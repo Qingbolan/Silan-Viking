@@ -12,6 +12,9 @@ recursive-include silan/bin *
 # Include all template files
 recursive-include silan/templates *
 
+# Include bundled Claude Code skills
+recursive-include silan/skills *
+
 # Exclude Python cache
 global-exclude __pycache__
 global-exclude *.py[co]

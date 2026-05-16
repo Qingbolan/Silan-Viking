@@ -57,7 +57,7 @@ const PlanHeaderCard: React.FC<PlanHeaderCardProps> = ({ plan, index }) => {
                   target.style.display = 'none';
                   const parent = target.parentElement;
                   if (parent) {
-                    parent.className = 'w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br from-purple-600 to-theme-600';
+                    parent.className = 'w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br from-theme-primary to-theme-primary-hover';
                     parent.textContent = (language === 'en' ? plan.name : plan.nameZh).charAt(0);
                   }
                 }}
@@ -68,7 +68,7 @@ const PlanHeaderCard: React.FC<PlanHeaderCardProps> = ({ plan, index }) => {
               </div>
             ) : (
               /* Blog-style fallback background */
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br from-purple-600 to-theme-600">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br from-theme-primary to-theme-primary-hover">
                 {(language === 'en' ? plan.name : plan.nameZh).charAt(0)}
               </div>
             )}
@@ -408,7 +408,7 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({ plan, projects, ideas, 
       label: language === 'en' ? 'Completion' : '完成度',
       value: `${Math.round((planProjects.length / plan.projectCount) * 100)}%`,
       icon: BarChart3,
-      color: 'text-purple-600'
+      color: 'text-theme-accent'
     }
   ];
 
@@ -481,22 +481,46 @@ const PlansPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Load all data concurrently
-        const [plansData, projectsData, ideasData, blogsData] = await Promise.all([
-          fetchAnnualPlans(language),
-          fetchProjectsWithAnnualPlans(language),
-          fetchIdeas({}, language),
-          fetchBlogPosts({}, language)
-        ]);
-        
-        if (isMounted) {
-          setPlans(plansData.sort((a: AnnualPlan, b: AnnualPlan) => b.year - a.year)); // Sort by year descending
-          setProjects(projectsData);
-          setIdeas(ideasData);
-          setBlogs(blogsData);
-          setLoading(false);
+
+        // Load all sources concurrently but independently — one source
+        // failing (e.g. a transient dev-server restart) must not blank
+        // the entire page.
+        const [plansRes, projectsRes, ideasRes, blogsRes] =
+          await Promise.allSettled([
+            fetchAnnualPlans(language),
+            fetchProjectsWithAnnualPlans(language),
+            fetchIdeas({}, language),
+            fetchBlogPosts({}, language),
+          ]);
+
+        if (!isMounted) return;
+
+        const plansData =
+          plansRes.status === 'fulfilled' ? plansRes.value : [];
+        const projectsData =
+          projectsRes.status === 'fulfilled' ? projectsRes.value : [];
+        const ideasData =
+          ideasRes.status === 'fulfilled' ? ideasRes.value : [];
+        const blogsData =
+          blogsRes.status === 'fulfilled' ? blogsRes.value : [];
+
+        setPlans(
+          [...plansData].sort(
+            (a: AnnualPlan, b: AnnualPlan) => b.year - a.year,
+          ),
+        );
+        setProjects(projectsData);
+        setIdeas(ideasData);
+        setBlogs(blogsData);
+
+        // Only surface a hard error if every source failed.
+        const allFailed = [plansRes, projectsRes, ideasRes, blogsRes].every(
+          (r) => r.status === 'rejected',
+        );
+        if (allFailed) {
+          setError(language === 'en' ? 'Failed to load data' : '加载数据失败');
         }
+        setLoading(false);
       } catch (err) {
         if (isMounted) {
           setError(language === 'en' ? 'Failed to load data' : '加载数据失败');

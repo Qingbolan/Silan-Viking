@@ -14,6 +14,7 @@ import ArticleDetailLayout from './ArticleDetailLayout';
 import { readingTracker } from '../../utils/readingBehavior';
 import { calculateReadingTime } from '../../utils/readingTime';
 import { useLanguage } from '../LanguageContext';
+import { useSetPageTitle } from '../../layout/PageTitleContext';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +40,9 @@ const BlogDetail: React.FC = () => {
     highlightAnnotation,
     cancelAnnotation
   } = useAnnotations(id);
+
+  // Reflect the post title in the address-bar breadcrumb.
+  useSetPageTitle(blog ? (language === 'zh' && blog.titleZh ? blog.titleZh : blog.title) : null);
 
   // Start reading tracking when blog is loaded
   useEffect(() => {

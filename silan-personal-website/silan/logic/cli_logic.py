@@ -59,7 +59,8 @@ class CLILogic(SilanCLILogger):
             'write': self._handle_write,
             'ls': self._handle_ls,
             'show': self._handle_show,
-            'search': self._handle_search
+            'search': self._handle_search,
+            'skill': self._handle_skill
         }
     
     def run_application(self, ctx, verbose: bool = False) -> None:
@@ -480,6 +481,15 @@ class CLILogic(SilanCLILogger):
         list_logic = ContentListLogic()
         return list_logic.search_content(query, content_type, search_in)
     
+    def _handle_skill(self, action: str = 'install', name: Optional[str] = None,
+                     project: bool = False, force: bool = False, **kwargs) -> bool:
+        """Handle skill command"""
+        from ..cli.skill_command import execute_skill_command
+
+        return execute_skill_command(
+            action=action, name=name, project=project, force=force
+        )
+
     def _build_db_config(self, db_type: Optional[str], host: str, port: Optional[int],
                         user: Optional[str], password: Optional[str], 
                         database: Optional[str], db_path: str) -> Dict[str, Any]:

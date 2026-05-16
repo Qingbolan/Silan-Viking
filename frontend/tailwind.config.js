@@ -214,19 +214,28 @@ export default {
         'mobile-4xl': ['2rem', { lineHeight: '2.5rem' }],      // 32px
       },
 
-      // Theme-aware shadows using CSS custom properties
+      // Shadows disabled globally — separation is by surface + spacing.
       boxShadow: {
-        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'medium': '0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 20px -5px rgba(0, 0, 0, 0.04)',
-        'large': '0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 2px 10px -5px rgba(0, 0, 0, 0.04)',
-        'theme': 'var(--shadow-elevation)',
+        'soft': 'none',
+        'medium': 'none',
+        'large': 'none',
+        'theme': 'none',
+        'sm': 'none',
+        'DEFAULT': 'none',
+        'md': 'none',
+        'lg': 'none',
+        'xl': 'none',
+        '2xl': 'none',
+        'inner': 'none',
+        'none': 'none',
       },
 
-      // Clean border radius
+      // Tightened border radius — editorial/academic feel, not bubbly
       borderRadius: {
-        'xl': '0.75rem',
-        '2xl': '1rem',
-        '3xl': '1.5rem',
+        'lg': '0.375rem',  // 6px
+        'xl': '0.5rem',    // 8px
+        '2xl': '0.5rem',   // 8px — collapsed, no oversized rounding
+        '3xl': '0.625rem', // 10px
       },
 
       // Professional backdrop blur

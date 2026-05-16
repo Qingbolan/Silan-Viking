@@ -15,27 +15,30 @@ import PlansPage from './views/PlansPage';
 import SearchResults from './views/SearchResults';
 import { ThemeProvider } from './components/ThemeContext';
 import { LanguageProvider } from './components/LanguageContext';
+import { PageTitleProvider } from './layout/PageTitleContext';
 
 const App: React.FC = () => {
   return (
     <ThemeProvider>
       <LanguageProvider>
         <Router>
-          <MainLayout>
-            <Routes>
-              <Route path="/" element={<ResumeWebsite />} />
-              <Route path="/recent-updates" element={<RecentUpdates />} />
-              <Route path="/contact" element={<InteractiveContactPage />} />
-              <Route path="/projects" element={<ProjectGallery />} />
-              <Route path="/projects/:id" element={<ProjectDetail />} />
-              <Route path="/plans" element={<PlansPage />} />
-              <Route path="/ideas" element={<IdeaPage />} />
-              <Route path="/ideas/:id" element={<IdeaDetail />} />
-              <Route path="/blog" element={<BlogStack />} />
-              <Route path="/blog/:id" element={<BlogDetail />} />
-              <Route path="/search" element={<SearchResults />} />
-            </Routes>
-          </MainLayout>
+          <PageTitleProvider>
+            <MainLayout>
+              <Routes>
+                <Route path="/" element={<ResumeWebsite />} />
+                <Route path="/recent-updates" element={<RecentUpdates />} />
+                <Route path="/contact" element={<InteractiveContactPage />} />
+                <Route path="/projects" element={<ProjectGallery />} />
+                <Route path="/projects/:id" element={<ProjectDetail />} />
+                <Route path="/plans" element={<PlansPage />} />
+                <Route path="/ideas" element={<IdeaPage />} />
+                <Route path="/ideas/:id" element={<IdeaDetail />} />
+                <Route path="/blog" element={<BlogStack />} />
+                <Route path="/blog/:id" element={<BlogDetail />} />
+                <Route path="/search" element={<SearchResults />} />
+              </Routes>
+            </MainLayout>
+          </PageTitleProvider>
         </Router>
       </LanguageProvider>
     </ThemeProvider>

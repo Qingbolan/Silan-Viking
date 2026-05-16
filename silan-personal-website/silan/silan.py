@@ -45,6 +45,7 @@ class SilanCLI:
 
         cli.add_command(self._create_status_command())
         cli.add_command(self._create_help_command())
+        cli.add_command(self._create_skill_command())
 
         # File editing and writing commands
         cli.add_command(self._create_edit_command())
@@ -311,6 +312,37 @@ class SilanCLI:
                 raise click.ClickException("Help command failed")
 
         return help
+
+    def _create_skill_command(self):
+        """Create skill command for installing the bundled Claude Code skill"""
+        @click.command(name='skill')
+        @click.argument('action', default='install',
+                       type=click.Choice(['install', 'uninstall', 'status', 'list']))
+        @click.option('--name', '-n', 'name', default=None,
+                     help='Specific skill name (defaults to all bundled skills)')
+        @click.option('--project', '-p', is_flag=True,
+                     help='Install into ./.claude/skills instead of ~/.claude/skills')
+        @click.option('--force', '-f', is_flag=True,
+                     help='Overwrite an already-installed skill')
+        def skill(action: str, name: Optional[str], project: bool, force: bool):
+            """Install the Claude Code skill for managing this website
+
+            Installs the bundled 'silan-blog' skill so AI assistants
+            (Claude Code) can help create, edit, and sync site content.
+
+            Examples:
+                silan skill install                # install for the current user
+                silan skill install --project      # install into the repo (team-shared)
+                silan skill status                 # show install state
+                silan skill uninstall -n silan-blog
+            """
+            success = self.cli_logic.execute_command(
+                'skill', action=action, name=name, project=project, force=force
+            )
+            if not success:
+                raise click.ClickException(f"Skill command '{action}' failed")
+
+        return skill
 
     def _create_frontend_group(self):
         """Create frontend command group"""

@@ -21,7 +21,6 @@ import { useTheme } from '../ThemeContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { BlogAPI } from '../../api';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
-import { BlogBreadcrumb } from './components/Breadcrumb';
 import { useTOC } from './hooks/useTOC';
 import { TableOfContents } from './components/TableOfContents';
 import BlogComments from './components/BlogComments';
@@ -47,7 +46,6 @@ interface SeriesDetailLayoutProps {
 
 const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   post,
-  onBack,
   userAnnotations,
   annotations,
   showAnnotationForm,
@@ -230,16 +228,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
         }}
       >
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <BlogBreadcrumb
-              post={post}
-              onBack={onBack}
-              onFilterByCategory={(category) => {
-                // Navigate back to blog with category filter
-                navigate(`/blog?type=${category}`);
-              }}
-            />
-
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-4 text-sm text-theme-secondary">
                 <div className="flex items-center gap-1">
@@ -272,7 +261,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
             }}
             className="flex items-start gap-2 text-theme-secondary hover:text-theme-primary transition-colors w-full"
           >
-            {metaSidebarCollapsed ? <ChevronRight size={16} /> : <List size={14} className="p-0.5 pt-0 text-purple-500 h-6 w-6" />}
+            {metaSidebarCollapsed ? <ChevronRight size={16} /> : <List size={14} className="p-0.5 pt-0 text-theme-accent h-6 w-6" />}
             {!metaSidebarCollapsed &&
               <h3 className="font-semibold text-theme-primary text-sm text-left">
                 {language === 'zh' && post.titleZh ? post.titleZh : post.title}
@@ -586,7 +575,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
             {/* Same content as desktop meta sidebar - simplified */}
               <div className="rounded-lg p-4 border border-theme-border mb-4">
               <div className="flex items-center gap-2 mb-3">
-                <List size={14} className="text-purple-500" />
+                <List size={14} className="text-theme-accent" />
                 <h3 className="font-semibold text-theme-primary text-sm">
                   {language === 'zh' && post.titleZh ? post.titleZh : post.title}
                 </h3>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft,
   ExternalLink,
   Github,
   Heart,
@@ -25,6 +24,7 @@ import {
 import { getClientFingerprint } from '../../utils/fingerprint';
 import ProjectTabs from './ProjectTabs';
 import type { ProjectDetail as ProjectDetailType } from '../../types/api';
+import { useSetPageTitle } from '../../layout/PageTitleContext';
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +37,12 @@ const ProjectDetail: React.FC = () => {
   const [metrics, setMetrics] = useState<ProjectMetricsResponse | null>(null);
   const [fingerprint, setFingerprint] = useState<string>('');
   const [liking, setLiking] = useState(false);
-  
+
+  // Reflect the project title in the address-bar breadcrumb.
+  useSetPageTitle(
+    project ? (language === 'zh' && project.titleZh ? project.titleZh : project.title) : null,
+  );
+
   // Initialize fingerprint
   useEffect(() => {
     const initFingerprint = async () => {
@@ -232,19 +237,6 @@ const ProjectDetail: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 mb-6 text-sm text-theme-secondary">
-            <Link 
-              to="/projects" 
-              className="flex items-center gap-1 hover:text-theme-primary transition-colors"
-            >
-              <ArrowLeft size={16} />
-              {t('projects.title')}
-            </Link>
-            <span>/</span>
-            <span className="text-theme-primary">{project.title}</span>
-          </div>
-
           {/* Project Header */}
           <div className="bg-theme-surface rounded-xl p-6 shadow-sm border border-theme-border">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">

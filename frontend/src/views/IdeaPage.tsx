@@ -80,22 +80,37 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, index, onView }) => {
   );
 
   // 返回的是"文字色 + 背景色"组合，既当徽章也当小图标底色
-  const getStatusClass = useCallback((status: IdeaStatus) => {
+  // Status text colour only — no background. Used for text status tags.
+  const getStatusTextClass = useCallback((status: IdeaStatus) => {
     switch (status) {
       case "published":
-        return "text-theme-success bg-theme-success-20";
-      case "validating":
-        return "text-theme-accent bg-theme-primary-20";
-      case "experimenting":
-        return "text-theme-accent bg-theme-primary-20";
+        return "text-theme-success";
       case "hypothesis":
-        return "text-theme-warning bg-theme-warning-20";
+        return "text-theme-warning";
       case "concluded":
-        return "text-theme-secondary bg-theme-surface-elevated";
+        return "text-theme-secondary";
+      case "validating":
+      case "experimenting":
       default:
-        return "text-theme-accent bg-theme-primary-20";
+        return "text-theme-accent";
     }
   }, []);
+
+  // Status colour + tinted background — used for the icon block only.
+  const getStatusClass = useCallback(
+    (status: IdeaStatus) => {
+      const bg =
+        status === "published"
+          ? "bg-theme-success-20"
+          : status === "hypothesis"
+          ? "bg-theme-warning-20"
+          : status === "concluded"
+          ? "bg-theme-surface-elevated"
+          : "bg-theme-primary-20";
+      return `${getStatusTextClass(status)} ${bg}`;
+    },
+    [getStatusTextClass],
+  );
 
   const handleClick = useCallback(() => {
     onView?.(idea);
@@ -154,9 +169,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, index, onView }) => {
         <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
           <span className="w-2 h-2 rounded-full bg-theme-primary/90" aria-hidden />
           <span
-            className={`px-2 py-1 rounded-full text-[10px] font-semibold backdrop-blur-sm ${getStatusClass(
-              idea.status
-            )}`}
+            className={`text-[10px] font-semibold ${getStatusTextClass(idea.status)}`}
           >
             {getStatusText(idea.status)}
           </span>
@@ -188,7 +201,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, index, onView }) => {
             </div>
             <h3 className="text-lg font-semibold text-theme-primary">{idea.title}</h3>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(idea.status)}`}>
+          <span className={`text-xs font-semibold ${getStatusTextClass(idea.status)}`}>
             {getStatusText(idea.status)}
           </span>
         </div>
@@ -511,7 +524,7 @@ const IdeaPage: React.FC = () => {
         <AnimatePresence mode="wait">
           <motion.div
             key={`${selectedCategory}-${selectedStatus}-${searchTerm}`}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

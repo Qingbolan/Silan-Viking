@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { 
+import {
   ChevronUp, 
   BookOpen, 
   Clock, 
@@ -21,7 +20,6 @@ import { useTheme } from '../ThemeContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
 import BlogComments from './components/BlogComments';
-import { BlogBreadcrumb } from './components/Breadcrumb';
 import { TableOfContents } from './components/TableOfContents';
 import { useTOC } from './hooks/useTOC';
 
@@ -46,7 +44,6 @@ interface ArticleDetailLayoutProps {
 
 const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
   post,
-  onBack,
   userAnnotations,
   annotations,
   showAnnotationForm,
@@ -63,7 +60,6 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
   onCancelAnnotation
 }) => {
   const { language } = useLanguage();
-  const navigate = useNavigate();
   const { sections } = useTOC(post);
   const { isDarkMode } = useTheme();
   const reduceMotion = useReducedMotion();
@@ -168,16 +164,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         }}
       >
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <BlogBreadcrumb
-              post={post}
-              onBack={onBack}
-              onFilterByCategory={(category) => {
-                // Navigate back to blog with category filter
-                navigate(`/blog?type=${category}`);
-              }}
-            />
-
+          <div className="flex items-center justify-end">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-4 text-sm text-theme-secondary">
                 <div className="flex items-center gap-1">
@@ -326,7 +313,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
       <div className={`transition-all duration-300 ${metaSidebarCollapsed ? 'lg:ml-12' : 'lg:ml-60'} ${tocCollapsed ? 'lg:mr-0' : 'lg:mr-60'}`}>
         <div className="pt-24 sm:pt-28 lg:pt-32 pb-20 px-4 sm:px-6 lg:px-8">
           <motion.div
-            className="mx-auto w-full max-w-4xl"
+            className="mx-auto w-full max-w-[var(--reading-max-width)]"
             initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           >
@@ -336,7 +323,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                 {/* Divider for Vlog */}
                 <div className="my-8 border-t border-theme-border"></div>
                 {/* Vlog Additional Content */}
-                <div className="prose-content space-y-6">
+                <div className="prose-content markdown-body">
                   <BlogContentRenderer
                     content={post.content}
                     isWideScreen={true}
@@ -359,7 +346,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
               </>
             ) : (
               /* Article Content */
-              <div className="prose-content space-y-6">
+              <div className="prose-content markdown-body">
                 <BlogContentRenderer
                   content={post.content}
                   isWideScreen={true}
@@ -386,7 +373,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
       {/* TOC Sidebar - Y轴轨道 3 - Hidden on mobile */}
       <motion.div
-        className={`fixed right-0 top-16 bottom-0 z-40 transition-all duration-300 hidden lg:block ${tocCollapsed ? 'w-12' : 'w-60'
+        className={`fixed right-0 top-16 xs:top-18 sm:top-20 bottom-0 z-40 transition-all duration-300 hidden lg:block ${tocCollapsed ? 'w-12' : 'w-60'
           }`}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -415,7 +402,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
       {/* Comments */}
       <div className={`transition-all duration-300 ${metaSidebarCollapsed ? 'lg:ml-12' : 'lg:ml-60'} ${tocCollapsed ? 'lg:mr-0' : 'lg:mr-60'}`}>
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-4xl">
+          <div className="mx-auto w-full max-w-[var(--reading-max-width)]">
             <BlogComments postId={post.id} postSlug={post.slug} />
           </div>
         </div>

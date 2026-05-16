@@ -140,7 +140,7 @@ const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
     switch (type) {
       case 'bug': return <Bug className="w-4 h-4 text-red-500" />;
       case 'enhancement': return <Lightbulb className="w-4 h-4 text-blue-500" />;
-      case 'question': return <HelpCircle className="w-4 h-4 text-purple-500" />;
+      case 'question': return <HelpCircle className="w-4 h-4 text-theme-accent" />;
       case 'documentation': return <FileText className="w-4 h-4 text-green-500" />;
       default: return <AlertCircle className="w-4 h-4 text-gray-500" />;
     }
@@ -150,7 +150,7 @@ const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
     return status === 'open' ? (
       <AlertCircle className="w-4 h-4 text-green-600" />
     ) : (
-      <CheckCircle className="w-4 h-4 text-purple-600" />
+      <CheckCircle className="w-4 h-4 text-theme-accent" />
     );
   };
 
@@ -159,7 +159,7 @@ const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
       'bug': 'red',
       'enhancement': 'blue',
       'documentation': 'geekblue',
-      'question': 'purple',
+      'question': 'blue',
       'high-priority': 'volcano',
       'low-priority': 'cyan',
       'ui': 'orange',

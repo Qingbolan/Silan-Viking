@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Calendar, Clock, Filter, Eye, Star, Zap, BookOpen, 
-  Briefcase, GraduationCap, FileText, Target, ArrowLeft
+import {
+  Calendar, Clock, Filter, Eye, Star, Zap, BookOpen,
+  Briefcase, GraduationCap, FileText, Target
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../components/LanguageContext';
@@ -10,6 +10,7 @@ import { useTheme } from '../components/ThemeContext';
 import { LoadingSpinner } from '../components/ui';
 import { fetchResumeData } from '../api/home/resumeApi';
 import Markdown from '../components/ui/Markdown';
+import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 
 interface RecentItem {
   id: string;
@@ -21,137 +22,6 @@ interface RecentItem {
   status: 'active' | 'ongoing' | 'completed';
   priority: 'high' | 'medium' | 'low';
 }
-
-interface TimelineEntry {
-  year: number;
-  month: number;
-  count: number;
-  items: RecentItem[];
-}
-
-// Timeline Component
-interface TimelineProps {
-  data: RecentItem[];
-  onTimeClick: (year: number, month?: number) => void;
-  selectedTime: { year: number; month?: number } | null;
-}
-
-const Timeline: React.FC<TimelineProps> = ({ data, onTimeClick, selectedTime }) => {
-  const { language } = useLanguage();
-
-  // Group data by year and month
-  const timelineData = useMemo(() => {
-    const grouped: { [key: string]: TimelineEntry } = {};
-    
-    data.forEach(item => {
-      const date = new Date(item.date);
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const key = `${year}-${month}`;
-      
-      if (!grouped[key]) {
-        grouped[key] = {
-          year,
-          month,
-          count: 0,
-          items: []
-        };
-      }
-      
-      grouped[key].count++;
-      grouped[key].items.push(item);
-    });
-
-    return Object.values(grouped).sort((a, b) => {
-      if (a.year !== b.year) return b.year - a.year; // Newest first
-      return b.month - a.month;
-    });
-  }, [data]);
-
-  const monthNames = language === 'en' 
-    ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    : ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-
-  // Group by year for display
-  const yearGroups = useMemo(() => {
-    const groups: { [year: number]: TimelineEntry[] } = {};
-    timelineData.forEach(entry => {
-      if (!groups[entry.year]) {
-        groups[entry.year] = [];
-      }
-      groups[entry.year].push(entry);
-    });
-    return groups;
-  }, [timelineData]);
-
-  return (
-    <div className="sticky top-8">
-      <div className="p-3 xs:p-4 rounded-lg xs:rounded-xl bg-theme-surface-elevated border border-theme-border">
-        <h3 className="font-semibold text-theme-primary mb-3 xs:mb-4 flex items-center gap-2 text-sm xs:text-base">
-          <Clock size={16} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
-          {language === 'en' ? 'Timeline' : '时间线'}
-        </h3>
-        
-        <div className="space-y-2 xs:space-y-3 max-h-96 overflow-y-auto">
-          {Object.entries(yearGroups)
-            .sort(([a], [b]) => parseInt(b) - parseInt(a))
-            .map(([year, entries]) => (
-            <div key={year} className="space-y-1 xs:space-y-2">
-              {/* Year Header */}
-              <button
-                onClick={() => onTimeClick(parseInt(year))}
-                className={`w-full text-left px-2 xs:px-3 py-1.5 xs:py-2 rounded-lg transition-colors min-h-[44px] text-sm xs:text-base ${
-                  selectedTime?.year === parseInt(year) && !selectedTime.month
-                    ? 'bg-theme-primary text-white'
-                    : 'hover:bg-theme-surface-tertiary text-theme-primary'
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">{year}</span>
-                  <span className="text-xs text-theme-secondary">
-                    {entries.reduce((sum, entry) => sum + entry.count, 0)} updates
-                  </span>
-                </div>
-              </button>
-              
-              {/* Months */}
-              <div className="ml-2 xs:ml-4 space-y-1">
-                {entries.map(entry => (
-                  <button
-                    key={`${entry.year}-${entry.month}`}
-                    onClick={() => onTimeClick(entry.year, entry.month)}
-                    className={`w-full text-left px-2 xs:px-3 py-1 rounded text-xs xs:text-sm transition-colors min-h-[40px] ${
-                      selectedTime?.year === entry.year && selectedTime.month === entry.month
-                        ? 'bg-theme-accent text-white'
-                        : 'hover:bg-theme-surface text-theme-secondary'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span>{monthNames[entry.month]}</span>
-                      <span className="text-xs">
-                        {entry.count}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        {/* Reset Button */}
-        {selectedTime && (
-          <button
-            onClick={() => onTimeClick(-1)} // Special value to reset
-            className="w-full mt-2 xs:mt-3 px-2 xs:px-3 py-1.5 xs:py-2 text-xs xs:text-sm text-theme-secondary hover:text-theme-primary hover:bg-theme-surface-tertiary rounded-lg transition-colors min-h-[44px]"
-          >
-            {language === 'en' ? 'Show All' : '显示全部'}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const RecentUpdates: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -310,17 +180,85 @@ const RecentUpdates: React.FC = () => {
     return typed;
   }, [normalized, filter, selectedTime]);
 
-  const handleBack = () => {
-    window.history.back();
+
+  // ── Address-bar timeline filter ──────────────────────────────────
+  // Build a year → month tree from the update dates; each node becomes
+  // a #facet option. Value is "<year>" or "<year>-<month>".
+  const monthNames = useMemo(
+    () =>
+      language === 'en'
+        ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        : ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+    [language],
+  );
+
+  const timelineOptions = useMemo<PageFilterOption[]>(() => {
+    // year -> month -> count
+    const tree: Record<number, Record<number, number>> = {};
+    recentData.forEach((item) => {
+      const d = new Date(item.date);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      if (Number.isNaN(y)) return;
+      tree[y] = tree[y] || {};
+      tree[y][m] = (tree[y][m] || 0) + 1;
+    });
+
+    const options: PageFilterOption[] = [];
+    Object.keys(tree)
+      .map(Number)
+      .sort((a, b) => b - a) // newest year first
+      .forEach((y) => {
+        const months = tree[y];
+        const yearCount = Object.values(months).reduce((s, n) => s + n, 0);
+        options.push({ value: String(y), label: String(y), count: yearCount, level: 0 });
+        Object.keys(months)
+          .map(Number)
+          .sort((a, b) => b - a) // newest month first
+          .forEach((m) => {
+            options.push({
+              value: `${y}-${m}`,
+              label: monthNames[m],
+              count: months[m],
+              level: 1,
+            });
+          });
+      });
+    return options;
+  }, [recentData, monthNames]);
+
+  const timelineActiveValue = useMemo(() => {
+    if (!selectedTime) return null;
+    return selectedTime.month !== undefined
+      ? `${selectedTime.year}-${selectedTime.month}`
+      : String(selectedTime.year);
+  }, [selectedTime]);
+
+  const handleTimelineSelect = (value: string | null) => {
+    if (!value) {
+      setSelectedTime(null);
+      return;
+    }
+    const [y, m] = value.split('-').map(Number);
+    setSelectedTime({ year: y, month: Number.isNaN(m) ? undefined : m });
   };
 
-  const handleTimeClick = (year: number, month?: number) => {
-    if (year === -1) {
-      setSelectedTime(null); // Reset
-    } else {
-      setSelectedTime({ year, month });
-    }
-  };
+  // Surface the timeline as an address-bar #facet filter.
+  usePageFilter(
+    useMemo(
+      () =>
+        timelineOptions.length > 0
+          ? {
+              options: timelineOptions,
+              activeValue: timelineActiveValue,
+              allLabel: language === 'en' ? 'All time' : '全部时间',
+              onSelect: handleTimelineSelect,
+            }
+          : null,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [timelineOptions, timelineActiveValue, language],
+    ),
+  );
 
   if (loading) {
     return (
@@ -368,14 +306,6 @@ const RecentUpdates: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <button
-            onClick={handleBack}
-            className="inline-flex items-center gap-1.5 xs:gap-2 mb-3 xs:mb-4 text-theme-secondary hover:text-theme-primary transition-colors min-h-[44px] px-2 py-2 rounded-lg text-sm xs:text-base"
-          >
-            <ArrowLeft size={16} className="xs:w-4 xs:h-4 sm:w-5 sm:h-5" />
-            {language === 'en' ? 'Back to Resume' : '返回简历'}
-          </button>
-          
           <h1 className="text-2xl xs:text-3xl sm:text-4xl font-bold text-theme-primary flex items-center gap-2 xs:gap-3 mb-2">
             <Calendar size={24} className="xs:w-6 xs:h-6 sm:w-8 sm:h-8" />
             {t('resume.recent_updates')}
@@ -388,10 +318,9 @@ const RecentUpdates: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Main Content - Responsive Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 xs:gap-6 sm:gap-8">
-          {/* Left Column - Main Content */}
-          <div className="xl:col-span-3 space-y-4 xs:space-y-6">
+        {/* Main Content */}
+        <div>
+          <div className="space-y-4 xs:space-y-6">
             {/* Filter Controls */}
             <motion.div
               className="p-3 xs:p-4 sm:p-6 rounded-lg xs:rounded-xl bg-theme-surface-elevated border border-theme-border"
@@ -553,20 +482,6 @@ const RecentUpdates: React.FC = () => {
             )}
           </div>
 
-          {/* Right Column - Timeline (Hidden on narrow screens) */}
-          <div className="hidden xl:block xl:col-span-1">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <Timeline 
-                data={recentData} 
-                onTimeClick={handleTimeClick}
-                selectedTime={selectedTime}
-              />
-            </motion.div>
-          </div>
         </div>
       </div>
     </motion.div>

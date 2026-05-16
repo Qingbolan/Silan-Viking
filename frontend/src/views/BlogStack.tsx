@@ -1,15 +1,37 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, User, ArrowRight, Play, Video, List, Grid, BookOpen, Tag as TagIcon } from 'lucide-react';
-import { Card, Input, Row, Col, Alert, Spin, Empty } from 'antd';
+import { Card, Input, Alert, Spin, Empty } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useTheme } from '../components/ThemeContext';
 import { useLanguage } from '../components/LanguageContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BlogData } from '../components/BlogStack/types/blog';
 import { fetchBlogPosts } from '../api';
+import { useVirtualGrid } from '../hooks/useVirtualGrid';
 
 const { Search } = Input;
+
+// Responsive column count, mirroring the old antd Col breakpoints
+// (xs:1 / sm:2 / lg:3).
+const useResponsiveColumns = (): number => {
+  const [columns, setColumns] = useState(() => {
+    if (typeof window === 'undefined') return 3;
+    const w = window.innerWidth;
+    return w >= 1024 ? 3 : w >= 640 ? 2 : 1;
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setColumns(w >= 1024 ? 3 : w >= 640 ? 2 : 1);
+    };
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return columns;
+};
 
 interface BlogCardProps {
   post: BlogData;
@@ -87,7 +109,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
       case 'vlog':
         return <Video size={16} className="text-red-500" />;
       case 'series':
-        return <List size={16} className="text-purple-500" />;
+        return <List size={16} className="text-theme-accent" />;
       case 'tutorial':
         return <BookOpen size={16} className="text-green-500" />;
       case 'podcast':
@@ -219,7 +241,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
         {/* Series episode indicator */}
         {isSeries && post.episodeNumber && post.totalEpisodes && (
           <div className="absolute bottom-4 left-4">
-            <div className="px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-purple-500/80 text-white">
+            <div className="px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-theme-primary/80 text-white">
               {language === 'en' ? `Episode ${post.episodeNumber}/${post.totalEpisodes}` : `第${post.episodeNumber}集/共${post.totalEpisodes}集`}
             </div>
           </div>
@@ -250,7 +272,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
           )}
           {/* Series progress indicator */}
           {isSeries && post.episodeNumber && post.totalEpisodes && (
-            <div className="flex items-center space-x-1 text-purple-600">
+            <div className="flex items-center space-x-1 text-theme-accent">
               <List size={isWideLayout ? 16 : 14} />
               <span>
                 {language === 'en' 
@@ -265,13 +287,13 @@ const BlogCard: React.FC<BlogCardProps> = ({
         {/* Series Title and Info (enhanced for wide layout) */}
         {isSeries && post.seriesTitle && (
           <div className={`mb-3 ${isWideLayout ? 'mb-4' : 'mb-2'}`}>
-            <div className="flex items-center gap-2 text-purple-600 font-medium">
+            <div className="flex items-center gap-2 text-theme-accent font-medium">
               <List size={isWideLayout ? 16 : 14} />
               <span className={`${isWideLayout ? 'text-base' : 'text-sm'}`}>
                 {language === 'zh' && post.seriesTitleZh ? post.seriesTitleZh : post.seriesTitle}
               </span>
               {post.episodeNumber && post.totalEpisodes && (
-                <span className={`ml-2 px-2 py-1 rounded-full bg-purple-100 text-purple-800 font-medium ${
+                <span className={`ml-2 px-2 py-1 rounded-full bg-theme-primary-light text-theme-accent font-medium ${
                   isWideLayout ? 'text-xs' : 'text-xs'
                 }`}>
                   {post.episodeNumber}/{post.totalEpisodes}
@@ -562,6 +584,35 @@ const BlogStack: React.FC = () => {
     navigate(`/blog/${post.id}`);
   }, [navigate]);
 
+  // ── Virtualized grid (pretext-measured) ──────────────────────────
+  const columns = useResponsiveColumns();
+
+  // Items fed to the virtual grid: id + the two text blocks whose
+  // wrapped height pretext computes to predict each card's size.
+  const gridItems = useMemo(
+    () =>
+      filteredPosts.map((post) => ({
+        id: post.id,
+        title: (language === 'zh' && post.titleZh ? post.titleZh : post.title) || '',
+        excerpt:
+          (language === 'zh' && post.summaryZh ? post.summaryZh : post.summary) || '',
+        post,
+      })),
+    [filteredPosts, language],
+  );
+
+  const { containerRef, totalHeight, virtualRows } = useVirtualGrid(gridItems, {
+    columns,
+    // Cover image + tags row + CTA + paddings/margins (everything that
+    // is not the measured title/excerpt text).
+    chromeHeight: 348,
+    gap: 12,
+    titleFont: '700 20px Inter',
+    titleLineHeight: 28,
+    excerptFont: '400 14px Inter',
+    excerptLineHeight: 20,
+  });
+
 
   if (loading) {
     return (
@@ -674,7 +725,7 @@ const BlogStack: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Blog Posts Grid */}
+        {/* Blog Posts Grid — virtualized, pretext-measured row heights */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${selectedTag}-${selectedType}-${searchTerm}`}
@@ -683,26 +734,40 @@ const BlogStack: React.FC = () => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <Row gutter={[24, 24]}>
-              {filteredPosts.map((post, index) => {
-                const isWideLayout = index % 8 === 4 && (post.summary || '').length > 250;
-                return (
-                  <Col 
-                    key={post.id}
-                    xs={24}
-                    sm={12}
-                    lg={isWideLayout ? 12 : 8}
+            {/* Scroll viewport. Only rows near the viewport are mounted;
+                pretext pre-computes each card's height so the scrollbar
+                and offsets are exact, with no layout-shift guesswork. */}
+            <div
+              ref={containerRef}
+              className="relative overflow-y-auto"
+              style={{ height: 'min(78vh, 900px)' }}
+            >
+              {/* Spacer giving the scrollbar its true total length. */}
+              <div style={{ height: totalHeight, position: 'relative' }}>
+                {virtualRows.map((row) => (
+                  <div
+                    key={row.index}
+                    className="absolute left-0 right-0 grid"
+                    style={{
+                      top: row.offset,
+                      height: row.height,
+                      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                      gap: 12,
+                    }}
                   >
-                    <BlogCard
-                      post={post}
-                      index={index}
-                      featured={false}
-                      onClick={handlePostClick}
-                    />
-                  </Col>
-                );
-              })}
-            </Row>
+                    {row.items.map((item) => (
+                      <BlogCard
+                        key={item.id}
+                        post={item.post}
+                        index={row.index * columns}
+                        featured={false}
+                        onClick={handlePostClick}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         </AnimatePresence>
 

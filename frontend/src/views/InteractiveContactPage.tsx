@@ -229,7 +229,7 @@ const InteractiveContactPageContent: React.FC = () => {
                               rel="noopener noreferrer"
                               className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-theme-surface-elevated transition-all group"
                             >
-                              <div className="p-1.5 rounded-md bg-theme-primary-20 text-theme-accent group-hover:scale-110 transition-transform">
+                              <div className="text-theme-accent group-hover:scale-110 transition-transform">
                                 {item.icon}
                               </div>
                               <div className="flex-1 min-w-0">

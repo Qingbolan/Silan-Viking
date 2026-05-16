@@ -1,114 +1,121 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
-// Vue.js inspired color scheme
+// Modern minimal academic color scheme — aligned to EasyNet's gallery
+// design language (OKLCH tokens, "Paper white" + "Graphite" presets).
+// Neutrals are chroma 0 so the surface stays true grey; a restrained
+// academic ink-blue accent is reserved for links, the current item,
+// and key actions. No gradients in the UI; separation is by surface
+// layer + spacing, not borders.
 const colorSchemes = {
   light: {
-    // Primary colors - Simple green (same as dark)
-    primary: '#42b883',         // Vue green
-    primaryHover: '#4fc08d',    // Lighter green (same as dark)
-    primaryLight: '#e8f5f0',    // Very light green background
+    // Primary — academic ink blue, used sparingly for emphasis
+    primary: 'oklch(0.50 0.13 264)',
+    primaryHover: 'oklch(0.44 0.14 264)',
+    primaryLight: 'oklch(0.96 0.02 264)',   // faint wash for selected states
 
-    // Secondary colors - Simple gray
-    secondary: '#6b7280',       // Medium gray
-    secondaryHover: '#4b5563',  // Darker gray
-    secondaryLight: '#f3f4f6',  // Light gray
+    // Secondary — true neutral graphite
+    secondary: 'oklch(0.44 0 0)',
+    secondaryHover: 'oklch(0.32 0 0)',
+    secondaryLight: 'oklch(0.95 0 0)',
 
-    // Background colors - Clean white
-    background: '#ffffff',       // Pure white
-    backgroundSecondary: '#f9fafb',   // Very light gray
-    backgroundTertiary: '#f3f4f6',    // Light gray
+    // Background — Gallery "Paper white": flat, quiet
+    background: 'oklch(1.00 0 0)',
+    backgroundSecondary: 'oklch(0.965 0 0)',
+    backgroundTertiary: 'oklch(0.94 0 0)',
 
-    // Text colors - Simple grayscale
-    textPrimary: '#111827',     // Almost black
-    textSecondary: '#6b7280',   // Medium gray
-    textTertiary: '#9ca3af',    // Light gray
+    // Text — graphite ink on paper
+    textPrimary: 'oklch(0.12 0 0)',
+    textSecondary: 'oklch(0.50 0 0)',       // = gallery --muted-foreground
+    textTertiary: 'oklch(0.62 0 0)',
 
-    // Accent colors - Green (consistent with dark)
-    accent: '#42b883',          // Vue green
-    accentHover: '#4fc08d',     // Lighter green
+    // Accent — same ink blue
+    accent: 'oklch(0.50 0.13 264)',
+    accentHover: 'oklch(0.44 0.14 264)',
 
-    // Status colors - Same as dark
-    success: '#42b883',         // Green
-    warning: '#e6a23c',         // Yellow
-    error: '#f56c6c',           // Red
+    // Status
+    success: 'oklch(0.55 0.13 150)',
+    warning: 'oklch(0.62 0.13 70)',
+    error: 'oklch(0.55 0.20 25)',
 
-    // Gradients - Simple green gradients
-    gradientPrimary: 'linear-gradient(135deg, #42b883 0%, #4fc08d 100%)',
-    gradientSecondary: 'linear-gradient(135deg, #34d399 0%, #42b883 100%)',
-    gradientAccent: 'linear-gradient(135deg, #42b883 0%, #10b981 100%)',
+    // "Gradients" kept flat (solid) — no AI-gradient look
+    gradientPrimary: 'oklch(0.50 0.13 264)',
+    gradientSecondary: 'oklch(0.44 0 0)',
+    gradientAccent: 'oklch(0.50 0.13 264)',
 
-    // Surface colors - Clean white and gray
-    cardBackground: '#ffffff',
-    cardBorder: '#e5e7eb',      // Light gray border
-    surface: '#f9fafb',
-    surfaceSecondary: '#f3f4f6',
-    surfaceTertiary: '#e5e7eb',
-    surfaceElevated: '#ffffff',
+    // Surfaces — fully transparent: no container backgrounds, no borders.
+    // Separation is by spacing and typography alone.
+    cardBackground: 'transparent',
+    cardBorder: 'transparent',
+    surface: 'transparent',
+    surfaceSecondary: 'transparent',
+    surfaceTertiary: 'transparent',
+    surfaceElevated: 'transparent',
 
-    // Interactive states
-    hoverBackground: '#f3f4f6',
-    activeBackground: '#e5e7eb',
-    focusRing: '#42b883',
+    // Interactive states — kept faint so hover/active still gives feedback
+    hoverBackground: 'oklch(0.96 0 0)',
+    activeBackground: 'oklch(0.93 0 0)',
+    focusRing: 'oklch(0.50 0.13 264)',
 
-    // Shadows
-    shadowSm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-    shadowMd: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    shadowLg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-    shadowXl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    // Shadows — disabled globally; separation is by surface + spacing.
+    shadowSm: 'none',
+    shadowMd: 'none',
+    shadowLg: 'none',
+    shadowXl: 'none',
   },
   dark: {
-    // Primary colors - Vue green for dark
-    primary: '#42b883',         // Vue green (same in dark)
-    primaryHover: '#4fc08d',    // Lighter Vue green
-    primaryLight: '#1a1a1a',    // Dark background
-    
-    // Secondary colors
-    secondary: '#a0a8b7',       // Light gray for dark mode
-    secondaryHover: '#c0c4cc',  // Lighter gray
-    secondaryLight: '#35495e',  // Vue dark blue
-    
-    // Background colors - Vue dark theme
-    background: '#1a1a1a',       // Very dark gray
-    backgroundSecondary: '#2c2c2c', // Dark gray
-    backgroundTertiary: '#35495e',  // Vue dark blue
-    
-    // Text colors - High contrast for dark
-    textPrimary: '#ffffff',     // Pure white
-    textSecondary: '#a0a8b7',   // Light gray
-    textTertiary: '#909399',    // Medium gray
-    
-    // Accent colors
-    accent: '#42b883',          // Vue green (consistent)
-    accentHover: '#4fc08d',     // Lighter Vue green
-    
-    // Status colors
-    success: '#67c23a',         // Vue success green
-    warning: '#e6a23c',         // Vue warning yellow  
-    error: '#f56c6c',           // Vue error red
-    
-    // Gradients - Vue dark style
-    gradientPrimary: 'linear-gradient(135deg, #42b883 0%, #4fc08d 100%)',
-    gradientSecondary: 'linear-gradient(135deg, #67c23a 0%, #42b883 100%)',
-    gradientAccent: 'linear-gradient(135deg, #a0a8b7 0%, #909399 100%)',
-    
-    // Surface colors
-    cardBackground: '#2c2c2c',   // Dark gray
-    cardBorder: '#35495e',       // Vue dark blue
-    surface: '#35495e',          // Vue dark blue
-    surfaceSecondary: '#2c2c2c', // Dark gray
-    surfaceTertiary: '#404040',  // Medium dark gray
-    surfaceElevated: '#2c2c2c',
-    
+    // Primary — lighter ink blue for contrast on graphite
+    primary: 'oklch(0.72 0.12 264)',
+    primaryHover: 'oklch(0.80 0.12 264)',
+    primaryLight: 'oklch(0.24 0.04 264)',
+
+    // Secondary — neutral
+    secondary: 'oklch(0.66 0 0)',
+    secondaryHover: 'oklch(0.80 0 0)',
+    secondaryLight: 'oklch(0.23 0 0)',
+
+    // Background — "Graphite": a layered near-neutral with a faint ink-blue
+    // cast, lifted enough that desk / window / surface read as distinct.
+    background: 'oklch(0.165 0.010 264)',
+    backgroundSecondary: 'oklch(0.21 0.012 264)',
+    backgroundTertiary: 'oklch(0.26 0.014 264)',
+
+    // Text
+    textPrimary: 'oklch(0.96 0.003 260)',
+    textSecondary: 'oklch(0.66 0.008 260)',
+    textTertiary: 'oklch(0.52 0.008 260)',
+
+    // Accent
+    accent: 'oklch(0.72 0.12 264)',
+    accentHover: 'oklch(0.80 0.12 264)',
+
+    // Status
+    success: 'oklch(0.72 0.15 150)',
+    warning: 'oklch(0.80 0.14 80)',
+    error: 'oklch(0.70 0.18 25)',
+
+    // Flat solid
+    gradientPrimary: 'oklch(0.72 0.12 264)',
+    gradientSecondary: 'oklch(0.66 0 0)',
+    gradientAccent: 'oklch(0.72 0.12 264)',
+
+    // Surfaces — fully transparent: no container backgrounds, no borders.
+    cardBackground: 'transparent',
+    cardBorder: 'transparent',
+    surface: 'transparent',
+    surfaceSecondary: 'transparent',
+    surfaceTertiary: 'transparent',
+    surfaceElevated: 'transparent',
+
     // Interactive states
-    hoverBackground: '#404040',
-    activeBackground: '#35495e',
-    focusRing: '#42b883',
-    
-    // Shadows for dark mode
-    shadowSm: '0 1px 2px 0 rgb(0 0 0 / 0.3)',
-    shadowMd: '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4)',
-    shadowLg: '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
-    shadowXl: '0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4)',
+    hoverBackground: 'oklch(0.22 0.010 260)',
+    activeBackground: 'oklch(0.26 0.012 260)',
+    focusRing: 'oklch(0.72 0.12 264)',
+
+    // Shadows — disabled globally; separation is by surface + spacing.
+    shadowSm: 'none',
+    shadowMd: 'none',
+    shadowLg: 'none',
+    shadowXl: 'none',
   }
 };
 
@@ -163,9 +170,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    // Check saved preference first, default to dark mode
+    // Check saved preference first; default to light mode (academic convention)
     const savedMode = localStorage.getItem('darkMode');
-    return savedMode !== null ? JSON.parse(savedMode) : true; // Default to dark mode
+    return savedMode !== null ? JSON.parse(savedMode) : false;
   });
 
   const toggleTheme = () => {

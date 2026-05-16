@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft,
   Lightbulb,
   Calendar,
   Clock,
@@ -25,6 +24,7 @@ import CommunityFeedback from './CommunityFeedback';
 import Markdown from '../ui/Markdown';
 import { IdeaData } from '../../types';
 import { fetchIdeaById } from '../../api/ideas/ideaApi';
+import { useSetPageTitle } from '../../layout/PageTitleContext';
 
 
 const IdeaDetail: React.FC = () => {
@@ -37,6 +37,9 @@ const IdeaDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('abstract');
   const [liked, setLiked] = useState(false);
+
+  // Reflect the idea title in the address-bar breadcrumb.
+  useSetPageTitle(idea ? idea.title : null);
 
   useEffect(() => {
     const loadIdea = async () => {
@@ -402,16 +405,6 @@ const IdeaDetail: React.FC = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8">
       <div className="max-w-6xl mx-auto px-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-2 mb-6 text-sm text-theme-secondary">
-            <button
-              onClick={() => navigate('/ideas')}
-              className="flex items-center gap-2 hover:text-theme-primary transition-colors"
-            >
-              <ArrowLeft size={16} />
-              {language === 'en' ? 'Back to Ideas' : '返回想法列表'}
-            </button>
-          </div>
-
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-4 mb-4">

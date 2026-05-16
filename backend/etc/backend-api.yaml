@@ -3,10 +3,12 @@ Host: 0.0.0.0
 Port: 5200
 Database:
   driver: sqlite3
-  source: portfolio.db?_fk=1
+  source: /Users/macbook.silan.tech/Documents/GitHub/Silan-Personal-Website/_deploy/api/portfolio.db?_fk=1
   host: ""
   port: ""
   user: ""
   password: ""
   name: ""
   ssl_mode: ""
+Auth:
+  google_client_id: ""
