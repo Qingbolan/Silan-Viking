@@ -62,9 +62,10 @@ const formatDateRange = (payload: any, language: Language = 'en') => {
 const sectionTitle = (key: string, language: Language) => {
   if (language !== 'zh') {
     return {
+      about: 'About Me',
       education: 'Education',
       experience: 'Work Experience',
-      research: 'Research Experience',
+      research: 'Projects',
       publications: 'Publications',
       awards: 'Awards',
       skills: 'Skills',
@@ -73,9 +74,10 @@ const sectionTitle = (key: string, language: Language) => {
   }
 
   return {
+    about: '关于我',
     education: '教育经历',
     experience: '工作经历',
-    research: '研究经历',
+    research: '项目',
     publications: '论文发表',
     awards: '荣誉奖项',
     skills: '技能',
@@ -90,6 +92,12 @@ const bodyLines = (part?: ResumePartResponse, language: Language = 'en') => {
     .split('\n')
     .map((line) => line.replace(/^[-*]\s*/, '').trim())
     .filter(Boolean);
+};
+
+// The raw prose body of a Part — paragraphs preserved (for the About section).
+const bodyText = (part?: ResumePartResponse, language: Language = 'en'): string => {
+  if (!part?.body) return '';
+  return (part.body[language] || part.body.en || Object.values(part.body)[0] || '').trim();
 };
 
 const mapEducation = (part?: ResumePartResponse): EducationItem[] =>
@@ -136,6 +144,12 @@ const mapExperience = (part?: ResumePartResponse): ExperienceItem[] =>
     };
   });
 
+// Authors may arrive as a JSON list or an already-joined string.
+const joinAuthors = (raw: unknown): string => {
+  if (Array.isArray(raw)) return raw.filter(Boolean).join(', ');
+  return raw ? String(raw) : '';
+};
+
 const mapResearch = (part?: ResumePartResponse): ResearchItem[] =>
   (part?.entries || []).map((entry) => {
     const payload = entryPayload(entry);
@@ -148,6 +162,8 @@ const mapResearch = (part?: ResumePartResponse): ResearchItem[] =>
       start_date: payload.start_date || payload.start || '',
       end_date: payload.end_date || payload.end || '',
       details: payload.details || payload.bullets || [],
+      image: payload.image_url || payload.image || payload.cover || '',
+      tags: payload.tags || payload.keywords || [],
       sort_order: entry.sort_order,
       created_at: '',
       updated_at: '',
@@ -161,13 +177,20 @@ const mapPublications = (part?: ResumePartResponse): Publication[] =>
       id: entry.id,
       user_id: '',
       title: payload.title || '',
-      authors: payload.authors || '',
-      journal: payload.journal || '',
-      conference: payload.conference || payload.venue || '',
+      authors: joinAuthors(payload.authors),
+      journal: payload.journal || payload.journal_name || '',
+      conference: payload.conference || payload.conference_name || payload.venue || '',
       publisher: payload.publisher || '',
-      published_at: payload.published_at || payload.date || '',
+      published_at: payload.published_at || payload.publication_date || payload.date || '',
       doi: payload.doi || '',
       url: payload.url || '',
+      pdf_url: payload.pdf_url || '',
+      github_url: payload.github_url || payload.github || payload.code_url || '',
+      blog_url: payload.blog_url || payload.blog || '',
+      abstract: payload.abstract || payload.summary || payload.description || '',
+      award: payload.award || payload.award_name || '',
+      tags: payload.tags || payload.keywords || [],
+      image: payload.image_url || payload.image || '',
       citation_count: Number(payload.citation_count || 0),
       created_at: '',
       updated_at: '',
@@ -198,6 +221,8 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
   ]);
 
   const parts = response.parts || [];
+  // About-me prose — the résumé's `summary` part.
+  const aboutText = bodyText(findPart(parts, ['summary', 'about']), language);
   const education = mapEducation(findPart(parts, ['education']));
   const experience = mapExperience(findPart(parts, ['experience', 'work']));
   const research = mapResearch(findPart(parts, ['research']));
@@ -225,6 +250,12 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
       url: link.url,
     })) || [],
     sections: {
+      ...(aboutText && {
+        about: {
+          title: sectionTitle('about', language),
+          content: aboutText,
+        },
+      }),
       education: {
         title: sectionTitle('education', language),
         content: education.map((edu) => ({
@@ -252,15 +283,35 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
       research: {
         title: sectionTitle('research', language),
         content: research.map((item) => ({
+          id: item.id,
           title: item.title,
           location: item.location || item.institution || '',
           date: formatDateRange(item, language),
           details: item.details || [],
+          image: item.image || undefined,
+          tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
         })),
       },
       publications: {
         title: sectionTitle('publications', language),
-        content: publications.map((item) => item.title),
+        // Keep the full structured publication — title, authors, venue,
+        // year, citations and links — instead of flattening to a string.
+        content: publications.map((item) => ({
+          id: item.id,
+          title: item.title,
+          authors: item.authors || undefined,
+          venue: item.conference || item.journal || item.publisher || undefined,
+          year: item.published_at || undefined,
+          abstract: item.abstract || undefined,
+          award: item.award || undefined,
+          tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
+          citations: item.citation_count || undefined,
+          url: item.url || item.doi || undefined,
+          pdfUrl: item.pdf_url || undefined,
+          githubUrl: item.github_url || undefined,
+          blogUrl: item.blog_url || undefined,
+          image: item.image || undefined,
+        })),
       },
       awards: {
         title: sectionTitle('awards', language),

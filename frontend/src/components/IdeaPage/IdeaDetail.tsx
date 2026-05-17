@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { useLanguage } from '../LanguageContext';
+import { Seo, creativeWorkJsonLd } from '../Seo';
 import CommunityFeedback from './CommunityFeedback';
 import Markdown from '../ui/Markdown';
 import { IdeaData } from '../../types';
@@ -404,8 +405,23 @@ const IdeaDetail: React.FC = () => {
     concluded: language === 'en' ? 'Concluded' : '已结题',
   };
 
+  const seoDescription =
+    (language === 'en' ? idea.abstract : idea.abstractZh || idea.abstract) || '';
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <Seo
+        title={idea.title}
+        description={seoDescription}
+        path={`/ideas/${idea.id}`}
+        type="article"
+        lang={language as 'en' | 'zh'}
+        jsonLd={creativeWorkJsonLd({
+          title: idea.title,
+          description: seoDescription,
+          path: `/ideas/${idea.id}`,
+        })}
+      />
       <Container width="content">
         <Section spacing="md">
           {/* --- Header — status eyebrow + title, then a single meta row

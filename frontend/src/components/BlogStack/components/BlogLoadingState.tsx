@@ -2,9 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Spin, Alert, Button } from 'antd';
+import { Spin } from 'antd';
 import { useTheme } from '../../ThemeContext';
 import { useLanguage } from '../../LanguageContext';
+import { NotFoundError } from '../../ds/ErrorState';
 
 interface BlogLoadingStateProps {
   loading: boolean;
@@ -39,31 +40,10 @@ export const BlogLoadingState: React.FC<BlogLoadingStateProps> = ({ loading, err
   }
 
   if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Alert
-            message={language === 'en' ? 'Article Not Found' : '文章未找到'}
-            description={language === 'en' ? 'The requested article could not be found.' : '无法找到请求的文章。'}
-            type="error"
-            showIcon
-            action={
-              <Button 
-                type="primary" 
-                onClick={() => navigate(-1)}
-                style={{ borderRadius: '8px' }}
-              >
-                {language === 'en' ? 'Go Back' : '返回'}
-              </Button>
-            }
-            style={{ 
-              maxWidth: '400px',
-              fontFamily: 'Georgia, "Times New Roman", serif'
-            }}
-          />
-        </motion.div>
-      </div>
-    );
+    // A genuine not-found — the blog API resolved with no article. Render
+    // the design-system full-page error (brand mark, "Home" + "Go Back"),
+    // not a floating antd Alert card.
+    return <NotFoundError onBack={() => navigate(-1)} />;
   }
 
   return null;

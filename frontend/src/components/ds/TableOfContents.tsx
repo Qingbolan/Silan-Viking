@@ -116,7 +116,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
   return (
     <nav {...dsRoot} aria-label={title} className={cn('w-full', className)}>
       {!hideHeader && (
-        <div className="mb-1.5 flex items-center px-2.5 py-1">
+        <div className="mb-1.5 flex items-center py-1">
           <h4 className="text-ds-2xs font-semibold uppercase tracking-[0.08em] text-ds-fg-muted">
             {title}
           </h4>
@@ -126,8 +126,11 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
         </div>
       )}
 
-      {/* The rail track: a faint hairline the active marker rides on. */}
-      <ul className="relative list-none border-l border-ds-border">
+      {/* The rail track: a faint hairline the active marker rides on.
+          `m-0 p-0`: zero the UA `<ul>` padding/margin explicitly — each row
+          owns its indent via `style.indent`, so a leaked default padding-left
+          would shift the whole outline right. */}
+      <ul className="relative m-0 list-none border-l border-ds-border p-0">
         {items.map((item) => {
           const isCurrent = item.id === currentId;
           const style = levelStyle(item.level);

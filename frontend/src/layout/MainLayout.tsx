@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect } from 'react';
+import React, { ReactNode, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
@@ -16,7 +16,10 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { colors, isDarkMode } = useTheme();
   const navigate = useNavigate();
-  const [scrollProgress, setScrollProgress] = useState(0);
+  // The progress bar is driven straight through a ref — writing `transform`
+  // on every animation frame, never via React state, so scrolling does not
+  // re-render MainLayout (and the heavy NoiseBackground) on every event.
+  const progressRef = useRef<HTMLDivElement | null>(null);
 
   // Layered graphite (dark) / paper (light): the desk is the deepest
   // layer, the content window sits a step above it. The desk base stays
@@ -28,17 +31,31 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const capsuleBg = isDarkMode ? 'oklch(0.21 0.012 264)' : 'oklch(1 0 0)';
   const hoverBg = isDarkMode ? 'oklch(0.27 0.014 264)' : 'oklch(0.95 0 0)';
 
-  // Reading progress along the top edge of the content window.
+  // Reading progress along the top edge of the content window. The scroll
+  // handler is throttled to one update per animation frame and writes the
+  // bar's `transform` straight to the DOM — no React state, no re-render.
   useEffect(() => {
     const el = document.getElementById('browser-window');
     if (!el) return;
-    const onScroll = () => {
+    let frame = 0;
+    const apply = () => {
+      frame = 0;
+      const bar = progressRef.current;
+      if (!bar) return;
       const sh = el.scrollHeight - el.clientHeight;
-      setScrollProgress(sh > 0 ? Math.min(100, Math.max(0, (el.scrollTop / sh) * 100)) : 0);
+      const ratio = sh > 0 ? Math.min(1, Math.max(0, el.scrollTop / sh)) : 0;
+      bar.style.transform = `scaleX(${ratio})`;
+    };
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(apply);
     };
     el.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => el.removeEventListener('scroll', onScroll);
+    apply();
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, []);
 
   // One control button inside the left control capsule.
@@ -111,15 +128,38 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
       >
-        {/* Reading progress line — NUS-orange brand colour. */}
-        <div className="sticky left-0 top-0 z-50 h-0.5 w-full">
+        {/* Reading progress line — a thin NUS-orange fill pinned to the top
+            edge of the content window. A sticky 0-height anchor holds the
+            bar so it never occupies layout space (no white seam, content
+            still fills to the top); the bar overlays on z-50. */}
+        <div className="pointer-events-none sticky left-0 top-0 z-50 h-0 w-full">
           <div
-            className="h-full transition-all duration-200 ease-out"
-            style={{ width: `${scrollProgress}%`, backgroundColor: 'var(--ds-color-primary)' }}
+            ref={progressRef}
+            className="absolute left-0 top-0 h-[3px] w-full origin-left"
+            style={{
+              transform: 'scaleX(0)',
+              backgroundColor: 'var(--ds-color-primary)',
+            }}
           />
         </div>
 
-        <div className="mx-auto px-4 pb-16 pt-2 sm:px-6 lg:px-8">{children}</div>
+        {/* Content-window background — a faint NUS diffusion field pinned to
+            the window viewport, so the content area itself carries the brand
+            glow (not just the desk behind it). Kept low-intensity: this is
+            a reading surface. A sticky 0-height anchor holds a fixed-size
+            layer that tracks the window without scrolling with content. */}
+        <div className="sticky left-0 top-0 z-0 h-0 w-full">
+          <div className="absolute left-0 top-0 h-screen w-full overflow-hidden">
+            <NoiseBackground
+              glow="nus-duo"
+              intensity={isDarkMode ? 0.05 : 0.035}
+            />
+          </div>
+        </div>
+
+        <div className="relative z-10 mx-auto px-4 pb-16 pt-2 sm:px-6 lg:px-8">
+          {children}
+        </div>
       </motion.main>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Mail, Phone, MapPin, Github, Linkedin, Globe, Lightbulb, Briefcase, Contact, ArrowRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../components/LanguageContext';
+import { Seo } from '../components/Seo';
 import {
   AuthProvider,
   useAuth,
@@ -105,6 +106,16 @@ const InteractiveContactPageContent: React.FC = () => {
 
   return (
     <div className="min-h-screen py-20">
+      <Seo
+        title={language === 'en' ? 'Contact' : '联系'}
+        description={
+          language === 'en'
+            ? 'Get in touch with Silan Hu — email, social links and a public message board.'
+            : '联系胡思蓝 —— 邮箱、社交链接与公开留言板。'
+        }
+        path="/contact"
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-7xl mx-auto px-4">
         {/* Hero header — same BlogHeader hero used by blog/ideas/projects,
             but hero-only (no search / filter toolbar). */}

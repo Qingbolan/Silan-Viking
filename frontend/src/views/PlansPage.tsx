@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../components/ThemeContext';
 import { useLanguage } from '../components/LanguageContext';
+import { Seo } from '../components/Seo';
 import { IdeaData } from '../types';
 import { AnnualPlan, Project } from '../types/api';
 import { BlogData } from '../components/BlogStack/types/blog';
@@ -603,6 +604,16 @@ const PlansPage: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <Seo
+        title={language === 'en' ? 'Plans' : '计划'}
+        description={
+          language === 'en'
+            ? 'Annual plans and strategic objectives of Silan Hu.'
+            : '胡思蓝的年度计划与战略目标。'
+        }
+        path="/plans"
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <motion.div

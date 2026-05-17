@@ -245,6 +245,21 @@ export default {
         'mobile-2xl': ['1.5rem', { lineHeight: '2rem' }],      // 24px
         'mobile-3xl': ['1.75rem', { lineHeight: '2.25rem' }],  // 28px
         'mobile-4xl': ['2rem', { lineHeight: '2.5rem' }],      // 32px
+
+        // Design-system type ramp. These map `text-ds-*` to the
+        // `--ds-text-*` variables defined in src/styles/design-system.css.
+        // Without these entries every `ds/` component's `text-ds-*` class is
+        // a no-op and falls back to the inherited body size.
+        'ds-2xs': ['var(--ds-text-2xs)', { lineHeight: '1.4' }],
+        'ds-xs': ['var(--ds-text-xs)', { lineHeight: '1.45' }],
+        'ds-sm': ['var(--ds-text-sm)', { lineHeight: '1.5' }],
+        'ds-base': ['var(--ds-text-base)', { lineHeight: '1.55' }],
+        'ds-md': ['var(--ds-text-md)', { lineHeight: '1.55' }],
+        'ds-lg': ['var(--ds-text-lg)', { lineHeight: '1.5' }],
+        'ds-xl': ['var(--ds-text-xl)', { lineHeight: '1.4' }],
+        'ds-2xl': ['var(--ds-text-2xl)', { lineHeight: '1.3' }],
+        'ds-3xl': ['var(--ds-text-3xl)', { lineHeight: '1.2' }],
+        'ds-4xl': ['var(--ds-text-4xl)', { lineHeight: '1.1' }],
       },
 
       // Legacy shadows stay off (un-migrated components rely on this).

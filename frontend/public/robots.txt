@@ -1,3 +1,9 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+# Internal pages — not for indexing.
+Disallow: /search
+Disallow: /gallery
+Disallow: /design
+
+Sitemap: https://silan.tech/sitemap.xml

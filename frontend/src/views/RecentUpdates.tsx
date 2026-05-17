@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../components/LanguageContext';
+import { Seo } from '../components/Seo';
 import { useTheme } from '../components/ThemeContext';
 import { LoadingSpinner } from '../components/ui';
 import { fetchUpdates } from '../api/updates/updateApi';
@@ -298,6 +299,16 @@ const RecentUpdates: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <Seo
+        title={language === 'en' ? 'Recent Updates' : '最新动态'}
+        description={
+          language === 'en'
+            ? 'Recent updates and timeline of Silan Hu — latest work, research and milestones.'
+            : '胡思蓝的最新动态与时间线 —— 近期工作、研究与里程碑。'
+        }
+        path="/recent-updates"
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6">
         {/* Header */}
         <motion.div

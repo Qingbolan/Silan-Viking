@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Layers, FolderGit2, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../components/LanguageContext";
+import { Seo } from "../components/Seo";
 import { Plan, ProjectWithPlan } from "../types";
 import {
   fetchCurrentPlan,
@@ -273,6 +274,16 @@ const ProjectGallery: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <Seo
+        title={language === 'en' ? 'Projects' : '项目'}
+        description={
+          language === 'en'
+            ? 'Software projects and engineering work by Silan Hu.'
+            : '胡思蓝的软件项目与工程作品。'
+        }
+        path="/projects"
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-7xl mx-auto px-4">
         {/* Header — title + search + plan Segmented + tag chips. */}
         <motion.div

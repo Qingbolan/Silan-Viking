@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../LanguageContext';
+import { Seo, creativeWorkJsonLd } from '../Seo';
 import { getPlanDisplay } from '../../utils/iconMap';
 import { fetchAnnualPlanByName } from '../../api/plans/planApi';
 import { fetchProjectDetailById } from '../../api';
@@ -226,8 +227,26 @@ const ProjectDetail: React.FC = () => {
 
   const planDisplay = plan ? getPlanDisplay(plan) : null;
 
+  const seoTitle =
+    language === 'zh' && project.titleZh ? project.titleZh : project.title;
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <Seo
+        title={seoTitle}
+        description={project.description || ''}
+        path={`/projects/${project.id}`}
+        image={project.image || undefined}
+        type="article"
+        lang={language as 'en' | 'zh'}
+        jsonLd={creativeWorkJsonLd({
+          title: seoTitle,
+          description: project.description || '',
+          path: `/projects/${project.id}`,
+          image: project.image || undefined,
+          type: 'SoftwareSourceCode',
+        })}
+      />
       <Container width="content">
         <Section spacing="md">
           {/* --- Header ------------------------------------------------- */}
