@@ -4,7 +4,6 @@ package ent
 
 import (
 	"fmt"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/ent/useridentity"
 	"strings"
@@ -45,24 +44,11 @@ type ProjectView struct {
 
 // ProjectViewEdges holds the relations/edges for other nodes in the graph.
 type ProjectViewEdges struct {
-	// Project holds the value of the project edge.
-	Project *Project `json:"project,omitempty"`
 	// UserIdentity holds the value of the user_identity edge.
 	UserIdentity *UserIdentity `json:"user_identity,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
-}
-
-// ProjectOrErr returns the Project value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ProjectViewEdges) ProjectOrErr() (*Project, error) {
-	if e.Project != nil {
-		return e.Project, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: project.Label}
-	}
-	return nil, &NotLoadedError{edge: "project"}
+	loadedTypes [1]bool
 }
 
 // UserIdentityOrErr returns the UserIdentity value or an error if the edge
@@ -70,7 +56,7 @@ func (e ProjectViewEdges) ProjectOrErr() (*Project, error) {
 func (e ProjectViewEdges) UserIdentityOrErr() (*UserIdentity, error) {
 	if e.UserIdentity != nil {
 		return e.UserIdentity, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: useridentity.Label}
 	}
 	return nil, &NotLoadedError{edge: "user_identity"}
@@ -173,11 +159,6 @@ func (pv *ProjectView) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (pv *ProjectView) Value(name string) (ent.Value, error) {
 	return pv.selectValues.Get(name)
-}
-
-// QueryProject queries the "project" edge of the ProjectView entity.
-func (pv *ProjectView) QueryProject() *ProjectQuery {
-	return NewProjectViewClient(pv.config).QueryProject(pv)
 }
 
 // QueryUserIdentity queries the "user_identity" edge of the ProjectView entity.

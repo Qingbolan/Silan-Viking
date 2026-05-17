@@ -109,8 +109,12 @@ func (Project) Edges() []ent.Edge {
 		edge.To("images", ProjectImage.Type),
 		// source_relationships/target_relationships edges dropped (M0.5a
 		// §11.9): project_relationships is replaced by content_relation.
-		// likes/views edges stay until M0.5b drops the underlying tables.
-		edge.To("likes", ProjectLike.Type),
-		edge.To("views", ProjectView.Type),
+		//
+		// No `likes` / `views` edges: `project_likes` / `project_views` are
+		// runtime analytics tables that soft-reference `projects` by a plain
+		// `project_id` field. An ent edge here would create a DB-level FK on
+		// those runtime tables, and promote — which rebuilds `projects` with
+		// fresh ids every content sync — would dangle it and abort. The
+		// analytics handlers query by `project_id` directly.
 	}
 }

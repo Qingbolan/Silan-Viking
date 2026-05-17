@@ -63,10 +63,6 @@ const (
 	EdgeDetails = "details"
 	// EdgeImages holds the string denoting the images edge name in mutations.
 	EdgeImages = "images"
-	// EdgeLikes holds the string denoting the likes edge name in mutations.
-	EdgeLikes = "likes"
-	// EdgeViews holds the string denoting the views edge name in mutations.
-	EdgeViews = "views"
 	// Table holds the table name of the project in the database.
 	Table = "projects"
 	// UserTable is the table that holds the user relation/edge.
@@ -104,20 +100,6 @@ const (
 	ImagesInverseTable = "project_images"
 	// ImagesColumn is the table column denoting the images relation/edge.
 	ImagesColumn = "project_id"
-	// LikesTable is the table that holds the likes relation/edge.
-	LikesTable = "project_likes"
-	// LikesInverseTable is the table name for the ProjectLike entity.
-	// It exists in this package in order to avoid circular dependency with the "projectlike" package.
-	LikesInverseTable = "project_likes"
-	// LikesColumn is the table column denoting the likes relation/edge.
-	LikesColumn = "project_id"
-	// ViewsTable is the table that holds the views relation/edge.
-	ViewsTable = "project_views"
-	// ViewsInverseTable is the table name for the ProjectView entity.
-	// It exists in this package in order to avoid circular dependency with the "projectview" package.
-	ViewsInverseTable = "project_views"
-	// ViewsColumn is the table column denoting the views relation/edge.
-	ViewsColumn = "project_id"
 )
 
 // Columns holds all SQL columns for project fields.
@@ -402,34 +384,6 @@ func ByImages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newImagesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByLikesCount orders the results by likes count.
-func ByLikesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newLikesStep(), opts...)
-	}
-}
-
-// ByLikes orders the results by likes terms.
-func ByLikes(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newLikesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByViewsCount orders the results by views count.
-func ByViewsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newViewsStep(), opts...)
-	}
-}
-
-// ByViews orders the results by views terms.
-func ByViews(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newViewsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -463,19 +417,5 @@ func newImagesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ImagesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ImagesTable, ImagesColumn),
-	)
-}
-func newLikesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(LikesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, LikesTable, LikesColumn),
-	)
-}
-func newViewsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ViewsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, ViewsTable, ViewsColumn),
 	)
 }

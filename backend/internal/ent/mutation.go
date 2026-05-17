@@ -32723,12 +32723,6 @@ type ProjectMutation struct {
 	images              map[string]struct{}
 	removedimages       map[string]struct{}
 	clearedimages       bool
-	likes               map[string]struct{}
-	removedlikes        map[string]struct{}
-	clearedlikes        bool
-	views               map[string]struct{}
-	removedviews        map[string]struct{}
-	clearedviews        bool
 	done                bool
 	oldValue            func(context.Context) (*Project, error)
 	predicates          []predicate.Project
@@ -33953,114 +33947,6 @@ func (m *ProjectMutation) ResetImages() {
 	m.removedimages = nil
 }
 
-// AddLikeIDs adds the "likes" edge to the ProjectLike entity by ids.
-func (m *ProjectMutation) AddLikeIDs(ids ...string) {
-	if m.likes == nil {
-		m.likes = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.likes[ids[i]] = struct{}{}
-	}
-}
-
-// ClearLikes clears the "likes" edge to the ProjectLike entity.
-func (m *ProjectMutation) ClearLikes() {
-	m.clearedlikes = true
-}
-
-// LikesCleared reports if the "likes" edge to the ProjectLike entity was cleared.
-func (m *ProjectMutation) LikesCleared() bool {
-	return m.clearedlikes
-}
-
-// RemoveLikeIDs removes the "likes" edge to the ProjectLike entity by IDs.
-func (m *ProjectMutation) RemoveLikeIDs(ids ...string) {
-	if m.removedlikes == nil {
-		m.removedlikes = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.likes, ids[i])
-		m.removedlikes[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedLikes returns the removed IDs of the "likes" edge to the ProjectLike entity.
-func (m *ProjectMutation) RemovedLikesIDs() (ids []string) {
-	for id := range m.removedlikes {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// LikesIDs returns the "likes" edge IDs in the mutation.
-func (m *ProjectMutation) LikesIDs() (ids []string) {
-	for id := range m.likes {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetLikes resets all changes to the "likes" edge.
-func (m *ProjectMutation) ResetLikes() {
-	m.likes = nil
-	m.clearedlikes = false
-	m.removedlikes = nil
-}
-
-// AddViewIDs adds the "views" edge to the ProjectView entity by ids.
-func (m *ProjectMutation) AddViewIDs(ids ...string) {
-	if m.views == nil {
-		m.views = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.views[ids[i]] = struct{}{}
-	}
-}
-
-// ClearViews clears the "views" edge to the ProjectView entity.
-func (m *ProjectMutation) ClearViews() {
-	m.clearedviews = true
-}
-
-// ViewsCleared reports if the "views" edge to the ProjectView entity was cleared.
-func (m *ProjectMutation) ViewsCleared() bool {
-	return m.clearedviews
-}
-
-// RemoveViewIDs removes the "views" edge to the ProjectView entity by IDs.
-func (m *ProjectMutation) RemoveViewIDs(ids ...string) {
-	if m.removedviews == nil {
-		m.removedviews = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.views, ids[i])
-		m.removedviews[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedViews returns the removed IDs of the "views" edge to the ProjectView entity.
-func (m *ProjectMutation) RemovedViewsIDs() (ids []string) {
-	for id := range m.removedviews {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ViewsIDs returns the "views" edge IDs in the mutation.
-func (m *ProjectMutation) ViewsIDs() (ids []string) {
-	for id := range m.views {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetViews resets all changes to the "views" edge.
-func (m *ProjectMutation) ResetViews() {
-	m.views = nil
-	m.clearedviews = false
-	m.removedviews = nil
-}
-
 // Where appends a list predicates to the ProjectMutation builder.
 func (m *ProjectMutation) Where(ps ...predicate.Project) {
 	m.predicates = append(m.predicates, ps...)
@@ -34608,7 +34494,7 @@ func (m *ProjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 5)
 	if m.user != nil {
 		edges = append(edges, project.EdgeUser)
 	}
@@ -34623,12 +34509,6 @@ func (m *ProjectMutation) AddedEdges() []string {
 	}
 	if m.images != nil {
 		edges = append(edges, project.EdgeImages)
-	}
-	if m.likes != nil {
-		edges = append(edges, project.EdgeLikes)
-	}
-	if m.views != nil {
-		edges = append(edges, project.EdgeViews)
 	}
 	return edges
 }
@@ -34663,25 +34543,13 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case project.EdgeLikes:
-		ids := make([]ent.Value, 0, len(m.likes))
-		for id := range m.likes {
-			ids = append(ids, id)
-		}
-		return ids
-	case project.EdgeViews:
-		ids := make([]ent.Value, 0, len(m.views))
-		for id := range m.views {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 5)
 	if m.removedtranslations != nil {
 		edges = append(edges, project.EdgeTranslations)
 	}
@@ -34690,12 +34558,6 @@ func (m *ProjectMutation) RemovedEdges() []string {
 	}
 	if m.removedimages != nil {
 		edges = append(edges, project.EdgeImages)
-	}
-	if m.removedlikes != nil {
-		edges = append(edges, project.EdgeLikes)
-	}
-	if m.removedviews != nil {
-		edges = append(edges, project.EdgeViews)
 	}
 	return edges
 }
@@ -34722,25 +34584,13 @@ func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case project.EdgeLikes:
-		ids := make([]ent.Value, 0, len(m.removedlikes))
-		for id := range m.removedlikes {
-			ids = append(ids, id)
-		}
-		return ids
-	case project.EdgeViews:
-		ids := make([]ent.Value, 0, len(m.removedviews))
-		for id := range m.removedviews {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 7)
+	edges := make([]string, 0, 5)
 	if m.cleareduser {
 		edges = append(edges, project.EdgeUser)
 	}
@@ -34755,12 +34605,6 @@ func (m *ProjectMutation) ClearedEdges() []string {
 	}
 	if m.clearedimages {
 		edges = append(edges, project.EdgeImages)
-	}
-	if m.clearedlikes {
-		edges = append(edges, project.EdgeLikes)
-	}
-	if m.clearedviews {
-		edges = append(edges, project.EdgeViews)
 	}
 	return edges
 }
@@ -34779,10 +34623,6 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 		return m.cleareddetails
 	case project.EdgeImages:
 		return m.clearedimages
-	case project.EdgeLikes:
-		return m.clearedlikes
-	case project.EdgeViews:
-		return m.clearedviews
 	}
 	return false
 }
@@ -34819,12 +34659,6 @@ func (m *ProjectMutation) ResetEdge(name string) error {
 		return nil
 	case project.EdgeImages:
 		m.ResetImages()
-		return nil
-	case project.EdgeLikes:
-		m.ResetLikes()
-		return nil
-	case project.EdgeViews:
-		m.ResetViews()
 		return nil
 	}
 	return fmt.Errorf("unknown Project edge %s", name)
@@ -37983,14 +37817,13 @@ type ProjectLikeMutation struct {
 	op                   Op
 	typ                  string
 	id                   *string
+	project_id           *string
 	fingerprint          *string
 	ip_address           *string
 	user_agent           *string
 	created_at           *time.Time
 	updated_at           *time.Time
 	clearedFields        map[string]struct{}
-	project              *string
-	clearedproject       bool
 	user_identity        *string
 	cleareduser_identity bool
 	done                 bool
@@ -38104,12 +37937,12 @@ func (m *ProjectLikeMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetProjectID sets the "project_id" field.
 func (m *ProjectLikeMutation) SetProjectID(s string) {
-	m.project = &s
+	m.project_id = &s
 }
 
 // ProjectID returns the value of the "project_id" field in the mutation.
 func (m *ProjectLikeMutation) ProjectID() (r string, exists bool) {
-	v := m.project
+	v := m.project_id
 	if v == nil {
 		return
 	}
@@ -38135,7 +37968,7 @@ func (m *ProjectLikeMutation) OldProjectID(ctx context.Context) (v string, err e
 
 // ResetProjectID resets all changes to the "project_id" field.
 func (m *ProjectLikeMutation) ResetProjectID() {
-	m.project = nil
+	m.project_id = nil
 }
 
 // SetUserIdentityID sets the "user_identity_id" field.
@@ -38406,33 +38239,6 @@ func (m *ProjectLikeMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// ClearProject clears the "project" edge to the Project entity.
-func (m *ProjectLikeMutation) ClearProject() {
-	m.clearedproject = true
-	m.clearedFields[projectlike.FieldProjectID] = struct{}{}
-}
-
-// ProjectCleared reports if the "project" edge to the Project entity was cleared.
-func (m *ProjectLikeMutation) ProjectCleared() bool {
-	return m.clearedproject
-}
-
-// ProjectIDs returns the "project" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ProjectID instead. It exists only for internal usage by the builders.
-func (m *ProjectLikeMutation) ProjectIDs() (ids []string) {
-	if id := m.project; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetProject resets all changes to the "project" edge.
-func (m *ProjectLikeMutation) ResetProject() {
-	m.project = nil
-	m.clearedproject = false
-}
-
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
 func (m *ProjectLikeMutation) ClearUserIdentity() {
 	m.cleareduser_identity = true
@@ -38495,7 +38301,7 @@ func (m *ProjectLikeMutation) Type() string {
 // AddedFields().
 func (m *ProjectLikeMutation) Fields() []string {
 	fields := make([]string, 0, 7)
-	if m.project != nil {
+	if m.project_id != nil {
 		fields = append(fields, projectlike.FieldProjectID)
 	}
 	if m.user_identity != nil {
@@ -38722,10 +38528,7 @@ func (m *ProjectLikeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectLikeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.project != nil {
-		edges = append(edges, projectlike.EdgeProject)
-	}
+	edges := make([]string, 0, 1)
 	if m.user_identity != nil {
 		edges = append(edges, projectlike.EdgeUserIdentity)
 	}
@@ -38736,10 +38539,6 @@ func (m *ProjectLikeMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ProjectLikeMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case projectlike.EdgeProject:
-		if id := m.project; id != nil {
-			return []ent.Value{*id}
-		}
 	case projectlike.EdgeUserIdentity:
 		if id := m.user_identity; id != nil {
 			return []ent.Value{*id}
@@ -38750,7 +38549,7 @@ func (m *ProjectLikeMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectLikeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -38762,10 +38561,7 @@ func (m *ProjectLikeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectLikeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedproject {
-		edges = append(edges, projectlike.EdgeProject)
-	}
+	edges := make([]string, 0, 1)
 	if m.cleareduser_identity {
 		edges = append(edges, projectlike.EdgeUserIdentity)
 	}
@@ -38776,8 +38572,6 @@ func (m *ProjectLikeMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ProjectLikeMutation) EdgeCleared(name string) bool {
 	switch name {
-	case projectlike.EdgeProject:
-		return m.clearedproject
 	case projectlike.EdgeUserIdentity:
 		return m.cleareduser_identity
 	}
@@ -38788,9 +38582,6 @@ func (m *ProjectLikeMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ProjectLikeMutation) ClearEdge(name string) error {
 	switch name {
-	case projectlike.EdgeProject:
-		m.ClearProject()
-		return nil
 	case projectlike.EdgeUserIdentity:
 		m.ClearUserIdentity()
 		return nil
@@ -38802,9 +38593,6 @@ func (m *ProjectLikeMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ProjectLikeMutation) ResetEdge(name string) error {
 	switch name {
-	case projectlike.EdgeProject:
-		m.ResetProject()
-		return nil
 	case projectlike.EdgeUserIdentity:
 		m.ResetUserIdentity()
 		return nil
@@ -40234,6 +40022,7 @@ type ProjectViewMutation struct {
 	op                   Op
 	typ                  string
 	id                   *string
+	project_id           *string
 	fingerprint          *string
 	ip_address           *string
 	user_agent           *string
@@ -40243,8 +40032,6 @@ type ProjectViewMutation struct {
 	created_at           *time.Time
 	updated_at           *time.Time
 	clearedFields        map[string]struct{}
-	project              *string
-	clearedproject       bool
 	user_identity        *string
 	cleareduser_identity bool
 	done                 bool
@@ -40358,12 +40145,12 @@ func (m *ProjectViewMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetProjectID sets the "project_id" field.
 func (m *ProjectViewMutation) SetProjectID(s string) {
-	m.project = &s
+	m.project_id = &s
 }
 
 // ProjectID returns the value of the "project_id" field in the mutation.
 func (m *ProjectViewMutation) ProjectID() (r string, exists bool) {
-	v := m.project
+	v := m.project_id
 	if v == nil {
 		return
 	}
@@ -40389,7 +40176,7 @@ func (m *ProjectViewMutation) OldProjectID(ctx context.Context) (v string, err e
 
 // ResetProjectID resets all changes to the "project_id" field.
 func (m *ProjectViewMutation) ResetProjectID() {
-	m.project = nil
+	m.project_id = nil
 }
 
 // SetUserIdentityID sets the "user_identity_id" field.
@@ -40779,33 +40566,6 @@ func (m *ProjectViewMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// ClearProject clears the "project" edge to the Project entity.
-func (m *ProjectViewMutation) ClearProject() {
-	m.clearedproject = true
-	m.clearedFields[projectview.FieldProjectID] = struct{}{}
-}
-
-// ProjectCleared reports if the "project" edge to the Project entity was cleared.
-func (m *ProjectViewMutation) ProjectCleared() bool {
-	return m.clearedproject
-}
-
-// ProjectIDs returns the "project" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ProjectID instead. It exists only for internal usage by the builders.
-func (m *ProjectViewMutation) ProjectIDs() (ids []string) {
-	if id := m.project; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetProject resets all changes to the "project" edge.
-func (m *ProjectViewMutation) ResetProject() {
-	m.project = nil
-	m.clearedproject = false
-}
-
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
 func (m *ProjectViewMutation) ClearUserIdentity() {
 	m.cleareduser_identity = true
@@ -40868,7 +40628,7 @@ func (m *ProjectViewMutation) Type() string {
 // AddedFields().
 func (m *ProjectViewMutation) Fields() []string {
 	fields := make([]string, 0, 9)
-	if m.project != nil {
+	if m.project_id != nil {
 		fields = append(fields, projectview.FieldProjectID)
 	}
 	if m.user_identity != nil {
@@ -41156,10 +40916,7 @@ func (m *ProjectViewMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectViewMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.project != nil {
-		edges = append(edges, projectview.EdgeProject)
-	}
+	edges := make([]string, 0, 1)
 	if m.user_identity != nil {
 		edges = append(edges, projectview.EdgeUserIdentity)
 	}
@@ -41170,10 +40927,6 @@ func (m *ProjectViewMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ProjectViewMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case projectview.EdgeProject:
-		if id := m.project; id != nil {
-			return []ent.Value{*id}
-		}
 	case projectview.EdgeUserIdentity:
 		if id := m.user_identity; id != nil {
 			return []ent.Value{*id}
@@ -41184,7 +40937,7 @@ func (m *ProjectViewMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectViewMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -41196,10 +40949,7 @@ func (m *ProjectViewMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectViewMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedproject {
-		edges = append(edges, projectview.EdgeProject)
-	}
+	edges := make([]string, 0, 1)
 	if m.cleareduser_identity {
 		edges = append(edges, projectview.EdgeUserIdentity)
 	}
@@ -41210,8 +40960,6 @@ func (m *ProjectViewMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ProjectViewMutation) EdgeCleared(name string) bool {
 	switch name {
-	case projectview.EdgeProject:
-		return m.clearedproject
 	case projectview.EdgeUserIdentity:
 		return m.cleareduser_identity
 	}
@@ -41222,9 +40970,6 @@ func (m *ProjectViewMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ProjectViewMutation) ClearEdge(name string) error {
 	switch name {
-	case projectview.EdgeProject:
-		m.ClearProject()
-		return nil
 	case projectview.EdgeUserIdentity:
 		m.ClearUserIdentity()
 		return nil
@@ -41236,9 +40981,6 @@ func (m *ProjectViewMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ProjectViewMutation) ResetEdge(name string) error {
 	switch name {
-	case projectview.EdgeProject:
-		m.ResetProject()
-		return nil
 	case projectview.EdgeUserIdentity:
 		m.ResetUserIdentity()
 		return nil

@@ -11,10 +11,8 @@ import (
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projectimage"
-	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
-	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
@@ -35,8 +33,6 @@ type ProjectQuery struct {
 	withTechnologies *ProjectTechnologyQuery
 	withDetails      *ProjectDetailQuery
 	withImages       *ProjectImageQuery
-	withLikes        *ProjectLikeQuery
-	withViews        *ProjectViewQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -176,50 +172,6 @@ func (pq *ProjectQuery) QueryImages() *ProjectImageQuery {
 			sqlgraph.From(project.Table, project.FieldID, selector),
 			sqlgraph.To(projectimage.Table, projectimage.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, project.ImagesTable, project.ImagesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryLikes chains the current query on the "likes" edge.
-func (pq *ProjectQuery) QueryLikes() *ProjectLikeQuery {
-	query := (&ProjectLikeClient{config: pq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(projectlike.Table, projectlike.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, project.LikesTable, project.LikesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryViews chains the current query on the "views" edge.
-func (pq *ProjectQuery) QueryViews() *ProjectViewQuery {
-	query := (&ProjectViewClient{config: pq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(projectview.Table, projectview.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, project.ViewsTable, project.ViewsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -424,8 +376,6 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		withTechnologies: pq.withTechnologies.Clone(),
 		withDetails:      pq.withDetails.Clone(),
 		withImages:       pq.withImages.Clone(),
-		withLikes:        pq.withLikes.Clone(),
-		withViews:        pq.withViews.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -484,28 +434,6 @@ func (pq *ProjectQuery) WithImages(opts ...func(*ProjectImageQuery)) *ProjectQue
 		opt(query)
 	}
 	pq.withImages = query
-	return pq
-}
-
-// WithLikes tells the query-builder to eager-load the nodes that are connected to
-// the "likes" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithLikes(opts ...func(*ProjectLikeQuery)) *ProjectQuery {
-	query := (&ProjectLikeClient{config: pq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withLikes = query
-	return pq
-}
-
-// WithViews tells the query-builder to eager-load the nodes that are connected to
-// the "views" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithViews(opts ...func(*ProjectViewQuery)) *ProjectQuery {
-	query := (&ProjectViewClient{config: pq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withViews = query
 	return pq
 }
 
@@ -587,14 +515,12 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	var (
 		nodes       = []*Project{}
 		_spec       = pq.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [5]bool{
 			pq.withUser != nil,
 			pq.withTranslations != nil,
 			pq.withTechnologies != nil,
 			pq.withDetails != nil,
 			pq.withImages != nil,
-			pq.withLikes != nil,
-			pq.withViews != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -645,20 +571,6 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 		if err := pq.loadImages(ctx, query, nodes,
 			func(n *Project) { n.Edges.Images = []*ProjectImage{} },
 			func(n *Project, e *ProjectImage) { n.Edges.Images = append(n.Edges.Images, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := pq.withLikes; query != nil {
-		if err := pq.loadLikes(ctx, query, nodes,
-			func(n *Project) { n.Edges.Likes = []*ProjectLike{} },
-			func(n *Project, e *ProjectLike) { n.Edges.Likes = append(n.Edges.Likes, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := pq.withViews; query != nil {
-		if err := pq.loadViews(ctx, query, nodes,
-			func(n *Project) { n.Edges.Views = []*ProjectView{} },
-			func(n *Project, e *ProjectView) { n.Edges.Views = append(n.Edges.Views, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -796,66 +708,6 @@ func (pq *ProjectQuery) loadImages(ctx context.Context, query *ProjectImageQuery
 	}
 	query.Where(predicate.ProjectImage(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(project.ImagesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.ProjectID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (pq *ProjectQuery) loadLikes(ctx context.Context, query *ProjectLikeQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectLike)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Project)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(projectlike.FieldProjectID)
-	}
-	query.Where(predicate.ProjectLike(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(project.LikesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.ProjectID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "project_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (pq *ProjectQuery) loadViews(ctx context.Context, query *ProjectViewQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectView)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Project)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(projectview.FieldProjectID)
-	}
-	query.Where(predicate.ProjectView(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(project.ViewsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

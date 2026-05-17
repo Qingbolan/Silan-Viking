@@ -545,29 +545,6 @@ func UpdatedAtLTE(v time.Time) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// HasProject applies the HasEdge predicate on the "project" edge.
-func HasProject() predicate.ProjectLike {
-	return predicate.ProjectLike(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ProjectTable, ProjectColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasProjectWith applies the HasEdge predicate on the "project" edge with a given conditions (other predicates).
-func HasProjectWith(preds ...predicate.Project) predicate.ProjectLike {
-	return predicate.ProjectLike(func(s *sql.Selector) {
-		step := newProjectStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasUserIdentity applies the HasEdge predicate on the "user_identity" edge.
 func HasUserIdentity() predicate.ProjectLike {
 	return predicate.ProjectLike(func(s *sql.Selector) {

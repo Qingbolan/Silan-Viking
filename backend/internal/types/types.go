@@ -942,6 +942,16 @@ type UpdateRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
+type VerifyEmailRequest struct {
+	Email string `json:"email"`
+}
+
+type VerifyEmailResponse struct {
+	Email  string `json:"email"`
+	Valid  bool   `json:"valid"`
+	Reason string `json:"reason,optional"`
+}
+
 type VisitorRow struct {
 	Fingerprint  string `json:"fingerprint"`
 	IPMasked     string `json:"ip_masked"`

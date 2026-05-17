@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/ent/useridentity"
 	"time"
@@ -126,11 +125,6 @@ func (plc *ProjectLikeCreate) SetNillableID(s *string) *ProjectLikeCreate {
 	return plc
 }
 
-// SetProject sets the "project" edge to the Project entity.
-func (plc *ProjectLikeCreate) SetProject(p *Project) *ProjectLikeCreate {
-	return plc.SetProjectID(p.ID)
-}
-
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (plc *ProjectLikeCreate) SetUserIdentity(u *UserIdentity) *ProjectLikeCreate {
 	return plc.SetUserIdentityID(u.ID)
@@ -201,9 +195,6 @@ func (plc *ProjectLikeCreate) check() error {
 	if _, ok := plc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectLike.updated_at"`)}
 	}
-	if len(plc.mutation.ProjectIDs()) == 0 {
-		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectLike.project"`)}
-	}
 	return nil
 }
 
@@ -239,6 +230,10 @@ func (plc *ProjectLikeCreate) createSpec() (*ProjectLike, *sqlgraph.CreateSpec) 
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := plc.mutation.ProjectID(); ok {
+		_spec.SetField(projectlike.FieldProjectID, field.TypeString, value)
+		_node.ProjectID = value
+	}
 	if value, ok := plc.mutation.Fingerprint(); ok {
 		_spec.SetField(projectlike.FieldFingerprint, field.TypeString, value)
 		_node.Fingerprint = value
@@ -258,23 +253,6 @@ func (plc *ProjectLikeCreate) createSpec() (*ProjectLike, *sqlgraph.CreateSpec) 
 	if value, ok := plc.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectlike.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := plc.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectlike.ProjectTable,
-			Columns: []string{projectlike.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.ProjectID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := plc.mutation.UserIdentityIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/ent/useridentity"
 
@@ -24,7 +23,6 @@ type ProjectViewQuery struct {
 	order            []projectview.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.ProjectView
-	withProject      *ProjectQuery
 	withUserIdentity *UserIdentityQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -60,28 +58,6 @@ func (pvq *ProjectViewQuery) Unique(unique bool) *ProjectViewQuery {
 func (pvq *ProjectViewQuery) Order(o ...projectview.OrderOption) *ProjectViewQuery {
 	pvq.order = append(pvq.order, o...)
 	return pvq
-}
-
-// QueryProject chains the current query on the "project" edge.
-func (pvq *ProjectViewQuery) QueryProject() *ProjectQuery {
-	query := (&ProjectClient{config: pvq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pvq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pvq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(projectview.Table, projectview.FieldID, selector),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, projectview.ProjectTable, projectview.ProjectColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pvq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryUserIdentity chains the current query on the "user_identity" edge.
@@ -298,23 +274,11 @@ func (pvq *ProjectViewQuery) Clone() *ProjectViewQuery {
 		order:            append([]projectview.OrderOption{}, pvq.order...),
 		inters:           append([]Interceptor{}, pvq.inters...),
 		predicates:       append([]predicate.ProjectView{}, pvq.predicates...),
-		withProject:      pvq.withProject.Clone(),
 		withUserIdentity: pvq.withUserIdentity.Clone(),
 		// clone intermediate query.
 		sql:  pvq.sql.Clone(),
 		path: pvq.path,
 	}
-}
-
-// WithProject tells the query-builder to eager-load the nodes that are connected to
-// the "project" edge. The optional arguments are used to configure the query builder of the edge.
-func (pvq *ProjectViewQuery) WithProject(opts ...func(*ProjectQuery)) *ProjectViewQuery {
-	query := (&ProjectClient{config: pvq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	pvq.withProject = query
-	return pvq
 }
 
 // WithUserIdentity tells the query-builder to eager-load the nodes that are connected to
@@ -406,8 +370,7 @@ func (pvq *ProjectViewQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*ProjectView{}
 		_spec       = pvq.querySpec()
-		loadedTypes = [2]bool{
-			pvq.withProject != nil,
+		loadedTypes = [1]bool{
 			pvq.withUserIdentity != nil,
 		}
 	)
@@ -429,12 +392,6 @@ func (pvq *ProjectViewQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := pvq.withProject; query != nil {
-		if err := pvq.loadProject(ctx, query, nodes, nil,
-			func(n *ProjectView, e *Project) { n.Edges.Project = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := pvq.withUserIdentity; query != nil {
 		if err := pvq.loadUserIdentity(ctx, query, nodes, nil,
 			func(n *ProjectView, e *UserIdentity) { n.Edges.UserIdentity = e }); err != nil {
@@ -444,35 +401,6 @@ func (pvq *ProjectViewQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
-func (pvq *ProjectViewQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectView, init func(*ProjectView), assign func(*ProjectView, *Project)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*ProjectView)
-	for i := range nodes {
-		fk := nodes[i].ProjectID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(project.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "project_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (pvq *ProjectViewQuery) loadUserIdentity(ctx context.Context, query *UserIdentityQuery, nodes []*ProjectView, init func(*ProjectView), assign func(*ProjectView, *UserIdentity)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*ProjectView)
@@ -527,9 +455,6 @@ func (pvq *ProjectViewQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != projectview.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if pvq.withProject != nil {
-			_spec.Node.AddColumnOnce(projectview.FieldProjectID)
 		}
 		if pvq.withUserIdentity != nil {
 			_spec.Node.AddColumnOnce(projectview.FieldUserIdentityID)

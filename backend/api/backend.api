@@ -810,6 +810,18 @@ type (
 		Provider  string `json:"provider"`
 		Verified  bool   `json:"verified"`
 	}
+	// VerifyEmailRequest carries the company email the Job Opportunity form
+	// asks to validate before submission.
+	VerifyEmailRequest {
+		Email string `json:"email"`
+	}
+	// VerifyEmailResponse reports whether the address is a plausible company
+	// email — well-formed and not a free-mail provider.
+	VerifyEmailResponse {
+		Email  string `json:"email"`
+		Valid  bool   `json:"valid"`
+		Reason string `json:"reason,optional"`
+	}
 )
 
 // ========== RESUME PAGE GROUP ==========
@@ -1078,6 +1090,10 @@ service backend-api {
 	@doc "Verify Google ID token and upsert identity"
 	@handler GoogleVerify
 	post /google/verify (GoogleVerifyRequest) returns (GoogleVerifyResponse)
+
+	@doc "Validate a company email — well-formed and not a free-mail provider"
+	@handler VerifyEmail
+	post /verify-email (VerifyEmailRequest) returns (VerifyEmailResponse)
 }
 
 // ========== STATS GROUP ==========

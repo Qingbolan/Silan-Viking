@@ -33,6 +33,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/google/verify",
 					Handler: auth.GoogleVerifyHandler(serverCtx),
 				},
+				{
+					// Validate a company email — well-formed and not a free-mail provider
+					Method:  http.MethodPost,
+					Path:    "/verify-email",
+					Handler: auth.VerifyEmailHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithPrefix("/api/v1/auth"),

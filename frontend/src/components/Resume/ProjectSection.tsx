@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Github, Linkedin, Globe } from 'lucide-react';
 import { ProfileHero, type ContactItem, type SocialItem } from '../../components/ds';
+import { resolveSocialLink } from '../../utils/socialPlatform';
 
 interface ContactInfo {
   type: string;
@@ -46,14 +46,14 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
   const dsSocials = useMemo<SocialItem[]>(
     () =>
       (socialLinks ?? []).map((link) => {
-        const type = link.type || 'unknown';
+        // Identify the platform from the URL (reliable) then the typed
+        // label, so the icon matches GitHub / LinkedIn / … instead of
+        // always falling back to a generic globe.
+        const { icon, label } = resolveSocialLink(link.url, link.type);
         return {
-          label: type.charAt(0).toUpperCase() + type.slice(1),
+          label,
           url: link.url || '#',
-          icon:
-            type === 'github' ? <Github /> :
-            type === 'linkedin' ? <Linkedin /> :
-            <Globe />,
+          icon,
         };
       }),
     [socialLinks],

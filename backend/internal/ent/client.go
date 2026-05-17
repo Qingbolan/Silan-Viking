@@ -6872,38 +6872,6 @@ func (c *ProjectClient) QueryImages(pr *Project) *ProjectImageQuery {
 	return query
 }
 
-// QueryLikes queries the likes edge of a Project.
-func (c *ProjectClient) QueryLikes(pr *Project) *ProjectLikeQuery {
-	query := (&ProjectLikeClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(projectlike.Table, projectlike.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, project.LikesTable, project.LikesColumn),
-		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryViews queries the views edge of a Project.
-func (c *ProjectClient) QueryViews(pr *Project) *ProjectViewQuery {
-	query := (&ProjectViewClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(projectview.Table, projectview.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, project.ViewsTable, project.ViewsColumn),
-		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *ProjectClient) Hooks() []Hook {
 	return c.hooks.Project
@@ -7697,22 +7665,6 @@ func (c *ProjectLikeClient) GetX(ctx context.Context, id string) *ProjectLike {
 	return obj
 }
 
-// QueryProject queries the project edge of a ProjectLike.
-func (c *ProjectLikeClient) QueryProject(pl *ProjectLike) *ProjectQuery {
-	query := (&ProjectClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pl.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(projectlike.Table, projectlike.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, projectlike.ProjectTable, projectlike.ProjectColumn),
-		)
-		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryUserIdentity queries the user_identity edge of a ProjectLike.
 func (c *ProjectLikeClient) QueryUserIdentity(pl *ProjectLike) *UserIdentityQuery {
 	query := (&UserIdentityClient{config: c.config}).Query()
@@ -8174,22 +8126,6 @@ func (c *ProjectViewClient) GetX(ctx context.Context, id string) *ProjectView {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryProject queries the project edge of a ProjectView.
-func (c *ProjectViewClient) QueryProject(pv *ProjectView) *ProjectQuery {
-	query := (&ProjectClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pv.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(projectview.Table, projectview.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, projectview.ProjectTable, projectview.ProjectColumn),
-		)
-		fromV = sqlgraph.Neighbors(pv.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryUserIdentity queries the user_identity edge of a ProjectView.

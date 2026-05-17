@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/ent/useridentity"
 	"time"
@@ -130,11 +129,6 @@ func (plu *ProjectLikeUpdate) SetUpdatedAt(t time.Time) *ProjectLikeUpdate {
 	return plu
 }
 
-// SetProject sets the "project" edge to the Project entity.
-func (plu *ProjectLikeUpdate) SetProject(p *Project) *ProjectLikeUpdate {
-	return plu.SetProjectID(p.ID)
-}
-
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (plu *ProjectLikeUpdate) SetUserIdentity(u *UserIdentity) *ProjectLikeUpdate {
 	return plu.SetUserIdentityID(u.ID)
@@ -143,12 +137,6 @@ func (plu *ProjectLikeUpdate) SetUserIdentity(u *UserIdentity) *ProjectLikeUpdat
 // Mutation returns the ProjectLikeMutation object of the builder.
 func (plu *ProjectLikeUpdate) Mutation() *ProjectLikeMutation {
 	return plu.mutation
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (plu *ProjectLikeUpdate) ClearProject() *ProjectLikeUpdate {
-	plu.mutation.ClearProject()
-	return plu
 }
 
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
@@ -200,9 +188,6 @@ func (plu *ProjectLikeUpdate) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "ProjectLike.ip_address": %w`, err)}
 		}
 	}
-	if plu.mutation.ProjectCleared() && len(plu.mutation.ProjectIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ProjectLike.project"`)
-	}
 	return nil
 }
 
@@ -217,6 +202,9 @@ func (plu *ProjectLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := plu.mutation.ProjectID(); ok {
+		_spec.SetField(projectlike.FieldProjectID, field.TypeString, value)
 	}
 	if value, ok := plu.mutation.Fingerprint(); ok {
 		_spec.SetField(projectlike.FieldFingerprint, field.TypeString, value)
@@ -238,35 +226,6 @@ func (plu *ProjectLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := plu.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectlike.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if plu.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectlike.ProjectTable,
-			Columns: []string{projectlike.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := plu.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectlike.ProjectTable,
-			Columns: []string{projectlike.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if plu.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -417,11 +376,6 @@ func (pluo *ProjectLikeUpdateOne) SetUpdatedAt(t time.Time) *ProjectLikeUpdateOn
 	return pluo
 }
 
-// SetProject sets the "project" edge to the Project entity.
-func (pluo *ProjectLikeUpdateOne) SetProject(p *Project) *ProjectLikeUpdateOne {
-	return pluo.SetProjectID(p.ID)
-}
-
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (pluo *ProjectLikeUpdateOne) SetUserIdentity(u *UserIdentity) *ProjectLikeUpdateOne {
 	return pluo.SetUserIdentityID(u.ID)
@@ -430,12 +384,6 @@ func (pluo *ProjectLikeUpdateOne) SetUserIdentity(u *UserIdentity) *ProjectLikeU
 // Mutation returns the ProjectLikeMutation object of the builder.
 func (pluo *ProjectLikeUpdateOne) Mutation() *ProjectLikeMutation {
 	return pluo.mutation
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (pluo *ProjectLikeUpdateOne) ClearProject() *ProjectLikeUpdateOne {
-	pluo.mutation.ClearProject()
-	return pluo
 }
 
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
@@ -500,9 +448,6 @@ func (pluo *ProjectLikeUpdateOne) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "ProjectLike.ip_address": %w`, err)}
 		}
 	}
-	if pluo.mutation.ProjectCleared() && len(pluo.mutation.ProjectIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ProjectLike.project"`)
-	}
 	return nil
 }
 
@@ -535,6 +480,9 @@ func (pluo *ProjectLikeUpdateOne) sqlSave(ctx context.Context) (_node *ProjectLi
 			}
 		}
 	}
+	if value, ok := pluo.mutation.ProjectID(); ok {
+		_spec.SetField(projectlike.FieldProjectID, field.TypeString, value)
+	}
 	if value, ok := pluo.mutation.Fingerprint(); ok {
 		_spec.SetField(projectlike.FieldFingerprint, field.TypeString, value)
 	}
@@ -555,35 +503,6 @@ func (pluo *ProjectLikeUpdateOne) sqlSave(ctx context.Context) (_node *ProjectLi
 	}
 	if value, ok := pluo.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectlike.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if pluo.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectlike.ProjectTable,
-			Columns: []string{projectlike.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pluo.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectlike.ProjectTable,
-			Columns: []string{projectlike.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if pluo.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{

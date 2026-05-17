@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/ent/useridentity"
 
@@ -24,7 +23,6 @@ type ProjectLikeQuery struct {
 	order            []projectlike.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.ProjectLike
-	withProject      *ProjectQuery
 	withUserIdentity *UserIdentityQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -60,28 +58,6 @@ func (plq *ProjectLikeQuery) Unique(unique bool) *ProjectLikeQuery {
 func (plq *ProjectLikeQuery) Order(o ...projectlike.OrderOption) *ProjectLikeQuery {
 	plq.order = append(plq.order, o...)
 	return plq
-}
-
-// QueryProject chains the current query on the "project" edge.
-func (plq *ProjectLikeQuery) QueryProject() *ProjectQuery {
-	query := (&ProjectClient{config: plq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := plq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := plq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(projectlike.Table, projectlike.FieldID, selector),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, projectlike.ProjectTable, projectlike.ProjectColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(plq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryUserIdentity chains the current query on the "user_identity" edge.
@@ -298,23 +274,11 @@ func (plq *ProjectLikeQuery) Clone() *ProjectLikeQuery {
 		order:            append([]projectlike.OrderOption{}, plq.order...),
 		inters:           append([]Interceptor{}, plq.inters...),
 		predicates:       append([]predicate.ProjectLike{}, plq.predicates...),
-		withProject:      plq.withProject.Clone(),
 		withUserIdentity: plq.withUserIdentity.Clone(),
 		// clone intermediate query.
 		sql:  plq.sql.Clone(),
 		path: plq.path,
 	}
-}
-
-// WithProject tells the query-builder to eager-load the nodes that are connected to
-// the "project" edge. The optional arguments are used to configure the query builder of the edge.
-func (plq *ProjectLikeQuery) WithProject(opts ...func(*ProjectQuery)) *ProjectLikeQuery {
-	query := (&ProjectClient{config: plq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	plq.withProject = query
-	return plq
 }
 
 // WithUserIdentity tells the query-builder to eager-load the nodes that are connected to
@@ -406,8 +370,7 @@ func (plq *ProjectLikeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*ProjectLike{}
 		_spec       = plq.querySpec()
-		loadedTypes = [2]bool{
-			plq.withProject != nil,
+		loadedTypes = [1]bool{
 			plq.withUserIdentity != nil,
 		}
 	)
@@ -429,12 +392,6 @@ func (plq *ProjectLikeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := plq.withProject; query != nil {
-		if err := plq.loadProject(ctx, query, nodes, nil,
-			func(n *ProjectLike, e *Project) { n.Edges.Project = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := plq.withUserIdentity; query != nil {
 		if err := plq.loadUserIdentity(ctx, query, nodes, nil,
 			func(n *ProjectLike, e *UserIdentity) { n.Edges.UserIdentity = e }); err != nil {
@@ -444,35 +401,6 @@ func (plq *ProjectLikeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
-func (plq *ProjectLikeQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectLike, init func(*ProjectLike), assign func(*ProjectLike, *Project)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*ProjectLike)
-	for i := range nodes {
-		fk := nodes[i].ProjectID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(project.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "project_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (plq *ProjectLikeQuery) loadUserIdentity(ctx context.Context, query *UserIdentityQuery, nodes []*ProjectLike, init func(*ProjectLike), assign func(*ProjectLike, *UserIdentity)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*ProjectLike)
@@ -527,9 +455,6 @@ func (plq *ProjectLikeQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != projectlike.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if plq.withProject != nil {
-			_spec.Node.AddColumnOnce(projectlike.FieldProjectID)
 		}
 		if plq.withUserIdentity != nil {
 			_spec.Node.AddColumnOnce(projectlike.FieldUserIdentityID)

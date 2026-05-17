@@ -294,7 +294,9 @@ export interface ProjectWithPlan {
   titleZh?: string;
   description: string;
   descriptionZh?: string;
-  image: string;
+  /** Cover image URL. Absent when the project has no cover — the card then
+   *  renders its built-in branded placeholder. */
+  image?: string;
   tags: string[];
   github?: string;
   demo?: string;

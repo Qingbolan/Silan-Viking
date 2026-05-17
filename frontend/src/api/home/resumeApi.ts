@@ -368,3 +368,36 @@ export const fetchAwards = async (language: Language = 'en'): Promise<Award[]> =
 
 export const fetchRecentUpdates = async (language: Language = 'en'): Promise<RecentUpdate[]> =>
   fetchUpdates(language);
+
+/** One "open to" role from the résumé's `expectations` part. */
+export interface ExpectationItem {
+  id: string;
+  title: string;
+  description: string;
+}
+
+/**
+ * Fetch the résumé's `expectations` entries — the kinds of roles /
+ * collaborations the author is open to. Drives the Contact page's
+ * "Expected Jobs" tab; an absent part yields an empty list.
+ */
+export const fetchExpectations = async (
+  language: Language = 'en',
+): Promise<ExpectationItem[]> => {
+  const response = await get<ResumeResponse>('/api/v1/resume', {
+    lang: formatLanguage(language),
+  });
+  const part = findPart(response.parts || [], ['expectations', 'open-to']);
+  return (part?.entries || [])
+    .map((entry) => {
+      const payload = entryPayload(entry);
+      return {
+        id: entry.id,
+        title: payload.title || '',
+        description: payload.description || '',
+        sort_order: entry.sort_order,
+      };
+    })
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(({ sort_order: _omit, ...rest }) => rest);
+};
