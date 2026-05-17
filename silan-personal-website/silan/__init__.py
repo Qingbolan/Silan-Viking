@@ -1,33 +1,17 @@
 """
-Silan Database Tools
+silan — thin forwarding shell for the `silan-viking` engine.
 
-A lightweight tool for syncing markdown content to databases.
-Users can easily transfer their markdown-based content to MySQL, PostgreSQL, or SQLite databases.
-
-Core Philosophy:
-- Content to Database: Transfer markdown files to structured database tables
-- Multi-Database Support: MySQL, PostgreSQL, SQLite
-- Simple CLI: Easy-to-use command-line interface
-- Git-Friendly: All content is version-controlled with Git
-- Schema Management: Automated database schema creation and management
+The Python implementation of this CLI has been retired; the package is
+now only an entry-point shim. All commands forward to the Rust
+`silan-viking` binary. See `silan/silan.py` for the forwarding logic.
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "Silan Hu"
 __email__ = "Silan.Hu@u.nus.edu"
-__description__ = "Lightweight database tools for markdown content synchronization"
+__description__ = "Thin wrapper that forwards the `silan` command to the silan-viking engine"
 __url__ = "https://github.com/Qingbolan/Silan-Personal-Website"
 
-# Export main components
 from .silan import cli
-from .parsers import ParserFactory, ParsedContentCollection
-from .utils.config import ConfigManager
-from .utils import *
 
-__all__ = [
-    'cli',
-    'ParserFactory',
-    'ParsedContentCollection',
-    'ConfigManager',
-    'ModernLogger',
-]
+__all__ = ["cli"]
