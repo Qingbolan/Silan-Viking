@@ -92,6 +92,7 @@ type BlogData struct {
 	Views               int64         `json:"views"`
 	Summary             string        `json:"summary"`
 	SummaryZh           string        `json:"summary_zh,omitempty"`
+	FeaturedImageURL    string        `json:"featured_image_url,omitempty"`
 	Type                string        `json:"type,omitempty"`
 	VideoURL            string        `json:"video_url,omitempty"`
 	VideoDuration       string        `json:"video_duration,omitempty"`
@@ -541,6 +542,10 @@ type LikeProjectRequest struct {
 type LikeProjectResponse struct {
 	LikesCount    int  `json:"likes_count"`
 	IsLikedByUser bool `json:"is_liked_by_user"`
+}
+
+type MediaRequest struct {
+	F string `form:"f"`
 }
 
 type PersonalInfo struct {

@@ -298,6 +298,7 @@ type (
 		Views               int64         `json:"views"`
 		Summary             string        `json:"summary"`
 		SummaryZh           string        `json:"summary_zh,omitempty"`
+		FeaturedImageURL    string        `json:"featured_image_url,omitempty"`
 		Type                string        `json:"type,omitempty"`
 		VideoURL            string        `json:"video_url,omitempty"`
 		VideoDuration       string        `json:"video_duration,omitempty"`
@@ -1202,5 +1203,32 @@ service backend-api {
 	@doc "Liveness probe — returns ok without touching the database"
 	@handler Health
 	get /health returns (HealthResponse)
+}
+
+// Media — serves the binary resource files (`assets/` images) that content
+// `silan://` references were rewritten to point at. The file path is carried
+// as the `f` query parameter, not a path segment, because a resource path is
+// variable-depth and go-zero's router has no catch-all segment. The handler
+// streams the file from the backend's media volume; it goes through the
+// Analytics middleware like every other route, so each image fetch lands in
+// `request_logs` — media access is tracked traffic, not opaque static files.
+type (
+	// MediaRequest locates one resource file under the media root. `F` is the
+	// path relative to `content/resources/`, e.g.
+	// `blog/my-post/assets/figure.png`.
+	MediaRequest {
+		F string `form:"f"`
+	}
+)
+
+@server (
+	group:      media
+	prefix:     /api/v1
+	middleware: Cors,Analytics
+)
+service backend-api {
+	@doc "Stream a binary resource file from the media volume"
+	@handler GetMedia
+	get /media (MediaRequest)
 }
 

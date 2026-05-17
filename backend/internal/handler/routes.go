@@ -11,6 +11,7 @@ import (
 	episodes "silan-backend/internal/handler/episodes"
 	health "silan-backend/internal/handler/health"
 	ideas "silan-backend/internal/handler/ideas"
+	media "silan-backend/internal/handler/media"
 	plans "silan-backend/internal/handler/plans"
 	projects "silan-backend/internal/handler/projects"
 	resume "silan-backend/internal/handler/resume"
@@ -218,6 +219,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/v1/ideas"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Route{
+				{
+					// Stream a binary resource file from the media volume
+					Method:  http.MethodGet,
+					Path:    "/media",
+					Handler: media.GetMediaHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/v1"),
 	)
 
 	server.AddRoutes(

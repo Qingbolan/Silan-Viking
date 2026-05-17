@@ -132,6 +132,7 @@ func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.Blog
 		Likes:               int64(post.LikeCount),
 		Views:               int64(post.ViewCount),
 		Summary:             excerpt,
+		FeaturedImageURL:    post.FeaturedImageURL,
 		Type:                contentType,
 		SeriesID:            seriesID,
 		SeriesSlug:          seriesSlug,

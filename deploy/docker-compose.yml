@@ -20,8 +20,11 @@ services:
     image: silan-backend:latest
     restart: unless-stopped
     volumes:
-      # The derived DB lives here. The deploy pipeline's promote step writes
-      # into this volume; runtime tables survive image rebuilds.
+      # The derived DB (`/data/portfolio.db`) and the binary resource files
+      # (`/data/media/`) both live here. The deploy pipeline's promote step
+      # writes the db and its media-sync step mirrors the media tree into
+      # this volume; both survive image rebuilds. The backend serves
+      # `/data/media` via the `/api/v1/media` route (see config `MediaRoot`).
       - portfolio-db:/data
     expose:
       - "5200"
