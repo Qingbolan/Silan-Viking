@@ -165,7 +165,15 @@ fn run(args: Vec<String>) -> Result<(), String> {
         }
         [kind, "rm", slug] if parse_kind(kind).is_some() => type_rm(&opts.content_root, kind, slug),
 
-        [kind, "list"] if parse_kind(kind).is_some() => type_list(&opts.content_root, kind),
+        [kind, "list"] if parse_kind(kind).is_some() => {
+            type_list(&opts.content_root, kind, None, None)
+        }
+        [kind, "list", "--status", status] if parse_kind(kind).is_some() => {
+            type_list(&opts.content_root, kind, Some(status), None)
+        }
+        [kind, "list", "--tag", tag] if parse_kind(kind).is_some() => {
+            type_list(&opts.content_root, kind, None, Some(tag))
+        }
         [kind, "show", slug] if parse_kind(kind).is_some() => {
             type_show(&opts.content_root, kind, slug)
         }
@@ -496,11 +504,16 @@ fn content_show(content_root: &Path, uri: &str) -> Result<(), String> {
     print_item(&ws, item)
 }
 
-fn type_list(content_root: &Path, kind: &str) -> Result<(), String> {
+fn type_list(
+    content_root: &Path,
+    kind: &str,
+    status: Option<&str>,
+    tag: Option<&str>,
+) -> Result<(), String> {
     let kind = parse_kind(kind).ok_or("unknown kind")?;
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     let index = ws.query_index().map_err(|e| e.to_string())?;
-    for doc in index.list(Some(kind), None) {
+    for doc in index.list(Some(kind), status, tag) {
         println!(
             "{}\t{}\t{}",
             doc.slug,

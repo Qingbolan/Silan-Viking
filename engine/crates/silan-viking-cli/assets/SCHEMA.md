@@ -67,6 +67,7 @@ types:
       - { name: visibility,                 type: "enum(private,unlisted,public)",      required: true,  default: private, source: new,      column: "ideas.is_public" }
       - { name: priority,                   type: "enum(high,medium,low)",              required: false, default: medium,  source: py,       column: "idea_details.priority" }
       - { name: category,                   type: string,                               required: false, default: null,    source: "py,ent", column: "ideas.category" }
+      - { name: tags,                       type: "list<string>",                       required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: abstract,                   type: text,                                 required: false, default: null,    source: "py,ent", column: "ideas.abstract" }
       - { name: collaboration_needed,       type: bool,                                 required: false, default: false,   source: "py,ent", column: "idea_details.collaboration_needed" }
       - { name: funding_required,           type: bool,                                 required: false, default: false,   source: "py,ent", column: "idea_details.funding_required" }
@@ -94,7 +95,7 @@ types:
       - { name: featured_image_url, type: string,                               required: false, default: null,    source: "py,ent", column: "blog_posts.featured_image_url" }
       - { name: published_at,       type: datetime,                             required: false, default: null,    source: "py,ent", column: "blog_posts.published_at" }
       - { name: category,          type: string,                               required: false, default: null,    source: "py,ent", column: "blog_posts.category_id" }
-      - { name: tags,               type: "list<string>",                      required: false, default: [],      source: "py,ent", column: "blog_post_tags" }
+      - { name: tags,               type: "list<string>",                      required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: series,             type: "string(slug)",                      required: false, default: null,    source: "py,ent", column: "blog_posts.series_id" }
       - { name: series_order,       type: int,                                  required: false, default: null,    source: "py,ent", column: "blog_posts.series_order" }
       - { name: relations,          type: "list<relation>",                    required: false, default: [],      source: new,      column: "content_relation" }
@@ -122,7 +123,7 @@ types:
       - { name: tech_stack,         type: "list<string>",                            required: false, default: [],              source: "py,ent", column: "project_technologies" }
       - { name: license,           type: "string(SPDX)",                            required: false, default: null,            source: "py,ent", column: "project_details.license" }
       - { name: version,           type: string,                                     required: false, default: null,            source: "py,ent", column: "project_details.version" }
-      - { name: tags,               type: "list<string>",                            required: false, default: [],              source: py,       column: "content_relation" }
+      - { name: tags,               type: "list<string>",                            required: false, default: [],              source: "py,ent", column: "content_tag" }
       - { name: relations,          type: "list<relation>",                          required: false, default: [],              source: new,      column: "content_relation" }
     parts:
       - { role: overview,      required: true,  order: 10, shape: prose }
@@ -155,6 +156,7 @@ types:
       - { name: visibility,       type: "enum(private,unlisted,public)",   required: true,  default: private, source: new, column: "episodes.visibility" }
       - { name: published_at,     type: datetime,                          required: false, default: null,    source: py,  column: "episodes.published_at" }
       - { name: duration_minutes, type: int,                               required: false, default: null,    source: py,  column: "episodes.duration_minutes" }
+      - { name: tags,             type: "list<string>",                    required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: relations,        type: "list<relation>",                  required: false, default: [],      source: new, column: "content_relation" }
     parts:
       - { role: body, required: true, order: 10, shape: prose }
@@ -171,7 +173,7 @@ types:
       - { name: priority,    type: "enum(high,medium,low)",                                               required: false, default: medium,  source: "py,ent", column: "recent_updates.priority" }
       - { name: visibility,  type: "enum(private,unlisted,public)",                                       required: true,  default: private, source: new,      column: "recent_updates.visibility" }
       - { name: date,        type: date,                                                                  required: true,  default: null,    source: "py,ent", column: "recent_updates.date" }
-      - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "recent_updates.tags" }
+      - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: relations,   type: "list<relation>",                                                     required: false, default: [],      source: new,      column: "content_relation" }
     parts:
       - { role: body, required: true, order: 10, shape: prose }
@@ -318,7 +320,14 @@ errors:
 ## Field placement rules (how the parser decides where a field is read from / written to)
 
 1. **Structured, enumerable, indexable** fields go in the frontmatter and land
-   as columns of the content main table.
+   as columns of the content main table. The `column:` attribute reads
+   `"<table>.<column>"` for such a field.
+1a. **List fields that fan out into their own table** carry a `column:` that is
+   a bare table name with no dot — `content_tag` (the `tags` list),
+   `content_relation` (the `relations` list), `project_technologies` (the
+   `tech_stack` list). These do not land as a main-table column; the mapper
+   routes them to that table. `content_tag` / `content_relation` are the
+   cross-type tables shared by all 6 types (the `content_*` family of M0.5).
 2. **Long prose text in a prose Part** goes in the Part body (`.md`) and lands
    in the `item_part` table.
 3. **Identity and translation metadata** go in `parts/<role>/meta.toml` and

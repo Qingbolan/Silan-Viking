@@ -38,6 +38,8 @@ pub struct QueryDocument {
     pub title: String,
     /// Status, if the type has one.
     pub status: Option<String>,
+    /// Content tags (the `tags` frontmatter list), as raw labels.
+    pub tags: Vec<String>,
     /// Language tags present in the parsed item.
     pub languages: Vec<String>,
     /// Searchable body text.
@@ -104,11 +106,19 @@ impl QueryIndex {
     }
 
     /// Structured list, matching the MCP `list(type, filter)` contract.
-    pub fn list(&self, kind: Option<ContentKind>, status: Option<&str>) -> Vec<QueryDocument> {
+    /// `tag` filters to documents carrying that tag (case-insensitive match
+    /// against the raw labels) — backs the `filter.tag` key of `03` §3.2.
+    pub fn list(
+        &self,
+        kind: Option<ContentKind>,
+        status: Option<&str>,
+        tag: Option<&str>,
+    ) -> Vec<QueryDocument> {
         self.documents
             .iter()
             .filter(|doc| kind.is_none_or(|k| doc.kind == k))
             .filter(|doc| status.is_none_or(|s| doc.status.as_deref() == Some(s)))
+            .filter(|doc| tag.is_none_or(|t| doc.tags.iter().any(|d| d.eq_ignore_ascii_case(t))))
             .cloned()
             .collect()
     }
@@ -192,12 +202,25 @@ fn document_from_parsed(item: &Item, parsed: &Parsed) -> QueryDocument {
         }
     }
 
+    // Content tags — a `FieldValue::List` in `main()`. Capture them as a
+    // structured field (for `list --tag`) and fold them into the search text
+    // (so `recall` finds an Item by its tag).
+    let tags = match parsed.main().get("tags") {
+        Some(FieldValue::List(items)) => items.clone(),
+        _ => Vec::new(),
+    };
+    for tag in &tags {
+        text.push_str(tag);
+        text.push('\n');
+    }
+
     QueryDocument {
         uri: item.uri().to_string(),
         kind: item.kind(),
         slug: item.slug().to_string(),
         title: title.unwrap_or_else(|| item.slug().to_string()),
         status: parsed.main().text("status").map(str::to_owned),
+        tags,
         languages,
         text,
     }
@@ -289,8 +312,28 @@ mod tests {
     fn list_filters_by_kind_and_status() {
         let ws = workspace();
         let index = ws.query_index().expect("index builds");
-        let blogs = index.list(Some(ContentKind::Blog), None);
+        let blogs = index.list(Some(ContentKind::Blog), None, None);
         assert_eq!(blogs.len(), 1);
         assert_eq!(blogs[0].slug, "hello-world");
+    }
+
+    #[test]
+    fn list_filters_by_tag() {
+        // The `tag` filter narrows to documents carrying that tag; an unknown
+        // tag yields nothing. The fixture blog `hello-world` carries tags.
+        let ws = workspace();
+        let index = ws.query_index().expect("index builds");
+        let tagged = &index.list(Some(ContentKind::Blog), None, None)[0].tags;
+        if let Some(first) = tagged.first() {
+            let hits = index.list(None, None, Some(first));
+            assert!(
+                hits.iter().any(|d| d.slug == "hello-world"),
+                "a known tag must match its Item"
+            );
+        }
+        assert!(
+            index.list(None, None, Some("no-such-tag-xyz")).is_empty(),
+            "an unknown tag must match nothing"
+        );
     }
 }

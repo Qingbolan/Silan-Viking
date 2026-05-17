@@ -151,8 +151,10 @@ fn build_batch(
 /// Columns excluded from the content digest: these hold engine-minted
 /// identities (`ItemId` ULIDs), not content. A fresh `ItemId` is generated
 /// each scan until ids are persisted in the manifest, so including them
-/// would make every incremental sync see a spurious change.
-const IDENTITY_COLUMNS: [&str; 3] = ["id", "item_id", "from_id"];
+/// would make every incremental sync see a spurious change. `entity_id` is
+/// the `content_tag` association's Item ULID — same reason. `tag_id` is *not*
+/// here: it is the deterministic tag slug, real content the digest must see.
+const IDENTITY_COLUMNS: [&str; 4] = ["id", "item_id", "from_id", "entity_id"];
 
 /// The digest of a batch: the FNV-1a hash of every row's table and its
 /// content columns, concatenated in deterministic order. Engine-minted

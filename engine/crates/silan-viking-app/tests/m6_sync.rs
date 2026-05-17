@@ -150,3 +150,45 @@ fn sync_writes_content_relation_rows() {
         "evolved_from is canonicalised to evolved_into before the sink"
     );
 }
+
+#[test]
+fn sync_writes_tag_and_content_tag_rows() {
+    let ws = workspace();
+    let mut sink = SqliteSink::open_in_memory().expect("in-memory sink");
+    ws.sync_into(&mut sink).expect("sync succeeds");
+    let conn = sink.connection();
+
+    // The fixture blog `hello-world` declares `tags: [intro, meta]`. Each
+    // distinct tag becomes a `tag` entity row + a `content_tag` association.
+    let tag_count: i64 = conn
+        .query_row("SELECT COUNT(*) FROM tag", [], |r| r.get(0))
+        .expect("tag table exists");
+    assert!(tag_count >= 2, "intro + meta must be tag entities");
+
+    // The association carries the entity_type and the stable slug.
+    let intro_on_blog: bool = conn
+        .query_row(
+            "SELECT 1 FROM content_tag WHERE tag_id='intro' AND entity_type='blog' \
+             AND entity_slug='hello-world'",
+            [],
+            |_| Ok(true),
+        )
+        .unwrap_or(false);
+    assert!(
+        intro_on_blog,
+        "content_tag must link the `intro` tag to the blog by stable slug"
+    );
+
+    // `tags` must NOT have been flattened into a `blog_posts.tags` column.
+    let blog_cols: Vec<String> = conn
+        .prepare("SELECT name FROM pragma_table_info('blog_posts')")
+        .and_then(|mut s| {
+            s.query_map([], |r| r.get::<_, String>(0))
+                .map(|rows| rows.flatten().collect())
+        })
+        .expect("blog_posts columns");
+    assert!(
+        !blog_cols.contains(&"tags".to_owned()),
+        "tags is a join-table field — it must not land as a blog_posts column"
+    );
+}

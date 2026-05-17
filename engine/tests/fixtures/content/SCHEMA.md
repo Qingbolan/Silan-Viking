@@ -94,7 +94,7 @@ types:
       - { name: featured_image_url, type: string,                               required: false, default: null,    source: "py,ent", column: "blog_posts.featured_image_url" }
       - { name: published_at,       type: datetime,                             required: false, default: null,    source: "py,ent", column: "blog_posts.published_at" }
       - { name: category,          type: string,                               required: false, default: null,    source: "py,ent", column: "blog_posts.category_id" }
-      - { name: tags,               type: "list<string>",                      required: false, default: [],      source: "py,ent", column: "blog_post_tags" }
+      - { name: tags,               type: "list<string>",                      required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: series,             type: "string(slug)",                      required: false, default: null,    source: "py,ent", column: "blog_posts.series_id" }
       - { name: series_order,       type: int,                                  required: false, default: null,    source: "py,ent", column: "blog_posts.series_order" }
       - { name: relations,          type: "list<relation>",                    required: false, default: [],      source: new,      column: "content_relation" }
@@ -122,7 +122,7 @@ types:
       - { name: tech_stack,         type: "list<string>",                            required: false, default: [],              source: "py,ent", column: "project_technologies" }
       - { name: license,           type: "string(SPDX)",                            required: false, default: null,            source: "py,ent", column: "project_details.license" }
       - { name: version,           type: string,                                     required: false, default: null,            source: "py,ent", column: "project_details.version" }
-      - { name: tags,               type: "list<string>",                            required: false, default: [],              source: py,       column: "content_relation" }
+      - { name: tags,               type: "list<string>",                            required: false, default: [],              source: "py,ent", column: "content_tag" }
       - { name: relations,          type: "list<relation>",                          required: false, default: [],              source: new,      column: "content_relation" }
     parts:
       - { role: overview,      required: true,  order: 10, shape: prose }
@@ -171,7 +171,7 @@ types:
       - { name: priority,    type: "enum(high,medium,low)",                                               required: false, default: medium,  source: "py,ent", column: "recent_updates.priority" }
       - { name: visibility,  type: "enum(private,unlisted,public)",                                       required: true,  default: private, source: new,      column: "recent_updates.visibility" }
       - { name: date,        type: date,                                                                  required: true,  default: null,    source: "py,ent", column: "recent_updates.date" }
-      - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "recent_updates.tags" }
+      - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: relations,   type: "list<relation>",                                                     required: false, default: [],      source: new,      column: "content_relation" }
     parts:
       - { role: body, required: true, order: 10, shape: prose }

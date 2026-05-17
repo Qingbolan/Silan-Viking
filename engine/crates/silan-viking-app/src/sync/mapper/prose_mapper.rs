@@ -38,10 +38,17 @@ impl ProseMapper {
         push_item_part_rows(&item_id, parsed, &mut rows);
         push_part_rows(&item_id, parsed, &mut rows);
         push_relation_rows(&item_id, parsed, &mut rows);
+        push_tag_rows(expected, &item_id, parsed, &mut rows);
 
         Ok(rows)
     }
 }
+
+/// Frontmatter fields that fan out into their own table instead of landing as
+/// a main-table column (`SCHEMA.md` placement rule 1a). `relations` is already
+/// split out by the parser; `tags` reaches `main()` as a list and is routed
+/// here by [`push_tag_rows`], so `main_row` must skip it.
+const JOIN_TABLE_FIELDS: &[&str] = &["tags"];
 
 /// Build the content main-table row from the language-neutral fields.
 fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed) -> Row {
@@ -49,6 +56,11 @@ fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed) -> Row {
         .with("id", SqlValue::Text(item_id.to_owned()))
         .with("kind", SqlValue::Text(kind.frontmatter_value().to_owned()));
     for name in parsed.main().field_names() {
+        // Join-table fields (`tags`) are routed to their own table, not
+        // flattened into a main-table column (`SCHEMA.md` rule 1a).
+        if JOIN_TABLE_FIELDS.contains(&name) {
+            continue;
+        }
         if let Some(value) = parsed.main().get(name) {
             row = row.with(name.to_owned(), sql_value(value));
         }
@@ -132,9 +144,76 @@ fn push_relation_rows(item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
     }
 }
 
-/// Convert a parser [`FieldValue`] into a [`SqlValue`]. Lists are joined with
-/// `, ` — a content main table column is scalar; list fields that need their
-/// own join table are a post-M6 concern (`SCHEMA.md` notes `blog_post_tags`).
+/// Build the tag rows: one `tag` entity row per distinct tag slug, and one
+/// `content_tag` association row per (Item, tag).
+///
+/// `tags` reaches `parsed.main()` as a `FieldValue::List` (the parser does not
+/// special-case it). `main_row` skips it via [`JOIN_TABLE_FIELDS`]; this fn
+/// fans it out. The `tag` table is shared across all 6 types — `tag.id` is the
+/// normalised slug, so the same tag from a blog and an idea is one row, and a
+/// later sync's `DELETE`+re-`INSERT` rebuilds it identically (idempotent).
+fn push_tag_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+    let Some(FieldValue::List(tags)) = parsed.main().get("tags") else {
+        return;
+    };
+    let entity_type = kind.frontmatter_value();
+    // The Item's stable slug — `content_tag` carries it alongside the minted
+    // `entity_id` ULID so the content digest has a stable key (the ULID is
+    // excluded from the digest; mirrors `content_relation.from_uri`).
+    let entity_slug = parsed.main().text("slug").unwrap_or_default().to_owned();
+    let mut seen: Vec<String> = Vec::new();
+    for label in tags {
+        let slug = tag_slug(label);
+        if slug.is_empty() {
+            continue; // a label that normalises to nothing — skip it
+        }
+        // One `tag` entity row per distinct slug across this Item's list.
+        // Cross-Item dedup is the sink's job: every sync writes the same
+        // `(id)` row, so an idempotent `DELETE`+`INSERT` collapses them.
+        if !seen.contains(&slug) {
+            seen.push(slug.clone());
+            rows.push(
+                Row::new(table_names::TAG_TABLE)
+                    .with("id", SqlValue::Text(slug.clone()))
+                    .with("slug", SqlValue::Text(slug.clone()))
+                    .with("label", SqlValue::Text(label.clone())),
+            );
+            rows.push(
+                Row::new(table_names::CONTENT_TAG_TABLE)
+                    .with("tag_id", SqlValue::Text(slug.clone()))
+                    .with("entity_type", SqlValue::Text(entity_type.to_owned()))
+                    .with("entity_id", SqlValue::Text(item_id.to_owned()))
+                    .with("entity_slug", SqlValue::Text(entity_slug.clone())),
+            );
+        }
+    }
+}
+
+/// Normalise a free-text tag label into a stable slug — the `tag` table's
+/// identity. Lowercases, maps every run of non-alphanumeric characters to a
+/// single `-`, and trims leading/trailing `-`. `"AI / ML"` → `"ai-ml"`.
+fn tag_slug(label: &str) -> String {
+    let mut slug = String::with_capacity(label.len());
+    let mut prev_dash = true; // true so a leading separator run is dropped
+    for ch in label.chars() {
+        if ch.is_ascii_alphanumeric() {
+            slug.push(ch.to_ascii_lowercase());
+            prev_dash = false;
+        } else if !prev_dash {
+            slug.push('-');
+            prev_dash = true;
+        }
+    }
+    while slug.ends_with('-') {
+        slug.pop();
+    }
+    slug
+}
+
+/// Convert a parser [`FieldValue`] into a [`SqlValue`]. Scalars map directly;
+/// a `List` that reaches here is a non-join list field and is joined with
+/// `, ` (join-table lists — `tags` — are routed away by [`JOIN_TABLE_FIELDS`]
+/// before `sql_value` is ever called on them).
 fn sql_value(value: &FieldValue) -> SqlValue {
     match value {
         FieldValue::Text(s) => SqlValue::Text(s.clone()),

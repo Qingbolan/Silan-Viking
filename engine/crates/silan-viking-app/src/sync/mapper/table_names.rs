@@ -46,6 +46,14 @@ pub const PART_ENTRY_TRANSLATION_TABLE: &str = "part_entry_translation";
 /// The general relation table (revision A, `01` §1.10).
 pub const CONTENT_RELATION_TABLE: &str = "content_relation";
 
+/// The tag-entity table — one row per distinct tag slug, shared across all 6
+/// content types (the `content_*` cross-type family of M0.5).
+pub const TAG_TABLE: &str = "tag";
+
+/// The tag-association table — one row per (Item, tag), `entity_type` naming
+/// the content kind. Mirrors `content_relation` / `content_interaction`.
+pub const CONTENT_TAG_TABLE: &str = "content_tag";
+
 #[cfg(test)]
 mod tests {
     use super::*;

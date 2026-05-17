@@ -206,17 +206,19 @@ pub fn recall(content_root: &Path, query: &str, limit: usize) -> Result<Vec<Quer
         .map_err(|e| McpError::Workspace(e.to_string()))
 }
 
-/// Structured list tool implementation.
+/// Structured list tool implementation. `tag` backs the `filter.tag` key of
+/// `03` §3.2 — narrows to Items carrying that tag.
 pub fn list(
     content_root: &Path,
     kind: Option<ContentKind>,
     status: Option<&str>,
+    tag: Option<&str>,
 ) -> Result<Vec<silan_viking_app::QueryDocument>, McpError> {
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
     let index = ws
         .query_index()
         .map_err(|e| McpError::Workspace(e.to_string()))?;
-    Ok(index.list(kind, status))
+    Ok(index.list(kind, status, tag))
 }
 
 /// Read one URI by using the query index metadata.
@@ -790,12 +792,24 @@ pub fn call(
                         .ok_or_else(|| McpError::InvalidRequest(format!("unknown type `{t}`")))
                 })
                 .transpose()?;
-            let status = opt_str("status");
-            let docs = list(content_root, kind, status.as_deref())?;
+            // `03` §3.2: `filter` is a nested object whose keys are `status`,
+            // `visibility`, `updated_after`, `updated_before`, `tag`. Read
+            // `status`/`tag` from `filter`, falling back to a top-level key.
+            let filter = args.get("filter").and_then(|v| v.as_object());
+            let from_filter = |key: &str| -> Option<String> {
+                filter
+                    .and_then(|f| f.get(key))
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned)
+                    .or_else(|| opt_str(key))
+            };
+            let status = from_filter("status");
+            let tag = from_filter("tag");
+            let docs = list(content_root, kind, status.as_deref(), tag.as_deref())?;
             Ok(json!({
                 "items": docs.iter().map(|d| json!({
                     "uri": d.uri, "slug": d.slug, "title": d.title,
-                    "status": d.status,
+                    "status": d.status, "tags": d.tags,
                 })).collect::<Vec<_>>()
             }))
         }

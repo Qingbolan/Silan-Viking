@@ -39,6 +39,9 @@ pub const DERIVED_TABLES: &[&str] = &[
     "part_entry_translation",
     // relations
     "content_relation",
+    // tags — the tag entities and their per-Item associations
+    "tag",
+    "content_tag",
     // translations
     "blog_post_translations",
     "idea_translations",
