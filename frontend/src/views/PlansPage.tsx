@@ -215,7 +215,7 @@ const ProjectsCard: React.FC<ProjectsCardProps> = ({ plan, projects, index }) =>
                 {project.description}
               </p>
               <div className="flex flex-wrap gap-1">
-                {project.tags.map((tag: string, tagIdx: number) => (
+                {(project.tags || []).map((tag: string, tagIdx: number) => (
                   <span
                     key={tagIdx}
                     className="px-2 py-1 text-xs rounded-full bg-theme-primary/10 text-theme-primary"

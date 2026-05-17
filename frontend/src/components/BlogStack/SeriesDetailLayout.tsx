@@ -583,7 +583,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
                   {language === 'en' ? 'Tags' : '标签'}
                 </h4>
                 <div className="flex flex-wrap gap-1">
-                  {post.tags.map((tag, index) => (
+                  {(post.tags || []).map((tag, index) => (
                     <span
                       key={index}
                       className="px-2 py-1 bg-theme-tertiary text-theme-secondary rounded text-xs"

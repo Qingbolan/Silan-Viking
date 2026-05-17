@@ -456,7 +456,7 @@ const RecentUpdates: React.FC = () => {
 
                       {/* Tags */}
                       <div className="flex flex-wrap gap-1.5 xs:gap-2">
-                        {item.tags.map((tag, tagIndex) => (
+                        {(item.tags || []).map((tag, tagIndex) => (
                           <span
                             key={tagIndex}
                             className="px-2 xs:px-3 py-1 text-xs xs:text-sm rounded-md xs:rounded-lg bg-theme-surface-tertiary text-theme-tertiary border border-theme-border"
