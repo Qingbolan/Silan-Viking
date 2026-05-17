@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"strings"
+
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -70,7 +71,7 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 	// Fetch project with all related data including details
 	proj, err := l.svcCtx.DB.Project.Query().
 		Where(project.ID(projectUUID)).
-		Where(project.IsPublic(true)).
+		Where(project.VisibilityEQ(project.VisibilityPublic)).
 		WithUser().
 		WithTechnologies().
 		WithDetails().
@@ -110,16 +111,14 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 
 	// Create detail information
 	var detailID string
-	var detailedDescription, release, dependencies, quickStart, license, version string
+	var detailedDescription, dependencies, license, version string
 	var licenseText string
 	var createdAt, updatedAt string
 	if proj.Edges.Details != nil {
 		detail := proj.Edges.Details
 		detailID = detail.ID.String()
 		detailedDescription = detail.ProjectDetails
-		release = detail.ReleaseNotes
 		dependencies = detail.Dependencies
-		quickStart = detail.QuickStart
 		license = l.GetLicenseText(detail.LicenseText)
 		licenseText = detail.LicenseText
 		version = detail.Version
@@ -135,19 +134,24 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		updatedAt = proj.UpdatedAt.Format("2006-01-02 15:04:05")
 	}
 
+	relatedBlogs, err := NewGetProjectRelatedBlogsLogic(l.ctx, l.svcCtx).GetProjectRelatedBlogs(req)
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.ProjectDetail{
 		ID:                  detailID,
 		ProjectID:           proj.ID.String(),
 		DetailedDescription: detailedDescription,
-		Release:             release,
-		QuickStart:          quickStart,
+		Release:             "", // M0.5a §11.8: moved to item_part
+		QuickStart:          "", // M0.5a §11.8: moved to item_part
 		Dependance:          dependencies,
 		License:             license,
 		LicenseText:         licenseText,
 		Version:             version,
 		Timeline:            timeline,
 		Metrics:             metrics,
-		RelatedBlogs:        []types.ProjectBlogRef{}, // This would need to be implemented
+		RelatedBlogs:        relatedBlogs,
 		CreatedAt:           createdAt,
 		UpdatedAt:           updatedAt,
 	}, nil

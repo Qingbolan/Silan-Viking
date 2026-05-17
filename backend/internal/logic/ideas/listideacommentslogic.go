@@ -52,7 +52,7 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 					sql.EQ(s.C("entity_type"), desiredEntityType),
 				))
 			},
-			comment.TypeEQ(req.Type),
+			comment.TypeEQ(comment.Type(req.Type)),
 		).
 		Order(ent.Asc(comment.FieldCreatedAt)).
 		All(l.ctx)
@@ -90,7 +90,7 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 			AuthorName:      comment.AuthorName,
 			AuthorAvatarURL: lookupAvatar(comment.AuthorEmail),
 			Content:         comment.Content,
-			Type:            comment.Type,
+			Type:            string(comment.Type),
 			CreatedAt:       comment.CreatedAt.Format(time.RFC3339),
 			UserIdentityID:  comment.UserIdentityID,
 			LikesCount:      comment.LikesCount,

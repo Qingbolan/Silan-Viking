@@ -89,7 +89,7 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		DocumentationURL: documentationURL,
 		ThumbnailURL:     thumbnailURL,
 		IsFeatured:       proj.IsFeatured,
-		IsPublic:         proj.IsPublic,
+		IsPublic:         proj.Visibility == project.VisibilityPublic,
 		ViewCount:        int64(proj.ViewCount),
 		SortOrder:        proj.SortOrder,
 		Year:             year,

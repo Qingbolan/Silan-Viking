@@ -28,11 +28,15 @@ func NewGetBlogPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBl
 
 func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.BlogData, err error) {
 	post, err := l.svcCtx.DB.BlogPost.Query().
-		Where(blogpost.Slug(req.Slug)).
+		Where(
+			blogpost.Slug(req.Slug),
+			blogpost.StatusEQ(blogpost.StatusPublished),
+			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
+		).
 		WithUser().
 		WithCategory().
-		WithSeries().
 		WithTags().
+		WithTranslations().
 		First(l.ctx)
 	if err != nil {
 		return nil, err
@@ -64,44 +68,41 @@ func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.Blog
 		author = post.Edges.User.FirstName + " " + post.Edges.User.LastName
 	}
 
-	// Parse content - simplified for now
+	title := post.Title
+	excerpt := post.Excerpt
+	body := post.Content
+	if req.Language != "en" && post.Edges.Translations != nil {
+		for _, translation := range post.Edges.Translations {
+			if translation.LanguageCode == req.Language {
+				title = translation.Title
+				excerpt = translation.Excerpt
+				body = translation.Content
+				break
+			}
+		}
+	}
+
 	content := []types.BlogContent{
 		{
 			Type:    "text",
-			Content: post.Content,
+			Content: body,
 			ID:      post.ID.String(),
 		},
 	}
 
-	// Add series information if this is part of a series
-	var seriesID, seriesTitle, seriesDescription string
-	var episodeNumber, totalEpisodes int
-	if post.Edges.Series != nil {
-		seriesID = post.Edges.Series.ID.String()
-		seriesTitle = post.Edges.Series.Title
-		seriesDescription = post.Edges.Series.Description
-		episodeNumber = post.SeriesOrder
-		totalEpisodes = post.Edges.Series.EpisodeCount
-	}
-
 	return &types.BlogData{
-		ID:                post.ID.String(),
-		Title:             post.Title,
-		Slug:              post.Slug,
-		Author:            author,
-		PublishDate:       publishDate,
-		ReadTime:          readTime,
-		Category:          category,
-		Tags:              tags,
-		Content:           content,
-		Likes:             int64(post.LikeCount),
-		Views:             int64(post.ViewCount),
-		Summary:           post.Excerpt,
-		Type:              string(post.ContentType),
-		SeriesID:          seriesID,
-		SeriesTitle:       seriesTitle,
-		SeriesDescription: seriesDescription,
-		EpisodeNumber:     episodeNumber,
-		TotalEpisodes:     totalEpisodes,
+		ID:          post.ID.String(),
+		Title:       title,
+		Slug:        post.Slug,
+		Author:      author,
+		PublishDate: publishDate,
+		ReadTime:    readTime,
+		Category:    category,
+		Tags:        tags,
+		Content:     content,
+		Likes:       int64(post.LikeCount),
+		Views:       int64(post.ViewCount),
+		Summary:     excerpt,
+		Type:        string(post.ContentType),
 	}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"silan-backend/internal/ent"
+	entcomment "silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -104,9 +105,9 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 	// Use entity_type with project_<type> for better filtering while keeping the type field
 	entityType := "project_" + strings.ToLower(req.Type)
 	commentBuilder := l.svcCtx.DB.Comment.Create().
-		SetEntityType(entityType).
+		SetEntityType(entcomment.EntityType(entityType)).
 		SetEntityID(projectUUID).
-		SetType(req.Type).
+		SetType(entcomment.Type(req.Type)).
 		SetAuthorName(authorName).
 		SetAuthorEmail(authorEmail).
 		SetContent(req.Content).
@@ -146,7 +147,7 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		AuthorName:      comment.AuthorName,
 		AuthorAvatarURL: avatarURL,
 		Content:         comment.Content,
-		Type:            comment.Type,
+		Type:            string(comment.Type),
 		CreatedAt:       comment.CreatedAt.Format(time.RFC3339),
 		UserIdentityID:  comment.UserIdentityID,
 		LikesCount:      comment.LikesCount,

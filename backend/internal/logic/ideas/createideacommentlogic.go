@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"silan-backend/internal/ent"
+	entcomment "silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -104,9 +105,9 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 	// Use entity_type with idea_<type> for better filtering while keeping the type field
 	entityType := "idea_" + strings.ToLower(req.Type)
 	commentBuilder := l.svcCtx.DB.Comment.Create().
-		SetEntityType(entityType).
+		SetEntityType(entcomment.EntityType(entityType)).
 		SetEntityID(ideaUUID).
-		SetType(req.Type).
+		SetType(entcomment.Type(req.Type)).
 		SetAuthorName(authorName).
 		SetAuthorEmail(authorEmail).
 		SetContent(req.Content).
@@ -146,7 +147,7 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		AuthorName:      comment.AuthorName,
 		AuthorAvatarURL: avatarURL,
 		Content:         comment.Content,
-		Type:            comment.Type,
+		Type:            string(comment.Type),
 		CreatedAt:       comment.CreatedAt.Format(time.RFC3339),
 		UserIdentityID:  req.UserIdentityId,
 		LikesCount:      comment.LikesCount,

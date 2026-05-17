@@ -32,7 +32,7 @@ func NewGetIdeasLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetIdeas
 
 func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaListResponse, err error) {
 	query := l.svcCtx.DB.Idea.Query().
-		Where(idea.IsPublic(true)).
+		Where(idea.VisibilityEQ(idea.VisibilityPublic)).
 		WithUser()
 
 	// Apply filters
@@ -88,15 +88,12 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		description := ideaEntity.Description
 
 		// Get detail fields from IdeaDetail edge
-		var progress, results, references, requiredResources string
+		var requiredResources string
 		var collaborationNeeded bool
 		var estimatedDuration string
 
 		if ideaEntity.Edges.Details != nil {
 			detail := ideaEntity.Edges.Details
-			progress = detail.Progress
-			results = detail.Results
-			references = detail.References
 			requiredResources = detail.RequiredResources
 			collaborationNeeded = detail.CollaborationNeeded
 
@@ -137,12 +134,12 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 			LastUpdated:          ideaEntity.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 			Abstract:             abstract,
 			AbstractZh:           abstract,
-			Progress:             progress,
-			ProgressZh:           progress,
-			Results:              results,
-			ResultsZh:            results,
-			Reference:            references,
-			Reference_Zh:         references,
+			Progress:             "", // M0.5a §11.8: moved to item_part
+			ProgressZh:           "", // M0.5a §11.8: moved to item_part
+			Results:              "", // M0.5a §11.8: moved to item_part
+			ResultsZh:            "", // M0.5a §11.8: moved to item_part
+			Reference:            "", // M0.5a §11.8: moved to item_part
+			Reference_Zh:         "", // M0.5a §11.8: moved to item_part
 			TechStack:            techStack,
 			CodeRepository:       codeRepository,
 			DemoURL:              demoURL,

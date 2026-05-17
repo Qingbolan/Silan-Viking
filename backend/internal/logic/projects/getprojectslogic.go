@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/project"
+	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -30,7 +34,7 @@ func NewGetProjectsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPr
 
 func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *types.ProjectListResponse, err error) {
 	query := l.svcCtx.DB.Project.Query().
-		Where(project.IsPublic(true)).
+		Where(project.VisibilityEQ(project.VisibilityPublic)).
 		WithUser().
 		WithTechnologies()
 
@@ -54,55 +58,45 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 		))
 	}
 
-	if req.Year > 0 {
-		// This would need to be implemented based on project year field
-		// For now, we'll skip this filter
+	if req.Tags != "" {
+		for _, tag := range splitCSV(req.Tags) {
+			query = query.Where(project.HasTechnologiesWith(projecttechnology.TechnologyNameEqualFold(tag)))
+		}
 	}
 
-	// Get total count
-	total, err := query.Count(l.ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Apply pagination
-	offset := (req.Page - 1) * req.Size
 	projects, err := query.
 		Order(ent.Desc(project.FieldSortOrder), ent.Desc(project.FieldCreatedAt)).
-		Limit(req.Size).
-		Offset(offset).
 		All(l.ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]types.Project, 0)
+	yearFilter := req.Year
+	if yearFilter == 0 && req.AnnualPlan != "" {
+		yearFilter, _ = parsePlanYear(req.AnnualPlan)
+	}
+
+	filtered := projects[:0]
 	for _, proj := range projects {
-		var technologies []string
-		for _, tech := range proj.Edges.Technologies {
-			technologies = append(technologies, tech.TechnologyName)
+		if yearFilter > 0 && projectYear(proj) != yearFilter {
+			continue
 		}
+		filtered = append(filtered, proj)
+	}
 
-		// Get the year from start date or created date
-		year := proj.CreatedAt.Year()
-		if !proj.StartDate.IsZero() {
-			year = proj.StartDate.Year()
-		}
+	total := len(filtered)
+	offset := (req.Page - 1) * req.Size
+	if offset > total {
+		offset = total
+	}
+	end := offset + req.Size
+	if end > total {
+		end = total
+	}
 
-		// Generate annual plan name based on year
-		annualPlan := fmt.Sprintf("Annual Plan %d", year)
-
-		// Handle description field (now non-nullable)
-		description := proj.Description
-
-		result = append(result, types.Project{
-			ID:          proj.ID.String(),
-			Name:        proj.Title,
-			Description: description,
-			Tags:        technologies,
-			Year:        year,
-			AnnualPlan:  annualPlan,
-		})
+	result := make([]types.Project, 0, end-offset)
+	for _, proj := range filtered[offset:end] {
+		result = append(result, mapBasicProject(proj))
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(req.Size)))
@@ -114,4 +108,52 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 		Size:       req.Size,
 		TotalPages: totalPages,
 	}, nil
+}
+
+func splitCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
+}
+
+func mapBasicProject(proj *ent.Project) types.Project {
+	technologies := make([]string, 0, len(proj.Edges.Technologies))
+	for _, tech := range proj.Edges.Technologies {
+		technologies = append(technologies, tech.TechnologyName)
+	}
+
+	year := projectYear(proj)
+	return types.Project{
+		ID:          proj.ID.String(),
+		Name:        proj.Title,
+		Description: proj.Description,
+		Tags:        technologies,
+		Year:        year,
+		AnnualPlan:  fmt.Sprintf("Annual Plan %d", year),
+	}
+}
+
+func projectYear(proj *ent.Project) int {
+	if !proj.StartDate.IsZero() {
+		return proj.StartDate.Year()
+	}
+	return proj.CreatedAt.Year()
+}
+
+func parsePlanYear(name string) (int, bool) {
+	match := regexp.MustCompile(`\d{4}`).FindString(strings.TrimSpace(name))
+	if match == "" {
+		return 0, false
+	}
+	year, err := strconv.Atoi(match)
+	if err != nil {
+		return 0, false
+	}
+	return year, true
 }

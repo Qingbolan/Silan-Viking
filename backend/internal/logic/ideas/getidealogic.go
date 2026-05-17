@@ -54,15 +54,12 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	description := ideaEntity.Description
 
 	// Get detail fields from IdeaDetail edge
-	var progress, results, references, requiredResources string
+	var requiredResources string
 	var collaborationNeeded bool
 	var estimatedDuration string
 
 	if ideaEntity.Edges.Details != nil {
 		detail := ideaEntity.Edges.Details
-		progress = detail.Progress
-		results = detail.Results
-		references = detail.References
 		requiredResources = detail.RequiredResources
 		collaborationNeeded = detail.CollaborationNeeded
 
@@ -106,12 +103,12 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 		LastUpdated:          ideaEntity.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		Abstract:             abstract,
 		AbstractZh:           abstract,
-		Progress:             progress,
-		ProgressZh:           progress,
-		Results:              results,
-		ResultsZh:            results,
-		Reference:            references,
-		Reference_Zh:         references,
+		Progress:             "", // M0.5a §11.8: moved to item_part
+		ProgressZh:           "", // M0.5a §11.8: moved to item_part
+		Results:              "", // M0.5a §11.8: moved to item_part
+		ResultsZh:            "", // M0.5a §11.8: moved to item_part
+		Reference:            "", // M0.5a §11.8: moved to item_part
+		Reference_Zh:         "", // M0.5a §11.8: moved to item_part
 		CodeRepository:       codeRepository,
 		DemoURL:              demoURL,
 		TechStack:            techStack,

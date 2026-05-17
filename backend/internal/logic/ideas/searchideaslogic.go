@@ -8,6 +8,7 @@ import (
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/idea"
+	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -31,7 +32,7 @@ func NewSearchIdeasLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Searc
 
 func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *types.IdeaListResponse, err error) {
 	query := l.svcCtx.DB.Idea.Query().
-		Where(idea.IsPublic(true)).
+		Where(idea.VisibilityEQ(idea.VisibilityPublic)).
 		WithUser()
 
 	// Apply search query if provided
@@ -48,23 +49,18 @@ func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *type
 		query = query.Where(idea.StatusEQ(idea.Status(req.Status)))
 	}
 
-	// Apply category filter
-	// Note: This would work if categories were stored as a field in the idea table
-	// For now, we'll skip this filter since the schema doesn't have a category field
 	if req.Category != "" {
-		// This would be implemented when the schema is updated:
-		// query = query.Where(idea.CategoryContains(req.Category))
+		query = query.Where(idea.CategoryEqualFold(req.Category))
 	}
 
-	// Apply tags filter
-	// Note: This would work if tags were stored as a field or relationship
-	// For now, we'll skip this filter since the schema doesn't have tags
 	if req.Tags != "" {
-		// This would be implemented when the schema is updated:
-		// tagList := strings.Split(req.Tags, ",")
-		// for _, tag := range tagList {
-		//     query = query.Where(idea.HasTagsWith(ideatag.NameContains(strings.TrimSpace(tag))))
-		// }
+		for _, tag := range strings.Split(req.Tags, ",") {
+			tag = strings.TrimSpace(tag)
+			if tag == "" {
+				continue
+			}
+			query = query.Where(idea.HasTagsWith(ideatag.NameEqualFold(tag)))
+		}
 	}
 
 	// Get total count
@@ -93,15 +89,12 @@ func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *type
 		description := ideaEntity.Description
 
 		// Get detail fields from IdeaDetail edge
-		var progress, results, references, requiredResources string
+		var requiredResources string
 		var collaborationNeeded bool
 		var estimatedDuration string
 
 		if ideaEntity.Edges.Details != nil {
 			detail := ideaEntity.Edges.Details
-			progress = detail.Progress
-			results = detail.Results
-			references = detail.References
 			requiredResources = detail.RequiredResources
 			collaborationNeeded = detail.CollaborationNeeded
 
@@ -190,12 +183,12 @@ func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *type
 			LastUpdated:          ideaEntity.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 			Abstract:             abstract,
 			AbstractZh:           abstract,
-			Progress:             progress,
-			ProgressZh:           progress,
-			Results:              results,
-			ResultsZh:            results,
-			Reference:            references,
-			Reference_Zh:         references,
+			Progress:             "", // M0.5a §11.8: moved to item_part
+			ProgressZh:           "", // M0.5a §11.8: moved to item_part
+			Results:              "", // M0.5a §11.8: moved to item_part
+			ResultsZh:            "", // M0.5a §11.8: moved to item_part
+			Reference:            "", // M0.5a §11.8: moved to item_part
+			Reference_Zh:         "", // M0.5a §11.8: moved to item_part
 			TechStack:            techStack,
 			Collaborators:        collaborators,
 			OpenForCollaboration: collaborationNeeded,

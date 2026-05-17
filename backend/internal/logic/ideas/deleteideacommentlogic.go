@@ -37,7 +37,7 @@ func (l *DeleteCommentLogic) DeleteComment(req *types.DeleteIdeaCommentRequest) 
 	// Load comment meta using entgo with entity_type filter (like blog implementation)
 	cmt, err := l.svcCtx.DB.Comment.Query().
 		Where(comment.IDEQ(commentUUID)).
-		Where(comment.EntityTypeHasPrefix("idea")).
+		Where(comment.EntityTypeEQ(comment.EntityTypeIdea)).
 		Only(l.ctx)
 	if err != nil {
 		return fmt.Errorf("comment not found")
@@ -68,7 +68,7 @@ func (l *DeleteCommentLogic) deleteWithReplies(commentID string) error {
 	// Find replies using entgo (filter by entity_type like blog implementation)
 	replies, err := l.svcCtx.DB.Comment.Query().
 		Where(comment.ParentIDEQ(commentUUID)).
-		Where(comment.EntityTypeHasPrefix("idea")).
+		Where(comment.EntityTypeEQ(comment.EntityTypeIdea)).
 		All(l.ctx)
 	if err != nil {
 		return err

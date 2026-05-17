@@ -37,7 +37,7 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 	// Get the project by UUID
 	proj, err := l.svcCtx.DB.Project.Query().
 		Where(project.ID(projectID)).
-		Where(project.IsPublic(true)).
+		Where(project.VisibilityEQ(project.VisibilityPublic)).
 		WithTechnologies().
 		First(l.ctx)
 	if err != nil {

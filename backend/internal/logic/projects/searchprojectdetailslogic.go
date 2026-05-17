@@ -34,14 +34,13 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 	// Only include public projects
 	query := l.svcCtx.DB.ProjectDetail.Query().
 		WithProject().
-		Where(projectdetail.HasProjectWith(project.IsPublic(true)))
+		Where(projectdetail.HasProjectWith(project.VisibilityEQ(project.VisibilityPublic)))
 	
 	// Apply filters through project relationship if provided
 	if req.Query != "" {
 		query = query.Where(
 			projectdetail.Or(
-				projectdetail.ReleaseNotesContains(req.Query),
-				projectdetail.QuickStartContains(req.Query),
+				// M0.5a §11.8: release_notes / quick_start moved to item_part
 				projectdetail.DependenciesContains(req.Query),
 				projectdetail.LicenseTextContains(req.Query),
 				projectdetail.VersionContains(req.Query),
@@ -121,8 +120,6 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 		}
 		
 		// Get values from project detail entity (these are strings, not pointers)
-		releaseNotes := pd.ReleaseNotes
-		quickStart := pd.QuickStart
 		dependencies := pd.Dependencies
 		license := pd.License
 		licenseText := pd.LicenseText
@@ -138,8 +135,8 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			ID:                  pd.ID.String(),
 			ProjectID:           pd.ProjectID.String(),
 			DetailedDescription: detailedDescription,
-			Release:             releaseNotes,
-			QuickStart:          quickStart,
+			Release:             "", // M0.5a §11.8: moved to item_part
+			QuickStart:          "", // M0.5a §11.8: moved to item_part
 			Dependance:          dependencies,
 			LicenseText:         licenseText,
 			License:             license,
