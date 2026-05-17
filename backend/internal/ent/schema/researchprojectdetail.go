@@ -17,10 +17,10 @@ type ResearchProjectDetail struct {
 // Fields of the ResearchProjectDetail.
 func (ResearchProjectDetail) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("research_project_id", uuid.UUID{}).
+		field.String("research_project_id").
 			StorageKey("research_project_id"),
 		field.Text("detail_text").
 			NotEmpty(),

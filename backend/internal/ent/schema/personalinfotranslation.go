@@ -26,10 +26,10 @@ func (PersonalInfoTranslation) Annotations() []schema.Annotation {
 // Fields of the PersonalInfoTranslation.
 func (PersonalInfoTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("personal_info_id", uuid.UUID{}).
+		field.String("personal_info_id").
 			StorageKey("personal_info_id"),
 		field.String("language_code").
 			MaxLen(5).

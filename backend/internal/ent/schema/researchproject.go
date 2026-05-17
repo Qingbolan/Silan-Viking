@@ -26,14 +26,15 @@ func (ResearchProject) Annotations() []schema.Annotation {
 // Fields of the ResearchProject.
 func (ResearchProject) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("user_id", uuid.UUID{}).
+		field.String("user_id").
+			Optional().
 			StorageKey("user_id"),
 		field.String("title").
 			MaxLen(300).
-			NotEmpty(),
+			Optional(),
 		field.Time("start_date").
 			Optional().
 			SchemaType(map[string]string{
@@ -61,9 +62,11 @@ func (ResearchProject) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -74,7 +77,6 @@ func (ResearchProject) Edges() []ent.Edge {
 		edge.From("user", User.Type).
 			Ref("research_projects").
 			Field("user_id").
-			Required().
 			Unique(),
 		edge.To("translations", ResearchProjectTranslation.Type),
 		edge.To("details", ResearchProjectDetail.Type),

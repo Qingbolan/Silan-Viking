@@ -26,10 +26,10 @@ func (ProjectTechnology) Annotations() []schema.Annotation {
 // Fields of the ProjectTechnology.
 func (ProjectTechnology) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("project_id", uuid.UUID{}).
+		field.String("project_id").
 			StorageKey("project_id"),
 		field.String("technology_name").
 			MaxLen(100).

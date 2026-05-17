@@ -26,10 +26,10 @@ func (PublicationAuthor) Annotations() []schema.Annotation {
 // Fields of the PublicationAuthor.
 func (PublicationAuthor) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("publication_id", uuid.UUID{}).
+		field.String("publication_id").
 			StorageKey("publication_id"),
 		field.String("author_name").
 			MaxLen(200).

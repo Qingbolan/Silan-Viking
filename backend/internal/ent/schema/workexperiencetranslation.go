@@ -26,10 +26,10 @@ func (WorkExperienceTranslation) Annotations() []schema.Annotation {
 // Fields of the WorkExperienceTranslation.
 func (WorkExperienceTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("work_experience_id", uuid.UUID{}).
+		field.String("work_experience_id").
 			StorageKey("work_experience_id"),
 		field.String("language_code").
 			MaxLen(5).

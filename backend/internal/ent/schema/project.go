@@ -26,14 +26,15 @@ func (Project) Annotations() []schema.Annotation {
 // Fields of the Project.
 func (Project) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("user_id", uuid.UUID{}).
+		field.String("user_id").
+			Optional().
 			StorageKey("user_id"),
 		field.String("title").
 			MaxLen(300).
-			NotEmpty(),
+			Optional(),
 		field.String("slug").
 			MaxLen(200).
 			Unique().
@@ -72,9 +73,11 @@ func (Project) Fields() []ent.Field {
 		field.Bool("is_featured").
 			Default(false),
 		// M0.5a §11.7: is_public dropped, unified onto visibility (10 §10.3).
+		// Default `private` — uniform with blog_posts / ideas: new content is
+		// not public until the author explicitly publishes it (silan ruling).
 		field.Enum("visibility").
 			Values("private", "unlisted", "public").
-			Default("public"),
+			Default("private"),
 		field.Int("view_count").
 			Default(0),
 		field.Int("like_count").
@@ -83,9 +86,11 @@ func (Project) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -96,7 +101,6 @@ func (Project) Edges() []ent.Edge {
 		edge.From("user", User.Type).
 			Ref("projects").
 			Field("user_id").
-			Required().
 			Unique(),
 		edge.To("translations", ProjectTranslation.Type),
 		edge.To("technologies", ProjectTechnology.Type),

@@ -26,10 +26,10 @@ func (ProjectImageTranslation) Annotations() []schema.Annotation {
 // Fields of the ProjectImageTranslation.
 func (ProjectImageTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("project_image_id", uuid.UUID{}).
+		field.String("project_image_id").
 			StorageKey("project_image_id"),
 		field.String("language_code").
 			MaxLen(5).

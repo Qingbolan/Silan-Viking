@@ -26,10 +26,10 @@ func (ProjectImage) Annotations() []schema.Annotation {
 // Fields of the ProjectImage.
 func (ProjectImage) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("project_id", uuid.UUID{}).
+		field.String("project_id").
 			StorageKey("project_id"),
 		field.String("image_url").
 			MaxLen(500).

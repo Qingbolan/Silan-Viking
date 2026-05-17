@@ -30,11 +30,11 @@ func (Episode) Annotations() []schema.Annotation {
 // Fields of the Episode.
 func (Episode) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		// Strong ownership: every episode belongs to a container series.
-		field.UUID("series_id", uuid.UUID{}).
+		field.String("series_id").
 			StorageKey("series_id"),
 		field.String("slug").
 			MaxLen(300).
@@ -42,7 +42,7 @@ func (Episode) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("title").
 			MaxLen(500).
-			NotEmpty(),
+			Optional(),
 		field.Int("episode_number"),
 		field.Enum("status").
 			Values("draft", "published", "archived").
@@ -58,9 +58,11 @@ func (Episode) Fields() []ent.Field {
 			Nillable(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

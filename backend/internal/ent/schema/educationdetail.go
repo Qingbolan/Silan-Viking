@@ -26,10 +26,10 @@ func (EducationDetail) Annotations() []schema.Annotation {
 // Fields of the EducationDetail.
 func (EducationDetail) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("education_id", uuid.UUID{}).
+		field.String("education_id").
 			StorageKey("education_id"),
 		field.Text("detail_text").
 			NotEmpty(),

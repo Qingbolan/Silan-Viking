@@ -27,16 +27,16 @@ func (Comment) Annotations() []schema.Annotation {
 // Fields of the Comment.
 func (Comment) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.Enum("entity_type").
 			Values("blog", "project", "idea", "episode", "resume", "update").
 			Comment("Type of the commented entity (M0.5a §11.6: enum)"),
-		field.UUID("entity_id", uuid.UUID{}).
+		field.String("entity_id").
 			StorageKey("entity_id").
 			Comment("ID of the blog post or idea"),
-		field.UUID("parent_id", uuid.UUID{}).
+		field.String("parent_id").
 			Optional().
 			StorageKey("parent_id"),
 		field.String("author_name").

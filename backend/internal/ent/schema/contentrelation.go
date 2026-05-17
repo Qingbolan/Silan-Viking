@@ -28,16 +28,16 @@ func (ContentRelation) Annotations() []schema.Annotation {
 // Fields of the ContentRelation.
 func (ContentRelation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.Enum("from_type").
 			Values("blog", "project", "idea", "episode", "resume", "update"),
-		field.UUID("from_id", uuid.UUID{}).
+		field.String("from_id").
 			StorageKey("from_id"),
 		field.Enum("to_type").
 			Values("blog", "project", "idea", "episode", "resume", "update"),
-		field.UUID("to_id", uuid.UUID{}).
+		field.String("to_id").
 			StorageKey("to_id"),
 		// Only canonical directions are stored; evolved_from is the flip of
 		// evolved_into and never enters the table (10 §10.5).

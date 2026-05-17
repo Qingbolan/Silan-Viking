@@ -28,10 +28,10 @@ func (ItemPartTranslation) Annotations() []schema.Annotation {
 // Fields of the ItemPartTranslation.
 func (ItemPartTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("item_part_id", uuid.UUID{}).
+		field.String("item_part_id").
 			StorageKey("item_part_id"),
 		field.String("language_code"),
 		// The body of this Part in this language.

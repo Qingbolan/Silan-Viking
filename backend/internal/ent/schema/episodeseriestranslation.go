@@ -28,10 +28,10 @@ func (EpisodeSeriesTranslation) Annotations() []schema.Annotation {
 // Fields of the EpisodeSeriesTranslation.
 func (EpisodeSeriesTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("episode_series_id", uuid.UUID{}).
+		field.String("episode_series_id").
 			StorageKey("episode_series_id"),
 		field.String("language_code").
 			MaxLen(5).

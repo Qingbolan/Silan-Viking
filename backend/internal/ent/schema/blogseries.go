@@ -26,8 +26,8 @@ func (BlogSeries) Annotations() []schema.Annotation {
 // Fields of the BlogSeries.
 func (BlogSeries) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.String("title").
 			MaxLen(300).

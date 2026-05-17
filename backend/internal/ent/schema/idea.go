@@ -26,14 +26,15 @@ func (Idea) Annotations() []schema.Annotation {
 // Fields of the Idea.
 func (Idea) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("user_id", uuid.UUID{}).
+		field.String("user_id").
+			Optional().
 			StorageKey("user_id"),
 		field.String("title").
 			MaxLen(300).
-			NotEmpty(),
+			Optional(),
 		field.String("slug").
 			MaxLen(200).
 			Unique().
@@ -59,9 +60,11 @@ func (Idea) Fields() []ent.Field {
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -72,7 +75,6 @@ func (Idea) Edges() []ent.Edge {
 		edge.From("user", User.Type).
 			Ref("ideas").
 			Field("user_id").
-			Required().
 			Unique(),
 		edge.To("translations", IdeaTranslation.Type),
 		edge.To("details", IdeaDetail.Type).

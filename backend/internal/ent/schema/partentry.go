@@ -29,11 +29,11 @@ func (PartEntry) Annotations() []schema.Annotation {
 // Fields of the PartEntry.
 func (PartEntry) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		// Which entry_list Part this entry belongs to.
-		field.UUID("item_part_id", uuid.UUID{}).
+		field.String("item_part_id").
 			StorageKey("item_part_id"),
 		// e_<ulid>, sourced from the TOML, stable across syncs. The stable
 		// anchor of an entry, what part_id is to a Part.

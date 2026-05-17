@@ -8,7 +8,6 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogPostTag holds the schema definition for the BlogPostTag entity.
@@ -27,9 +26,9 @@ func (BlogPostTag) Annotations() []schema.Annotation {
 // Fields of the BlogPostTag.
 func (BlogPostTag) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("blog_post_id", uuid.UUID{}).
+		field.String("blog_post_id").
 			StorageKey("blog_post_id"),
-		field.UUID("blog_tag_id", uuid.UUID{}).
+		field.String("blog_tag_id").
 			StorageKey("blog_tag_id"),
 		field.Time("created_at").
 			Default(time.Now).

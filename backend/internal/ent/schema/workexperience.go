@@ -26,10 +26,10 @@ func (WorkExperience) Annotations() []schema.Annotation {
 // Fields of the WorkExperience.
 func (WorkExperience) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("user_id", uuid.UUID{}).
+		field.String("user_id").
 			StorageKey("user_id"),
 		field.String("company").
 			MaxLen(200).

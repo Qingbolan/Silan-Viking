@@ -28,12 +28,12 @@ func (Annotation) Annotations() []schema.Annotation {
 // Fields of the Annotation.
 func (Annotation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.Enum("entity_type").
 			Values("blog", "project", "idea", "episode", "resume", "update"),
-		field.UUID("entity_id", uuid.UUID{}).
+		field.String("entity_id").
 			StorageKey("entity_id"),
 		// Which Part the annotation is anchored to.
 		field.String("part_role").
