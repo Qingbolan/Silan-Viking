@@ -158,6 +158,8 @@ class ReadingBehaviorTracker {
           scroll_progress: session.scrollProgress,
           session_start: new Date(session.startTime).toISOString(),
           session_end: session.endTime ? new Date(session.endTime).toISOString() : new Date().toISOString(),
+          user_agent_full: navigator.userAgent,
+          referrer: document.referrer,
         }),
       });
     } catch (error) {

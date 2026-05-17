@@ -23,10 +23,6 @@ export const useBlogData = (id: string | undefined) => {
         // Fetch blog data with language support
         const blogData = await fetchBlogById(id, language as 'en' | 'zh');
         
-        console.log('🔍 useBlogData - Raw blog data received:', blogData);
-        console.log('🔍 useBlogData - Blog seriesId:', blogData?.seriesId);
-        console.log('🔍 useBlogData - Blog type:', blogData?.type);
-        
         if (blogData) {
           setBlog(blogData);
           // Try to update view count, but don't fail if it doesn't work

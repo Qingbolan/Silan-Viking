@@ -195,8 +195,8 @@
   "projects": {
     "title": "项目",
     "loadingProjects": "加载项目中...",
-    "errorLoadingData": "数据加载出错",
-    "failedToLoadData": "加载数据失败",
+    "errorLoadingData": "项目加载出错",
+    "failedToLoadData": "加载项目失败",
     "searchPlaceholder": "搜索项目...",
     "clearSearch": "清除搜索",
     "all": "全部",

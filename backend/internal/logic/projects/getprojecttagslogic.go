@@ -2,7 +2,9 @@ package projects
 
 import (
 	"context"
+	"sort"
 
+	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -25,6 +27,28 @@ func NewGetProjectTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetProjectTagsLogic) GetProjectTags(req *types.ResumeRequest) (resp []string, err error) {
-	// Return empty slice as placeholder
-	return []string{}, nil
+	projects, err := l.svcCtx.DB.Project.Query().
+		Where(project.VisibilityEQ(project.VisibilityPublic)).
+		WithTechnologies().
+		All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tags := make(map[string]struct{})
+	for _, proj := range projects {
+		for _, tech := range proj.Edges.Technologies {
+			if tech.TechnologyName != "" {
+				tags[tech.TechnologyName] = struct{}{}
+			}
+		}
+	}
+
+	resp = make([]string, 0, len(tags))
+	for tag := range tags {
+		resp = append(resp, tag)
+	}
+	sort.Strings(resp)
+
+	return resp, nil
 }

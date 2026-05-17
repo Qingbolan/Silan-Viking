@@ -1,25 +1,24 @@
-package resume
+package episodes
 
 import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"silan-backend/internal/logic/resume"
+	"silan-backend/internal/logic/episodes"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 )
 
-// Get recent updates
-func GetRecentUpdatesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetEpisodeSeriesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ResumeRequest
+		var req types.EpisodeSeriesRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
 
-		l := resume.NewGetRecentUpdatesLogic(r.Context(), svcCtx)
-		resp, err := l.GetRecentUpdates(&req)
+		l := episodes.NewGetEpisodeSeriesLogic(r.Context(), svcCtx)
+		resp, err := l.GetEpisodeSeries(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

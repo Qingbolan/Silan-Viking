@@ -135,7 +135,7 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
           }}
           className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all duration-300 ${
             messageType === 'general'
-              ? 'bg-gradient-primary text-white shadow-md'
+              ? 'bg-theme-primary text-white shadow-md'
               : 'bg-theme-surface-elevated text-theme-secondary hover:bg-theme-hover'
           }`}
         >
@@ -150,7 +150,7 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
           }}
           className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all duration-300 ${
             messageType === 'job'
-              ? 'bg-gradient-primary text-white shadow-md'
+              ? 'bg-theme-primary text-white shadow-md'
               : 'bg-theme-surface-elevated text-theme-secondary hover:bg-theme-hover'
           }`}
         >

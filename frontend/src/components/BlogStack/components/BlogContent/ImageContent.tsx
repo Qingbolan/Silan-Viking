@@ -29,8 +29,8 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
         bodyStyle={{ padding: 0 }}
         style={{
           borderRadius: '12px',
-          backgroundColor: 'var(--color-surface-elevated, white)',
-          borderColor: 'var(--color-card-border, rgba(229, 231, 235, 1))'
+          backgroundColor: 'var(--color-surfaceElevated)',
+          borderColor: 'var(--color-cardBorder)'
         }}
       >
         {/* Image with Ant Design Image component */}
@@ -40,7 +40,7 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
               <FuzzyText
                 fontSize="3.5rem"
                 fontWeight={800}
-                color="var(--color-text-tertiary, #9ca3af)"
+                color="var(--color-textSecondary, #9ca3af)"
                 baseIntensity={0.08}
                 hoverIntensity={0.25}
               >
@@ -76,7 +76,7 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
                 width: '100%',
                 maxHeight: '600px',
                 objectFit: 'contain',
-                backgroundColor: 'var(--color-surface-secondary, #f9fafb)'
+                backgroundColor: 'var(--color-surfaceSecondary, #f9fafb)'
               }}
               className="transition-all duration-500"
             />
@@ -88,14 +88,16 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
           <div className="p-6 bg-theme-surface-elevated">
             <div className="text-center space-y-2">
               {/* Figure Number Tag */}
-              <Tag 
-                color="blue" 
+              <Tag
                 className="mb-2"
                 style={{
                   borderRadius: '16px',
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
+                  letterSpacing: '0.05em',
+                  color: 'var(--color-primary)',
+                  background: 'var(--color-primaryLight)',
+                  border: 'none',
                 }}
               >
                 Figure {index + 1}
@@ -108,7 +110,7 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
                   fontFamily: 'Georgia, "Times New Roman", Charter, serif',
                   fontSize: '14px',
                   lineHeight: '1.6',
-                  color: 'var(--color-text-secondary, #6b7280)',
+                  color: 'var(--color-textSecondary, #6b7280)',
                   marginBottom: 0
                 }}
               >

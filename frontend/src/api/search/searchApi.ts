@@ -54,14 +54,6 @@ export const globalSearch = async (
       results.blogs = (blogResponse.posts || []).map((post: any) => ({
         ...post,
         tags: post.tags || [],
-        seriesId: post.series_id,
-        seriesTitle: post.series_title,
-        seriesTitleZh: post.series_title_zh,
-        seriesDescription: post.series_description,
-        seriesDescriptionZh: post.series_description_zh,
-        episodeNumber: post.episode_number,
-        totalEpisodes: post.total_episodes,
-        seriesImage: post.series_image,
         publishDate: post.publish_date,
         readTime: post.read_time
       }));

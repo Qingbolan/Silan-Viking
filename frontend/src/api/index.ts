@@ -2,11 +2,15 @@
 export * from './home/resumeApi';
 export * from './projects/projectApi';
 export * from './ideas/ideaApi';
+export * from './episodes/episodeApi';
+export * from './updates/updateApi';
 // Avoid type name collisions across APIs by namespacing comment-like types
 export * as BlogAPI from './blog/blogApi';
 export * as ProjectAPI from './projects/projectApi';
 export * as IdeaAPI from './ideas/ideaApi';
 export * as ResumeAPI from './home/resumeApi';
+export * as EpisodeAPI from './episodes/episodeApi';
+export * as UpdateAPI from './updates/updateApi';
 // Backward compatibility: re-export common functions without conflicting types
 export {
   fetchBlogPosts,
@@ -16,9 +20,6 @@ export {
   getBlogTags,
   updateBlogViews,
   updateBlogLikes,
-  fetchSeriesData,
-  updateSeriesProgress,
-  setCurrentEpisode,
   listBlogComments,
   createBlogComment,
   deleteBlogComment,

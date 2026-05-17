@@ -229,7 +229,7 @@ const ProjectDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -238,7 +238,7 @@ const ProjectDetail: React.FC = () => {
           className="mb-8"
         >
           {/* Project Header */}
-          <div className="bg-theme-surface rounded-xl p-6 shadow-sm border border-theme-border">
+          <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               <div className="flex-1">
                 {/* Plan Badge */}

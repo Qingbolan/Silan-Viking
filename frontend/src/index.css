@@ -99,9 +99,6 @@ img, svg, canvas, video, audio, iframe, table, tr, td, th, ul, ol, li {
 /* Button reset — buttons never carry a background or border.
    !important overrides Tailwind bg-* utilities and inline styles. */
 button {
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
   cursor: pointer;
   font-family: inherit;
   font-size: inherit;
@@ -1208,11 +1205,15 @@ code[class*="language-"] .token.italic { font-style: italic; }
   font-family: var(--font-body, 'Inter') !important;
 }
 
-.ant-tabs .ant-tabs-tab-active {
+.ant-tabs .ant-tabs-tab-active,
+.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-btn,
+.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-btn * {
   color: var(--color-primary, #0066FF) !important;
 }
 
-.ant-tabs .ant-tabs-tab:hover {
+.ant-tabs .ant-tabs-tab:hover,
+.ant-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn,
+.ant-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn * {
   color: var(--color-primary, #0066FF) !important;
 }
 

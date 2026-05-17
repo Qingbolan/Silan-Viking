@@ -26,19 +26,6 @@ type AnnualPlanRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
-type Award struct {
-	ID           string `json:"id"`
-	UserID       string `json:"user_id"`
-	Title        string `json:"title"`
-	Organization string `json:"organization"`
-	Description  string `json:"description,omitempty"`
-	AwardDate    string `json:"award_date,omitempty"`
-	Category     string `json:"category,omitempty"`
-	SortOrder    int    `json:"sort_order"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-}
-
 type BlogByIdRequest struct {
 	ID       string `path:"id"`
 	Language string `form:"lang,default=en"`
@@ -91,32 +78,24 @@ type BlogContent struct {
 }
 
 type BlogData struct {
-	ID                  string        `json:"id"`
-	Title               string        `json:"title"`
-	TitleZh             string        `json:"title_zh,omitempty"`
-	Slug                string        `json:"slug,omitempty"`
-	Author              string        `json:"author"`
-	PublishDate         string        `json:"publish_date"`
-	ReadTime            string        `json:"read_time"`
-	Category            string        `json:"category"`
-	Tags                []string      `json:"tags"`
-	Content             []BlogContent `json:"content"`
-	Likes               int64         `json:"likes"`
-	Views               int64         `json:"views"`
-	Summary             string        `json:"summary"`
-	SummaryZh           string        `json:"summary_zh,omitempty"`
-	Type                string        `json:"type,omitempty"`
-	VideoURL            string        `json:"video_url,omitempty"`
-	VideoDuration       string        `json:"video_duration,omitempty"`
-	VideoThumbnail      string        `json:"video_thumbnail,omitempty"`
-	SeriesID            string        `json:"series_id,omitempty"`
-	SeriesTitle         string        `json:"series_title,omitempty"`
-	SeriesTitleZh       string        `json:"series_title_zh,omitempty"`
-	SeriesDescription   string        `json:"series_description,omitempty"`
-	SeriesDescriptionZh string        `json:"series_description_zh,omitempty"`
-	EpisodeNumber       int           `json:"episode_number,omitempty"`
-	TotalEpisodes       int           `json:"total_episodes,omitempty"`
-	SeriesImage         string        `json:"series_image,omitempty"`
+	ID             string        `json:"id"`
+	Title          string        `json:"title"`
+	TitleZh        string        `json:"title_zh,omitempty"`
+	Slug           string        `json:"slug,omitempty"`
+	Author         string        `json:"author"`
+	PublishDate    string        `json:"publish_date"`
+	ReadTime       string        `json:"read_time"`
+	Category       string        `json:"category"`
+	Tags           []string      `json:"tags"`
+	Content        []BlogContent `json:"content"`
+	Likes          int64         `json:"likes"`
+	Views          int64         `json:"views"`
+	Summary        string        `json:"summary"`
+	SummaryZh      string        `json:"summary_zh,omitempty"`
+	Type           string        `json:"type,omitempty"`
+	VideoURL       string        `json:"video_url,omitempty"`
+	VideoDuration  string        `json:"video_duration,omitempty"`
+	VideoThumbnail string        `json:"video_thumbnail,omitempty"`
 }
 
 type BlogListRequest struct {
@@ -153,23 +132,6 @@ type BlogSearchRequest struct {
 	Language string `form:"lang,default=en"`
 	Page     int    `form:"page,default=1"`
 	Size     int    `form:"size,default=10"`
-}
-
-type BlogSeries struct {
-	ID             string          `json:"id"`
-	Title          string          `json:"title"`
-	Description    string          `json:"description"`
-	ThumbnailURL   string          `json:"thumbnail_url,omitempty"`
-	Episodes       []SeriesEpisode `json:"episodes"`
-	TotalDuration  string          `json:"total_duration"`
-	CompletedCount int             `json:"completed_count"`
-	CreatedAt      string          `json:"created_at"`
-	UpdatedAt      string          `json:"updated_at"`
-}
-
-type BlogSeriesRequest struct {
-	SeriesID string `path:"series_id"`
-	Language string `form:"lang,default=en"`
 }
 
 type BlogTag struct {
@@ -294,23 +256,49 @@ type DeleteProjectRequest struct {
 	ID string `path:"id"`
 }
 
-type Education struct {
-	ID                 string   `json:"id"`
-	UserID             string   `json:"user_id"`
-	Institution        string   `json:"institution"`
-	Degree             string   `json:"degree"`
-	FieldOfStudy       string   `json:"field_of_study,omitempty"`
-	StartDate          string   `json:"start_date,omitempty"`
-	EndDate            string   `json:"end_date,omitempty"`
-	IsCurrent          bool     `json:"is_current"`
-	GPA                string   `json:"gpa,omitempty"`
-	Location           string   `json:"location,omitempty"`
-	InstitutionWebsite string   `json:"institution_website,omitempty"`
-	InstitutionLogoURL string   `json:"institution_logo_url,omitempty"`
-	Details            []string `json:"details"`
-	SortOrder          int      `json:"sort_order"`
-	CreatedAt          string   `json:"created_at"`
-	UpdatedAt          string   `json:"updated_at"`
+type EpisodeData struct {
+	ID              string        `json:"id"`
+	SeriesID        string        `json:"series_id"`
+	SeriesSlug      string        `json:"series_slug"`
+	Slug            string        `json:"slug"`
+	Title           string        `json:"title"`
+	Description     string        `json:"description,omitempty"`
+	EpisodeNumber   int           `json:"episode_number"`
+	Status          string        `json:"status"`
+	Visibility      string        `json:"visibility"`
+	PublishDate     string        `json:"publish_date,omitempty"`
+	DurationMinutes int           `json:"duration_minutes,omitempty"`
+	Content         []BlogContent `json:"content,omitempty"`
+}
+
+type EpisodeRequest struct {
+	Slug     string `path:"slug"`
+	Language string `form:"lang,default=en"`
+}
+
+type EpisodeSeriesData struct {
+	ID          string        `json:"id"`
+	Slug        string        `json:"slug"`
+	Title       string        `json:"title"`
+	Description string        `json:"description,omitempty"`
+	Status      string        `json:"status"`
+	Episodes    []EpisodeData `json:"episodes"`
+	CreatedAt   string        `json:"created_at"`
+	UpdatedAt   string        `json:"updated_at"`
+}
+
+type EpisodeSeriesListRequest struct {
+	Language string `form:"lang,default=en"`
+}
+
+type EpisodeSeriesListResponse struct {
+	Series []EpisodeSeriesData `json:"series"`
+	Total  int                 `json:"total"`
+}
+
+type EpisodeSeriesRequest struct {
+	SeriesSlug string `path:"series_slug"`
+	Language   string `form:"lang,default=en"`
 }
 
 type Experiment struct {
@@ -499,6 +487,7 @@ type LikeProjectRequest struct {
 	UserIdentityId string `json:"user_identity_id,optional"`
 	ClientIP       string `json:"client_ip,optional"`
 	UserAgentFull  string `json:"user_agent_full,optional"`
+	Referrer       string `json:"referrer,optional"`
 	Language       string `form:"lang,default=en"`
 }
 
@@ -712,26 +701,13 @@ type ProjectsWithPlansRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
-type Publication struct {
-	ID            string `json:"id"`
-	UserID        string `json:"user_id"`
-	Title         string `json:"title"`
-	Authors       string `json:"authors"`
-	Journal       string `json:"journal,omitempty"`
-	Conference    string `json:"conference,omitempty"`
-	Publisher     string `json:"publisher,omitempty"`
-	PublishedAt   string `json:"published_at,omitempty"`
-	DOI           string `json:"doi,omitempty"`
-	URL           string `json:"url,omitempty"`
-	CitationCount int    `json:"citation_count"`
-	CreatedAt     string `json:"created_at"`
-	UpdatedAt     string `json:"updated_at"`
-}
-
 type RecentUpdate struct {
 	ID          string   `json:"id"`
 	UserID      string   `json:"user_id"`
+	Slug        string   `json:"slug"`
 	Type        string   `json:"type"`
+	UpdateType  string   `json:"update_type"`
+	Visibility  string   `json:"visibility"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Date        string   `json:"date"`
@@ -748,6 +724,7 @@ type RecordProjectViewRequest struct {
 	UserIdentityId string `json:"user_identity_id,optional"`
 	ClientIP       string `json:"client_ip,optional"`
 	UserAgentFull  string `json:"user_agent_full,optional"`
+	Referrer       string `json:"referrer,optional"`
 	Language       string `form:"lang,default=en"`
 }
 
@@ -768,42 +745,32 @@ type Reference struct {
 	NotesZh string   `json:"notes_zh,omitempty"`
 }
 
-type ResearchProject struct {
-	ID          string   `json:"id"`
-	UserID      string   `json:"user_id"`
-	Title       string   `json:"title"`
-	Institution string   `json:"institution,omitempty"`
-	Location    string   `json:"location,omitempty"`
-	StartDate   string   `json:"start_date,omitempty"`
-	EndDate     string   `json:"end_date,omitempty"`
-	Details     []string `json:"details"`
-	SortOrder   int      `json:"sort_order"`
-	CreatedAt   string   `json:"created_at"`
-	UpdatedAt   string   `json:"updated_at"`
+type ResumeData struct {
+	PersonalInfo PersonalInfo `json:"personal_info"`
+	Parts        []ResumePart `json:"parts"`
 }
 
-type ResumeData struct {
-	PersonalInfo  PersonalInfo      `json:"personal_info"`
-	Education     []Education       `json:"education"`
-	Experience    []WorkExperience  `json:"experience"`
-	Research      []ResearchProject `json:"research"`
-	Publications  []Publication     `json:"publications"`
-	Awards        []Award           `json:"awards"`
-	RecentUpdates []RecentUpdate    `json:"recent_updates"`
-	Skills        []string          `json:"skills"`
+type ResumeEntry struct {
+	ID               string                 `json:"id"`
+	EntryID          string                 `json:"entry_id"`
+	SortOrder        int                    `json:"sort_order"`
+	SharedPayload    map[string]interface{} `json:"shared_payload"`
+	LocalizedPayload map[string]interface{} `json:"localized_payload"`
+}
+
+type ResumePart struct {
+	ID            string            `json:"id"`
+	PartID        string            `json:"part_id"`
+	Role          string            `json:"role"`
+	Shape         string            `json:"shape"`
+	SortOrder     int               `json:"sort_order"`
+	CanonicalLang string            `json:"canonical_lang"`
+	Body          map[string]string `json:"body"`
+	Entries       []ResumeEntry     `json:"entries"`
 }
 
 type ResumeRequest struct {
 	Language string `form:"lang,default=en"`
-}
-
-type SeriesEpisode struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Duration  string `json:"duration,omitempty"`
-	Completed bool   `json:"completed,omitempty"`
-	Current   bool   `json:"current,omitempty"`
-	Order     int    `json:"order"`
 }
 
 type SocialLink struct {
@@ -816,9 +783,14 @@ type SocialLink struct {
 }
 
 type UpdateBlogLikesRequest struct {
-	ID        string `path:"id"`
-	Increment bool   `json:"increment,default=true"`
-	Language  string `form:"lang,default=en"`
+	ID             string `path:"id"`
+	Increment      bool   `json:"increment,default=true"`
+	Fingerprint    string `json:"fingerprint,optional"`
+	UserIdentityId string `json:"user_identity_id,optional"`
+	ClientIP       string `json:"client_ip,optional"`
+	UserAgentFull  string `json:"user_agent_full,optional"`
+	Referrer       string `json:"referrer,optional"`
+	Language       string `form:"lang,default=en"`
 }
 
 type UpdateBlogLikesResponse struct {
@@ -826,8 +798,17 @@ type UpdateBlogLikesResponse struct {
 }
 
 type UpdateBlogViewsRequest struct {
-	ID       string `path:"id"`
-	Language string `form:"lang,default=en"`
+	ID             string  `path:"id"`
+	Fingerprint    string  `json:"fingerprint,optional"`
+	UserIdentityId string  `json:"user_identity_id,optional"`
+	ClientIP       string  `json:"client_ip,optional"`
+	UserAgentFull  string  `json:"user_agent_full,optional"`
+	Referrer       string  `json:"referrer,optional"`
+	ReadingTime    int     `json:"reading_time,optional"`
+	ScrollProgress float64 `json:"scroll_progress,optional"`
+	SessionStart   string  `json:"session_start,optional"`
+	SessionEnd     string  `json:"session_end,optional"`
+	Language       string  `form:"lang,default=en"`
 }
 
 type UpdateIdeaRequest struct {
@@ -848,6 +829,15 @@ type UpdateIdeaRequest struct {
 	FundingStatus        string   `json:"funding_status,optional"`
 	DemoURL              string   `json:"demo_url,optional"`
 	CodeRepository       string   `json:"code_repository,optional"`
+}
+
+type UpdateListRequest struct {
+	Language string `form:"lang,default=en"`
+}
+
+type UpdateListResponse struct {
+	Updates []RecentUpdate `json:"updates"`
+	Total   int            `json:"total"`
 }
 
 type UpdatePersonalInfoRequest struct {
@@ -872,26 +862,64 @@ type UpdateProjectRequest struct {
 	AnnualPlan  string   `json:"annual_plan,optional"`
 }
 
-type UpdateSeriesProgressRequest struct {
-	SeriesID  string `path:"series_id"`
-	EpisodeID string `path:"episode_id"`
-	Completed bool   `json:"completed"`
-	Language  string `form:"lang,default=en"`
+type UpdateRequest struct {
+	Slug     string `path:"slug"`
+	Language string `form:"lang,default=en"`
 }
 
-type WorkExperience struct {
-	ID             string   `json:"id"`
-	UserID         string   `json:"user_id"`
-	Company        string   `json:"company"`
-	Position       string   `json:"position"`
-	StartDate      string   `json:"start_date,omitempty"`
-	EndDate        string   `json:"end_date,omitempty"`
-	IsCurrent      bool     `json:"is_current"`
-	Location       string   `json:"location,omitempty"`
-	CompanyWebsite string   `json:"company_website,omitempty"`
-	CompanyLogoURL string   `json:"company_logo_url,omitempty"`
-	Details        []string `json:"details"`
-	SortOrder      int      `json:"sort_order"`
-	CreatedAt      string   `json:"created_at"`
-	UpdatedAt      string   `json:"updated_at"`
+// ── stats — runtime interaction statistics (docs/silan-viking/03 §3.2 #15) ──
+
+// StatsRequest identifies the content whose statistics are queried. The MCP /
+// CLI side resolves a silan:// URI into entity_type + entity_id.
+type StatsRequest struct {
+	EntityType string `form:"entity_type"`
+	EntityID   string `form:"entity_id"`
+	Section    string `form:"section,optional"`
+}
+
+// StatsResponse is the aggregate view/like/comment count of one content item.
+type StatsResponse struct {
+	EntityType string `json:"entity_type"`
+	EntityID   string `json:"entity_id"`
+	Views      int    `json:"views"`
+	Likes      int    `json:"likes"`
+	Comments   int    `json:"comments"`
+}
+
+// VisitorRow is one de-identified visitor of a content item.
+type VisitorRow struct {
+	Fingerprint  string `json:"fingerprint"`
+	IPMasked     string `json:"ip_masked"`
+	VisitorKind  string `json:"visitor_kind"`
+	ReferrerKind string `json:"referrer_kind"`
+	LastSeenAt   string `json:"last_seen_at"`
+}
+
+// VisitorsResponse lists the visitors of a content item.
+type VisitorsResponse struct {
+	EntityType string       `json:"entity_type"`
+	EntityID   string       `json:"entity_id"`
+	Visitors   []VisitorRow `json:"visitors"`
+}
+
+// CrawlerRow aggregates one visitor kind / crawler.
+type CrawlerRow struct {
+	VisitorKind string `json:"visitor_kind"`
+	Count       int    `json:"count"`
+}
+
+// CrawlerBreakdownResponse aggregates visitors by kind.
+type CrawlerBreakdownResponse struct {
+	Items []CrawlerRow `json:"items"`
+}
+
+// SourceRow aggregates one referrer source.
+type SourceRow struct {
+	Source string `json:"source"`
+	Count  int    `json:"count"`
+}
+
+// SourceBreakdownResponse aggregates visits by referrer source.
+type SourceBreakdownResponse struct {
+	Items []SourceRow `json:"items"`
 }

@@ -6,6 +6,7 @@ import (
 
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectview"
+	"silan-backend/internal/logic/analytics"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -87,8 +88,25 @@ func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewR
 		if userAgent != "" {
 			builder = builder.SetUserAgent(userAgent)
 		}
+		if req.Referrer != "" {
+			builder = builder.SetReferrer(req.Referrer)
+		}
 
 		_, err = builder.Save(l.ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		err = analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
+			EntityType:     "project",
+			EntityID:       projectID,
+			Kind:           "view",
+			UserIdentityID: req.UserIdentityId,
+			Fingerprint:    req.Fingerprint,
+			IPAddress:      clientIP,
+			UserAgent:      userAgent,
+			Referrer:       req.Referrer,
+		})
 		if err != nil {
 			return nil, err
 		}

@@ -2,6 +2,7 @@ package plans
 
 import (
 	"context"
+	"time"
 
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -25,7 +26,23 @@ func NewGetCurrentAnnualPlanLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *GetCurrentAnnualPlanLogic) GetCurrentAnnualPlan(req *types.AnnualPlanListRequest) (resp *types.AnnualPlan, err error) {
-	// todo: add your logic here and delete this line
+	projects, err := fetchPublicProjects(l.ctx, l.svcCtx.DB)
+	if err != nil {
+		l.Logger.Errorf("Failed to fetch projects: %v", err)
+		return nil, err
+	}
 
-	return
+	plans := buildAnnualPlans(projects)
+	if len(plans) == 0 {
+		return nil, nil
+	}
+
+	currentYear := time.Now().Year()
+	for _, plan := range plans {
+		if plan.Year == currentYear {
+			return &plan, nil
+		}
+	}
+
+	return &plans[0], nil
 }

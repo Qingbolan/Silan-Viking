@@ -31,21 +31,12 @@ export interface BlogData {
   views: number;
   summary: string;
   summaryZh?: string;
-  type?: 'article' | 'vlog' | 'tutorial' | 'podcast' | 'episode' | 'series';
+  type?: 'article' | 'vlog' | 'tutorial' | 'podcast';
   // Vlog specific fields
   videoUrl?: string;
   videoDuration?: string;
   videoThumbnail?: string;
   vlogCover?: string; // Vlog cover image for display
-  // Series specific fields
-  seriesId?: string;
-  seriesTitle?: string;
-  seriesTitleZh?: string;
-  seriesDescription?: string;
-  seriesDescriptionZh?: string;
-  episodeNumber?: number;
-  totalEpisodes?: number;
-  seriesImage?: string;
 }
 
 export interface Comment {

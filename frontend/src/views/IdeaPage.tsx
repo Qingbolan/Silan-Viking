@@ -179,7 +179,7 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, index, onView }) => {
       {/* Body */}
       <div className="p-6">
         {/* Header 行 */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center mb-3">
           <div className="flex items-center space-x-3">
             <div className={`p-2 rounded-lg ${getStatusClass(idea.status)}`} aria-hidden>
               <Lightbulb
@@ -201,9 +201,6 @@ const IdeaCard: React.FC<IdeaCardProps> = ({ idea, index, onView }) => {
             </div>
             <h3 className="text-lg font-semibold text-theme-primary">{idea.title}</h3>
           </div>
-          <span className={`text-xs font-semibold ${getStatusTextClass(idea.status)}`}>
-            {getStatusText(idea.status)}
-          </span>
         </div>
 
         {/* 描述：保留一份就够了 */}
@@ -374,18 +371,27 @@ const IdeaPage: React.FC = () => {
     return () => { mounted = false; };
   }, [language]);
 
-  const [statuses, setStatuses] = useState<string[]>([language === 'en' ? 'All' : '全部']);
-
-  // Load statuses (static list)
-  useEffect(() => {
+  // Status filter chips — only show statuses that actually have ideas.
+  // `getIdeaStatuses` gives the canonical order; we keep just the ones
+  // present in the loaded data (plus the always-on "All").
+  const statuses = useMemo(() => {
     const labelAll = language === 'en' ? 'All' : '全部';
+    const present = new Set<string>(ideas.map((i) => i.status));
+    const canonical = ['draft', 'hypothesis', 'experimenting', 'validating', 'published', 'concluded'];
     const localized = getIdeaStatuses(language as 'en' | 'zh');
-    setStatuses([labelAll, ...localized]);
-    // Keep selectedStatus valid
-    if (!localized.includes(selectedStatus) && selectedStatus !== labelAll) {
-      setSelectedStatus(labelAll);
+    const used = canonical
+      .map((status, idx) => ({ status, label: localized[idx] }))
+      .filter(({ status }) => present.has(status))
+      .map(({ label }) => label);
+    return [labelAll, ...used];
+  }, [ideas, language]);
+
+  // Reset the filter if the selected status no longer has any ideas.
+  useEffect(() => {
+    if (!statuses.includes(selectedStatus)) {
+      setSelectedStatus(language === 'en' ? 'All' : '全部');
     }
-  }, [language, selectedStatus]);
+  }, [statuses, selectedStatus, language]);
 
   const handleIdeaView = useCallback((idea: IdeaData) => {
     // Navigate to idea detail page

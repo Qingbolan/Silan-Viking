@@ -731,7 +731,8 @@ export const likeProject = async (
 
   if (options.userIdentityId) body.user_identity_id = options.userIdentityId;
   if (options.clientIP) body.client_ip = options.clientIP;
-  if (options.userAgent) body.user_agent_full = options.userAgent;
+  body.user_agent_full = options.userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  body.referrer = typeof document !== 'undefined' ? document.referrer : '';
 
   const url = `/api/v1/projects/${projectId}/like?lang=${formatLanguage(options.language || 'en')}`;
   const response = await post<LikeProjectResponse>(url, body);
@@ -757,7 +758,8 @@ export const recordProjectView = async (
 
   if (options.userIdentityId) body.user_identity_id = options.userIdentityId;
   if (options.clientIP) body.client_ip = options.clientIP;
-  if (options.userAgent) body.user_agent_full = options.userAgent;
+  body.user_agent_full = options.userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+  body.referrer = typeof document !== 'undefined' ? document.referrer : '';
 
   const url = `/api/v1/projects/${projectId}/view?lang=${formatLanguage(options.language || 'en')}`;
   const response = await post<RecordProjectViewResponse>(url, body);

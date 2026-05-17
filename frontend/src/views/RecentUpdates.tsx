@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../components/LanguageContext';
 import { useTheme } from '../components/ThemeContext';
 import { LoadingSpinner } from '../components/ui';
-import { fetchResumeData } from '../api/home/resumeApi';
+import { fetchUpdates } from '../api/updates/updateApi';
 import Markdown from '../components/ui/Markdown';
 import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 
@@ -56,10 +56,10 @@ const RecentUpdates: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const data = await fetchResumeData(language);
+        const data = await fetchUpdates(language as 'en' | 'zh');
         
-        if (isMounted && data.sections.recent) {
-          const typedContent = data.sections.recent.content.map((item: any) => ({
+        if (isMounted) {
+          const typedContent = data.map((item: any) => ({
             ...item,
             type: item.type as 'work' | 'education' | 'research' | 'publication' | 'project'
           }));

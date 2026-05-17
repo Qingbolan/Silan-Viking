@@ -6,6 +6,7 @@ import (
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectlike"
+	"silan-backend/internal/logic/analytics"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -99,6 +100,20 @@ func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *typ
 		}
 
 		_, err = builder.Save(l.ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		err = analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
+			EntityType:     "project",
+			EntityID:       projectID,
+			Kind:           "like",
+			UserIdentityID: req.UserIdentityId,
+			Fingerprint:    req.Fingerprint,
+			IPAddress:      clientIP,
+			UserAgent:      userAgent,
+			Referrer:       req.Referrer,
+		})
 		if err != nil {
 			return nil, err
 		}

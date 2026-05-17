@@ -38,88 +38,14 @@ type (
 		IsActive    bool   `json:"is_active"`
 		SortOrder   int    `json:"sort_order"`
 	}
-	// Education types
-	Education {
-		ID                 string   `json:"id"`
-		UserID             string   `json:"user_id"`
-		Institution        string   `json:"institution"`
-		Degree             string   `json:"degree"`
-		FieldOfStudy       string   `json:"field_of_study,omitempty"`
-		StartDate          string   `json:"start_date,omitempty"`
-		EndDate            string   `json:"end_date,omitempty"`
-		IsCurrent          bool     `json:"is_current"`
-		GPA                string   `json:"gpa,omitempty"`
-		Location           string   `json:"location,omitempty"`
-		InstitutionWebsite string   `json:"institution_website,omitempty"`
-		InstitutionLogoURL string   `json:"institution_logo_url,omitempty"`
-		Details            []string `json:"details"`
-		SortOrder          int      `json:"sort_order"`
-		CreatedAt          string   `json:"created_at"`
-		UpdatedAt          string   `json:"updated_at"`
-	}
-	// Experience types
-	WorkExperience {
-		ID             string   `json:"id"`
-		UserID         string   `json:"user_id"`
-		Company        string   `json:"company"`
-		Position       string   `json:"position"`
-		StartDate      string   `json:"start_date,omitempty"`
-		EndDate        string   `json:"end_date,omitempty"`
-		IsCurrent      bool     `json:"is_current"`
-		Location       string   `json:"location,omitempty"`
-		CompanyWebsite string   `json:"company_website,omitempty"`
-		CompanyLogoURL string   `json:"company_logo_url,omitempty"`
-		Details        []string `json:"details"`
-		SortOrder      int      `json:"sort_order"`
-		CreatedAt      string   `json:"created_at"`
-		UpdatedAt      string   `json:"updated_at"`
-	}
-	// Research types
-	ResearchProject {
-		ID          string   `json:"id"`
-		UserID      string   `json:"user_id"`
-		Title       string   `json:"title"`
-		Institution string   `json:"institution,omitempty"`
-		Location    string   `json:"location,omitempty"`
-		StartDate   string   `json:"start_date,omitempty"`
-		EndDate     string   `json:"end_date,omitempty"`
-		Details     []string `json:"details"`
-		SortOrder   int      `json:"sort_order"`
-		CreatedAt   string   `json:"created_at"`
-		UpdatedAt   string   `json:"updated_at"`
-	}
-	Publication {
-		ID            string `json:"id"`
-		UserID        string `json:"user_id"`
-		Title         string `json:"title"`
-		Authors       string `json:"authors"`
-		Journal       string `json:"journal,omitempty"`
-		Conference    string `json:"conference,omitempty"`
-		Publisher     string `json:"publisher,omitempty"`
-		PublishedAt   string `json:"published_at,omitempty"`
-		DOI           string `json:"doi,omitempty"`
-		URL           string `json:"url,omitempty"`
-		CitationCount int    `json:"citation_count"`
-		CreatedAt     string `json:"created_at"`
-		UpdatedAt     string `json:"updated_at"`
-	}
-	Award {
-		ID           string `json:"id"`
-		UserID       string `json:"user_id"`
-		Title        string `json:"title"`
-		Organization string `json:"organization"`
-		Description  string `json:"description,omitempty"`
-		AwardDate    string `json:"award_date,omitempty"`
-		Category     string `json:"category,omitempty"`
-		SortOrder    int    `json:"sort_order"`
-		CreatedAt    string `json:"created_at"`
-		UpdatedAt    string `json:"updated_at"`
-	}
 	// Recent Update types
 	RecentUpdate {
 		ID          string   `json:"id"`
 		UserID      string   `json:"user_id"`
+		Slug        string   `json:"slug"`
 		Type        string   `json:"type"`
+		UpdateType  string   `json:"update_type"`
+		Visibility  string   `json:"visibility"`
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
 		Date        string   `json:"date"`
@@ -129,16 +55,38 @@ type (
 		CreatedAt   string   `json:"created_at"`
 		UpdatedAt   string   `json:"updated_at"`
 	}
+	UpdateListRequest {
+		Language string `form:"lang,default=en"`
+	}
+	UpdateRequest {
+		Slug     string `path:"slug"`
+		Language string `form:"lang,default=en"`
+	}
+	UpdateListResponse {
+		Updates []RecentUpdate `json:"updates"`
+		Total   int            `json:"total"`
+	}
 	// Resume Data aggregation
 	ResumeData {
-		PersonalInfo  PersonalInfo      `json:"personal_info"`
-		Education     []Education       `json:"education"`
-		Experience    []WorkExperience  `json:"experience"`
-		Research      []ResearchProject `json:"research"`
-		Publications  []Publication     `json:"publications"`
-		Awards        []Award           `json:"awards"`
-		RecentUpdates []RecentUpdate    `json:"recent_updates"`
-		Skills        []string          `json:"skills"`
+		PersonalInfo PersonalInfo `json:"personal_info"`
+		Parts        []ResumePart `json:"parts"`
+	}
+	ResumeEntry {
+		ID               string                 `json:"id"`
+		EntryID          string                 `json:"entry_id"`
+		SortOrder        int                    `json:"sort_order"`
+		SharedPayload    map[string]interface{} `json:"shared_payload"`
+		LocalizedPayload map[string]interface{} `json:"localized_payload"`
+	}
+	ResumePart {
+		ID            string            `json:"id"`
+		PartID        string            `json:"part_id"`
+		Role          string            `json:"role"`
+		Shape         string            `json:"shape"`
+		SortOrder     int               `json:"sort_order"`
+		CanonicalLang string            `json:"canonical_lang"`
+		Body          map[string]string `json:"body"`
+		Entries       []ResumeEntry     `json:"entries"`
 	}
 	// Project types
 	// Project types (updated to match frontend exactly)
@@ -336,32 +284,24 @@ type (
 		ID         string `json:"id"`
 	}
 	BlogData {
-		ID                  string        `json:"id"`
-		Title               string        `json:"title"`
-		TitleZh             string        `json:"title_zh,omitempty"`
-		Slug                string        `json:"slug,omitempty"`
-		Author              string        `json:"author"`
-		PublishDate         string        `json:"publish_date"`
-		ReadTime            string        `json:"read_time"`
-		Category            string        `json:"category"`
-		Tags                []string      `json:"tags"`
-		Content             []BlogContent `json:"content"`
-		Likes               int64         `json:"likes"`
-		Views               int64         `json:"views"`
-		Summary             string        `json:"summary"`
-		SummaryZh           string        `json:"summary_zh,omitempty"`
-		Type                string        `json:"type,omitempty"`
-		VideoURL            string        `json:"video_url,omitempty"`
-		VideoDuration       string        `json:"video_duration,omitempty"`
-		VideoThumbnail      string        `json:"video_thumbnail,omitempty"`
-		SeriesID            string        `json:"series_id,omitempty"`
-		SeriesTitle         string        `json:"series_title,omitempty"`
-		SeriesTitleZh       string        `json:"series_title_zh,omitempty"`
-		SeriesDescription   string        `json:"series_description,omitempty"`
-		SeriesDescriptionZh string        `json:"series_description_zh,omitempty"`
-		EpisodeNumber       int           `json:"episode_number,omitempty"`
-		TotalEpisodes       int           `json:"total_episodes,omitempty"`
-		SeriesImage         string        `json:"series_image,omitempty"`
+		ID             string        `json:"id"`
+		Title          string        `json:"title"`
+		TitleZh        string        `json:"title_zh,omitempty"`
+		Slug           string        `json:"slug,omitempty"`
+		Author         string        `json:"author"`
+		PublishDate    string        `json:"publish_date"`
+		ReadTime       string        `json:"read_time"`
+		Category       string        `json:"category"`
+		Tags           []string      `json:"tags"`
+		Content        []BlogContent `json:"content"`
+		Likes          int64         `json:"likes"`
+		Views          int64         `json:"views"`
+		Summary        string        `json:"summary"`
+		SummaryZh      string        `json:"summary_zh,omitempty"`
+		Type           string        `json:"type,omitempty"`
+		VideoURL       string        `json:"video_url,omitempty"`
+		VideoDuration  string        `json:"video_duration,omitempty"`
+		VideoThumbnail string        `json:"video_thumbnail,omitempty"`
 	}
 	BlogCategory {
 		ID          string `json:"id"`
@@ -377,24 +317,44 @@ type (
 		Slug       string `json:"slug"`
 		UsageCount int    `json:"usage_count"`
 	}
-	BlogSeries {
-		ID             string          `json:"id"`
-		Title          string          `json:"title"`
-		Description    string          `json:"description"`
-		ThumbnailURL   string          `json:"thumbnail_url,omitempty"`
-		Episodes       []SeriesEpisode `json:"episodes"`
-		TotalDuration  string          `json:"total_duration"`
-		CompletedCount int             `json:"completed_count"`
-		CreatedAt      string          `json:"created_at"`
-		UpdatedAt      string          `json:"updated_at"`
+	EpisodeData {
+		ID              string        `json:"id"`
+		SeriesID        string        `json:"series_id"`
+		SeriesSlug      string        `json:"series_slug"`
+		Slug            string        `json:"slug"`
+		Title           string        `json:"title"`
+		Description     string        `json:"description,omitempty"`
+		EpisodeNumber   int           `json:"episode_number"`
+		Status          string        `json:"status"`
+		Visibility      string        `json:"visibility"`
+		PublishDate     string        `json:"publish_date,omitempty"`
+		DurationMinutes int           `json:"duration_minutes,omitempty"`
+		Content         []BlogContent `json:"content,omitempty"`
 	}
-	SeriesEpisode {
-		ID        string `json:"id"`
-		Title     string `json:"title"`
-		Duration  string `json:"duration,omitempty"`
-		Completed bool   `json:"completed,omitempty"`
-		Current   bool   `json:"current,omitempty"`
-		Order     int    `json:"order"`
+	EpisodeSeriesData {
+		ID          string        `json:"id"`
+		Slug        string        `json:"slug"`
+		Title       string        `json:"title"`
+		Description string        `json:"description,omitempty"`
+		Status      string        `json:"status"`
+		Episodes    []EpisodeData `json:"episodes"`
+		CreatedAt   string        `json:"created_at"`
+		UpdatedAt   string        `json:"updated_at"`
+	}
+	EpisodeSeriesListRequest {
+		Language string `form:"lang,default=en"`
+	}
+	EpisodeSeriesListResponse {
+		Series []EpisodeSeriesData `json:"series"`
+		Total  int                 `json:"total"`
+	}
+	EpisodeSeriesRequest {
+		SeriesSlug string `path:"series_slug"`
+		Language   string `form:"lang,default=en"`
+	}
+	EpisodeRequest {
+		Slug     string `path:"slug"`
+		Language string `form:"lang,default=en"`
 	}
 	// Blog comments
 	BlogCommentData {
@@ -503,26 +463,30 @@ type (
 		Language string `form:"lang,default=en"`
 	}
 	UpdateBlogViewsRequest {
-		ID       string `path:"id"`
-		Language string `form:"lang,default=en"`
+		ID             string  `path:"id"`
+		Fingerprint    string  `json:"fingerprint,optional"`
+		UserIdentityId string  `json:"user_identity_id,optional"`
+		ClientIP       string  `json:"client_ip,optional"`
+		UserAgentFull  string  `json:"user_agent_full,optional"`
+		Referrer       string  `json:"referrer,optional"`
+		ReadingTime    int     `json:"reading_time,optional"`
+		ScrollProgress float64 `json:"scroll_progress,optional"`
+		SessionStart   string  `json:"session_start,optional"`
+		SessionEnd     string  `json:"session_end,optional"`
+		Language       string  `form:"lang,default=en"`
 	}
 	UpdateBlogLikesRequest {
-		ID        string `path:"id"`
-		Increment bool   `json:"increment,default=true"`
-		Language  string `form:"lang,default=en"`
+		ID             string `path:"id"`
+		Increment      bool   `json:"increment,default=true"`
+		Fingerprint    string `json:"fingerprint,optional"`
+		UserIdentityId string `json:"user_identity_id,optional"`
+		ClientIP       string `json:"client_ip,optional"`
+		UserAgentFull  string `json:"user_agent_full,optional"`
+		Referrer       string `json:"referrer,optional"`
+		Language       string `form:"lang,default=en"`
 	}
 	UpdateBlogLikesResponse {
 		Likes int64 `json:"likes"`
-	}
-	BlogSeriesRequest {
-		SeriesID string `path:"series_id"`
-		Language string `form:"lang,default=en"`
-	}
-	UpdateSeriesProgressRequest {
-		SeriesID  string `path:"series_id"`
-		EpisodeID string `path:"episode_id"`
-		Completed bool   `json:"completed"`
-		Language  string `form:"lang,default=en"`
 	}
 	// Idea types (matching frontend IdeaData exactly)
 	IdeaData {
@@ -767,6 +731,7 @@ type (
 		UserIdentityId string `json:"user_identity_id,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
+		Referrer       string `json:"referrer,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	LikeProjectResponse {
@@ -779,6 +744,7 @@ type (
 		UserIdentityId string `json:"user_identity_id,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
+		Referrer       string `json:"referrer,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	RecordProjectViewResponse {
@@ -840,7 +806,7 @@ type (
 @server (
 	group:      resume
 	prefix:     /api/v1/resume
-	middleware: Cors
+	middleware: Cors,Analytics
 )
 service backend-api {
 	@doc "Get complete resume data"
@@ -850,37 +816,13 @@ service backend-api {
 	@doc "Get personal information"
 	@handler GetPersonalInfo
 	get /personal (PersonalInfoRequest) returns (PersonalInfo)
-
-	@doc "Get education list"
-	@handler GetEducation
-	get /education (ResumeRequest) returns ([]Education)
-
-	@doc "Get work experience list"
-	@handler GetWorkExperience
-	get /experience (ResumeRequest) returns ([]WorkExperience)
-
-	@doc "Get research projects list"
-	@handler GetResearchProjects
-	get /research (ResumeRequest) returns ([]ResearchProject)
-
-	@doc "Get publications list"
-	@handler GetPublications
-	get /publications (ResumeRequest) returns ([]Publication)
-
-	@doc "Get awards list"
-	@handler GetAwards
-	get /awards (ResumeRequest) returns ([]Award)
-
-	@doc "Get recent updates"
-	@handler GetRecentUpdates
-	get /recent (ResumeRequest) returns ([]RecentUpdate)
 }
 
 // ========== PROJECTS PAGE GROUP ==========
 @server (
 	group:      projects
 	prefix:     /api/v1/projects
-	middleware: Cors
+	middleware: Cors,Analytics
 )
 service backend-api {
 	@doc "Get projects list with pagination and filtering"
@@ -954,7 +896,7 @@ service backend-api {
 @server (
 	group:      plans
 	prefix:     /api/v1/plans
-	middleware: Cors
+	middleware: Cors,Analytics
 )
 service backend-api {
 	@doc "Get annual plans list"
@@ -982,7 +924,7 @@ service backend-api {
 @server (
 	group:      blog
 	prefix:     /api/v1/blog
-	middleware: Cors
+	middleware: Cors,Analytics
 )
 service backend-api {
 	@doc "Get blog posts list with pagination and filtering"
@@ -1013,10 +955,6 @@ service backend-api {
 	@handler GetBlogTags
 	get /tags (BlogTagsRequest) returns ([]BlogTag)
 
-	@doc "Get blog series data"
-	@handler GetBlogSeries
-	get /series/:series_id (BlogSeriesRequest) returns (BlogSeries)
-
 	@doc "Search blog posts with filters"
 	@handler SearchBlogPosts
 	get /search (BlogSearchRequest) returns (BlogListResponse)
@@ -1039,11 +977,47 @@ service backend-api {
 	post /comments/:comment_id/like (LikeCommentRequest) returns (LikeCommentResponse)
 }
 
+// ========== EPISODES GROUP ==========
+@server (
+	group:      episodes
+	prefix:     /api/v1/episodes
+	middleware: Cors,Analytics
+)
+service backend-api {
+	@doc "Get episode series list"
+	@handler GetEpisodeSeriesList
+	get /series (EpisodeSeriesListRequest) returns (EpisodeSeriesListResponse)
+
+	@doc "Get episode series by slug"
+	@handler GetEpisodeSeries
+	get /series/:series_slug (EpisodeSeriesRequest) returns (EpisodeSeriesData)
+
+	@doc "Get episode by slug"
+	@handler GetEpisode
+	get /:slug (EpisodeRequest) returns (EpisodeData)
+}
+
+// ========== UPDATES GROUP ==========
+@server (
+	group:      updates
+	prefix:     /api/v1/updates
+	middleware: Cors,Analytics
+)
+service backend-api {
+	@doc "Get recent updates list"
+	@handler GetUpdates
+	get / (UpdateListRequest) returns (UpdateListResponse)
+
+	@doc "Get recent update by slug"
+	@handler GetUpdate
+	get /:slug (UpdateRequest) returns (RecentUpdate)
+}
+
 // ========== IDEAS PAGE GROUP ==========
 @server (
 	group:      ideas
 	prefix:     /api/v1/ideas
-	middleware: Cors
+	middleware: Cors,Analytics
 )
 service backend-api {
 	@doc "Get ideas list with pagination and filtering"
@@ -1088,7 +1062,7 @@ service backend-api {
 @server (
 	group:      auth
 	prefix:     /api/v1/auth
-	middleware: Cors
+	middleware: Cors,Analytics
 )
 service backend-api {
 	@doc "Verify Google ID token and upsert identity"

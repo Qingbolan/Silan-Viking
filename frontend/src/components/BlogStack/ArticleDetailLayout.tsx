@@ -16,7 +16,6 @@ import {
   Info
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { useTheme } from '../ThemeContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
 import BlogComments from './components/BlogComments';
@@ -61,7 +60,6 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 }) => {
   const { language } = useLanguage();
   const { sections } = useTOC(post);
-  const { isDarkMode } = useTheme();
   const reduceMotion = useReducedMotion();
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [metaSidebarCollapsed, setMetaSidebarCollapsed] = useState(false); // Default open on desktop
@@ -158,15 +156,13 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         initial={reduceMotion ? false : { opacity: 0, y: -12 }}
         animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
         style={{
-          backgroundColor: isDarkMode ? 'rgba(26,26,26,0.50)' : 'rgba(255,255,255,0.70)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)'
+          backgroundColor: 'transparent',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-end">
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-4 text-sm text-theme-secondary">
+              <div className="flex flex-col items-start gap-1 text-sm text-theme-secondary">
                 <div className="flex items-center gap-1">
                   <Eye size={14} />
                   <span>{post.views}</span>
@@ -188,7 +184,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         initial={reduceMotion ? false : { opacity: 0, x: -20 }}
         animate={reduceMotion ? undefined : { opacity: 1, x: 0 }}
       >
-        <div className="h-full overflow-y-auto p-4 pt-3.5 pl-5">
+        <div className="h-full overflow-y-auto p-4 pt-0 pl-5">
                       {/* Sidebar Toggle */}
             <button
               onClick={() => {
@@ -311,7 +307,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
       {/* Main Content - Y轴轨道 2 - Responsive layout */}
       <div className={`transition-all duration-300 ${metaSidebarCollapsed ? 'lg:ml-12' : 'lg:ml-60'} ${tocCollapsed ? 'lg:mr-0' : 'lg:mr-60'}`}>
-        <div className="pt-24 sm:pt-28 lg:pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="pt-12 pb-20 px-4 sm:px-6 lg:px-8">
           <motion.div
             className="mx-auto w-full max-w-[var(--reading-max-width)]"
             initial={reduceMotion ? false : { opacity: 0, y: 20 }}

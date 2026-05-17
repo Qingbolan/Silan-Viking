@@ -1,25 +1,24 @@
-package resume
+package episodes
 
 import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"silan-backend/internal/logic/resume"
+	"silan-backend/internal/logic/episodes"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 )
 
-// Get research projects list
-func GetResearchProjectsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetEpisodeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ResumeRequest
+		var req types.EpisodeRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
 
-		l := resume.NewGetResearchProjectsLogic(r.Context(), svcCtx)
-		resp, err := l.GetResearchProjects(&req)
+		l := episodes.NewGetEpisodeLogic(r.Context(), svcCtx)
+		resp, err := l.GetEpisode(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

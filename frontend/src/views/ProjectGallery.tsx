@@ -33,6 +33,11 @@ const CurrentPlanSubtitle: React.FC<CurrentPlanProps> = ({
 }) => {
   const { t } = useTranslation();
   const planDisplay = getPlanDisplay(plan, { size: 20 });
+  const goals = Array.isArray(language === "en" ? plan.goals : plan.goalsZh)
+    ? language === "en" ? plan.goals : plan.goalsZh
+    : Array.isArray(plan.goals)
+      ? plan.goals
+      : [];
   
   return (
     <div className="max-w-4xl mx-auto">
@@ -57,9 +62,7 @@ const CurrentPlanSubtitle: React.FC<CurrentPlanProps> = ({
       {/* 第二行：Slogan + 核心目标标签 */}
       <div className="text-center">
         <div className="flex flex-wrap justify-center gap-2 mt-2">
-          {(language === "en" ? plan.goals : plan.goalsZh)
-            .slice(0, 3)
-            .map((goal, index) => (
+          {goals.slice(0, 3).map((goal, index) => (
               <span
                 key={index}
                 className="px-3 py-1 text-xs rounded-full bg-theme-surface text-theme-secondary border border-theme-border hover:bg-theme-primary hover:text-white transition-colors duration-200"
@@ -67,9 +70,9 @@ const CurrentPlanSubtitle: React.FC<CurrentPlanProps> = ({
                 {goal}
               </span>
             ))}
-          {(language === "en" ? plan.goals : plan.goalsZh).length > 3 && (
+          {goals.length > 3 && (
             <span className="px-3 py-1 text-xs rounded-full bg-theme-accent text-white">
-              +{(language === "en" ? plan.goals : plan.goalsZh).length - 3}{" "}
+              +{goals.length - 3}{" "}
               {t('projects.more')}
             </span>
           )}
@@ -329,14 +332,21 @@ const ProjectGallery: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // Load current plan, all plans, and projects concurrently
-        const [currentPlanData, allPlansData, projectsData] = await Promise.all(
-          [
-            fetchCurrentPlan(language),
-            fetchPlans(language),
-            fetchProjectsWithPlans(language),
-          ]
-        );
+        const [currentPlanRes, allPlansRes, projectsRes] = await Promise.allSettled([
+          fetchCurrentPlan(language),
+          fetchPlans(language),
+          fetchProjectsWithPlans(language),
+        ]);
+
+        if (projectsRes.status === 'rejected') {
+          throw projectsRes.reason;
+        }
+
+        const currentPlanData =
+          currentPlanRes.status === 'fulfilled' ? currentPlanRes.value : null;
+        const allPlansData =
+          allPlansRes.status === 'fulfilled' ? allPlansRes.value : [];
+        const projectsData = projectsRes.value;
         
         if (isMounted) {
           setCurrentPlan(currentPlanData);

@@ -200,8 +200,8 @@
   "projects": {
     "title": "Projects",
     "loadingProjects": "Loading projects...",
-    "errorLoadingData": "Error Loading Data",
-    "failedToLoadData": "Failed to load data",
+    "errorLoadingData": "Error Loading Projects",
+    "failedToLoadData": "Failed to load projects",
     "searchPlaceholder": "Search projects...",
     "clearSearch": "Clear search",
     "all": "All",

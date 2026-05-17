@@ -4,6 +4,50 @@ import { get, formatLanguage } from '../utils';
 
 // API Functions
 
+const getString = (value: unknown, fallback = ''): string =>
+  typeof value === 'string' ? value : fallback;
+
+const getNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+};
+
+const getArray = <T>(value: unknown): T[] => Array.isArray(value) ? value as T[] : [];
+
+const normalizeAnnualPlan = (annualPlan: AnnualPlan): AnnualPlan => {
+  const raw = annualPlan as Record<string, any>;
+  return {
+    ...annualPlan,
+    nameZh: getString(raw.nameZh ?? raw.name_zh, getString(raw.name)),
+    descriptionZh: getString(raw.descriptionZh ?? raw.description_zh, getString(raw.description)),
+    image: raw.image ?? null,
+    icon: getString(raw.icon, 'Calendar'),
+    projectCount: getNumber(raw.projectCount ?? raw.project_count, getArray(raw.projects).length),
+    objectives: getArray<string>(raw.objectives),
+    objectivesZh: getArray<string>(raw.objectivesZh ?? raw.objectives_zh),
+    projects: getArray(raw.projects),
+  };
+};
+
+const normalizeProject = (project: Project): Project => {
+  const raw = project as Record<string, any>;
+  return {
+    ...project,
+    id: String(raw.id ?? project.id),
+    name: getString(raw.name ?? raw.title, project.name),
+    description: getString(raw.description, project.description),
+    tags: getArray<string>(raw.tags),
+    year: getNumber(raw.year, new Date().getFullYear()),
+    annualPlan: getString(raw.annualPlan ?? raw.annual_plan ?? raw.planId ?? raw.plan_id),
+  };
+};
+
 /**
  * Fetch all annual plans
  */
@@ -11,7 +55,7 @@ export const fetchAnnualPlans = async (language: Language = 'en'): Promise<Annua
   const response = await get<AnnualPlan[]>('/api/v1/plans/annual', {
     lang: formatLanguage(language)
   });
-  return response;
+  return response.map(normalizeAnnualPlan);
 };
 
 /**
@@ -21,7 +65,7 @@ export const fetchCurrentAnnualPlan = async (language: Language = 'en'): Promise
   const response = await get<AnnualPlan>('/api/v1/plans/annual/current', {
     lang: formatLanguage(language)
   });
-  return response;
+  return response ? normalizeAnnualPlan(response) : null;
 };
 
 /**
@@ -31,21 +75,17 @@ export const fetchAnnualPlanByName = async (planName: string, language: Language
   const response = await get<AnnualPlan>(`/api/v1/plans/annual/${planName}`, {
     lang: formatLanguage(language)
   });
-  return response;
+  return response ? normalizeAnnualPlan(response) : null;
 };
 
 /**
  * Fetch all projects with language support
  */
 export const fetchProjectsWithAnnualPlans = async (language: Language = 'en'): Promise<Project[]> => {
-  // Directly use the projects API instead of a non-existent plans/projects endpoint
-  try {
-    const { fetchProjects } = await import('../projects/projectApi');
-    return await fetchProjects({}, language);
-  } catch (error) {
-    console.warn('Failed to import projects API:', error);
-    return [];
-  }
+  const response = await get<Project[]>('/api/v1/plans/projects', {
+    lang: formatLanguage(language)
+  });
+  return response.map(normalizeProject);
 };
 
 /**
@@ -70,23 +110,29 @@ export const fetchProjectsByAnnualPlan = async (planName: string, language: Lang
 };
 
 // Conversion functions for backward compatibility
-const convertAnnualPlanToPlan = (annualPlan: AnnualPlan): Plan => ({
-  id: annualPlan.name,
-  name: annualPlan.name,
-  nameZh: annualPlan.nameZh, // Use correct Chinese name
-  description: annualPlan.description,
-  descriptionZh: annualPlan.descriptionZh, // Use correct Chinese description
-  slogan: annualPlan.description,
-  sloganZh: annualPlan.descriptionZh, // Use Chinese description as slogan
-  goals: annualPlan.objectives,
-  goalsZh: annualPlan.objectivesZh, // Use correct Chinese objectives
-  image: '/logo.svg',
-  icon: 'Calendar',
-  startYear: annualPlan.year,
-  endYear: annualPlan.year,
-  status: annualPlan.year === new Date().getFullYear() ? 'active' : 
-           annualPlan.year < new Date().getFullYear() ? 'completed' : 'planned'
-});
+const convertAnnualPlanToPlan = (annualPlan: AnnualPlan): Plan => {
+  const normalized = normalizeAnnualPlan(annualPlan);
+  const goals = getArray<string>(normalized.objectives);
+  const goalsZh = getArray<string>(normalized.objectivesZh);
+
+  return {
+    id: normalized.name,
+    name: normalized.name,
+    nameZh: normalized.nameZh || normalized.name,
+    description: normalized.description,
+    descriptionZh: normalized.descriptionZh || normalized.description,
+    slogan: normalized.description,
+    sloganZh: normalized.descriptionZh || normalized.description,
+    goals,
+    goalsZh: goalsZh.length > 0 ? goalsZh : goals,
+    image: '/logo.svg',
+    icon: 'Calendar',
+    startYear: normalized.year,
+    endYear: normalized.year,
+    status: normalized.year === new Date().getFullYear() ? 'active' :
+             normalized.year < new Date().getFullYear() ? 'completed' : 'planned'
+  };
+};
 
 const convertProjectToProjectWithPlan = (project: Project): ProjectWithPlan => ({
   id: project.id.toString(),

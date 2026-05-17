@@ -1,25 +1,24 @@
-package resume
+package updates
 
 import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"silan-backend/internal/logic/resume"
+	"silan-backend/internal/logic/updates"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 )
 
-// Get work experience list
-func GetWorkExperienceHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func GetUpdatesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.ResumeRequest
+		var req types.UpdateListRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
 
-		l := resume.NewGetWorkExperienceLogic(r.Context(), svcCtx)
-		resp, err := l.GetWorkExperience(&req)
+		l := updates.NewGetUpdatesLogic(r.Context(), svcCtx)
+		resp, err := l.GetUpdates(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

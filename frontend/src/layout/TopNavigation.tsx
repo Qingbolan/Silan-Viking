@@ -178,7 +178,7 @@ export const NavAvatar: React.FC = () => {
       >
         {imgOk ? (
           <img
-            src="/avatar.jpg"
+            src="/image.png"
             alt=""
             aria-hidden
             className="h-full w-full object-cover"
