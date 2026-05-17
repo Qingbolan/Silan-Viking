@@ -28,6 +28,8 @@ const (
 	FieldLocation = "location"
 	// FieldResearchType holds the string denoting the research_type field in the database.
 	FieldResearchType = "research_type"
+	// FieldImageURL holds the string denoting the image_url field in the database.
+	FieldImageURL = "image_url"
 	// FieldFundingSource holds the string denoting the funding_source field in the database.
 	FieldFundingSource = "funding_source"
 	// FieldFundingAmount holds the string denoting the funding_amount field in the database.
@@ -79,6 +81,7 @@ var Columns = []string{
 	FieldIsOngoing,
 	FieldLocation,
 	FieldResearchType,
+	FieldImageURL,
 	FieldFundingSource,
 	FieldFundingAmount,
 	FieldSortOrder,
@@ -105,6 +108,8 @@ var (
 	LocationValidator func(string) error
 	// ResearchTypeValidator is a validator for the "research_type" field. It is called by the builders before save.
 	ResearchTypeValidator func(string) error
+	// ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
+	ImageURLValidator func(string) error
 	// FundingSourceValidator is a validator for the "funding_source" field. It is called by the builders before save.
 	FundingSourceValidator func(string) error
 	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
@@ -160,6 +165,11 @@ func ByLocation(opts ...sql.OrderTermOption) OrderOption {
 // ByResearchType orders the results by the research_type field.
 func ByResearchType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResearchType, opts...).ToFunc()
+}
+
+// ByImageURL orders the results by the image_url field.
+func ByImageURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldImageURL, opts...).ToFunc()
 }
 
 // ByFundingSource orders the results by the funding_source field.

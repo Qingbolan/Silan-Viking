@@ -33,6 +33,10 @@ type RequestLog struct {
 	IP string `json:"ip,omitempty"`
 	// Lang holds the value of the "lang" field.
 	Lang string `json:"lang,omitempty"`
+	// Whether the User-Agent is a known search-engine / social crawler.
+	IsBot bool `json:"is_bot,omitempty"`
+	// Canonical crawler name when is_bot is true (e.g. Googlebot).
+	BotName string `json:"bot_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt    time.Time `json:"created_at,omitempty"`
 	selectValues sql.SelectValues
@@ -43,9 +47,11 @@ func (*RequestLog) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case requestlog.FieldIsBot:
+			values[i] = new(sql.NullBool)
 		case requestlog.FieldID, requestlog.FieldStatus, requestlog.FieldDurationMs:
 			values[i] = new(sql.NullInt64)
-		case requestlog.FieldMethod, requestlog.FieldPath, requestlog.FieldReferrer, requestlog.FieldUserAgent, requestlog.FieldIP, requestlog.FieldLang:
+		case requestlog.FieldMethod, requestlog.FieldPath, requestlog.FieldReferrer, requestlog.FieldUserAgent, requestlog.FieldIP, requestlog.FieldLang, requestlog.FieldBotName:
 			values[i] = new(sql.NullString)
 		case requestlog.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -118,6 +124,18 @@ func (rl *RequestLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				rl.Lang = value.String
 			}
+		case requestlog.FieldIsBot:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_bot", values[i])
+			} else if value.Valid {
+				rl.IsBot = value.Bool
+			}
+		case requestlog.FieldBotName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field bot_name", values[i])
+			} else if value.Valid {
+				rl.BotName = value.String
+			}
 		case requestlog.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -183,6 +201,12 @@ func (rl *RequestLog) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("lang=")
 	builder.WriteString(rl.Lang)
+	builder.WriteString(", ")
+	builder.WriteString("is_bot=")
+	builder.WriteString(fmt.Sprintf("%v", rl.IsBot))
+	builder.WriteString(", ")
+	builder.WriteString("bot_name=")
+	builder.WriteString(rl.BotName)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(rl.CreatedAt.Format(time.ANSIC))

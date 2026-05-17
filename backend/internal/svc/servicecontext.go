@@ -35,7 +35,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		log.Fatalf("failed opening raw DB connection: %v", err)
 	}
 
-	// Create request_logs table if not exists (per driver)
+	// request_logs — a runtime access-log table written by the analytics
+	// middleware via the ent client. The table itself mirrors the ent
+	// RequestLog schema; it is created here (a small bootstrap DDL, like
+	// the other runtime tables) rather than via ent migrate, since a full
+	// ent migrate would also touch the engine-owned content tables.
 	var ddl string
 	switch c.Database.Driver {
 	case "sqlite3":
@@ -49,6 +53,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent TEXT,
 			ip TEXT,
 			lang TEXT,
+			is_bot BOOLEAN DEFAULT 0,
+			bot_name TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`
 	case "mysql":
@@ -62,6 +68,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent VARCHAR(1024),
 			ip VARCHAR(64),
 			lang VARCHAR(8),
+			is_bot TINYINT(1) DEFAULT 0,
+			bot_name VARCHAR(64),
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		) ENGINE=InnoDB`
 	case "postgres", "postgresql":
@@ -75,6 +83,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent TEXT,
 			ip TEXT,
 			lang TEXT,
+			is_bot BOOLEAN DEFAULT FALSE,
+			bot_name TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`
 	default:
@@ -84,6 +94,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		if _, err := rawDB.Exec(ddl); err != nil {
 			log.Printf("warning: failed creating request_logs table: %v", err)
 		}
+		// Idempotently add the bot columns to a pre-existing table — a
+		// failed ALTER (column already present) is expected and ignored.
+		boolType := "BOOLEAN DEFAULT 0"
+		if c.Database.Driver == "postgres" || c.Database.Driver == "postgresql" {
+			boolType = "BOOLEAN DEFAULT FALSE"
+		} else if c.Database.Driver == "mysql" {
+			boolType = "TINYINT(1) DEFAULT 0"
+		}
+		nameType := "TEXT"
+		if c.Database.Driver == "mysql" {
+			nameType = "VARCHAR(64)"
+		}
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN is_bot " + boolType)
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN bot_name " + nameType)
 	}
 
 	// Create user_identities table for OAuth identities (to store avatar, etc.)
@@ -144,7 +168,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:    c,
 		Cors:      middleware.NewCorsMiddleware().Handle,
-		Analytics: middleware.NewAnalyticsMiddleware(rawDB, c.Database.Driver).Handle,
+		Analytics: middleware.NewAnalyticsMiddleware(client).Handle,
 		DB:        client,
 		RawDB:     rawDB,
 	}

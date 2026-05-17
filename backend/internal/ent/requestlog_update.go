@@ -201,6 +201,40 @@ func (rlu *RequestLogUpdate) ClearLang() *RequestLogUpdate {
 	return rlu
 }
 
+// SetIsBot sets the "is_bot" field.
+func (rlu *RequestLogUpdate) SetIsBot(b bool) *RequestLogUpdate {
+	rlu.mutation.SetIsBot(b)
+	return rlu
+}
+
+// SetNillableIsBot sets the "is_bot" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableIsBot(b *bool) *RequestLogUpdate {
+	if b != nil {
+		rlu.SetIsBot(*b)
+	}
+	return rlu
+}
+
+// SetBotName sets the "bot_name" field.
+func (rlu *RequestLogUpdate) SetBotName(s string) *RequestLogUpdate {
+	rlu.mutation.SetBotName(s)
+	return rlu
+}
+
+// SetNillableBotName sets the "bot_name" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableBotName(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetBotName(*s)
+	}
+	return rlu
+}
+
+// ClearBotName clears the value of the "bot_name" field.
+func (rlu *RequestLogUpdate) ClearBotName() *RequestLogUpdate {
+	rlu.mutation.ClearBotName()
+	return rlu
+}
+
 // Mutation returns the RequestLogMutation object of the builder.
 func (rlu *RequestLogUpdate) Mutation() *RequestLogMutation {
 	return rlu.mutation
@@ -263,6 +297,11 @@ func (rlu *RequestLogUpdate) check() error {
 	if v, ok := rlu.mutation.Lang(); ok {
 		if err := requestlog.LangValidator(v); err != nil {
 			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "RequestLog.lang": %w`, err)}
+		}
+	}
+	if v, ok := rlu.mutation.BotName(); ok {
+		if err := requestlog.BotNameValidator(v); err != nil {
+			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
 		}
 	}
 	return nil
@@ -333,6 +372,15 @@ func (rlu *RequestLogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if rlu.mutation.LangCleared() {
 		_spec.ClearField(requestlog.FieldLang, field.TypeString)
+	}
+	if value, ok := rlu.mutation.IsBot(); ok {
+		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)
+	}
+	if value, ok := rlu.mutation.BotName(); ok {
+		_spec.SetField(requestlog.FieldBotName, field.TypeString, value)
+	}
+	if rlu.mutation.BotNameCleared() {
+		_spec.ClearField(requestlog.FieldBotName, field.TypeString)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, rlu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -528,6 +576,40 @@ func (rluo *RequestLogUpdateOne) ClearLang() *RequestLogUpdateOne {
 	return rluo
 }
 
+// SetIsBot sets the "is_bot" field.
+func (rluo *RequestLogUpdateOne) SetIsBot(b bool) *RequestLogUpdateOne {
+	rluo.mutation.SetIsBot(b)
+	return rluo
+}
+
+// SetNillableIsBot sets the "is_bot" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableIsBot(b *bool) *RequestLogUpdateOne {
+	if b != nil {
+		rluo.SetIsBot(*b)
+	}
+	return rluo
+}
+
+// SetBotName sets the "bot_name" field.
+func (rluo *RequestLogUpdateOne) SetBotName(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetBotName(s)
+	return rluo
+}
+
+// SetNillableBotName sets the "bot_name" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableBotName(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetBotName(*s)
+	}
+	return rluo
+}
+
+// ClearBotName clears the value of the "bot_name" field.
+func (rluo *RequestLogUpdateOne) ClearBotName() *RequestLogUpdateOne {
+	rluo.mutation.ClearBotName()
+	return rluo
+}
+
 // Mutation returns the RequestLogMutation object of the builder.
 func (rluo *RequestLogUpdateOne) Mutation() *RequestLogMutation {
 	return rluo.mutation
@@ -603,6 +685,11 @@ func (rluo *RequestLogUpdateOne) check() error {
 	if v, ok := rluo.mutation.Lang(); ok {
 		if err := requestlog.LangValidator(v); err != nil {
 			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "RequestLog.lang": %w`, err)}
+		}
+	}
+	if v, ok := rluo.mutation.BotName(); ok {
+		if err := requestlog.BotNameValidator(v); err != nil {
+			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
 		}
 	}
 	return nil
@@ -690,6 +777,15 @@ func (rluo *RequestLogUpdateOne) sqlSave(ctx context.Context) (_node *RequestLog
 	}
 	if rluo.mutation.LangCleared() {
 		_spec.ClearField(requestlog.FieldLang, field.TypeString)
+	}
+	if value, ok := rluo.mutation.IsBot(); ok {
+		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)
+	}
+	if value, ok := rluo.mutation.BotName(); ok {
+		_spec.SetField(requestlog.FieldBotName, field.TypeString, value)
+	}
+	if rluo.mutation.BotNameCleared() {
+		_spec.ClearField(requestlog.FieldBotName, field.TypeString)
 	}
 	_node = &RequestLog{config: rluo.config}
 	_spec.Assign = _node.assignValues

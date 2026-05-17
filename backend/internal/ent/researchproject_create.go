@@ -121,6 +121,20 @@ func (rpc *ResearchProjectCreate) SetNillableResearchType(s *string) *ResearchPr
 	return rpc
 }
 
+// SetImageURL sets the "image_url" field.
+func (rpc *ResearchProjectCreate) SetImageURL(s string) *ResearchProjectCreate {
+	rpc.mutation.SetImageURL(s)
+	return rpc
+}
+
+// SetNillableImageURL sets the "image_url" field if the given value is not nil.
+func (rpc *ResearchProjectCreate) SetNillableImageURL(s *string) *ResearchProjectCreate {
+	if s != nil {
+		rpc.SetImageURL(*s)
+	}
+	return rpc
+}
+
 // SetFundingSource sets the "funding_source" field.
 func (rpc *ResearchProjectCreate) SetFundingSource(s string) *ResearchProjectCreate {
 	rpc.mutation.SetFundingSource(s)
@@ -317,6 +331,11 @@ func (rpc *ResearchProjectCreate) check() error {
 			return &ValidationError{Name: "research_type", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.research_type": %w`, err)}
 		}
 	}
+	if v, ok := rpc.mutation.ImageURL(); ok {
+		if err := researchproject.ImageURLValidator(v); err != nil {
+			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.image_url": %w`, err)}
+		}
+	}
 	if v, ok := rpc.mutation.FundingSource(); ok {
 		if err := researchproject.FundingSourceValidator(v); err != nil {
 			return &ValidationError{Name: "funding_source", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.funding_source": %w`, err)}
@@ -383,6 +402,10 @@ func (rpc *ResearchProjectCreate) createSpec() (*ResearchProject, *sqlgraph.Crea
 	if value, ok := rpc.mutation.ResearchType(); ok {
 		_spec.SetField(researchproject.FieldResearchType, field.TypeString, value)
 		_node.ResearchType = value
+	}
+	if value, ok := rpc.mutation.ImageURL(); ok {
+		_spec.SetField(researchproject.FieldImageURL, field.TypeString, value)
+		_node.ImageURL = value
 	}
 	if value, ok := rpc.mutation.FundingSource(); ok {
 		_spec.SetField(researchproject.FieldFundingSource, field.TypeString, value)

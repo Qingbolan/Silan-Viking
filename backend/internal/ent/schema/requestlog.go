@@ -55,6 +55,13 @@ func (RequestLog) Fields() []ent.Field {
 		field.String("lang").
 			Optional().
 			MaxLen(8),
+		field.Bool("is_bot").
+			Default(false).
+			Comment("Whether the User-Agent is a known search-engine / social crawler."),
+		field.String("bot_name").
+			Optional().
+			MaxLen(64).
+			Comment("Canonical crawler name when is_bot is true (e.g. Googlebot)."),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
@@ -66,5 +73,6 @@ func (RequestLog) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("created_at"),
 		index.Fields("path"),
+		index.Fields("is_bot"),
 	}
 }

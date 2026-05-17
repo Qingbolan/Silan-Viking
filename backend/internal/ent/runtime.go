@@ -1750,24 +1750,28 @@ func init() {
 	publicationDescPdfURL := publicationFields[13].Descriptor()
 	// publication.PdfURLValidator is a validator for the "pdf_url" field. It is called by the builders before save.
 	publication.PdfURLValidator = publicationDescPdfURL.Validators[0].(func(string) error)
+	// publicationDescImageURL is the schema descriptor for image_url field.
+	publicationDescImageURL := publicationFields[14].Descriptor()
+	// publication.ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
+	publication.ImageURLValidator = publicationDescImageURL.Validators[0].(func(string) error)
 	// publicationDescCitationCount is the schema descriptor for citation_count field.
-	publicationDescCitationCount := publicationFields[14].Descriptor()
+	publicationDescCitationCount := publicationFields[15].Descriptor()
 	// publication.DefaultCitationCount holds the default value on creation for the citation_count field.
 	publication.DefaultCitationCount = publicationDescCitationCount.Default.(int)
 	// publicationDescIsPeerReviewed is the schema descriptor for is_peer_reviewed field.
-	publicationDescIsPeerReviewed := publicationFields[15].Descriptor()
+	publicationDescIsPeerReviewed := publicationFields[16].Descriptor()
 	// publication.DefaultIsPeerReviewed holds the default value on creation for the is_peer_reviewed field.
 	publication.DefaultIsPeerReviewed = publicationDescIsPeerReviewed.Default.(bool)
 	// publicationDescSortOrder is the schema descriptor for sort_order field.
-	publicationDescSortOrder := publicationFields[16].Descriptor()
+	publicationDescSortOrder := publicationFields[17].Descriptor()
 	// publication.DefaultSortOrder holds the default value on creation for the sort_order field.
 	publication.DefaultSortOrder = publicationDescSortOrder.Default.(int)
 	// publicationDescCreatedAt is the schema descriptor for created_at field.
-	publicationDescCreatedAt := publicationFields[17].Descriptor()
+	publicationDescCreatedAt := publicationFields[18].Descriptor()
 	// publication.DefaultCreatedAt holds the default value on creation for the created_at field.
 	publication.DefaultCreatedAt = publicationDescCreatedAt.Default.(func() time.Time)
 	// publicationDescUpdatedAt is the schema descriptor for updated_at field.
-	publicationDescUpdatedAt := publicationFields[18].Descriptor()
+	publicationDescUpdatedAt := publicationFields[19].Descriptor()
 	// publication.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	publication.DefaultUpdatedAt = publicationDescUpdatedAt.Default.(func() time.Time)
 	// publication.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -2004,8 +2008,16 @@ func init() {
 	requestlogDescLang := requestlogFields[8].Descriptor()
 	// requestlog.LangValidator is a validator for the "lang" field. It is called by the builders before save.
 	requestlog.LangValidator = requestlogDescLang.Validators[0].(func(string) error)
+	// requestlogDescIsBot is the schema descriptor for is_bot field.
+	requestlogDescIsBot := requestlogFields[9].Descriptor()
+	// requestlog.DefaultIsBot holds the default value on creation for the is_bot field.
+	requestlog.DefaultIsBot = requestlogDescIsBot.Default.(bool)
+	// requestlogDescBotName is the schema descriptor for bot_name field.
+	requestlogDescBotName := requestlogFields[10].Descriptor()
+	// requestlog.BotNameValidator is a validator for the "bot_name" field. It is called by the builders before save.
+	requestlog.BotNameValidator = requestlogDescBotName.Validators[0].(func(string) error)
 	// requestlogDescCreatedAt is the schema descriptor for created_at field.
-	requestlogDescCreatedAt := requestlogFields[9].Descriptor()
+	requestlogDescCreatedAt := requestlogFields[11].Descriptor()
 	// requestlog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	requestlog.DefaultCreatedAt = requestlogDescCreatedAt.Default.(func() time.Time)
 	researchprojectFields := schema.ResearchProject{}.Fields()
@@ -2026,20 +2038,24 @@ func init() {
 	researchprojectDescResearchType := researchprojectFields[7].Descriptor()
 	// researchproject.ResearchTypeValidator is a validator for the "research_type" field. It is called by the builders before save.
 	researchproject.ResearchTypeValidator = researchprojectDescResearchType.Validators[0].(func(string) error)
+	// researchprojectDescImageURL is the schema descriptor for image_url field.
+	researchprojectDescImageURL := researchprojectFields[8].Descriptor()
+	// researchproject.ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
+	researchproject.ImageURLValidator = researchprojectDescImageURL.Validators[0].(func(string) error)
 	// researchprojectDescFundingSource is the schema descriptor for funding_source field.
-	researchprojectDescFundingSource := researchprojectFields[8].Descriptor()
+	researchprojectDescFundingSource := researchprojectFields[9].Descriptor()
 	// researchproject.FundingSourceValidator is a validator for the "funding_source" field. It is called by the builders before save.
 	researchproject.FundingSourceValidator = researchprojectDescFundingSource.Validators[0].(func(string) error)
 	// researchprojectDescSortOrder is the schema descriptor for sort_order field.
-	researchprojectDescSortOrder := researchprojectFields[10].Descriptor()
+	researchprojectDescSortOrder := researchprojectFields[11].Descriptor()
 	// researchproject.DefaultSortOrder holds the default value on creation for the sort_order field.
 	researchproject.DefaultSortOrder = researchprojectDescSortOrder.Default.(int)
 	// researchprojectDescCreatedAt is the schema descriptor for created_at field.
-	researchprojectDescCreatedAt := researchprojectFields[11].Descriptor()
+	researchprojectDescCreatedAt := researchprojectFields[12].Descriptor()
 	// researchproject.DefaultCreatedAt holds the default value on creation for the created_at field.
 	researchproject.DefaultCreatedAt = researchprojectDescCreatedAt.Default.(func() time.Time)
 	// researchprojectDescUpdatedAt is the schema descriptor for updated_at field.
-	researchprojectDescUpdatedAt := researchprojectFields[12].Descriptor()
+	researchprojectDescUpdatedAt := researchprojectFields[13].Descriptor()
 	// researchproject.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	researchproject.DefaultUpdatedAt = researchprojectDescUpdatedAt.Default.(func() time.Time)
 	// researchproject.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

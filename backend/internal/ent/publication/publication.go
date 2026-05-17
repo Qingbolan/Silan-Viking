@@ -40,6 +40,8 @@ const (
 	FieldURL = "url"
 	// FieldPdfURL holds the string denoting the pdf_url field in the database.
 	FieldPdfURL = "pdf_url"
+	// FieldImageURL holds the string denoting the image_url field in the database.
+	FieldImageURL = "image_url"
 	// FieldCitationCount holds the string denoting the citation_count field in the database.
 	FieldCitationCount = "citation_count"
 	// FieldIsPeerReviewed holds the string denoting the is_peer_reviewed field in the database.
@@ -97,6 +99,7 @@ var Columns = []string{
 	FieldIsbn,
 	FieldURL,
 	FieldPdfURL,
+	FieldImageURL,
 	FieldCitationCount,
 	FieldIsPeerReviewed,
 	FieldSortOrder,
@@ -137,6 +140,8 @@ var (
 	URLValidator func(string) error
 	// PdfURLValidator is a validator for the "pdf_url" field. It is called by the builders before save.
 	PdfURLValidator func(string) error
+	// ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
+	ImageURLValidator func(string) error
 	// DefaultCitationCount holds the default value on creation for the "citation_count" field.
 	DefaultCitationCount int
 	// DefaultIsPeerReviewed holds the default value on creation for the "is_peer_reviewed" field.
@@ -224,6 +229,11 @@ func ByURL(opts ...sql.OrderTermOption) OrderOption {
 // ByPdfURL orders the results by the pdf_url field.
 func ByPdfURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPdfURL, opts...).ToFunc()
+}
+
+// ByImageURL orders the results by the image_url field.
+func ByImageURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldImageURL, opts...).ToFunc()
 }
 
 // ByCitationCount orders the results by the citation_count field.

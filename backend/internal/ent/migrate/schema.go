@@ -1405,6 +1405,7 @@ var (
 		{Name: "isbn", Type: field.TypeString, Nullable: true, Size: 20},
 		{Name: "url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "pdf_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "image_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "citation_count", Type: field.TypeInt, Default: 0},
 		{Name: "is_peer_reviewed", Type: field.TypeBool, Default: false},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
@@ -1420,7 +1421,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "publications_users_publications",
-				Columns:    []*schema.Column{PublicationsColumns[18]},
+				Columns:    []*schema.Column{PublicationsColumns[19]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1576,6 +1577,8 @@ var (
 		{Name: "user_agent", Type: field.TypeString, Nullable: true, Size: 1024},
 		{Name: "ip", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "lang", Type: field.TypeString, Nullable: true, Size: 8},
+		{Name: "is_bot", Type: field.TypeBool, Default: false},
+		{Name: "bot_name", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "created_at", Type: field.TypeTime},
 	}
 	// RequestLogsTable holds the schema information for the "request_logs" table.
@@ -1587,12 +1590,17 @@ var (
 			{
 				Name:    "requestlog_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{RequestLogsColumns[9]},
+				Columns: []*schema.Column{RequestLogsColumns[11]},
 			},
 			{
 				Name:    "requestlog_path",
 				Unique:  false,
 				Columns: []*schema.Column{RequestLogsColumns[2]},
+			},
+			{
+				Name:    "requestlog_is_bot",
+				Unique:  false,
+				Columns: []*schema.Column{RequestLogsColumns[9]},
 			},
 		},
 	}
@@ -1605,6 +1613,7 @@ var (
 		{Name: "is_ongoing", Type: field.TypeBool, Default: false},
 		{Name: "location", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "research_type", Type: field.TypeString, Nullable: true, Size: 50},
+		{Name: "image_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "funding_source", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "funding_amount", Type: field.TypeFloat64, Nullable: true},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
@@ -1620,7 +1629,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "research_projects_users_research_projects",
-				Columns:    []*schema.Column{ResearchProjectsColumns[12]},
+				Columns:    []*schema.Column{ResearchProjectsColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

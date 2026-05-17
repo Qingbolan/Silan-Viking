@@ -29,6 +29,10 @@ const (
 	FieldIP = "ip"
 	// FieldLang holds the string denoting the lang field in the database.
 	FieldLang = "lang"
+	// FieldIsBot holds the string denoting the is_bot field in the database.
+	FieldIsBot = "is_bot"
+	// FieldBotName holds the string denoting the bot_name field in the database.
+	FieldBotName = "bot_name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// Table holds the table name of the requestlog in the database.
@@ -46,6 +50,8 @@ var Columns = []string{
 	FieldUserAgent,
 	FieldIP,
 	FieldLang,
+	FieldIsBot,
+	FieldBotName,
 	FieldCreatedAt,
 }
 
@@ -72,6 +78,10 @@ var (
 	IPValidator func(string) error
 	// LangValidator is a validator for the "lang" field. It is called by the builders before save.
 	LangValidator func(string) error
+	// DefaultIsBot holds the default value on creation for the "is_bot" field.
+	DefaultIsBot bool
+	// BotNameValidator is a validator for the "bot_name" field. It is called by the builders before save.
+	BotNameValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
@@ -122,6 +132,16 @@ func ByIP(opts ...sql.OrderTermOption) OrderOption {
 // ByLang orders the results by the lang field.
 func ByLang(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLang, opts...).ToFunc()
+}
+
+// ByIsBot orders the results by the is_bot field.
+func ByIsBot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsBot, opts...).ToFunc()
+}
+
+// ByBotName orders the results by the bot_name field.
+func ByBotName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBotName, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

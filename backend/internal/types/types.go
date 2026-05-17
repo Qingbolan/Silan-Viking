@@ -154,6 +154,31 @@ type BlogTagsRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
+type BotSummary struct {
+	BotName string `json:"bot_name"`
+	Count   int    `json:"count"`
+}
+
+type BotVisit struct {
+	BotName   string `json:"bot_name"`
+	Path      string `json:"path"`
+	Status    int    `json:"status"`
+	UserAgent string `json:"user_agent"`
+	IP        string `json:"ip"`
+	VisitedAt string `json:"visited_at"`
+}
+
+type BotVisitsRequest struct {
+	Bot   string `form:"bot,optional"`
+	Limit int    `form:"limit,optional"`
+}
+
+type BotVisitsResponse struct {
+	Total   int          `json:"total"`
+	Summary []BotSummary `json:"summary"`
+	Recent  []BotVisit   `json:"recent"`
+}
+
 type Collaborator struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
@@ -165,6 +190,15 @@ type Collaborator struct {
 type Contact struct {
 	Type  string `json:"type"`
 	Value string `json:"value"`
+}
+
+type CrawlerBreakdownResponse struct {
+	Items []CrawlerRow `json:"items"`
+}
+
+type CrawlerRow struct {
+	VisitorKind string `json:"visitor_kind"`
+	Count       int    `json:"count"`
 }
 
 type CreateBlogCommentRequest struct {
@@ -791,6 +825,29 @@ type SocialLink struct {
 	SortOrder   int    `json:"sort_order"`
 }
 
+type SourceBreakdownResponse struct {
+	Items []SourceRow `json:"items"`
+}
+
+type SourceRow struct {
+	Source string `json:"source"`
+	Count  int    `json:"count"`
+}
+
+type StatsRequest struct {
+	EntityType string `form:"entity_type"`
+	EntityID   string `form:"entity_id"`
+	Section    string `form:"section,optional"`
+}
+
+type StatsResponse struct {
+	EntityType string `json:"entity_type"`
+	EntityID   string `json:"entity_id"`
+	Views      int    `json:"views"`
+	Likes      int    `json:"likes"`
+	Comments   int    `json:"comments"`
+}
+
 type UpdateBlogLikesRequest struct {
 	ID             string `path:"id"`
 	Increment      bool   `json:"increment,default=true"`
@@ -876,26 +933,6 @@ type UpdateRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
-// ── stats — runtime interaction statistics (docs/silan-viking/03 §3.2 #15) ──
-
-// StatsRequest identifies the content whose statistics are queried. The MCP /
-// CLI side resolves a silan:// URI into entity_type + entity_id.
-type StatsRequest struct {
-	EntityType string `form:"entity_type"`
-	EntityID   string `form:"entity_id"`
-	Section    string `form:"section,optional"`
-}
-
-// StatsResponse is the aggregate view/like/comment count of one content item.
-type StatsResponse struct {
-	EntityType string `json:"entity_type"`
-	EntityID   string `json:"entity_id"`
-	Views      int    `json:"views"`
-	Likes      int    `json:"likes"`
-	Comments   int    `json:"comments"`
-}
-
-// VisitorRow is one de-identified visitor of a content item.
 type VisitorRow struct {
 	Fingerprint  string `json:"fingerprint"`
 	IPMasked     string `json:"ip_masked"`
@@ -904,31 +941,8 @@ type VisitorRow struct {
 	LastSeenAt   string `json:"last_seen_at"`
 }
 
-// VisitorsResponse lists the visitors of a content item.
 type VisitorsResponse struct {
 	EntityType string       `json:"entity_type"`
 	EntityID   string       `json:"entity_id"`
 	Visitors   []VisitorRow `json:"visitors"`
-}
-
-// CrawlerRow aggregates one visitor kind / crawler.
-type CrawlerRow struct {
-	VisitorKind string `json:"visitor_kind"`
-	Count       int    `json:"count"`
-}
-
-// CrawlerBreakdownResponse aggregates visitors by kind.
-type CrawlerBreakdownResponse struct {
-	Items []CrawlerRow `json:"items"`
-}
-
-// SourceRow aggregates one referrer source.
-type SourceRow struct {
-	Source string `json:"source"`
-	Count  int    `json:"count"`
-}
-
-// SourceBreakdownResponse aggregates visits by referrer source.
-type SourceBreakdownResponse struct {
-	Items []SourceRow `json:"items"`
 }

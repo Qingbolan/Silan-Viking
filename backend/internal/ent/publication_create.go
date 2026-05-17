@@ -181,6 +181,20 @@ func (pc *PublicationCreate) SetNillablePdfURL(s *string) *PublicationCreate {
 	return pc
 }
 
+// SetImageURL sets the "image_url" field.
+func (pc *PublicationCreate) SetImageURL(s string) *PublicationCreate {
+	pc.mutation.SetImageURL(s)
+	return pc
+}
+
+// SetNillableImageURL sets the "image_url" field if the given value is not nil.
+func (pc *PublicationCreate) SetNillableImageURL(s *string) *PublicationCreate {
+	if s != nil {
+		pc.SetImageURL(*s)
+	}
+	return pc
+}
+
 // SetCitationCount sets the "citation_count" field.
 func (pc *PublicationCreate) SetCitationCount(i int) *PublicationCreate {
 	pc.mutation.SetCitationCount(i)
@@ -427,6 +441,11 @@ func (pc *PublicationCreate) check() error {
 			return &ValidationError{Name: "pdf_url", err: fmt.Errorf(`ent: validator failed for field "Publication.pdf_url": %w`, err)}
 		}
 	}
+	if v, ok := pc.mutation.ImageURL(); ok {
+		if err := publication.ImageURLValidator(v); err != nil {
+			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "Publication.image_url": %w`, err)}
+		}
+	}
 	if _, ok := pc.mutation.CitationCount(); !ok {
 		return &ValidationError{Name: "citation_count", err: errors.New(`ent: missing required field "Publication.citation_count"`)}
 	}
@@ -527,6 +546,10 @@ func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.PdfURL(); ok {
 		_spec.SetField(publication.FieldPdfURL, field.TypeString, value)
 		_node.PdfURL = value
+	}
+	if value, ok := pc.mutation.ImageURL(); ok {
+		_spec.SetField(publication.FieldImageURL, field.TypeString, value)
+		_node.ImageURL = value
 	}
 	if value, ok := pc.mutation.CitationCount(); ok {
 		_spec.SetField(publication.FieldCitationCount, field.TypeInt, value)

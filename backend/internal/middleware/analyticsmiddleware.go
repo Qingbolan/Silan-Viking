@@ -1,20 +1,21 @@
 package middleware
 
 import (
-	"database/sql"
+	"context"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"silan-backend/internal/ent"
 )
 
 type AnalyticsMiddleware struct {
-	db     *sql.DB
-	driver string
+	client *ent.Client
 }
 
-func NewAnalyticsMiddleware(db *sql.DB, driver string) *AnalyticsMiddleware {
-	return &AnalyticsMiddleware{db: db, driver: driver}
+func NewAnalyticsMiddleware(client *ent.Client) *AnalyticsMiddleware {
+	return &AnalyticsMiddleware{client: client}
 }
 
 type analyticsResponseWriter struct {
@@ -41,30 +42,32 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		next(wrapped, r)
 
-		if m.db == nil || r.Method == http.MethodOptions {
+		if m.client == nil || r.Method == http.MethodOptions {
 			return
 		}
 
 		duration := time.Since(start).Milliseconds()
-		query := `INSERT INTO request_logs (method, path, status, duration_ms, referrer, user_agent, ip, lang, created_at)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-		if m.driver == "postgres" || m.driver == "postgresql" {
-			query = `INSERT INTO request_logs (method, path, status, duration_ms, referrer, user_agent, ip, lang, created_at)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
-		}
+		// Flag known search-engine / social crawlers so bot traffic is
+		// queryable straight from request_logs.
+		isBot, botName := detectBot(r.UserAgent())
 
-		_, _ = m.db.Exec(
-			query,
-			r.Method,
-			r.URL.Path,
-			wrapped.status,
-			duration,
-			r.Referer(),
-			r.UserAgent(),
-			clientIP(r),
-			r.URL.Query().Get("lang"),
-			time.Now(),
-		)
+		// Persist the access-log row via the ent client. Best-effort —
+		// a logging failure must never affect the response. A fresh,
+		// short context decouples it from the (already-finished) request.
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		_, _ = m.client.RequestLog.Create().
+			SetMethod(r.Method).
+			SetPath(r.URL.Path).
+			SetStatus(wrapped.status).
+			SetDurationMs(int(duration)).
+			SetReferrer(r.Referer()).
+			SetUserAgent(r.UserAgent()).
+			SetIP(clientIP(r)).
+			SetLang(r.URL.Query().Get("lang")).
+			SetIsBot(isBot).
+			SetBotName(botName).
+			Save(ctx)
 	}
 }
 
