@@ -31,6 +31,21 @@ pub fn translation_table(kind: ContentKind) -> &'static str {
     }
 }
 
+/// The foreign-key column a translation row uses to point back at its main
+/// table row. Each `*_translations` table names this column after its main
+/// table (`blog_post_translations.blog_post_id`, …) — the column name the
+/// reverse-generated `silan-viking-entities` carries.
+pub fn translation_fk(kind: ContentKind) -> &'static str {
+    match kind {
+        ContentKind::Idea => "idea_id",
+        ContentKind::Blog => "blog_post_id",
+        ContentKind::Project => "project_id",
+        ContentKind::Episode => "episode_id",
+        ContentKind::Resume => "personal_info_id",
+        ContentKind::Update => "recent_update_id",
+    }
+}
+
 /// The shared Part-identity table (revision G, `01` §1.10).
 pub const ITEM_PART_TABLE: &str = "item_part";
 

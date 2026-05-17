@@ -89,12 +89,15 @@ fn empty_project_to_skill_full_chain() {
         "an entry_list resume Part must scaffold a .toml file, not .md"
     );
 
-    // 5. sync — parse + map + write the derived DB. All six Items must pass
+    // 5. sync — parse + map + write the derived DB. Every Item must pass
     //    validation (this is what caught the missing `update.date` field).
+    //    `init` scaffolds 4 Items (resume + 3 seed items, `06` §6.2.1) and
+    //    this test creates 5 more (idea/blog/project/update/episode — the
+    //    episode series is not an Item) → 9 Items in all.
     let sync_out = ok_in(&root, &["index", "sync"]);
     assert!(
-        sync_out.contains("items=6"),
-        "sync should see 6 Items: {sync_out}"
+        sync_out.contains("items=9"),
+        "sync should see 9 Items (4 from init + 5 created here): {sync_out}"
     );
 
     // 6. read the content back.
@@ -155,9 +158,10 @@ fn empty_project_to_skill_full_chain() {
         "a just-emitted skill must be up to date: {status}"
     );
 
-    // 9. doctor — the project is healthy end to end.
+    // 9. doctor — the project is healthy end to end (9 Items: 4 from init
+    //    + 5 created above).
     let doctor = ok_in(&root, &["doctor"]);
-    assert!(doctor.contains("items=6"));
+    assert!(doctor.contains("items=9"));
 
     let _ = std::fs::remove_dir_all(&root);
 }

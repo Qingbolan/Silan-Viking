@@ -200,6 +200,11 @@ fn resume_group_every_verb() {
 fn everything_synced_passes_validation() {
     // After exercising the write verbs, a full sync must still succeed —
     // proving the scaffolds and frontmatter rewrites stay SCHEMA-valid.
+    //
+    // `init` already scaffolds 4 Items (1 resume + 3 seed items: a welcome
+    // blog, one idea, one project — `06` §6.2.1). This test then creates 5
+    // more (idea / blog / project / update / episode; the episode *series*
+    // is not itself an Item). So a full sync covers 4 + 5 = 9 Items.
     let c = fresh_project();
     ok(&c, &["idea", "new", "x-idea"]);
     ok(&c, &["blog", "new", "x-blog"]);
@@ -209,7 +214,10 @@ fn everything_synced_passes_validation() {
     ok(&c, &["episode", "series", "new", "x-series"]);
     ok(&c, &["episode", "new", "x-series", "x-ep"]);
     let sync = ok(&c, &["index", "sync"]);
-    assert!(sync.contains("items=6"), "all 6 Items must sync: {sync}");
+    assert!(
+        sync.contains("items=9") && sync.contains("wrote=true"),
+        "all 9 Items (4 from init + 5 created here) must sync: {sync}"
+    );
     let _ = std::fs::remove_dir_all(c.parent().expect("root"));
 }
 

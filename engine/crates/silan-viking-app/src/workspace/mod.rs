@@ -191,14 +191,62 @@ impl Workspace {
     // ── M7 proposal lifecycle (`03` §3.1, `08` §8.5) ──────────────────────
     //
     // The `content/` directory is itself the proposal Git repo, so the repo
-    // root is `content_root`. `propose` only records metadata for an
-    // already-created `proposal/<id>` branch — branch creation and draft
-    // writes are the MCP server's job (it owns the agent write path); the
-    // engine owns the typed contract, validation, and `accept`.
+    // root is `content_root`. The engine owns the *whole* proposal branch
+    // lifecycle — creation, registration, and `accept` — because each step
+    // carries an invariant (`#10`: a proposal branch never advances `main`;
+    // `accept` is the only path into `main`). The caller of `create_proposal`
+    // (the MCP server's `propose`/`capture`, or a future `silan propose`)
+    // supplies only *what files to write* via a closure; it never drives the
+    // branch git itself. Creating a proposal is not an agent-only action —
+    // silan may propose too — so it belongs in the engine, beside `accept`.
 
     /// Open the `content/` Git repository backing this workspace.
     pub fn content_repo(&self) -> Result<GitRepo, ProposalError> {
         Ok(GitRepo::open(&self.content_root)?)
+    }
+
+    /// Create a proposal branch `proposal/<id>`, let `write_draft` populate
+    /// the working tree, commit it, return to `main`, and register the
+    /// proposal's metadata (`03` §3.1). Returns the persisted record.
+    ///
+    /// The engine owns the branch lifecycle and the `#10` invariant (the
+    /// branch is created off `main`, committed, and `main` is checked back
+    /// out — `main` itself is never advanced here; only `accept` does that).
+    /// `write_draft` receives the content root and writes whatever files the
+    /// proposal carries — it is the *only* caller-specific part.
+    pub fn create_proposal<F>(
+        &self,
+        id: &ProposalId,
+        kind: ProposalKind,
+        touched: Vec<String>,
+        commit_summary: &str,
+        write_draft: F,
+    ) -> Result<ProposalRecord, ProposalError>
+    where
+        F: FnOnce(&Path) -> Result<(), ProposalError>,
+    {
+        let repo = self.content_repo()?;
+        let branch = id.branch_name();
+        // Branch off main; the agent/owner never writes to main directly.
+        repo.run(["checkout", "-q", "-b", &branch])?;
+
+        // The caller writes the draft files; then stage + commit. Run the
+        // sequence into a `Result` so a failure does not skip the checkout
+        // back to `main` below.
+        let committed: Result<(), ProposalError> = (|| {
+            write_draft(&self.content_root)?;
+            repo.run(["add", "-A"])?;
+            repo.run(["commit", "-q", "-m", commit_summary])?;
+            Ok(())
+        })();
+
+        // Always return to main, even if the draft write or commit failed,
+        // so a failed `create_proposal` does not strand the repo on the
+        // proposal branch.
+        let back = repo.run(["checkout", "-q", DEFAULT_MAIN_BRANCH]);
+        committed?;
+        back?;
+        self.register_proposal(id, kind, touched)
     }
 
     /// Register proposal metadata for a `proposal/<id>` branch (`08` §8.5):

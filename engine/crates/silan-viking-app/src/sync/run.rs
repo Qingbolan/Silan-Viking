@@ -150,11 +150,26 @@ fn build_batch(
 
 /// Columns excluded from the content digest: these hold engine-minted
 /// identities (`ItemId` ULIDs), not content. A fresh `ItemId` is generated
-/// each scan until ids are persisted in the manifest, so including them
-/// would make every incremental sync see a spurious change. `entity_id` is
-/// the `content_tag` association's Item ULID — same reason. `tag_id` is *not*
-/// here: it is the deterministic tag slug, real content the digest must see.
-const IDENTITY_COLUMNS: [&str; 4] = ["id", "item_id", "from_id", "entity_id"];
+/// each scan until Item ids are persisted, so including them would make
+/// every incremental sync see a spurious change.
+///
+/// This covers: the main-table / `content_tag` `id` & `entity_id`; and the
+/// per-language translation tables' foreign keys (`blog_post_id`, …) — each
+/// holds the owning Item's `ItemId`. `tag_id` is *not* here (it is the
+/// deterministic tag slug — real content); nor are `part_id` / `entry_id` /
+/// `item_part_id` / `part_entry_id` (stable, from `meta.toml` / TOML), nor
+/// `from_id` / `to_id` (Item slugs — stable content).
+const IDENTITY_COLUMNS: &[&str] = &[
+    "id",
+    "item_id",
+    "entity_id",
+    "blog_post_id",
+    "idea_id",
+    "project_id",
+    "episode_id",
+    "recent_update_id",
+    "personal_info_id",
+];
 
 /// The digest of a batch: the FNV-1a hash of every row's table and its
 /// content columns, concatenated in deterministic order. Engine-minted
@@ -184,12 +199,19 @@ fn batch_digest(batch: &RowSetBatch) -> String {
 }
 
 /// Build the `sync_meta` provenance row (`01` §1.10 revision B, `09` §9.2.3).
+///
+/// `content_commit` is left empty here: a local `index sync` does not know
+/// which Git commit it will be deployed from. The deploy `promote` step
+/// fills this column on the live DB as the "batch complete" marker
+/// (`11` §11.11). Keeping the column in the synced schema means the live and
+/// snapshot `sync_meta` tables share one shape, so `promote` can replace it.
 fn sync_meta_row(content_hash: &str, items_total: usize) -> RowSet {
     let mut set = RowSet::new();
     set.push(
         Row::new("sync_meta")
             .with("content_hash", SqlValue::Text(content_hash.to_owned()))
-            .with("items_total", SqlValue::Int(items_total as i64)),
+            .with("items_total", SqlValue::Int(items_total as i64))
+            .with("content_commit", SqlValue::Text(String::new())),
     );
     set
 }

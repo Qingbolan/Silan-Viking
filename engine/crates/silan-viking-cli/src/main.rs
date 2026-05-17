@@ -66,8 +66,10 @@ fn run(args: Vec<String>) -> Result<(), String> {
             );
             Ok(())
         }
-        ["content", "tree"] => content_tree(&opts.content_root),
-        ["content", "ls"] => content_ls(&opts.content_root),
+        ["content", "tree"] => content_tree(&opts.content_root, None),
+        ["content", "tree", uri] => content_tree(&opts.content_root, Some(uri)),
+        ["content", "ls"] => content_ls(&opts.content_root, None),
+        ["content", "ls", uri] => content_ls(&opts.content_root, Some(uri)),
         ["content", "show", uri] => content_show(&opts.content_root, uri),
         ["relation", "graph"] => relation_graph(&opts.content_root),
         ["relation", "show", uri] => relation_show(&opts.content_root, uri),
@@ -220,7 +222,7 @@ impl CliOptions {
     fn parse(args: &[String]) -> Result<Self, String> {
         let cwd = env::current_dir().map_err(|e| e.to_string())?;
         let mut content_root = cwd.join("content");
-        let mut db_path = cwd.join("portfolio.db");
+        let mut db_path: Option<PathBuf> = None;
         let mut out_dir = cwd.join("_site");
         let mut command = Vec::new();
         let mut i = 0;
@@ -236,7 +238,7 @@ impl CliOptions {
                 }
                 "--db" => {
                     i += 1;
-                    db_path = args.get(i).ok_or("--db requires a path")?.as_str().into();
+                    db_path = Some(args.get(i).ok_or("--db requires a path")?.as_str().into());
                 }
                 "--out" => {
                     i += 1;
@@ -246,6 +248,11 @@ impl CliOptions {
             }
             i += 1;
         }
+        // `--db` wins. Otherwise resolve from `silan-viking.toml`'s
+        // `[database].path` (relative to the project root) so `index sync` and
+        // `site deploy` write where the config says, not a stray cwd file.
+        let db_path =
+            db_path.unwrap_or_else(|| resolve_db_path(&content_root).unwrap_or(cwd.join("portfolio.db")));
         Ok(Self {
             content_root,
             db_path,
@@ -253,6 +260,28 @@ impl CliOptions {
             command,
         })
     }
+}
+
+/// Resolve the derived-database path from `silan-viking.toml`'s
+/// `[database].path`. The project root is the content dir's parent; a relative
+/// config path is joined onto it. Returns `None` when there is no project
+/// config yet (e.g. before `silan init`) so the caller can fall back.
+fn resolve_db_path(content_root: &Path) -> Option<PathBuf> {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let config: toml::Value = fs::read_to_string(project_root.join("silan-viking.toml"))
+        .ok()?
+        .parse()
+        .ok()?;
+    let raw = config
+        .get("database")
+        .and_then(|d| d.get("path"))
+        .and_then(|v| v.as_str())?;
+    let path = Path::new(raw);
+    Some(if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        project_root.join(path)
+    })
 }
 
 fn print_help() {
@@ -373,6 +402,32 @@ fn init_content(content_root: &Path) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
     }
 
+    // The six content-type directories (`06` §6.2.1). `episode` / `update`
+    // stay empty collections — no seed item, just the directory so the
+    // collection exists. `blog` / `ideas` / `projects` each get one seed
+    // item below; `resume` is already scaffolded above.
+    for type_dir in ["blog", "ideas", "projects", "episode", "update"] {
+        fs::create_dir_all(content_root.join("resources").join(type_dir))
+            .map_err(|e| e.to_string())?;
+    }
+
+    // Three seed items (`06` §6.2.1: "六 type + 三示例条目"): a welcome blog,
+    // one idea, one project. Skipped if a same-slug item already exists, so
+    // `init` over a non-empty content/ does not clobber real content.
+    for (kind, slug) in [
+        ("blog", "welcome"),
+        ("idea", "first-idea"),
+        ("project", "first-project"),
+    ] {
+        let item_dir = content_root
+            .join("resources")
+            .join(scaffold::type_dir_name(kind).map_err(|e| e.to_string())?)
+            .join(slug);
+        if !item_dir.exists() {
+            scaffold::new_item(content_root, kind, slug).map_err(|e| e.to_string())?;
+        }
+    }
+
     // `git init` over `content/` + first commit (`06` §6.2 step 3). The
     // proposal mechanism (`03` §3.1) needs `content/` to be a Git repo, so
     // `init` must establish it. Exit code 2 if `git` is unavailable.
@@ -474,9 +529,14 @@ fn doctor(content_root: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn content_tree(content_root: &Path) -> Result<(), String> {
+/// `content tree [uri]` — list items and their parts. With `uri`, only items
+/// whose URI is at or under that prefix are shown (subtree filter, `02`).
+fn content_tree(content_root: &Path, filter: Option<&str>) -> Result<(), String> {
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     for item in ws.scan().map_err(|e| e.to_string())?.items() {
+        if !uri_matches(&item.uri().to_string(), filter) {
+            continue;
+        }
         println!("{} {}", item.kind(), item.uri());
         for part in item.parts() {
             println!("  part {}", part.role());
@@ -485,12 +545,30 @@ fn content_tree(content_root: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn content_ls(content_root: &Path) -> Result<(), String> {
+/// `content ls [uri]` — list item URIs, optionally filtered to a subtree.
+fn content_ls(content_root: &Path, filter: Option<&str>) -> Result<(), String> {
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     for item in ws.scan().map_err(|e| e.to_string())?.items() {
-        println!("{}", item.uri());
+        let uri = item.uri().to_string();
+        if uri_matches(&uri, filter) {
+            println!("{uri}");
+        }
     }
     Ok(())
+}
+
+/// True if `uri` should be shown given an optional subtree `filter`. No
+/// filter → always shown. With a filter → `uri` must equal it or sit under
+/// it (prefix match on a `/` boundary, so `.../idea` does not match
+/// `.../idea-two`).
+fn uri_matches(uri: &str, filter: Option<&str>) -> bool {
+    match filter {
+        None => true,
+        Some(prefix) => {
+            let prefix = prefix.trim_end_matches('/');
+            uri == prefix || uri.starts_with(&format!("{prefix}/"))
+        }
+    }
 }
 
 fn content_show(content_root: &Path, uri: &str) -> Result<(), String> {
@@ -1207,14 +1285,17 @@ fn site_publish(content_root: &Path, uri: &str) -> Result<(), String> {
 struct DeployConfig {
     host: String,
     user: String,
+    /// SSH key path — only required for a remote `host`.
     ssh_key_path: PathBuf,
+    /// Remote directory — only required for a remote `host`.
     remote_dir: String,
     compose_file: String,
 }
 
 /// Read and validate `[deploy]` from the project config. A missing section or
-/// field is a code-1 user error (`06` §6.8); the SSH key file must exist with
-/// `600` permissions (`06` §6.2.2 SSH key safety).
+/// field is a code-1 user error (`06` §6.8). For a remote `host`, the SSH key
+/// file must exist with `600` permissions (`06` §6.2.2). A `localhost` /
+/// `local` host is a single-host docker deploy and needs no SSH fields.
 fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
     let project_root = content_root.parent().unwrap_or(content_root);
     let config_path = project_root.join("silan-viking.toml");
@@ -1233,42 +1314,74 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
             .map(str::to_owned)
             .ok_or_else(|| format!("[deploy].{k} is required in silan-viking.toml"))
     };
-    let ssh_key_raw = field("ssh_key_path")?;
-    // Expand a leading `~/` to $HOME — the config stores a path, not the key.
-    let ssh_key_path = if let Some(rest) = ssh_key_raw.strip_prefix("~/") {
-        PathBuf::from(env::var("HOME").map_err(|_| "HOME is not set".to_string())?).join(rest)
-    } else {
-        PathBuf::from(&ssh_key_raw)
+    let opt = |k: &str| -> String {
+        deploy
+            .get(k)
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_owned()
     };
-    if !ssh_key_path.exists() {
-        return Err(format!(
-            "SSH key not found: {} — generate one or fix [deploy].ssh_key_path",
-            ssh_key_path.display()
-        ));
-    }
-    // The private key must be `600` — ssh refuses a world-readable key anyway,
-    // and we fail early with a clear message (`06` §6.2.2).
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mode = fs::metadata(&ssh_key_path)
-            .map_err(|e| e.to_string())?
-            .permissions()
-            .mode()
-            & 0o777;
-        if mode != 0o600 {
+
+    let host = field("host")?;
+    let is_local = matches!(host.as_str(), "localhost" | "127.0.0.1" | "local");
+
+    let (ssh_key_path, remote_dir) = if is_local {
+        // Single-host deploy: no SSH, no remote dir.
+        (PathBuf::new(), String::new())
+    } else {
+        let ssh_key_raw = field("ssh_key_path")?;
+        // Expand a leading `~/` to $HOME — the config stores a path, not the key.
+        let ssh_key_path = if let Some(rest) = ssh_key_raw.strip_prefix("~/") {
+            PathBuf::from(env::var("HOME").map_err(|_| "HOME is not set".to_string())?).join(rest)
+        } else {
+            PathBuf::from(&ssh_key_raw)
+        };
+        if !ssh_key_path.exists() {
             return Err(format!(
-                "SSH key {} has mode {mode:o}, expected 600 — run `chmod 600` on it",
+                "SSH key not found: {} — generate one or fix [deploy].ssh_key_path",
                 ssh_key_path.display()
             ));
         }
-    }
+        // The private key must be `600` — ssh refuses a world-readable key
+        // anyway, and we fail early with a clear message (`06` §6.2.2).
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&ssh_key_path)
+                .map_err(|e| e.to_string())?
+                .permissions()
+                .mode()
+                & 0o777;
+            if mode != 0o600 {
+                return Err(format!(
+                    "SSH key {} has mode {mode:o}, expected 600 — run `chmod 600` on it",
+                    ssh_key_path.display()
+                ));
+            }
+        }
+        (ssh_key_path, field("remote_dir")?)
+    };
+
+    // compose_file defaults to the repo's standard location.
+    let compose_file = {
+        let cf = opt("compose_file");
+        if cf.is_empty() {
+            "deploy/docker-compose.yml".to_owned()
+        } else {
+            cf
+        }
+    };
+
     Ok(DeployConfig {
-        host: field("host")?,
-        user: field("user")?,
+        host,
+        user: if is_local {
+            opt("user")
+        } else {
+            field("user")?
+        },
         ssh_key_path,
-        remote_dir: field("remote_dir")?,
-        compose_file: field("compose_file")?,
+        remote_dir,
+        compose_file,
     })
 }
 
@@ -1282,63 +1395,80 @@ fn site_deploy(
     confirm: bool,
 ) -> Result<(), String> {
     let cfg = deploy_config(content_root)?;
+    let project_root = content_root.parent().unwrap_or(content_root);
+    // A `localhost` / `local` host means a single-host deploy: docker runs
+    // here, no SSH. This is what the e2e Docker experiment exercises.
+    let is_local = matches!(cfg.host.as_str(), "localhost" | "127.0.0.1" | "local");
     let target = format!("{}@{}", cfg.user, cfg.host);
+    let compose = &cfg.compose_file;
 
     if !confirm {
         println!("site deploy — dry run (pass --confirm to execute)");
-        println!("  target  {target}:{}", cfg.remote_dir);
+        if is_local {
+            println!("  target  localhost (single-host docker deploy)");
+        } else {
+            println!("  target  {target}:{}", cfg.remote_dir);
+        }
         println!("  1 sync     content/ -> {}", db_path.display());
-        println!("  2 build    Vite + SEO artifacts -> {}", out_dir.display());
-        println!("  3 package  tar the build + db snapshot");
-        println!("  4 ship     scp the bundle to {target}");
-        println!("  5 promote  replace derived tables on the live db");
-        println!("  6 up       docker compose -f {} up -d", cfg.compose_file);
+        println!("  2 build    Vite bundle + SEO artifacts -> {}", out_dir.display());
+        println!("  3 package  docker compose build (backend/web images)");
+        println!("  4 ship     {}", if is_local { "load images locally" } else { "docker save | ssh docker load" });
+        println!("  5 promote  replace derived tables on the live db (runtime tables preserved)");
+        println!("  6 up       docker compose -f {compose} up -d");
         return Ok(());
     }
 
-    // 1 — sync: rebuild the derived db from content/.
+    // 1 — sync: rebuild the derived db snapshot from content/.
     println!("[1/6] sync");
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     ws.sync(db_path).map_err(|e| e.to_string())?;
+    let content_commit = git_head_commit(content_root).unwrap_or_else(|| "unknown".into());
 
-    // 2 — build: front-end + SEO artifacts.
+    // 2 — build: front-end Vite bundle + SEO crawler artifacts. The SEO
+    // artifacts land in `deploy/seo/` so the web image bakes them in.
     println!("[2/6] build");
-    let projector = silan_viking_site::SiteProjector::new(format!("https://{}", cfg.host));
+    let base_url = if is_local {
+        "http://localhost:8080".to_owned()
+    } else {
+        format!("https://{}", cfg.host)
+    };
+    run_vite_build(project_root)?;
+    let projector = silan_viking_site::SiteProjector::new(&base_url);
+    let seo_dir = project_root.join("deploy/seo");
     projector
-        .build(content_root, out_dir)
+        .build(content_root, &seo_dir)
         .map_err(|e| e.to_string())?;
+    // Mirror the SEO artifacts into `--out` too, for `site preview` parity.
+    let _ = projector.build(content_root, out_dir);
 
-    // 3 — package: tar the build dir + db snapshot into one bundle.
+    // 3 — package: build the docker images from the compose file.
     println!("[3/6] package");
-    let bundle = out_dir
-        .parent()
-        .unwrap_or(out_dir)
-        .join("silan-deploy-bundle.tar.gz");
-    let out_name = out_dir
-        .file_name()
-        .and_then(|n| n.to_str())
-        .ok_or("invalid --out path")?;
-    let pkg = Command::new("tar")
-        .arg("-czf")
-        .arg(&bundle)
-        .arg("-C")
-        .arg(out_dir.parent().unwrap_or(out_dir))
-        .arg(out_name)
-        .arg("-C")
-        .arg(db_path.parent().unwrap_or(Path::new(".")))
-        .arg(
-            db_path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .ok_or("invalid --db path")?,
-        )
-        .status()
-        .map_err(|e| format!("tar: {e}"))?;
-    if !pkg.success() {
-        return Err("package step failed (tar)".into());
+    docker_compose(project_root, compose, &["build"])?;
+
+    // 4/5/6 differ between a local and a remote target.
+    if is_local {
+        // 4 — ship: images are already in the local docker daemon.
+        println!("[4/6] ship (local — images already loaded)");
+
+        // 6 — up first, so the named volume + live db exist for promote.
+        println!("[5/6] promote — bring stack up, then replace derived tables");
+        docker_compose(project_root, compose, &["up", "-d"])?;
+        // The live db lives in the `portfolio-db` named volume, mounted at
+        // /data in the backend container. Copy it out, promote, copy it back.
+        let live_snapshot = project_root.join("_deploy/live-portfolio.db");
+        docker_cp_from(compose, project_root, "backend", "/data/portfolio.db", &live_snapshot)
+            // First deploy: no live db yet — start from the fresh snapshot.
+            .or_else(|_| fs::copy(db_path, &live_snapshot).map(|_| ()).map_err(|e| e.to_string()))?;
+        promote_db(&live_snapshot, db_path, &content_commit)?;
+        docker_cp_to(compose, project_root, "backend", &live_snapshot, "/data/portfolio.db")?;
+
+        println!("[6/6] up — restart backend with the promoted db");
+        docker_compose(project_root, compose, &["restart", "backend"])?;
+        println!("deployed locally — http://localhost:8080");
+        return Ok(());
     }
 
-    // The `ssh`/`scp` invocations share the key + strict-host options.
+    // ---- remote target: ship images + snapshot + silan binary over SSH ----
     let key = cfg.ssh_key_path.to_string_lossy().into_owned();
     let ssh = |remote_cmd: &str| -> Result<(), String> {
         let status = Command::new("ssh")
@@ -1350,38 +1480,187 @@ fn site_deploy(
         }
         Ok(())
     };
+    let scp = |local: &Path, remote_rel: &str| -> Result<(), String> {
+        let status = Command::new("scp")
+            .args(["-i", &key])
+            .arg(local)
+            .arg(format!("{target}:{}/{remote_rel}", cfg.remote_dir))
+            .status()
+            .map_err(|e| format!("scp: {e}"))?;
+        if !status.success() {
+            return Err(format!("scp failed: {}", local.display()));
+        }
+        Ok(())
+    };
 
-    // 4 — ship: scp the bundle to the server.
     println!("[4/6] ship");
     ssh(&format!("mkdir -p {}", cfg.remote_dir))?;
-    let scp = Command::new("scp")
-        .args(["-i", &key])
-        .arg(&bundle)
-        .arg(format!("{target}:{}/bundle.tar.gz", cfg.remote_dir))
+    // Save the built images to a tarball and ship them.
+    let images_tar = project_root.join("_deploy/images.tar");
+    let save = Command::new("docker")
+        .args(["save", "-o"])
+        .arg(&images_tar)
+        .args(["silan-backend:latest", "silan-web:latest"])
         .status()
-        .map_err(|e| format!("scp: {e}"))?;
-    if !scp.success() {
-        return Err("ship step failed (scp)".into());
+        .map_err(|e| format!("docker save: {e}"))?;
+    if !save.success() {
+        return Err("docker save failed".into());
     }
+    scp(&images_tar, "images.tar")?;
+    scp(db_path, "snapshot.db")?;
+    scp(&project_root.join(compose), "docker-compose.yml")?;
+    // Ship the silan binary so promote can run server-side.
+    let self_bin = env::current_exe().map_err(|e| e.to_string())?;
+    scp(&self_bin, "silan-viking")?;
+    ssh(&format!("cd {} && docker load -i images.tar", cfg.remote_dir))?;
 
-    // 5 — promote: unpack + replace derived tables on the live db. The remote
-    // promote keeps the previous live db as `portfolio.db.prev` for rollback.
     println!("[5/6] promote");
+    // Server-side: bring stack up, pull the live db out of the volume,
+    // promote derived tables, push it back. Runtime tables survive.
     ssh(&format!(
-        "cd {dir} && tar -xzf bundle.tar.gz && \
-         cp -f portfolio.db portfolio.db.prev 2>/dev/null || true",
-        dir = cfg.remote_dir
+        "cd {dir} && chmod +x silan-viking && \
+         docker compose -f docker-compose.yml up -d && \
+         (docker compose -f docker-compose.yml cp backend:/data/portfolio.db live.db \
+            || cp snapshot.db live.db) && \
+         cp -f live.db portfolio.db.prev && \
+         ./silan-viking site promote live.db snapshot.db {commit} && \
+         docker compose -f docker-compose.yml cp live.db backend:/data/portfolio.db",
+        dir = cfg.remote_dir,
+        commit = content_commit,
     ))?;
 
-    // 6 — up: bring the stack up.
     println!("[6/6] up");
     ssh(&format!(
-        "cd {} && docker compose -f {} up -d",
-        cfg.remote_dir, cfg.compose_file
+        "cd {} && docker compose -f docker-compose.yml restart backend",
+        cfg.remote_dir
     ))?;
 
     println!("deployed to https://{}", cfg.host);
     Ok(())
+}
+
+/// Run `npm run build` for the front-end. The Vite bundle lands in
+/// `frontend/dist/`, which the `web` Docker image copies in.
+fn run_vite_build(project_root: &Path) -> Result<(), String> {
+    let frontend = project_root.join("frontend");
+    if !frontend.join("package.json").exists() {
+        return Err(format!(
+            "front-end not found at {} — cannot build the web bundle",
+            frontend.display()
+        ));
+    }
+    // `npm ci` if dependencies are not installed yet.
+    if !frontend.join("node_modules").exists() {
+        let ci = Command::new("npm")
+            .arg("ci")
+            .current_dir(&frontend)
+            .status()
+            .map_err(|e| format!("npm ci: {e}"))?;
+        if !ci.success() {
+            return Err("npm ci failed".into());
+        }
+    }
+    let build = Command::new("npm")
+        .args(["run", "build"])
+        .current_dir(&frontend)
+        .status()
+        .map_err(|e| format!("npm run build: {e}"))?;
+    if !build.success() {
+        return Err("front-end build failed (npm run build)".into());
+    }
+    Ok(())
+}
+
+/// Run `docker compose -f <file> <args...>` from the project root.
+fn docker_compose(project_root: &Path, compose_file: &str, args: &[&str]) -> Result<(), String> {
+    let status = Command::new("docker")
+        .args(["compose", "-f", compose_file])
+        .args(args)
+        .current_dir(project_root)
+        .status()
+        .map_err(|e| format!("docker compose: {e}"))?;
+    if !status.success() {
+        return Err(format!("docker compose {} failed", args.join(" ")));
+    }
+    Ok(())
+}
+
+/// `docker compose cp <service>:<remote> <local>` — copy a file out of a
+/// running container.
+fn docker_cp_from(
+    compose_file: &str,
+    project_root: &Path,
+    service: &str,
+    remote: &str,
+    local: &Path,
+) -> Result<(), String> {
+    let status = Command::new("docker")
+        .args(["compose", "-f", compose_file, "cp"])
+        .arg(format!("{service}:{remote}"))
+        .arg(local)
+        .current_dir(project_root)
+        .status()
+        .map_err(|e| format!("docker compose cp: {e}"))?;
+    if !status.success() {
+        return Err(format!("docker compose cp from {service}:{remote} failed"));
+    }
+    Ok(())
+}
+
+/// `docker compose cp <local> <service>:<remote>` — copy a file into a
+/// running container.
+fn docker_cp_to(
+    compose_file: &str,
+    project_root: &Path,
+    service: &str,
+    local: &Path,
+    remote: &str,
+) -> Result<(), String> {
+    let status = Command::new("docker")
+        .args(["compose", "-f", compose_file, "cp"])
+        .arg(local)
+        .arg(format!("{service}:{remote}"))
+        .current_dir(project_root)
+        .status()
+        .map_err(|e| format!("docker compose cp: {e}"))?;
+    if !status.success() {
+        return Err(format!("docker compose cp to {service}:{remote} failed"));
+    }
+    Ok(())
+}
+
+/// Promote the snapshot's derived tables onto the live db, in place. Runtime
+/// tables (comment / content_interaction / annotation) are left untouched
+/// (`08` §8.3).
+fn promote_db(live_db: &Path, snapshot_db: &Path, content_commit: &str) -> Result<(), String> {
+    let report = silan_viking_site::promote(
+        &live_db.to_string_lossy(),
+        &snapshot_db.to_string_lossy(),
+        content_commit,
+    )
+    .map_err(|e| e.to_string())?;
+    println!(
+        "  promoted tables={} rows={} content_commit={}",
+        report.replaced_tables.len(),
+        report.rows_inserted,
+        report.content_commit
+    );
+    Ok(())
+}
+
+/// The current `content/` Git HEAD commit — the marker promote writes so
+/// monitoring knows which content revision is live.
+fn git_head_commit(content_root: &Path) -> Option<String> {
+    let out = Command::new("git")
+        .args(["-C"])
+        .arg(content_root)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&out.stdout).trim().to_owned())
 }
 
 /// `silan site rollback` — restore the previous live db on the server and

@@ -41,6 +41,14 @@ impl SqliteSink {
     /// Sets WAL mode and a busy timeout (`11` §11.11) so a concurrent reader
     /// — the Go API — does not block the writer.
     pub fn open(path: &Path) -> Result<Self, SyncError> {
+        // The configured db path may sit under a not-yet-created dir (e.g.
+        // `_deploy/portfolio.db`). Create the parent so the first `sync` on a
+        // fresh project succeeds without a manual `mkdir`.
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent).map_err(SyncError::db)?;
+            }
+        }
         let conn = Connection::open(path)?;
         Self::configure(&conn)?;
         Ok(Self { conn })
@@ -96,11 +104,40 @@ impl Sink for SqliteSink {
     fn write_batch(&mut self, batch: &RowSetBatch) -> Result<(), SyncError> {
         let tx = self.conn.transaction()?;
 
-        // Phase 1: ensure every table exists, with a column set wide enough
-        // for every row targeting it.
+        // Phase 0: schema gate. For any table that is a generated
+        // `silan-viking-entities` Entity, the columns a `Mapper` wrote must
+        // be a subset of what the Entity declares — otherwise the Mapper and
+        // the schema disagree and the sync aborts (`11` truth-source
+        // discipline). Tables not in the Entity layer (`sync_meta`, the
+        // `tag` / `content_tag` join tables) are engine-internal derived
+        // tables with no Entity; they pass through.
+        //
+        // Every drift in the batch is collected and reported together, so a
+        // mapper can be realigned to the schema in a single pass rather than
+        // one failed sync per offending column.
         let table_columns = collect_table_columns(batch);
+        let mut drift: Vec<(String, String)> = Vec::new();
         for (table, columns) in &table_columns {
-            create_table(&tx, table, columns)?;
+            if let Some(authoritative) = silan_viking_entities::table_columns(table) {
+                for column in columns {
+                    if !authoritative.iter().any(|c| c == column) {
+                        drift.push((table.clone(), column.clone()));
+                    }
+                }
+            }
+        }
+        if !drift.is_empty() {
+            return Err(SyncError::SchemaDrift(drift));
+        }
+
+        // Phase 1: ensure every table exists. An Entity-backed table is
+        // built from the *authoritative* column set (so its on-disk schema
+        // always matches the Entity, even for columns no row used this
+        // sync); a non-Entity table is built from the observed columns.
+        for (table, columns) in &table_columns {
+            let create_columns = silan_viking_entities::table_columns(table)
+                .unwrap_or_else(|| columns.clone());
+            create_table(&tx, table, &create_columns)?;
             // Replace, not append: a sync derives the whole table afresh.
             tx.execute(&format!("DELETE FROM \"{table}\""), [])?;
         }

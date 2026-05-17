@@ -159,6 +159,67 @@ pub fn endpoint_read(endpoint: &str) -> Option<EndpointRead> {
         .find(|e| e.endpoint == endpoint)
 }
 
+/// The authoritative column set of a generated table — the schema truth the
+/// `SqliteSink` validates `Mapper` output against (`docs/silan-viking/11`
+/// truth-source discipline). `None` if `table` is not a generated Entity.
+///
+/// This is what makes the Entity layer an *enforced* schema source rather
+/// than dead code: `sink` builds tables from this set and rejects any
+/// `Mapper` row carrying a column the Entity does not declare — so a drift
+/// like `content_relation.from_uri` is caught at sync time, not in prod.
+pub fn table_columns(table: &str) -> Option<Vec<String>> {
+    use sea_orm::{IdenStatic, Iterable};
+
+    /// Collect `<E>::Column`'s names if `<E>` maps to `table`, else `None`.
+    fn columns_of<E: sea_orm::EntityTrait>(entity: E, table: &str) -> Option<Vec<String>> {
+        if entity.table_name() != table {
+            return None;
+        }
+        Some(
+            <E::Column as Iterable>::iter()
+                .map(|c| IdenStatic::as_str(&c).to_owned())
+                .collect(),
+        )
+    }
+
+    // One arm per generated Entity — kept aligned with the table list in
+    // `generated_table_names()` (tests).
+    macro_rules! try_tables {
+        ($($m:ident),* $(,)?) => {
+            $( if let Some(cols) = columns_of(crate::$m::Entity, table) {
+                return Some(cols);
+            } )*
+        };
+    }
+    try_tables!(
+        blog_posts,
+        blog_post_translations,
+        projects,
+        project_translations,
+        project_details,
+        ideas,
+        idea_translations,
+        idea_details,
+        personal_info,
+        personal_info_translations,
+        item_part,
+        item_part_translation,
+        part_entry,
+        part_entry_translation,
+        recent_updates,
+        recent_update_translations,
+        episodes,
+        episode_translations,
+        episode_series,
+        episode_series_translations,
+        content_relation,
+        content_interaction,
+        comments,
+        request_logs,
+    );
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

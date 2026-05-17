@@ -6,9 +6,10 @@
 //! parser expects, with a required-field frontmatter block on the canonical
 //! file (`01` §1.3.1, `content/SCHEMA.md`).
 //!
-//! `part_id` is intentionally omitted from the generated `meta.toml`: per
-//! `01` §1.4 the engine mints it on first scan. A scaffolded file is a valid
-//! "not yet scanned" Part.
+//! `part_id` is generated *here*, at scaffold time, and written into the
+//! `meta.toml`: per `01` §1.4 the stable Part identity is minted by `init` /
+//! `add-part` / the offline re-layout tool, and `index sync` only ever reads
+//! it (it never silently writes `part_id` back to the truth source).
 //!
 //! Note on directory naming: the on-disk type directory is the engine's
 //! `ContentKind::dir_name()` (e.g. `ideas`, plural), not the CLI verb-group
@@ -104,13 +105,15 @@ fn slug_to_title(slug: &str) -> String {
         .join(" ")
 }
 
-/// Write a `meta.toml` for a prose Part (`01` §1.3.1). `part_id` is omitted —
-/// the engine mints it on first scan.
+/// Write a `meta.toml` for a prose Part (`01` §1.3.1 / §1.4). A fresh
+/// `part_id` (`p_<ulid>`) is minted here — scaffold time — so the Part has a
+/// stable identity from creation; `index sync` reads it, never writes it.
 fn write_meta(part_dir: &Path, role: &str) -> Result<PathBuf, ScaffoldError> {
     let path = part_dir.join("meta.toml");
+    let part_id = silan_viking_base::PartId::generate();
     let body = format!(
-        "# Part identity for the `{role}` part (per 01 §1.3.1).\n\
-         # `part_id` is omitted: the engine mints it on first `index sync`.\n\
+        "# Part identity for the `{role}` part (per 01 §1.3.1 / §1.4).\n\
+         part_id        = \"{part_id}\"\n\
          type           = \"{role}\"\n\
          shape          = \"prose\"\n\
          canonical_lang = \"en\"\n"

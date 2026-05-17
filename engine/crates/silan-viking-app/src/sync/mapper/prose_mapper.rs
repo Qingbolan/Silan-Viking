@@ -35,45 +35,77 @@ impl ProseMapper {
 
         rows.push(main_row(expected, &item_id, parsed));
         push_translation_rows(expected, &item_id, parsed, &mut rows);
-        push_item_part_rows(&item_id, parsed, &mut rows);
-        push_part_rows(&item_id, parsed, &mut rows);
-        push_relation_rows(&item_id, parsed, &mut rows);
+        push_item_part_rows(expected, &item_id, parsed, &mut rows);
+        push_part_rows(parsed, &mut rows);
+        push_relation_rows(expected, parsed, &mut rows);
         push_tag_rows(expected, &item_id, parsed, &mut rows);
 
         Ok(rows)
     }
 }
 
-/// Frontmatter fields that fan out into their own table instead of landing as
-/// a main-table column (`SCHEMA.md` placement rule 1a). `relations` is already
-/// split out by the parser; `tags` reaches `main()` as a list and is routed
-/// here by [`push_tag_rows`], so `main_row` must skip it.
-const JOIN_TABLE_FIELDS: &[&str] = &["tags"];
+/// Frontmatter fields that must **not** become a main-table column.
+/// - `tags` fans out to its own table (`SCHEMA.md` rule 1a), routed by
+///   [`push_tag_rows`].
+/// - `kind` is the type discriminator: each type has its own main table, so
+///   the Entity carries no `kind` column — it would be schema drift.
+/// - `priority` (idea) / `tech_stack` (project): these appear in legacy
+///   Python-parser frontmatter but the new `10`/`11` schema deliberately
+///   does **not** carry them as columns — they are dropped on purpose, not
+///   pending. (`tech_stack`-style data, if ever needed, would go through a
+///   join table, not a main-table column.)
+///
+/// Note: `visibility` is **not** skipped — `blog_posts`/`ideas`/`projects`/
+/// `episodes` all carry a `visibility` column (`11` §11.7), so it is real
+/// content the main row must write. (`resume` is the exception — handled in
+/// `resume.rs`, whose `personal_info` table has no `visibility`.)
+const SKIP_MAIN_FIELDS: &[&str] = &["tags", "kind", "priority", "tech_stack"];
 
 /// Build the content main-table row from the language-neutral fields.
+///
+/// No `kind` column: each content type has its own main table (`blog_posts`,
+/// `ideas`, …), so the type is the table — the Entity carries no `kind`.
 fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed) -> Row {
-    let mut row = Row::new(table_names::main_table(kind))
-        .with("id", SqlValue::Text(item_id.to_owned()))
-        .with("kind", SqlValue::Text(kind.frontmatter_value().to_owned()));
+    let mut row =
+        Row::new(table_names::main_table(kind)).with("id", SqlValue::Text(item_id.to_owned()));
     for name in parsed.main().field_names() {
-        // Join-table fields (`tags`) are routed to their own table, not
-        // flattened into a main-table column (`SCHEMA.md` rule 1a).
-        if JOIN_TABLE_FIELDS.contains(&name) {
+        // `tags` fans out to its own table; `kind` is not a column.
+        if SKIP_MAIN_FIELDS.contains(&name) {
             continue;
         }
         if let Some(value) = parsed.main().get(name) {
-            row = row.with(name.to_owned(), sql_value(value));
+            row = row.with(main_column_name(kind, name), sql_value(value));
         }
     }
     row
+}
+
+/// Map a frontmatter field name to the main table's column name. They match
+/// for almost every field; the exception is `episode`, whose `series`
+/// frontmatter field is the Entity's `series_id` foreign-key column.
+fn main_column_name(kind: ContentKind, field: &str) -> String {
+    match (kind, field) {
+        (ContentKind::Episode, "series") => "series_id".to_owned(),
+        _ => field.to_owned(),
+    }
 }
 
 /// Build one translation row per language, carrying that language's
 /// translatable scalar fields.
 fn push_translation_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
     for (lang, variant) in parsed.langs() {
+        // The translation row points back at its main row via the
+        // type-specific FK column (`blog_post_id`, `idea_id`, …) — the
+        // column the reverse-generated Entity carries (`11` §11).
+        // `id` is derived deterministically from (parent Item, language) —
+        // the row's natural key — so a pure-function `Mapper` needs no
+        // DB-minted id and incremental-sync hashes stay stable.
         let mut row = Row::new(table_names::translation_table(kind))
-            .with("item_id", SqlValue::Text(item_id.to_owned()))
+            .with("id", SqlValue::Text(format!("{item_id}_{lang}")))
+            .with(
+                table_names::translation_fk(kind),
+                SqlValue::Text(item_id.to_owned()),
+            )
             .with("language_code", SqlValue::Text(lang.to_string()));
         // The translatable scalar fields of this language (`title`, …).
         for name in ["title", "excerpt", "abstract", "description"] {
@@ -87,55 +119,121 @@ fn push_translation_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows
 
 /// Build one `item_part` identity row per Part role the Item has prose for.
 ///
-/// `item_part` holds the Part identity (revision G, `01` §1.10). In M6 the
-/// natural key `(item_id, role)` identifies the Part; the `PartId` ULID
-/// column is populated once the parser threads `PartId` through `Parsed`.
-fn push_item_part_rows(item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+/// `item_part` holds the Part identity (revision G, `01` §1.10 / `11` §11.5).
+/// Its columns match the `silan-viking-entities` Entity: `id` is the stable
+/// `part_id` (`01` §1.4 — minted at scaffold, read from `meta.toml`); the
+/// `part_id` column carries it too (the Entity's `unique` natural key);
+/// `entity_type` / `entity_id` locate the owning Item.
+fn push_item_part_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
     let mut seen: Vec<String> = Vec::new();
     for variant in parsed.langs().values() {
-        for role in variant.prose_roles() {
-            if !seen.contains(&role.to_owned()) {
-                seen.push(role.to_owned());
-                rows.push(
-                    Row::new(table_names::ITEM_PART_TABLE)
-                        .with("item_id", SqlValue::Text(item_id.to_owned()))
-                        .with("role", SqlValue::Text(role.to_owned())),
-                );
+        for (order, role) in variant.prose_roles().enumerate() {
+            if seen.contains(&role.to_owned()) {
+                continue;
             }
+            seen.push(role.to_owned());
+            // `id` = `part_id`: the Part's stable identity doubles as the
+            // row's primary key, so `item_part_translation` can point at it
+            // by a value a pure-function `Mapper` can compute (no DB-minted
+            // UUID needed). A role whose `meta.toml` lacked `part_id` falls
+            // back to the role name — still deterministic within the Item.
+            let part_id = parsed
+                .part_id(role)
+                .map(|p| p.as_str().to_owned())
+                .unwrap_or_else(|| role.to_owned());
+            // `canonical_lang`: the first language is the canonical one for
+            // M6's purposes; the Part's own `meta.toml` carries the truth,
+            // threaded once the parser exposes it per Part.
+            let canonical_lang = parsed
+                .languages()
+                .next()
+                .map(ToString::to_string)
+                .unwrap_or_default();
+            rows.push(
+                Row::new(table_names::ITEM_PART_TABLE)
+                    .with("id", SqlValue::Text(part_id.clone()))
+                    .with("part_id", SqlValue::Text(part_id))
+                    .with(
+                        "entity_type",
+                        SqlValue::Text(kind.frontmatter_value().to_owned()),
+                    )
+                    .with("entity_id", SqlValue::Text(item_id.to_owned()))
+                    .with("role", SqlValue::Text(role.to_owned()))
+                    .with("sort_order", SqlValue::Int(order as i64))
+                    .with("canonical_lang", SqlValue::Text(canonical_lang)),
+            );
         }
     }
 }
 
 /// Build one `item_part_translation` row per (language, prose Part body).
-fn push_part_rows(item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+///
+/// Columns match the Entity (`11` §11.5): `item_part_id` is the parent
+/// `item_part`'s id (= the Part's `part_id`); `role` is **not** a column here
+/// — it lives on `item_part`, not on the translation.
+fn push_part_rows(parsed: &Parsed, rows: &mut RowSet) {
     for (lang, variant) in parsed.langs() {
         for role in variant.prose_roles() {
-            if let Some(body) = variant.prose(role) {
-                rows.push(
-                    Row::new(table_names::ITEM_PART_TRANSLATION_TABLE)
-                        .with("item_id", SqlValue::Text(item_id.to_owned()))
-                        .with("language_code", SqlValue::Text(lang.to_string()))
-                        .with("role", SqlValue::Text(role.to_owned()))
-                        .with("body", SqlValue::Text(body.to_owned())),
-                );
-            }
+            let Some(body) = variant.prose(role) else {
+                continue;
+            };
+            let item_part_id = parsed
+                .part_id(role)
+                .map(|p| p.as_str().to_owned())
+                .unwrap_or_else(|| role.to_owned());
+            // `id` derived from (parent `item_part`, language) — the row's
+            // natural key — same rationale as the translation rows above.
+            rows.push(
+                Row::new(table_names::ITEM_PART_TRANSLATION_TABLE)
+                    .with("id", SqlValue::Text(format!("{item_part_id}_{lang}")))
+                    .with("item_part_id", SqlValue::Text(item_part_id))
+                    .with("language_code", SqlValue::Text(lang.to_string()))
+                    .with("body", SqlValue::Text(body.to_owned())),
+            );
         }
     }
 }
 
+/// Resolve a content `silan://resources/<type-dir>/<slug>` URI into its
+/// `(entity_type, entity_id)` pair for `content_relation`. `entity_type` is
+/// the frontmatter enum value (`blog`/`idea`/…); `entity_id` is the Item
+/// slug — a stable natural key a pure-function `Mapper` can compute (the same
+/// rationale as `item_part.id` = `part_id`). An unrecognised URI shape yields
+/// the raw segments, so a malformed relation is visible rather than silent.
+fn uri_type_and_id(uri: &silan_viking_base::SilanUri) -> (String, String) {
+    let segments = uri.segments();
+    let entity_type = segments
+        .first()
+        .and_then(|dir| silan_viking_content::ContentKind::from_dir_name(dir).ok())
+        .map(|k| k.frontmatter_value().to_owned())
+        .unwrap_or_else(|| segments.first().cloned().unwrap_or_default());
+    let entity_id = segments.get(1).cloned().unwrap_or_default();
+    (entity_type, entity_id)
+}
+
 /// Build one `content_relation` row per declared relation, in canonical form.
-fn push_relation_rows(item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+///
+/// Columns match the Entity (`11` §11.2): the edge endpoints are stored as
+/// `(from_type, from_id)` / `(to_type, to_id)` — type enum + Item id — not as
+/// opaque URIs.
+fn push_relation_rows(kind: ContentKind, parsed: &Parsed, rows: &mut RowSet) {
     for relation in parsed.relations() {
         let canonical = relation.canonicalized();
+        let (to_type, to_id) = uri_type_and_id(canonical.to());
+        let from_id = parsed.main().text("slug").unwrap_or_default().to_owned();
+        let from_type = kind.frontmatter_value().to_owned();
+        let relation_type = canonical.relation_type().as_str().to_owned();
+        // `id` is the edge's natural key — the endpoints plus the relation
+        // kind — so re-syncing rebuilds the same row deterministically.
+        let id = format!("{from_type}_{from_id}_{to_type}_{to_id}_{relation_type}");
         rows.push(
             Row::new(table_names::CONTENT_RELATION_TABLE)
-                .with("from_id", SqlValue::Text(item_id.to_owned()))
-                .with("from_uri", SqlValue::Text(canonical.from().to_string()))
-                .with("to_uri", SqlValue::Text(canonical.to().to_string()))
-                .with(
-                    "relation_type",
-                    SqlValue::Text(canonical.relation_type().as_str().to_owned()),
-                )
+                .with("id", SqlValue::Text(id))
+                .with("from_type", SqlValue::Text(from_type))
+                .with("from_id", SqlValue::Text(from_id))
+                .with("to_type", SqlValue::Text(to_type))
+                .with("to_id", SqlValue::Text(to_id))
+                .with("relation_type", SqlValue::Text(relation_type))
                 .with(
                     "sort_order",
                     canonical.sort_order().map_or(SqlValue::Null, SqlValue::Int),
@@ -157,9 +255,8 @@ fn push_tag_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows: &mut R
         return;
     };
     let entity_type = kind.frontmatter_value();
-    // The Item's stable slug — `content_tag` carries it alongside the minted
-    // `entity_id` ULID so the content digest has a stable key (the ULID is
-    // excluded from the digest; mirrors `content_relation.from_uri`).
+    // The Item's stable slug — the natural key `content_tag` carries (the
+    // same stable-natural-key rationale as `content_relation.from_id`).
     let entity_slug = parsed.main().text("slug").unwrap_or_default().to_owned();
     let mut seen: Vec<String> = Vec::new();
     for label in tags {

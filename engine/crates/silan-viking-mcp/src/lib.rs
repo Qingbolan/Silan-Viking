@@ -342,39 +342,30 @@ pub struct ProposalCreated {
 /// `propose(uri, draft)` — write an agent draft onto a fresh `proposal/<id>`
 /// Git branch and register it (`03` §3.1). The draft is written to the Item
 /// or Part path the URI anchors to; `accept` (CLI, human-only) merges it.
+///
+/// The proposal branch lifecycle is owned by the engine
+/// (`Workspace::create_proposal`); this function supplies only the id, the
+/// touched URI, and a closure writing the one draft file.
 pub fn propose(content_root: &Path, uri: &str, draft: &str) -> Result<ProposalCreated, McpError> {
     let target = ProposalTarget::parse(uri).map_err(|e| McpError::Proposal(e.to_string()))?;
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
-    let repo = ws
-        .content_repo()
-        .map_err(|e| McpError::Proposal(e.to_string()))?;
 
     let id =
         ProposalId::new(Ulid::new().to_string()).map_err(|e| McpError::Proposal(e.to_string()))?;
-    let branch = id.branch_name();
-
-    // Branch from main, write the draft, commit, return to main — the agent
-    // never writes to the main branch (#10 invariant).
-    git_ok(&repo, &["checkout", "-q", "-b", &branch])?;
     let rel = draft_rel_path(&target);
-    let file = content_root.join(&rel);
-    if let Some(parent) = file.parent() {
-        fs::create_dir_all(parent).map_err(|e| McpError::Io(e.to_string()))?;
-    }
-    fs::write(&file, draft).map_err(|e| McpError::Io(e.to_string()))?;
-    git_ok(&repo, &["add", "-A"])?;
-    git_ok(
-        &repo,
-        &["commit", "-q", "-m", &format!("propose {}", id.as_str())],
-    )?;
-    git_ok(&repo, &["checkout", "-q", "main"])?;
 
-    ws.register_proposal(&id, ProposalKind::Modify, vec![uri.to_owned()])
-        .map_err(|e| McpError::Proposal(e.to_string()))?;
+    ws.create_proposal(
+        &id,
+        ProposalKind::Modify,
+        vec![uri.to_owned()],
+        &format!("propose {}", id.as_str()),
+        |root| write_draft_file(&root.join(&rel), draft),
+    )
+    .map_err(|e| McpError::Proposal(e.to_string()))?;
 
     Ok(ProposalCreated {
         id: id.as_str().to_owned(),
-        branch,
+        branch: id.branch_name(),
     })
 }
 
@@ -384,47 +375,34 @@ pub fn propose(content_root: &Path, uri: &str, draft: &str) -> Result<ProposalCr
 /// `silan://resources` is *not* used — capture stays in `agent/`.
 pub fn capture(content_root: &Path, note: &str) -> Result<ProposalCreated, McpError> {
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
-    let repo = ws
-        .content_repo()
-        .map_err(|e| McpError::Proposal(e.to_string()))?;
 
     let id =
         ProposalId::new(Ulid::new().to_string()).map_err(|e| McpError::Proposal(e.to_string()))?;
-    let branch = id.branch_name();
     let rel = format!("agent/notes/{}.md", id.as_str());
 
-    git_ok(&repo, &["checkout", "-q", "-b", &branch])?;
-    let file = content_root.join(&rel);
-    if let Some(parent) = file.parent() {
-        fs::create_dir_all(parent).map_err(|e| McpError::Io(e.to_string()))?;
-    }
-    fs::write(&file, note).map_err(|e| McpError::Io(e.to_string()))?;
-    git_ok(&repo, &["add", "-A"])?;
-    git_ok(
-        &repo,
-        &["commit", "-q", "-m", &format!("capture {}", id.as_str())],
-    )?;
-    git_ok(&repo, &["checkout", "-q", "main"])?;
-
-    ws.register_proposal(
+    ws.create_proposal(
         &id,
         ProposalKind::Create,
         vec![format!("silan://agent/notes/{}", id.as_str())],
+        &format!("capture {}", id.as_str()),
+        |root| write_draft_file(&root.join(&rel), note),
     )
     .map_err(|e| McpError::Proposal(e.to_string()))?;
 
     Ok(ProposalCreated {
         id: id.as_str().to_owned(),
-        branch,
+        branch: id.branch_name(),
     })
 }
 
-/// Run a `git` command through the workspace repo, mapping failure to
-/// [`McpError::Proposal`].
-fn git_ok(repo: &silan_viking_app::GitRepo, args: &[&str]) -> Result<(), McpError> {
-    repo.run(args.iter().copied())
-        .map(|_| ())
-        .map_err(|e| McpError::Proposal(e.to_string()))
+/// Write a proposal draft file, creating parent directories. The
+/// `write_draft` closure of `Workspace::create_proposal` returns
+/// `ProposalError`, so io failures map to `ProposalError::Io`.
+fn write_draft_file(path: &Path, body: &str) -> Result<(), silan_viking_app::ProposalError> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| silan_viking_app::ProposalError::Io(e.to_string()))?;
+    }
+    fs::write(path, body).map_err(|e| silan_viking_app::ProposalError::Io(e.to_string()))
 }
 
 /// The repo-relative file path a proposal draft is written to. An Item target
@@ -680,6 +658,14 @@ fn resolve_stats_entity(db_path: &Path, uri: &str) -> Result<(String, String), M
         }
     };
 
+    // A missing db file means the project has never been synced — point at
+    // `index sync` rather than leaking a raw "unable to open" sqlite error.
+    if !db_path.exists() {
+        return Err(McpError::Workspace(format!(
+            "no local DB at {} — run `silan index sync` first",
+            db_path.display()
+        )));
+    }
     let conn = rusqlite::Connection::open(db_path)
         .map_err(|e| McpError::Workspace(format!("open {}: {e}", db_path.display())))?;
     let query = if entity_type == "resume" {

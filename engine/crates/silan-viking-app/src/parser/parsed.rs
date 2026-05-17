@@ -11,7 +11,7 @@
 //! can never amend it.
 
 use super::entry::PartEntry;
-use silan_viking_base::{ItemId, Lang};
+use silan_viking_base::{ItemId, Lang, PartId};
 use silan_viking_content::{ContentKind, PartRole, Relation};
 use std::collections::BTreeMap;
 
@@ -143,6 +143,11 @@ pub struct Parsed {
     main: LangNeutral,
     langs: BTreeMap<Lang, LangVariant>,
     relations: Vec<Relation>,
+    /// The stable `PartId` of each Part role (`01` §1.3 / §1.4 — read from
+    /// `parts/<role>/meta.toml`). Language-independent: a Part's `en` and
+    /// `zh` files share one `PartId`, so it is keyed by role, not by Part ×
+    /// language. A role absent here had no `part_id` in its `meta.toml`.
+    part_ids: BTreeMap<String, PartId>,
 }
 
 impl Parsed {
@@ -169,6 +174,12 @@ impl Parsed {
     /// The declared relations of this Item.
     pub fn relations(&self) -> &[Relation] {
         &self.relations
+    }
+
+    /// The stable `PartId` of a Part role, if its `meta.toml` declared one.
+    /// The `Mapper` writes this into `item_part.part_id` (`11` §11.5).
+    pub fn part_id(&self, role: &str) -> Option<&PartId> {
+        self.part_ids.get(role)
     }
 
     /// The set of languages present, in sorted order.
@@ -203,6 +214,7 @@ pub(in crate::parser) struct ParsedBuilder {
     main: LangNeutral,
     langs: BTreeMap<Lang, LangVariant>,
     relations: Vec<Relation>,
+    part_ids: BTreeMap<String, PartId>,
 }
 
 impl ParsedBuilder {
@@ -214,6 +226,7 @@ impl ParsedBuilder {
             main: LangNeutral::default(),
             langs: BTreeMap::new(),
             relations: Vec::new(),
+            part_ids: BTreeMap::new(),
         }
     }
 
@@ -278,6 +291,11 @@ impl ParsedBuilder {
         self.relations.push(relation);
     }
 
+    /// Record the stable `PartId` of a Part role, read from its `meta.toml`.
+    pub(in crate::parser) fn put_part_id(&mut self, role: impl Into<String>, part_id: PartId) {
+        self.part_ids.insert(role.into(), part_id);
+    }
+
     /// Finish building, validating the construct-time invariants.
     ///
     /// Returns the offending message as `Err` if `langs` is empty — a parsed
@@ -292,6 +310,7 @@ impl ParsedBuilder {
             main: self.main,
             langs: self.langs,
             relations: self.relations,
+            part_ids: self.part_ids,
         })
     }
 }

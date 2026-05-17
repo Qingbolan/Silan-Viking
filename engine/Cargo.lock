@@ -1726,6 +1726,7 @@ dependencies = [
  "rusqlite",
  "serde_json",
  "silan-viking-app",
+ "silan-viking-base",
  "silan-viking-mcp",
  "silan-viking-site",
  "time",

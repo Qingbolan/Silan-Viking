@@ -51,6 +51,16 @@ pub enum SyncError {
     #[error("map failed: {0}")]
     Map(#[from] MapError),
 
+    /// One or more `Mapper` row columns that the `silan-viking-entities`
+    /// schema does not declare — the sink rejects the whole sync so a drift
+    /// like `content_relation.from_uri` is caught at sync time, not in
+    /// production (`docs/silan-viking/11` truth-source discipline). Every
+    /// drift found in the batch is reported at once (`(table, column)`
+    /// pairs), so a mapper can be realigned in one pass.
+    #[error("schema drift — Mapper columns absent from silan-viking-entities: {}",
+        .0.iter().map(|(t, c)| format!("{t}.{c}")).collect::<Vec<_>>().join(", "))]
+    SchemaDrift(Vec<(String, String)>),
+
     /// The database could not be opened or written.
     #[error("database error: {detail}")]
     Db { detail: String },

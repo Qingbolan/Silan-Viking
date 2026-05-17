@@ -12,6 +12,7 @@ name = "silan-viking"
 path = "src/main.rs"
 
 [dependencies]
+silan-viking-base = { workspace = true }
 silan-viking-app  = { workspace = true }
 silan-viking-mcp  = { workspace = true }
 silan-viking-site = { workspace = true }

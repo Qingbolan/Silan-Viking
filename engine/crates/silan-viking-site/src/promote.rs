@@ -50,6 +50,9 @@ pub const DERIVED_TABLES: &[&str] = &[
     "recent_update_translations",
     "episode_translations",
     "episode_series_translations",
+    // provenance — the single-row sync digest; promote stamps content_commit
+    // onto it as the "batch complete" marker (`11` §11.11).
+    "sync_meta",
 ];
 
 /// The runtime tables promote must never name in its SQL (`11` §11.11). Kept
@@ -129,17 +132,37 @@ pub fn promote(
 /// INSERTs then the marker. A `?` anywhere rolls the whole thing back.
 fn promote_txn(conn: &Connection, content_commit: &str) -> Result<PromoteReport, PromoteError> {
     conn.execute_batch("BEGIN IMMEDIATE")?;
+    // Defer FK enforcement to COMMIT time: promote replaces a whole graph of
+    // derived tables, so mid-transaction a child can transiently reference a
+    // parent not yet re-inserted. The check still runs at COMMIT — a genuine
+    // dangling reference rolls the whole promote back. `defer_foreign_keys`
+    // is per-transaction and resets automatically.
+    conn.execute_batch("PRAGMA defer_foreign_keys = ON")?;
 
     let outcome = (|| -> Result<PromoteReport, PromoteError> {
-        // A derived table is replaced only if it exists in *both* the live
-        // DB and the snapshot. A live table missing from the snapshot is
-        // left alone; a snapshot table missing from the live DB is skipped
-        // (the live schema is authoritative for what promote may write).
+        // Every whitelisted derived table present in the snapshot is
+        // replaceable. The snapshot is authoritative for derived-table shape
+        // (it is `index sync`'s output); a derived table missing from the
+        // live DB — a fresh deploy, or the Go migration not creating content
+        // tables — is CREATEd from the snapshot's own DDL. A live table not
+        // in the snapshot is left alone. Runtime tables are never in
+        // DERIVED_TABLES, so they are untouched by construction (`08` §8.3).
         let mut replaceable = Vec::new();
         for table in DERIVED_TABLES {
-            if has_table(conn, "main", table)? && has_table(conn, "snapshot", table)? {
-                replaceable.push(*table);
+            if !has_table(conn, "snapshot", table)? {
+                continue;
             }
+            if !has_table(conn, "main", table)? {
+                // Copy the snapshot's CREATE TABLE statement verbatim so the
+                // live derived table matches the engine's schema exactly.
+                let ddl: String = conn.query_row(
+                    "SELECT sql FROM snapshot.sqlite_master WHERE type='table' AND name=?1",
+                    rusqlite::params![table],
+                    |r| r.get(0),
+                )?;
+                conn.execute_batch(&ddl)?;
+            }
+            replaceable.push(*table);
         }
 
         // Phase 1 — clear the replaceable tables. Reverse order so a child
@@ -149,23 +172,51 @@ fn promote_txn(conn: &Connection, content_commit: &str) -> Result<PromoteReport,
         }
 
         // Phase 2 — refill from the attached snapshot, parents first so FK
-        // constraints (if enabled) are satisfied.
+        // constraints (if enabled) are satisfied. The INSERT is column-explicit
+        // (target column ← SELECT expression) so it is correct even when the
+        // live table — created by the Go ent migration — has a different
+        // column order, extra columns, or NOT NULL columns the engine never
+        // fills (those get a type-appropriate fallback; see `column_plan`).
         let mut rows_inserted = 0usize;
         for table in &replaceable {
+            let plan = column_plan(conn, table)?;
+            if plan.is_empty() {
+                continue;
+            }
+            let target = plan
+                .iter()
+                .map(|(col, _)| format!("\"{col}\""))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let exprs = plan
+                .iter()
+                .map(|(_, expr)| expr.clone())
+                .collect::<Vec<_>>()
+                .join(", ");
             let n = conn.execute(
-                &format!("INSERT INTO {table} SELECT * FROM snapshot.{table}"),
+                &format!("INSERT INTO {table} ({target}) SELECT {exprs} FROM snapshot.{table}"),
                 [],
             )?;
             rows_inserted += n;
         }
 
-        // Phase 3 — the completion marker. Monitoring/rollback reads only
-        // this (`11` §11.11).
-        conn.execute(
-            "INSERT INTO sync_meta(key, value) VALUES('content_commit', ?1)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        // Phase 3 — the completion marker. `sync_meta` now holds the synced
+        // row (content_hash / items_total) from the snapshot; stamp the
+        // deploy's content_commit onto it. Monitoring/rollback reads only
+        // this column (`11` §11.11).
+        let stamped = conn.execute(
+            "UPDATE sync_meta SET content_commit = ?1",
             rusqlite::params![content_commit],
         )?;
+        // A snapshot with no sync_meta row (an empty content tree) still gets
+        // a marker so monitoring sees the deploy.
+        if stamped == 0 {
+            conn.execute(
+                "INSERT INTO sync_meta(content_hash, items_total, content_commit)
+                 VALUES('', 0, ?1)",
+                rusqlite::params![content_commit],
+            )?;
+        }
 
         Ok(PromoteReport {
             replaced_tables: replaceable.iter().map(|t| (*t).to_owned()).collect(),
@@ -199,6 +250,98 @@ fn has_table(conn: &Connection, schema: &str, table: &str) -> Result<bool, Promo
     Ok(count > 0)
 }
 
+/// Information promote needs about a column of the live derived table.
+struct LiveColumn {
+    name: String,
+    /// SQLite declared type, lower-cased (`text`, `integer`, `datetime`, …).
+    decl_type: String,
+    not_null: bool,
+    has_default: bool,
+}
+
+/// Plan how promote fills a derived table: a list of
+/// `(target_column, select_expression)` pairs feeding one
+/// `INSERT INTO t (target...) SELECT expr... FROM snapshot.t`.
+///
+/// For each column the live table has:
+/// - Not in the snapshot → omitted (the live default / NULL applies).
+/// - In the snapshot, normally → copied verbatim (`"col"`).
+/// - In the snapshot but all-NULL there, and the live column is NOT NULL:
+///   the engine declares the column but never fills it. If the live column
+///   has a DEFAULT, omit it (the default applies). If it has no DEFAULT
+///   (e.g. ent's `Default(time.Now)` emits no SQL default), substitute a
+///   type-appropriate literal so the NOT NULL constraint is satisfied —
+///   `CURRENT_TIMESTAMP` for date/time columns, `0` for numerics, `''`
+///   otherwise. This keeps promote all-or-nothing without the engine having
+///   to author every structural column.
+///
+/// `table` is a `DERIVED_TABLES` literal, never user input.
+fn column_plan(conn: &Connection, table: &str) -> Result<Vec<(String, String)>, PromoteError> {
+    // Snapshot column names.
+    let mut snap_stmt = conn.prepare(&format!("PRAGMA snapshot.table_info({table})"))?;
+    let snapshot_cols: Vec<String> = snap_stmt
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?;
+    // Live columns. `table_info` columns: 1=name, 2=type, 3=notnull, 4=dflt.
+    let mut live_stmt = conn.prepare(&format!("PRAGMA main.table_info({table})"))?;
+    let live_cols: Vec<LiveColumn> = live_stmt
+        .query_map([], |row| {
+            Ok(LiveColumn {
+                name: row.get::<_, String>(1)?,
+                decl_type: row.get::<_, String>(2)?.to_ascii_lowercase(),
+                not_null: row.get::<_, i64>(3)? != 0,
+                has_default: row.get::<_, Option<String>>(4)?.is_some(),
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let mut plan = Vec::new();
+    for col in live_cols {
+        if !snapshot_cols.contains(&col.name) {
+            continue; // live-only column — keeps its own default / NULL
+        }
+        let quoted = format!("\"{}\"", col.name);
+        if col.not_null {
+            let all_null: bool = conn.query_row(
+                &format!(
+                    "SELECT count(*) = 0 FROM snapshot.{table} WHERE {quoted} IS NOT NULL"
+                ),
+                [],
+                |row| row.get(0),
+            )?;
+            if all_null && col.has_default {
+                continue; // every value is NULL — defer to the live DEFAULT
+            }
+            // NOT NULL column: guard every row against a NULL the constraint
+            // would reject — COALESCE to a type-appropriate fallback. (When
+            // the column is fully populated this is a harmless no-op.)
+            let fallback = null_fallback(&col.decl_type);
+            plan.push((col.name.clone(), format!("COALESCE({quoted}, {fallback})")));
+            continue;
+        }
+        plan.push((col.name.clone(), quoted));
+    }
+    Ok(plan)
+}
+
+/// A SQL literal used in place of NULL for a NOT-NULL column the engine
+/// leaves empty, chosen by the column's declared type affinity.
+fn null_fallback(decl_type: &str) -> String {
+    if decl_type.contains("date") || decl_type.contains("time") {
+        "CURRENT_TIMESTAMP".to_owned()
+    } else if decl_type.contains("int")
+        || decl_type.contains("real")
+        || decl_type.contains("floa")
+        || decl_type.contains("doub")
+        || decl_type.contains("num")
+        || decl_type.contains("bool")
+    {
+        "0".to_owned()
+    } else {
+        "''".to_owned()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -220,24 +363,28 @@ mod tests {
         let live = dir.join("live.db");
         let snap = dir.join("snapshot.db");
 
-        // A minimal live DB: one derived table + one runtime table + sync_meta.
+        // A minimal live DB: one derived table + one runtime table. Like the
+        // Go-migrated production DB, it has NO `sync_meta` — promote creates
+        // it (the regression behind the M9 e2e schema-drift fix).
         {
             let c = Connection::open(&live).expect("open live");
             c.execute_batch(
                 "CREATE TABLE blog_posts(id TEXT, slug TEXT);
                  CREATE TABLE comments(id TEXT, body TEXT);
-                 CREATE TABLE sync_meta(key TEXT PRIMARY KEY, value TEXT);
                  INSERT INTO blog_posts VALUES('old','old-post');
                  INSERT INTO comments VALUES('c1','a real visitor comment');",
             )
             .expect("seed live");
         }
-        // The snapshot only carries derived tables.
+        // The snapshot carries the derived tables + the engine's sync_meta
+        // (content_hash / items_total / content_commit), as `index sync` writes it.
         {
             let c = Connection::open(&snap).expect("open snap");
             c.execute_batch(
                 "CREATE TABLE blog_posts(id TEXT, slug TEXT);
-                 INSERT INTO blog_posts VALUES('new','fresh-post');",
+                 CREATE TABLE sync_meta(content_hash TEXT, items_total INTEGER, content_commit TEXT);
+                 INSERT INTO blog_posts VALUES('new','fresh-post');
+                 INSERT INTO sync_meta VALUES('hash-123', 1, '');",
             )
             .expect("seed snap");
         }
@@ -261,15 +408,17 @@ mod tests {
             .query_row("SELECT body FROM comments", [], |r| r.get(0))
             .expect("query comment");
         assert_eq!(comment, "a real visitor comment");
-        // The completion marker is set.
-        let commit: String = c
+        // The completion marker is stamped onto the synced sync_meta row,
+        // which also carries the snapshot's content_hash.
+        let (commit, hash): (String, String) = c
             .query_row(
-                "SELECT value FROM sync_meta WHERE key='content_commit'",
+                "SELECT content_commit, content_hash FROM sync_meta",
                 [],
-                |r| r.get(0),
+                |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .expect("query marker");
         assert_eq!(commit, "commit-abc");
+        assert_eq!(hash, "hash-123");
 
         let _ = std::fs::remove_dir_all(&dir);
     }

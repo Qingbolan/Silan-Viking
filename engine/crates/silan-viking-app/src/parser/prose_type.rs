@@ -75,8 +75,11 @@ impl<'s> ProseTypeParser<'s> {
             self.read_frontmatter(spec, item, part, &mut builder)?;
         }
 
-        // Every Part contributes its prose bodies, one per language.
+        // Every Part contributes its prose bodies, one per language, plus
+        // its stable `PartId` (read from `meta.toml` during scan — `01`
+        // §1.3 / §1.4; the Mapper writes it into `item_part.part_id`).
         for part in item.parts() {
+            builder.put_part_id(part.role().to_string(), part.id().clone());
             for file in part.files() {
                 let doc = frontmatter::split(file.body());
                 builder.put_prose(file.lang().clone(), part.role().to_string(), doc.body);

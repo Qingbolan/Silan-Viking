@@ -167,6 +167,9 @@ impl Parser for ResumeParser {
         let mut builder = Parsed::builder(ContentKind::Resume, item.id().clone());
 
         for part in item.parts() {
+            // Every resume Part — prose or structured — carries its stable
+            // `PartId` from `meta.toml` (`01` §1.3 / §1.4).
+            builder.put_part_id(part.role().to_string(), part.id().clone());
             match part.shape() {
                 PartShape::Prose => {
                     // The `summary` prose Part: its body lands per language.

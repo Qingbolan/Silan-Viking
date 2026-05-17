@@ -132,6 +132,10 @@ pub enum ProposalError {
     /// A `git` invocation failed.
     #[error("git error: {0}")]
     Git(#[from] GitError),
+    /// Writing a proposal draft file into the working tree failed — raised
+    /// from the `write_draft` closure of `Workspace::create_proposal`.
+    #[error("proposal draft io error: {0}")]
+    Io(String),
     /// Acquiring or releasing a proposal lock failed.
     #[error("lock error: {0}")]
     Lock(#[from] LockError),
