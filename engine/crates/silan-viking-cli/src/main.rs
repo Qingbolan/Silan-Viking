@@ -1,5 +1,6 @@
 //! `silan-viking` CLI binary — M8 command surface.
 
+mod banner;
 mod scaffold;
 mod skill;
 
@@ -23,8 +24,13 @@ fn main() {
 }
 
 fn run(args: Vec<String>) -> Result<(), String> {
-    if args.is_empty() || matches!(args[0].as_str(), "-h" | "--help" | "help") {
-        print_help();
+    // Top-level help is shown for no args, or whenever `-h`/`--help`/`help`
+    // appears anywhere before a subcommand. We still parse `--content` so
+    // the banner's status block reflects the project the user is pointing
+    // at, not a stray cwd default.
+    if args.is_empty() || args.iter().any(|a| matches!(a.as_str(), "-h" | "--help" | "help")) {
+        let content_root = resolve_content_root(&args);
+        print_help(&content_root);
         return Ok(());
     }
 
@@ -284,47 +290,137 @@ fn resolve_db_path(content_root: &Path) -> Option<PathBuf> {
     })
 }
 
-fn print_help() {
+/// Resolve the content root for the help/banner path. Mirrors the
+/// `--content` handling in `CliOptions::parse` so the banner's status
+/// block reflects the project the user is pointing at. Defaults to
+/// `<cwd>/content`.
+fn resolve_content_root(args: &[String]) -> PathBuf {
+    let cwd = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let mut content_root = cwd.join("content");
+    let mut i = 0;
+    while i < args.len() {
+        if args[i] == "--content" {
+            if let Some(p) = args.get(i + 1) {
+                content_root = PathBuf::from(p);
+            }
+            i += 2;
+            continue;
+        }
+        i += 1;
+    }
+    content_root
+}
+
+/// Top-level `--help`. Aligned with EasyNet-Cli (`src/facade/cli/mod.rs`)
+/// so the two CLIs read as one product family:
+///
+///   1. ASCII wordmark banner + tagline + signature + live project status
+///      (rendered by `banner::render_top_level_banner`).
+///   2. A hand-grouped, ANSI-coloured `Commands:` block with `[Group]`
+///      headers in bold cyan and command names in bold.
+///
+/// Maintenance contract: this block is hand-written. Adding, renaming, or
+/// removing a command requires updating both the dispatch table in `run`
+/// and this listing — there is no auto-sync.
+fn print_help(content_root: &Path) {
+    use banner::sgr;
+    let style = banner::colour_mode();
+
+    // Banner: wordmark + tagline + signature + project-status block.
+    print!("{}", banner::render_top_level_banner(content_root));
+
+    let h = |t: &str| style.paint(sgr::ACCENT, t); // group / section header
+    let c = |t: &str| style.paint(sgr::BOLD, t); // command literal
+    let d = |t: &str| style.paint(sgr::DIM, t); // dim hint text
+
+    // Usage line.
+    println!("{}", h("Usage:"));
     println!(
-        "silan-viking {}
+        "  {} {}\n",
+        c("silan-viking"),
+        d("[--content PATH] [--db PATH] [--out PATH] <command>"),
+    );
 
-Usage:
-  silan-viking [--content PATH] [--db PATH] [--out PATH] <command>
+    // Grouped command listing. `[Group]` headers in bold cyan, command
+    // names in bold, descriptions plain. Padding is fixed so the
+    // description column lines up across every group.
+    println!("{}", h("Commands:"));
 
-Content groups:
-  idea|blog|project|update new|list|show|edit|archive|rm <slug>
-  idea|blog|project|update add-part <slug> <role>
-  idea|blog|project|update add-lang <slug> <lang>
-  idea status <slug> <state>     idea promote <slug> --to blog|project
-  blog publish|unpublish <slug>  project progress <slug>
-  update status <slug> <state>   update set-type <slug> <update-type>
-  episode series new|list|show|reorder|archive|rm <series>
-  episode new|show|edit|add-lang|publish|unpublish|archive|rm <series> <slug>
-  episode list [<series>]
-  resume show|list                resume add-part|add-lang|edit <role> [lang]
+    // Pad a command name to a fixed-width column so descriptions line
+    // up. The width must clear the longest name (`idea|blog|project|
+    // update`, 24 chars); `c()` wraps the name in ANSI escapes, so the
+    // pad is applied to the *painted* string and the escapes count
+    // toward the width — we therefore pad the raw name first, then
+    // paint, keeping the visible column honest.
+    const NAME_COL: usize = 26;
+    let row = |name: &str, desc: &str| {
+        let painted = c(name);
+        let pad = NAME_COL.saturating_sub(name.chars().count());
+        println!("    {}{} {}", painted, " ".repeat(pad), desc);
+    };
 
-Tool groups:
-  content tree|ls|show <uri>
-  index sync|status|lint|rebuild
-  relation graph|show <uri>
-  relation link <from> <to> --type <kind>
-  site build|preview|check|status [--out PATH]
-  site publish <uri>               (set visibility=public)
-  site deploy [--dry-run|--confirm] (six-step pipeline; dry-run default)
-  site rollback                    (restore the previous deploy)
-  site promote <live-db> <snapshot-db> <content-commit>
-  stats sync <uri>                 (pull runtime stats from the deployed API)
-  stats show|visitors|crawlers|sources <uri>   (query the local stats cache)
-  proposal list|show|accept|reject <id>
-  proposal rebase <id> [--continue]
-  mcp serve [--stdio]              mcp status
-  skill emit|status|rm [--path <dir>]   (default ~/.claude/skills/silan-viking)
+    println!("  {}", h("[Content]"));
+    row("idea|blog|project|update", "Create / edit / list a content item");
+    row("episode", "Manage episode series and per-episode entries");
+    row("resume", "Show and edit the single resume Item");
+    println!();
 
-Top-level:
-  init|doctor
-  config [edit [--global]]
-  completion bash|zsh|fish",
-        env!("CARGO_PKG_VERSION")
+    println!("  {}", h("[Workflow]"));
+    row("index", "Sync, lint, or rebuild the derived database");
+    row("content", "Inspect the content tree (tree, ls, show)");
+    row("relation", "Inspect and link cross-item relations");
+    row("proposal", "Review agent proposals (list, accept, reject, rebase)");
+    println!();
+
+    println!("  {}", h("[Publish]"));
+    row("site", "Build, preview, check, deploy, rollback the site");
+    row("stats", "Pull and query runtime visitor statistics");
+    println!();
+
+    println!("  {}", h("[Integration]"));
+    row("mcp", "MCP server — expose the content engine to AI assistants");
+    row("skill", "Manage the silan-viking Claude skill (emit, status, rm)");
+    println!();
+
+    println!("  {}", h("[Maintenance]"));
+    row("init", "Lay down a runnable silan-viking project");
+    row("doctor", "Health check — content, index, embedder");
+    row("config", "Show resolved paths, or edit silan-viking.toml");
+    row("completion", "Emit a shell completion script (bash/zsh/fish)");
+    println!();
+
+    // Per-group detail, for the verbs the one-line summary can't carry.
+    println!("{}", h("Content verbs:"));
+    println!("  {}", d("idea|blog|project|update new|list|show|edit|archive|rm <slug>"));
+    println!("  {}", d("idea|blog|project|update add-part <slug> <role> · add-lang <slug> <lang>"));
+    println!("  {}", d("idea status <slug> <state> · idea promote <slug> --to blog|project"));
+    println!("  {}", d("blog publish|unpublish <slug> · project progress <slug>"));
+    println!("  {}", d("update status <slug> <state> · update set-type <slug> <update-type>"));
+    println!("  {}", d("episode series new|list|show|reorder|archive|rm <series>"));
+    println!("  {}", d("episode new|show|edit|add-lang|publish|unpublish|archive|rm <series> <slug>"));
+    println!("  {}", d("resume show|list · resume add-part|add-lang|edit <role> [lang]"));
+    println!();
+
+    println!("{}", h("Workflow verbs:"));
+    println!("  {}", d("index sync|status|lint|rebuild"));
+    println!("  {}", d("content tree|ls|show <uri> · relation graph|show <uri>"));
+    println!("  {}", d("relation link <from> <to> --type <kind>"));
+    println!("  {}", d("proposal list|show|accept|reject <id> · proposal rebase <id> [--continue]"));
+    println!();
+
+    println!("{}", h("Publish verbs:"));
+    println!("  {}", d("site build|preview|check|status [--out PATH]"));
+    println!("  {}", d("site publish <uri> · site deploy [--dry-run|--confirm]"));
+    println!("  {}", d("site rollback · site promote <live-db> <snapshot-db> <content-commit>"));
+    println!("  {}", d("stats sync <uri> · stats show|visitors|crawlers|sources <uri>"));
+    println!();
+
+    println!(
+        "{}",
+        d(&format!(
+            "silan-viking {} · run 'silan-viking <command> --help' for command-specific help.",
+            env!("CARGO_PKG_VERSION"),
+        )),
     );
 }
 
@@ -396,8 +492,14 @@ fn init_content(content_root: &Path) -> Result<(), String> {
     }
 
     // The single resume Item — every project has exactly one (`02` §一).
-    let resume_dir = content_root.join("resources/resume");
-    if !resume_dir.exists() {
+    // The presence check keys on the `summary` *Part* (the one required
+    // part of a resume), not on the `resources/resume` directory: that
+    // directory may already exist as an empty skeleton folder, in which
+    // case keying on it would silently skip scaffolding and leave an
+    // Item with zero language variants — a state `index sync` rejects
+    // with "parsed item has no language variant".
+    let resume_summary = content_root.join("resources/resume/parts/summary");
+    if !resume_summary.exists() {
         scaffold::new_resume(content_root, "Example User", "AI Researcher / Engineer")
             .map_err(|e| e.to_string())?;
     }
@@ -436,7 +538,10 @@ fn init_content(content_root: &Path) -> Result<(), String> {
     println!("initialized {}", content_root.display());
     println!("  schema  {}", schema.display());
     println!("  config  {}", config.display());
-    println!("  resume  {}", resume_dir.display());
+    println!(
+        "  resume  {}",
+        content_root.join("resources/resume").display()
+    );
     Ok(())
 }
 
