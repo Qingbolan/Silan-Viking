@@ -2,7 +2,9 @@ package updates
 
 import (
 	"context"
+	"database/sql"
 
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/svc"
@@ -57,7 +59,7 @@ func updatePartBody(ctx context.Context, svcCtx *svc.ServiceContext, updateID, r
 	return ""
 }
 
-func updateToData(update *ent.RecentUpdate, language string) types.RecentUpdate {
+func updateToData(ctx context.Context, rawDB *sql.DB, update *ent.RecentUpdate, language string) types.RecentUpdate {
 	title := update.Title
 	description := update.Description
 	for _, translation := range update.Edges.Translations {
@@ -67,6 +69,10 @@ func updateToData(update *ent.RecentUpdate, language string) types.RecentUpdate 
 			break
 		}
 	}
+
+	// Tags come from the cross-type `content_tag` table — the engine no
+	// longer writes them onto the `recent_updates.tags` column.
+	tags, _ := contenttag.Lookup(ctx, rawDB, "update", update.ID)
 
 	return types.RecentUpdate{
 		ID:          update.ID,
@@ -78,7 +84,7 @@ func updateToData(update *ent.RecentUpdate, language string) types.RecentUpdate 
 		Title:       title,
 		Description: description,
 		Date:        update.Date.Format("2006-01-02"),
-		Tags:        update.Tags,
+		Tags:        tags,
 		Status:      string(update.Status),
 		Priority:    string(update.Priority),
 		CreatedAt:   update.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),

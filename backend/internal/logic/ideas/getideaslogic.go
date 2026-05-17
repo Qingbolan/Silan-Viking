@@ -6,6 +6,7 @@ import (
 	"math"
 	"strings"
 
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
@@ -115,14 +116,11 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 			}
 		}
 
-		// Tags from M2M edge (IdeaTag)
-		tags := []string{}
-		if len(ideaEntity.Edges.Tags) > 0 {
-			for _, t := range ideaEntity.Edges.Tags {
-				if t.Name != "" {
-					tags = append(tags, t.Name)
-				}
-			}
+		// Tags come from the cross-type `content_tag` table — the engine no
+		// longer populates the legacy ent `Tags` edge.
+		tags, tagErr := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "idea", ideaEntity.ID)
+		if tagErr != nil {
+			l.Errorf("content_tag lookup for idea %s: %v", ideaEntity.ID, tagErr)
 		}
 		category := ideaEntity.Category
 

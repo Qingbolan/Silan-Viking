@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -90,15 +91,11 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	}
 
 	// Tags from M2M edge (IdeaTag)
-	var tags []string
-	if len(ideaEntity.Edges.Tags) > 0 {
-		for _, t := range ideaEntity.Edges.Tags {
-			if t.Name != "" {
-				tags = append(tags, t.Name)
-			}
-		}
-	} else {
-		tags = []string{}
+	// Tags come from the cross-type `content_tag` table — the engine no
+	// longer populates the legacy ent `Tags` edge.
+	tags, err := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "idea", ideaEntity.ID)
+	if err != nil {
+		l.Errorf("content_tag lookup for idea %s: %v", ideaEntity.ID, err)
 	}
 	// Category: now directly from Ent field
 	category := ideaEntity.Category

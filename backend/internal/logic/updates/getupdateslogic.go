@@ -37,7 +37,7 @@ func (l *GetUpdatesLogic) GetUpdates(req *types.UpdateListRequest) (*types.Updat
 
 	result := make([]types.RecentUpdate, 0, len(updates))
 	for _, update := range updates {
-		result = append(result, updateToData(update, req.Language))
+		result = append(result, updateToData(l.ctx, l.svcCtx.RawDB, update, req.Language))
 	}
 
 	return &types.UpdateListResponse{
