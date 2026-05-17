@@ -1,0 +1,1 @@
+# placeholder — silan site build overwrites this dir with sitemap.xml/robots.txt/site-index.jsonld before docker build
