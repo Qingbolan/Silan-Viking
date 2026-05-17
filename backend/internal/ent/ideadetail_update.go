@@ -45,66 +45,6 @@ func (idu *IdeaDetailUpdate) SetNillableIdeaID(u *uuid.UUID) *IdeaDetailUpdate {
 	return idu
 }
 
-// SetProgress sets the "progress" field.
-func (idu *IdeaDetailUpdate) SetProgress(s string) *IdeaDetailUpdate {
-	idu.mutation.SetProgress(s)
-	return idu
-}
-
-// SetNillableProgress sets the "progress" field if the given value is not nil.
-func (idu *IdeaDetailUpdate) SetNillableProgress(s *string) *IdeaDetailUpdate {
-	if s != nil {
-		idu.SetProgress(*s)
-	}
-	return idu
-}
-
-// ClearProgress clears the value of the "progress" field.
-func (idu *IdeaDetailUpdate) ClearProgress() *IdeaDetailUpdate {
-	idu.mutation.ClearProgress()
-	return idu
-}
-
-// SetResults sets the "results" field.
-func (idu *IdeaDetailUpdate) SetResults(s string) *IdeaDetailUpdate {
-	idu.mutation.SetResults(s)
-	return idu
-}
-
-// SetNillableResults sets the "results" field if the given value is not nil.
-func (idu *IdeaDetailUpdate) SetNillableResults(s *string) *IdeaDetailUpdate {
-	if s != nil {
-		idu.SetResults(*s)
-	}
-	return idu
-}
-
-// ClearResults clears the value of the "results" field.
-func (idu *IdeaDetailUpdate) ClearResults() *IdeaDetailUpdate {
-	idu.mutation.ClearResults()
-	return idu
-}
-
-// SetReferences sets the "references" field.
-func (idu *IdeaDetailUpdate) SetReferences(s string) *IdeaDetailUpdate {
-	idu.mutation.SetReferences(s)
-	return idu
-}
-
-// SetNillableReferences sets the "references" field if the given value is not nil.
-func (idu *IdeaDetailUpdate) SetNillableReferences(s *string) *IdeaDetailUpdate {
-	if s != nil {
-		idu.SetReferences(*s)
-	}
-	return idu
-}
-
-// ClearReferences clears the value of the "references" field.
-func (idu *IdeaDetailUpdate) ClearReferences() *IdeaDetailUpdate {
-	idu.mutation.ClearReferences()
-	return idu
-}
-
 // SetEstimatedDurationMonths sets the "estimated_duration_months" field.
 func (idu *IdeaDetailUpdate) SetEstimatedDurationMonths(i int) *IdeaDetailUpdate {
 	idu.mutation.ResetEstimatedDurationMonths()
@@ -321,24 +261,6 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := idu.mutation.Progress(); ok {
-		_spec.SetField(ideadetail.FieldProgress, field.TypeString, value)
-	}
-	if idu.mutation.ProgressCleared() {
-		_spec.ClearField(ideadetail.FieldProgress, field.TypeString)
-	}
-	if value, ok := idu.mutation.Results(); ok {
-		_spec.SetField(ideadetail.FieldResults, field.TypeString, value)
-	}
-	if idu.mutation.ResultsCleared() {
-		_spec.ClearField(ideadetail.FieldResults, field.TypeString)
-	}
-	if value, ok := idu.mutation.References(); ok {
-		_spec.SetField(ideadetail.FieldReferences, field.TypeString, value)
-	}
-	if idu.mutation.ReferencesCleared() {
-		_spec.ClearField(ideadetail.FieldReferences, field.TypeString)
-	}
 	if value, ok := idu.mutation.EstimatedDurationMonths(); ok {
 		_spec.SetField(ideadetail.FieldEstimatedDurationMonths, field.TypeInt, value)
 	}
@@ -477,66 +399,6 @@ func (iduo *IdeaDetailUpdateOne) SetNillableIdeaID(u *uuid.UUID) *IdeaDetailUpda
 	if u != nil {
 		iduo.SetIdeaID(*u)
 	}
-	return iduo
-}
-
-// SetProgress sets the "progress" field.
-func (iduo *IdeaDetailUpdateOne) SetProgress(s string) *IdeaDetailUpdateOne {
-	iduo.mutation.SetProgress(s)
-	return iduo
-}
-
-// SetNillableProgress sets the "progress" field if the given value is not nil.
-func (iduo *IdeaDetailUpdateOne) SetNillableProgress(s *string) *IdeaDetailUpdateOne {
-	if s != nil {
-		iduo.SetProgress(*s)
-	}
-	return iduo
-}
-
-// ClearProgress clears the value of the "progress" field.
-func (iduo *IdeaDetailUpdateOne) ClearProgress() *IdeaDetailUpdateOne {
-	iduo.mutation.ClearProgress()
-	return iduo
-}
-
-// SetResults sets the "results" field.
-func (iduo *IdeaDetailUpdateOne) SetResults(s string) *IdeaDetailUpdateOne {
-	iduo.mutation.SetResults(s)
-	return iduo
-}
-
-// SetNillableResults sets the "results" field if the given value is not nil.
-func (iduo *IdeaDetailUpdateOne) SetNillableResults(s *string) *IdeaDetailUpdateOne {
-	if s != nil {
-		iduo.SetResults(*s)
-	}
-	return iduo
-}
-
-// ClearResults clears the value of the "results" field.
-func (iduo *IdeaDetailUpdateOne) ClearResults() *IdeaDetailUpdateOne {
-	iduo.mutation.ClearResults()
-	return iduo
-}
-
-// SetReferences sets the "references" field.
-func (iduo *IdeaDetailUpdateOne) SetReferences(s string) *IdeaDetailUpdateOne {
-	iduo.mutation.SetReferences(s)
-	return iduo
-}
-
-// SetNillableReferences sets the "references" field if the given value is not nil.
-func (iduo *IdeaDetailUpdateOne) SetNillableReferences(s *string) *IdeaDetailUpdateOne {
-	if s != nil {
-		iduo.SetReferences(*s)
-	}
-	return iduo
-}
-
-// ClearReferences clears the value of the "references" field.
-func (iduo *IdeaDetailUpdateOne) ClearReferences() *IdeaDetailUpdateOne {
-	iduo.mutation.ClearReferences()
 	return iduo
 }
 
@@ -785,24 +647,6 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := iduo.mutation.Progress(); ok {
-		_spec.SetField(ideadetail.FieldProgress, field.TypeString, value)
-	}
-	if iduo.mutation.ProgressCleared() {
-		_spec.ClearField(ideadetail.FieldProgress, field.TypeString)
-	}
-	if value, ok := iduo.mutation.Results(); ok {
-		_spec.SetField(ideadetail.FieldResults, field.TypeString, value)
-	}
-	if iduo.mutation.ResultsCleared() {
-		_spec.ClearField(ideadetail.FieldResults, field.TypeString)
-	}
-	if value, ok := iduo.mutation.References(); ok {
-		_spec.SetField(ideadetail.FieldReferences, field.TypeString, value)
-	}
-	if iduo.mutation.ReferencesCleared() {
-		_spec.ClearField(ideadetail.FieldReferences, field.TypeString)
 	}
 	if value, ok := iduo.mutation.EstimatedDurationMonths(); ok {
 		_spec.SetField(ideadetail.FieldEstimatedDurationMonths, field.TypeInt, value)

@@ -71,8 +71,10 @@ func (Project) Fields() []ent.Field {
 			MaxLen(500),
 		field.Bool("is_featured").
 			Default(false),
-		field.Bool("is_public").
-			Default(true),
+		// M0.5a §11.7: is_public dropped, unified onto visibility (10 §10.3).
+		field.Enum("visibility").
+			Values("private", "unlisted", "public").
+			Default("public"),
 		field.Int("view_count").
 			Default(0),
 		field.Int("like_count").
@@ -101,8 +103,9 @@ func (Project) Edges() []ent.Edge {
 		edge.To("details", ProjectDetail.Type).
 			Unique(),
 		edge.To("images", ProjectImage.Type),
-		edge.To("source_relationships", ProjectRelationship.Type),
-		edge.To("target_relationships", ProjectRelationship.Type),
+		// source_relationships/target_relationships edges dropped (M0.5a
+		// §11.9): project_relationships is replaced by content_relation.
+		// likes/views edges stay until M0.5b drops the underlying tables.
 		edge.To("likes", ProjectLike.Type),
 		edge.To("views", ProjectView.Type),
 	}

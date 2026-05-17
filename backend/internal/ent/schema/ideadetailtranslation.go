@@ -34,14 +34,8 @@ func (IdeaDetailTranslation) Fields() []ent.Field {
 		field.String("language_code").
 			MaxLen(5).
 			StorageKey("language_code"),
-		field.Text("progress").
-			Optional(),
-		field.Text("results").
-			Optional(),
-		field.Text("references").
-			Optional(),
-		field.Text("required_resources").
-			Optional(),
+		// M0.5a §11.8: progress/results/references/required_resources
+		// (Part body text) moved out to item_part_translation.
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),

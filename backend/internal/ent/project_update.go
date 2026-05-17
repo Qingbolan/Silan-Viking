@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projectimage"
 	"silan-backend/internal/ent/projectlike"
-	"silan-backend/internal/ent/projectrelationship"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/projectview"
@@ -261,16 +260,16 @@ func (pu *ProjectUpdate) SetNillableIsFeatured(b *bool) *ProjectUpdate {
 	return pu
 }
 
-// SetIsPublic sets the "is_public" field.
-func (pu *ProjectUpdate) SetIsPublic(b bool) *ProjectUpdate {
-	pu.mutation.SetIsPublic(b)
+// SetVisibility sets the "visibility" field.
+func (pu *ProjectUpdate) SetVisibility(pr project.Visibility) *ProjectUpdate {
+	pu.mutation.SetVisibility(pr)
 	return pu
 }
 
-// SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableIsPublic(b *bool) *ProjectUpdate {
-	if b != nil {
-		pu.SetIsPublic(*b)
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableVisibility(pr *project.Visibility) *ProjectUpdate {
+	if pr != nil {
+		pu.SetVisibility(*pr)
 	}
 	return pu
 }
@@ -413,36 +412,6 @@ func (pu *ProjectUpdate) AddImages(p ...*ProjectImage) *ProjectUpdate {
 	return pu.AddImageIDs(ids...)
 }
 
-// AddSourceRelationshipIDs adds the "source_relationships" edge to the ProjectRelationship entity by IDs.
-func (pu *ProjectUpdate) AddSourceRelationshipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.AddSourceRelationshipIDs(ids...)
-	return pu
-}
-
-// AddSourceRelationships adds the "source_relationships" edges to the ProjectRelationship entity.
-func (pu *ProjectUpdate) AddSourceRelationships(p ...*ProjectRelationship) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.AddSourceRelationshipIDs(ids...)
-}
-
-// AddTargetRelationshipIDs adds the "target_relationships" edge to the ProjectRelationship entity by IDs.
-func (pu *ProjectUpdate) AddTargetRelationshipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.AddTargetRelationshipIDs(ids...)
-	return pu
-}
-
-// AddTargetRelationships adds the "target_relationships" edges to the ProjectRelationship entity.
-func (pu *ProjectUpdate) AddTargetRelationships(p ...*ProjectRelationship) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.AddTargetRelationshipIDs(ids...)
-}
-
 // AddLikeIDs adds the "likes" edge to the ProjectLike entity by IDs.
 func (pu *ProjectUpdate) AddLikeIDs(ids ...uuid.UUID) *ProjectUpdate {
 	pu.mutation.AddLikeIDs(ids...)
@@ -551,48 +520,6 @@ func (pu *ProjectUpdate) RemoveImages(p ...*ProjectImage) *ProjectUpdate {
 		ids[i] = p[i].ID
 	}
 	return pu.RemoveImageIDs(ids...)
-}
-
-// ClearSourceRelationships clears all "source_relationships" edges to the ProjectRelationship entity.
-func (pu *ProjectUpdate) ClearSourceRelationships() *ProjectUpdate {
-	pu.mutation.ClearSourceRelationships()
-	return pu
-}
-
-// RemoveSourceRelationshipIDs removes the "source_relationships" edge to ProjectRelationship entities by IDs.
-func (pu *ProjectUpdate) RemoveSourceRelationshipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.RemoveSourceRelationshipIDs(ids...)
-	return pu
-}
-
-// RemoveSourceRelationships removes "source_relationships" edges to ProjectRelationship entities.
-func (pu *ProjectUpdate) RemoveSourceRelationships(p ...*ProjectRelationship) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.RemoveSourceRelationshipIDs(ids...)
-}
-
-// ClearTargetRelationships clears all "target_relationships" edges to the ProjectRelationship entity.
-func (pu *ProjectUpdate) ClearTargetRelationships() *ProjectUpdate {
-	pu.mutation.ClearTargetRelationships()
-	return pu
-}
-
-// RemoveTargetRelationshipIDs removes the "target_relationships" edge to ProjectRelationship entities by IDs.
-func (pu *ProjectUpdate) RemoveTargetRelationshipIDs(ids ...uuid.UUID) *ProjectUpdate {
-	pu.mutation.RemoveTargetRelationshipIDs(ids...)
-	return pu
-}
-
-// RemoveTargetRelationships removes "target_relationships" edges to ProjectRelationship entities.
-func (pu *ProjectUpdate) RemoveTargetRelationships(p ...*ProjectRelationship) *ProjectUpdate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.RemoveTargetRelationshipIDs(ids...)
 }
 
 // ClearLikes clears all "likes" edges to the ProjectLike entity.
@@ -715,6 +642,11 @@ func (pu *ProjectUpdate) check() error {
 			return &ValidationError{Name: "thumbnail_url", err: fmt.Errorf(`ent: validator failed for field "Project.thumbnail_url": %w`, err)}
 		}
 	}
+	if v, ok := pu.mutation.Visibility(); ok {
+		if err := project.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Project.visibility": %w`, err)}
+		}
+	}
 	if pu.mutation.UserCleared() && len(pu.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Project.user"`)
 	}
@@ -790,8 +722,8 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.IsFeatured(); ok {
 		_spec.SetField(project.FieldIsFeatured, field.TypeBool, value)
 	}
-	if value, ok := pu.mutation.IsPublic(); ok {
-		_spec.SetField(project.FieldIsPublic, field.TypeBool, value)
+	if value, ok := pu.mutation.Visibility(); ok {
+		_spec.SetField(project.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := pu.mutation.ViewCount(); ok {
 		_spec.SetField(project.FieldViewCount, field.TypeInt, value)
@@ -1000,96 +932,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.SourceRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.SourceRelationshipsTable,
-			Columns: []string{project.SourceRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedSourceRelationshipsIDs(); len(nodes) > 0 && !pu.mutation.SourceRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.SourceRelationshipsTable,
-			Columns: []string{project.SourceRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.SourceRelationshipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.SourceRelationshipsTable,
-			Columns: []string{project.SourceRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.TargetRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.TargetRelationshipsTable,
-			Columns: []string{project.TargetRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedTargetRelationshipsIDs(); len(nodes) > 0 && !pu.mutation.TargetRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.TargetRelationshipsTable,
-			Columns: []string{project.TargetRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.TargetRelationshipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.TargetRelationshipsTable,
-			Columns: []string{project.TargetRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -1431,16 +1273,16 @@ func (puo *ProjectUpdateOne) SetNillableIsFeatured(b *bool) *ProjectUpdateOne {
 	return puo
 }
 
-// SetIsPublic sets the "is_public" field.
-func (puo *ProjectUpdateOne) SetIsPublic(b bool) *ProjectUpdateOne {
-	puo.mutation.SetIsPublic(b)
+// SetVisibility sets the "visibility" field.
+func (puo *ProjectUpdateOne) SetVisibility(pr project.Visibility) *ProjectUpdateOne {
+	puo.mutation.SetVisibility(pr)
 	return puo
 }
 
-// SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableIsPublic(b *bool) *ProjectUpdateOne {
-	if b != nil {
-		puo.SetIsPublic(*b)
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableVisibility(pr *project.Visibility) *ProjectUpdateOne {
+	if pr != nil {
+		puo.SetVisibility(*pr)
 	}
 	return puo
 }
@@ -1583,36 +1425,6 @@ func (puo *ProjectUpdateOne) AddImages(p ...*ProjectImage) *ProjectUpdateOne {
 	return puo.AddImageIDs(ids...)
 }
 
-// AddSourceRelationshipIDs adds the "source_relationships" edge to the ProjectRelationship entity by IDs.
-func (puo *ProjectUpdateOne) AddSourceRelationshipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.AddSourceRelationshipIDs(ids...)
-	return puo
-}
-
-// AddSourceRelationships adds the "source_relationships" edges to the ProjectRelationship entity.
-func (puo *ProjectUpdateOne) AddSourceRelationships(p ...*ProjectRelationship) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.AddSourceRelationshipIDs(ids...)
-}
-
-// AddTargetRelationshipIDs adds the "target_relationships" edge to the ProjectRelationship entity by IDs.
-func (puo *ProjectUpdateOne) AddTargetRelationshipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.AddTargetRelationshipIDs(ids...)
-	return puo
-}
-
-// AddTargetRelationships adds the "target_relationships" edges to the ProjectRelationship entity.
-func (puo *ProjectUpdateOne) AddTargetRelationships(p ...*ProjectRelationship) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.AddTargetRelationshipIDs(ids...)
-}
-
 // AddLikeIDs adds the "likes" edge to the ProjectLike entity by IDs.
 func (puo *ProjectUpdateOne) AddLikeIDs(ids ...uuid.UUID) *ProjectUpdateOne {
 	puo.mutation.AddLikeIDs(ids...)
@@ -1721,48 +1533,6 @@ func (puo *ProjectUpdateOne) RemoveImages(p ...*ProjectImage) *ProjectUpdateOne 
 		ids[i] = p[i].ID
 	}
 	return puo.RemoveImageIDs(ids...)
-}
-
-// ClearSourceRelationships clears all "source_relationships" edges to the ProjectRelationship entity.
-func (puo *ProjectUpdateOne) ClearSourceRelationships() *ProjectUpdateOne {
-	puo.mutation.ClearSourceRelationships()
-	return puo
-}
-
-// RemoveSourceRelationshipIDs removes the "source_relationships" edge to ProjectRelationship entities by IDs.
-func (puo *ProjectUpdateOne) RemoveSourceRelationshipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.RemoveSourceRelationshipIDs(ids...)
-	return puo
-}
-
-// RemoveSourceRelationships removes "source_relationships" edges to ProjectRelationship entities.
-func (puo *ProjectUpdateOne) RemoveSourceRelationships(p ...*ProjectRelationship) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.RemoveSourceRelationshipIDs(ids...)
-}
-
-// ClearTargetRelationships clears all "target_relationships" edges to the ProjectRelationship entity.
-func (puo *ProjectUpdateOne) ClearTargetRelationships() *ProjectUpdateOne {
-	puo.mutation.ClearTargetRelationships()
-	return puo
-}
-
-// RemoveTargetRelationshipIDs removes the "target_relationships" edge to ProjectRelationship entities by IDs.
-func (puo *ProjectUpdateOne) RemoveTargetRelationshipIDs(ids ...uuid.UUID) *ProjectUpdateOne {
-	puo.mutation.RemoveTargetRelationshipIDs(ids...)
-	return puo
-}
-
-// RemoveTargetRelationships removes "target_relationships" edges to ProjectRelationship entities.
-func (puo *ProjectUpdateOne) RemoveTargetRelationships(p ...*ProjectRelationship) *ProjectUpdateOne {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.RemoveTargetRelationshipIDs(ids...)
 }
 
 // ClearLikes clears all "likes" edges to the ProjectLike entity.
@@ -1898,6 +1668,11 @@ func (puo *ProjectUpdateOne) check() error {
 			return &ValidationError{Name: "thumbnail_url", err: fmt.Errorf(`ent: validator failed for field "Project.thumbnail_url": %w`, err)}
 		}
 	}
+	if v, ok := puo.mutation.Visibility(); ok {
+		if err := project.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Project.visibility": %w`, err)}
+		}
+	}
 	if puo.mutation.UserCleared() && len(puo.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Project.user"`)
 	}
@@ -1990,8 +1765,8 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	if value, ok := puo.mutation.IsFeatured(); ok {
 		_spec.SetField(project.FieldIsFeatured, field.TypeBool, value)
 	}
-	if value, ok := puo.mutation.IsPublic(); ok {
-		_spec.SetField(project.FieldIsPublic, field.TypeBool, value)
+	if value, ok := puo.mutation.Visibility(); ok {
+		_spec.SetField(project.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := puo.mutation.ViewCount(); ok {
 		_spec.SetField(project.FieldViewCount, field.TypeInt, value)
@@ -2200,96 +1975,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.SourceRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.SourceRelationshipsTable,
-			Columns: []string{project.SourceRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedSourceRelationshipsIDs(); len(nodes) > 0 && !puo.mutation.SourceRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.SourceRelationshipsTable,
-			Columns: []string{project.SourceRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.SourceRelationshipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.SourceRelationshipsTable,
-			Columns: []string{project.SourceRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.TargetRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.TargetRelationshipsTable,
-			Columns: []string{project.TargetRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedTargetRelationshipsIDs(); len(nodes) > 0 && !puo.mutation.TargetRelationshipsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.TargetRelationshipsTable,
-			Columns: []string{project.TargetRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.TargetRelationshipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.TargetRelationshipsTable,
-			Columns: []string{project.TargetRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

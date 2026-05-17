@@ -43,34 +43,6 @@ func (pdc *ProjectDetailCreate) SetNillableProjectDetails(s *string) *ProjectDet
 	return pdc
 }
 
-// SetQuickStart sets the "quick_start" field.
-func (pdc *ProjectDetailCreate) SetQuickStart(s string) *ProjectDetailCreate {
-	pdc.mutation.SetQuickStart(s)
-	return pdc
-}
-
-// SetNillableQuickStart sets the "quick_start" field if the given value is not nil.
-func (pdc *ProjectDetailCreate) SetNillableQuickStart(s *string) *ProjectDetailCreate {
-	if s != nil {
-		pdc.SetQuickStart(*s)
-	}
-	return pdc
-}
-
-// SetReleaseNotes sets the "release_notes" field.
-func (pdc *ProjectDetailCreate) SetReleaseNotes(s string) *ProjectDetailCreate {
-	pdc.mutation.SetReleaseNotes(s)
-	return pdc
-}
-
-// SetNillableReleaseNotes sets the "release_notes" field if the given value is not nil.
-func (pdc *ProjectDetailCreate) SetNillableReleaseNotes(s *string) *ProjectDetailCreate {
-	if s != nil {
-		pdc.SetReleaseNotes(*s)
-	}
-	return pdc
-}
-
 // SetDependencies sets the "dependencies" field.
 func (pdc *ProjectDetailCreate) SetDependencies(s string) *ProjectDetailCreate {
 	pdc.mutation.SetDependencies(s)
@@ -300,14 +272,6 @@ func (pdc *ProjectDetailCreate) createSpec() (*ProjectDetail, *sqlgraph.CreateSp
 	if value, ok := pdc.mutation.ProjectDetails(); ok {
 		_spec.SetField(projectdetail.FieldProjectDetails, field.TypeString, value)
 		_node.ProjectDetails = value
-	}
-	if value, ok := pdc.mutation.QuickStart(); ok {
-		_spec.SetField(projectdetail.FieldQuickStart, field.TypeString, value)
-		_node.QuickStart = value
-	}
-	if value, ok := pdc.mutation.ReleaseNotes(); ok {
-		_spec.SetField(projectdetail.FieldReleaseNotes, field.TypeString, value)
-		_node.ReleaseNotes = value
 	}
 	if value, ok := pdc.mutation.Dependencies(); ok {
 		_spec.SetField(projectdetail.FieldDependencies, field.TypeString, value)

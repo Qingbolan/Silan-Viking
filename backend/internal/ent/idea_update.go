@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
@@ -131,16 +130,16 @@ func (iu *IdeaUpdate) SetNillableStatus(i *idea.Status) *IdeaUpdate {
 	return iu
 }
 
-// SetIsPublic sets the "is_public" field.
-func (iu *IdeaUpdate) SetIsPublic(b bool) *IdeaUpdate {
-	iu.mutation.SetIsPublic(b)
+// SetVisibility sets the "visibility" field.
+func (iu *IdeaUpdate) SetVisibility(i idea.Visibility) *IdeaUpdate {
+	iu.mutation.SetVisibility(i)
 	return iu
 }
 
-// SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (iu *IdeaUpdate) SetNillableIsPublic(b *bool) *IdeaUpdate {
-	if b != nil {
-		iu.SetIsPublic(*b)
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (iu *IdeaUpdate) SetNillableVisibility(i *idea.Visibility) *IdeaUpdate {
+	if i != nil {
+		iu.SetVisibility(*i)
 	}
 	return iu
 }
@@ -252,21 +251,6 @@ func (iu *IdeaUpdate) SetDetails(i *IdeaDetail) *IdeaUpdate {
 	return iu.SetDetailsID(i.ID)
 }
 
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (iu *IdeaUpdate) AddBlogPostIDs(ids ...uuid.UUID) *IdeaUpdate {
-	iu.mutation.AddBlogPostIDs(ids...)
-	return iu
-}
-
-// AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
-func (iu *IdeaUpdate) AddBlogPosts(b ...*BlogPost) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return iu.AddBlogPostIDs(ids...)
-}
-
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
 func (iu *IdeaUpdate) AddCommentIDs(ids ...uuid.UUID) *IdeaUpdate {
 	iu.mutation.AddCommentIDs(ids...)
@@ -333,27 +317,6 @@ func (iu *IdeaUpdate) RemoveTranslations(i ...*IdeaTranslation) *IdeaUpdate {
 func (iu *IdeaUpdate) ClearDetails() *IdeaUpdate {
 	iu.mutation.ClearDetails()
 	return iu
-}
-
-// ClearBlogPosts clears all "blog_posts" edges to the BlogPost entity.
-func (iu *IdeaUpdate) ClearBlogPosts() *IdeaUpdate {
-	iu.mutation.ClearBlogPosts()
-	return iu
-}
-
-// RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (iu *IdeaUpdate) RemoveBlogPostIDs(ids ...uuid.UUID) *IdeaUpdate {
-	iu.mutation.RemoveBlogPostIDs(ids...)
-	return iu
-}
-
-// RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
-func (iu *IdeaUpdate) RemoveBlogPosts(b ...*BlogPost) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return iu.RemoveBlogPostIDs(ids...)
 }
 
 // ClearComments clears all "comments" edges to the Comment entity.
@@ -451,6 +414,11 @@ func (iu *IdeaUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Idea.status": %w`, err)}
 		}
 	}
+	if v, ok := iu.mutation.Visibility(); ok {
+		if err := idea.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Idea.visibility": %w`, err)}
+		}
+	}
 	if v, ok := iu.mutation.Category(); ok {
 		if err := idea.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Idea.category": %w`, err)}
@@ -495,8 +463,8 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := iu.mutation.Status(); ok {
 		_spec.SetField(idea.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := iu.mutation.IsPublic(); ok {
-		_spec.SetField(idea.FieldIsPublic, field.TypeBool, value)
+	if value, ok := iu.mutation.Visibility(); ok {
+		_spec.SetField(idea.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := iu.mutation.ViewCount(); ok {
 		_spec.SetField(idea.FieldViewCount, field.TypeInt, value)
@@ -615,51 +583,6 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if iu.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iu.mutation.RemovedBlogPostsIDs(); len(nodes) > 0 && !iu.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iu.mutation.BlogPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -873,16 +796,16 @@ func (iuo *IdeaUpdateOne) SetNillableStatus(i *idea.Status) *IdeaUpdateOne {
 	return iuo
 }
 
-// SetIsPublic sets the "is_public" field.
-func (iuo *IdeaUpdateOne) SetIsPublic(b bool) *IdeaUpdateOne {
-	iuo.mutation.SetIsPublic(b)
+// SetVisibility sets the "visibility" field.
+func (iuo *IdeaUpdateOne) SetVisibility(i idea.Visibility) *IdeaUpdateOne {
+	iuo.mutation.SetVisibility(i)
 	return iuo
 }
 
-// SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (iuo *IdeaUpdateOne) SetNillableIsPublic(b *bool) *IdeaUpdateOne {
-	if b != nil {
-		iuo.SetIsPublic(*b)
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (iuo *IdeaUpdateOne) SetNillableVisibility(i *idea.Visibility) *IdeaUpdateOne {
+	if i != nil {
+		iuo.SetVisibility(*i)
 	}
 	return iuo
 }
@@ -994,21 +917,6 @@ func (iuo *IdeaUpdateOne) SetDetails(i *IdeaDetail) *IdeaUpdateOne {
 	return iuo.SetDetailsID(i.ID)
 }
 
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (iuo *IdeaUpdateOne) AddBlogPostIDs(ids ...uuid.UUID) *IdeaUpdateOne {
-	iuo.mutation.AddBlogPostIDs(ids...)
-	return iuo
-}
-
-// AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
-func (iuo *IdeaUpdateOne) AddBlogPosts(b ...*BlogPost) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return iuo.AddBlogPostIDs(ids...)
-}
-
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
 func (iuo *IdeaUpdateOne) AddCommentIDs(ids ...uuid.UUID) *IdeaUpdateOne {
 	iuo.mutation.AddCommentIDs(ids...)
@@ -1075,27 +983,6 @@ func (iuo *IdeaUpdateOne) RemoveTranslations(i ...*IdeaTranslation) *IdeaUpdateO
 func (iuo *IdeaUpdateOne) ClearDetails() *IdeaUpdateOne {
 	iuo.mutation.ClearDetails()
 	return iuo
-}
-
-// ClearBlogPosts clears all "blog_posts" edges to the BlogPost entity.
-func (iuo *IdeaUpdateOne) ClearBlogPosts() *IdeaUpdateOne {
-	iuo.mutation.ClearBlogPosts()
-	return iuo
-}
-
-// RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (iuo *IdeaUpdateOne) RemoveBlogPostIDs(ids ...uuid.UUID) *IdeaUpdateOne {
-	iuo.mutation.RemoveBlogPostIDs(ids...)
-	return iuo
-}
-
-// RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
-func (iuo *IdeaUpdateOne) RemoveBlogPosts(b ...*BlogPost) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return iuo.RemoveBlogPostIDs(ids...)
 }
 
 // ClearComments clears all "comments" edges to the Comment entity.
@@ -1206,6 +1093,11 @@ func (iuo *IdeaUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Idea.status": %w`, err)}
 		}
 	}
+	if v, ok := iuo.mutation.Visibility(); ok {
+		if err := idea.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Idea.visibility": %w`, err)}
+		}
+	}
 	if v, ok := iuo.mutation.Category(); ok {
 		if err := idea.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Idea.category": %w`, err)}
@@ -1267,8 +1159,8 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 	if value, ok := iuo.mutation.Status(); ok {
 		_spec.SetField(idea.FieldStatus, field.TypeEnum, value)
 	}
-	if value, ok := iuo.mutation.IsPublic(); ok {
-		_spec.SetField(idea.FieldIsPublic, field.TypeBool, value)
+	if value, ok := iuo.mutation.Visibility(); ok {
+		_spec.SetField(idea.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := iuo.mutation.ViewCount(); ok {
 		_spec.SetField(idea.FieldViewCount, field.TypeInt, value)
@@ -1387,51 +1279,6 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if iuo.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iuo.mutation.RemovedBlogPostsIDs(); len(nodes) > 0 && !iuo.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iuo.mutation.BlogPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

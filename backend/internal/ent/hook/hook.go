@@ -8,6 +8,18 @@ import (
 	"silan-backend/internal/ent"
 )
 
+// The AnnotationFunc type is an adapter to allow the use of ordinary
+// function as Annotation mutator.
+type AnnotationFunc func(context.Context, *ent.AnnotationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AnnotationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AnnotationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AnnotationMutation", m)
+}
+
 // The AwardFunc type is an adapter to allow the use of ordinary
 // function as Award mutator.
 type AwardFunc func(context.Context, *ent.AwardMutation) (ent.Value, error)
@@ -152,6 +164,30 @@ func (f CommentLikeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentLikeMutation", m)
 }
 
+// The ContentInteractionFunc type is an adapter to allow the use of ordinary
+// function as ContentInteraction mutator.
+type ContentInteractionFunc func(context.Context, *ent.ContentInteractionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ContentInteractionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ContentInteractionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ContentInteractionMutation", m)
+}
+
+// The ContentRelationFunc type is an adapter to allow the use of ordinary
+// function as ContentRelation mutator.
+type ContentRelationFunc func(context.Context, *ent.ContentRelationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ContentRelationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ContentRelationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ContentRelationMutation", m)
+}
+
 // The EducationFunc type is an adapter to allow the use of ordinary
 // function as Education mutator.
 type EducationFunc func(context.Context, *ent.EducationMutation) (ent.Value, error)
@@ -198,6 +234,54 @@ func (f EducationTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EducationTranslationMutation", m)
+}
+
+// The EpisodeFunc type is an adapter to allow the use of ordinary
+// function as Episode mutator.
+type EpisodeFunc func(context.Context, *ent.EpisodeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EpisodeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EpisodeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EpisodeMutation", m)
+}
+
+// The EpisodeSeriesFunc type is an adapter to allow the use of ordinary
+// function as EpisodeSeries mutator.
+type EpisodeSeriesFunc func(context.Context, *ent.EpisodeSeriesMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EpisodeSeriesFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EpisodeSeriesMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EpisodeSeriesMutation", m)
+}
+
+// The EpisodeSeriesTranslationFunc type is an adapter to allow the use of ordinary
+// function as EpisodeSeriesTranslation mutator.
+type EpisodeSeriesTranslationFunc func(context.Context, *ent.EpisodeSeriesTranslationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EpisodeSeriesTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EpisodeSeriesTranslationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EpisodeSeriesTranslationMutation", m)
+}
+
+// The EpisodeTranslationFunc type is an adapter to allow the use of ordinary
+// function as EpisodeTranslation mutator.
+type EpisodeTranslationFunc func(context.Context, *ent.EpisodeTranslationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EpisodeTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EpisodeTranslationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EpisodeTranslationMutation", m)
 }
 
 // The IdeaFunc type is an adapter to allow the use of ordinary
@@ -260,6 +344,30 @@ func (f IdeaTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdeaTranslationMutation", m)
 }
 
+// The ItemPartFunc type is an adapter to allow the use of ordinary
+// function as ItemPart mutator.
+type ItemPartFunc func(context.Context, *ent.ItemPartMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ItemPartFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ItemPartMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ItemPartMutation", m)
+}
+
+// The ItemPartTranslationFunc type is an adapter to allow the use of ordinary
+// function as ItemPartTranslation mutator.
+type ItemPartTranslationFunc func(context.Context, *ent.ItemPartTranslationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ItemPartTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ItemPartTranslationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ItemPartTranslationMutation", m)
+}
+
 // The LanguageFunc type is an adapter to allow the use of ordinary
 // function as Language mutator.
 type LanguageFunc func(context.Context, *ent.LanguageMutation) (ent.Value, error)
@@ -270,6 +378,30 @@ func (f LanguageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LanguageMutation", m)
+}
+
+// The PartEntryFunc type is an adapter to allow the use of ordinary
+// function as PartEntry mutator.
+type PartEntryFunc func(context.Context, *ent.PartEntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PartEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PartEntryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PartEntryMutation", m)
+}
+
+// The PartEntryTranslationFunc type is an adapter to allow the use of ordinary
+// function as PartEntryTranslation mutator.
+type PartEntryTranslationFunc func(context.Context, *ent.PartEntryTranslationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PartEntryTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PartEntryTranslationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PartEntryTranslationMutation", m)
 }
 
 // The PersonalInfoFunc type is an adapter to allow the use of ordinary
@@ -368,18 +500,6 @@ func (f ProjectLikeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectLikeMutation", m)
 }
 
-// The ProjectRelationshipFunc type is an adapter to allow the use of ordinary
-// function as ProjectRelationship mutator.
-type ProjectRelationshipFunc func(context.Context, *ent.ProjectRelationshipMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ProjectRelationshipFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ProjectRelationshipMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProjectRelationshipMutation", m)
-}
-
 // The ProjectTechnologyFunc type is an adapter to allow the use of ordinary
 // function as ProjectTechnology mutator.
 type ProjectTechnologyFunc func(context.Context, *ent.ProjectTechnologyMutation) (ent.Value, error)
@@ -474,6 +594,18 @@ func (f RecentUpdateTranslationFunc) Mutate(ctx context.Context, m ent.Mutation)
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RecentUpdateTranslationMutation", m)
+}
+
+// The RequestLogFunc type is an adapter to allow the use of ordinary
+// function as RequestLog mutator.
+type RequestLogFunc func(context.Context, *ent.RequestLogMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RequestLogFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RequestLogMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RequestLogMutation", m)
 }
 
 // The ResearchProjectFunc type is an adapter to allow the use of ordinary

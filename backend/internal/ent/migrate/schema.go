@@ -9,6 +9,32 @@ import (
 )
 
 var (
+	// AnnotationColumns holds the columns for the "annotation" table.
+	AnnotationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "part_role", Type: field.TypeString, Nullable: true},
+		{Name: "anchor", Type: field.TypeString, Nullable: true},
+		{Name: "body", Type: field.TypeString, Size: 2147483647},
+		{Name: "author_kind", Type: field.TypeEnum, Enums: []string{"owner", "reader", "agent"}},
+		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// AnnotationTable holds the schema information for the "annotation" table.
+	AnnotationTable = &schema.Table{
+		Name:       "annotation",
+		Columns:    AnnotationColumns,
+		PrimaryKey: []*schema.Column{AnnotationColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "annotation_entity_type_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{AnnotationColumns[1], AnnotationColumns[2]},
+			},
+		},
+	}
 	// AwardsColumns holds the columns for the "awards" table.
 	AwardsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -122,8 +148,9 @@ var (
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
 		{Name: "excerpt", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
-		{Name: "content_type", Type: field.TypeEnum, Enums: []string{"article", "vlog", "episode"}, Default: "article"},
+		{Name: "content_type", Type: field.TypeEnum, Enums: []string{"article", "podcast", "vlog", "tutorial"}, Default: "article"},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "published", "archived"}, Default: "draft"},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
 		{Name: "is_featured", Type: field.TypeBool, Default: false},
 		{Name: "featured_image_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "reading_time_minutes", Type: field.TypeInt, Nullable: true},
@@ -136,7 +163,6 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "category_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "series_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "ideas_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "user_id", Type: field.TypeUUID},
 	}
 	// BlogPostsTable holds the schema information for the "blog_posts" table.
@@ -147,20 +173,14 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "blog_posts_blog_categories_blog_posts",
-				Columns:    []*schema.Column{BlogPostsColumns[17]},
+				Columns:    []*schema.Column{BlogPostsColumns[18]},
 				RefColumns: []*schema.Column{BlogCategoriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "blog_posts_blog_series_blog_posts",
-				Columns:    []*schema.Column{BlogPostsColumns[18]},
-				RefColumns: []*schema.Column{BlogSeriesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "blog_posts_ideas_blog_posts",
 				Columns:    []*schema.Column{BlogPostsColumns[19]},
-				RefColumns: []*schema.Column{IdeasColumns[0]},
+				RefColumns: []*schema.Column{BlogSeriesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
@@ -291,14 +311,14 @@ var (
 	// CommentsColumns holds the columns for the "comments" table.
 	CommentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "entity_type", Type: field.TypeString},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
 		{Name: "entity_id", Type: field.TypeUUID},
 		{Name: "author_name", Type: field.TypeString, Size: 100},
 		{Name: "author_email", Type: field.TypeString, Size: 255},
 		{Name: "author_website", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
-		{Name: "type", Type: field.TypeString, Default: "general"},
-		{Name: "referrence_id", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"general", "question", "feedback"}, Default: "general"},
+		{Name: "reference_id", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "attachment_id", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "is_approved", Type: field.TypeBool, Default: false},
 		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
@@ -340,6 +360,18 @@ var (
 				Columns:    []*schema.Column{CommentsColumns[19]},
 				RefColumns: []*schema.Column{IdeasColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "comment_entity_type_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommentsColumns[1], CommentsColumns[2]},
+			},
+			{
+				Name:    "comment_parent_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommentsColumns[17]},
 			},
 		},
 	}
@@ -386,6 +418,91 @@ var (
 				Name:    "commentlike_user_identity_id",
 				Unique:  false,
 				Columns: []*schema.Column{CommentLikesColumns[6]},
+			},
+		},
+	}
+	// ContentInteractionColumns holds the columns for the "content_interaction" table.
+	ContentInteractionColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "section_anchor", Type: field.TypeString, Nullable: true},
+		{Name: "kind", Type: field.TypeEnum, Enums: []string{"view", "like"}},
+		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
+		{Name: "fingerprint", Type: field.TypeString, Nullable: true},
+		{Name: "ip_address", Type: field.TypeString, Nullable: true},
+		{Name: "user_agent", Type: field.TypeString, Nullable: true},
+		{Name: "visitor_kind", Type: field.TypeEnum, Enums: []string{"human", "search_crawler", "ai_crawler"}, Default: "human"},
+		{Name: "referrer_kind", Type: field.TypeEnum, Enums: []string{"search", "social", "ai_chat", "direct", "internal"}, Default: "direct"},
+		{Name: "crawler_name", Type: field.TypeString, Nullable: true},
+		{Name: "session_duration", Type: field.TypeInt, Default: 0},
+		{Name: "scroll_progress", Type: field.TypeFloat64, Default: 0},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// ContentInteractionTable holds the schema information for the "content_interaction" table.
+	ContentInteractionTable = &schema.Table{
+		Name:       "content_interaction",
+		Columns:    ContentInteractionColumns,
+		PrimaryKey: []*schema.Column{ContentInteractionColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "contentinteraction_entity_type_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{ContentInteractionColumns[1], ContentInteractionColumns[2]},
+			},
+			{
+				Name:    "contentinteraction_entity_type_entity_id_section_anchor",
+				Unique:  false,
+				Columns: []*schema.Column{ContentInteractionColumns[1], ContentInteractionColumns[2], ContentInteractionColumns[3]},
+			},
+			{
+				Name:    "contentinteraction_entity_type_entity_id_kind",
+				Unique:  false,
+				Columns: []*schema.Column{ContentInteractionColumns[1], ContentInteractionColumns[2], ContentInteractionColumns[4]},
+			},
+			{
+				Name:    "contentinteraction_fingerprint",
+				Unique:  false,
+				Columns: []*schema.Column{ContentInteractionColumns[6]},
+			},
+			{
+				Name:    "contentinteraction_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ContentInteractionColumns[14]},
+			},
+		},
+	}
+	// ContentRelationColumns holds the columns for the "content_relation" table.
+	ContentRelationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "from_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "from_id", Type: field.TypeUUID},
+		{Name: "to_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "to_id", Type: field.TypeUUID},
+		{Name: "relation_type", Type: field.TypeEnum, Enums: []string{"evolved_into", "documents", "references", "supersedes", "part_of"}},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// ContentRelationTable holds the schema information for the "content_relation" table.
+	ContentRelationTable = &schema.Table{
+		Name:       "content_relation",
+		Columns:    ContentRelationColumns,
+		PrimaryKey: []*schema.Column{ContentRelationColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "contentrelation_from_type_from_id_to_type_to_id_relation_type",
+				Unique:  true,
+				Columns: []*schema.Column{ContentRelationColumns[1], ContentRelationColumns[2], ContentRelationColumns[3], ContentRelationColumns[4], ContentRelationColumns[5]},
+			},
+			{
+				Name:    "contentrelation_from_type_from_id",
+				Unique:  false,
+				Columns: []*schema.Column{ContentRelationColumns[1], ContentRelationColumns[2]},
+			},
+			{
+				Name:    "contentrelation_to_type_to_id",
+				Unique:  false,
+				Columns: []*schema.Column{ContentRelationColumns[3], ContentRelationColumns[4]},
 			},
 		},
 	}
@@ -503,6 +620,122 @@ var (
 			},
 		},
 	}
+	// EpisodesColumns holds the columns for the "episodes" table.
+	EpisodesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
+		{Name: "title", Type: field.TypeString, Size: 500},
+		{Name: "episode_number", Type: field.TypeInt},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "published", "archived"}, Default: "draft"},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
+		{Name: "published_at", Type: field.TypeTime, Nullable: true},
+		{Name: "duration_minutes", Type: field.TypeInt, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "series_id", Type: field.TypeUUID},
+	}
+	// EpisodesTable holds the schema information for the "episodes" table.
+	EpisodesTable = &schema.Table{
+		Name:       "episodes",
+		Columns:    EpisodesColumns,
+		PrimaryKey: []*schema.Column{EpisodesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "episodes_episode_series_episodes",
+				Columns:    []*schema.Column{EpisodesColumns[10]},
+				RefColumns: []*schema.Column{EpisodeSeriesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "episode_series_id",
+				Unique:  false,
+				Columns: []*schema.Column{EpisodesColumns[10]},
+			},
+			{
+				Name:    "episode_series_id_episode_number",
+				Unique:  true,
+				Columns: []*schema.Column{EpisodesColumns[10], EpisodesColumns[3]},
+			},
+		},
+	}
+	// EpisodeSeriesColumns holds the columns for the "episode_series" table.
+	EpisodeSeriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
+		{Name: "title", Type: field.TypeString, Size: 300},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"ongoing", "completed", "archived"}, Default: "ongoing"},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// EpisodeSeriesTable holds the schema information for the "episode_series" table.
+	EpisodeSeriesTable = &schema.Table{
+		Name:       "episode_series",
+		Columns:    EpisodeSeriesColumns,
+		PrimaryKey: []*schema.Column{EpisodeSeriesColumns[0]},
+	}
+	// EpisodeSeriesTranslationsColumns holds the columns for the "episode_series_translations" table.
+	EpisodeSeriesTranslationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "language_code", Type: field.TypeString, Size: 5},
+		{Name: "title", Type: field.TypeString, Size: 300},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "episode_series_id", Type: field.TypeUUID},
+	}
+	// EpisodeSeriesTranslationsTable holds the schema information for the "episode_series_translations" table.
+	EpisodeSeriesTranslationsTable = &schema.Table{
+		Name:       "episode_series_translations",
+		Columns:    EpisodeSeriesTranslationsColumns,
+		PrimaryKey: []*schema.Column{EpisodeSeriesTranslationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "episode_series_translations_episode_series_translations",
+				Columns:    []*schema.Column{EpisodeSeriesTranslationsColumns[5]},
+				RefColumns: []*schema.Column{EpisodeSeriesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "episodeseriestranslation_episode_series_id_language_code",
+				Unique:  true,
+				Columns: []*schema.Column{EpisodeSeriesTranslationsColumns[5], EpisodeSeriesTranslationsColumns[1]},
+			},
+		},
+	}
+	// EpisodeTranslationsColumns holds the columns for the "episode_translations" table.
+	EpisodeTranslationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "language_code", Type: field.TypeString, Size: 5},
+		{Name: "title", Type: field.TypeString, Size: 500},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "episode_id", Type: field.TypeUUID},
+	}
+	// EpisodeTranslationsTable holds the schema information for the "episode_translations" table.
+	EpisodeTranslationsTable = &schema.Table{
+		Name:       "episode_translations",
+		Columns:    EpisodeTranslationsColumns,
+		PrimaryKey: []*schema.Column{EpisodeTranslationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "episode_translations_episodes_translations",
+				Columns:    []*schema.Column{EpisodeTranslationsColumns[5]},
+				RefColumns: []*schema.Column{EpisodesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "episodetranslation_episode_id_language_code",
+				Unique:  true,
+				Columns: []*schema.Column{EpisodeTranslationsColumns[5], EpisodeTranslationsColumns[1]},
+			},
+		},
+	}
 	// IdeasColumns holds the columns for the "ideas" table.
 	IdeasColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -511,7 +744,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "abstract", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "hypothesis", "experimenting", "validating", "published", "concluded"}, Default: "draft"},
-		{Name: "is_public", Type: field.TypeBool, Default: false},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
 		{Name: "view_count", Type: field.TypeInt, Default: 0},
 		{Name: "like_count", Type: field.TypeInt, Default: 0},
 		{Name: "category", Type: field.TypeString, Nullable: true, Size: 100, Default: ""},
@@ -536,9 +769,6 @@ var (
 	// IdeaDetailsColumns holds the columns for the "idea_details" table.
 	IdeaDetailsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "progress", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "results", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "references", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "estimated_duration_months", Type: field.TypeInt, Nullable: true},
 		{Name: "required_resources", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "collaboration_needed", Type: field.TypeBool, Default: false},
@@ -556,7 +786,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "idea_details_ideas_details",
-				Columns:    []*schema.Column{IdeaDetailsColumns[11]},
+				Columns:    []*schema.Column{IdeaDetailsColumns[8]},
 				RefColumns: []*schema.Column{IdeasColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -565,10 +795,6 @@ var (
 	// IdeaDetailTranslationsColumns holds the columns for the "idea_detail_translations" table.
 	IdeaDetailTranslationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "progress", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "results", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "references", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "required_resources", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "idea_detail_id", Type: field.TypeUUID},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
@@ -581,13 +807,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "idea_detail_translations_idea_details_translations",
-				Columns:    []*schema.Column{IdeaDetailTranslationsColumns[6]},
+				Columns:    []*schema.Column{IdeaDetailTranslationsColumns[2]},
 				RefColumns: []*schema.Column{IdeaDetailsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "idea_detail_translations_languages_idea_detail_translations",
-				Columns:    []*schema.Column{IdeaDetailTranslationsColumns[7]},
+				Columns:    []*schema.Column{IdeaDetailTranslationsColumns[3]},
 				RefColumns: []*schema.Column{LanguagesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -640,6 +866,70 @@ var (
 			},
 		},
 	}
+	// ItemPartColumns holds the columns for the "item_part" table.
+	ItemPartColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "part_id", Type: field.TypeString},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "role", Type: field.TypeString},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "canonical_lang", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// ItemPartTable holds the schema information for the "item_part" table.
+	ItemPartTable = &schema.Table{
+		Name:       "item_part",
+		Columns:    ItemPartColumns,
+		PrimaryKey: []*schema.Column{ItemPartColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "itempart_part_id",
+				Unique:  true,
+				Columns: []*schema.Column{ItemPartColumns[1]},
+			},
+			{
+				Name:    "itempart_entity_type_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{ItemPartColumns[2], ItemPartColumns[3]},
+			},
+			{
+				Name:    "itempart_entity_type_entity_id_role",
+				Unique:  true,
+				Columns: []*schema.Column{ItemPartColumns[2], ItemPartColumns[3], ItemPartColumns[4]},
+			},
+		},
+	}
+	// ItemPartTranslationColumns holds the columns for the "item_part_translation" table.
+	ItemPartTranslationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "language_code", Type: field.TypeString},
+		{Name: "body", Type: field.TypeString, Size: 2147483647},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "item_part_id", Type: field.TypeUUID},
+	}
+	// ItemPartTranslationTable holds the schema information for the "item_part_translation" table.
+	ItemPartTranslationTable = &schema.Table{
+		Name:       "item_part_translation",
+		Columns:    ItemPartTranslationColumns,
+		PrimaryKey: []*schema.Column{ItemPartTranslationColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "item_part_translation_item_part_translations",
+				Columns:    []*schema.Column{ItemPartTranslationColumns[4]},
+				RefColumns: []*schema.Column{ItemPartColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "itemparttranslation_item_part_id_language_code",
+				Unique:  true,
+				Columns: []*schema.Column{ItemPartTranslationColumns[4], ItemPartTranslationColumns[1]},
+			},
+		},
+	}
 	// LanguagesColumns holds the columns for the "languages" table.
 	LanguagesColumns = []*schema.Column{
 		{Name: "code", Type: field.TypeString, Unique: true, Size: 5},
@@ -653,6 +943,70 @@ var (
 		Name:       "languages",
 		Columns:    LanguagesColumns,
 		PrimaryKey: []*schema.Column{LanguagesColumns[0]},
+	}
+	// PartEntryColumns holds the columns for the "part_entry" table.
+	PartEntryColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "entry_id", Type: field.TypeString},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "shared_payload", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "item_part_id", Type: field.TypeUUID},
+	}
+	// PartEntryTable holds the schema information for the "part_entry" table.
+	PartEntryTable = &schema.Table{
+		Name:       "part_entry",
+		Columns:    PartEntryColumns,
+		PrimaryKey: []*schema.Column{PartEntryColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "part_entry_item_part_entries",
+				Columns:    []*schema.Column{PartEntryColumns[5]},
+				RefColumns: []*schema.Column{ItemPartColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "partentry_item_part_id",
+				Unique:  false,
+				Columns: []*schema.Column{PartEntryColumns[5]},
+			},
+			{
+				Name:    "partentry_item_part_id_entry_id",
+				Unique:  true,
+				Columns: []*schema.Column{PartEntryColumns[5], PartEntryColumns[1]},
+			},
+		},
+	}
+	// PartEntryTranslationColumns holds the columns for the "part_entry_translation" table.
+	PartEntryTranslationColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "language_code", Type: field.TypeString},
+		{Name: "localized_payload", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "part_entry_id", Type: field.TypeUUID},
+	}
+	// PartEntryTranslationTable holds the schema information for the "part_entry_translation" table.
+	PartEntryTranslationTable = &schema.Table{
+		Name:       "part_entry_translation",
+		Columns:    PartEntryTranslationColumns,
+		PrimaryKey: []*schema.Column{PartEntryTranslationColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "part_entry_translation_part_entry_translations",
+				Columns:    []*schema.Column{PartEntryTranslationColumns[4]},
+				RefColumns: []*schema.Column{PartEntryColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "partentrytranslation_part_entry_id_language_code",
+				Unique:  true,
+				Columns: []*schema.Column{PartEntryTranslationColumns[4], PartEntryTranslationColumns[1]},
+			},
+		},
 	}
 	// PersonalInfoColumns holds the columns for the "personal_info" table.
 	PersonalInfoColumns = []*schema.Column{
@@ -730,7 +1084,7 @@ var (
 		{Name: "documentation_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "thumbnail_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "is_featured", Type: field.TypeBool, Default: false},
-		{Name: "is_public", Type: field.TypeBool, Default: true},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "public"},
 		{Name: "view_count", Type: field.TypeInt, Default: 0},
 		{Name: "like_count", Type: field.TypeInt, Default: 0},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
@@ -756,8 +1110,6 @@ var (
 	ProjectDetailsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "project_details", Type: field.TypeString, Nullable: true},
-		{Name: "quick_start", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "release_notes", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "dependencies", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "license", Type: field.TypeString, Nullable: true, Size: 50},
 		{Name: "license_text", Type: field.TypeString, Nullable: true},
@@ -774,7 +1126,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "project_details_projects_details",
-				Columns:    []*schema.Column{ProjectDetailsColumns[10]},
+				Columns:    []*schema.Column{ProjectDetailsColumns[8]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -783,12 +1135,6 @@ var (
 	// ProjectDetailTranslationsColumns holds the columns for the "project_detail_translations" table.
 	ProjectDetailTranslationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "detailed_description", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "goals", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "challenges", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "solutions", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "lessons_learned", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "future_enhancements", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 		{Name: "project_detail_id", Type: field.TypeUUID},
@@ -801,13 +1147,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "project_detail_translations_languages_project_detail_translations",
-				Columns:    []*schema.Column{ProjectDetailTranslationsColumns[8]},
+				Columns:    []*schema.Column{ProjectDetailTranslationsColumns[2]},
 				RefColumns: []*schema.Column{LanguagesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "project_detail_translations_project_details_translations",
-				Columns:    []*schema.Column{ProjectDetailTranslationsColumns[9]},
+				Columns:    []*schema.Column{ProjectDetailTranslationsColumns[3]},
 				RefColumns: []*schema.Column{ProjectDetailsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -923,34 +1269,6 @@ var (
 				Name:    "projectlike_ip_address",
 				Unique:  false,
 				Columns: []*schema.Column{ProjectLikesColumns[2]},
-			},
-		},
-	}
-	// ProjectRelationshipsColumns holds the columns for the "project_relationships" table.
-	ProjectRelationshipsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "relationship_type", Type: field.TypeString, Size: 50},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "source_project_id", Type: field.TypeUUID},
-		{Name: "target_project_id", Type: field.TypeUUID},
-	}
-	// ProjectRelationshipsTable holds the schema information for the "project_relationships" table.
-	ProjectRelationshipsTable = &schema.Table{
-		Name:       "project_relationships",
-		Columns:    ProjectRelationshipsColumns,
-		PrimaryKey: []*schema.Column{ProjectRelationshipsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "project_relationships_projects_source_relationships",
-				Columns:    []*schema.Column{ProjectRelationshipsColumns[3]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "project_relationships_projects_target_relationships",
-				Columns:    []*schema.Column{ProjectRelationshipsColumns[4]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.NoAction,
 			},
 		},
 	}
@@ -1166,7 +1484,10 @@ var (
 	// RecentUpdatesColumns holds the columns for the "recent_updates" table.
 	RecentUpdatesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"work", "education", "research", "publication", "project"}, Default: "project"},
+		{Name: "update_type", Type: field.TypeEnum, Enums: []string{"milestone", "achievement", "progress", "release", "announcement", "insight", "learning", "reflection"}, Default: "progress"},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
 		{Name: "title", Type: field.TypeString, Size: 200},
 		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
@@ -1197,9 +1518,21 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "recent_updates_users_recent_updates",
-				Columns:    []*schema.Column{RecentUpdatesColumns[22]},
+				Columns:    []*schema.Column{RecentUpdatesColumns[25]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "recentupdate_update_type",
+				Unique:  false,
+				Columns: []*schema.Column{RecentUpdatesColumns[3]},
+			},
+			{
+				Name:    "recentupdate_visibility",
+				Unique:  false,
+				Columns: []*schema.Column{RecentUpdatesColumns[4]},
 			},
 		},
 	}
@@ -1229,6 +1562,37 @@ var (
 				Columns:    []*schema.Column{RecentUpdateTranslationsColumns[5]},
 				RefColumns: []*schema.Column{RecentUpdatesColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// RequestLogsColumns holds the columns for the "request_logs" table.
+	RequestLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "method", Type: field.TypeString, Nullable: true, Size: 16},
+		{Name: "path", Type: field.TypeString, Nullable: true, Size: 1024},
+		{Name: "status", Type: field.TypeInt, Nullable: true},
+		{Name: "duration_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "referrer", Type: field.TypeString, Nullable: true, Size: 1024},
+		{Name: "user_agent", Type: field.TypeString, Nullable: true, Size: 1024},
+		{Name: "ip", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "lang", Type: field.TypeString, Nullable: true, Size: 8},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// RequestLogsTable holds the schema information for the "request_logs" table.
+	RequestLogsTable = &schema.Table{
+		Name:       "request_logs",
+		Columns:    RequestLogsColumns,
+		PrimaryKey: []*schema.Column{RequestLogsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "requestlog_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RequestLogsColumns[9]},
+			},
+			{
+				Name:    "requestlog_path",
+				Unique:  false,
+				Columns: []*schema.Column{RequestLogsColumns[2]},
 			},
 		},
 	}
@@ -1559,6 +1923,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AnnotationTable,
 		AwardsTable,
 		AwardTranslationsTable,
 		BlogCategoriesTable,
@@ -1571,16 +1936,26 @@ var (
 		BlogTagsTable,
 		CommentsTable,
 		CommentLikesTable,
+		ContentInteractionTable,
+		ContentRelationTable,
 		EducationTable,
 		EducationDetailsTable,
 		EducationDetailTranslationsTable,
 		EducationTranslationsTable,
+		EpisodesTable,
+		EpisodeSeriesTable,
+		EpisodeSeriesTranslationsTable,
+		EpisodeTranslationsTable,
 		IdeasTable,
 		IdeaDetailsTable,
 		IdeaDetailTranslationsTable,
 		IdeaTagsTable,
 		IdeaTranslationsTable,
+		ItemPartTable,
+		ItemPartTranslationTable,
 		LanguagesTable,
+		PartEntryTable,
+		PartEntryTranslationTable,
 		PersonalInfoTable,
 		PersonalInfoTranslationsTable,
 		ProjectsTable,
@@ -1589,7 +1964,6 @@ var (
 		ProjectImagesTable,
 		ProjectImageTranslationsTable,
 		ProjectLikesTable,
-		ProjectRelationshipsTable,
 		ProjectTechnologiesTable,
 		ProjectTranslationsTable,
 		ProjectViewsTable,
@@ -1598,6 +1972,7 @@ var (
 		PublicationTranslationsTable,
 		RecentUpdatesTable,
 		RecentUpdateTranslationsTable,
+		RequestLogsTable,
 		ResearchProjectsTable,
 		ResearchProjectDetailsTable,
 		ResearchProjectDetailTranslationsTable,
@@ -1614,6 +1989,9 @@ var (
 )
 
 func init() {
+	AnnotationTable.Annotation = &entsql.Annotation{
+		Table: "annotation",
+	}
 	AwardsTable.ForeignKeys[0].RefTable = UsersTable
 	AwardsTable.Annotation = &entsql.Annotation{
 		Table: "awards",
@@ -1633,8 +2011,7 @@ func init() {
 	}
 	BlogPostsTable.ForeignKeys[0].RefTable = BlogCategoriesTable
 	BlogPostsTable.ForeignKeys[1].RefTable = BlogSeriesTable
-	BlogPostsTable.ForeignKeys[2].RefTable = IdeasTable
-	BlogPostsTable.ForeignKeys[3].RefTable = UsersTable
+	BlogPostsTable.ForeignKeys[2].RefTable = UsersTable
 	BlogPostsTable.Annotation = &entsql.Annotation{
 		Table: "blog_posts",
 	}
@@ -1670,6 +2047,12 @@ func init() {
 	CommentLikesTable.Annotation = &entsql.Annotation{
 		Table: "comment_likes",
 	}
+	ContentInteractionTable.Annotation = &entsql.Annotation{
+		Table: "content_interaction",
+	}
+	ContentRelationTable.Annotation = &entsql.Annotation{
+		Table: "content_relation",
+	}
 	EducationTable.ForeignKeys[0].RefTable = UsersTable
 	EducationTable.Annotation = &entsql.Annotation{
 		Table: "education",
@@ -1687,6 +2070,21 @@ func init() {
 	EducationTranslationsTable.ForeignKeys[1].RefTable = LanguagesTable
 	EducationTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "education_translations",
+	}
+	EpisodesTable.ForeignKeys[0].RefTable = EpisodeSeriesTable
+	EpisodesTable.Annotation = &entsql.Annotation{
+		Table: "episodes",
+	}
+	EpisodeSeriesTable.Annotation = &entsql.Annotation{
+		Table: "episode_series",
+	}
+	EpisodeSeriesTranslationsTable.ForeignKeys[0].RefTable = EpisodeSeriesTable
+	EpisodeSeriesTranslationsTable.Annotation = &entsql.Annotation{
+		Table: "episode_series_translations",
+	}
+	EpisodeTranslationsTable.ForeignKeys[0].RefTable = EpisodesTable
+	EpisodeTranslationsTable.Annotation = &entsql.Annotation{
+		Table: "episode_translations",
 	}
 	IdeasTable.ForeignKeys[0].RefTable = UsersTable
 	IdeasTable.Annotation = &entsql.Annotation{
@@ -1709,8 +2107,23 @@ func init() {
 	IdeaTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "idea_translations",
 	}
+	ItemPartTable.Annotation = &entsql.Annotation{
+		Table: "item_part",
+	}
+	ItemPartTranslationTable.ForeignKeys[0].RefTable = ItemPartTable
+	ItemPartTranslationTable.Annotation = &entsql.Annotation{
+		Table: "item_part_translation",
+	}
 	LanguagesTable.Annotation = &entsql.Annotation{
 		Table: "languages",
+	}
+	PartEntryTable.ForeignKeys[0].RefTable = ItemPartTable
+	PartEntryTable.Annotation = &entsql.Annotation{
+		Table: "part_entry",
+	}
+	PartEntryTranslationTable.ForeignKeys[0].RefTable = PartEntryTable
+	PartEntryTranslationTable.Annotation = &entsql.Annotation{
+		Table: "part_entry_translation",
 	}
 	PersonalInfoTable.ForeignKeys[0].RefTable = UsersTable
 	PersonalInfoTable.Annotation = &entsql.Annotation{
@@ -1748,11 +2161,6 @@ func init() {
 	ProjectLikesTable.Annotation = &entsql.Annotation{
 		Table: "project_likes",
 	}
-	ProjectRelationshipsTable.ForeignKeys[0].RefTable = ProjectsTable
-	ProjectRelationshipsTable.ForeignKeys[1].RefTable = ProjectsTable
-	ProjectRelationshipsTable.Annotation = &entsql.Annotation{
-		Table: "project_relationships",
-	}
 	ProjectTechnologiesTable.ForeignKeys[0].RefTable = ProjectsTable
 	ProjectTechnologiesTable.Annotation = &entsql.Annotation{
 		Table: "project_technologies",
@@ -1788,6 +2196,9 @@ func init() {
 	RecentUpdateTranslationsTable.ForeignKeys[1].RefTable = RecentUpdatesTable
 	RecentUpdateTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "recent_update_translations",
+	}
+	RequestLogsTable.Annotation = &entsql.Annotation{
+		Table: "request_logs",
 	}
 	ResearchProjectsTable.ForeignKeys[0].RefTable = UsersTable
 	ResearchProjectsTable.Annotation = &entsql.Annotation{

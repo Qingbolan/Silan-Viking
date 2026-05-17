@@ -46,16 +46,58 @@ func (ruu *RecentUpdateUpdate) SetNillableUserID(u *uuid.UUID) *RecentUpdateUpda
 	return ruu
 }
 
-// SetType sets the "type" field.
-func (ruu *RecentUpdateUpdate) SetType(r recentupdate.Type) *RecentUpdateUpdate {
-	ruu.mutation.SetType(r)
+// SetSlug sets the "slug" field.
+func (ruu *RecentUpdateUpdate) SetSlug(s string) *RecentUpdateUpdate {
+	ruu.mutation.SetSlug(s)
 	return ruu
 }
 
-// SetNillableType sets the "type" field if the given value is not nil.
-func (ruu *RecentUpdateUpdate) SetNillableType(r *recentupdate.Type) *RecentUpdateUpdate {
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableSlug(s *string) *RecentUpdateUpdate {
+	if s != nil {
+		ruu.SetSlug(*s)
+	}
+	return ruu
+}
+
+// SetSubjectKind sets the "subject_kind" field.
+func (ruu *RecentUpdateUpdate) SetSubjectKind(rk recentupdate.SubjectKind) *RecentUpdateUpdate {
+	ruu.mutation.SetSubjectKind(rk)
+	return ruu
+}
+
+// SetNillableSubjectKind sets the "subject_kind" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableSubjectKind(rk *recentupdate.SubjectKind) *RecentUpdateUpdate {
+	if rk != nil {
+		ruu.SetSubjectKind(*rk)
+	}
+	return ruu
+}
+
+// SetUpdateType sets the "update_type" field.
+func (ruu *RecentUpdateUpdate) SetUpdateType(rt recentupdate.UpdateType) *RecentUpdateUpdate {
+	ruu.mutation.SetUpdateType(rt)
+	return ruu
+}
+
+// SetNillableUpdateType sets the "update_type" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableUpdateType(rt *recentupdate.UpdateType) *RecentUpdateUpdate {
+	if rt != nil {
+		ruu.SetUpdateType(*rt)
+	}
+	return ruu
+}
+
+// SetVisibility sets the "visibility" field.
+func (ruu *RecentUpdateUpdate) SetVisibility(r recentupdate.Visibility) *RecentUpdateUpdate {
+	ruu.mutation.SetVisibility(r)
+	return ruu
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableVisibility(r *recentupdate.Visibility) *RecentUpdateUpdate {
 	if r != nil {
-		ruu.SetType(*r)
+		ruu.SetVisibility(*r)
 	}
 	return ruu
 }
@@ -471,9 +513,24 @@ func (ruu *RecentUpdateUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruu *RecentUpdateUpdate) check() error {
-	if v, ok := ruu.mutation.GetType(); ok {
-		if err := recentupdate.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.type": %w`, err)}
+	if v, ok := ruu.mutation.Slug(); ok {
+		if err := recentupdate.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.slug": %w`, err)}
+		}
+	}
+	if v, ok := ruu.mutation.SubjectKind(); ok {
+		if err := recentupdate.SubjectKindValidator(v); err != nil {
+			return &ValidationError{Name: "subject_kind", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.subject_kind": %w`, err)}
+		}
+	}
+	if v, ok := ruu.mutation.UpdateType(); ok {
+		if err := recentupdate.UpdateTypeValidator(v); err != nil {
+			return &ValidationError{Name: "update_type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.update_type": %w`, err)}
+		}
+	}
+	if v, ok := ruu.mutation.Visibility(); ok {
+		if err := recentupdate.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.visibility": %w`, err)}
 		}
 	}
 	if v, ok := ruu.mutation.Title(); ok {
@@ -549,8 +606,17 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ruu.mutation.GetType(); ok {
-		_spec.SetField(recentupdate.FieldType, field.TypeEnum, value)
+	if value, ok := ruu.mutation.Slug(); ok {
+		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := ruu.mutation.SubjectKind(); ok {
+		_spec.SetField(recentupdate.FieldSubjectKind, field.TypeEnum, value)
+	}
+	if value, ok := ruu.mutation.UpdateType(); ok {
+		_spec.SetField(recentupdate.FieldUpdateType, field.TypeEnum, value)
+	}
+	if value, ok := ruu.mutation.Visibility(); ok {
+		_spec.SetField(recentupdate.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := ruu.mutation.Title(); ok {
 		_spec.SetField(recentupdate.FieldTitle, field.TypeString, value)
@@ -776,16 +842,58 @@ func (ruuo *RecentUpdateUpdateOne) SetNillableUserID(u *uuid.UUID) *RecentUpdate
 	return ruuo
 }
 
-// SetType sets the "type" field.
-func (ruuo *RecentUpdateUpdateOne) SetType(r recentupdate.Type) *RecentUpdateUpdateOne {
-	ruuo.mutation.SetType(r)
+// SetSlug sets the "slug" field.
+func (ruuo *RecentUpdateUpdateOne) SetSlug(s string) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetSlug(s)
 	return ruuo
 }
 
-// SetNillableType sets the "type" field if the given value is not nil.
-func (ruuo *RecentUpdateUpdateOne) SetNillableType(r *recentupdate.Type) *RecentUpdateUpdateOne {
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableSlug(s *string) *RecentUpdateUpdateOne {
+	if s != nil {
+		ruuo.SetSlug(*s)
+	}
+	return ruuo
+}
+
+// SetSubjectKind sets the "subject_kind" field.
+func (ruuo *RecentUpdateUpdateOne) SetSubjectKind(rk recentupdate.SubjectKind) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetSubjectKind(rk)
+	return ruuo
+}
+
+// SetNillableSubjectKind sets the "subject_kind" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableSubjectKind(rk *recentupdate.SubjectKind) *RecentUpdateUpdateOne {
+	if rk != nil {
+		ruuo.SetSubjectKind(*rk)
+	}
+	return ruuo
+}
+
+// SetUpdateType sets the "update_type" field.
+func (ruuo *RecentUpdateUpdateOne) SetUpdateType(rt recentupdate.UpdateType) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetUpdateType(rt)
+	return ruuo
+}
+
+// SetNillableUpdateType sets the "update_type" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableUpdateType(rt *recentupdate.UpdateType) *RecentUpdateUpdateOne {
+	if rt != nil {
+		ruuo.SetUpdateType(*rt)
+	}
+	return ruuo
+}
+
+// SetVisibility sets the "visibility" field.
+func (ruuo *RecentUpdateUpdateOne) SetVisibility(r recentupdate.Visibility) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetVisibility(r)
+	return ruuo
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableVisibility(r *recentupdate.Visibility) *RecentUpdateUpdateOne {
 	if r != nil {
-		ruuo.SetType(*r)
+		ruuo.SetVisibility(*r)
 	}
 	return ruuo
 }
@@ -1214,9 +1322,24 @@ func (ruuo *RecentUpdateUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruuo *RecentUpdateUpdateOne) check() error {
-	if v, ok := ruuo.mutation.GetType(); ok {
-		if err := recentupdate.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.type": %w`, err)}
+	if v, ok := ruuo.mutation.Slug(); ok {
+		if err := recentupdate.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.slug": %w`, err)}
+		}
+	}
+	if v, ok := ruuo.mutation.SubjectKind(); ok {
+		if err := recentupdate.SubjectKindValidator(v); err != nil {
+			return &ValidationError{Name: "subject_kind", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.subject_kind": %w`, err)}
+		}
+	}
+	if v, ok := ruuo.mutation.UpdateType(); ok {
+		if err := recentupdate.UpdateTypeValidator(v); err != nil {
+			return &ValidationError{Name: "update_type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.update_type": %w`, err)}
+		}
+	}
+	if v, ok := ruuo.mutation.Visibility(); ok {
+		if err := recentupdate.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.visibility": %w`, err)}
 		}
 	}
 	if v, ok := ruuo.mutation.Title(); ok {
@@ -1309,8 +1432,17 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			}
 		}
 	}
-	if value, ok := ruuo.mutation.GetType(); ok {
-		_spec.SetField(recentupdate.FieldType, field.TypeEnum, value)
+	if value, ok := ruuo.mutation.Slug(); ok {
+		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := ruuo.mutation.SubjectKind(); ok {
+		_spec.SetField(recentupdate.FieldSubjectKind, field.TypeEnum, value)
+	}
+	if value, ok := ruuo.mutation.UpdateType(); ok {
+		_spec.SetField(recentupdate.FieldUpdateType, field.TypeEnum, value)
+	}
+	if value, ok := ruuo.mutation.Visibility(); ok {
+		_spec.SetField(recentupdate.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := ruuo.mutation.Title(); ok {
 		_spec.SetField(recentupdate.FieldTitle, field.TypeString, value)

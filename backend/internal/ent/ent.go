@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"silan-backend/internal/ent/annotation"
 	"silan-backend/internal/ent/award"
 	"silan-backend/internal/ent/awardtranslation"
 	"silan-backend/internal/ent/blogcategory"
@@ -19,16 +20,26 @@ import (
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
+	"silan-backend/internal/ent/contentinteraction"
+	"silan-backend/internal/ent/contentrelation"
 	"silan-backend/internal/ent/education"
 	"silan-backend/internal/ent/educationdetail"
 	"silan-backend/internal/ent/educationdetailtranslation"
 	"silan-backend/internal/ent/educationtranslation"
+	"silan-backend/internal/ent/episode"
+	"silan-backend/internal/ent/episodeseries"
+	"silan-backend/internal/ent/episodeseriestranslation"
+	"silan-backend/internal/ent/episodetranslation"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideadetailtranslation"
 	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
+	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/ent/itemparttranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/partentry"
+	"silan-backend/internal/ent/partentrytranslation"
 	"silan-backend/internal/ent/personalinfo"
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/project"
@@ -37,7 +48,6 @@ import (
 	"silan-backend/internal/ent/projectimage"
 	"silan-backend/internal/ent/projectimagetranslation"
 	"silan-backend/internal/ent/projectlike"
-	"silan-backend/internal/ent/projectrelationship"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/projectview"
@@ -46,6 +56,7 @@ import (
 	"silan-backend/internal/ent/publicationtranslation"
 	"silan-backend/internal/ent/recentupdate"
 	"silan-backend/internal/ent/recentupdatetranslation"
+	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
 	"silan-backend/internal/ent/researchprojectdetailtranslation"
@@ -122,6 +133,7 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			annotation.Table:                       annotation.ValidColumn,
 			award.Table:                            award.ValidColumn,
 			awardtranslation.Table:                 awardtranslation.ValidColumn,
 			blogcategory.Table:                     blogcategory.ValidColumn,
@@ -134,16 +146,26 @@ func checkColumn(table, column string) error {
 			blogtag.Table:                          blogtag.ValidColumn,
 			comment.Table:                          comment.ValidColumn,
 			commentlike.Table:                      commentlike.ValidColumn,
+			contentinteraction.Table:               contentinteraction.ValidColumn,
+			contentrelation.Table:                  contentrelation.ValidColumn,
 			education.Table:                        education.ValidColumn,
 			educationdetail.Table:                  educationdetail.ValidColumn,
 			educationdetailtranslation.Table:       educationdetailtranslation.ValidColumn,
 			educationtranslation.Table:             educationtranslation.ValidColumn,
+			episode.Table:                          episode.ValidColumn,
+			episodeseries.Table:                    episodeseries.ValidColumn,
+			episodeseriestranslation.Table:         episodeseriestranslation.ValidColumn,
+			episodetranslation.Table:               episodetranslation.ValidColumn,
 			idea.Table:                             idea.ValidColumn,
 			ideadetail.Table:                       ideadetail.ValidColumn,
 			ideadetailtranslation.Table:            ideadetailtranslation.ValidColumn,
 			ideatag.Table:                          ideatag.ValidColumn,
 			ideatranslation.Table:                  ideatranslation.ValidColumn,
+			itempart.Table:                         itempart.ValidColumn,
+			itemparttranslation.Table:              itemparttranslation.ValidColumn,
 			language.Table:                         language.ValidColumn,
+			partentry.Table:                        partentry.ValidColumn,
+			partentrytranslation.Table:             partentrytranslation.ValidColumn,
 			personalinfo.Table:                     personalinfo.ValidColumn,
 			personalinfotranslation.Table:          personalinfotranslation.ValidColumn,
 			project.Table:                          project.ValidColumn,
@@ -152,7 +174,6 @@ func checkColumn(table, column string) error {
 			projectimage.Table:                     projectimage.ValidColumn,
 			projectimagetranslation.Table:          projectimagetranslation.ValidColumn,
 			projectlike.Table:                      projectlike.ValidColumn,
-			projectrelationship.Table:              projectrelationship.ValidColumn,
 			projecttechnology.Table:                projecttechnology.ValidColumn,
 			projecttranslation.Table:               projecttranslation.ValidColumn,
 			projectview.Table:                      projectview.ValidColumn,
@@ -161,6 +182,7 @@ func checkColumn(table, column string) error {
 			publicationtranslation.Table:           publicationtranslation.ValidColumn,
 			recentupdate.Table:                     recentupdate.ValidColumn,
 			recentupdatetranslation.Table:          recentupdatetranslation.ValidColumn,
+			requestlog.Table:                       requestlog.ValidColumn,
 			researchproject.Table:                  researchproject.ValidColumn,
 			researchprojectdetail.Table:            researchprojectdetail.ValidColumn,
 			researchprojectdetailtranslation.Table: researchprojectdetailtranslation.ValidColumn,

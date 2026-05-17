@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
@@ -87,16 +86,16 @@ func (ic *IdeaCreate) SetNillableStatus(i *idea.Status) *IdeaCreate {
 	return ic
 }
 
-// SetIsPublic sets the "is_public" field.
-func (ic *IdeaCreate) SetIsPublic(b bool) *IdeaCreate {
-	ic.mutation.SetIsPublic(b)
+// SetVisibility sets the "visibility" field.
+func (ic *IdeaCreate) SetVisibility(i idea.Visibility) *IdeaCreate {
+	ic.mutation.SetVisibility(i)
 	return ic
 }
 
-// SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (ic *IdeaCreate) SetNillableIsPublic(b *bool) *IdeaCreate {
-	if b != nil {
-		ic.SetIsPublic(*b)
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ic *IdeaCreate) SetNillableVisibility(i *idea.Visibility) *IdeaCreate {
+	if i != nil {
+		ic.SetVisibility(*i)
 	}
 	return ic
 }
@@ -224,21 +223,6 @@ func (ic *IdeaCreate) SetDetails(i *IdeaDetail) *IdeaCreate {
 	return ic.SetDetailsID(i.ID)
 }
 
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (ic *IdeaCreate) AddBlogPostIDs(ids ...uuid.UUID) *IdeaCreate {
-	ic.mutation.AddBlogPostIDs(ids...)
-	return ic
-}
-
-// AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
-func (ic *IdeaCreate) AddBlogPosts(b ...*BlogPost) *IdeaCreate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return ic.AddBlogPostIDs(ids...)
-}
-
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
 func (ic *IdeaCreate) AddCommentIDs(ids ...uuid.UUID) *IdeaCreate {
 	ic.mutation.AddCommentIDs(ids...)
@@ -308,9 +292,9 @@ func (ic *IdeaCreate) defaults() {
 		v := idea.DefaultStatus
 		ic.mutation.SetStatus(v)
 	}
-	if _, ok := ic.mutation.IsPublic(); !ok {
-		v := idea.DefaultIsPublic
-		ic.mutation.SetIsPublic(v)
+	if _, ok := ic.mutation.Visibility(); !ok {
+		v := idea.DefaultVisibility
+		ic.mutation.SetVisibility(v)
 	}
 	if _, ok := ic.mutation.ViewCount(); !ok {
 		v := idea.DefaultViewCount
@@ -367,8 +351,13 @@ func (ic *IdeaCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Idea.status": %w`, err)}
 		}
 	}
-	if _, ok := ic.mutation.IsPublic(); !ok {
-		return &ValidationError{Name: "is_public", err: errors.New(`ent: missing required field "Idea.is_public"`)}
+	if _, ok := ic.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "Idea.visibility"`)}
+	}
+	if v, ok := ic.mutation.Visibility(); ok {
+		if err := idea.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Idea.visibility": %w`, err)}
+		}
 	}
 	if _, ok := ic.mutation.ViewCount(); !ok {
 		return &ValidationError{Name: "view_count", err: errors.New(`ent: missing required field "Idea.view_count"`)}
@@ -445,9 +434,9 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 		_spec.SetField(idea.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
-	if value, ok := ic.mutation.IsPublic(); ok {
-		_spec.SetField(idea.FieldIsPublic, field.TypeBool, value)
-		_node.IsPublic = value
+	if value, ok := ic.mutation.Visibility(); ok {
+		_spec.SetField(idea.FieldVisibility, field.TypeEnum, value)
+		_node.Visibility = value
 	}
 	if value, ok := ic.mutation.ViewCount(); ok {
 		_spec.SetField(idea.FieldViewCount, field.TypeInt, value)
@@ -511,22 +500,6 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := ic.mutation.BlogPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

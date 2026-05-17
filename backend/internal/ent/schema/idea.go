@@ -45,8 +45,10 @@ func (Idea) Fields() []ent.Field {
 		field.Enum("status").
 			Values("draft", "hypothesis", "experimenting", "validating", "published", "concluded").
 			Default("draft"),
-		field.Bool("is_public").
-			Default(false),
+		// M0.5a §11.7: is_public dropped, unified onto visibility (10 §10.3).
+		field.Enum("visibility").
+			Values("private", "unlisted", "public").
+			Default("private"),
 		field.Int("view_count").
 			Default(0),
 		field.Int("like_count").
@@ -75,7 +77,8 @@ func (Idea) Edges() []ent.Edge {
 		edge.To("translations", IdeaTranslation.Type),
 		edge.To("details", IdeaDetail.Type).
 			Unique(),
-		edge.To("blog_posts", BlogPost.Type),
+		// blog_posts edge dropped (M0.5a §11.7): idea->blog edges moved to
+		// content_relation.
 		edge.To("comments", Comment.Type),
 		// Many-to-many: idea <-> tags
 		edge.To("tags", IdeaTag.Type).

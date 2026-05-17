@@ -31,12 +31,8 @@ func (IdeaDetail) Fields() []ent.Field {
 			StorageKey("id"),
 		field.UUID("idea_id", uuid.UUID{}).
 			StorageKey("idea_id"),
-		field.Text("progress").
-			Optional(),
-		field.Text("results").
-			Optional(),
-		field.Text("references").
-			Optional(),
+		// M0.5a §11.8: progress/results/references (Part body text) moved
+		// out to item_part. Structured attributes below stay.
 		field.Int("estimated_duration_months").
 			Optional(),
 		field.Text("required_resources").

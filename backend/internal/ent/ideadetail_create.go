@@ -29,48 +29,6 @@ func (idc *IdeaDetailCreate) SetIdeaID(u uuid.UUID) *IdeaDetailCreate {
 	return idc
 }
 
-// SetProgress sets the "progress" field.
-func (idc *IdeaDetailCreate) SetProgress(s string) *IdeaDetailCreate {
-	idc.mutation.SetProgress(s)
-	return idc
-}
-
-// SetNillableProgress sets the "progress" field if the given value is not nil.
-func (idc *IdeaDetailCreate) SetNillableProgress(s *string) *IdeaDetailCreate {
-	if s != nil {
-		idc.SetProgress(*s)
-	}
-	return idc
-}
-
-// SetResults sets the "results" field.
-func (idc *IdeaDetailCreate) SetResults(s string) *IdeaDetailCreate {
-	idc.mutation.SetResults(s)
-	return idc
-}
-
-// SetNillableResults sets the "results" field if the given value is not nil.
-func (idc *IdeaDetailCreate) SetNillableResults(s *string) *IdeaDetailCreate {
-	if s != nil {
-		idc.SetResults(*s)
-	}
-	return idc
-}
-
-// SetReferences sets the "references" field.
-func (idc *IdeaDetailCreate) SetReferences(s string) *IdeaDetailCreate {
-	idc.mutation.SetReferences(s)
-	return idc
-}
-
-// SetNillableReferences sets the "references" field if the given value is not nil.
-func (idc *IdeaDetailCreate) SetNillableReferences(s *string) *IdeaDetailCreate {
-	if s != nil {
-		idc.SetReferences(*s)
-	}
-	return idc
-}
-
 // SetEstimatedDurationMonths sets the "estimated_duration_months" field.
 func (idc *IdeaDetailCreate) SetEstimatedDurationMonths(i int) *IdeaDetailCreate {
 	idc.mutation.SetEstimatedDurationMonths(i)
@@ -314,18 +272,6 @@ func (idc *IdeaDetailCreate) createSpec() (*IdeaDetail, *sqlgraph.CreateSpec) {
 	if id, ok := idc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
-	}
-	if value, ok := idc.mutation.Progress(); ok {
-		_spec.SetField(ideadetail.FieldProgress, field.TypeString, value)
-		_node.Progress = value
-	}
-	if value, ok := idc.mutation.Results(); ok {
-		_spec.SetField(ideadetail.FieldResults, field.TypeString, value)
-		_node.Results = value
-	}
-	if value, ok := idc.mutation.References(); ok {
-		_spec.SetField(ideadetail.FieldReferences, field.TypeString, value)
-		_node.References = value
 	}
 	if value, ok := idc.mutation.EstimatedDurationMonths(); ok {
 		_spec.SetField(ideadetail.FieldEstimatedDurationMonths, field.TypeInt, value)

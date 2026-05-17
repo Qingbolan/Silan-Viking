@@ -56,11 +56,6 @@ func IDLTE(id uuid.UUID) predicate.Comment {
 	return predicate.Comment(sql.FieldLTE(FieldID, id))
 }
 
-// EntityType applies equality check predicate on the "entity_type" field. It's identical to EntityTypeEQ.
-func EntityType(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldEQ(FieldEntityType, v))
-}
-
 // EntityID applies equality check predicate on the "entity_id" field. It's identical to EntityIDEQ.
 func EntityID(v uuid.UUID) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldEntityID, v))
@@ -91,14 +86,9 @@ func Content(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldContent, v))
 }
 
-// Type applies equality check predicate on the "type" field. It's identical to TypeEQ.
-func Type(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldEQ(FieldType, v))
-}
-
-// ReferrenceID applies equality check predicate on the "referrence_id" field. It's identical to ReferrenceIDEQ.
-func ReferrenceID(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldEQ(FieldReferrenceID, v))
+// ReferenceID applies equality check predicate on the "reference_id" field. It's identical to ReferenceIDEQ.
+func ReferenceID(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldReferenceID, v))
 }
 
 // AttachmentID applies equality check predicate on the "attachment_id" field. It's identical to AttachmentIDEQ.
@@ -142,68 +132,23 @@ func UpdatedAt(v time.Time) predicate.Comment {
 }
 
 // EntityTypeEQ applies the EQ predicate on the "entity_type" field.
-func EntityTypeEQ(v string) predicate.Comment {
+func EntityTypeEQ(v EntityType) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldEntityType, v))
 }
 
 // EntityTypeNEQ applies the NEQ predicate on the "entity_type" field.
-func EntityTypeNEQ(v string) predicate.Comment {
+func EntityTypeNEQ(v EntityType) predicate.Comment {
 	return predicate.Comment(sql.FieldNEQ(FieldEntityType, v))
 }
 
 // EntityTypeIn applies the In predicate on the "entity_type" field.
-func EntityTypeIn(vs ...string) predicate.Comment {
+func EntityTypeIn(vs ...EntityType) predicate.Comment {
 	return predicate.Comment(sql.FieldIn(FieldEntityType, vs...))
 }
 
 // EntityTypeNotIn applies the NotIn predicate on the "entity_type" field.
-func EntityTypeNotIn(vs ...string) predicate.Comment {
+func EntityTypeNotIn(vs ...EntityType) predicate.Comment {
 	return predicate.Comment(sql.FieldNotIn(FieldEntityType, vs...))
-}
-
-// EntityTypeGT applies the GT predicate on the "entity_type" field.
-func EntityTypeGT(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldGT(FieldEntityType, v))
-}
-
-// EntityTypeGTE applies the GTE predicate on the "entity_type" field.
-func EntityTypeGTE(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldGTE(FieldEntityType, v))
-}
-
-// EntityTypeLT applies the LT predicate on the "entity_type" field.
-func EntityTypeLT(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldLT(FieldEntityType, v))
-}
-
-// EntityTypeLTE applies the LTE predicate on the "entity_type" field.
-func EntityTypeLTE(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldLTE(FieldEntityType, v))
-}
-
-// EntityTypeContains applies the Contains predicate on the "entity_type" field.
-func EntityTypeContains(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldContains(FieldEntityType, v))
-}
-
-// EntityTypeHasPrefix applies the HasPrefix predicate on the "entity_type" field.
-func EntityTypeHasPrefix(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldHasPrefix(FieldEntityType, v))
-}
-
-// EntityTypeHasSuffix applies the HasSuffix predicate on the "entity_type" field.
-func EntityTypeHasSuffix(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldHasSuffix(FieldEntityType, v))
-}
-
-// EntityTypeEqualFold applies the EqualFold predicate on the "entity_type" field.
-func EntityTypeEqualFold(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldEqualFold(FieldEntityType, v))
-}
-
-// EntityTypeContainsFold applies the ContainsFold predicate on the "entity_type" field.
-func EntityTypeContainsFold(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldContainsFold(FieldEntityType, v))
 }
 
 // EntityIDEQ applies the EQ predicate on the "entity_id" field.
@@ -547,143 +492,98 @@ func ContentContainsFold(v string) predicate.Comment {
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
-func TypeEQ(v string) predicate.Comment {
+func TypeEQ(v Type) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldType, v))
 }
 
 // TypeNEQ applies the NEQ predicate on the "type" field.
-func TypeNEQ(v string) predicate.Comment {
+func TypeNEQ(v Type) predicate.Comment {
 	return predicate.Comment(sql.FieldNEQ(FieldType, v))
 }
 
 // TypeIn applies the In predicate on the "type" field.
-func TypeIn(vs ...string) predicate.Comment {
+func TypeIn(vs ...Type) predicate.Comment {
 	return predicate.Comment(sql.FieldIn(FieldType, vs...))
 }
 
 // TypeNotIn applies the NotIn predicate on the "type" field.
-func TypeNotIn(vs ...string) predicate.Comment {
+func TypeNotIn(vs ...Type) predicate.Comment {
 	return predicate.Comment(sql.FieldNotIn(FieldType, vs...))
 }
 
-// TypeGT applies the GT predicate on the "type" field.
-func TypeGT(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldGT(FieldType, v))
+// ReferenceIDEQ applies the EQ predicate on the "reference_id" field.
+func ReferenceIDEQ(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldReferenceID, v))
 }
 
-// TypeGTE applies the GTE predicate on the "type" field.
-func TypeGTE(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldGTE(FieldType, v))
+// ReferenceIDNEQ applies the NEQ predicate on the "reference_id" field.
+func ReferenceIDNEQ(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldNEQ(FieldReferenceID, v))
 }
 
-// TypeLT applies the LT predicate on the "type" field.
-func TypeLT(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldLT(FieldType, v))
+// ReferenceIDIn applies the In predicate on the "reference_id" field.
+func ReferenceIDIn(vs ...string) predicate.Comment {
+	return predicate.Comment(sql.FieldIn(FieldReferenceID, vs...))
 }
 
-// TypeLTE applies the LTE predicate on the "type" field.
-func TypeLTE(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldLTE(FieldType, v))
+// ReferenceIDNotIn applies the NotIn predicate on the "reference_id" field.
+func ReferenceIDNotIn(vs ...string) predicate.Comment {
+	return predicate.Comment(sql.FieldNotIn(FieldReferenceID, vs...))
 }
 
-// TypeContains applies the Contains predicate on the "type" field.
-func TypeContains(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldContains(FieldType, v))
+// ReferenceIDGT applies the GT predicate on the "reference_id" field.
+func ReferenceIDGT(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldGT(FieldReferenceID, v))
 }
 
-// TypeHasPrefix applies the HasPrefix predicate on the "type" field.
-func TypeHasPrefix(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldHasPrefix(FieldType, v))
+// ReferenceIDGTE applies the GTE predicate on the "reference_id" field.
+func ReferenceIDGTE(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldGTE(FieldReferenceID, v))
 }
 
-// TypeHasSuffix applies the HasSuffix predicate on the "type" field.
-func TypeHasSuffix(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldHasSuffix(FieldType, v))
+// ReferenceIDLT applies the LT predicate on the "reference_id" field.
+func ReferenceIDLT(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldLT(FieldReferenceID, v))
 }
 
-// TypeEqualFold applies the EqualFold predicate on the "type" field.
-func TypeEqualFold(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldEqualFold(FieldType, v))
+// ReferenceIDLTE applies the LTE predicate on the "reference_id" field.
+func ReferenceIDLTE(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldLTE(FieldReferenceID, v))
 }
 
-// TypeContainsFold applies the ContainsFold predicate on the "type" field.
-func TypeContainsFold(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldContainsFold(FieldType, v))
+// ReferenceIDContains applies the Contains predicate on the "reference_id" field.
+func ReferenceIDContains(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldContains(FieldReferenceID, v))
 }
 
-// ReferrenceIDEQ applies the EQ predicate on the "referrence_id" field.
-func ReferrenceIDEQ(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldEQ(FieldReferrenceID, v))
+// ReferenceIDHasPrefix applies the HasPrefix predicate on the "reference_id" field.
+func ReferenceIDHasPrefix(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldHasPrefix(FieldReferenceID, v))
 }
 
-// ReferrenceIDNEQ applies the NEQ predicate on the "referrence_id" field.
-func ReferrenceIDNEQ(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldNEQ(FieldReferrenceID, v))
+// ReferenceIDHasSuffix applies the HasSuffix predicate on the "reference_id" field.
+func ReferenceIDHasSuffix(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldHasSuffix(FieldReferenceID, v))
 }
 
-// ReferrenceIDIn applies the In predicate on the "referrence_id" field.
-func ReferrenceIDIn(vs ...string) predicate.Comment {
-	return predicate.Comment(sql.FieldIn(FieldReferrenceID, vs...))
+// ReferenceIDIsNil applies the IsNil predicate on the "reference_id" field.
+func ReferenceIDIsNil() predicate.Comment {
+	return predicate.Comment(sql.FieldIsNull(FieldReferenceID))
 }
 
-// ReferrenceIDNotIn applies the NotIn predicate on the "referrence_id" field.
-func ReferrenceIDNotIn(vs ...string) predicate.Comment {
-	return predicate.Comment(sql.FieldNotIn(FieldReferrenceID, vs...))
+// ReferenceIDNotNil applies the NotNil predicate on the "reference_id" field.
+func ReferenceIDNotNil() predicate.Comment {
+	return predicate.Comment(sql.FieldNotNull(FieldReferenceID))
 }
 
-// ReferrenceIDGT applies the GT predicate on the "referrence_id" field.
-func ReferrenceIDGT(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldGT(FieldReferrenceID, v))
+// ReferenceIDEqualFold applies the EqualFold predicate on the "reference_id" field.
+func ReferenceIDEqualFold(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEqualFold(FieldReferenceID, v))
 }
 
-// ReferrenceIDGTE applies the GTE predicate on the "referrence_id" field.
-func ReferrenceIDGTE(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldGTE(FieldReferrenceID, v))
-}
-
-// ReferrenceIDLT applies the LT predicate on the "referrence_id" field.
-func ReferrenceIDLT(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldLT(FieldReferrenceID, v))
-}
-
-// ReferrenceIDLTE applies the LTE predicate on the "referrence_id" field.
-func ReferrenceIDLTE(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldLTE(FieldReferrenceID, v))
-}
-
-// ReferrenceIDContains applies the Contains predicate on the "referrence_id" field.
-func ReferrenceIDContains(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldContains(FieldReferrenceID, v))
-}
-
-// ReferrenceIDHasPrefix applies the HasPrefix predicate on the "referrence_id" field.
-func ReferrenceIDHasPrefix(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldHasPrefix(FieldReferrenceID, v))
-}
-
-// ReferrenceIDHasSuffix applies the HasSuffix predicate on the "referrence_id" field.
-func ReferrenceIDHasSuffix(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldHasSuffix(FieldReferrenceID, v))
-}
-
-// ReferrenceIDIsNil applies the IsNil predicate on the "referrence_id" field.
-func ReferrenceIDIsNil() predicate.Comment {
-	return predicate.Comment(sql.FieldIsNull(FieldReferrenceID))
-}
-
-// ReferrenceIDNotNil applies the NotNil predicate on the "referrence_id" field.
-func ReferrenceIDNotNil() predicate.Comment {
-	return predicate.Comment(sql.FieldNotNull(FieldReferrenceID))
-}
-
-// ReferrenceIDEqualFold applies the EqualFold predicate on the "referrence_id" field.
-func ReferrenceIDEqualFold(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldEqualFold(FieldReferrenceID, v))
-}
-
-// ReferrenceIDContainsFold applies the ContainsFold predicate on the "referrence_id" field.
-func ReferrenceIDContainsFold(v string) predicate.Comment {
-	return predicate.Comment(sql.FieldContainsFold(FieldReferrenceID, v))
+// ReferenceIDContainsFold applies the ContainsFold predicate on the "reference_id" field.
+func ReferenceIDContainsFold(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldContainsFold(FieldReferenceID, v))
 }
 
 // AttachmentIDEQ applies the EQ predicate on the "attachment_id" field.

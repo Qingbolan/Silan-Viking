@@ -37,9 +37,8 @@ func (BlogPost) Fields() []ent.Field {
 		field.UUID("series_id", uuid.UUID{}).
 			Optional().
 			StorageKey("series_id"),
-		field.UUID("ideas_id", uuid.UUID{}).
-			Optional().
-			StorageKey("ideas_id"),
+		// ideas_id FK dropped (M0.5a §11.7): idea->blog evolution edges
+		// now live in content_relation.
 		field.String("title").
 			MaxLen(500).
 			NotEmpty(),
@@ -51,12 +50,18 @@ func (BlogPost) Fields() []ent.Field {
 			Optional(),
 		field.Text("content").
 			NotEmpty(),
+		// M0.5a §11.7 / ledger #4 #6: add podcast/tutorial, drop episode
+		// (episode is now its own table).
 		field.Enum("content_type").
-			Values("article", "vlog", "episode").
+			Values("article", "podcast", "vlog", "tutorial").
 			Default("article"),
 		field.Enum("status").
 			Values("draft", "published", "archived").
 			Default("draft"),
+		// M0.5a §11.7: status/visibility separation (10 §10.3).
+		field.Enum("visibility").
+			Values("private", "unlisted", "public").
+			Default("private"),
 		field.Bool("is_featured").
 			Default(false),
 		field.String("featured_image_url").
@@ -98,10 +103,6 @@ func (BlogPost) Edges() []ent.Edge {
 		edge.From("series", BlogSeries.Type).
 			Ref("blog_posts").
 			Field("series_id").
-			Unique(),
-		edge.From("ideas", Idea.Type).
-			Ref("blog_posts").
-			Field("ideas_id").
 			Unique(),
 		edge.To("tags", BlogTag.Type).
 			Through("blog_post_tags", BlogPostTag.Type),

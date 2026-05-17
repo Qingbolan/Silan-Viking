@@ -81,11 +81,6 @@ func Abstract(v string) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldAbstract, v))
 }
 
-// IsPublic applies equality check predicate on the "is_public" field. It's identical to IsPublicEQ.
-func IsPublic(v bool) predicate.Idea {
-	return predicate.Idea(sql.FieldEQ(FieldIsPublic, v))
-}
-
 // ViewCount applies equality check predicate on the "view_count" field. It's identical to ViewCountEQ.
 func ViewCount(v int) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldViewCount, v))
@@ -431,14 +426,24 @@ func StatusNotIn(vs ...Status) predicate.Idea {
 	return predicate.Idea(sql.FieldNotIn(FieldStatus, vs...))
 }
 
-// IsPublicEQ applies the EQ predicate on the "is_public" field.
-func IsPublicEQ(v bool) predicate.Idea {
-	return predicate.Idea(sql.FieldEQ(FieldIsPublic, v))
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldEQ(FieldVisibility, v))
 }
 
-// IsPublicNEQ applies the NEQ predicate on the "is_public" field.
-func IsPublicNEQ(v bool) predicate.Idea {
-	return predicate.Idea(sql.FieldNEQ(FieldIsPublic, v))
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldNEQ(FieldVisibility, v))
+}
+
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldIn(FieldVisibility, vs...))
+}
+
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // ViewCountEQ applies the EQ predicate on the "view_count" field.
@@ -737,29 +742,6 @@ func HasDetails() predicate.Idea {
 func HasDetailsWith(preds ...predicate.IdeaDetail) predicate.Idea {
 	return predicate.Idea(func(s *sql.Selector) {
 		step := newDetailsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasBlogPosts applies the HasEdge predicate on the "blog_posts" edge.
-func HasBlogPosts() predicate.Idea {
-	return predicate.Idea(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, BlogPostsTable, BlogPostsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasBlogPostsWith applies the HasEdge predicate on the "blog_posts" edge with a given conditions (other predicates).
-func HasBlogPostsWith(preds ...predicate.BlogPost) predicate.Idea {
-	return predicate.Idea(func(s *sql.Selector) {
-		step := newBlogPostsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

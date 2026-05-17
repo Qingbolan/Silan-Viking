@@ -71,11 +71,6 @@ func SeriesID(v uuid.UUID) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldSeriesID, v))
 }
 
-// IdeasID applies equality check predicate on the "ideas_id" field. It's identical to IdeasIDEQ.
-func IdeasID(v uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldEQ(FieldIdeasID, v))
-}
-
 // Title applies equality check predicate on the "title" field. It's identical to TitleEQ.
 func Title(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldTitle, v))
@@ -224,36 +219,6 @@ func SeriesIDIsNil() predicate.BlogPost {
 // SeriesIDNotNil applies the NotNil predicate on the "series_id" field.
 func SeriesIDNotNil() predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotNull(FieldSeriesID))
-}
-
-// IdeasIDEQ applies the EQ predicate on the "ideas_id" field.
-func IdeasIDEQ(v uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldEQ(FieldIdeasID, v))
-}
-
-// IdeasIDNEQ applies the NEQ predicate on the "ideas_id" field.
-func IdeasIDNEQ(v uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNEQ(FieldIdeasID, v))
-}
-
-// IdeasIDIn applies the In predicate on the "ideas_id" field.
-func IdeasIDIn(vs ...uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldIn(FieldIdeasID, vs...))
-}
-
-// IdeasIDNotIn applies the NotIn predicate on the "ideas_id" field.
-func IdeasIDNotIn(vs ...uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNotIn(FieldIdeasID, vs...))
-}
-
-// IdeasIDIsNil applies the IsNil predicate on the "ideas_id" field.
-func IdeasIDIsNil() predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldIsNull(FieldIdeasID))
-}
-
-// IdeasIDNotNil applies the NotNil predicate on the "ideas_id" field.
-func IdeasIDNotNil() predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNotNull(FieldIdeasID))
 }
 
 // TitleEQ applies the EQ predicate on the "title" field.
@@ -564,6 +529,26 @@ func StatusIn(vs ...Status) predicate.BlogPost {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldEQ(FieldVisibility, v))
+}
+
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNEQ(FieldVisibility, v))
+}
+
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldIn(FieldVisibility, vs...))
+}
+
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // IsFeaturedEQ applies the EQ predicate on the "is_featured" field.
@@ -1062,29 +1047,6 @@ func HasSeries() predicate.BlogPost {
 func HasSeriesWith(preds ...predicate.BlogSeries) predicate.BlogPost {
 	return predicate.BlogPost(func(s *sql.Selector) {
 		step := newSeriesStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasIdeas applies the HasEdge predicate on the "ideas" edge.
-func HasIdeas() predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, IdeasTable, IdeasColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasIdeasWith applies the HasEdge predicate on the "ideas" edge with a given conditions (other predicates).
-func HasIdeasWith(preds ...predicate.Idea) predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := newIdeasStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

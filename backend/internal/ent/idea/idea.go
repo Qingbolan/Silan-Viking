@@ -28,8 +28,8 @@ const (
 	FieldAbstract = "abstract"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
-	// FieldIsPublic holds the string denoting the is_public field in the database.
-	FieldIsPublic = "is_public"
+	// FieldVisibility holds the string denoting the visibility field in the database.
+	FieldVisibility = "visibility"
 	// FieldViewCount holds the string denoting the view_count field in the database.
 	FieldViewCount = "view_count"
 	// FieldLikeCount holds the string denoting the like_count field in the database.
@@ -46,8 +46,6 @@ const (
 	EdgeTranslations = "translations"
 	// EdgeDetails holds the string denoting the details edge name in mutations.
 	EdgeDetails = "details"
-	// EdgeBlogPosts holds the string denoting the blog_posts edge name in mutations.
-	EdgeBlogPosts = "blog_posts"
 	// EdgeComments holds the string denoting the comments edge name in mutations.
 	EdgeComments = "comments"
 	// EdgeTags holds the string denoting the tags edge name in mutations.
@@ -75,13 +73,6 @@ const (
 	DetailsInverseTable = "idea_details"
 	// DetailsColumn is the table column denoting the details relation/edge.
 	DetailsColumn = "idea_id"
-	// BlogPostsTable is the table that holds the blog_posts relation/edge.
-	BlogPostsTable = "blog_posts"
-	// BlogPostsInverseTable is the table name for the BlogPost entity.
-	// It exists in this package in order to avoid circular dependency with the "blogpost" package.
-	BlogPostsInverseTable = "blog_posts"
-	// BlogPostsColumn is the table column denoting the blog_posts relation/edge.
-	BlogPostsColumn = "ideas_id"
 	// CommentsTable is the table that holds the comments relation/edge.
 	CommentsTable = "comments"
 	// CommentsInverseTable is the table name for the Comment entity.
@@ -105,7 +96,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldAbstract,
 	FieldStatus,
-	FieldIsPublic,
+	FieldVisibility,
 	FieldViewCount,
 	FieldLikeCount,
 	FieldCategory,
@@ -134,8 +125,6 @@ var (
 	TitleValidator func(string) error
 	// SlugValidator is a validator for the "slug" field. It is called by the builders before save.
 	SlugValidator func(string) error
-	// DefaultIsPublic holds the default value on creation for the "is_public" field.
-	DefaultIsPublic bool
 	// DefaultViewCount holds the default value on creation for the "view_count" field.
 	DefaultViewCount int
 	// DefaultLikeCount holds the default value on creation for the "like_count" field.
@@ -184,6 +173,33 @@ func StatusValidator(s Status) error {
 	}
 }
 
+// Visibility defines the type for the "visibility" enum field.
+type Visibility string
+
+// VisibilityPrivate is the default value of the Visibility enum.
+const DefaultVisibility = VisibilityPrivate
+
+// Visibility values.
+const (
+	VisibilityPrivate  Visibility = "private"
+	VisibilityUnlisted Visibility = "unlisted"
+	VisibilityPublic   Visibility = "public"
+)
+
+func (v Visibility) String() string {
+	return string(v)
+}
+
+// VisibilityValidator is a validator for the "visibility" field enum values. It is called by the builders before save.
+func VisibilityValidator(v Visibility) error {
+	switch v {
+	case VisibilityPrivate, VisibilityUnlisted, VisibilityPublic:
+		return nil
+	default:
+		return fmt.Errorf("idea: invalid enum value for visibility field: %q", v)
+	}
+}
+
 // OrderOption defines the ordering options for the Idea queries.
 type OrderOption func(*sql.Selector)
 
@@ -222,9 +238,9 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
-// ByIsPublic orders the results by the is_public field.
-func ByIsPublic(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIsPublic, opts...).ToFunc()
+// ByVisibility orders the results by the visibility field.
+func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVisibility, opts...).ToFunc()
 }
 
 // ByViewCount orders the results by the view_count field.
@@ -280,20 +296,6 @@ func ByDetailsField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByBlogPostsCount orders the results by blog_posts count.
-func ByBlogPostsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newBlogPostsStep(), opts...)
-	}
-}
-
-// ByBlogPosts orders the results by blog_posts terms.
-func ByBlogPosts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBlogPostsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByCommentsCount orders the results by comments count.
 func ByCommentsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -340,13 +342,6 @@ func newDetailsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DetailsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, DetailsTable, DetailsColumn),
-	)
-}
-func newBlogPostsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(BlogPostsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, BlogPostsTable, BlogPostsColumn),
 	)
 }
 func newCommentsStep() *sqlgraph.Step {

@@ -32,8 +32,8 @@ type Idea struct {
 	Abstract string `json:"abstract,omitempty"`
 	// Status holds the value of the "status" field.
 	Status idea.Status `json:"status,omitempty"`
-	// IsPublic holds the value of the "is_public" field.
-	IsPublic bool `json:"is_public,omitempty"`
+	// Visibility holds the value of the "visibility" field.
+	Visibility idea.Visibility `json:"visibility,omitempty"`
 	// ViewCount holds the value of the "view_count" field.
 	ViewCount int `json:"view_count,omitempty"`
 	// LikeCount holds the value of the "like_count" field.
@@ -58,15 +58,13 @@ type IdeaEdges struct {
 	Translations []*IdeaTranslation `json:"translations,omitempty"`
 	// Details holds the value of the details edge.
 	Details *IdeaDetail `json:"details,omitempty"`
-	// BlogPosts holds the value of the blog_posts edge.
-	BlogPosts []*BlogPost `json:"blog_posts,omitempty"`
 	// Comments holds the value of the comments edge.
 	Comments []*Comment `json:"comments,omitempty"`
 	// Tags holds the value of the tags edge.
 	Tags []*IdeaTag `json:"tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [5]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -100,19 +98,10 @@ func (e IdeaEdges) DetailsOrErr() (*IdeaDetail, error) {
 	return nil, &NotLoadedError{edge: "details"}
 }
 
-// BlogPostsOrErr returns the BlogPosts value or an error if the edge
-// was not loaded in eager-loading.
-func (e IdeaEdges) BlogPostsOrErr() ([]*BlogPost, error) {
-	if e.loadedTypes[3] {
-		return e.BlogPosts, nil
-	}
-	return nil, &NotLoadedError{edge: "blog_posts"}
-}
-
 // CommentsOrErr returns the Comments value or an error if the edge
 // was not loaded in eager-loading.
 func (e IdeaEdges) CommentsOrErr() ([]*Comment, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[3] {
 		return e.Comments, nil
 	}
 	return nil, &NotLoadedError{edge: "comments"}
@@ -121,7 +110,7 @@ func (e IdeaEdges) CommentsOrErr() ([]*Comment, error) {
 // TagsOrErr returns the Tags value or an error if the edge
 // was not loaded in eager-loading.
 func (e IdeaEdges) TagsOrErr() ([]*IdeaTag, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[4] {
 		return e.Tags, nil
 	}
 	return nil, &NotLoadedError{edge: "tags"}
@@ -132,11 +121,9 @@ func (*Idea) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case idea.FieldIsPublic:
-			values[i] = new(sql.NullBool)
 		case idea.FieldViewCount, idea.FieldLikeCount:
 			values[i] = new(sql.NullInt64)
-		case idea.FieldTitle, idea.FieldSlug, idea.FieldDescription, idea.FieldAbstract, idea.FieldStatus, idea.FieldCategory:
+		case idea.FieldTitle, idea.FieldSlug, idea.FieldDescription, idea.FieldAbstract, idea.FieldStatus, idea.FieldVisibility, idea.FieldCategory:
 			values[i] = new(sql.NullString)
 		case idea.FieldCreatedAt, idea.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -199,11 +186,11 @@ func (i *Idea) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				i.Status = idea.Status(value.String)
 			}
-		case idea.FieldIsPublic:
-			if value, ok := values[j].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field is_public", values[j])
+		case idea.FieldVisibility:
+			if value, ok := values[j].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field visibility", values[j])
 			} else if value.Valid {
-				i.IsPublic = value.Bool
+				i.Visibility = idea.Visibility(value.String)
 			}
 		case idea.FieldViewCount:
 			if value, ok := values[j].(*sql.NullInt64); !ok {
@@ -263,11 +250,6 @@ func (i *Idea) QueryDetails() *IdeaDetailQuery {
 	return NewIdeaClient(i.config).QueryDetails(i)
 }
 
-// QueryBlogPosts queries the "blog_posts" edge of the Idea entity.
-func (i *Idea) QueryBlogPosts() *BlogPostQuery {
-	return NewIdeaClient(i.config).QueryBlogPosts(i)
-}
-
 // QueryComments queries the "comments" edge of the Idea entity.
 func (i *Idea) QueryComments() *CommentQuery {
 	return NewIdeaClient(i.config).QueryComments(i)
@@ -319,8 +301,8 @@ func (i *Idea) String() string {
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", i.Status))
 	builder.WriteString(", ")
-	builder.WriteString("is_public=")
-	builder.WriteString(fmt.Sprintf("%v", i.IsPublic))
+	builder.WriteString("visibility=")
+	builder.WriteString(fmt.Sprintf("%v", i.Visibility))
 	builder.WriteString(", ")
 	builder.WriteString("view_count=")
 	builder.WriteString(fmt.Sprintf("%v", i.ViewCount))

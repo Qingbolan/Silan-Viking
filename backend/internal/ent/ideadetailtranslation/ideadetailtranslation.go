@@ -19,14 +19,6 @@ const (
 	FieldIdeaDetailID = "idea_detail_id"
 	// FieldLanguageCode holds the string denoting the language_code field in the database.
 	FieldLanguageCode = "language_code"
-	// FieldProgress holds the string denoting the progress field in the database.
-	FieldProgress = "progress"
-	// FieldResults holds the string denoting the results field in the database.
-	FieldResults = "results"
-	// FieldReferences holds the string denoting the references field in the database.
-	FieldReferences = "references"
-	// FieldRequiredResources holds the string denoting the required_resources field in the database.
-	FieldRequiredResources = "required_resources"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeIdeaDetail holds the string denoting the idea_detail edge name in mutations.
@@ -58,10 +50,6 @@ var Columns = []string{
 	FieldID,
 	FieldIdeaDetailID,
 	FieldLanguageCode,
-	FieldProgress,
-	FieldResults,
-	FieldReferences,
-	FieldRequiredResources,
 	FieldCreatedAt,
 }
 
@@ -100,26 +88,6 @@ func ByIdeaDetailID(opts ...sql.OrderTermOption) OrderOption {
 // ByLanguageCode orders the results by the language_code field.
 func ByLanguageCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLanguageCode, opts...).ToFunc()
-}
-
-// ByProgress orders the results by the progress field.
-func ByProgress(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProgress, opts...).ToFunc()
-}
-
-// ByResults orders the results by the results field.
-func ByResults(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldResults, opts...).ToFunc()
-}
-
-// ByReferences orders the results by the references field.
-func ByReferences(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldReferences, opts...).ToFunc()
-}
-
-// ByRequiredResources orders the results by the required_resources field.
-func ByRequiredResources(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldRequiredResources, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

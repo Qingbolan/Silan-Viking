@@ -19,8 +19,8 @@ type Comment struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
-	// Type of entity: 'blog' or 'idea'
-	EntityType string `json:"entity_type,omitempty"`
+	// Type of the commented entity (M0.5a §11.6: enum)
+	EntityType comment.EntityType `json:"entity_type,omitempty"`
 	// ID of the blog post or idea
 	EntityID uuid.UUID `json:"entity_id,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
@@ -33,10 +33,10 @@ type Comment struct {
 	AuthorWebsite string `json:"author_website,omitempty"`
 	// Content holds the value of the "content" field.
 	Content string `json:"content,omitempty"`
-	// Type of comment: general, question, suggestion, etc.
-	Type string `json:"type,omitempty"`
-	// ReferrenceID holds the value of the "referrence_id" field.
-	ReferrenceID string `json:"referrence_id,omitempty"`
+	// Type of comment (M0.5a §11.6: enum)
+	Type comment.Type `json:"type,omitempty"`
+	// ReferenceID holds the value of the "reference_id" field.
+	ReferenceID string `json:"reference_id,omitempty"`
 	// AttachmentID holds the value of the "attachment_id" field.
 	AttachmentID string `json:"attachment_id,omitempty"`
 	// IsApproved holds the value of the "is_approved" field.
@@ -114,7 +114,7 @@ func (*Comment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case comment.FieldLikesCount:
 			values[i] = new(sql.NullInt64)
-		case comment.FieldEntityType, comment.FieldAuthorName, comment.FieldAuthorEmail, comment.FieldAuthorWebsite, comment.FieldContent, comment.FieldType, comment.FieldReferrenceID, comment.FieldAttachmentID, comment.FieldIPAddress, comment.FieldUserAgent, comment.FieldUserIdentityID:
+		case comment.FieldEntityType, comment.FieldAuthorName, comment.FieldAuthorEmail, comment.FieldAuthorWebsite, comment.FieldContent, comment.FieldType, comment.FieldReferenceID, comment.FieldAttachmentID, comment.FieldIPAddress, comment.FieldUserAgent, comment.FieldUserIdentityID:
 			values[i] = new(sql.NullString)
 		case comment.FieldCreatedAt, comment.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -149,7 +149,7 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entity_type", values[i])
 			} else if value.Valid {
-				c.EntityType = value.String
+				c.EntityType = comment.EntityType(value.String)
 			}
 		case comment.FieldEntityID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
@@ -191,13 +191,13 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
-				c.Type = value.String
+				c.Type = comment.Type(value.String)
 			}
-		case comment.FieldReferrenceID:
+		case comment.FieldReferenceID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field referrence_id", values[i])
+				return fmt.Errorf("unexpected type %T for field reference_id", values[i])
 			} else if value.Valid {
-				c.ReferrenceID = value.String
+				c.ReferenceID = value.String
 			}
 		case comment.FieldAttachmentID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -313,7 +313,7 @@ func (c *Comment) String() string {
 	builder.WriteString("Comment(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", c.ID))
 	builder.WriteString("entity_type=")
-	builder.WriteString(c.EntityType)
+	builder.WriteString(fmt.Sprintf("%v", c.EntityType))
 	builder.WriteString(", ")
 	builder.WriteString("entity_id=")
 	builder.WriteString(fmt.Sprintf("%v", c.EntityID))
@@ -334,10 +334,10 @@ func (c *Comment) String() string {
 	builder.WriteString(c.Content)
 	builder.WriteString(", ")
 	builder.WriteString("type=")
-	builder.WriteString(c.Type)
+	builder.WriteString(fmt.Sprintf("%v", c.Type))
 	builder.WriteString(", ")
-	builder.WriteString("referrence_id=")
-	builder.WriteString(c.ReferrenceID)
+	builder.WriteString("reference_id=")
+	builder.WriteString(c.ReferenceID)
 	builder.WriteString(", ")
 	builder.WriteString("attachment_id=")
 	builder.WriteString(c.AttachmentID)

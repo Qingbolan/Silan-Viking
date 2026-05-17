@@ -35,62 +35,6 @@ func (idtc *IdeaDetailTranslationCreate) SetLanguageCode(s string) *IdeaDetailTr
 	return idtc
 }
 
-// SetProgress sets the "progress" field.
-func (idtc *IdeaDetailTranslationCreate) SetProgress(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetProgress(s)
-	return idtc
-}
-
-// SetNillableProgress sets the "progress" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableProgress(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetProgress(*s)
-	}
-	return idtc
-}
-
-// SetResults sets the "results" field.
-func (idtc *IdeaDetailTranslationCreate) SetResults(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetResults(s)
-	return idtc
-}
-
-// SetNillableResults sets the "results" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableResults(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetResults(*s)
-	}
-	return idtc
-}
-
-// SetReferences sets the "references" field.
-func (idtc *IdeaDetailTranslationCreate) SetReferences(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetReferences(s)
-	return idtc
-}
-
-// SetNillableReferences sets the "references" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableReferences(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetReferences(*s)
-	}
-	return idtc
-}
-
-// SetRequiredResources sets the "required_resources" field.
-func (idtc *IdeaDetailTranslationCreate) SetRequiredResources(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetRequiredResources(s)
-	return idtc
-}
-
-// SetNillableRequiredResources sets the "required_resources" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableRequiredResources(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetRequiredResources(*s)
-	}
-	return idtc
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (idtc *IdeaDetailTranslationCreate) SetCreatedAt(t time.Time) *IdeaDetailTranslationCreate {
 	idtc.mutation.SetCreatedAt(t)
@@ -236,22 +180,6 @@ func (idtc *IdeaDetailTranslationCreate) createSpec() (*IdeaDetailTranslation, *
 	if id, ok := idtc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
-	}
-	if value, ok := idtc.mutation.Progress(); ok {
-		_spec.SetField(ideadetailtranslation.FieldProgress, field.TypeString, value)
-		_node.Progress = value
-	}
-	if value, ok := idtc.mutation.Results(); ok {
-		_spec.SetField(ideadetailtranslation.FieldResults, field.TypeString, value)
-		_node.Results = value
-	}
-	if value, ok := idtc.mutation.References(); ok {
-		_spec.SetField(ideadetailtranslation.FieldReferences, field.TypeString, value)
-		_node.References = value
-	}
-	if value, ok := idtc.mutation.RequiredResources(); ok {
-		_spec.SetField(ideadetailtranslation.FieldRequiredResources, field.TypeString, value)
-		_node.RequiredResources = value
 	}
 	if value, ok := idtc.mutation.CreatedAt(); ok {
 		_spec.SetField(ideadetailtranslation.FieldCreatedAt, field.TypeTime, value)

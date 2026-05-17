@@ -23,8 +23,8 @@ type CommentCreate struct {
 }
 
 // SetEntityType sets the "entity_type" field.
-func (cc *CommentCreate) SetEntityType(s string) *CommentCreate {
-	cc.mutation.SetEntityType(s)
+func (cc *CommentCreate) SetEntityType(ct comment.EntityType) *CommentCreate {
+	cc.mutation.SetEntityType(ct)
 	return cc
 }
 
@@ -81,29 +81,29 @@ func (cc *CommentCreate) SetContent(s string) *CommentCreate {
 }
 
 // SetType sets the "type" field.
-func (cc *CommentCreate) SetType(s string) *CommentCreate {
-	cc.mutation.SetType(s)
+func (cc *CommentCreate) SetType(c comment.Type) *CommentCreate {
+	cc.mutation.SetType(c)
 	return cc
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableType(s *string) *CommentCreate {
-	if s != nil {
-		cc.SetType(*s)
+func (cc *CommentCreate) SetNillableType(c *comment.Type) *CommentCreate {
+	if c != nil {
+		cc.SetType(*c)
 	}
 	return cc
 }
 
-// SetReferrenceID sets the "referrence_id" field.
-func (cc *CommentCreate) SetReferrenceID(s string) *CommentCreate {
-	cc.mutation.SetReferrenceID(s)
+// SetReferenceID sets the "reference_id" field.
+func (cc *CommentCreate) SetReferenceID(s string) *CommentCreate {
+	cc.mutation.SetReferenceID(s)
 	return cc
 }
 
-// SetNillableReferrenceID sets the "referrence_id" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableReferrenceID(s *string) *CommentCreate {
+// SetNillableReferenceID sets the "reference_id" field if the given value is not nil.
+func (cc *CommentCreate) SetNillableReferenceID(s *string) *CommentCreate {
 	if s != nil {
-		cc.SetReferrenceID(*s)
+		cc.SetReferenceID(*s)
 	}
 	return cc
 }
@@ -325,6 +325,11 @@ func (cc *CommentCreate) check() error {
 	if _, ok := cc.mutation.EntityType(); !ok {
 		return &ValidationError{Name: "entity_type", err: errors.New(`ent: missing required field "Comment.entity_type"`)}
 	}
+	if v, ok := cc.mutation.EntityType(); ok {
+		if err := comment.EntityTypeValidator(v); err != nil {
+			return &ValidationError{Name: "entity_type", err: fmt.Errorf(`ent: validator failed for field "Comment.entity_type": %w`, err)}
+		}
+	}
 	if _, ok := cc.mutation.EntityID(); !ok {
 		return &ValidationError{Name: "entity_id", err: errors.New(`ent: missing required field "Comment.entity_id"`)}
 	}
@@ -360,9 +365,14 @@ func (cc *CommentCreate) check() error {
 	if _, ok := cc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Comment.type"`)}
 	}
-	if v, ok := cc.mutation.ReferrenceID(); ok {
-		if err := comment.ReferrenceIDValidator(v); err != nil {
-			return &ValidationError{Name: "referrence_id", err: fmt.Errorf(`ent: validator failed for field "Comment.referrence_id": %w`, err)}
+	if v, ok := cc.mutation.GetType(); ok {
+		if err := comment.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Comment.type": %w`, err)}
+		}
+	}
+	if v, ok := cc.mutation.ReferenceID(); ok {
+		if err := comment.ReferenceIDValidator(v); err != nil {
+			return &ValidationError{Name: "reference_id", err: fmt.Errorf(`ent: validator failed for field "Comment.reference_id": %w`, err)}
 		}
 	}
 	if v, ok := cc.mutation.AttachmentID(); ok {
@@ -428,7 +438,7 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = &id
 	}
 	if value, ok := cc.mutation.EntityType(); ok {
-		_spec.SetField(comment.FieldEntityType, field.TypeString, value)
+		_spec.SetField(comment.FieldEntityType, field.TypeEnum, value)
 		_node.EntityType = value
 	}
 	if value, ok := cc.mutation.EntityID(); ok {
@@ -452,12 +462,12 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 		_node.Content = value
 	}
 	if value, ok := cc.mutation.GetType(); ok {
-		_spec.SetField(comment.FieldType, field.TypeString, value)
+		_spec.SetField(comment.FieldType, field.TypeEnum, value)
 		_node.Type = value
 	}
-	if value, ok := cc.mutation.ReferrenceID(); ok {
-		_spec.SetField(comment.FieldReferrenceID, field.TypeString, value)
-		_node.ReferrenceID = value
+	if value, ok := cc.mutation.ReferenceID(); ok {
+		_spec.SetField(comment.FieldReferenceID, field.TypeString, value)
+		_node.ReferenceID = value
 	}
 	if value, ok := cc.mutation.AttachmentID(); ok {
 		_spec.SetField(comment.FieldAttachmentID, field.TypeString, value)

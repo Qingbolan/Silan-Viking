@@ -371,7 +371,7 @@ func (cq *CommentQuery) WithUserIdentity(opts ...func(*UserIdentityQuery)) *Comm
 // Example:
 //
 //	var v []struct {
-//		EntityType string `json:"entity_type,omitempty"`
+//		EntityType comment.EntityType `json:"entity_type,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -394,7 +394,7 @@ func (cq *CommentQuery) GroupBy(field string, fields ...string) *CommentGroupBy 
 // Example:
 //
 //	var v []struct {
-//		EntityType string `json:"entity_type,omitempty"`
+//		EntityType comment.EntityType `json:"entity_type,omitempty"`
 //	}
 //
 //	client.Comment.Query().

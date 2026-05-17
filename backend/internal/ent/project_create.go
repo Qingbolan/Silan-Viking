@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projectimage"
 	"silan-backend/internal/ent/projectlike"
-	"silan-backend/internal/ent/projectrelationship"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/projectview"
@@ -187,16 +186,16 @@ func (pc *ProjectCreate) SetNillableIsFeatured(b *bool) *ProjectCreate {
 	return pc
 }
 
-// SetIsPublic sets the "is_public" field.
-func (pc *ProjectCreate) SetIsPublic(b bool) *ProjectCreate {
-	pc.mutation.SetIsPublic(b)
+// SetVisibility sets the "visibility" field.
+func (pc *ProjectCreate) SetVisibility(pr project.Visibility) *ProjectCreate {
+	pc.mutation.SetVisibility(pr)
 	return pc
 }
 
-// SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableIsPublic(b *bool) *ProjectCreate {
-	if b != nil {
-		pc.SetIsPublic(*b)
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableVisibility(pr *project.Visibility) *ProjectCreate {
+	if pr != nil {
+		pc.SetVisibility(*pr)
 	}
 	return pc
 }
@@ -354,36 +353,6 @@ func (pc *ProjectCreate) AddImages(p ...*ProjectImage) *ProjectCreate {
 	return pc.AddImageIDs(ids...)
 }
 
-// AddSourceRelationshipIDs adds the "source_relationships" edge to the ProjectRelationship entity by IDs.
-func (pc *ProjectCreate) AddSourceRelationshipIDs(ids ...uuid.UUID) *ProjectCreate {
-	pc.mutation.AddSourceRelationshipIDs(ids...)
-	return pc
-}
-
-// AddSourceRelationships adds the "source_relationships" edges to the ProjectRelationship entity.
-func (pc *ProjectCreate) AddSourceRelationships(p ...*ProjectRelationship) *ProjectCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pc.AddSourceRelationshipIDs(ids...)
-}
-
-// AddTargetRelationshipIDs adds the "target_relationships" edge to the ProjectRelationship entity by IDs.
-func (pc *ProjectCreate) AddTargetRelationshipIDs(ids ...uuid.UUID) *ProjectCreate {
-	pc.mutation.AddTargetRelationshipIDs(ids...)
-	return pc
-}
-
-// AddTargetRelationships adds the "target_relationships" edges to the ProjectRelationship entity.
-func (pc *ProjectCreate) AddTargetRelationships(p ...*ProjectRelationship) *ProjectCreate {
-	ids := make([]uuid.UUID, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pc.AddTargetRelationshipIDs(ids...)
-}
-
 // AddLikeIDs adds the "likes" edge to the ProjectLike entity by IDs.
 func (pc *ProjectCreate) AddLikeIDs(ids ...uuid.UUID) *ProjectCreate {
 	pc.mutation.AddLikeIDs(ids...)
@@ -461,9 +430,9 @@ func (pc *ProjectCreate) defaults() {
 		v := project.DefaultIsFeatured
 		pc.mutation.SetIsFeatured(v)
 	}
-	if _, ok := pc.mutation.IsPublic(); !ok {
-		v := project.DefaultIsPublic
-		pc.mutation.SetIsPublic(v)
+	if _, ok := pc.mutation.Visibility(); !ok {
+		v := project.DefaultVisibility
+		pc.mutation.SetVisibility(v)
 	}
 	if _, ok := pc.mutation.ViewCount(); !ok {
 		v := project.DefaultViewCount
@@ -551,8 +520,13 @@ func (pc *ProjectCreate) check() error {
 	if _, ok := pc.mutation.IsFeatured(); !ok {
 		return &ValidationError{Name: "is_featured", err: errors.New(`ent: missing required field "Project.is_featured"`)}
 	}
-	if _, ok := pc.mutation.IsPublic(); !ok {
-		return &ValidationError{Name: "is_public", err: errors.New(`ent: missing required field "Project.is_public"`)}
+	if _, ok := pc.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "Project.visibility"`)}
+	}
+	if v, ok := pc.mutation.Visibility(); ok {
+		if err := project.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Project.visibility": %w`, err)}
+		}
 	}
 	if _, ok := pc.mutation.ViewCount(); !ok {
 		return &ValidationError{Name: "view_count", err: errors.New(`ent: missing required field "Project.view_count"`)}
@@ -655,9 +629,9 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_spec.SetField(project.FieldIsFeatured, field.TypeBool, value)
 		_node.IsFeatured = value
 	}
-	if value, ok := pc.mutation.IsPublic(); ok {
-		_spec.SetField(project.FieldIsPublic, field.TypeBool, value)
-		_node.IsPublic = value
+	if value, ok := pc.mutation.Visibility(); ok {
+		_spec.SetField(project.FieldVisibility, field.TypeEnum, value)
+		_node.Visibility = value
 	}
 	if value, ok := pc.mutation.ViewCount(); ok {
 		_spec.SetField(project.FieldViewCount, field.TypeInt, value)
@@ -753,38 +727,6 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pc.mutation.SourceRelationshipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.SourceRelationshipsTable,
-			Columns: []string{project.SourceRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pc.mutation.TargetRelationshipsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.TargetRelationshipsTable,
-			Columns: []string{project.TargetRelationshipsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectrelationship.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

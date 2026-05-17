@@ -14,7 +14,6 @@ import (
 	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
-	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/user"
 
@@ -35,7 +34,6 @@ type BlogPostQuery struct {
 	withUser         *UserQuery
 	withCategory     *BlogCategoryQuery
 	withSeries       *BlogSeriesQuery
-	withIdeas        *IdeaQuery
 	withTags         *BlogTagQuery
 	withTranslations *BlogPostTranslationQuery
 	withComments     *CommentQuery
@@ -135,28 +133,6 @@ func (bpq *BlogPostQuery) QuerySeries() *BlogSeriesQuery {
 			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
 			sqlgraph.To(blogseries.Table, blogseries.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.SeriesTable, blogpost.SeriesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryIdeas chains the current query on the "ideas" edge.
-func (bpq *BlogPostQuery) QueryIdeas() *IdeaQuery {
-	query := (&IdeaClient{config: bpq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := bpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
-			sqlgraph.To(idea.Table, idea.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.IdeasTable, blogpost.IdeasColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
 		return fromU, nil
@@ -447,7 +423,6 @@ func (bpq *BlogPostQuery) Clone() *BlogPostQuery {
 		withUser:         bpq.withUser.Clone(),
 		withCategory:     bpq.withCategory.Clone(),
 		withSeries:       bpq.withSeries.Clone(),
-		withIdeas:        bpq.withIdeas.Clone(),
 		withTags:         bpq.withTags.Clone(),
 		withTranslations: bpq.withTranslations.Clone(),
 		withComments:     bpq.withComments.Clone(),
@@ -488,17 +463,6 @@ func (bpq *BlogPostQuery) WithSeries(opts ...func(*BlogSeriesQuery)) *BlogPostQu
 		opt(query)
 	}
 	bpq.withSeries = query
-	return bpq
-}
-
-// WithIdeas tells the query-builder to eager-load the nodes that are connected to
-// the "ideas" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BlogPostQuery) WithIdeas(opts ...func(*IdeaQuery)) *BlogPostQuery {
-	query := (&IdeaClient{config: bpq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	bpq.withIdeas = query
 	return bpq
 }
 
@@ -624,11 +588,10 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	var (
 		nodes       = []*BlogPost{}
 		_spec       = bpq.querySpec()
-		loadedTypes = [8]bool{
+		loadedTypes = [7]bool{
 			bpq.withUser != nil,
 			bpq.withCategory != nil,
 			bpq.withSeries != nil,
-			bpq.withIdeas != nil,
 			bpq.withTags != nil,
 			bpq.withTranslations != nil,
 			bpq.withComments != nil,
@@ -668,12 +631,6 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	if query := bpq.withSeries; query != nil {
 		if err := bpq.loadSeries(ctx, query, nodes, nil,
 			func(n *BlogPost, e *BlogSeries) { n.Edges.Series = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := bpq.withIdeas; query != nil {
-		if err := bpq.loadIdeas(ctx, query, nodes, nil,
-			func(n *BlogPost, e *Idea) { n.Edges.Ideas = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -788,35 +745,6 @@ func (bpq *BlogPostQuery) loadSeries(ctx context.Context, query *BlogSeriesQuery
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "series_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
-func (bpq *BlogPostQuery) loadIdeas(ctx context.Context, query *IdeaQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *Idea)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogPost)
-	for i := range nodes {
-		fk := nodes[i].IdeasID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(idea.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "ideas_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -1010,9 +938,6 @@ func (bpq *BlogPostQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if bpq.withSeries != nil {
 			_spec.Node.AddColumnOnce(blogpost.FieldSeriesID)
-		}
-		if bpq.withIdeas != nil {
-			_spec.Node.AddColumnOnce(blogpost.FieldIdeasID)
 		}
 	}
 	if ps := bpq.predicates; len(ps) > 0 {

@@ -17,12 +17,6 @@ const (
 	FieldID = "id"
 	// FieldIdeaID holds the string denoting the idea_id field in the database.
 	FieldIdeaID = "idea_id"
-	// FieldProgress holds the string denoting the progress field in the database.
-	FieldProgress = "progress"
-	// FieldResults holds the string denoting the results field in the database.
-	FieldResults = "results"
-	// FieldReferences holds the string denoting the references field in the database.
-	FieldReferences = "references"
 	// FieldEstimatedDurationMonths holds the string denoting the estimated_duration_months field in the database.
 	FieldEstimatedDurationMonths = "estimated_duration_months"
 	// FieldRequiredResources holds the string denoting the required_resources field in the database.
@@ -63,9 +57,6 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldIdeaID,
-	FieldProgress,
-	FieldResults,
-	FieldReferences,
 	FieldEstimatedDurationMonths,
 	FieldRequiredResources,
 	FieldCollaborationNeeded,
@@ -111,21 +102,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByIdeaID orders the results by the idea_id field.
 func ByIdeaID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIdeaID, opts...).ToFunc()
-}
-
-// ByProgress orders the results by the progress field.
-func ByProgress(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProgress, opts...).ToFunc()
-}
-
-// ByResults orders the results by the results field.
-func ByResults(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldResults, opts...).ToFunc()
-}
-
-// ByReferences orders the results by the references field.
-func ByReferences(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldReferences, opts...).ToFunc()
 }
 
 // ByEstimatedDurationMonths orders the results by the estimated_duration_months field.

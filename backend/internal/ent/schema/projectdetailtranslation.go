@@ -34,18 +34,10 @@ func (ProjectDetailTranslation) Fields() []ent.Field {
 		field.String("language_code").
 			MaxLen(5).
 			StorageKey("language_code"),
-		field.Text("detailed_description").
-			Optional(),
-		field.Text("goals").
-			Optional(),
-		field.Text("challenges").
-			Optional(),
-		field.Text("solutions").
-			Optional(),
-		field.Text("lessons_learned").
-			Optional(),
-		field.Text("future_enhancements").
-			Optional(),
+		// M0.5a §11.8: detailed_description/goals/challenges/solutions/
+		// lessons_learned/future_enhancements (all Part body text) moved out
+		// to item_part_translation. The table is kept as the per-language
+		// anchor; dropping it is deferred (not an M0.5a irreversible action).
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),

@@ -116,11 +116,6 @@ func IsFeatured(v bool) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldIsFeatured, v))
 }
 
-// IsPublic applies equality check predicate on the "is_public" field. It's identical to IsPublicEQ.
-func IsPublic(v bool) predicate.Project {
-	return predicate.Project(sql.FieldEQ(FieldIsPublic, v))
-}
-
 // ViewCount applies equality check predicate on the "view_count" field. It's identical to ViewCountEQ.
 func ViewCount(v int) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldViewCount, v))
@@ -866,14 +861,24 @@ func IsFeaturedNEQ(v bool) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldIsFeatured, v))
 }
 
-// IsPublicEQ applies the EQ predicate on the "is_public" field.
-func IsPublicEQ(v bool) predicate.Project {
-	return predicate.Project(sql.FieldEQ(FieldIsPublic, v))
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v Visibility) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldVisibility, v))
 }
 
-// IsPublicNEQ applies the NEQ predicate on the "is_public" field.
-func IsPublicNEQ(v bool) predicate.Project {
-	return predicate.Project(sql.FieldNEQ(FieldIsPublic, v))
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v Visibility) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldVisibility, v))
+}
+
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...Visibility) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldVisibility, vs...))
+}
+
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...Visibility) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // ViewCountEQ applies the EQ predicate on the "view_count" field.
@@ -1183,52 +1188,6 @@ func HasImages() predicate.Project {
 func HasImagesWith(preds ...predicate.ProjectImage) predicate.Project {
 	return predicate.Project(func(s *sql.Selector) {
 		step := newImagesStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasSourceRelationships applies the HasEdge predicate on the "source_relationships" edge.
-func HasSourceRelationships() predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, SourceRelationshipsTable, SourceRelationshipsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasSourceRelationshipsWith applies the HasEdge predicate on the "source_relationships" edge with a given conditions (other predicates).
-func HasSourceRelationshipsWith(preds ...predicate.ProjectRelationship) predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := newSourceRelationshipsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasTargetRelationships applies the HasEdge predicate on the "target_relationships" edge.
-func HasTargetRelationships() predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, TargetRelationshipsTable, TargetRelationshipsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasTargetRelationshipsWith applies the HasEdge predicate on the "target_relationships" edge with a given conditions (other predicates).
-func HasTargetRelationshipsWith(preds ...predicate.ProjectRelationship) predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := newTargetRelationshipsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -29,16 +29,50 @@ func (ruc *RecentUpdateCreate) SetUserID(u uuid.UUID) *RecentUpdateCreate {
 	return ruc
 }
 
-// SetType sets the "type" field.
-func (ruc *RecentUpdateCreate) SetType(r recentupdate.Type) *RecentUpdateCreate {
-	ruc.mutation.SetType(r)
+// SetSlug sets the "slug" field.
+func (ruc *RecentUpdateCreate) SetSlug(s string) *RecentUpdateCreate {
+	ruc.mutation.SetSlug(s)
 	return ruc
 }
 
-// SetNillableType sets the "type" field if the given value is not nil.
-func (ruc *RecentUpdateCreate) SetNillableType(r *recentupdate.Type) *RecentUpdateCreate {
+// SetSubjectKind sets the "subject_kind" field.
+func (ruc *RecentUpdateCreate) SetSubjectKind(rk recentupdate.SubjectKind) *RecentUpdateCreate {
+	ruc.mutation.SetSubjectKind(rk)
+	return ruc
+}
+
+// SetNillableSubjectKind sets the "subject_kind" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableSubjectKind(rk *recentupdate.SubjectKind) *RecentUpdateCreate {
+	if rk != nil {
+		ruc.SetSubjectKind(*rk)
+	}
+	return ruc
+}
+
+// SetUpdateType sets the "update_type" field.
+func (ruc *RecentUpdateCreate) SetUpdateType(rt recentupdate.UpdateType) *RecentUpdateCreate {
+	ruc.mutation.SetUpdateType(rt)
+	return ruc
+}
+
+// SetNillableUpdateType sets the "update_type" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableUpdateType(rt *recentupdate.UpdateType) *RecentUpdateCreate {
+	if rt != nil {
+		ruc.SetUpdateType(*rt)
+	}
+	return ruc
+}
+
+// SetVisibility sets the "visibility" field.
+func (ruc *RecentUpdateCreate) SetVisibility(r recentupdate.Visibility) *RecentUpdateCreate {
+	ruc.mutation.SetVisibility(r)
+	return ruc
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableVisibility(r *recentupdate.Visibility) *RecentUpdateCreate {
 	if r != nil {
-		ruc.SetType(*r)
+		ruc.SetVisibility(*r)
 	}
 	return ruc
 }
@@ -328,9 +362,17 @@ func (ruc *RecentUpdateCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ruc *RecentUpdateCreate) defaults() {
-	if _, ok := ruc.mutation.GetType(); !ok {
-		v := recentupdate.DefaultType
-		ruc.mutation.SetType(v)
+	if _, ok := ruc.mutation.SubjectKind(); !ok {
+		v := recentupdate.DefaultSubjectKind
+		ruc.mutation.SetSubjectKind(v)
+	}
+	if _, ok := ruc.mutation.UpdateType(); !ok {
+		v := recentupdate.DefaultUpdateType
+		ruc.mutation.SetUpdateType(v)
+	}
+	if _, ok := ruc.mutation.Visibility(); !ok {
+		v := recentupdate.DefaultVisibility
+		ruc.mutation.SetVisibility(v)
 	}
 	if _, ok := ruc.mutation.Status(); !ok {
 		v := recentupdate.DefaultStatus
@@ -363,12 +405,36 @@ func (ruc *RecentUpdateCreate) check() error {
 	if _, ok := ruc.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "RecentUpdate.user_id"`)}
 	}
-	if _, ok := ruc.mutation.GetType(); !ok {
-		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "RecentUpdate.type"`)}
+	if _, ok := ruc.mutation.Slug(); !ok {
+		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "RecentUpdate.slug"`)}
 	}
-	if v, ok := ruc.mutation.GetType(); ok {
-		if err := recentupdate.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.type": %w`, err)}
+	if v, ok := ruc.mutation.Slug(); ok {
+		if err := recentupdate.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.slug": %w`, err)}
+		}
+	}
+	if _, ok := ruc.mutation.SubjectKind(); !ok {
+		return &ValidationError{Name: "subject_kind", err: errors.New(`ent: missing required field "RecentUpdate.subject_kind"`)}
+	}
+	if v, ok := ruc.mutation.SubjectKind(); ok {
+		if err := recentupdate.SubjectKindValidator(v); err != nil {
+			return &ValidationError{Name: "subject_kind", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.subject_kind": %w`, err)}
+		}
+	}
+	if _, ok := ruc.mutation.UpdateType(); !ok {
+		return &ValidationError{Name: "update_type", err: errors.New(`ent: missing required field "RecentUpdate.update_type"`)}
+	}
+	if v, ok := ruc.mutation.UpdateType(); ok {
+		if err := recentupdate.UpdateTypeValidator(v); err != nil {
+			return &ValidationError{Name: "update_type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.update_type": %w`, err)}
+		}
+	}
+	if _, ok := ruc.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "RecentUpdate.visibility"`)}
+	}
+	if v, ok := ruc.mutation.Visibility(); ok {
+		if err := recentupdate.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.visibility": %w`, err)}
 		}
 	}
 	if _, ok := ruc.mutation.Title(); !ok {
@@ -488,9 +554,21 @@ func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
-	if value, ok := ruc.mutation.GetType(); ok {
-		_spec.SetField(recentupdate.FieldType, field.TypeEnum, value)
-		_node.Type = value
+	if value, ok := ruc.mutation.Slug(); ok {
+		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
+		_node.Slug = value
+	}
+	if value, ok := ruc.mutation.SubjectKind(); ok {
+		_spec.SetField(recentupdate.FieldSubjectKind, field.TypeEnum, value)
+		_node.SubjectKind = value
+	}
+	if value, ok := ruc.mutation.UpdateType(); ok {
+		_spec.SetField(recentupdate.FieldUpdateType, field.TypeEnum, value)
+		_node.UpdateType = value
+	}
+	if value, ok := ruc.mutation.Visibility(); ok {
+		_spec.SetField(recentupdate.FieldVisibility, field.TypeEnum, value)
+		_node.Visibility = value
 	}
 	if value, ok := ruc.mutation.Title(); ok {
 		_spec.SetField(recentupdate.FieldTitle, field.TypeString, value)

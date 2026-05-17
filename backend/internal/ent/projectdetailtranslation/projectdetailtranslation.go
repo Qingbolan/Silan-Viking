@@ -19,18 +19,6 @@ const (
 	FieldProjectDetailID = "project_detail_id"
 	// FieldLanguageCode holds the string denoting the language_code field in the database.
 	FieldLanguageCode = "language_code"
-	// FieldDetailedDescription holds the string denoting the detailed_description field in the database.
-	FieldDetailedDescription = "detailed_description"
-	// FieldGoals holds the string denoting the goals field in the database.
-	FieldGoals = "goals"
-	// FieldChallenges holds the string denoting the challenges field in the database.
-	FieldChallenges = "challenges"
-	// FieldSolutions holds the string denoting the solutions field in the database.
-	FieldSolutions = "solutions"
-	// FieldLessonsLearned holds the string denoting the lessons_learned field in the database.
-	FieldLessonsLearned = "lessons_learned"
-	// FieldFutureEnhancements holds the string denoting the future_enhancements field in the database.
-	FieldFutureEnhancements = "future_enhancements"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// EdgeProjectDetail holds the string denoting the project_detail edge name in mutations.
@@ -62,12 +50,6 @@ var Columns = []string{
 	FieldID,
 	FieldProjectDetailID,
 	FieldLanguageCode,
-	FieldDetailedDescription,
-	FieldGoals,
-	FieldChallenges,
-	FieldSolutions,
-	FieldLessonsLearned,
-	FieldFutureEnhancements,
 	FieldCreatedAt,
 }
 
@@ -106,36 +88,6 @@ func ByProjectDetailID(opts ...sql.OrderTermOption) OrderOption {
 // ByLanguageCode orders the results by the language_code field.
 func ByLanguageCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLanguageCode, opts...).ToFunc()
-}
-
-// ByDetailedDescription orders the results by the detailed_description field.
-func ByDetailedDescription(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDetailedDescription, opts...).ToFunc()
-}
-
-// ByGoals orders the results by the goals field.
-func ByGoals(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGoals, opts...).ToFunc()
-}
-
-// ByChallenges orders the results by the challenges field.
-func ByChallenges(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldChallenges, opts...).ToFunc()
-}
-
-// BySolutions orders the results by the solutions field.
-func BySolutions(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSolutions, opts...).ToFunc()
-}
-
-// ByLessonsLearned orders the results by the lessons_learned field.
-func ByLessonsLearned(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLessonsLearned, opts...).ToFunc()
-}
-
-// ByFutureEnhancements orders the results by the future_enhancements field.
-func ByFutureEnhancements(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFutureEnhancements, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

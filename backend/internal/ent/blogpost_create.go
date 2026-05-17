@@ -12,7 +12,6 @@ import (
 	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
-	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/user"
 	"time"
 
@@ -58,20 +57,6 @@ func (bpc *BlogPostCreate) SetSeriesID(u uuid.UUID) *BlogPostCreate {
 func (bpc *BlogPostCreate) SetNillableSeriesID(u *uuid.UUID) *BlogPostCreate {
 	if u != nil {
 		bpc.SetSeriesID(*u)
-	}
-	return bpc
-}
-
-// SetIdeasID sets the "ideas_id" field.
-func (bpc *BlogPostCreate) SetIdeasID(u uuid.UUID) *BlogPostCreate {
-	bpc.mutation.SetIdeasID(u)
-	return bpc
-}
-
-// SetNillableIdeasID sets the "ideas_id" field if the given value is not nil.
-func (bpc *BlogPostCreate) SetNillableIdeasID(u *uuid.UUID) *BlogPostCreate {
-	if u != nil {
-		bpc.SetIdeasID(*u)
 	}
 	return bpc
 }
@@ -132,6 +117,20 @@ func (bpc *BlogPostCreate) SetStatus(b blogpost.Status) *BlogPostCreate {
 func (bpc *BlogPostCreate) SetNillableStatus(b *blogpost.Status) *BlogPostCreate {
 	if b != nil {
 		bpc.SetStatus(*b)
+	}
+	return bpc
+}
+
+// SetVisibility sets the "visibility" field.
+func (bpc *BlogPostCreate) SetVisibility(b blogpost.Visibility) *BlogPostCreate {
+	bpc.mutation.SetVisibility(b)
+	return bpc
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (bpc *BlogPostCreate) SetNillableVisibility(b *blogpost.Visibility) *BlogPostCreate {
+	if b != nil {
+		bpc.SetVisibility(*b)
 	}
 	return bpc
 }
@@ -305,11 +304,6 @@ func (bpc *BlogPostCreate) SetSeries(b *BlogSeries) *BlogPostCreate {
 	return bpc.SetSeriesID(b.ID)
 }
 
-// SetIdeas sets the "ideas" edge to the Idea entity.
-func (bpc *BlogPostCreate) SetIdeas(i *Idea) *BlogPostCreate {
-	return bpc.SetIdeasID(i.ID)
-}
-
 // AddTagIDs adds the "tags" edge to the BlogTag entity by IDs.
 func (bpc *BlogPostCreate) AddTagIDs(ids ...uuid.UUID) *BlogPostCreate {
 	bpc.mutation.AddTagIDs(ids...)
@@ -398,6 +392,10 @@ func (bpc *BlogPostCreate) defaults() {
 		v := blogpost.DefaultStatus
 		bpc.mutation.SetStatus(v)
 	}
+	if _, ok := bpc.mutation.Visibility(); !ok {
+		v := blogpost.DefaultVisibility
+		bpc.mutation.SetVisibility(v)
+	}
 	if _, ok := bpc.mutation.IsFeatured(); !ok {
 		v := blogpost.DefaultIsFeatured
 		bpc.mutation.SetIsFeatured(v)
@@ -471,6 +469,14 @@ func (bpc *BlogPostCreate) check() error {
 	if v, ok := bpc.mutation.Status(); ok {
 		if err := blogpost.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "BlogPost.status": %w`, err)}
+		}
+	}
+	if _, ok := bpc.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "BlogPost.visibility"`)}
+	}
+	if v, ok := bpc.mutation.Visibility(); ok {
+		if err := blogpost.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "BlogPost.visibility": %w`, err)}
 		}
 	}
 	if _, ok := bpc.mutation.IsFeatured(); !ok {
@@ -557,6 +563,10 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 	if value, ok := bpc.mutation.Status(); ok {
 		_spec.SetField(blogpost.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := bpc.mutation.Visibility(); ok {
+		_spec.SetField(blogpost.FieldVisibility, field.TypeEnum, value)
+		_node.Visibility = value
 	}
 	if value, ok := bpc.mutation.IsFeatured(); ok {
 		_spec.SetField(blogpost.FieldIsFeatured, field.TypeBool, value)
@@ -647,23 +657,6 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.SeriesID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := bpc.mutation.IdeasIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.IdeasTable,
-			Columns: []string{blogpost.IdeasColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.IdeasID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bpc.mutation.TagsIDs(); len(nodes) > 0 {

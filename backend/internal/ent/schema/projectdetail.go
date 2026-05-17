@@ -33,10 +33,8 @@ func (ProjectDetail) Fields() []ent.Field {
 			StorageKey("project_id"),
 		field.String("project_details").
 			Optional(),
-		field.Text("quick_start").
-			Optional(),
-		field.Text("release_notes").
-			Optional(),
+		// M0.5a §11.8: quick_start/release_notes (Part body text) moved out
+		// to item_part. Structured attributes below stay.
 		field.Text("dependencies").
 			Optional(),
 		field.String("license").

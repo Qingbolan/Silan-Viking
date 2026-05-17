@@ -21,12 +21,6 @@ type IdeaDetail struct {
 	ID uuid.UUID `json:"id,omitempty"`
 	// IdeaID holds the value of the "idea_id" field.
 	IdeaID uuid.UUID `json:"idea_id,omitempty"`
-	// Progress holds the value of the "progress" field.
-	Progress string `json:"progress,omitempty"`
-	// Results holds the value of the "results" field.
-	Results string `json:"results,omitempty"`
-	// References holds the value of the "references" field.
-	References string `json:"references,omitempty"`
 	// EstimatedDurationMonths holds the value of the "estimated_duration_months" field.
 	EstimatedDurationMonths int `json:"estimated_duration_months,omitempty"`
 	// RequiredResources holds the value of the "required_resources" field.
@@ -89,7 +83,7 @@ func (*IdeaDetail) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case ideadetail.FieldEstimatedDurationMonths:
 			values[i] = new(sql.NullInt64)
-		case ideadetail.FieldProgress, ideadetail.FieldResults, ideadetail.FieldReferences, ideadetail.FieldRequiredResources:
+		case ideadetail.FieldRequiredResources:
 			values[i] = new(sql.NullString)
 		case ideadetail.FieldCreatedAt, ideadetail.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -121,24 +115,6 @@ func (id *IdeaDetail) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field idea_id", values[i])
 			} else if value != nil {
 				id.IdeaID = *value
-			}
-		case ideadetail.FieldProgress:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field progress", values[i])
-			} else if value.Valid {
-				id.Progress = value.String
-			}
-		case ideadetail.FieldResults:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field results", values[i])
-			} else if value.Valid {
-				id.Results = value.String
-			}
-		case ideadetail.FieldReferences:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field references", values[i])
-			} else if value.Valid {
-				id.References = value.String
 			}
 		case ideadetail.FieldEstimatedDurationMonths:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -230,15 +206,6 @@ func (id *IdeaDetail) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", id.ID))
 	builder.WriteString("idea_id=")
 	builder.WriteString(fmt.Sprintf("%v", id.IdeaID))
-	builder.WriteString(", ")
-	builder.WriteString("progress=")
-	builder.WriteString(id.Progress)
-	builder.WriteString(", ")
-	builder.WriteString("results=")
-	builder.WriteString(id.Results)
-	builder.WriteString(", ")
-	builder.WriteString("references=")
-	builder.WriteString(id.References)
 	builder.WriteString(", ")
 	builder.WriteString("estimated_duration_months=")
 	builder.WriteString(fmt.Sprintf("%v", id.EstimatedDurationMonths))

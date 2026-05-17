@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// Annotation is the client for interacting with the Annotation builders.
+	Annotation *AnnotationClient
 	// Award is the client for interacting with the Award builders.
 	Award *AwardClient
 	// AwardTranslation is the client for interacting with the AwardTranslation builders.
@@ -36,6 +38,10 @@ type Tx struct {
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
 	CommentLike *CommentLikeClient
+	// ContentInteraction is the client for interacting with the ContentInteraction builders.
+	ContentInteraction *ContentInteractionClient
+	// ContentRelation is the client for interacting with the ContentRelation builders.
+	ContentRelation *ContentRelationClient
 	// Education is the client for interacting with the Education builders.
 	Education *EducationClient
 	// EducationDetail is the client for interacting with the EducationDetail builders.
@@ -44,6 +50,14 @@ type Tx struct {
 	EducationDetailTranslation *EducationDetailTranslationClient
 	// EducationTranslation is the client for interacting with the EducationTranslation builders.
 	EducationTranslation *EducationTranslationClient
+	// Episode is the client for interacting with the Episode builders.
+	Episode *EpisodeClient
+	// EpisodeSeries is the client for interacting with the EpisodeSeries builders.
+	EpisodeSeries *EpisodeSeriesClient
+	// EpisodeSeriesTranslation is the client for interacting with the EpisodeSeriesTranslation builders.
+	EpisodeSeriesTranslation *EpisodeSeriesTranslationClient
+	// EpisodeTranslation is the client for interacting with the EpisodeTranslation builders.
+	EpisodeTranslation *EpisodeTranslationClient
 	// Idea is the client for interacting with the Idea builders.
 	Idea *IdeaClient
 	// IdeaDetail is the client for interacting with the IdeaDetail builders.
@@ -54,8 +68,16 @@ type Tx struct {
 	IdeaTag *IdeaTagClient
 	// IdeaTranslation is the client for interacting with the IdeaTranslation builders.
 	IdeaTranslation *IdeaTranslationClient
+	// ItemPart is the client for interacting with the ItemPart builders.
+	ItemPart *ItemPartClient
+	// ItemPartTranslation is the client for interacting with the ItemPartTranslation builders.
+	ItemPartTranslation *ItemPartTranslationClient
 	// Language is the client for interacting with the Language builders.
 	Language *LanguageClient
+	// PartEntry is the client for interacting with the PartEntry builders.
+	PartEntry *PartEntryClient
+	// PartEntryTranslation is the client for interacting with the PartEntryTranslation builders.
+	PartEntryTranslation *PartEntryTranslationClient
 	// PersonalInfo is the client for interacting with the PersonalInfo builders.
 	PersonalInfo *PersonalInfoClient
 	// PersonalInfoTranslation is the client for interacting with the PersonalInfoTranslation builders.
@@ -72,8 +94,6 @@ type Tx struct {
 	ProjectImageTranslation *ProjectImageTranslationClient
 	// ProjectLike is the client for interacting with the ProjectLike builders.
 	ProjectLike *ProjectLikeClient
-	// ProjectRelationship is the client for interacting with the ProjectRelationship builders.
-	ProjectRelationship *ProjectRelationshipClient
 	// ProjectTechnology is the client for interacting with the ProjectTechnology builders.
 	ProjectTechnology *ProjectTechnologyClient
 	// ProjectTranslation is the client for interacting with the ProjectTranslation builders.
@@ -90,6 +110,8 @@ type Tx struct {
 	RecentUpdate *RecentUpdateClient
 	// RecentUpdateTranslation is the client for interacting with the RecentUpdateTranslation builders.
 	RecentUpdateTranslation *RecentUpdateTranslationClient
+	// RequestLog is the client for interacting with the RequestLog builders.
+	RequestLog *RequestLogClient
 	// ResearchProject is the client for interacting with the ResearchProject builders.
 	ResearchProject *ResearchProjectClient
 	// ResearchProjectDetail is the client for interacting with the ResearchProjectDetail builders.
@@ -243,6 +265,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.Annotation = NewAnnotationClient(tx.config)
 	tx.Award = NewAwardClient(tx.config)
 	tx.AwardTranslation = NewAwardTranslationClient(tx.config)
 	tx.BlogCategory = NewBlogCategoryClient(tx.config)
@@ -255,16 +278,26 @@ func (tx *Tx) init() {
 	tx.BlogTag = NewBlogTagClient(tx.config)
 	tx.Comment = NewCommentClient(tx.config)
 	tx.CommentLike = NewCommentLikeClient(tx.config)
+	tx.ContentInteraction = NewContentInteractionClient(tx.config)
+	tx.ContentRelation = NewContentRelationClient(tx.config)
 	tx.Education = NewEducationClient(tx.config)
 	tx.EducationDetail = NewEducationDetailClient(tx.config)
 	tx.EducationDetailTranslation = NewEducationDetailTranslationClient(tx.config)
 	tx.EducationTranslation = NewEducationTranslationClient(tx.config)
+	tx.Episode = NewEpisodeClient(tx.config)
+	tx.EpisodeSeries = NewEpisodeSeriesClient(tx.config)
+	tx.EpisodeSeriesTranslation = NewEpisodeSeriesTranslationClient(tx.config)
+	tx.EpisodeTranslation = NewEpisodeTranslationClient(tx.config)
 	tx.Idea = NewIdeaClient(tx.config)
 	tx.IdeaDetail = NewIdeaDetailClient(tx.config)
 	tx.IdeaDetailTranslation = NewIdeaDetailTranslationClient(tx.config)
 	tx.IdeaTag = NewIdeaTagClient(tx.config)
 	tx.IdeaTranslation = NewIdeaTranslationClient(tx.config)
+	tx.ItemPart = NewItemPartClient(tx.config)
+	tx.ItemPartTranslation = NewItemPartTranslationClient(tx.config)
 	tx.Language = NewLanguageClient(tx.config)
+	tx.PartEntry = NewPartEntryClient(tx.config)
+	tx.PartEntryTranslation = NewPartEntryTranslationClient(tx.config)
 	tx.PersonalInfo = NewPersonalInfoClient(tx.config)
 	tx.PersonalInfoTranslation = NewPersonalInfoTranslationClient(tx.config)
 	tx.Project = NewProjectClient(tx.config)
@@ -273,7 +306,6 @@ func (tx *Tx) init() {
 	tx.ProjectImage = NewProjectImageClient(tx.config)
 	tx.ProjectImageTranslation = NewProjectImageTranslationClient(tx.config)
 	tx.ProjectLike = NewProjectLikeClient(tx.config)
-	tx.ProjectRelationship = NewProjectRelationshipClient(tx.config)
 	tx.ProjectTechnology = NewProjectTechnologyClient(tx.config)
 	tx.ProjectTranslation = NewProjectTranslationClient(tx.config)
 	tx.ProjectView = NewProjectViewClient(tx.config)
@@ -282,6 +314,7 @@ func (tx *Tx) init() {
 	tx.PublicationTranslation = NewPublicationTranslationClient(tx.config)
 	tx.RecentUpdate = NewRecentUpdateClient(tx.config)
 	tx.RecentUpdateTranslation = NewRecentUpdateTranslationClient(tx.config)
+	tx.RequestLog = NewRequestLogClient(tx.config)
 	tx.ResearchProject = NewResearchProjectClient(tx.config)
 	tx.ResearchProjectDetail = NewResearchProjectDetailClient(tx.config)
 	tx.ResearchProjectDetailTranslation = NewResearchProjectDetailTranslationClient(tx.config)
@@ -302,7 +335,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Award.QueryXXX(), the query will be executed
+// applies a query, for example: Annotation.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.
