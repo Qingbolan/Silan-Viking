@@ -139,6 +139,38 @@ impl RowSetBatch {
         self.rows.extend(set.rows);
     }
 
+    /// Collapse the rows of `table` so each distinct value of `key_column`
+    /// appears once, keeping the first occurrence.
+    ///
+    /// A cross-type entity table (`tag`) gets one row per Item that uses the
+    /// entity — five blog posts tagged `easynet` each emit a `tag` row with
+    /// `id = "easynet"`. They are identical by construction, but the sink's
+    /// plain `INSERT` would write five rows and a later `content_tag` JOIN
+    /// would fan out into duplicates. Folding by the key column here keeps
+    /// one row per entity. Rows of other tables, and rows missing the key
+    /// column, are left untouched.
+    pub fn dedup_table_by(&mut self, table: &str, key_column: &str) {
+        let mut seen: Vec<String> = Vec::new();
+        self.rows.retain(|row| {
+            if row.table() != table {
+                return true;
+            }
+            match row.columns().get(key_column) {
+                Some(SqlValue::Text(key)) => {
+                    if seen.contains(key) {
+                        false
+                    } else {
+                        seen.push(key.clone());
+                        true
+                    }
+                }
+                // A `tag` row with no/!text key is malformed — keep it so the
+                // anomaly is visible rather than silently dropped.
+                _ => true,
+            }
+        });
+    }
+
     /// All rows accumulated so far.
     pub fn rows(&self) -> &[Row] {
         &self.rows
@@ -189,5 +221,25 @@ mod tests {
             SqlValue::Text("x".to_owned())
         );
         assert_eq!(SqlValue::text_or_null(None::<String>), SqlValue::Null);
+    }
+
+    #[test]
+    fn dedup_table_by_collapses_tag_rows_and_keeps_associations() {
+        let mut batch = RowSetBatch::new();
+        let mut set = RowSet::new();
+        // Two Items both tagged `easynet` → two identical `tag` rows, plus
+        // their two distinct `content_tag` association rows.
+        set.push(Row::new("tag").with("id", SqlValue::Text("easynet".to_owned())));
+        set.push(Row::new("tag").with("id", SqlValue::Text("rust".to_owned())));
+        set.push(Row::new("tag").with("id", SqlValue::Text("easynet".to_owned())));
+        set.push(Row::new("content_tag").with("entity_id", SqlValue::Text("a".to_owned())));
+        set.push(Row::new("content_tag").with("entity_id", SqlValue::Text("b".to_owned())));
+        batch.push(set);
+
+        batch.dedup_table_by("tag", "id");
+
+        // `tag` folded to one row per id; `content_tag` rows untouched.
+        assert_eq!(batch.rows_for("tag").count(), 2);
+        assert_eq!(batch.rows_for("content_tag").count(), 2);
     }
 }

@@ -415,6 +415,11 @@ content/resources/episode/<series-slug>/
 | shape | 含义 | 语言文件扩展名 | 落库 |
 |---|---|---|---|
 | `prose` | 自由 markdown 正文(同 blog body) | **`<lang>.md`** | `item_part` + `item_part_translation` |
+
+> **resume `summary`(bio)正文不写顶级标题**:`summary` Part 的 body 是
+> 纯段落 markdown。前端已把它渲染在带标题的章节里("About Me"),body
+> 里再写一个 `## Summary` / `# …` 会出现重复标题。scaffold 模板产出的
+> 也是无标题段落 —— bio 直接写正文,不加 heading。
 | `entry_list` | 一组同构条目的有序列表(N 条 education…)| **`<lang>.toml`** | `part_entry` + `part_entry_translation` |
 | `key_value_list` | 分类键值列表(skills:`category: a, b, c`)| **`<lang>.toml`** | `part_entry`(payload 为 kv 结构)|
 

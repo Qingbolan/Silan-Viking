@@ -37,6 +37,11 @@ pub const DERIVED_TABLES: &[&str] = &[
     "item_part_translation",
     "part_entry",
     "part_entry_translation",
+    // resume side tables — `social_links` rows belong to `personal_info`;
+    // it is derived from the résumé's frontmatter, so promote replaces it
+    // alongside its parent. (Omitting it left the live `social_links` table
+    // forever empty even though `index sync` populated the snapshot.)
+    "social_links",
     // relations
     "content_relation",
     // tags — the tag entities and their per-Item associations

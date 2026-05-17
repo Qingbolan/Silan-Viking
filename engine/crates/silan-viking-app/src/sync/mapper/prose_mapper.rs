@@ -45,22 +45,41 @@ impl ProseMapper {
     }
 }
 
-/// Frontmatter fields that must **not** become a main-table column.
+/// Frontmatter fields that must **not** become a content main-table column.
 /// - `tags` fans out to its own table (`SCHEMA.md` rule 1a), routed by
 ///   [`push_tag_rows`].
 /// - `kind` is the type discriminator: each type has its own main table, so
 ///   the Entity carries no `kind` column — it would be schema drift.
-/// - `priority` (idea) / `tech_stack` (project): these appear in legacy
-///   Python-parser frontmatter but the new `10`/`11` schema deliberately
-///   does **not** carry them as columns — they are dropped on purpose, not
-///   pending. (`tech_stack`-style data, if ever needed, would go through a
-///   join table, not a main-table column.)
+/// - `tech_stack` appears in legacy Python-parser frontmatter but the new
+///   `10`/`11` schema does not carry it as a main-table column.
+/// - The `idea_details` / `project_details` side-table fields — `priority`,
+///   `collaboration_needed`, `funding_required`, `estimated_duration_months`,
+///   `estimated_budget` (idea) and `license`, `version` (project). `SCHEMA.md`
+///   declares these with a `column: "<details_table>.<col>"` — they belong to
+///   a *separate* `*_details` table, NOT the content main table. `ProseMapper`
+///   does not yet emit those side tables, so these fields are skipped here
+///   rather than written to a non-existent `ideas.*` / `projects.*` column
+///   (which the sink's schema gate rejects, aborting the whole sync). Emitting
+///   `idea_details` / `project_details` rows is a pending mapper feature.
 ///
 /// Note: `visibility` is **not** skipped — `blog_posts`/`ideas`/`projects`/
 /// `episodes` all carry a `visibility` column (`11` §11.7), so it is real
 /// content the main row must write. (`resume` is the exception — handled in
 /// `resume.rs`, whose `personal_info` table has no `visibility`.)
-const SKIP_MAIN_FIELDS: &[&str] = &["tags", "kind", "priority", "tech_stack"];
+const SKIP_MAIN_FIELDS: &[&str] = &[
+    "tags",
+    "kind",
+    "tech_stack",
+    // idea_details.* — side-table fields, not `ideas` columns
+    "priority",
+    "collaboration_needed",
+    "funding_required",
+    "estimated_duration_months",
+    "estimated_budget",
+    // project_details.* — side-table fields, not `projects` columns
+    "license",
+    "version",
+];
 
 /// Build the content main-table row from the language-neutral fields.
 ///

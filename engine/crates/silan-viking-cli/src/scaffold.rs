@@ -298,9 +298,12 @@ pub fn new_resume(
     let frontmatter = format!(
         "---\nfull_name: {full_name}\ntitle: {title}\nkind: resume\nvisibility: private\n---\n"
     );
+    // The bio body is heading-free prose: the front-end already renders it
+    // inside a titled section ("About Me"), so a leading `## Summary` here
+    // would be a duplicate heading. Scaffold a plain paragraph.
     fs::write(
         &md,
-        format!("{frontmatter}\n## Summary\n\nA short professional summary.\n"),
+        format!("{frontmatter}\nA short professional summary — written as plain prose, no heading.\n"),
     )?;
     Ok(Scaffolded {
         files: vec![meta, md],

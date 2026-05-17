@@ -156,6 +156,14 @@ fn build_batch(
         batch.push(episode_series_rows(scan));
     }
 
+    // `tag` is a cross-type entity table: every Item that uses a tag emits
+    // its own `tag` row, so the same tag slug arrives once per Item. Fold
+    // them to one row per `id` — otherwise the sink writes duplicate `tag`
+    // rows and a `content_tag` JOIN fans out into repeated tags. The
+    // `content_tag` association rows are NOT deduped: each is a distinct
+    // (Item, tag) edge.
+    batch.dedup_table_by("tag", "id");
+
     Ok(batch)
 }
 

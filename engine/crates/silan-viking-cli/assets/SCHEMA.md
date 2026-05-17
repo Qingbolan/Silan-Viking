@@ -283,6 +283,14 @@ types:
         required: false
         order: 70
         shape: key_value_list
+      - role: expectations
+        required: false
+        order: 80
+        shape: entry_list
+        entry_fields:
+          - { name: title,       type: string, required: true,  translatable: true }
+          - { name: description, type: text,   required: false, translatable: true }
+          - { name: sort_order,  type: int,    required: false, translatable: false }
 
 # ---------------------------------------------------------------------------
 # relations — relation types and canonicalization (per 10 §10.5, 01 §1.8.2)
