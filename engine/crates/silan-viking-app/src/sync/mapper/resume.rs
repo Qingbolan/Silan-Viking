@@ -15,6 +15,7 @@
 //! **not** get per-Part ent tables — they all land in the generic
 //! `part_entry` family (ruling #2).
 
+use super::media_uri;
 use super::table_names;
 use super::Mapper;
 use crate::parser::{EntryValue, FieldValue, Parsed};
@@ -266,9 +267,14 @@ fn field_sql(value: &FieldValue) -> SqlValue {
 
 /// Convert an [`EntryValue`] into a `serde_json::Value` — one field of a
 /// `part_entry` payload object.
+///
+/// A `Text` field is passed through [`media_uri::rewrite_reference`] so an
+/// entry field holding a `silan://resources/…` reference (`education`'s
+/// `institution_logo_url`, `publications`' `image_url`, …) is stored as the
+/// servable `/api/v1/media/…` path; non-reference strings are unchanged.
 fn entry_json(value: &EntryValue) -> serde_json::Value {
     match value {
-        EntryValue::Text(s) => serde_json::Value::String(s.clone()),
+        EntryValue::Text(s) => serde_json::Value::String(media_uri::rewrite_reference(s)),
         EntryValue::Int(i) => serde_json::Value::from(*i),
         EntryValue::Float(f) => serde_json::Value::from(*f),
         EntryValue::Bool(b) => serde_json::Value::Bool(*b),

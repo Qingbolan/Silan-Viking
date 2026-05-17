@@ -12,6 +12,7 @@
 //! All five prose types (idea / blog / project / episode / update) share
 //! this engine; resume has its own mapper.
 
+use super::media_uri;
 use super::table_names;
 use crate::parser::{FieldValue, Parsed};
 use crate::sync::error::MapError;
@@ -183,12 +184,15 @@ fn push_part_rows(parsed: &Parsed, rows: &mut RowSet) {
                 .unwrap_or_else(|| role.to_owned());
             // `id` derived from (parent `item_part`, language) — the row's
             // natural key — same rationale as the translation rows above.
+            // The body's `silan://` resource references (Markdown images and
+            // links) are rewritten to the `/api/v1/media/…` paths the backend
+            // serves, so the stored prose needs no resolution at read time.
             rows.push(
                 Row::new(table_names::ITEM_PART_TRANSLATION_TABLE)
                     .with("id", SqlValue::Text(format!("{item_part_id}_{lang}")))
                     .with("item_part_id", SqlValue::Text(item_part_id))
                     .with("language_code", SqlValue::Text(lang.to_string()))
-                    .with("body", SqlValue::Text(body.to_owned())),
+                    .with("body", SqlValue::Text(media_uri::rewrite_prose(body))),
             );
         }
     }
@@ -311,9 +315,14 @@ fn tag_slug(label: &str) -> String {
 /// a `List` that reaches here is a non-join list field and is joined with
 /// `, ` (join-table lists — `tags` — are routed away by [`JOIN_TABLE_FIELDS`]
 /// before `sql_value` is ever called on them).
+///
+/// A `Text` value is passed through [`media_uri::rewrite_reference`]: a field
+/// holding a `silan://resources/…` resource reference (`featured_image_url`,
+/// `thumbnail_url`, …) is rewritten to its `/api/v1/media/…` path, and every
+/// other string is returned verbatim (the rewrite is a prefix-gated no-op).
 fn sql_value(value: &FieldValue) -> SqlValue {
     match value {
-        FieldValue::Text(s) => SqlValue::Text(s.clone()),
+        FieldValue::Text(s) => SqlValue::Text(media_uri::rewrite_reference(s)),
         FieldValue::Int(i) => SqlValue::Int(*i),
         FieldValue::Float(f) => SqlValue::Float(*f),
         FieldValue::Bool(b) => SqlValue::Bool(*b),

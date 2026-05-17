@@ -5,7 +5,7 @@ mod scaffold;
 mod skill;
 
 use rusqlite::{params, Connection, OptionalExtension};
-use silan_viking_app::{ContentKind, Identified, ProposalId, Workspace};
+use silan_viking_app::{ContentKind, Identified, ProposalId, ScannedAsset, Workspace};
 use std::env;
 use std::fs;
 use std::io;
@@ -1583,7 +1583,7 @@ fn site_deploy(
             println!("  target  {target}:{}", cfg.remote_dir);
         }
         println!("  1 sync     content/ -> {}", db_path.display());
-        println!("  2 build    stage embedded sources + SEO artifacts -> {}", out_dir.display());
+        println!("  2 build    stage embedded sources + SEO artifacts + media -> {}", out_dir.display());
         println!("  3 package  docker compose build (backend/web images, multi-stage)");
         println!("  4 ship     {}", if is_local { "load images locally" } else { "docker save | ssh docker load" });
         println!("  5 promote  replace derived tables on the live db (runtime tables preserved)");
@@ -1596,6 +1596,10 @@ fn site_deploy(
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     ws.sync(db_path).map_err(|e| e.to_string())?;
     let content_commit = git_head_commit(content_root).unwrap_or_else(|| "unknown".into());
+    // The scan also surfaces the binary resources (`assets/` images) the
+    // `silan://` references in the synced db now point at — they ride along
+    // into the backend's media volume below.
+    let assets = ws.scan().map_err(|e| e.to_string())?.assets().to_vec();
 
     // 2 — build: materialise the Docker build context from the embedded
     // artifacts, then render SEO crawler artifacts into `deploy/seo/` so
@@ -1616,6 +1620,12 @@ fn site_deploy(
         .map_err(|e| e.to_string())?;
     // Mirror the SEO artifacts into `--out` too, for `site preview` parity.
     let _ = projector.build(content_root, out_dir);
+    // Stage the binary resources beside the build context, ready to ship
+    // into the backend's media volume.
+    let media_root = stage_media(&staging, &assets)?;
+    if let Some(ref dir) = media_root {
+        println!("        staged {} media file(s) -> {}", assets.len(), dir.display());
+    }
 
     // 3 — package: build the docker images from the staged compose file.
     println!("[3/6] package");
@@ -1637,6 +1647,11 @@ fn site_deploy(
             .or_else(|_| fs::copy(db_path, &live_snapshot).map(|_| ()).map_err(|e| e.to_string()))?;
         promote_db(&live_snapshot, db_path, &content_commit)?;
         docker_cp_to(compose, &staging, "backend", &live_snapshot, "/data/portfolio.db")?;
+        // Mirror the staged media tree into the backend's media volume.
+        if let Some(ref dir) = media_root {
+            sync_media_into_volume(compose, &staging, "backend", dir)?;
+            println!("  synced {} media file(s) into /data/media", assets.len());
+        }
 
         // Restart the backend so it reopens the promoted db, and the proxy
         // with it: step 5's `up -d` recreates the backend container on a new
@@ -1772,6 +1787,34 @@ fn site_deploy(
         dir = cfg.remote_dir,
     ))?;
 
+    // Ship the media tree: tar it (scp has no recursive flag here), send the
+    // tarball, unpack it on the server, then mirror it into the backend's
+    // media volume — clearing `/data/media` first so a deleted asset also
+    // disappears server-side (same mirror semantics as the local path).
+    if let Some(ref dir) = media_root {
+        let media_tar = project_root.join("_deploy/media.tar");
+        let tar = Command::new("tar")
+            .arg("-czf")
+            .arg(&media_tar)
+            .arg("-C")
+            .arg(dir)
+            .arg(".")
+            .status()
+            .map_err(|e| format!("tar media: {e}"))?;
+        if !tar.success() {
+            return Err("packing the media tree failed".to_owned());
+        }
+        scp_up(&media_tar, "media.tar")?;
+        ssh(&format!(
+            "cd {dir} && docker compose -f docker-compose.yml exec -T backend \
+                 sh -c 'rm -rf /data/media && mkdir -p /data/media' && \
+             rm -rf media && mkdir -p media && tar -xzf media.tar -C media && \
+             docker compose -f docker-compose.yml cp media/. backend:/data/media",
+            dir = cfg.remote_dir,
+        ))?;
+        println!("  synced {} media file(s) into /data/media", assets.len());
+    }
+
     // Restart the proxy alongside the backend — `up -d` above may have
     // recreated the backend container on a fresh IP, and nginx caches the
     // `backend` upstream IP at worker start, so a stale proxy serves 502
@@ -1877,6 +1920,78 @@ fn promote_db(live_db: &Path, snapshot_db: &Path, content_commit: &str) -> Resul
         report.rows_inserted,
         report.content_commit
     );
+    Ok(())
+}
+
+/// Stage the scanned binary resources into one local `media/` tree.
+///
+/// Each [`ScannedAsset`] is copied to `<staging>/deploy/media/<rel_path>`,
+/// preserving the `<type>/<slug>/assets/<file>` layout — the same path the
+/// `sync` step rewrote `silan://` references to (minus the `/api/v1/media`
+/// route prefix). The returned directory is what [`sync_media_into_volume`]
+/// ships into the backend's media volume. Returns `None` when the content
+/// tree has no assets, so deploy can skip the media steps entirely.
+fn stage_media(staging: &Path, assets: &[ScannedAsset]) -> Result<Option<PathBuf>, String> {
+    if assets.is_empty() {
+        return Ok(None);
+    }
+    let media_root = staging.join("deploy/media");
+    // A clean tree each deploy: the staged set IS the desired server state
+    // (mirror semantics), so a stale file from a previous run must not linger.
+    let _ = fs::remove_dir_all(&media_root);
+    for asset in assets {
+        let dest = media_root.join(&asset.rel_path);
+        if let Some(parent) = dest.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("staging media dir {}: {e}", parent.display()))?;
+        }
+        fs::copy(&asset.abs_path, &dest)
+            .map_err(|e| format!("staging media file {}: {e}", asset.rel_path))?;
+    }
+    Ok(Some(media_root))
+}
+
+/// Mirror the staged `media/` tree into the backend container's `/data/media`
+/// volume.
+///
+/// Mirror, not merge: the container's `/data/media` is removed first, so an
+/// asset deleted from `content/` also disappears from the server — the live
+/// media set always equals the current scan. The volume itself persists
+/// across container restarts (it is a named volume), so this is the only
+/// thing that changes its contents.
+fn sync_media_into_volume(
+    compose_file: &str,
+    compose_dir: &Path,
+    service: &str,
+    media_root: &Path,
+) -> Result<(), String> {
+    // Clear the volume's media dir, then recreate it empty, so `cp` lands the
+    // staged tree as `/data/media` exactly (not nested under a stale dir).
+    let clear = Command::new("docker")
+        .args(["compose", "-f", compose_file, "exec", "-T", service])
+        .args(["sh", "-c", "rm -rf /data/media && mkdir -p /data/media"])
+        .current_dir(compose_dir)
+        .status()
+        .map_err(|e| format!("docker compose exec (clear media): {e}"))?;
+    if !clear.success() {
+        return Err("clearing the container's /data/media failed".to_owned());
+    }
+    // `cp <localdir>/. <service>:/data/media` copies the *contents* of the
+    // staged tree into the now-empty volume dir — the trailing `/.` is what
+    // makes `docker cp` merge contents rather than nest the directory.
+    let media_root = absolutise(media_root)?;
+    let mut src = media_root.into_os_string();
+    src.push("/.");
+    let status = Command::new("docker")
+        .args(["compose", "-f", compose_file, "cp"])
+        .arg(&src)
+        .arg(format!("{service}:/data/media"))
+        .current_dir(compose_dir)
+        .status()
+        .map_err(|e| format!("docker compose cp (media): {e}"))?;
+    if !status.success() {
+        return Err("copying media into the container failed".to_owned());
+    }
     Ok(())
 }
 

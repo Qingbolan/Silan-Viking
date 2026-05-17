@@ -94,9 +94,14 @@ fn pack(repo_root: &Path, dir: &str, dest: &Path, excludes: &[&str]) {
         "deploy artifact source missing: {}",
         src.display()
     );
-    // Cargo re-runs the build script when anything under the directory
-    // changes, so the embedded tarballs never go stale.
-    println!("cargo:rerun-if-changed={}", src.display());
+    // Cargo must re-run this script — and re-pack the tarball — whenever any
+    // source file changes. A single `rerun-if-changed` on the *directory*
+    // only reacts to the directory's own mtime (an entry added or removed at
+    // the top level); a deep nested edit (e.g. `backend/internal/handler/
+    // media/getmediahandler.go`) does not bump it, so the embedded artifact
+    // would silently go stale. Emitting one `rerun-if-changed` per file —
+    // the whole tree, walked here — is what makes nested edits trigger.
+    emit_rerun_recursive(&src);
 
     let mut cmd = Command::new("tar");
     // `-C <repo_root>` so paths inside the archive are `frontend/...`
@@ -112,6 +117,25 @@ fn pack(repo_root: &Path, dir: &str, dest: &Path, excludes: &[&str]) {
         .status()
         .unwrap_or_else(|e| panic!("failed to run `tar` for {dir}: {e}"));
     assert!(status.success(), "`tar` failed packing {dir}");
+}
+
+/// Emit a `cargo:rerun-if-changed` line for `path` and, recursively, every
+/// file and directory beneath it — so an edit anywhere in the tree re-runs
+/// the build script. A directory that cannot be read is reported as a single
+/// `rerun-if-changed` (its mtime still tells Cargo something changed).
+fn emit_rerun_recursive(path: &Path) {
+    println!("cargo:rerun-if-changed={}", path.display());
+    let Ok(entries) = std::fs::read_dir(path) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let child = entry.path();
+        if child.is_dir() {
+            emit_rerun_recursive(&child);
+        } else {
+            println!("cargo:rerun-if-changed={}", child.display());
+        }
+    }
 }
 
 fn env_var(key: &str) -> String {

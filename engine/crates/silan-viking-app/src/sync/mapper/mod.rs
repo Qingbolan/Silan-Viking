@@ -12,6 +12,7 @@
 mod blog;
 mod episode;
 mod idea;
+mod media_uri;
 mod project;
 mod prose_mapper;
 mod registry;
