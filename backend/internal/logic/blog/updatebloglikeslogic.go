@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -29,11 +28,7 @@ func NewUpdateBlogLikesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 }
 
 func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest) (resp *types.UpdateBlogLikesResponse, err error) {
-	// Parse UUID
-	postID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	postID := req.ID
 
 	existingLike := false
 	likeQuery := l.svcCtx.DB.ContentInteraction.Query().

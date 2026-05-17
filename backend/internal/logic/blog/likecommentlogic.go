@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -29,10 +28,7 @@ func NewLikeCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeC
 }
 
 func (l *LikeCommentLogic) LikeComment(req *types.LikeCommentRequest) (resp *types.LikeCommentResponse, err error) {
-	commentID, err := uuid.Parse(req.CommentID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid comment ID: %w", err)
-	}
+	commentID := req.CommentID
 
 	// Check if comment exists
 	_, err = l.svcCtx.DB.Comment.Get(l.ctx, commentID)

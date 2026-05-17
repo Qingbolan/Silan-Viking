@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -29,10 +28,7 @@ func NewDeleteBlogCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *DeleteBlogCommentLogic) DeleteBlogComment(req *types.DeleteBlogCommentRequest) error {
-	cid, err := uuid.Parse(req.CommentID)
-	if err != nil {
-		return err
-	}
+	cid := req.CommentID
 
 	c, err := l.svcCtx.DB.Comment.Query().Where(comment.IDEQ(cid), comment.EntityTypeEQ("blog")).Only(l.ctx)
 	if err != nil {
@@ -67,7 +63,7 @@ func (l *DeleteBlogCommentLogic) DeleteBlogComment(req *types.DeleteBlogCommentR
 }
 
 // deleteCommentWithReplies recursively deletes a comment and all its replies
-func (l *DeleteBlogCommentLogic) deleteCommentWithReplies(commentID uuid.UUID) error {
+func (l *DeleteBlogCommentLogic) deleteCommentWithReplies(commentID string) error {
 	// First, find all direct replies to this comment
 	replies, err := l.svcCtx.DB.Comment.
 		Query().

@@ -12,7 +12,6 @@ import (
 	"silan-backend/internal/types"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -32,11 +31,7 @@ func NewListProjectCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 }
 
 func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectCommentListRequest) (resp *types.ProjectCommentListResponse, err error) {
-	// Validate project id format
-	projectUUID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	projectUUID := req.ID
 
 	// Fetch comments using entgo - using project_<type> entity type format
 	desiredEntityType := "project_" + strings.ToLower(req.Type)
@@ -77,14 +72,10 @@ func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectComment
 	commentMap := make(map[string]*types.ProjectCommentData)
 	var order []string
 	for _, comment := range comments {
-		parentIDStr := ""
-		if comment.ParentID != (uuid.UUID{}) {
-			parentIDStr = comment.ParentID.String()
-		}
 		commentData := types.ProjectCommentData{
-			ID:              comment.ID.String(),
-			ProjectID:       comment.EntityID.String(),
-			ParentID:        parentIDStr,
+			ID:              comment.ID,
+			ProjectID:       comment.EntityID,
+			ParentID:        comment.ParentID,
 			AuthorName:      comment.AuthorName,
 			AuthorAvatarURL: lookupAvatar(comment.AuthorEmail),
 			Content:         comment.Content,
@@ -95,8 +86,8 @@ func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectComment
 			IsLikedByUser:   false,
 			Replies:         []types.ProjectCommentData{},
 		}
-		commentMap[comment.ID.String()] = &commentData
-		order = append(order, comment.ID.String())
+		commentMap[comment.ID] = &commentData
+		order = append(order, comment.ID)
 	}
 
 	// Build tree: parent->children

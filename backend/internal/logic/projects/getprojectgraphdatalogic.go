@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -41,7 +40,7 @@ func (l *GetProjectGraphDataLogic) GetProjectGraphData(req *types.GraphRequest) 
 	}
 
 	nodesByID := make(map[string]types.GraphNode)
-	projectIDs := make([]uuid.UUID, 0, len(projects))
+	projectIDs := make([]string, 0, len(projects))
 	for _, proj := range projects {
 		id := graphNodeID("project", proj.ID)
 		nodesByID[id] = types.GraphNode{ID: id, Group: 1}
@@ -90,8 +89,8 @@ func (l *GetProjectGraphDataLogic) GetProjectGraphData(req *types.GraphRequest) 
 	}, nil
 }
 
-func graphNodeID(entityType string, id uuid.UUID) string {
-	return strings.ToLower(entityType) + ":" + id.String()
+func graphNodeID(entityType string, id string) string {
+	return strings.ToLower(entityType) + ":" + id
 }
 
 func graphGroup(entityType string) int {

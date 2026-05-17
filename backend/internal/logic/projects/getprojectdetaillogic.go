@@ -8,7 +8,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -63,10 +62,7 @@ func (l *GetProjectDetailLogic) GetLicenseText(str string) string {
 }
 
 func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest) (resp *types.ProjectDetail, err error) {
-	projectUUID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	projectUUID := req.ID
 
 	// Fetch project with all related data including details
 	proj, err := l.svcCtx.DB.Project.Query().
@@ -116,8 +112,7 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 	var createdAt, updatedAt string
 	if proj.Edges.Details != nil {
 		detail := proj.Edges.Details
-		detailID = detail.ID.String()
-		detailedDescription = detail.ProjectDetails
+		detailID = detail.ID
 		dependencies = detail.Dependencies
 		license = l.GetLicenseText(detail.LicenseText)
 		licenseText = detail.LicenseText
@@ -126,13 +121,16 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		updatedAt = detail.UpdatedAt.Format("2006-01-02 15:04:05")
 	} else {
 		// No details found - return empty values
-		detailID = proj.ID.String()
-		detailedDescription = ""
+		detailID = proj.ID
 		license = "MIT"
 		version = "1.0.0"
 		createdAt = proj.CreatedAt.Format("2006-01-02 15:04:05")
 		updatedAt = proj.UpdatedAt.Format("2006-01-02 15:04:05")
 	}
+
+	// The prose body (overview Part) lives in item_part_translation — the
+	// content engine no longer populates project_details.project_details.
+	detailedDescription = projectPartBody(l.ctx, l.svcCtx, proj.ID, "overview", req.Language)
 
 	relatedBlogs, err := NewGetProjectRelatedBlogsLogic(l.ctx, l.svcCtx).GetProjectRelatedBlogs(req)
 	if err != nil {
@@ -141,7 +139,7 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 
 	return &types.ProjectDetail{
 		ID:                  detailID,
-		ProjectID:           proj.ID.String(),
+		ProjectID:           proj.ID,
 		DetailedDescription: detailedDescription,
 		Release:             "", // M0.5a §11.8: moved to item_part
 		QuickStart:          "", // M0.5a §11.8: moved to item_part

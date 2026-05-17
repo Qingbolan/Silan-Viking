@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -30,11 +29,7 @@ func NewUpdateBlogViewsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 }
 
 func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest) error {
-	// Parse UUID
-	postID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return err
-	}
+	postID := req.ID
 
 	sessionDuration := 0
 	if req.ReadingTime > 0 {
@@ -69,7 +64,7 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 		duplicateView = count > 0
 	}
 
-	err = analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
+	err := analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
 		EntityType:      "blog",
 		EntityID:        postID,
 		Kind:            "view",

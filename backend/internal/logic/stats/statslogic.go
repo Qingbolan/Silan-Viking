@@ -14,7 +14,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -34,13 +33,13 @@ func NewStatsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *StatsLogic 
 	}
 }
 
-// entityID parses the request's entity_id into a UUID.
-func entityID(req *types.StatsRequest) (uuid.UUID, error) {
-	id, err := uuid.Parse(req.EntityID)
-	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid entity_id %q: %w", req.EntityID, err)
+// entityID returns the request's entity_id as a string id, validating that
+// it is non-empty. Ids are prefixed-ULID strings written by the Rust engine.
+func entityID(req *types.StatsRequest) (string, error) {
+	if req.EntityID == "" {
+		return "", fmt.Errorf("entity_id is required")
 	}
-	return id, nil
+	return req.EntityID, nil
 }
 
 // Stats returns the aggregate view/like/comment counts of one content item.

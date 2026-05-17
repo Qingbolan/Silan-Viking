@@ -12,7 +12,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -36,21 +35,13 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		return nil, fmt.Errorf("content is required")
 	}
 
-	postID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	postID := req.ID
 
 	// Validate parent comment if this is a reply
-	var parentID *uuid.UUID
+	var parentID string
 	if req.ParentId != "" {
-		pid, err := uuid.Parse(req.ParentId)
-		if err != nil {
-			return nil, fmt.Errorf("invalid parent_id format")
-		}
-
 		// Check if parent comment exists and belongs to the same post
-		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, pid)
+		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, req.ParentId)
 		if err != nil {
 			return nil, fmt.Errorf("parent comment not found")
 		}
@@ -58,7 +49,7 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 			return nil, fmt.Errorf("parent comment belongs to different post")
 		}
 
-		parentID = &pid
+		parentID = req.ParentId
 	}
 
 	// Handle authentication
@@ -125,8 +116,8 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		createBuilder = createBuilder.SetIPAddress(req.ClientIP)
 	}
 
-	if parentID != nil {
-		createBuilder = createBuilder.SetParentID(*parentID)
+	if parentID != "" {
+		createBuilder = createBuilder.SetParentID(parentID)
 	}
 
 	if userIdentity != nil {
@@ -140,7 +131,7 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 
 	// Log the comment creation for audit trail
 	commentType := "root"
-	if parentID != nil {
+	if parentID != "" {
 		commentType = "reply"
 	}
 	userType := "anonymous"
@@ -151,26 +142,21 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 	l.Infof("Created %s comment %s by %s user (author: %s, ip: %s, fingerprint: %s)",
 		commentType, c.ID, userType, authorName, req.ClientIP, req.Fingerprint)
 
-	var parentIDStr string
-	if parentID != nil {
-		parentIDStr = parentID.String()
-	}
-
 	var userIdentityIDStr string
 	if userIdentity != nil {
 		userIdentityIDStr = userIdentity.ID
 	}
 
 	return &types.BlogCommentData{
-		ID:             c.ID.String(),
-		BlogPostID:     c.EntityID.String(),
-		ParentID:       parentIDStr,
-		AuthorName:     c.AuthorName,
+		ID:              c.ID,
+		BlogPostID:      c.EntityID,
+		ParentID:        parentID,
+		AuthorName:      c.AuthorName,
 		AuthorAvatarURL: avatarURL,
-		Content:        c.Content,
-		CreatedAt:      c.CreatedAt.Format(time.RFC3339),
-		UserIdentityID: userIdentityIDStr,
-		Replies:        []types.BlogCommentData{},
+		Content:         c.Content,
+		CreatedAt:       c.CreatedAt.Format(time.RFC3339),
+		UserIdentityID:  userIdentityIDStr,
+		Replies:         []types.BlogCommentData{},
 	}, nil
 }
 

@@ -36,7 +36,8 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 	query := l.svcCtx.DB.Project.Query().
 		Where(project.VisibilityEQ(project.VisibilityPublic)).
 		WithUser().
-		WithTechnologies()
+		WithTechnologies().
+		WithTranslations()
 
 	// Apply filters
 	if req.Type != "" {
@@ -96,7 +97,7 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 
 	result := make([]types.Project, 0, end-offset)
 	for _, proj := range filtered[offset:end] {
-		result = append(result, mapBasicProject(proj))
+		result = append(result, mapBasicProject(proj, req.Language))
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(req.Size)))
@@ -122,17 +123,30 @@ func splitCSV(value string) []string {
 	return result
 }
 
-func mapBasicProject(proj *ent.Project) types.Project {
+func mapBasicProject(proj *ent.Project, lang string) types.Project {
 	technologies := make([]string, 0, len(proj.Edges.Technologies))
 	for _, tech := range proj.Edges.Technologies {
 		technologies = append(technologies, tech.TechnologyName)
 	}
 
+	// Resolve language-variant fields from project_translations: the content
+	// engine leaves title/description empty on the main projects row.
+	name := proj.Title
+	description := proj.Description
+	if tr := pickProjectTranslation(proj.Edges.Translations, lang); tr != nil {
+		if tr.Title != "" {
+			name = tr.Title
+		}
+		if tr.Description != "" {
+			description = tr.Description
+		}
+	}
+
 	year := projectYear(proj)
 	return types.Project{
-		ID:          proj.ID.String(),
-		Name:        proj.Title,
-		Description: proj.Description,
+		ID:          proj.ID,
+		Name:        name,
+		Description: description,
 		Tags:        technologies,
 		Year:        year,
 		AnnualPlan:  fmt.Sprintf("Annual Plan %d", year),

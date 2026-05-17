@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -30,11 +29,7 @@ func NewLikeProjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeP
 }
 
 func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *types.LikeProjectResponse, err error) {
-	// Parse project UUID
-	projectID, err := uuid.Parse(req.ProjectID)
-	if err != nil {
-		return nil, err
-	}
+	projectID := req.ProjectID
 
 	// Get client IP and user agent from context if available
 	clientIP := req.ClientIP

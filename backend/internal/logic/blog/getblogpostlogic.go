@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -35,6 +36,9 @@ func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.Blog
 		).
 		WithUser().
 		WithCategory().
+		WithSeries(func(q *ent.BlogSeriesQuery) {
+			q.WithTranslations()
+		}).
 		WithTags().
 		WithTranslations().
 		First(l.ctx)
@@ -68,15 +72,40 @@ func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.Blog
 		author = post.Edges.User.FirstName + " " + post.Edges.User.LastName
 	}
 
+	// title/excerpt come from blog_post_translations, the prose body from
+	// item_part_translation — the content engine leaves the main blog_posts
+	// row's title/content empty (same as the by-id endpoint).
 	title := post.Title
 	excerpt := post.Excerpt
+	if tr := pickBlogTranslation(post.Edges.Translations, req.Language); tr != nil {
+		if tr.Title != "" {
+			title = tr.Title
+		}
+		if tr.Excerpt != "" {
+			excerpt = tr.Excerpt
+		}
+	}
 	body := post.Content
-	if req.Language != "en" && post.Edges.Translations != nil {
-		for _, translation := range post.Edges.Translations {
-			if translation.LanguageCode == req.Language {
-				title = translation.Title
-				excerpt = translation.Excerpt
-				body = translation.Content
+	if synced := blogBody(l.ctx, l.svcCtx, post.ID, req.Language); synced != "" {
+		body = synced
+	}
+
+	var seriesID, seriesSlug, seriesTitle, seriesTitleZh, seriesDescription, seriesDescriptionZh, seriesImage string
+	var episodeNumber, totalEpisodes int
+	contentType := string(post.ContentType)
+	if post.Edges.Series != nil {
+		seriesID = post.Edges.Series.ID
+		seriesSlug = post.Edges.Series.Slug
+		seriesTitle = post.Edges.Series.Title
+		seriesDescription = post.Edges.Series.Description
+		seriesImage = post.Edges.Series.ThumbnailURL
+		episodeNumber = post.SeriesOrder
+		totalEpisodes = post.Edges.Series.EpisodeCount
+		contentType = "episode"
+		for _, translation := range post.Edges.Series.Edges.Translations {
+			if translation.LanguageCode == "zh" {
+				seriesTitleZh = translation.Title
+				seriesDescriptionZh = translation.Description
 				break
 			}
 		}
@@ -86,23 +115,32 @@ func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.Blog
 		{
 			Type:    "text",
 			Content: body,
-			ID:      post.ID.String(),
+			ID:      post.ID,
 		},
 	}
 
 	return &types.BlogData{
-		ID:          post.ID.String(),
-		Title:       title,
-		Slug:        post.Slug,
-		Author:      author,
-		PublishDate: publishDate,
-		ReadTime:    readTime,
-		Category:    category,
-		Tags:        tags,
-		Content:     content,
-		Likes:       int64(post.LikeCount),
-		Views:       int64(post.ViewCount),
-		Summary:     excerpt,
-		Type:        string(post.ContentType),
+		ID:                  post.ID,
+		Title:               title,
+		Slug:                post.Slug,
+		Author:              author,
+		PublishDate:         publishDate,
+		ReadTime:            readTime,
+		Category:            category,
+		Tags:                tags,
+		Content:             content,
+		Likes:               int64(post.LikeCount),
+		Views:               int64(post.ViewCount),
+		Summary:             excerpt,
+		Type:                contentType,
+		SeriesID:            seriesID,
+		SeriesSlug:          seriesSlug,
+		SeriesTitle:         seriesTitle,
+		SeriesTitleZh:       seriesTitleZh,
+		SeriesDescription:   seriesDescription,
+		SeriesDescriptionZh: seriesDescriptionZh,
+		EpisodeNumber:       episodeNumber,
+		TotalEpisodes:       totalEpisodes,
+		SeriesImage:         seriesImage,
 	}, nil
 }

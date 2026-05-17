@@ -53,7 +53,7 @@ func parsePlanYear(name string) (int, bool) {
 
 func mapPlanProject(proj *ent.Project) types.PlanProject {
 	return types.PlanProject{
-		ID:          proj.ID.String(),
+		ID:          proj.ID,
 		Name:        proj.Title,
 		Description: proj.Description,
 	}
@@ -68,7 +68,7 @@ func mapProject(proj *ent.Project) types.Project {
 
 	year := projectYear(proj)
 	return types.Project{
-		ID:          proj.ID.String(),
+		ID:          proj.ID,
 		Name:        proj.Title,
 		Description: proj.Description,
 		Tags:        technologies,

@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -33,11 +32,7 @@ func NewListIdeaCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clientIP, userAgent, fingerprint, userIdentityID string) (resp *types.IdeaCommentListResponse, err error) {
-	// Validate idea id format
-	ideaUUID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	ideaUUID := req.ID
 
 	// Fetch comments using entgo
 	// Support both legacy entity_type "idea" and new namespaced form "idea_<type>"
@@ -79,14 +74,10 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 	commentMap := make(map[string]*types.IdeaCommentData)
 	var order []string
 	for _, comment := range comments {
-		parentIDStr := ""
-		if comment.ParentID != (uuid.UUID{}) {
-			parentIDStr = comment.ParentID.String()
-		}
 		commentData := types.IdeaCommentData{
-			ID:              comment.ID.String(),
-			IdeaID:          comment.EntityID.String(),
-			ParentID:        parentIDStr,
+			ID:              comment.ID,
+			IdeaID:          comment.EntityID,
+			ParentID:        comment.ParentID,
 			AuthorName:      comment.AuthorName,
 			AuthorAvatarURL: lookupAvatar(comment.AuthorEmail),
 			Content:         comment.Content,
@@ -97,8 +88,8 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 			IsLikedByUser:   false,
 			Replies:         []types.IdeaCommentData{},
 		}
-		commentMap[comment.ID.String()] = &commentData
-		order = append(order, comment.ID.String())
+		commentMap[comment.ID] = &commentData
+		order = append(order, comment.ID)
 	}
 
 	// Build tree: parent->children
@@ -116,13 +107,8 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 
 	// Determine like status for this user using entgo
 	if (userIdentityID != "" || fingerprint != "") && len(order) > 0 {
-		// Convert comment IDs to UUIDs
-		commentUUIDs := make([]uuid.UUID, 0, len(order))
-		for _, id := range order {
-			if commentUUID, err := uuid.Parse(id); err == nil {
-				commentUUIDs = append(commentUUIDs, commentUUID)
-			}
-		}
+		commentUUIDs := make([]string, 0, len(order))
+		commentUUIDs = append(commentUUIDs, order...)
 
 		if len(commentUUIDs) > 0 {
 			// Use entgo to query likes
@@ -161,7 +147,7 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 			if err == nil {
 				liked := make(map[string]bool)
 				for _, like := range likes {
-					liked[like.CommentID.String()] = true
+					liked[like.CommentID] = true
 				}
 				for _, c := range commentMap {
 					c.IsLikedByUser = liked[c.ID]

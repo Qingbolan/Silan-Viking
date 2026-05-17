@@ -71,6 +71,7 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 	ideas, err := query.
 		WithTags().
 		WithDetails().
+		WithTranslations().
 		Order(ent.Desc(idea.FieldUpdatedAt)).
 		Limit(req.Size).
 		Offset(offset).
@@ -86,6 +87,18 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		// Handle non-nullable fields
 		abstract := ideaEntity.Abstract
 		description := ideaEntity.Description
+		title := ideaEntity.Title
+
+		// Resolve language-variant fields from idea_translations: the content
+		// engine leaves title/abstract empty on the main ideas row.
+		if tr := pickIdeaTranslation(ideaEntity.Edges.Translations, req.Language); tr != nil {
+			if tr.Title != "" {
+				title = tr.Title
+			}
+			if tr.Abstract != "" {
+				abstract = tr.Abstract
+			}
+		}
 
 		// Get detail fields from IdeaDetail edge
 		var requiredResources string
@@ -124,8 +137,8 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		var keywords []string
 
 		result = append(result, types.IdeaData{
-			ID:                   ideaEntity.ID.String(),
-			Title:                ideaEntity.Title,
+			ID:                   ideaEntity.ID,
+			Title:                title,
 			Description:          description,
 			Category:             category,
 			Tags:                 tags,

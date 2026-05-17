@@ -33,6 +33,7 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		WithTechnologies().
 		WithDetails().
 		WithImages().
+		WithTranslations().
 		First(l.ctx)
 	if err != nil {
 		return nil, err
@@ -51,8 +52,18 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		technologies = append(technologies, tech.TechnologyName)
 	}
 
-	// Handle description field (now non-nullable)
+	// title/description live in project_translations — the content engine
+	// leaves the main projects row's title/description empty.
+	title := proj.Title
 	description := proj.Description
+	if tr := pickProjectTranslation(proj.Edges.Translations, req.Language); tr != nil {
+		if tr.Title != "" {
+			title = tr.Title
+		}
+		if tr.Description != "" {
+			description = tr.Description
+		}
+	}
 
 	// Generate annual plan name based on year
 	year := proj.CreatedAt.Year()
@@ -70,13 +81,13 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 	// Get user ID from edge relationship
 	var userID string
 	if proj.Edges.User != nil {
-		userID = proj.Edges.User.ID.String()
+		userID = proj.Edges.User.ID
 	}
 
 	return &types.ProjectExtended{
-		ID:               proj.ID.String(),
+		ID:               proj.ID,
 		UserID:           userID,
-		Title:            proj.Title,
+		Title:            title,
 		Slug:             proj.Slug,
 		Description:      description,
 		ProjectType:      proj.ProjectType,

@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -30,10 +29,7 @@ func NewListBlogCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListRequest, clientIP, userAgent, fingerprint, userIdentityID string) (resp *types.BlogCommentListResponse, err error) {
-	postID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	postID := req.ID
 
 	list, err := l.svcCtx.DB.Comment.
 		Query().
@@ -83,45 +79,39 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 
 	// First pass: create all comment objects
 	for _, c := range list {
-		parentIDStr := ""
-		// Check if ParentID is not zero value (empty UUID)
-		if c.ParentID != (uuid.UUID{}) {
-			parentIDStr = c.ParentID.String()
-		}
-
 		userIdentityIDStr := ""
 		if c.UserIdentityID != "" {
 			userIdentityIDStr = c.UserIdentityID
 		}
 
 		comment := types.BlogCommentData{
-			ID:             c.ID.String(),
-			BlogPostID:     c.EntityID.String(),
-			ParentID:       parentIDStr,
-			AuthorName:     c.AuthorName,
+			ID:              c.ID,
+			BlogPostID:      c.EntityID,
+			ParentID:        c.ParentID,
+			AuthorName:      c.AuthorName,
 			AuthorAvatarURL: lookupAvatar(c.AuthorEmail),
-			Content:        c.Content,
-			CreatedAt:      c.CreatedAt.Format(time.RFC3339),
-			UserIdentityID: userIdentityIDStr,
-			LikesCount:     c.LikesCount,
-			IsLikedByUser:  false, // Will be set below
-			Replies:        []types.BlogCommentData{},
+			Content:         c.Content,
+			CreatedAt:       c.CreatedAt.Format(time.RFC3339),
+			UserIdentityID:  userIdentityIDStr,
+			LikesCount:      c.LikesCount,
+			IsLikedByUser:   false, // Will be set below
+			Replies:         []types.BlogCommentData{},
 		}
-		commentMap[c.ID.String()] = &comment
+		commentMap[c.ID] = &comment
 
 		// Track root comments
-		if c.ParentID == (uuid.UUID{}) {
-			rootCommentIDs = append(rootCommentIDs, c.ID.String())
+		if c.ParentID == "" {
+			rootCommentIDs = append(rootCommentIDs, c.ID)
 		}
 	}
 
 	// Second pass: build tree structure
 	for _, c := range list {
-		if c.ParentID != (uuid.UUID{}) {
+		if c.ParentID != "" {
 			// This is a reply - add to parent's replies
-			parentID := c.ParentID.String()
+			parentID := c.ParentID
 			if parent, exists := commentMap[parentID]; exists {
-				comment := commentMap[c.ID.String()]
+				comment := commentMap[c.ID]
 				parent.Replies = append(parent.Replies, *comment)
 			}
 		}
@@ -149,11 +139,9 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 
 // setLikeStatus checks if the user has liked each comment and updates the IsLikedByUser field
 func (l *ListBlogCommentsLogic) setLikeStatus(commentMap map[string]*types.BlogCommentData, userIdentityID, fingerprint string) {
-	var commentIDs []uuid.UUID
+	var commentIDs []string
 	for commentIDStr := range commentMap {
-		if commentID, err := uuid.Parse(commentIDStr); err == nil {
-			commentIDs = append(commentIDs, commentID)
-		}
+		commentIDs = append(commentIDs, commentIDStr)
 	}
 
 	if len(commentIDs) == 0 {
@@ -180,7 +168,7 @@ func (l *ListBlogCommentsLogic) setLikeStatus(commentMap map[string]*types.BlogC
 	// Create a set of liked comment IDs for O(1) lookup
 	likedComments := make(map[string]bool)
 	for _, like := range likes {
-		likedComments[like.CommentID.String()] = true
+		likedComments[like.CommentID] = true
 	}
 
 	// Update the IsLikedByUser field for all comments
@@ -197,4 +185,3 @@ func (l *ListBlogCommentsLogic) setLikeStatus(commentMap map[string]*types.BlogC
 		updateComment(comment)
 	}
 }
-

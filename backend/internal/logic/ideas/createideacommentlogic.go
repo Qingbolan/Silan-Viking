@@ -13,7 +13,6 @@ import (
 	"silan-backend/internal/types"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -36,26 +35,22 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 	if strings.TrimSpace(req.Content) == "" {
 		return nil, fmt.Errorf("content is required")
 	}
-	if _, err := uuid.Parse(req.ID); err != nil {
+	if req.ID == "" {
 		return nil, fmt.Errorf("invalid idea id")
 	}
 
 	// Validate parent comment if provided
-	var parentUUID *uuid.UUID
+	var parentID string
 	if req.ParentId != "" {
-		parentIDParsed, err := uuid.Parse(req.ParentId)
-		if err != nil {
-			return nil, fmt.Errorf("invalid parent_id format")
-		}
 		// Ensure parent exists and belongs to same idea using entgo
-		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, parentIDParsed)
+		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, req.ParentId)
 		if err != nil {
 			return nil, errors.New("parent comment not found")
 		}
-		if parentComment.EntityID.String() != req.ID {
+		if parentComment.EntityID != req.ID {
 			return nil, errors.New("parent comment belongs to different idea")
 		}
-		parentUUID = &parentIDParsed
+		parentID = req.ParentId
 	}
 
 	// Resolve author
@@ -95,18 +90,12 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		userAgent += " | " + req.UserAgentFull
 	}
 
-	// Parse idea ID
-	ideaUUID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid idea id")
-	}
-
 	// Create comment using entgo
 	// Use entity_type with idea_<type> for better filtering while keeping the type field
 	entityType := "idea_" + strings.ToLower(req.Type)
 	commentBuilder := l.svcCtx.DB.Comment.Create().
 		SetEntityType(entcomment.EntityType(entityType)).
-		SetEntityID(ideaUUID).
+		SetEntityID(req.ID).
 		SetType(entcomment.Type(req.Type)).
 		SetAuthorName(authorName).
 		SetAuthorEmail(authorEmail).
@@ -114,8 +103,8 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		SetIsApproved(true). // Auto-approve for now
 		SetLikesCount(0)
 
-	if parentUUID != nil {
-		commentBuilder = commentBuilder.SetParentID(*parentUUID)
+	if parentID != "" {
+		commentBuilder = commentBuilder.SetParentID(parentID)
 	}
 	if req.AuthorWebsite != "" {
 		commentBuilder = commentBuilder.SetAuthorWebsite(req.AuthorWebsite)
@@ -135,15 +124,10 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		return nil, err
 	}
 
-	parentIDStr := ""
-	if comment.ParentID != (uuid.UUID{}) {
-		parentIDStr = comment.ParentID.String()
-	}
-
 	return &types.IdeaCommentData{
-		ID:              comment.ID.String(),
-		IdeaID:          comment.EntityID.String(),
-		ParentID:        parentIDStr,
+		ID:              comment.ID,
+		IdeaID:          comment.EntityID,
+		ParentID:        comment.ParentID,
 		AuthorName:      comment.AuthorName,
 		AuthorAvatarURL: avatarURL,
 		Content:         comment.Content,

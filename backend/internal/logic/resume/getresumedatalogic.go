@@ -68,7 +68,7 @@ func (l *GetResumeDataLogic) getResumeParts(language string) ([]types.ResumePart
 		entries := make([]types.ResumeEntry, 0, len(part.Edges.Entries))
 		for _, entry := range part.Edges.Entries {
 			entries = append(entries, types.ResumeEntry{
-				ID:               entry.ID.String(),
+				ID:               entry.ID,
 				EntryID:          entry.EntryID,
 				SortOrder:        entry.SortOrder,
 				SharedPayload:    entry.SharedPayload,
@@ -82,7 +82,7 @@ func (l *GetResumeDataLogic) getResumeParts(language string) ([]types.ResumePart
 		}
 
 		result = append(result, types.ResumePart{
-			ID:            part.ID.String(),
+			ID:            part.ID,
 			PartID:        part.PartID,
 			Role:          part.Role,
 			Shape:         shape,

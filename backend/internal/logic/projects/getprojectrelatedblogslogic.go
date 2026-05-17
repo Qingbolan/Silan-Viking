@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -31,10 +30,7 @@ func NewGetProjectRelatedBlogsLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectDetailRequest) (resp []types.ProjectBlogRef, err error) {
-	projectID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid project ID format: %w", err)
-	}
+	projectID := req.ID
 
 	exists, err := l.svcCtx.DB.Project.Query().
 		Where(project.ID(projectID), project.VisibilityEQ(project.VisibilityPublic)).
@@ -67,11 +63,11 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 		return []types.ProjectBlogRef{}, nil
 	}
 
-	relevanceByBlogID := make(map[uuid.UUID]string)
-	blogIDs := make([]uuid.UUID, 0, len(relations))
-	seen := make(map[uuid.UUID]struct{})
+	relevanceByBlogID := make(map[string]string)
+	blogIDs := make([]string, 0, len(relations))
+	seen := make(map[string]struct{})
 	for _, relation := range relations {
-		var blogID uuid.UUID
+		var blogID string
 		if relation.FromType == contentrelation.FromTypeBlog {
 			blogID = relation.FromID
 		} else if relation.ToType == contentrelation.ToTypeBlog {
@@ -123,7 +119,7 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 		}
 
 		resp = append(resp, types.ProjectBlogRef{
-			ID:          post.ID.String(),
+			ID:          post.ID,
 			Title:       post.Title,
 			Summary:     post.Excerpt,
 			PublishDate: publishDate,

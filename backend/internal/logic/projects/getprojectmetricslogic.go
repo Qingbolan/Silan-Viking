@@ -7,7 +7,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -27,11 +26,7 @@ func NewGetProjectMetricsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *GetProjectMetricsLogic) GetProjectMetrics(req *types.ProjectMetricsRequest) (resp *types.ProjectMetricsResponse, err error) {
-	// Parse project UUID
-	projectID, err := uuid.Parse(req.ProjectID)
-	if err != nil {
-		return nil, err
-	}
+	projectID := req.ProjectID
 
 	// Get project with metrics
 	proj, err := l.svcCtx.DB.Project.Get(l.ctx, projectID)

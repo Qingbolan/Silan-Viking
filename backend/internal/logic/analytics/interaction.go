@@ -13,7 +13,7 @@ import (
 
 type InteractionEvent struct {
 	EntityType      string
-	EntityID        uuid.UUID
+	EntityID        string
 	Kind            string
 	UserIdentityID  string
 	Fingerprint     string
@@ -48,7 +48,7 @@ func RecordContentInteraction(ctx context.Context, svcCtx *svc.ServiceContext, e
 		query,
 		uuid.New().String(),
 		event.EntityType,
-		event.EntityID.String(),
+		event.EntityID,
 		nil,
 		event.Kind,
 		nullable(event.UserIdentityID),

@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -29,11 +28,7 @@ func NewGetIdeaLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetIdeaLo
 }
 
 func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, err error) {
-	// Parse UUID
-	ideaID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid idea ID: %w", err)
-	}
+	ideaID := req.ID
 
 	// Query the idea with details
 	ideaEntity, err := l.svcCtx.DB.Idea.Query().
@@ -41,6 +36,7 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 		WithUser().
 		WithTags().
 		WithDetails().
+		WithTranslations().
 		First(l.ctx)
 	if err != nil {
 		return nil, err
@@ -49,9 +45,34 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	// Convert to response format
 	// Note: Author field not used in IdeaData response
 
-	// Handle non-nullable fields
+	// The content engine keeps title/abstract in idea_translations and the
+	// prose bodies (overview/progress/result/reference) in item_part_translation,
+	// leaving the main ideas row's title/abstract/description empty — so always
+	// resolve title/abstract from the translation here.
+	title := ideaEntity.Title
 	abstract := ideaEntity.Abstract
-	description := ideaEntity.Description
+	if tr := pickIdeaTranslation(ideaEntity.Edges.Translations, req.Language); tr != nil {
+		if tr.Title != "" {
+			title = tr.Title
+		}
+		if tr.Abstract != "" {
+			abstract = tr.Abstract
+		}
+	}
+	var abstractZh string
+	if tr := pickIdeaTranslation(ideaEntity.Edges.Translations, "zh"); tr != nil {
+		abstractZh = tr.Abstract
+	}
+
+	// Prose bodies come from the idea's item_part rows.
+	// The IdeaData.Description carries the `overview` Part body.
+	description := ideaPartBody(l.ctx, l.svcCtx, ideaEntity.ID, "overview", req.Language)
+	progress := ideaPartBody(l.ctx, l.svcCtx, ideaEntity.ID, "progress", req.Language)
+	progressZh := ideaPartBody(l.ctx, l.svcCtx, ideaEntity.ID, "progress", "zh")
+	results := ideaPartBody(l.ctx, l.svcCtx, ideaEntity.ID, "result", req.Language)
+	resultsZh := ideaPartBody(l.ctx, l.svcCtx, ideaEntity.ID, "result", "zh")
+	reference := ideaPartBody(l.ctx, l.svcCtx, ideaEntity.ID, "reference", req.Language)
+	referenceZh := ideaPartBody(l.ctx, l.svcCtx, ideaEntity.ID, "reference", "zh")
 
 	// Get detail fields from IdeaDetail edge
 	var requiredResources string
@@ -93,8 +114,8 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	var demoURL string
 
 	return &types.IdeaData{
-		ID:                   ideaEntity.ID.String(),
-		Title:                ideaEntity.Title,
+		ID:                   ideaEntity.ID,
+		Title:                title,
 		Description:          description,
 		Category:             category,
 		Tags:                 tags,
@@ -102,13 +123,13 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 		CreatedAt:            ideaEntity.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		LastUpdated:          ideaEntity.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		Abstract:             abstract,
-		AbstractZh:           abstract,
-		Progress:             "", // M0.5a §11.8: moved to item_part
-		ProgressZh:           "", // M0.5a §11.8: moved to item_part
-		Results:              "", // M0.5a §11.8: moved to item_part
-		ResultsZh:            "", // M0.5a §11.8: moved to item_part
-		Reference:            "", // M0.5a §11.8: moved to item_part
-		Reference_Zh:         "", // M0.5a §11.8: moved to item_part
+		AbstractZh:           abstractZh,
+		Progress:             progress,
+		ProgressZh:           progressZh,
+		Results:              results,
+		ResultsZh:            resultsZh,
+		Reference:            reference,
+		Reference_Zh:         referenceZh,
 		CodeRepository:       codeRepository,
 		DemoURL:              demoURL,
 		TechStack:            techStack,

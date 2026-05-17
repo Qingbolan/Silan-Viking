@@ -1,13 +1,64 @@
 package episodes
 
 import (
+	"context"
 	"fmt"
 
 	"entgo.io/ent/dialect/sql"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/episode"
+	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 )
+
+// resolveLang normalizes an empty language to the default ("en").
+func resolveLang(lang string) string {
+	if lang == "" {
+		return "en"
+	}
+	return lang
+}
+
+// episodePartBody fetches an episode's prose body for a given Part role and
+// language. The content engine stores Part bodies in item_part_translation
+// (keyed by the episode's item_part rows), not in the episodes table — so the
+// detail endpoint reads them here. It prefers the requested language, then
+// "en", then any. Returns "" when the episode has no synced body for that role.
+func episodePartBody(ctx context.Context, svcCtx *svc.ServiceContext, episodeID, role, lang string) string {
+	part, err := svcCtx.DB.ItemPart.Query().
+		Where(
+			itempart.EntityTypeEQ(itempart.EntityTypeEpisode),
+			itempart.EntityIDEQ(episodeID),
+			itempart.Role(role),
+		).
+		WithTranslations().
+		First(ctx)
+	if err != nil || part == nil {
+		return ""
+	}
+	trs := part.Edges.Translations
+	by := func(code string) string {
+		for _, t := range trs {
+			if t.LanguageCode == code && t.Body != "" {
+				return t.Body
+			}
+		}
+		return ""
+	}
+	if b := by(resolveLang(lang)); b != "" {
+		return b
+	}
+	if b := by("en"); b != "" {
+		return b
+	}
+	for _, t := range trs {
+		if t.Body != "" {
+			return t.Body
+		}
+	}
+	return ""
+}
 
 func publicEpisodeQuery(q *ent.EpisodeQuery) {
 	q.Where(
@@ -49,7 +100,7 @@ func episodeToData(ep *ent.Episode, language string) types.EpisodeData {
 	content := []types.BlogContent{}
 	if description != "" {
 		content = append(content, types.BlogContent{
-			ID:       fmt.Sprintf("%s-description", ep.ID.String()),
+			ID:       fmt.Sprintf("%s-description", ep.ID),
 			Type:     "markdown",
 			Content:  description,
 			Language: language,
@@ -57,8 +108,8 @@ func episodeToData(ep *ent.Episode, language string) types.EpisodeData {
 	}
 
 	return types.EpisodeData{
-		ID:              ep.ID.String(),
-		SeriesID:        ep.SeriesID.String(),
+		ID:              ep.ID,
+		SeriesID:        ep.SeriesID,
 		SeriesSlug:      seriesSlug,
 		Slug:            ep.Slug,
 		Title:           title,
@@ -96,7 +147,7 @@ func seriesToData(series *ent.EpisodeSeries, language string) types.EpisodeSerie
 	}
 
 	return types.EpisodeSeriesData{
-		ID:          series.ID.String(),
+		ID:          series.ID,
 		Slug:        series.Slug,
 		Title:       title,
 		Description: description,

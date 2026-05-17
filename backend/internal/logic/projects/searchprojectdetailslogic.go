@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projecttechnology"
@@ -33,9 +34,11 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 	// Build the query with filters - search through project details with project join
 	// Only include public projects
 	query := l.svcCtx.DB.ProjectDetail.Query().
-		WithProject().
+		WithProject(func(q *ent.ProjectQuery) {
+			q.WithTranslations()
+		}).
 		Where(projectdetail.HasProjectWith(project.VisibilityEQ(project.VisibilityPublic)))
-	
+
 	// Apply filters through project relationship if provided
 	if req.Query != "" {
 		query = query.Where(
@@ -53,7 +56,7 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			),
 		)
 	}
-	
+
 	if req.Tags != "" {
 		query = query.Where(
 			projectdetail.HasProjectWith(
@@ -63,7 +66,7 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			),
 		)
 	}
-	
+
 	if req.Year > 0 {
 		query = query.Where(
 			projectdetail.HasProjectWith(
@@ -72,13 +75,13 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			),
 		)
 	}
-	
+
 	// Execute the query
 	projectDetails, err := query.All(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert to response format
 	result := make([]types.ProjectDetail, 0, len(projectDetails))
 	for _, pd := range projectDetails {
@@ -88,7 +91,7 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			End:      "",
 			Duration: "",
 		}
-		
+
 		// Get metrics data from the related project
 		metrics := types.ProjectMetrics{
 			LinesOfCode: 0,
@@ -96,7 +99,7 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			Stars:       0,
 			Downloads:   0,
 		}
-		
+
 		// If project is loaded, get additional data
 		if pd.Edges.Project != nil {
 			proj := pd.Edges.Project
@@ -118,22 +121,27 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 
 			metrics.Stars = proj.LikeCount
 		}
-		
+
 		// Get values from project detail entity (these are strings, not pointers)
 		dependencies := pd.Dependencies
 		license := pd.License
 		licenseText := pd.LicenseText
 		version := pd.Version
 
-		// Get detailed description from related project if available
+		// Get detailed description from related project if available.
+		// The content engine leaves description empty on the main projects
+		// row, so resolve it from project_translations.
 		var detailedDescription string
 		if pd.Edges.Project != nil {
 			detailedDescription = pd.Edges.Project.Description
+			if tr := pickProjectTranslation(pd.Edges.Project.Edges.Translations, req.Language); tr != nil && tr.Description != "" {
+				detailedDescription = tr.Description
+			}
 		}
 
 		result = append(result, types.ProjectDetail{
-			ID:                  pd.ID.String(),
-			ProjectID:           pd.ProjectID.String(),
+			ID:                  pd.ID,
+			ProjectID:           pd.ProjectID,
 			DetailedDescription: detailedDescription,
 			Release:             "", // M0.5a §11.8: moved to item_part
 			QuickStart:          "", // M0.5a §11.8: moved to item_part
@@ -148,6 +156,6 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			UpdatedAt:           pd.UpdatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
-	
+
 	return result, nil
 }

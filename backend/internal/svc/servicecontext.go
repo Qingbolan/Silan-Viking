@@ -139,6 +139,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	createAnalyticsTables(rawDB, c.Database.Driver)
 	createContentRelationTable(rawDB, c.Database.Driver)
+	migrateLegacyBlogSeries(rawDB, c.Database.Driver)
 
 	return &ServiceContext{
 		Config:    c,
@@ -146,6 +147,73 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Analytics: middleware.NewAnalyticsMiddleware(rawDB, c.Database.Driver).Handle,
 		DB:        client,
 		RawDB:     rawDB,
+	}
+}
+
+func migrateLegacyBlogSeries(db *sql.DB, driver string) {
+	if driver != "sqlite3" {
+		return
+	}
+
+	uuidExpr := `lower(
+		hex(randomblob(4)) || '-' ||
+		hex(randomblob(2)) || '-' ||
+		'4' || substr(hex(randomblob(2)), 2) || '-' ||
+		substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)), 2) || '-' ||
+		hex(randomblob(6))
+	)`
+
+	statements := []string{
+		`INSERT OR IGNORE INTO episode_series (id, slug, title, description, status, created_at, updated_at)
+		 SELECT
+		 	id,
+		 	slug,
+		 	title,
+		 	description,
+		 	CASE WHEN status IN ('active', 'ongoing') THEN 'ongoing' ELSE status END,
+		 	COALESCE(created_at, datetime('now')),
+		 	COALESCE(updated_at, datetime('now'))
+		 FROM blog_series`,
+		`INSERT OR IGNORE INTO episodes (id, slug, title, episode_number, status, visibility, published_at, duration_minutes, created_at, updated_at, series_id)
+		 SELECT
+		 	id,
+		 	slug,
+		 	title,
+		 	COALESCE(series_order, 1),
+		 	CASE WHEN status = 'published' THEN 'published' ELSE 'draft' END,
+		 	visibility,
+		 	published_at,
+		 	reading_time_minutes,
+		 	COALESCE(created_at, datetime('now')),
+		 	COALESCE(updated_at, datetime('now')),
+		 	series_id
+		 FROM blog_posts
+		 WHERE series_id IS NOT NULL`,
+		`INSERT OR IGNORE INTO episode_series_translations (id, language_code, title, description, created_at, episode_series_id)
+		 SELECT
+		 	` + uuidExpr + `,
+		 	language_code,
+		 	title,
+		 	description,
+		 	COALESCE(created_at, datetime('now')),
+		 	blog_series_id
+		 FROM blog_series_translations`,
+		`INSERT OR IGNORE INTO episode_translations (id, language_code, title, description, created_at, episode_id)
+		 SELECT
+		 	` + uuidExpr + `,
+		 	language_code,
+		 	title,
+		 	excerpt,
+		 	COALESCE(created_at, datetime('now')),
+		 	blog_post_id
+		 FROM blog_post_translations
+		 WHERE blog_post_id IN (SELECT id FROM blog_posts WHERE series_id IS NOT NULL)`,
+	}
+
+	for _, statement := range statements {
+		if _, err := db.Exec(statement); err != nil {
+			log.Printf("warning: failed migrating legacy blog series: %v", err)
+		}
 	}
 }
 

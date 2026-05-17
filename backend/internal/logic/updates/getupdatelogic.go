@@ -37,5 +37,13 @@ func (l *GetUpdateLogic) GetUpdate(req *types.UpdateRequest) (*types.RecentUpdat
 	}
 
 	data := updateToData(update, req.Language)
+
+	// Update is a prose type: the body markdown lives in item_part_translation
+	// (the `body` Part), not in the recent_updates table. Override the
+	// description with the synced Part body on the detail endpoint.
+	if body := updatePartBody(l.ctx, l.svcCtx, update.ID, "body", req.Language); body != "" {
+		data.Description = body
+	}
+
 	return &data, nil
 }

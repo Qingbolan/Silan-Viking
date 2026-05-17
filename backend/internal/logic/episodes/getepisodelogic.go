@@ -39,5 +39,21 @@ func (l *GetEpisodeLogic) GetEpisode(req *types.EpisodeRequest) (*types.EpisodeD
 	}
 
 	data := episodeToData(ep, req.Language)
+
+	// Episode is a prose type: the body markdown lives in item_part_translation
+	// (the `body` Part), not in the episodes table. Override the description /
+	// content with the synced Part body on the detail endpoint.
+	if body := episodePartBody(l.ctx, l.svcCtx, ep.ID, "body", req.Language); body != "" {
+		data.Description = body
+		data.Content = []types.BlogContent{
+			{
+				ID:       ep.ID + "-body",
+				Type:     "markdown",
+				Content:  body,
+				Language: resolveLang(req.Language),
+			},
+		}
+	}
+
 	return &data, nil
 }
