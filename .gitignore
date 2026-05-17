@@ -53,3 +53,9 @@ yarn-error.log*
 # A `go build` with no -o once dropped a binary named `backend` into the
 # ent package directory. Guard against it being re-tracked.
 /backend/internal/ent/backend
+
+# Claude Code local runtime state — machine-local, never committed.
+/.claude/
+
+# Database snapshots taken before migrations — local backups only.
+*.db.before-*.bak
