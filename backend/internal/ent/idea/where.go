@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Idea {
+func ID(id string) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Idea {
+func IDEQ(id string) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Idea {
+func IDNEQ(id string) predicate.Idea {
 	return predicate.Idea(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Idea {
+func IDIn(ids ...string) predicate.Idea {
 	return predicate.Idea(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Idea {
+func IDNotIn(ids ...string) predicate.Idea {
 	return predicate.Idea(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Idea {
+func IDGT(id string) predicate.Idea {
 	return predicate.Idea(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Idea {
+func IDGTE(id string) predicate.Idea {
 	return predicate.Idea(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Idea {
+func IDLT(id string) predicate.Idea {
 	return predicate.Idea(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Idea {
+func IDLTE(id string) predicate.Idea {
 	return predicate.Idea(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.Idea {
+	return predicate.Idea(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.Idea {
+	return predicate.Idea(sql.FieldContainsFold(FieldID, id))
+}
+
 // UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
-func UserID(v uuid.UUID) predicate.Idea {
+func UserID(v string) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldUserID, v))
 }
 
@@ -79,11 +88,6 @@ func Description(v string) predicate.Idea {
 // Abstract applies equality check predicate on the "abstract" field. It's identical to AbstractEQ.
 func Abstract(v string) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldAbstract, v))
-}
-
-// IsPublic applies equality check predicate on the "is_public" field. It's identical to IsPublicEQ.
-func IsPublic(v bool) predicate.Idea {
-	return predicate.Idea(sql.FieldEQ(FieldIsPublic, v))
 }
 
 // ViewCount applies equality check predicate on the "view_count" field. It's identical to ViewCountEQ.
@@ -112,23 +116,78 @@ func UpdatedAt(v time.Time) predicate.Idea {
 }
 
 // UserIDEQ applies the EQ predicate on the "user_id" field.
-func UserIDEQ(v uuid.UUID) predicate.Idea {
+func UserIDEQ(v string) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldUserID, v))
 }
 
 // UserIDNEQ applies the NEQ predicate on the "user_id" field.
-func UserIDNEQ(v uuid.UUID) predicate.Idea {
+func UserIDNEQ(v string) predicate.Idea {
 	return predicate.Idea(sql.FieldNEQ(FieldUserID, v))
 }
 
 // UserIDIn applies the In predicate on the "user_id" field.
-func UserIDIn(vs ...uuid.UUID) predicate.Idea {
+func UserIDIn(vs ...string) predicate.Idea {
 	return predicate.Idea(sql.FieldIn(FieldUserID, vs...))
 }
 
 // UserIDNotIn applies the NotIn predicate on the "user_id" field.
-func UserIDNotIn(vs ...uuid.UUID) predicate.Idea {
+func UserIDNotIn(vs ...string) predicate.Idea {
 	return predicate.Idea(sql.FieldNotIn(FieldUserID, vs...))
+}
+
+// UserIDGT applies the GT predicate on the "user_id" field.
+func UserIDGT(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldGT(FieldUserID, v))
+}
+
+// UserIDGTE applies the GTE predicate on the "user_id" field.
+func UserIDGTE(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldGTE(FieldUserID, v))
+}
+
+// UserIDLT applies the LT predicate on the "user_id" field.
+func UserIDLT(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldLT(FieldUserID, v))
+}
+
+// UserIDLTE applies the LTE predicate on the "user_id" field.
+func UserIDLTE(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldLTE(FieldUserID, v))
+}
+
+// UserIDContains applies the Contains predicate on the "user_id" field.
+func UserIDContains(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldContains(FieldUserID, v))
+}
+
+// UserIDHasPrefix applies the HasPrefix predicate on the "user_id" field.
+func UserIDHasPrefix(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldHasPrefix(FieldUserID, v))
+}
+
+// UserIDHasSuffix applies the HasSuffix predicate on the "user_id" field.
+func UserIDHasSuffix(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldHasSuffix(FieldUserID, v))
+}
+
+// UserIDIsNil applies the IsNil predicate on the "user_id" field.
+func UserIDIsNil() predicate.Idea {
+	return predicate.Idea(sql.FieldIsNull(FieldUserID))
+}
+
+// UserIDNotNil applies the NotNil predicate on the "user_id" field.
+func UserIDNotNil() predicate.Idea {
+	return predicate.Idea(sql.FieldNotNull(FieldUserID))
+}
+
+// UserIDEqualFold applies the EqualFold predicate on the "user_id" field.
+func UserIDEqualFold(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldEqualFold(FieldUserID, v))
+}
+
+// UserIDContainsFold applies the ContainsFold predicate on the "user_id" field.
+func UserIDContainsFold(v string) predicate.Idea {
+	return predicate.Idea(sql.FieldContainsFold(FieldUserID, v))
 }
 
 // TitleEQ applies the EQ predicate on the "title" field.
@@ -184,6 +243,16 @@ func TitleHasPrefix(v string) predicate.Idea {
 // TitleHasSuffix applies the HasSuffix predicate on the "title" field.
 func TitleHasSuffix(v string) predicate.Idea {
 	return predicate.Idea(sql.FieldHasSuffix(FieldTitle, v))
+}
+
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.Idea {
+	return predicate.Idea(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.Idea {
+	return predicate.Idea(sql.FieldNotNull(FieldTitle))
 }
 
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
@@ -431,14 +500,24 @@ func StatusNotIn(vs ...Status) predicate.Idea {
 	return predicate.Idea(sql.FieldNotIn(FieldStatus, vs...))
 }
 
-// IsPublicEQ applies the EQ predicate on the "is_public" field.
-func IsPublicEQ(v bool) predicate.Idea {
-	return predicate.Idea(sql.FieldEQ(FieldIsPublic, v))
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldEQ(FieldVisibility, v))
 }
 
-// IsPublicNEQ applies the NEQ predicate on the "is_public" field.
-func IsPublicNEQ(v bool) predicate.Idea {
-	return predicate.Idea(sql.FieldNEQ(FieldIsPublic, v))
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldNEQ(FieldVisibility, v))
+}
+
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldIn(FieldVisibility, vs...))
+}
+
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...Visibility) predicate.Idea {
+	return predicate.Idea(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // ViewCountEQ applies the EQ predicate on the "view_count" field.
@@ -636,6 +715,16 @@ func CreatedAtLTE(v time.Time) predicate.Idea {
 	return predicate.Idea(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.Idea {
+	return predicate.Idea(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.Idea {
+	return predicate.Idea(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldUpdatedAt, v))
@@ -674,6 +763,16 @@ func UpdatedAtLT(v time.Time) predicate.Idea {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Idea {
 	return predicate.Idea(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.Idea {
+	return predicate.Idea(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.Idea {
+	return predicate.Idea(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.
@@ -737,29 +836,6 @@ func HasDetails() predicate.Idea {
 func HasDetailsWith(preds ...predicate.IdeaDetail) predicate.Idea {
 	return predicate.Idea(func(s *sql.Selector) {
 		step := newDetailsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasBlogPosts applies the HasEdge predicate on the "blog_posts" edge.
-func HasBlogPosts() predicate.Idea {
-	return predicate.Idea(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, BlogPostsTable, BlogPostsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasBlogPostsWith applies the HasEdge predicate on the "blog_posts" edge with a given conditions (other predicates).
-func HasBlogPostsWith(preds ...predicate.BlogPost) predicate.Idea {
-	return predicate.Idea(func(s *sql.Selector) {
-		step := newBlogPostsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

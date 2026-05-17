@@ -30,7 +30,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // LanguageUpdate is the builder for updating Language entities.
@@ -89,14 +88,14 @@ func (lu *LanguageUpdate) SetNillableIsActive(b *bool) *LanguageUpdate {
 }
 
 // AddPersonalInfoTranslationIDs adds the "personal_info_translations" edge to the PersonalInfoTranslation entity by IDs.
-func (lu *LanguageUpdate) AddPersonalInfoTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddPersonalInfoTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddPersonalInfoTranslationIDs(ids...)
 	return lu
 }
 
 // AddPersonalInfoTranslations adds the "personal_info_translations" edges to the PersonalInfoTranslation entity.
 func (lu *LanguageUpdate) AddPersonalInfoTranslations(p ...*PersonalInfoTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -104,14 +103,14 @@ func (lu *LanguageUpdate) AddPersonalInfoTranslations(p ...*PersonalInfoTranslat
 }
 
 // AddEducationTranslationIDs adds the "education_translations" edge to the EducationTranslation entity by IDs.
-func (lu *LanguageUpdate) AddEducationTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddEducationTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddEducationTranslationIDs(ids...)
 	return lu
 }
 
 // AddEducationTranslations adds the "education_translations" edges to the EducationTranslation entity.
 func (lu *LanguageUpdate) AddEducationTranslations(e ...*EducationTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -119,14 +118,14 @@ func (lu *LanguageUpdate) AddEducationTranslations(e ...*EducationTranslation) *
 }
 
 // AddEducationDetailTranslationIDs adds the "education_detail_translations" edge to the EducationDetailTranslation entity by IDs.
-func (lu *LanguageUpdate) AddEducationDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddEducationDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddEducationDetailTranslationIDs(ids...)
 	return lu
 }
 
 // AddEducationDetailTranslations adds the "education_detail_translations" edges to the EducationDetailTranslation entity.
 func (lu *LanguageUpdate) AddEducationDetailTranslations(e ...*EducationDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -134,14 +133,14 @@ func (lu *LanguageUpdate) AddEducationDetailTranslations(e ...*EducationDetailTr
 }
 
 // AddWorkExperienceTranslationIDs adds the "work_experience_translations" edge to the WorkExperienceTranslation entity by IDs.
-func (lu *LanguageUpdate) AddWorkExperienceTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddWorkExperienceTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddWorkExperienceTranslationIDs(ids...)
 	return lu
 }
 
 // AddWorkExperienceTranslations adds the "work_experience_translations" edges to the WorkExperienceTranslation entity.
 func (lu *LanguageUpdate) AddWorkExperienceTranslations(w ...*WorkExperienceTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -149,14 +148,14 @@ func (lu *LanguageUpdate) AddWorkExperienceTranslations(w ...*WorkExperienceTran
 }
 
 // AddWorkExperienceDetailTranslationIDs adds the "work_experience_detail_translations" edge to the WorkExperienceDetailTranslation entity by IDs.
-func (lu *LanguageUpdate) AddWorkExperienceDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddWorkExperienceDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddWorkExperienceDetailTranslationIDs(ids...)
 	return lu
 }
 
 // AddWorkExperienceDetailTranslations adds the "work_experience_detail_translations" edges to the WorkExperienceDetailTranslation entity.
 func (lu *LanguageUpdate) AddWorkExperienceDetailTranslations(w ...*WorkExperienceDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -164,14 +163,14 @@ func (lu *LanguageUpdate) AddWorkExperienceDetailTranslations(w ...*WorkExperien
 }
 
 // AddProjectTranslationIDs adds the "project_translations" edge to the ProjectTranslation entity by IDs.
-func (lu *LanguageUpdate) AddProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddProjectTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddProjectTranslationIDs(ids...)
 	return lu
 }
 
 // AddProjectTranslations adds the "project_translations" edges to the ProjectTranslation entity.
 func (lu *LanguageUpdate) AddProjectTranslations(p ...*ProjectTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -179,14 +178,14 @@ func (lu *LanguageUpdate) AddProjectTranslations(p ...*ProjectTranslation) *Lang
 }
 
 // AddProjectDetailTranslationIDs adds the "project_detail_translations" edge to the ProjectDetailTranslation entity by IDs.
-func (lu *LanguageUpdate) AddProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddProjectDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddProjectDetailTranslationIDs(ids...)
 	return lu
 }
 
 // AddProjectDetailTranslations adds the "project_detail_translations" edges to the ProjectDetailTranslation entity.
 func (lu *LanguageUpdate) AddProjectDetailTranslations(p ...*ProjectDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -194,14 +193,14 @@ func (lu *LanguageUpdate) AddProjectDetailTranslations(p ...*ProjectDetailTransl
 }
 
 // AddProjectImageTranslationIDs adds the "project_image_translations" edge to the ProjectImageTranslation entity by IDs.
-func (lu *LanguageUpdate) AddProjectImageTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddProjectImageTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddProjectImageTranslationIDs(ids...)
 	return lu
 }
 
 // AddProjectImageTranslations adds the "project_image_translations" edges to the ProjectImageTranslation entity.
 func (lu *LanguageUpdate) AddProjectImageTranslations(p ...*ProjectImageTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -209,14 +208,14 @@ func (lu *LanguageUpdate) AddProjectImageTranslations(p ...*ProjectImageTranslat
 }
 
 // AddBlogCategoryTranslationIDs adds the "blog_category_translations" edge to the BlogCategoryTranslation entity by IDs.
-func (lu *LanguageUpdate) AddBlogCategoryTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddBlogCategoryTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddBlogCategoryTranslationIDs(ids...)
 	return lu
 }
 
 // AddBlogCategoryTranslations adds the "blog_category_translations" edges to the BlogCategoryTranslation entity.
 func (lu *LanguageUpdate) AddBlogCategoryTranslations(b ...*BlogCategoryTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -224,14 +223,14 @@ func (lu *LanguageUpdate) AddBlogCategoryTranslations(b ...*BlogCategoryTranslat
 }
 
 // AddBlogPostTranslationIDs adds the "blog_post_translations" edge to the BlogPostTranslation entity by IDs.
-func (lu *LanguageUpdate) AddBlogPostTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddBlogPostTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddBlogPostTranslationIDs(ids...)
 	return lu
 }
 
 // AddBlogPostTranslations adds the "blog_post_translations" edges to the BlogPostTranslation entity.
 func (lu *LanguageUpdate) AddBlogPostTranslations(b ...*BlogPostTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -239,14 +238,14 @@ func (lu *LanguageUpdate) AddBlogPostTranslations(b ...*BlogPostTranslation) *La
 }
 
 // AddBlogSeriesTranslationIDs adds the "blog_series_translations" edge to the BlogSeriesTranslation entity by IDs.
-func (lu *LanguageUpdate) AddBlogSeriesTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddBlogSeriesTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddBlogSeriesTranslationIDs(ids...)
 	return lu
 }
 
 // AddBlogSeriesTranslations adds the "blog_series_translations" edges to the BlogSeriesTranslation entity.
 func (lu *LanguageUpdate) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -254,14 +253,14 @@ func (lu *LanguageUpdate) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation)
 }
 
 // AddIdeaTranslationIDs adds the "idea_translations" edge to the IdeaTranslation entity by IDs.
-func (lu *LanguageUpdate) AddIdeaTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddIdeaTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddIdeaTranslationIDs(ids...)
 	return lu
 }
 
 // AddIdeaTranslations adds the "idea_translations" edges to the IdeaTranslation entity.
 func (lu *LanguageUpdate) AddIdeaTranslations(i ...*IdeaTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -269,14 +268,14 @@ func (lu *LanguageUpdate) AddIdeaTranslations(i ...*IdeaTranslation) *LanguageUp
 }
 
 // AddIdeaDetailTranslationIDs adds the "idea_detail_translations" edge to the IdeaDetailTranslation entity by IDs.
-func (lu *LanguageUpdate) AddIdeaDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddIdeaDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddIdeaDetailTranslationIDs(ids...)
 	return lu
 }
 
 // AddIdeaDetailTranslations adds the "idea_detail_translations" edges to the IdeaDetailTranslation entity.
 func (lu *LanguageUpdate) AddIdeaDetailTranslations(i ...*IdeaDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -284,14 +283,14 @@ func (lu *LanguageUpdate) AddIdeaDetailTranslations(i ...*IdeaDetailTranslation)
 }
 
 // AddResearchProjectTranslationIDs adds the "research_project_translations" edge to the ResearchProjectTranslation entity by IDs.
-func (lu *LanguageUpdate) AddResearchProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddResearchProjectTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddResearchProjectTranslationIDs(ids...)
 	return lu
 }
 
 // AddResearchProjectTranslations adds the "research_project_translations" edges to the ResearchProjectTranslation entity.
 func (lu *LanguageUpdate) AddResearchProjectTranslations(r ...*ResearchProjectTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -299,14 +298,14 @@ func (lu *LanguageUpdate) AddResearchProjectTranslations(r ...*ResearchProjectTr
 }
 
 // AddResearchProjectDetailTranslationIDs adds the "research_project_detail_translations" edge to the ResearchProjectDetailTranslation entity by IDs.
-func (lu *LanguageUpdate) AddResearchProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddResearchProjectDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddResearchProjectDetailTranslationIDs(ids...)
 	return lu
 }
 
 // AddResearchProjectDetailTranslations adds the "research_project_detail_translations" edges to the ResearchProjectDetailTranslation entity.
 func (lu *LanguageUpdate) AddResearchProjectDetailTranslations(r ...*ResearchProjectDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -314,14 +313,14 @@ func (lu *LanguageUpdate) AddResearchProjectDetailTranslations(r ...*ResearchPro
 }
 
 // AddPublicationTranslationIDs adds the "publication_translations" edge to the PublicationTranslation entity by IDs.
-func (lu *LanguageUpdate) AddPublicationTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddPublicationTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddPublicationTranslationIDs(ids...)
 	return lu
 }
 
 // AddPublicationTranslations adds the "publication_translations" edges to the PublicationTranslation entity.
 func (lu *LanguageUpdate) AddPublicationTranslations(p ...*PublicationTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -329,14 +328,14 @@ func (lu *LanguageUpdate) AddPublicationTranslations(p ...*PublicationTranslatio
 }
 
 // AddAwardTranslationIDs adds the "award_translations" edge to the AwardTranslation entity by IDs.
-func (lu *LanguageUpdate) AddAwardTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddAwardTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddAwardTranslationIDs(ids...)
 	return lu
 }
 
 // AddAwardTranslations adds the "award_translations" edges to the AwardTranslation entity.
 func (lu *LanguageUpdate) AddAwardTranslations(a ...*AwardTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -344,14 +343,14 @@ func (lu *LanguageUpdate) AddAwardTranslations(a ...*AwardTranslation) *Language
 }
 
 // AddRecentUpdateTranslationIDs adds the "recent_update_translations" edge to the RecentUpdateTranslation entity by IDs.
-func (lu *LanguageUpdate) AddRecentUpdateTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) AddRecentUpdateTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.AddRecentUpdateTranslationIDs(ids...)
 	return lu
 }
 
 // AddRecentUpdateTranslations adds the "recent_update_translations" edges to the RecentUpdateTranslation entity.
 func (lu *LanguageUpdate) AddRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -370,14 +369,14 @@ func (lu *LanguageUpdate) ClearPersonalInfoTranslations() *LanguageUpdate {
 }
 
 // RemovePersonalInfoTranslationIDs removes the "personal_info_translations" edge to PersonalInfoTranslation entities by IDs.
-func (lu *LanguageUpdate) RemovePersonalInfoTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemovePersonalInfoTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemovePersonalInfoTranslationIDs(ids...)
 	return lu
 }
 
 // RemovePersonalInfoTranslations removes "personal_info_translations" edges to PersonalInfoTranslation entities.
 func (lu *LanguageUpdate) RemovePersonalInfoTranslations(p ...*PersonalInfoTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -391,14 +390,14 @@ func (lu *LanguageUpdate) ClearEducationTranslations() *LanguageUpdate {
 }
 
 // RemoveEducationTranslationIDs removes the "education_translations" edge to EducationTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveEducationTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveEducationTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveEducationTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveEducationTranslations removes "education_translations" edges to EducationTranslation entities.
 func (lu *LanguageUpdate) RemoveEducationTranslations(e ...*EducationTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -412,14 +411,14 @@ func (lu *LanguageUpdate) ClearEducationDetailTranslations() *LanguageUpdate {
 }
 
 // RemoveEducationDetailTranslationIDs removes the "education_detail_translations" edge to EducationDetailTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveEducationDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveEducationDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveEducationDetailTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveEducationDetailTranslations removes "education_detail_translations" edges to EducationDetailTranslation entities.
 func (lu *LanguageUpdate) RemoveEducationDetailTranslations(e ...*EducationDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -433,14 +432,14 @@ func (lu *LanguageUpdate) ClearWorkExperienceTranslations() *LanguageUpdate {
 }
 
 // RemoveWorkExperienceTranslationIDs removes the "work_experience_translations" edge to WorkExperienceTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveWorkExperienceTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveWorkExperienceTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveWorkExperienceTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveWorkExperienceTranslations removes "work_experience_translations" edges to WorkExperienceTranslation entities.
 func (lu *LanguageUpdate) RemoveWorkExperienceTranslations(w ...*WorkExperienceTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -454,14 +453,14 @@ func (lu *LanguageUpdate) ClearWorkExperienceDetailTranslations() *LanguageUpdat
 }
 
 // RemoveWorkExperienceDetailTranslationIDs removes the "work_experience_detail_translations" edge to WorkExperienceDetailTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveWorkExperienceDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveWorkExperienceDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveWorkExperienceDetailTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveWorkExperienceDetailTranslations removes "work_experience_detail_translations" edges to WorkExperienceDetailTranslation entities.
 func (lu *LanguageUpdate) RemoveWorkExperienceDetailTranslations(w ...*WorkExperienceDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -475,14 +474,14 @@ func (lu *LanguageUpdate) ClearProjectTranslations() *LanguageUpdate {
 }
 
 // RemoveProjectTranslationIDs removes the "project_translations" edge to ProjectTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveProjectTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveProjectTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveProjectTranslations removes "project_translations" edges to ProjectTranslation entities.
 func (lu *LanguageUpdate) RemoveProjectTranslations(p ...*ProjectTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -496,14 +495,14 @@ func (lu *LanguageUpdate) ClearProjectDetailTranslations() *LanguageUpdate {
 }
 
 // RemoveProjectDetailTranslationIDs removes the "project_detail_translations" edge to ProjectDetailTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveProjectDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveProjectDetailTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveProjectDetailTranslations removes "project_detail_translations" edges to ProjectDetailTranslation entities.
 func (lu *LanguageUpdate) RemoveProjectDetailTranslations(p ...*ProjectDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -517,14 +516,14 @@ func (lu *LanguageUpdate) ClearProjectImageTranslations() *LanguageUpdate {
 }
 
 // RemoveProjectImageTranslationIDs removes the "project_image_translations" edge to ProjectImageTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveProjectImageTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveProjectImageTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveProjectImageTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveProjectImageTranslations removes "project_image_translations" edges to ProjectImageTranslation entities.
 func (lu *LanguageUpdate) RemoveProjectImageTranslations(p ...*ProjectImageTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -538,14 +537,14 @@ func (lu *LanguageUpdate) ClearBlogCategoryTranslations() *LanguageUpdate {
 }
 
 // RemoveBlogCategoryTranslationIDs removes the "blog_category_translations" edge to BlogCategoryTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveBlogCategoryTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveBlogCategoryTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveBlogCategoryTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveBlogCategoryTranslations removes "blog_category_translations" edges to BlogCategoryTranslation entities.
 func (lu *LanguageUpdate) RemoveBlogCategoryTranslations(b ...*BlogCategoryTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -559,14 +558,14 @@ func (lu *LanguageUpdate) ClearBlogPostTranslations() *LanguageUpdate {
 }
 
 // RemoveBlogPostTranslationIDs removes the "blog_post_translations" edge to BlogPostTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveBlogPostTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveBlogPostTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveBlogPostTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveBlogPostTranslations removes "blog_post_translations" edges to BlogPostTranslation entities.
 func (lu *LanguageUpdate) RemoveBlogPostTranslations(b ...*BlogPostTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -580,14 +579,14 @@ func (lu *LanguageUpdate) ClearBlogSeriesTranslations() *LanguageUpdate {
 }
 
 // RemoveBlogSeriesTranslationIDs removes the "blog_series_translations" edge to BlogSeriesTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveBlogSeriesTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveBlogSeriesTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveBlogSeriesTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveBlogSeriesTranslations removes "blog_series_translations" edges to BlogSeriesTranslation entities.
 func (lu *LanguageUpdate) RemoveBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -601,14 +600,14 @@ func (lu *LanguageUpdate) ClearIdeaTranslations() *LanguageUpdate {
 }
 
 // RemoveIdeaTranslationIDs removes the "idea_translations" edge to IdeaTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveIdeaTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveIdeaTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveIdeaTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveIdeaTranslations removes "idea_translations" edges to IdeaTranslation entities.
 func (lu *LanguageUpdate) RemoveIdeaTranslations(i ...*IdeaTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -622,14 +621,14 @@ func (lu *LanguageUpdate) ClearIdeaDetailTranslations() *LanguageUpdate {
 }
 
 // RemoveIdeaDetailTranslationIDs removes the "idea_detail_translations" edge to IdeaDetailTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveIdeaDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveIdeaDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveIdeaDetailTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveIdeaDetailTranslations removes "idea_detail_translations" edges to IdeaDetailTranslation entities.
 func (lu *LanguageUpdate) RemoveIdeaDetailTranslations(i ...*IdeaDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -643,14 +642,14 @@ func (lu *LanguageUpdate) ClearResearchProjectTranslations() *LanguageUpdate {
 }
 
 // RemoveResearchProjectTranslationIDs removes the "research_project_translations" edge to ResearchProjectTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveResearchProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveResearchProjectTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveResearchProjectTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveResearchProjectTranslations removes "research_project_translations" edges to ResearchProjectTranslation entities.
 func (lu *LanguageUpdate) RemoveResearchProjectTranslations(r ...*ResearchProjectTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -664,14 +663,14 @@ func (lu *LanguageUpdate) ClearResearchProjectDetailTranslations() *LanguageUpda
 }
 
 // RemoveResearchProjectDetailTranslationIDs removes the "research_project_detail_translations" edge to ResearchProjectDetailTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveResearchProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveResearchProjectDetailTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveResearchProjectDetailTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveResearchProjectDetailTranslations removes "research_project_detail_translations" edges to ResearchProjectDetailTranslation entities.
 func (lu *LanguageUpdate) RemoveResearchProjectDetailTranslations(r ...*ResearchProjectDetailTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -685,14 +684,14 @@ func (lu *LanguageUpdate) ClearPublicationTranslations() *LanguageUpdate {
 }
 
 // RemovePublicationTranslationIDs removes the "publication_translations" edge to PublicationTranslation entities by IDs.
-func (lu *LanguageUpdate) RemovePublicationTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemovePublicationTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemovePublicationTranslationIDs(ids...)
 	return lu
 }
 
 // RemovePublicationTranslations removes "publication_translations" edges to PublicationTranslation entities.
 func (lu *LanguageUpdate) RemovePublicationTranslations(p ...*PublicationTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -706,14 +705,14 @@ func (lu *LanguageUpdate) ClearAwardTranslations() *LanguageUpdate {
 }
 
 // RemoveAwardTranslationIDs removes the "award_translations" edge to AwardTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveAwardTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveAwardTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveAwardTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveAwardTranslations removes "award_translations" edges to AwardTranslation entities.
 func (lu *LanguageUpdate) RemoveAwardTranslations(a ...*AwardTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -727,14 +726,14 @@ func (lu *LanguageUpdate) ClearRecentUpdateTranslations() *LanguageUpdate {
 }
 
 // RemoveRecentUpdateTranslationIDs removes the "recent_update_translations" edge to RecentUpdateTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveRecentUpdateTranslationIDs(ids ...uuid.UUID) *LanguageUpdate {
+func (lu *LanguageUpdate) RemoveRecentUpdateTranslationIDs(ids ...string) *LanguageUpdate {
 	lu.mutation.RemoveRecentUpdateTranslationIDs(ids...)
 	return lu
 }
 
 // RemoveRecentUpdateTranslations removes "recent_update_translations" edges to RecentUpdateTranslation entities.
 func (lu *LanguageUpdate) RemoveRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -812,7 +811,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.PersonalInfoTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -825,7 +824,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.PersonalInfoTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -841,7 +840,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.PersonalInfoTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -857,7 +856,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.EducationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -870,7 +869,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.EducationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -886,7 +885,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.EducationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -902,7 +901,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.EducationDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -915,7 +914,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.EducationDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -931,7 +930,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.EducationDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -947,7 +946,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.WorkExperienceTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -960,7 +959,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.WorkExperienceTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -976,7 +975,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.WorkExperienceTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -992,7 +991,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.WorkExperienceDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1005,7 +1004,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.WorkExperienceDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1021,7 +1020,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.WorkExperienceDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1037,7 +1036,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1050,7 +1049,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1066,7 +1065,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1082,7 +1081,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1095,7 +1094,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1111,7 +1110,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1127,7 +1126,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectImageTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1140,7 +1139,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectImageTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1156,7 +1155,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ProjectImageTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1172,7 +1171,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogCategoryTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1185,7 +1184,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogCategoryTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1201,7 +1200,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogCategoryTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1217,7 +1216,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogPostTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1230,7 +1229,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogPostTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1246,7 +1245,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogPostTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1262,7 +1261,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogSeriesTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1275,7 +1274,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogSeriesTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1291,7 +1290,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.BlogSeriesTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1307,7 +1306,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.IdeaTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1320,7 +1319,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.IdeaTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1336,7 +1335,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.IdeaTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1352,7 +1351,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.IdeaDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1365,7 +1364,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.IdeaDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1381,7 +1380,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.IdeaDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1397,7 +1396,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ResearchProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1410,7 +1409,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ResearchProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1426,7 +1425,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ResearchProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1442,7 +1441,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ResearchProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1455,7 +1454,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ResearchProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1471,7 +1470,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.ResearchProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1487,7 +1486,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.PublicationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1500,7 +1499,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.PublicationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1516,7 +1515,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.PublicationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1532,7 +1531,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.AwardTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1545,7 +1544,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.AwardTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1561,7 +1560,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.AwardTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1577,7 +1576,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.RecentUpdateTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1590,7 +1589,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.RecentUpdateTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1606,7 +1605,7 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{language.RecentUpdateTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1677,14 +1676,14 @@ func (luo *LanguageUpdateOne) SetNillableIsActive(b *bool) *LanguageUpdateOne {
 }
 
 // AddPersonalInfoTranslationIDs adds the "personal_info_translations" edge to the PersonalInfoTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddPersonalInfoTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddPersonalInfoTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddPersonalInfoTranslationIDs(ids...)
 	return luo
 }
 
 // AddPersonalInfoTranslations adds the "personal_info_translations" edges to the PersonalInfoTranslation entity.
 func (luo *LanguageUpdateOne) AddPersonalInfoTranslations(p ...*PersonalInfoTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1692,14 +1691,14 @@ func (luo *LanguageUpdateOne) AddPersonalInfoTranslations(p ...*PersonalInfoTran
 }
 
 // AddEducationTranslationIDs adds the "education_translations" edge to the EducationTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddEducationTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddEducationTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddEducationTranslationIDs(ids...)
 	return luo
 }
 
 // AddEducationTranslations adds the "education_translations" edges to the EducationTranslation entity.
 func (luo *LanguageUpdateOne) AddEducationTranslations(e ...*EducationTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1707,14 +1706,14 @@ func (luo *LanguageUpdateOne) AddEducationTranslations(e ...*EducationTranslatio
 }
 
 // AddEducationDetailTranslationIDs adds the "education_detail_translations" edge to the EducationDetailTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddEducationDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddEducationDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddEducationDetailTranslationIDs(ids...)
 	return luo
 }
 
 // AddEducationDetailTranslations adds the "education_detail_translations" edges to the EducationDetailTranslation entity.
 func (luo *LanguageUpdateOne) AddEducationDetailTranslations(e ...*EducationDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1722,14 +1721,14 @@ func (luo *LanguageUpdateOne) AddEducationDetailTranslations(e ...*EducationDeta
 }
 
 // AddWorkExperienceTranslationIDs adds the "work_experience_translations" edge to the WorkExperienceTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddWorkExperienceTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddWorkExperienceTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddWorkExperienceTranslationIDs(ids...)
 	return luo
 }
 
 // AddWorkExperienceTranslations adds the "work_experience_translations" edges to the WorkExperienceTranslation entity.
 func (luo *LanguageUpdateOne) AddWorkExperienceTranslations(w ...*WorkExperienceTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -1737,14 +1736,14 @@ func (luo *LanguageUpdateOne) AddWorkExperienceTranslations(w ...*WorkExperience
 }
 
 // AddWorkExperienceDetailTranslationIDs adds the "work_experience_detail_translations" edge to the WorkExperienceDetailTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddWorkExperienceDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddWorkExperienceDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddWorkExperienceDetailTranslationIDs(ids...)
 	return luo
 }
 
 // AddWorkExperienceDetailTranslations adds the "work_experience_detail_translations" edges to the WorkExperienceDetailTranslation entity.
 func (luo *LanguageUpdateOne) AddWorkExperienceDetailTranslations(w ...*WorkExperienceDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -1752,14 +1751,14 @@ func (luo *LanguageUpdateOne) AddWorkExperienceDetailTranslations(w ...*WorkExpe
 }
 
 // AddProjectTranslationIDs adds the "project_translations" edge to the ProjectTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddProjectTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddProjectTranslationIDs(ids...)
 	return luo
 }
 
 // AddProjectTranslations adds the "project_translations" edges to the ProjectTranslation entity.
 func (luo *LanguageUpdateOne) AddProjectTranslations(p ...*ProjectTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1767,14 +1766,14 @@ func (luo *LanguageUpdateOne) AddProjectTranslations(p ...*ProjectTranslation) *
 }
 
 // AddProjectDetailTranslationIDs adds the "project_detail_translations" edge to the ProjectDetailTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddProjectDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddProjectDetailTranslationIDs(ids...)
 	return luo
 }
 
 // AddProjectDetailTranslations adds the "project_detail_translations" edges to the ProjectDetailTranslation entity.
 func (luo *LanguageUpdateOne) AddProjectDetailTranslations(p ...*ProjectDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1782,14 +1781,14 @@ func (luo *LanguageUpdateOne) AddProjectDetailTranslations(p ...*ProjectDetailTr
 }
 
 // AddProjectImageTranslationIDs adds the "project_image_translations" edge to the ProjectImageTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddProjectImageTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddProjectImageTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddProjectImageTranslationIDs(ids...)
 	return luo
 }
 
 // AddProjectImageTranslations adds the "project_image_translations" edges to the ProjectImageTranslation entity.
 func (luo *LanguageUpdateOne) AddProjectImageTranslations(p ...*ProjectImageTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1797,14 +1796,14 @@ func (luo *LanguageUpdateOne) AddProjectImageTranslations(p ...*ProjectImageTran
 }
 
 // AddBlogCategoryTranslationIDs adds the "blog_category_translations" edge to the BlogCategoryTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddBlogCategoryTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddBlogCategoryTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddBlogCategoryTranslationIDs(ids...)
 	return luo
 }
 
 // AddBlogCategoryTranslations adds the "blog_category_translations" edges to the BlogCategoryTranslation entity.
 func (luo *LanguageUpdateOne) AddBlogCategoryTranslations(b ...*BlogCategoryTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -1812,14 +1811,14 @@ func (luo *LanguageUpdateOne) AddBlogCategoryTranslations(b ...*BlogCategoryTran
 }
 
 // AddBlogPostTranslationIDs adds the "blog_post_translations" edge to the BlogPostTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddBlogPostTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddBlogPostTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddBlogPostTranslationIDs(ids...)
 	return luo
 }
 
 // AddBlogPostTranslations adds the "blog_post_translations" edges to the BlogPostTranslation entity.
 func (luo *LanguageUpdateOne) AddBlogPostTranslations(b ...*BlogPostTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -1827,14 +1826,14 @@ func (luo *LanguageUpdateOne) AddBlogPostTranslations(b ...*BlogPostTranslation)
 }
 
 // AddBlogSeriesTranslationIDs adds the "blog_series_translations" edge to the BlogSeriesTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddBlogSeriesTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddBlogSeriesTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddBlogSeriesTranslationIDs(ids...)
 	return luo
 }
 
 // AddBlogSeriesTranslations adds the "blog_series_translations" edges to the BlogSeriesTranslation entity.
 func (luo *LanguageUpdateOne) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -1842,14 +1841,14 @@ func (luo *LanguageUpdateOne) AddBlogSeriesTranslations(b ...*BlogSeriesTranslat
 }
 
 // AddIdeaTranslationIDs adds the "idea_translations" edge to the IdeaTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddIdeaTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddIdeaTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddIdeaTranslationIDs(ids...)
 	return luo
 }
 
 // AddIdeaTranslations adds the "idea_translations" edges to the IdeaTranslation entity.
 func (luo *LanguageUpdateOne) AddIdeaTranslations(i ...*IdeaTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -1857,14 +1856,14 @@ func (luo *LanguageUpdateOne) AddIdeaTranslations(i ...*IdeaTranslation) *Langua
 }
 
 // AddIdeaDetailTranslationIDs adds the "idea_detail_translations" edge to the IdeaDetailTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddIdeaDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddIdeaDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddIdeaDetailTranslationIDs(ids...)
 	return luo
 }
 
 // AddIdeaDetailTranslations adds the "idea_detail_translations" edges to the IdeaDetailTranslation entity.
 func (luo *LanguageUpdateOne) AddIdeaDetailTranslations(i ...*IdeaDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -1872,14 +1871,14 @@ func (luo *LanguageUpdateOne) AddIdeaDetailTranslations(i ...*IdeaDetailTranslat
 }
 
 // AddResearchProjectTranslationIDs adds the "research_project_translations" edge to the ResearchProjectTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddResearchProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddResearchProjectTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddResearchProjectTranslationIDs(ids...)
 	return luo
 }
 
 // AddResearchProjectTranslations adds the "research_project_translations" edges to the ResearchProjectTranslation entity.
 func (luo *LanguageUpdateOne) AddResearchProjectTranslations(r ...*ResearchProjectTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1887,14 +1886,14 @@ func (luo *LanguageUpdateOne) AddResearchProjectTranslations(r ...*ResearchProje
 }
 
 // AddResearchProjectDetailTranslationIDs adds the "research_project_detail_translations" edge to the ResearchProjectDetailTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddResearchProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddResearchProjectDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddResearchProjectDetailTranslationIDs(ids...)
 	return luo
 }
 
 // AddResearchProjectDetailTranslations adds the "research_project_detail_translations" edges to the ResearchProjectDetailTranslation entity.
 func (luo *LanguageUpdateOne) AddResearchProjectDetailTranslations(r ...*ResearchProjectDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1902,14 +1901,14 @@ func (luo *LanguageUpdateOne) AddResearchProjectDetailTranslations(r ...*Researc
 }
 
 // AddPublicationTranslationIDs adds the "publication_translations" edge to the PublicationTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddPublicationTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddPublicationTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddPublicationTranslationIDs(ids...)
 	return luo
 }
 
 // AddPublicationTranslations adds the "publication_translations" edges to the PublicationTranslation entity.
 func (luo *LanguageUpdateOne) AddPublicationTranslations(p ...*PublicationTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1917,14 +1916,14 @@ func (luo *LanguageUpdateOne) AddPublicationTranslations(p ...*PublicationTransl
 }
 
 // AddAwardTranslationIDs adds the "award_translations" edge to the AwardTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddAwardTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddAwardTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddAwardTranslationIDs(ids...)
 	return luo
 }
 
 // AddAwardTranslations adds the "award_translations" edges to the AwardTranslation entity.
 func (luo *LanguageUpdateOne) AddAwardTranslations(a ...*AwardTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -1932,14 +1931,14 @@ func (luo *LanguageUpdateOne) AddAwardTranslations(a ...*AwardTranslation) *Lang
 }
 
 // AddRecentUpdateTranslationIDs adds the "recent_update_translations" edge to the RecentUpdateTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddRecentUpdateTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) AddRecentUpdateTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddRecentUpdateTranslationIDs(ids...)
 	return luo
 }
 
 // AddRecentUpdateTranslations adds the "recent_update_translations" edges to the RecentUpdateTranslation entity.
 func (luo *LanguageUpdateOne) AddRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1958,14 +1957,14 @@ func (luo *LanguageUpdateOne) ClearPersonalInfoTranslations() *LanguageUpdateOne
 }
 
 // RemovePersonalInfoTranslationIDs removes the "personal_info_translations" edge to PersonalInfoTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemovePersonalInfoTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemovePersonalInfoTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemovePersonalInfoTranslationIDs(ids...)
 	return luo
 }
 
 // RemovePersonalInfoTranslations removes "personal_info_translations" edges to PersonalInfoTranslation entities.
 func (luo *LanguageUpdateOne) RemovePersonalInfoTranslations(p ...*PersonalInfoTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1979,14 +1978,14 @@ func (luo *LanguageUpdateOne) ClearEducationTranslations() *LanguageUpdateOne {
 }
 
 // RemoveEducationTranslationIDs removes the "education_translations" edge to EducationTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveEducationTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveEducationTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveEducationTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveEducationTranslations removes "education_translations" edges to EducationTranslation entities.
 func (luo *LanguageUpdateOne) RemoveEducationTranslations(e ...*EducationTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -2000,14 +1999,14 @@ func (luo *LanguageUpdateOne) ClearEducationDetailTranslations() *LanguageUpdate
 }
 
 // RemoveEducationDetailTranslationIDs removes the "education_detail_translations" edge to EducationDetailTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveEducationDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveEducationDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveEducationDetailTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveEducationDetailTranslations removes "education_detail_translations" edges to EducationDetailTranslation entities.
 func (luo *LanguageUpdateOne) RemoveEducationDetailTranslations(e ...*EducationDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -2021,14 +2020,14 @@ func (luo *LanguageUpdateOne) ClearWorkExperienceTranslations() *LanguageUpdateO
 }
 
 // RemoveWorkExperienceTranslationIDs removes the "work_experience_translations" edge to WorkExperienceTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveWorkExperienceTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveWorkExperienceTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveWorkExperienceTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveWorkExperienceTranslations removes "work_experience_translations" edges to WorkExperienceTranslation entities.
 func (luo *LanguageUpdateOne) RemoveWorkExperienceTranslations(w ...*WorkExperienceTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -2042,14 +2041,14 @@ func (luo *LanguageUpdateOne) ClearWorkExperienceDetailTranslations() *LanguageU
 }
 
 // RemoveWorkExperienceDetailTranslationIDs removes the "work_experience_detail_translations" edge to WorkExperienceDetailTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveWorkExperienceDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveWorkExperienceDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveWorkExperienceDetailTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveWorkExperienceDetailTranslations removes "work_experience_detail_translations" edges to WorkExperienceDetailTranslation entities.
 func (luo *LanguageUpdateOne) RemoveWorkExperienceDetailTranslations(w ...*WorkExperienceDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -2063,14 +2062,14 @@ func (luo *LanguageUpdateOne) ClearProjectTranslations() *LanguageUpdateOne {
 }
 
 // RemoveProjectTranslationIDs removes the "project_translations" edge to ProjectTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveProjectTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveProjectTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveProjectTranslations removes "project_translations" edges to ProjectTranslation entities.
 func (luo *LanguageUpdateOne) RemoveProjectTranslations(p ...*ProjectTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -2084,14 +2083,14 @@ func (luo *LanguageUpdateOne) ClearProjectDetailTranslations() *LanguageUpdateOn
 }
 
 // RemoveProjectDetailTranslationIDs removes the "project_detail_translations" edge to ProjectDetailTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveProjectDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveProjectDetailTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveProjectDetailTranslations removes "project_detail_translations" edges to ProjectDetailTranslation entities.
 func (luo *LanguageUpdateOne) RemoveProjectDetailTranslations(p ...*ProjectDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -2105,14 +2104,14 @@ func (luo *LanguageUpdateOne) ClearProjectImageTranslations() *LanguageUpdateOne
 }
 
 // RemoveProjectImageTranslationIDs removes the "project_image_translations" edge to ProjectImageTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveProjectImageTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveProjectImageTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveProjectImageTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveProjectImageTranslations removes "project_image_translations" edges to ProjectImageTranslation entities.
 func (luo *LanguageUpdateOne) RemoveProjectImageTranslations(p ...*ProjectImageTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -2126,14 +2125,14 @@ func (luo *LanguageUpdateOne) ClearBlogCategoryTranslations() *LanguageUpdateOne
 }
 
 // RemoveBlogCategoryTranslationIDs removes the "blog_category_translations" edge to BlogCategoryTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveBlogCategoryTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveBlogCategoryTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveBlogCategoryTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveBlogCategoryTranslations removes "blog_category_translations" edges to BlogCategoryTranslation entities.
 func (luo *LanguageUpdateOne) RemoveBlogCategoryTranslations(b ...*BlogCategoryTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -2147,14 +2146,14 @@ func (luo *LanguageUpdateOne) ClearBlogPostTranslations() *LanguageUpdateOne {
 }
 
 // RemoveBlogPostTranslationIDs removes the "blog_post_translations" edge to BlogPostTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveBlogPostTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveBlogPostTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveBlogPostTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveBlogPostTranslations removes "blog_post_translations" edges to BlogPostTranslation entities.
 func (luo *LanguageUpdateOne) RemoveBlogPostTranslations(b ...*BlogPostTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -2168,14 +2167,14 @@ func (luo *LanguageUpdateOne) ClearBlogSeriesTranslations() *LanguageUpdateOne {
 }
 
 // RemoveBlogSeriesTranslationIDs removes the "blog_series_translations" edge to BlogSeriesTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveBlogSeriesTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveBlogSeriesTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveBlogSeriesTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveBlogSeriesTranslations removes "blog_series_translations" edges to BlogSeriesTranslation entities.
 func (luo *LanguageUpdateOne) RemoveBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -2189,14 +2188,14 @@ func (luo *LanguageUpdateOne) ClearIdeaTranslations() *LanguageUpdateOne {
 }
 
 // RemoveIdeaTranslationIDs removes the "idea_translations" edge to IdeaTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveIdeaTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveIdeaTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveIdeaTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveIdeaTranslations removes "idea_translations" edges to IdeaTranslation entities.
 func (luo *LanguageUpdateOne) RemoveIdeaTranslations(i ...*IdeaTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -2210,14 +2209,14 @@ func (luo *LanguageUpdateOne) ClearIdeaDetailTranslations() *LanguageUpdateOne {
 }
 
 // RemoveIdeaDetailTranslationIDs removes the "idea_detail_translations" edge to IdeaDetailTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveIdeaDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveIdeaDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveIdeaDetailTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveIdeaDetailTranslations removes "idea_detail_translations" edges to IdeaDetailTranslation entities.
 func (luo *LanguageUpdateOne) RemoveIdeaDetailTranslations(i ...*IdeaDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -2231,14 +2230,14 @@ func (luo *LanguageUpdateOne) ClearResearchProjectTranslations() *LanguageUpdate
 }
 
 // RemoveResearchProjectTranslationIDs removes the "research_project_translations" edge to ResearchProjectTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveResearchProjectTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveResearchProjectTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveResearchProjectTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveResearchProjectTranslations removes "research_project_translations" edges to ResearchProjectTranslation entities.
 func (luo *LanguageUpdateOne) RemoveResearchProjectTranslations(r ...*ResearchProjectTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -2252,14 +2251,14 @@ func (luo *LanguageUpdateOne) ClearResearchProjectDetailTranslations() *Language
 }
 
 // RemoveResearchProjectDetailTranslationIDs removes the "research_project_detail_translations" edge to ResearchProjectDetailTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveResearchProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveResearchProjectDetailTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveResearchProjectDetailTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveResearchProjectDetailTranslations removes "research_project_detail_translations" edges to ResearchProjectDetailTranslation entities.
 func (luo *LanguageUpdateOne) RemoveResearchProjectDetailTranslations(r ...*ResearchProjectDetailTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -2273,14 +2272,14 @@ func (luo *LanguageUpdateOne) ClearPublicationTranslations() *LanguageUpdateOne 
 }
 
 // RemovePublicationTranslationIDs removes the "publication_translations" edge to PublicationTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemovePublicationTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemovePublicationTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemovePublicationTranslationIDs(ids...)
 	return luo
 }
 
 // RemovePublicationTranslations removes "publication_translations" edges to PublicationTranslation entities.
 func (luo *LanguageUpdateOne) RemovePublicationTranslations(p ...*PublicationTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -2294,14 +2293,14 @@ func (luo *LanguageUpdateOne) ClearAwardTranslations() *LanguageUpdateOne {
 }
 
 // RemoveAwardTranslationIDs removes the "award_translations" edge to AwardTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveAwardTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveAwardTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveAwardTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveAwardTranslations removes "award_translations" edges to AwardTranslation entities.
 func (luo *LanguageUpdateOne) RemoveAwardTranslations(a ...*AwardTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -2315,14 +2314,14 @@ func (luo *LanguageUpdateOne) ClearRecentUpdateTranslations() *LanguageUpdateOne
 }
 
 // RemoveRecentUpdateTranslationIDs removes the "recent_update_translations" edge to RecentUpdateTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveRecentUpdateTranslationIDs(ids ...uuid.UUID) *LanguageUpdateOne {
+func (luo *LanguageUpdateOne) RemoveRecentUpdateTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.RemoveRecentUpdateTranslationIDs(ids...)
 	return luo
 }
 
 // RemoveRecentUpdateTranslations removes "recent_update_translations" edges to RecentUpdateTranslation entities.
 func (luo *LanguageUpdateOne) RemoveRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -2430,7 +2429,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.PersonalInfoTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2443,7 +2442,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.PersonalInfoTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2459,7 +2458,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.PersonalInfoTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2475,7 +2474,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.EducationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2488,7 +2487,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.EducationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2504,7 +2503,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.EducationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2520,7 +2519,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.EducationDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2533,7 +2532,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.EducationDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2549,7 +2548,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.EducationDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2565,7 +2564,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.WorkExperienceTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2578,7 +2577,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.WorkExperienceTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2594,7 +2593,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.WorkExperienceTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2610,7 +2609,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.WorkExperienceDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2623,7 +2622,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.WorkExperienceDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2639,7 +2638,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.WorkExperienceDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2655,7 +2654,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2668,7 +2667,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2684,7 +2683,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2700,7 +2699,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2713,7 +2712,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2729,7 +2728,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2745,7 +2744,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectImageTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2758,7 +2757,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectImageTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2774,7 +2773,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ProjectImageTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2790,7 +2789,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogCategoryTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2803,7 +2802,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogCategoryTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2819,7 +2818,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogCategoryTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2835,7 +2834,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogPostTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2848,7 +2847,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogPostTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2864,7 +2863,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogPostTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2880,7 +2879,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogSeriesTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2893,7 +2892,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogSeriesTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2909,7 +2908,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.BlogSeriesTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2925,7 +2924,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.IdeaTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2938,7 +2937,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.IdeaTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2954,7 +2953,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.IdeaTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2970,7 +2969,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.IdeaDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2983,7 +2982,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.IdeaDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2999,7 +2998,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.IdeaDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3015,7 +3014,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ResearchProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -3028,7 +3027,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ResearchProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3044,7 +3043,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ResearchProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3060,7 +3059,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ResearchProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -3073,7 +3072,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ResearchProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3089,7 +3088,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.ResearchProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3105,7 +3104,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.PublicationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -3118,7 +3117,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.PublicationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3134,7 +3133,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.PublicationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3150,7 +3149,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.AwardTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -3163,7 +3162,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.AwardTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3179,7 +3178,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.AwardTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3195,7 +3194,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.RecentUpdateTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -3208,7 +3207,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.RecentUpdateTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3224,7 +3223,7 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Columns: []string{language.RecentUpdateTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

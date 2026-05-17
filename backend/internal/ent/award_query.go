@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AwardQuery is the builder for querying Award entities.
@@ -132,8 +131,8 @@ func (aq *AwardQuery) FirstX(ctx context.Context) *Award {
 
 // FirstID returns the first Award ID from the query.
 // Returns a *NotFoundError when no Award ID was found.
-func (aq *AwardQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (aq *AwardQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = aq.Limit(1).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (aq *AwardQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (aq *AwardQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (aq *AwardQuery) FirstIDX(ctx context.Context) string {
 	id, err := aq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (aq *AwardQuery) OnlyX(ctx context.Context) *Award {
 // OnlyID is like Only, but returns the only Award ID in the query.
 // Returns a *NotSingularError when more than one Award ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (aq *AwardQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (aq *AwardQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = aq.Limit(2).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (aq *AwardQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (aq *AwardQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (aq *AwardQuery) OnlyIDX(ctx context.Context) string {
 	id, err := aq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (aq *AwardQuery) AllX(ctx context.Context) []*Award {
 }
 
 // IDs executes the query and returns a list of Award IDs.
-func (aq *AwardQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (aq *AwardQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if aq.ctx.Unique == nil && aq.path != nil {
 		aq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (aq *AwardQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (aq *AwardQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (aq *AwardQuery) IDsX(ctx context.Context) []string {
 	ids, err := aq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -336,7 +335,7 @@ func (aq *AwardQuery) WithTranslations(opts ...func(*AwardTranslationQuery)) *Aw
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -359,7 +358,7 @@ func (aq *AwardQuery) GroupBy(field string, fields ...string) *AwardGroupBy {
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.Award.Query().
@@ -448,8 +447,8 @@ func (aq *AwardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Award,
 }
 
 func (aq *AwardQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Award, init func(*Award), assign func(*Award, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Award)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Award)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -478,7 +477,7 @@ func (aq *AwardQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*A
 }
 func (aq *AwardQuery) loadTranslations(ctx context.Context, query *AwardTranslationQuery, nodes []*Award, init func(*Award), assign func(*Award, *AwardTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Award)
+	nodeids := make(map[string]*Award)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -517,7 +516,7 @@ func (aq *AwardQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (aq *AwardQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(award.Table, award.Columns, sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(award.Table, award.Columns, sqlgraph.NewFieldSpec(award.FieldID, field.TypeString))
 	_spec.From = aq.sql
 	if unique := aq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

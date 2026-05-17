@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // AwardTranslation is the model entity for the AwardTranslation schema.
 type AwardTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// AwardID holds the value of the "award_id" field.
-	AwardID uuid.UUID `json:"award_id,omitempty"`
+	AwardID string `json:"award_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Title holds the value of the "title" field.
@@ -78,12 +77,10 @@ func (*AwardTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case awardtranslation.FieldLanguageCode, awardtranslation.FieldTitle, awardtranslation.FieldAwardingOrganization, awardtranslation.FieldAwardType, awardtranslation.FieldDescription:
+		case awardtranslation.FieldID, awardtranslation.FieldAwardID, awardtranslation.FieldLanguageCode, awardtranslation.FieldTitle, awardtranslation.FieldAwardingOrganization, awardtranslation.FieldAwardType, awardtranslation.FieldDescription:
 			values[i] = new(sql.NullString)
 		case awardtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case awardtranslation.FieldID, awardtranslation.FieldAwardID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -100,16 +97,16 @@ func (at *AwardTranslation) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case awardtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				at.ID = *value
+			} else if value.Valid {
+				at.ID = value.String
 			}
 		case awardtranslation.FieldAwardID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field award_id", values[i])
-			} else if value != nil {
-				at.AwardID = *value
+			} else if value.Valid {
+				at.AwardID = value.String
 			}
 		case awardtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -194,7 +191,7 @@ func (at *AwardTranslation) String() string {
 	builder.WriteString("AwardTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", at.ID))
 	builder.WriteString("award_id=")
-	builder.WriteString(fmt.Sprintf("%v", at.AwardID))
+	builder.WriteString(at.AwardID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(at.LanguageCode)

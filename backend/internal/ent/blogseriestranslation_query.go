@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogSeriesTranslationQuery is the builder for querying BlogSeriesTranslation entities.
@@ -131,8 +130,8 @@ func (bstq *BlogSeriesTranslationQuery) FirstX(ctx context.Context) *BlogSeriesT
 
 // FirstID returns the first BlogSeriesTranslation ID from the query.
 // Returns a *NotFoundError when no BlogSeriesTranslation ID was found.
-func (bstq *BlogSeriesTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bstq *BlogSeriesTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bstq.Limit(1).IDs(setContextOp(ctx, bstq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (bstq *BlogSeriesTranslationQuery) FirstID(ctx context.Context) (id uuid.UU
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bstq *BlogSeriesTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (bstq *BlogSeriesTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := bstq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (bstq *BlogSeriesTranslationQuery) OnlyX(ctx context.Context) *BlogSeriesTr
 // OnlyID is like Only, but returns the only BlogSeriesTranslation ID in the query.
 // Returns a *NotSingularError when more than one BlogSeriesTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bstq *BlogSeriesTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bstq *BlogSeriesTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bstq.Limit(2).IDs(setContextOp(ctx, bstq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (bstq *BlogSeriesTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUI
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bstq *BlogSeriesTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (bstq *BlogSeriesTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := bstq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (bstq *BlogSeriesTranslationQuery) AllX(ctx context.Context) []*BlogSeriesT
 }
 
 // IDs executes the query and returns a list of BlogSeriesTranslation IDs.
-func (bstq *BlogSeriesTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (bstq *BlogSeriesTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if bstq.ctx.Unique == nil && bstq.path != nil {
 		bstq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (bstq *BlogSeriesTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUI
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bstq *BlogSeriesTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (bstq *BlogSeriesTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := bstq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (bstq *BlogSeriesTranslationQuery) WithLanguage(opts ...func(*LanguageQuery
 // Example:
 //
 //	var v []struct {
-//		BlogSeriesID uuid.UUID `json:"blog_series_id,omitempty"`
+//		BlogSeriesID string `json:"blog_series_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (bstq *BlogSeriesTranslationQuery) GroupBy(field string, fields ...string) 
 // Example:
 //
 //	var v []struct {
-//		BlogSeriesID uuid.UUID `json:"blog_series_id,omitempty"`
+//		BlogSeriesID string `json:"blog_series_id,omitempty"`
 //	}
 //
 //	client.BlogSeriesTranslation.Query().
@@ -446,8 +445,8 @@ func (bstq *BlogSeriesTranslationQuery) sqlAll(ctx context.Context, hooks ...que
 }
 
 func (bstq *BlogSeriesTranslationQuery) loadBlogSeries(ctx context.Context, query *BlogSeriesQuery, nodes []*BlogSeriesTranslation, init func(*BlogSeriesTranslation), assign func(*BlogSeriesTranslation, *BlogSeries)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogSeriesTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogSeriesTranslation)
 	for i := range nodes {
 		fk := nodes[i].BlogSeriesID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (bstq *BlogSeriesTranslationQuery) sqlCount(ctx context.Context) (int, erro
 }
 
 func (bstq *BlogSeriesTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(blogseriestranslation.Table, blogseriestranslation.Columns, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(blogseriestranslation.Table, blogseriestranslation.Columns, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString))
 	_spec.From = bstq.sql
 	if unique := bstq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

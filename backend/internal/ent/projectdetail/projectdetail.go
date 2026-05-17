@@ -7,7 +7,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -19,10 +18,6 @@ const (
 	FieldProjectID = "project_id"
 	// FieldProjectDetails holds the string denoting the project_details field in the database.
 	FieldProjectDetails = "project_details"
-	// FieldQuickStart holds the string denoting the quick_start field in the database.
-	FieldQuickStart = "quick_start"
-	// FieldReleaseNotes holds the string denoting the release_notes field in the database.
-	FieldReleaseNotes = "release_notes"
 	// FieldDependencies holds the string denoting the dependencies field in the database.
 	FieldDependencies = "dependencies"
 	// FieldLicense holds the string denoting the license field in the database.
@@ -62,8 +57,6 @@ var Columns = []string{
 	FieldID,
 	FieldProjectID,
 	FieldProjectDetails,
-	FieldQuickStart,
-	FieldReleaseNotes,
 	FieldDependencies,
 	FieldLicense,
 	FieldLicenseText,
@@ -94,7 +87,7 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() string
 )
 
 // OrderOption defines the ordering options for the ProjectDetail queries.
@@ -113,16 +106,6 @@ func ByProjectID(opts ...sql.OrderTermOption) OrderOption {
 // ByProjectDetails orders the results by the project_details field.
 func ByProjectDetails(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectDetails, opts...).ToFunc()
-}
-
-// ByQuickStart orders the results by the quick_start field.
-func ByQuickStart(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldQuickStart, opts...).ToFunc()
-}
-
-// ByReleaseNotes orders the results by the release_notes field.
-func ByReleaseNotes(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldReleaseNotes, opts...).ToFunc()
 }
 
 // ByDependencies orders the results by the dependencies field.

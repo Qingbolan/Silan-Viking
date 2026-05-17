@@ -29,7 +29,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // LanguageCreate is the builder for creating a Language entity.
@@ -86,14 +85,14 @@ func (lc *LanguageCreate) SetID(s string) *LanguageCreate {
 }
 
 // AddPersonalInfoTranslationIDs adds the "personal_info_translations" edge to the PersonalInfoTranslation entity by IDs.
-func (lc *LanguageCreate) AddPersonalInfoTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddPersonalInfoTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddPersonalInfoTranslationIDs(ids...)
 	return lc
 }
 
 // AddPersonalInfoTranslations adds the "personal_info_translations" edges to the PersonalInfoTranslation entity.
 func (lc *LanguageCreate) AddPersonalInfoTranslations(p ...*PersonalInfoTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -101,14 +100,14 @@ func (lc *LanguageCreate) AddPersonalInfoTranslations(p ...*PersonalInfoTranslat
 }
 
 // AddEducationTranslationIDs adds the "education_translations" edge to the EducationTranslation entity by IDs.
-func (lc *LanguageCreate) AddEducationTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddEducationTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddEducationTranslationIDs(ids...)
 	return lc
 }
 
 // AddEducationTranslations adds the "education_translations" edges to the EducationTranslation entity.
 func (lc *LanguageCreate) AddEducationTranslations(e ...*EducationTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -116,14 +115,14 @@ func (lc *LanguageCreate) AddEducationTranslations(e ...*EducationTranslation) *
 }
 
 // AddEducationDetailTranslationIDs adds the "education_detail_translations" edge to the EducationDetailTranslation entity by IDs.
-func (lc *LanguageCreate) AddEducationDetailTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddEducationDetailTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddEducationDetailTranslationIDs(ids...)
 	return lc
 }
 
 // AddEducationDetailTranslations adds the "education_detail_translations" edges to the EducationDetailTranslation entity.
 func (lc *LanguageCreate) AddEducationDetailTranslations(e ...*EducationDetailTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -131,14 +130,14 @@ func (lc *LanguageCreate) AddEducationDetailTranslations(e ...*EducationDetailTr
 }
 
 // AddWorkExperienceTranslationIDs adds the "work_experience_translations" edge to the WorkExperienceTranslation entity by IDs.
-func (lc *LanguageCreate) AddWorkExperienceTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddWorkExperienceTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddWorkExperienceTranslationIDs(ids...)
 	return lc
 }
 
 // AddWorkExperienceTranslations adds the "work_experience_translations" edges to the WorkExperienceTranslation entity.
 func (lc *LanguageCreate) AddWorkExperienceTranslations(w ...*WorkExperienceTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -146,14 +145,14 @@ func (lc *LanguageCreate) AddWorkExperienceTranslations(w ...*WorkExperienceTran
 }
 
 // AddWorkExperienceDetailTranslationIDs adds the "work_experience_detail_translations" edge to the WorkExperienceDetailTranslation entity by IDs.
-func (lc *LanguageCreate) AddWorkExperienceDetailTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddWorkExperienceDetailTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddWorkExperienceDetailTranslationIDs(ids...)
 	return lc
 }
 
 // AddWorkExperienceDetailTranslations adds the "work_experience_detail_translations" edges to the WorkExperienceDetailTranslation entity.
 func (lc *LanguageCreate) AddWorkExperienceDetailTranslations(w ...*WorkExperienceDetailTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -161,14 +160,14 @@ func (lc *LanguageCreate) AddWorkExperienceDetailTranslations(w ...*WorkExperien
 }
 
 // AddProjectTranslationIDs adds the "project_translations" edge to the ProjectTranslation entity by IDs.
-func (lc *LanguageCreate) AddProjectTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddProjectTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddProjectTranslationIDs(ids...)
 	return lc
 }
 
 // AddProjectTranslations adds the "project_translations" edges to the ProjectTranslation entity.
 func (lc *LanguageCreate) AddProjectTranslations(p ...*ProjectTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -176,14 +175,14 @@ func (lc *LanguageCreate) AddProjectTranslations(p ...*ProjectTranslation) *Lang
 }
 
 // AddProjectDetailTranslationIDs adds the "project_detail_translations" edge to the ProjectDetailTranslation entity by IDs.
-func (lc *LanguageCreate) AddProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddProjectDetailTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddProjectDetailTranslationIDs(ids...)
 	return lc
 }
 
 // AddProjectDetailTranslations adds the "project_detail_translations" edges to the ProjectDetailTranslation entity.
 func (lc *LanguageCreate) AddProjectDetailTranslations(p ...*ProjectDetailTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -191,14 +190,14 @@ func (lc *LanguageCreate) AddProjectDetailTranslations(p ...*ProjectDetailTransl
 }
 
 // AddProjectImageTranslationIDs adds the "project_image_translations" edge to the ProjectImageTranslation entity by IDs.
-func (lc *LanguageCreate) AddProjectImageTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddProjectImageTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddProjectImageTranslationIDs(ids...)
 	return lc
 }
 
 // AddProjectImageTranslations adds the "project_image_translations" edges to the ProjectImageTranslation entity.
 func (lc *LanguageCreate) AddProjectImageTranslations(p ...*ProjectImageTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -206,14 +205,14 @@ func (lc *LanguageCreate) AddProjectImageTranslations(p ...*ProjectImageTranslat
 }
 
 // AddBlogCategoryTranslationIDs adds the "blog_category_translations" edge to the BlogCategoryTranslation entity by IDs.
-func (lc *LanguageCreate) AddBlogCategoryTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddBlogCategoryTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddBlogCategoryTranslationIDs(ids...)
 	return lc
 }
 
 // AddBlogCategoryTranslations adds the "blog_category_translations" edges to the BlogCategoryTranslation entity.
 func (lc *LanguageCreate) AddBlogCategoryTranslations(b ...*BlogCategoryTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -221,14 +220,14 @@ func (lc *LanguageCreate) AddBlogCategoryTranslations(b ...*BlogCategoryTranslat
 }
 
 // AddBlogPostTranslationIDs adds the "blog_post_translations" edge to the BlogPostTranslation entity by IDs.
-func (lc *LanguageCreate) AddBlogPostTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddBlogPostTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddBlogPostTranslationIDs(ids...)
 	return lc
 }
 
 // AddBlogPostTranslations adds the "blog_post_translations" edges to the BlogPostTranslation entity.
 func (lc *LanguageCreate) AddBlogPostTranslations(b ...*BlogPostTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -236,14 +235,14 @@ func (lc *LanguageCreate) AddBlogPostTranslations(b ...*BlogPostTranslation) *La
 }
 
 // AddBlogSeriesTranslationIDs adds the "blog_series_translations" edge to the BlogSeriesTranslation entity by IDs.
-func (lc *LanguageCreate) AddBlogSeriesTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddBlogSeriesTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddBlogSeriesTranslationIDs(ids...)
 	return lc
 }
 
 // AddBlogSeriesTranslations adds the "blog_series_translations" edges to the BlogSeriesTranslation entity.
 func (lc *LanguageCreate) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -251,14 +250,14 @@ func (lc *LanguageCreate) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation)
 }
 
 // AddIdeaTranslationIDs adds the "idea_translations" edge to the IdeaTranslation entity by IDs.
-func (lc *LanguageCreate) AddIdeaTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddIdeaTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddIdeaTranslationIDs(ids...)
 	return lc
 }
 
 // AddIdeaTranslations adds the "idea_translations" edges to the IdeaTranslation entity.
 func (lc *LanguageCreate) AddIdeaTranslations(i ...*IdeaTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -266,14 +265,14 @@ func (lc *LanguageCreate) AddIdeaTranslations(i ...*IdeaTranslation) *LanguageCr
 }
 
 // AddIdeaDetailTranslationIDs adds the "idea_detail_translations" edge to the IdeaDetailTranslation entity by IDs.
-func (lc *LanguageCreate) AddIdeaDetailTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddIdeaDetailTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddIdeaDetailTranslationIDs(ids...)
 	return lc
 }
 
 // AddIdeaDetailTranslations adds the "idea_detail_translations" edges to the IdeaDetailTranslation entity.
 func (lc *LanguageCreate) AddIdeaDetailTranslations(i ...*IdeaDetailTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -281,14 +280,14 @@ func (lc *LanguageCreate) AddIdeaDetailTranslations(i ...*IdeaDetailTranslation)
 }
 
 // AddResearchProjectTranslationIDs adds the "research_project_translations" edge to the ResearchProjectTranslation entity by IDs.
-func (lc *LanguageCreate) AddResearchProjectTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddResearchProjectTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddResearchProjectTranslationIDs(ids...)
 	return lc
 }
 
 // AddResearchProjectTranslations adds the "research_project_translations" edges to the ResearchProjectTranslation entity.
 func (lc *LanguageCreate) AddResearchProjectTranslations(r ...*ResearchProjectTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -296,14 +295,14 @@ func (lc *LanguageCreate) AddResearchProjectTranslations(r ...*ResearchProjectTr
 }
 
 // AddResearchProjectDetailTranslationIDs adds the "research_project_detail_translations" edge to the ResearchProjectDetailTranslation entity by IDs.
-func (lc *LanguageCreate) AddResearchProjectDetailTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddResearchProjectDetailTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddResearchProjectDetailTranslationIDs(ids...)
 	return lc
 }
 
 // AddResearchProjectDetailTranslations adds the "research_project_detail_translations" edges to the ResearchProjectDetailTranslation entity.
 func (lc *LanguageCreate) AddResearchProjectDetailTranslations(r ...*ResearchProjectDetailTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -311,14 +310,14 @@ func (lc *LanguageCreate) AddResearchProjectDetailTranslations(r ...*ResearchPro
 }
 
 // AddPublicationTranslationIDs adds the "publication_translations" edge to the PublicationTranslation entity by IDs.
-func (lc *LanguageCreate) AddPublicationTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddPublicationTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddPublicationTranslationIDs(ids...)
 	return lc
 }
 
 // AddPublicationTranslations adds the "publication_translations" edges to the PublicationTranslation entity.
 func (lc *LanguageCreate) AddPublicationTranslations(p ...*PublicationTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -326,14 +325,14 @@ func (lc *LanguageCreate) AddPublicationTranslations(p ...*PublicationTranslatio
 }
 
 // AddAwardTranslationIDs adds the "award_translations" edge to the AwardTranslation entity by IDs.
-func (lc *LanguageCreate) AddAwardTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddAwardTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddAwardTranslationIDs(ids...)
 	return lc
 }
 
 // AddAwardTranslations adds the "award_translations" edges to the AwardTranslation entity.
 func (lc *LanguageCreate) AddAwardTranslations(a ...*AwardTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -341,14 +340,14 @@ func (lc *LanguageCreate) AddAwardTranslations(a ...*AwardTranslation) *Language
 }
 
 // AddRecentUpdateTranslationIDs adds the "recent_update_translations" edge to the RecentUpdateTranslation entity by IDs.
-func (lc *LanguageCreate) AddRecentUpdateTranslationIDs(ids ...uuid.UUID) *LanguageCreate {
+func (lc *LanguageCreate) AddRecentUpdateTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddRecentUpdateTranslationIDs(ids...)
 	return lc
 }
 
 // AddRecentUpdateTranslations adds the "recent_update_translations" edges to the RecentUpdateTranslation entity.
 func (lc *LanguageCreate) AddRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -488,7 +487,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.PersonalInfoTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -504,7 +503,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.EducationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -520,7 +519,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.EducationDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -536,7 +535,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.WorkExperienceTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -552,7 +551,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.WorkExperienceDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -568,7 +567,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.ProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -584,7 +583,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.ProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -600,7 +599,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.ProjectImageTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -616,7 +615,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.BlogCategoryTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -632,7 +631,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.BlogPostTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -648,7 +647,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.BlogSeriesTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -664,7 +663,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.IdeaTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -680,7 +679,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.IdeaDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -696,7 +695,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.ResearchProjectTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -712,7 +711,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.ResearchProjectDetailTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -728,7 +727,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.PublicationTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -744,7 +743,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.AwardTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -760,7 +759,7 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Columns: []string{language.RecentUpdateTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

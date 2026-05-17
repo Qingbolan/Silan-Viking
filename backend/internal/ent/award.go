@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // Award is the model entity for the Award schema.
 type Award struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// AwardingOrganization holds the value of the "awarding_organization" field.
@@ -87,12 +86,10 @@ func (*Award) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case award.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case award.FieldTitle, award.FieldAwardingOrganization, award.FieldAwardType, award.FieldDescription, award.FieldCertificateURL:
+		case award.FieldID, award.FieldUserID, award.FieldTitle, award.FieldAwardingOrganization, award.FieldAwardType, award.FieldDescription, award.FieldCertificateURL:
 			values[i] = new(sql.NullString)
 		case award.FieldAwardDate, award.FieldCreatedAt, award.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case award.FieldID, award.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -109,16 +106,16 @@ func (a *Award) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case award.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				a.ID = *value
+			} else if value.Valid {
+				a.ID = value.String
 			}
 		case award.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				a.UserID = *value
+			} else if value.Valid {
+				a.UserID = value.String
 			}
 		case award.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -227,7 +224,7 @@ func (a *Award) String() string {
 	builder.WriteString("Award(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", a.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", a.UserID))
+	builder.WriteString(a.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(a.Title)

@@ -37,7 +37,7 @@ func (l *GetBlogCategoriesLogic) GetBlogCategories(req *types.BlogCategoriesRequ
 	var result []types.BlogCategory
 	for _, cat := range categories {
 		result = append(result, types.BlogCategory{
-			ID:          cat.ID.String(),
+			ID:          cat.ID,
 			Name:        cat.Name,
 			Slug:        cat.Slug,
 			Description: cat.Description,

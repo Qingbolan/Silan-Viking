@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectTranslationQuery is the builder for querying ProjectTranslation entities.
@@ -131,8 +130,8 @@ func (ptq *ProjectTranslationQuery) FirstX(ctx context.Context) *ProjectTranslat
 
 // FirstID returns the first ProjectTranslation ID from the query.
 // Returns a *NotFoundError when no ProjectTranslation ID was found.
-func (ptq *ProjectTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ptq *ProjectTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ptq.Limit(1).IDs(setContextOp(ctx, ptq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (ptq *ProjectTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (ptq *ProjectTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (ptq *ProjectTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := ptq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (ptq *ProjectTranslationQuery) OnlyX(ctx context.Context) *ProjectTranslati
 // OnlyID is like Only, but returns the only ProjectTranslation ID in the query.
 // Returns a *NotSingularError when more than one ProjectTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (ptq *ProjectTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ptq *ProjectTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ptq.Limit(2).IDs(setContextOp(ctx, ptq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (ptq *ProjectTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, e
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (ptq *ProjectTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (ptq *ProjectTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := ptq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (ptq *ProjectTranslationQuery) AllX(ctx context.Context) []*ProjectTranslat
 }
 
 // IDs executes the query and returns a list of ProjectTranslation IDs.
-func (ptq *ProjectTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (ptq *ProjectTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if ptq.ctx.Unique == nil && ptq.path != nil {
 		ptq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (ptq *ProjectTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, e
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (ptq *ProjectTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (ptq *ProjectTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := ptq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (ptq *ProjectTranslationQuery) WithLanguage(opts ...func(*LanguageQuery)) *
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (ptq *ProjectTranslationQuery) GroupBy(field string, fields ...string) *Pro
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //	}
 //
 //	client.ProjectTranslation.Query().
@@ -446,8 +445,8 @@ func (ptq *ProjectTranslationQuery) sqlAll(ctx context.Context, hooks ...queryHo
 }
 
 func (ptq *ProjectTranslationQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectTranslation, init func(*ProjectTranslation), assign func(*ProjectTranslation, *Project)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ProjectTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ProjectTranslation)
 	for i := range nodes {
 		fk := nodes[i].ProjectID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (ptq *ProjectTranslationQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (ptq *ProjectTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(projecttranslation.Table, projecttranslation.Columns, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(projecttranslation.Table, projecttranslation.Columns, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString))
 	_spec.From = ptq.sql
 	if unique := ptq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

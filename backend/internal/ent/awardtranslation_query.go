@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AwardTranslationQuery is the builder for querying AwardTranslation entities.
@@ -131,8 +130,8 @@ func (atq *AwardTranslationQuery) FirstX(ctx context.Context) *AwardTranslation 
 
 // FirstID returns the first AwardTranslation ID from the query.
 // Returns a *NotFoundError when no AwardTranslation ID was found.
-func (atq *AwardTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (atq *AwardTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = atq.Limit(1).IDs(setContextOp(ctx, atq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (atq *AwardTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, er
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (atq *AwardTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (atq *AwardTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := atq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (atq *AwardTranslationQuery) OnlyX(ctx context.Context) *AwardTranslation {
 // OnlyID is like Only, but returns the only AwardTranslation ID in the query.
 // Returns a *NotSingularError when more than one AwardTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (atq *AwardTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (atq *AwardTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = atq.Limit(2).IDs(setContextOp(ctx, atq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (atq *AwardTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (atq *AwardTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (atq *AwardTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := atq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (atq *AwardTranslationQuery) AllX(ctx context.Context) []*AwardTranslation 
 }
 
 // IDs executes the query and returns a list of AwardTranslation IDs.
-func (atq *AwardTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (atq *AwardTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if atq.ctx.Unique == nil && atq.path != nil {
 		atq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (atq *AwardTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (atq *AwardTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (atq *AwardTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := atq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (atq *AwardTranslationQuery) WithLanguage(opts ...func(*LanguageQuery)) *Aw
 // Example:
 //
 //	var v []struct {
-//		AwardID uuid.UUID `json:"award_id,omitempty"`
+//		AwardID string `json:"award_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (atq *AwardTranslationQuery) GroupBy(field string, fields ...string) *Award
 // Example:
 //
 //	var v []struct {
-//		AwardID uuid.UUID `json:"award_id,omitempty"`
+//		AwardID string `json:"award_id,omitempty"`
 //	}
 //
 //	client.AwardTranslation.Query().
@@ -446,8 +445,8 @@ func (atq *AwardTranslationQuery) sqlAll(ctx context.Context, hooks ...queryHook
 }
 
 func (atq *AwardTranslationQuery) loadAward(ctx context.Context, query *AwardQuery, nodes []*AwardTranslation, init func(*AwardTranslation), assign func(*AwardTranslation, *Award)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*AwardTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*AwardTranslation)
 	for i := range nodes {
 		fk := nodes[i].AwardID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (atq *AwardTranslationQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (atq *AwardTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(awardtranslation.Table, awardtranslation.Columns, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(awardtranslation.Table, awardtranslation.Columns, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString))
 	_spec.From = atq.sql
 	if unique := atq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

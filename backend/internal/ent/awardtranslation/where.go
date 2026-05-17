@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.AwardTranslation {
+func ID(id string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.AwardTranslation {
+func IDEQ(id string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.AwardTranslation {
+func IDNEQ(id string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.AwardTranslation {
+func IDIn(ids ...string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.AwardTranslation {
+func IDNotIn(ids ...string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.AwardTranslation {
+func IDGT(id string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.AwardTranslation {
+func IDGTE(id string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.AwardTranslation {
+func IDLT(id string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.AwardTranslation {
+func IDLTE(id string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // AwardID applies equality check predicate on the "award_id" field. It's identical to AwardIDEQ.
-func AwardID(v uuid.UUID) predicate.AwardTranslation {
+func AwardID(v string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldEQ(FieldAwardID, v))
 }
 
@@ -92,23 +101,68 @@ func CreatedAt(v time.Time) predicate.AwardTranslation {
 }
 
 // AwardIDEQ applies the EQ predicate on the "award_id" field.
-func AwardIDEQ(v uuid.UUID) predicate.AwardTranslation {
+func AwardIDEQ(v string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldEQ(FieldAwardID, v))
 }
 
 // AwardIDNEQ applies the NEQ predicate on the "award_id" field.
-func AwardIDNEQ(v uuid.UUID) predicate.AwardTranslation {
+func AwardIDNEQ(v string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldNEQ(FieldAwardID, v))
 }
 
 // AwardIDIn applies the In predicate on the "award_id" field.
-func AwardIDIn(vs ...uuid.UUID) predicate.AwardTranslation {
+func AwardIDIn(vs ...string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldIn(FieldAwardID, vs...))
 }
 
 // AwardIDNotIn applies the NotIn predicate on the "award_id" field.
-func AwardIDNotIn(vs ...uuid.UUID) predicate.AwardTranslation {
+func AwardIDNotIn(vs ...string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldNotIn(FieldAwardID, vs...))
+}
+
+// AwardIDGT applies the GT predicate on the "award_id" field.
+func AwardIDGT(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldGT(FieldAwardID, v))
+}
+
+// AwardIDGTE applies the GTE predicate on the "award_id" field.
+func AwardIDGTE(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldGTE(FieldAwardID, v))
+}
+
+// AwardIDLT applies the LT predicate on the "award_id" field.
+func AwardIDLT(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldLT(FieldAwardID, v))
+}
+
+// AwardIDLTE applies the LTE predicate on the "award_id" field.
+func AwardIDLTE(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldLTE(FieldAwardID, v))
+}
+
+// AwardIDContains applies the Contains predicate on the "award_id" field.
+func AwardIDContains(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldContains(FieldAwardID, v))
+}
+
+// AwardIDHasPrefix applies the HasPrefix predicate on the "award_id" field.
+func AwardIDHasPrefix(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldHasPrefix(FieldAwardID, v))
+}
+
+// AwardIDHasSuffix applies the HasSuffix predicate on the "award_id" field.
+func AwardIDHasSuffix(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldHasSuffix(FieldAwardID, v))
+}
+
+// AwardIDEqualFold applies the EqualFold predicate on the "award_id" field.
+func AwardIDEqualFold(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldEqualFold(FieldAwardID, v))
+}
+
+// AwardIDContainsFold applies the ContainsFold predicate on the "award_id" field.
+func AwardIDContainsFold(v string) predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldContainsFold(FieldAwardID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

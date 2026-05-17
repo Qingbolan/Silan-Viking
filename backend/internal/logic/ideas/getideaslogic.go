@@ -32,7 +32,7 @@ func NewGetIdeasLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetIdeas
 
 func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaListResponse, err error) {
 	query := l.svcCtx.DB.Idea.Query().
-		Where(idea.IsPublic(true)).
+		Where(idea.VisibilityEQ(idea.VisibilityPublic)).
 		WithUser()
 
 	// Apply filters
@@ -71,6 +71,7 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 	ideas, err := query.
 		WithTags().
 		WithDetails().
+		WithTranslations().
 		Order(ent.Desc(idea.FieldUpdatedAt)).
 		Limit(req.Size).
 		Offset(offset).
@@ -86,17 +87,26 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		// Handle non-nullable fields
 		abstract := ideaEntity.Abstract
 		description := ideaEntity.Description
+		title := ideaEntity.Title
+
+		// Resolve language-variant fields from idea_translations: the content
+		// engine leaves title/abstract empty on the main ideas row.
+		if tr := pickIdeaTranslation(ideaEntity.Edges.Translations, req.Language); tr != nil {
+			if tr.Title != "" {
+				title = tr.Title
+			}
+			if tr.Abstract != "" {
+				abstract = tr.Abstract
+			}
+		}
 
 		// Get detail fields from IdeaDetail edge
-		var progress, results, references, requiredResources string
+		var requiredResources string
 		var collaborationNeeded bool
 		var estimatedDuration string
 
 		if ideaEntity.Edges.Details != nil {
 			detail := ideaEntity.Edges.Details
-			progress = detail.Progress
-			results = detail.Results
-			references = detail.References
 			requiredResources = detail.RequiredResources
 			collaborationNeeded = detail.CollaborationNeeded
 
@@ -127,8 +137,8 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		var keywords []string
 
 		result = append(result, types.IdeaData{
-			ID:                   ideaEntity.ID.String(),
-			Title:                ideaEntity.Title,
+			ID:                   ideaEntity.ID,
+			Title:                title,
 			Description:          description,
 			Category:             category,
 			Tags:                 tags,
@@ -137,12 +147,12 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 			LastUpdated:          ideaEntity.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 			Abstract:             abstract,
 			AbstractZh:           abstract,
-			Progress:             progress,
-			ProgressZh:           progress,
-			Results:              results,
-			ResultsZh:            results,
-			Reference:            references,
-			Reference_Zh:         references,
+			Progress:             "", // M0.5a §11.8: moved to item_part
+			ProgressZh:           "", // M0.5a §11.8: moved to item_part
+			Results:              "", // M0.5a §11.8: moved to item_part
+			ResultsZh:            "", // M0.5a §11.8: moved to item_part
+			Reference:            "", // M0.5a §11.8: moved to item_part
+			Reference_Zh:         "", // M0.5a §11.8: moved to item_part
 			TechStack:            techStack,
 			CodeRepository:       codeRepository,
 			DemoURL:              demoURL,

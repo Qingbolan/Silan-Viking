@@ -40,7 +40,7 @@ func (wetd *WorkExperienceTranslationDelete) ExecX(ctx context.Context) int {
 }
 
 func (wetd *WorkExperienceTranslationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(workexperiencetranslation.Table, sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(workexperiencetranslation.Table, sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString))
 	if ps := wetd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

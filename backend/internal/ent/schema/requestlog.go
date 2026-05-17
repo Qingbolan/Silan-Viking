@@ -1,0 +1,70 @@
+package schema
+
+import (
+	"time"
+
+	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
+)
+
+// RequestLog holds the schema definition for the API/access log table
+// (M0.5a, docs/silan-viking/11 §11.10, ruling #7). It is formalized as a
+// standalone ent table — not merged into content_interaction, since an access
+// log and a content interaction are different things. It is a runtime table:
+// written by the Go API on request arrival, never touched by promote.
+//
+// The id is an auto-increment integer (not a UUID) to stay compatible with
+// the pre-existing request_logs table created in servicecontext.go.
+type RequestLog struct {
+	ent.Schema
+}
+
+// Annotations for the RequestLog schema.
+func (RequestLog) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entsql.Annotation{Table: "request_logs"},
+	}
+}
+
+// Fields of the RequestLog.
+func (RequestLog) Fields() []ent.Field {
+	return []ent.Field{
+		field.Int("id"),
+		field.String("method").
+			Optional().
+			MaxLen(16),
+		field.String("path").
+			Optional().
+			MaxLen(1024),
+		field.Int("status").
+			Optional(),
+		field.Int("duration_ms").
+			Optional(),
+		field.String("referrer").
+			Optional().
+			MaxLen(1024),
+		field.String("user_agent").
+			Optional().
+			MaxLen(1024),
+		field.String("ip").
+			Optional().
+			MaxLen(64),
+		field.String("lang").
+			Optional().
+			MaxLen(8),
+		field.Time("created_at").
+			Default(time.Now).
+			Immutable(),
+	}
+}
+
+// Indexes of the RequestLog.
+func (RequestLog) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("created_at"),
+		index.Fields("path"),
+	}
+}

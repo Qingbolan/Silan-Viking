@@ -1,0 +1,40 @@
+# silan-viking engine CI — the three-stage pipeline (per docs/silan-viking/05 §5.5).
+#
+#   1. fmt    — cargo fmt --check
+#   2. clippy — cargo clippy, -D warnings + -D clippy::unwrap_used
+#   3. test   — cargo test --workspace
+#
+# The criterion performance-benchmark job is wired in once benches/ land in
+# M5/M6 (09 §9.5).
+name: engine-ci
+
+on:
+  push:
+    paths: ["engine/**"]
+  pull_request:
+    paths: ["engine/**"]
+
+defaults:
+  run:
+    working-directory: engine
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup component add rustfmt
+      - run: cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup component add clippy
+      - run: cargo clippy --workspace --all-targets -- -D warnings -D clippy::unwrap_used
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo test --workspace

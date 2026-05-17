@@ -26,10 +26,10 @@ func (AwardTranslation) Annotations() []schema.Annotation {
 // Fields of the AwardTranslation.
 func (AwardTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("award_id", uuid.UUID{}).
+		field.String("award_id").
 			StorageKey("award_id"),
 		field.String("language_code").
 			MaxLen(5).

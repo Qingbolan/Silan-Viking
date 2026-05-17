@@ -40,7 +40,7 @@ func (pid *PersonalInfoDelete) ExecX(ctx context.Context) int {
 }
 
 func (pid *PersonalInfoDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(personalinfo.Table, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(personalinfo.Table, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString))
 	if ps := pid.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

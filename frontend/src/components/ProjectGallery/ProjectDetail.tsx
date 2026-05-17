@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft,
   ExternalLink,
   Github,
   Heart,
@@ -25,6 +24,16 @@ import {
 import { getClientFingerprint } from '../../utils/fingerprint';
 import ProjectTabs from './ProjectTabs';
 import type { ProjectDetail as ProjectDetailType } from '../../types/api';
+import { useSetPageTitle } from '../../layout/PageTitleContext';
+import {
+  Container,
+  Section,
+  Badge,
+  Button,
+  Divider,
+  BrandLoading,
+  ErrorState,
+} from '../../components/ds';
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,7 +46,12 @@ const ProjectDetail: React.FC = () => {
   const [metrics, setMetrics] = useState<ProjectMetricsResponse | null>(null);
   const [fingerprint, setFingerprint] = useState<string>('');
   const [liking, setLiking] = useState(false);
-  
+
+  // Reflect the project title in the address-bar breadcrumb.
+  useSetPageTitle(
+    project ? (language === 'zh' && project.titleZh ? project.titleZh : project.title) : null,
+  );
+
   // Initialize fingerprint
   useEffect(() => {
     const initFingerprint = async () => {
@@ -190,183 +204,184 @@ const ProjectDetail: React.FC = () => {
   };
   
   if (loading) {
-    return (
-      <div className="container mx-auto px-6 py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-theme-primary mx-auto mb-4"></div>
-          <p className="text-theme-secondary">
-            {t('projects.loadingProject')}
-          </p>
-        </div>
-      </div>
-    );
+    return <BrandLoading inline message={t('projects.loadingProject')} />;
   }
-  
+
   if (error || !project) {
     return (
-      <div className="container mx-auto px-6 py-12">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-theme-primary mb-4">
-            {error || t('projects.projectNotFound')}
-          </h1>
-          <Link 
-            to="/projects"
-            className="text-theme-600 hover:underline"
-          >
-            {t('projects.backToProjects')}
+      <ErrorState
+        variant="page"
+        title={t('projects.projectNotFound')}
+        description={typeof error === 'string' ? error : undefined}
+        actions={
+          <Link to="/projects">
+            <Button variant="outline" size="sm">
+              {t('projects.backToProjects')}
+            </Button>
           </Link>
-        </div>
-      </div>
+        }
+      />
     );
   }
 
   const planDisplay = plan ? getPlanDisplay(plan) : null;
 
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-6 py-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-8"
-        >
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 mb-6 text-sm text-theme-secondary">
-            <Link 
-              to="/projects" 
-              className="flex items-center gap-1 hover:text-theme-primary transition-colors"
-            >
-              <ArrowLeft size={16} />
-              {t('projects.title')}
-            </Link>
-            <span>/</span>
-            <span className="text-theme-primary">{project.title}</span>
-          </div>
-
-          {/* Project Header */}
-          <div className="bg-theme-surface rounded-xl p-6 shadow-sm border border-theme-border">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-              <div className="flex-1">
-                {/* Plan Badge */}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <Container width="content">
+        <Section spacing="md">
+          {/* --- Header ------------------------------------------------- */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {/* Eyebrow row — plan label + build-status marker. */}
+            {(plan || project.status?.buildStatus) && (
+              <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 {plan && planDisplay && (
-                  <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex items-center gap-1.5 text-ds-xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
                     {planDisplay}
-                    <span className="text-sm font-medium text-theme-secondary">
-                      {language === 'en' ? plan.name : plan.nameZh}
-                    </span>
-                  </div>
+                    {language === 'en' ? plan.name : plan.nameZh}
+                  </span>
                 )}
-
-                {/* Title and Description */}
-                <h1 className="text-3xl font-bold text-theme-primary mb-3">
-                  {language === 'zh' && project.titleZh ? project.titleZh : project.title}
-                </h1>
-                <p className="text-lg text-theme-secondary mb-4">
-                  {project.description}
-                </p>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {project.tags?.map((tag: string, index: number) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-theme-100 text-theme-800 rounded-full text-sm font-medium"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Quick Stats */}
-                <div className="flex flex-wrap items-center gap-6 text-sm text-theme-secondary">
-                  <button
-                    onClick={handleLikeProject}
-                    disabled={liking}
-                    className={`flex items-center gap-1 transition-colors hover:text-red-500 ${
-                      metrics?.is_liked_by_user ? 'text-red-500' : 'text-theme-secondary'
-                    } ${liking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                {plan && project.status?.buildStatus && (
+                  <Divider orientation="vertical" className="h-3" />
+                )}
+                {project.status?.buildStatus && (
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-ds-xs font-medium uppercase tracking-[0.08em] ${
+                      project.status.buildStatus === 'passing'
+                        ? 'text-ds-success'
+                        : project.status.buildStatus === 'failing'
+                          ? 'text-ds-error'
+                          : 'text-ds-fg-subtle'
+                    }`}
                   >
-                    <Heart
-                      size={16}
-                      className={metrics?.is_liked_by_user ? 'fill-current' : ''}
+                    <span
+                      className="size-1.5 rounded-full bg-current"
+                      aria-hidden
                     />
-                    <span>{metrics?.likes_count || 0} {t('projects.likes')}</span>
-                  </button>
-                  <div className="flex items-center gap-1">
-                    <Eye size={16} />
-                    <span>{metrics?.views_count || 0} views</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Download size={16} />
-                    <span>{project.metrics?.downloads || 0} {t('projects.downloads')}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Shield size={16} />
-                    <span>{project.status?.license || 'MIT'}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar size={16} />
-                    <span>{t('projects.updated')} {project.status?.lastUpdated}</span>
-                  </div>
-                </div>
+                    {t(`projects.build.${project.status.buildStatus}`, {
+                      defaultValue: project.status.buildStatus,
+                    })}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Title + description — one tight group. */}
+            <h1 className="text-ds-4xl font-semibold leading-[1.15] tracking-[-0.02em] text-ds-fg">
+              {language === 'zh' && project.titleZh ? project.titleZh : project.title}
+            </h1>
+            {project.description && (
+              <p className="mt-3 max-w-2xl text-ds-lg leading-[1.6] text-ds-fg-muted">
+                {project.description}
+              </p>
+            )}
+
+            {/* Byline — license · updated, inline peers split by hairlines. */}
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 text-ds-sm text-ds-fg-muted">
+                <Shield size={15} className="text-ds-fg-subtle" />
+                {project.status?.license || 'MIT'}
+              </span>
+              {project.status?.lastUpdated && (
+                <>
+                  <Divider orientation="vertical" className="h-3.5" />
+                  <span className="inline-flex items-center gap-1.5 text-ds-sm text-ds-fg-muted">
+                    <Calendar size={15} className="text-ds-fg-subtle" />
+                    {t('projects.updated')} {project.status.lastUpdated}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Tag chips. */}
+            {project.tags && project.tags.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {project.tags.map((tag: string, index: number) => (
+                  <Badge key={index} tone="neutral" appearance="soft" size="md">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Cover image. */}
+            {project.image && (
+              <img
+                src={project.image}
+                alt={project.title}
+                className="mt-6 h-64 w-full rounded-ds-lg border border-ds-border object-cover"
+              />
+            )}
+          </motion.div>
+
+          {/* --- Sticky stats bar — horizontal "topping" that pins to the
+              top of the viewport as the content scrolls beneath it. ----- */}
+          <div className="sticky top-0 z-20 mt-8 -mx-4 border-b border-ds-border bg-ds-surface-1/85 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
+            <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-ds-sm text-ds-fg-muted">
+                <button
+                  onClick={handleLikeProject}
+                  disabled={liking}
+                  className={`inline-flex items-center gap-1.5 rounded-ds-sm px-1 py-0.5 transition-colors hover:text-ds-error ${
+                    metrics?.is_liked_by_user ? 'text-ds-error' : ''
+                  } ${liking ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                >
+                  <Heart
+                    size={15}
+                    className={metrics?.is_liked_by_user ? 'fill-current' : ''}
+                  />
+                  {metrics?.likes_count || 0} {t('projects.likes')}
+                </button>
+                <Divider orientation="vertical" className="h-3.5" />
+                <span className="inline-flex items-center gap-1.5">
+                  <Eye size={15} className="text-ds-fg-subtle" />
+                  {metrics?.views_count || 0} views
+                </span>
+                <Divider orientation="vertical" className="h-3.5" />
+                <span className="inline-flex items-center gap-1.5">
+                  <Download size={15} className="text-ds-fg-subtle" />
+                  {project.metrics?.downloads || 0} {t('projects.downloads')}
+                </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-3 lg:min-w-[200px]">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 {project.demo && (
-                  <a
-                    href={project.demo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-theme-600 text-white px-4 py-2 rounded-lg hover:bg-theme-700 transition-colors"
-                  >
-                    <ExternalLink size={16} />
-                    {t('projects.liveDemo')}
+                  <a href={project.demo} target="_blank" rel="noopener noreferrer">
+                    <Button size="sm" leadingIcon={<ExternalLink />}>
+                      {t('projects.liveDemo')}
+                    </Button>
                   </a>
                 )}
                 {project.github && (
-                  <a
-                    href={project.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 border border-theme-border text-theme-primary px-4 py-2 rounded-lg hover:bg-theme-surface transition-colors"
-                  >
-                    <Github size={16} />
-                    {t('projects.sourceCode')}
+                  <a href={project.github} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" leadingIcon={<Github />}>
+                      {t('projects.sourceCode')}
+                    </Button>
                   </a>
                 )}
-                <button className="flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                  <Download size={16} />
+                <Button variant="secondary" size="sm" leadingIcon={<Download />}>
                   {t('projects.download')} v{project.versions?.latest || '1.0.0'}
-                </button>
+                </Button>
               </div>
             </div>
-
-            {/* Project Image */}
-            {project.image && (
-              <div className="mt-6">
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="w-full h-64  project-image-placeholder rounded-lg"
-                />
-              </div>
-            )}
           </div>
-        </motion.div>
 
-        {/* Tabs Content */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <ProjectTabs projectData={project} />
-        </motion.div>
-      </div>
-    </div>
+          {/* --- Tabs --------------------------------------------------- */}
+          <motion.div
+            className="mt-6"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
+            <ProjectTabs projectData={project} />
+          </motion.div>
+        </Section>
+      </Container>
+    </motion.div>
   );
 };
 

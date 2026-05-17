@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // RecentUpdateCreate is the builder for creating a RecentUpdate entity.
@@ -24,21 +23,63 @@ type RecentUpdateCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (ruc *RecentUpdateCreate) SetUserID(u uuid.UUID) *RecentUpdateCreate {
-	ruc.mutation.SetUserID(u)
+func (ruc *RecentUpdateCreate) SetUserID(s string) *RecentUpdateCreate {
+	ruc.mutation.SetUserID(s)
 	return ruc
 }
 
-// SetType sets the "type" field.
-func (ruc *RecentUpdateCreate) SetType(r recentupdate.Type) *RecentUpdateCreate {
-	ruc.mutation.SetType(r)
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableUserID(s *string) *RecentUpdateCreate {
+	if s != nil {
+		ruc.SetUserID(*s)
+	}
 	return ruc
 }
 
-// SetNillableType sets the "type" field if the given value is not nil.
-func (ruc *RecentUpdateCreate) SetNillableType(r *recentupdate.Type) *RecentUpdateCreate {
+// SetSlug sets the "slug" field.
+func (ruc *RecentUpdateCreate) SetSlug(s string) *RecentUpdateCreate {
+	ruc.mutation.SetSlug(s)
+	return ruc
+}
+
+// SetSubjectKind sets the "subject_kind" field.
+func (ruc *RecentUpdateCreate) SetSubjectKind(rk recentupdate.SubjectKind) *RecentUpdateCreate {
+	ruc.mutation.SetSubjectKind(rk)
+	return ruc
+}
+
+// SetNillableSubjectKind sets the "subject_kind" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableSubjectKind(rk *recentupdate.SubjectKind) *RecentUpdateCreate {
+	if rk != nil {
+		ruc.SetSubjectKind(*rk)
+	}
+	return ruc
+}
+
+// SetUpdateType sets the "update_type" field.
+func (ruc *RecentUpdateCreate) SetUpdateType(rt recentupdate.UpdateType) *RecentUpdateCreate {
+	ruc.mutation.SetUpdateType(rt)
+	return ruc
+}
+
+// SetNillableUpdateType sets the "update_type" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableUpdateType(rt *recentupdate.UpdateType) *RecentUpdateCreate {
+	if rt != nil {
+		ruc.SetUpdateType(*rt)
+	}
+	return ruc
+}
+
+// SetVisibility sets the "visibility" field.
+func (ruc *RecentUpdateCreate) SetVisibility(r recentupdate.Visibility) *RecentUpdateCreate {
+	ruc.mutation.SetVisibility(r)
+	return ruc
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableVisibility(r *recentupdate.Visibility) *RecentUpdateCreate {
 	if r != nil {
-		ruc.SetType(*r)
+		ruc.SetVisibility(*r)
 	}
 	return ruc
 }
@@ -49,9 +90,25 @@ func (ruc *RecentUpdateCreate) SetTitle(s string) *RecentUpdateCreate {
 	return ruc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableTitle(s *string) *RecentUpdateCreate {
+	if s != nil {
+		ruc.SetTitle(*s)
+	}
+	return ruc
+}
+
 // SetDescription sets the "description" field.
 func (ruc *RecentUpdateCreate) SetDescription(s string) *RecentUpdateCreate {
 	ruc.mutation.SetDescription(s)
+	return ruc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableDescription(s *string) *RecentUpdateCreate {
+	if s != nil {
+		ruc.SetDescription(*s)
+	}
 	return ruc
 }
 
@@ -260,15 +317,15 @@ func (ruc *RecentUpdateCreate) SetNillableUpdatedAt(t *time.Time) *RecentUpdateC
 }
 
 // SetID sets the "id" field.
-func (ruc *RecentUpdateCreate) SetID(u uuid.UUID) *RecentUpdateCreate {
-	ruc.mutation.SetID(u)
+func (ruc *RecentUpdateCreate) SetID(s string) *RecentUpdateCreate {
+	ruc.mutation.SetID(s)
 	return ruc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ruc *RecentUpdateCreate) SetNillableID(u *uuid.UUID) *RecentUpdateCreate {
-	if u != nil {
-		ruc.SetID(*u)
+func (ruc *RecentUpdateCreate) SetNillableID(s *string) *RecentUpdateCreate {
+	if s != nil {
+		ruc.SetID(*s)
 	}
 	return ruc
 }
@@ -279,14 +336,14 @@ func (ruc *RecentUpdateCreate) SetUser(u *User) *RecentUpdateCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by IDs.
-func (ruc *RecentUpdateCreate) AddTranslationIDs(ids ...uuid.UUID) *RecentUpdateCreate {
+func (ruc *RecentUpdateCreate) AddTranslationIDs(ids ...string) *RecentUpdateCreate {
 	ruc.mutation.AddTranslationIDs(ids...)
 	return ruc
 }
 
 // AddTranslations adds the "translations" edges to the RecentUpdateTranslation entity.
 func (ruc *RecentUpdateCreate) AddTranslations(r ...*RecentUpdateTranslation) *RecentUpdateCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -328,9 +385,17 @@ func (ruc *RecentUpdateCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ruc *RecentUpdateCreate) defaults() {
-	if _, ok := ruc.mutation.GetType(); !ok {
-		v := recentupdate.DefaultType
-		ruc.mutation.SetType(v)
+	if _, ok := ruc.mutation.SubjectKind(); !ok {
+		v := recentupdate.DefaultSubjectKind
+		ruc.mutation.SetSubjectKind(v)
+	}
+	if _, ok := ruc.mutation.UpdateType(); !ok {
+		v := recentupdate.DefaultUpdateType
+		ruc.mutation.SetUpdateType(v)
+	}
+	if _, ok := ruc.mutation.Visibility(); !ok {
+		v := recentupdate.DefaultVisibility
+		ruc.mutation.SetVisibility(v)
 	}
 	if _, ok := ruc.mutation.Status(); !ok {
 		v := recentupdate.DefaultStatus
@@ -360,31 +425,41 @@ func (ruc *RecentUpdateCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruc *RecentUpdateCreate) check() error {
-	if _, ok := ruc.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "RecentUpdate.user_id"`)}
+	if _, ok := ruc.mutation.Slug(); !ok {
+		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "RecentUpdate.slug"`)}
 	}
-	if _, ok := ruc.mutation.GetType(); !ok {
-		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "RecentUpdate.type"`)}
-	}
-	if v, ok := ruc.mutation.GetType(); ok {
-		if err := recentupdate.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.type": %w`, err)}
+	if v, ok := ruc.mutation.Slug(); ok {
+		if err := recentupdate.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.slug": %w`, err)}
 		}
 	}
-	if _, ok := ruc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "RecentUpdate.title"`)}
+	if _, ok := ruc.mutation.SubjectKind(); !ok {
+		return &ValidationError{Name: "subject_kind", err: errors.New(`ent: missing required field "RecentUpdate.subject_kind"`)}
+	}
+	if v, ok := ruc.mutation.SubjectKind(); ok {
+		if err := recentupdate.SubjectKindValidator(v); err != nil {
+			return &ValidationError{Name: "subject_kind", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.subject_kind": %w`, err)}
+		}
+	}
+	if _, ok := ruc.mutation.UpdateType(); !ok {
+		return &ValidationError{Name: "update_type", err: errors.New(`ent: missing required field "RecentUpdate.update_type"`)}
+	}
+	if v, ok := ruc.mutation.UpdateType(); ok {
+		if err := recentupdate.UpdateTypeValidator(v); err != nil {
+			return &ValidationError{Name: "update_type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.update_type": %w`, err)}
+		}
+	}
+	if _, ok := ruc.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "RecentUpdate.visibility"`)}
+	}
+	if v, ok := ruc.mutation.Visibility(); ok {
+		if err := recentupdate.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.visibility": %w`, err)}
+		}
 	}
 	if v, ok := ruc.mutation.Title(); ok {
 		if err := recentupdate.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.title": %w`, err)}
-		}
-	}
-	if _, ok := ruc.mutation.Description(); !ok {
-		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "RecentUpdate.description"`)}
-	}
-	if v, ok := ruc.mutation.Description(); ok {
-		if err := recentupdate.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.description": %w`, err)}
 		}
 	}
 	if _, ok := ruc.mutation.Date(); !ok {
@@ -444,15 +519,6 @@ func (ruc *RecentUpdateCreate) check() error {
 	if _, ok := ruc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "RecentUpdate.sort_order"`)}
 	}
-	if _, ok := ruc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RecentUpdate.created_at"`)}
-	}
-	if _, ok := ruc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "RecentUpdate.updated_at"`)}
-	}
-	if len(ruc.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "RecentUpdate.user"`)}
-	}
 	return nil
 }
 
@@ -468,10 +534,10 @@ func (ruc *RecentUpdateCreate) sqlSave(ctx context.Context) (*RecentUpdate, erro
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected RecentUpdate.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ruc.mutation.id = &_node.ID
@@ -482,15 +548,27 @@ func (ruc *RecentUpdateCreate) sqlSave(ctx context.Context) (*RecentUpdate, erro
 func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec) {
 	var (
 		_node = &RecentUpdate{config: ruc.config}
-		_spec = sqlgraph.NewCreateSpec(recentupdate.Table, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(recentupdate.Table, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString))
 	)
 	if id, ok := ruc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
-	if value, ok := ruc.mutation.GetType(); ok {
-		_spec.SetField(recentupdate.FieldType, field.TypeEnum, value)
-		_node.Type = value
+	if value, ok := ruc.mutation.Slug(); ok {
+		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
+		_node.Slug = value
+	}
+	if value, ok := ruc.mutation.SubjectKind(); ok {
+		_spec.SetField(recentupdate.FieldSubjectKind, field.TypeEnum, value)
+		_node.SubjectKind = value
+	}
+	if value, ok := ruc.mutation.UpdateType(); ok {
+		_spec.SetField(recentupdate.FieldUpdateType, field.TypeEnum, value)
+		_node.UpdateType = value
+	}
+	if value, ok := ruc.mutation.Visibility(); ok {
+		_spec.SetField(recentupdate.FieldVisibility, field.TypeEnum, value)
+		_node.Visibility = value
 	}
 	if value, ok := ruc.mutation.Title(); ok {
 		_spec.SetField(recentupdate.FieldTitle, field.TypeString, value)
@@ -580,7 +658,7 @@ func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec
 			Columns: []string{recentupdate.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -597,7 +675,7 @@ func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec
 			Columns: []string{recentupdate.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

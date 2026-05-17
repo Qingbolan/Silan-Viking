@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectDetailTranslationQuery is the builder for querying ResearchProjectDetailTranslation entities.
@@ -131,8 +130,8 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) FirstX(ctx context.Context) 
 
 // FirstID returns the first ResearchProjectDetailTranslation ID from the query.
 // Returns a *NotFoundError when no ResearchProjectDetailTranslation ID was found.
-func (rpdtq *ResearchProjectDetailTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (rpdtq *ResearchProjectDetailTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = rpdtq.Limit(1).IDs(setContextOp(ctx, rpdtq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) FirstID(ctx context.Context)
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (rpdtq *ResearchProjectDetailTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (rpdtq *ResearchProjectDetailTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := rpdtq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) OnlyX(ctx context.Context) *
 // OnlyID is like Only, but returns the only ResearchProjectDetailTranslation ID in the query.
 // Returns a *NotSingularError when more than one ResearchProjectDetailTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (rpdtq *ResearchProjectDetailTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (rpdtq *ResearchProjectDetailTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = rpdtq.Limit(2).IDs(setContextOp(ctx, rpdtq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) OnlyID(ctx context.Context) 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (rpdtq *ResearchProjectDetailTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (rpdtq *ResearchProjectDetailTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := rpdtq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) AllX(ctx context.Context) []
 }
 
 // IDs executes the query and returns a list of ResearchProjectDetailTranslation IDs.
-func (rpdtq *ResearchProjectDetailTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (rpdtq *ResearchProjectDetailTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if rpdtq.ctx.Unique == nil && rpdtq.path != nil {
 		rpdtq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) IDs(ctx context.Context) (id
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (rpdtq *ResearchProjectDetailTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (rpdtq *ResearchProjectDetailTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := rpdtq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) WithLanguage(opts ...func(*L
 // Example:
 //
 //	var v []struct {
-//		ResearchProjectDetailID uuid.UUID `json:"research_project_detail_id,omitempty"`
+//		ResearchProjectDetailID string `json:"research_project_detail_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) GroupBy(field string, fields
 // Example:
 //
 //	var v []struct {
-//		ResearchProjectDetailID uuid.UUID `json:"research_project_detail_id,omitempty"`
+//		ResearchProjectDetailID string `json:"research_project_detail_id,omitempty"`
 //	}
 //
 //	client.ResearchProjectDetailTranslation.Query().
@@ -446,8 +445,8 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) sqlAll(ctx context.Context, 
 }
 
 func (rpdtq *ResearchProjectDetailTranslationQuery) loadResearchProjectDetail(ctx context.Context, query *ResearchProjectDetailQuery, nodes []*ResearchProjectDetailTranslation, init func(*ResearchProjectDetailTranslation), assign func(*ResearchProjectDetailTranslation, *ResearchProjectDetail)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ResearchProjectDetailTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ResearchProjectDetailTranslation)
 	for i := range nodes {
 		fk := nodes[i].ResearchProjectDetailID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (rpdtq *ResearchProjectDetailTranslationQuery) sqlCount(ctx context.Context
 }
 
 func (rpdtq *ResearchProjectDetailTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(researchprojectdetailtranslation.Table, researchprojectdetailtranslation.Columns, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(researchprojectdetailtranslation.Table, researchprojectdetailtranslation.Columns, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString))
 	_spec.From = rpdtq.sql
 	if unique := rpdtq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

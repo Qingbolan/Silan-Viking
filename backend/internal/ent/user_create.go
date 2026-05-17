@@ -21,7 +21,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -160,28 +159,28 @@ func (uc *UserCreate) SetNillableUpdatedAt(t *time.Time) *UserCreate {
 }
 
 // SetID sets the "id" field.
-func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
-	uc.mutation.SetID(u)
+func (uc *UserCreate) SetID(s string) *UserCreate {
+	uc.mutation.SetID(s)
 	return uc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (uc *UserCreate) SetNillableID(u *uuid.UUID) *UserCreate {
-	if u != nil {
-		uc.SetID(*u)
+func (uc *UserCreate) SetNillableID(s *string) *UserCreate {
+	if s != nil {
+		uc.SetID(*s)
 	}
 	return uc
 }
 
 // AddPersonalInfoIDs adds the "personal_infos" edge to the PersonalInfo entity by IDs.
-func (uc *UserCreate) AddPersonalInfoIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddPersonalInfoIDs(ids ...string) *UserCreate {
 	uc.mutation.AddPersonalInfoIDs(ids...)
 	return uc
 }
 
 // AddPersonalInfos adds the "personal_infos" edges to the PersonalInfo entity.
 func (uc *UserCreate) AddPersonalInfos(p ...*PersonalInfo) *UserCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -189,14 +188,14 @@ func (uc *UserCreate) AddPersonalInfos(p ...*PersonalInfo) *UserCreate {
 }
 
 // AddEducationIDs adds the "educations" edge to the Education entity by IDs.
-func (uc *UserCreate) AddEducationIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddEducationIDs(ids ...string) *UserCreate {
 	uc.mutation.AddEducationIDs(ids...)
 	return uc
 }
 
 // AddEducations adds the "educations" edges to the Education entity.
 func (uc *UserCreate) AddEducations(e ...*Education) *UserCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -204,14 +203,14 @@ func (uc *UserCreate) AddEducations(e ...*Education) *UserCreate {
 }
 
 // AddWorkExperienceIDs adds the "work_experiences" edge to the WorkExperience entity by IDs.
-func (uc *UserCreate) AddWorkExperienceIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddWorkExperienceIDs(ids ...string) *UserCreate {
 	uc.mutation.AddWorkExperienceIDs(ids...)
 	return uc
 }
 
 // AddWorkExperiences adds the "work_experiences" edges to the WorkExperience entity.
 func (uc *UserCreate) AddWorkExperiences(w ...*WorkExperience) *UserCreate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -219,14 +218,14 @@ func (uc *UserCreate) AddWorkExperiences(w ...*WorkExperience) *UserCreate {
 }
 
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (uc *UserCreate) AddProjectIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddProjectIDs(ids ...string) *UserCreate {
 	uc.mutation.AddProjectIDs(ids...)
 	return uc
 }
 
 // AddProjects adds the "projects" edges to the Project entity.
 func (uc *UserCreate) AddProjects(p ...*Project) *UserCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -234,14 +233,14 @@ func (uc *UserCreate) AddProjects(p ...*Project) *UserCreate {
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (uc *UserCreate) AddBlogPostIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddBlogPostIDs(ids ...string) *UserCreate {
 	uc.mutation.AddBlogPostIDs(ids...)
 	return uc
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (uc *UserCreate) AddBlogPosts(b ...*BlogPost) *UserCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -249,14 +248,14 @@ func (uc *UserCreate) AddBlogPosts(b ...*BlogPost) *UserCreate {
 }
 
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
-func (uc *UserCreate) AddIdeaIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddIdeaIDs(ids ...string) *UserCreate {
 	uc.mutation.AddIdeaIDs(ids...)
 	return uc
 }
 
 // AddIdeas adds the "ideas" edges to the Idea entity.
 func (uc *UserCreate) AddIdeas(i ...*Idea) *UserCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -264,14 +263,14 @@ func (uc *UserCreate) AddIdeas(i ...*Idea) *UserCreate {
 }
 
 // AddResearchProjectIDs adds the "research_projects" edge to the ResearchProject entity by IDs.
-func (uc *UserCreate) AddResearchProjectIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddResearchProjectIDs(ids ...string) *UserCreate {
 	uc.mutation.AddResearchProjectIDs(ids...)
 	return uc
 }
 
 // AddResearchProjects adds the "research_projects" edges to the ResearchProject entity.
 func (uc *UserCreate) AddResearchProjects(r ...*ResearchProject) *UserCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -279,14 +278,14 @@ func (uc *UserCreate) AddResearchProjects(r ...*ResearchProject) *UserCreate {
 }
 
 // AddPublicationIDs adds the "publications" edge to the Publication entity by IDs.
-func (uc *UserCreate) AddPublicationIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddPublicationIDs(ids ...string) *UserCreate {
 	uc.mutation.AddPublicationIDs(ids...)
 	return uc
 }
 
 // AddPublications adds the "publications" edges to the Publication entity.
 func (uc *UserCreate) AddPublications(p ...*Publication) *UserCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -294,14 +293,14 @@ func (uc *UserCreate) AddPublications(p ...*Publication) *UserCreate {
 }
 
 // AddAwardIDs adds the "awards" edge to the Award entity by IDs.
-func (uc *UserCreate) AddAwardIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddAwardIDs(ids ...string) *UserCreate {
 	uc.mutation.AddAwardIDs(ids...)
 	return uc
 }
 
 // AddAwards adds the "awards" edges to the Award entity.
 func (uc *UserCreate) AddAwards(a ...*Award) *UserCreate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -309,14 +308,14 @@ func (uc *UserCreate) AddAwards(a ...*Award) *UserCreate {
 }
 
 // AddRecentUpdateIDs adds the "recent_updates" edge to the RecentUpdate entity by IDs.
-func (uc *UserCreate) AddRecentUpdateIDs(ids ...uuid.UUID) *UserCreate {
+func (uc *UserCreate) AddRecentUpdateIDs(ids ...string) *UserCreate {
 	uc.mutation.AddRecentUpdateIDs(ids...)
 	return uc
 }
 
 // AddRecentUpdates adds the "recent_updates" edges to the RecentUpdate entity.
 func (uc *UserCreate) AddRecentUpdates(r ...*RecentUpdate) *UserCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -454,10 +453,10 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected User.ID type: %T", _spec.ID.Value)
 		}
 	}
 	uc.mutation.id = &_node.ID
@@ -468,11 +467,11 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	var (
 		_node = &User{config: uc.config}
-		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	)
 	if id, ok := uc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := uc.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)
@@ -530,7 +529,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.PersonalInfosColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -546,7 +545,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.EducationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -562,7 +561,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.WorkExperiencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -578,7 +577,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.ProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -594,7 +593,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -610,7 +609,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.IdeasColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -626,7 +625,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.ResearchProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -642,7 +641,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.PublicationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -658,7 +657,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.AwardsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -674,7 +673,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.RecentUpdatesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

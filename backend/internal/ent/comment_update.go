@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // CommentUpdate is the builder for updating Comment entities.
@@ -31,43 +30,43 @@ func (cu *CommentUpdate) Where(ps ...predicate.Comment) *CommentUpdate {
 }
 
 // SetEntityType sets the "entity_type" field.
-func (cu *CommentUpdate) SetEntityType(s string) *CommentUpdate {
-	cu.mutation.SetEntityType(s)
+func (cu *CommentUpdate) SetEntityType(ct comment.EntityType) *CommentUpdate {
+	cu.mutation.SetEntityType(ct)
 	return cu
 }
 
 // SetNillableEntityType sets the "entity_type" field if the given value is not nil.
-func (cu *CommentUpdate) SetNillableEntityType(s *string) *CommentUpdate {
-	if s != nil {
-		cu.SetEntityType(*s)
+func (cu *CommentUpdate) SetNillableEntityType(ct *comment.EntityType) *CommentUpdate {
+	if ct != nil {
+		cu.SetEntityType(*ct)
 	}
 	return cu
 }
 
 // SetEntityID sets the "entity_id" field.
-func (cu *CommentUpdate) SetEntityID(u uuid.UUID) *CommentUpdate {
-	cu.mutation.SetEntityID(u)
+func (cu *CommentUpdate) SetEntityID(s string) *CommentUpdate {
+	cu.mutation.SetEntityID(s)
 	return cu
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (cu *CommentUpdate) SetNillableEntityID(u *uuid.UUID) *CommentUpdate {
-	if u != nil {
-		cu.SetEntityID(*u)
+func (cu *CommentUpdate) SetNillableEntityID(s *string) *CommentUpdate {
+	if s != nil {
+		cu.SetEntityID(*s)
 	}
 	return cu
 }
 
 // SetParentID sets the "parent_id" field.
-func (cu *CommentUpdate) SetParentID(u uuid.UUID) *CommentUpdate {
-	cu.mutation.SetParentID(u)
+func (cu *CommentUpdate) SetParentID(s string) *CommentUpdate {
+	cu.mutation.SetParentID(s)
 	return cu
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (cu *CommentUpdate) SetNillableParentID(u *uuid.UUID) *CommentUpdate {
-	if u != nil {
-		cu.SetParentID(*u)
+func (cu *CommentUpdate) SetNillableParentID(s *string) *CommentUpdate {
+	if s != nil {
+		cu.SetParentID(*s)
 	}
 	return cu
 }
@@ -141,36 +140,36 @@ func (cu *CommentUpdate) SetNillableContent(s *string) *CommentUpdate {
 }
 
 // SetType sets the "type" field.
-func (cu *CommentUpdate) SetType(s string) *CommentUpdate {
-	cu.mutation.SetType(s)
+func (cu *CommentUpdate) SetType(c comment.Type) *CommentUpdate {
+	cu.mutation.SetType(c)
 	return cu
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (cu *CommentUpdate) SetNillableType(s *string) *CommentUpdate {
-	if s != nil {
-		cu.SetType(*s)
+func (cu *CommentUpdate) SetNillableType(c *comment.Type) *CommentUpdate {
+	if c != nil {
+		cu.SetType(*c)
 	}
 	return cu
 }
 
-// SetReferrenceID sets the "referrence_id" field.
-func (cu *CommentUpdate) SetReferrenceID(s string) *CommentUpdate {
-	cu.mutation.SetReferrenceID(s)
+// SetReferenceID sets the "reference_id" field.
+func (cu *CommentUpdate) SetReferenceID(s string) *CommentUpdate {
+	cu.mutation.SetReferenceID(s)
 	return cu
 }
 
-// SetNillableReferrenceID sets the "referrence_id" field if the given value is not nil.
-func (cu *CommentUpdate) SetNillableReferrenceID(s *string) *CommentUpdate {
+// SetNillableReferenceID sets the "reference_id" field if the given value is not nil.
+func (cu *CommentUpdate) SetNillableReferenceID(s *string) *CommentUpdate {
 	if s != nil {
-		cu.SetReferrenceID(*s)
+		cu.SetReferenceID(*s)
 	}
 	return cu
 }
 
-// ClearReferrenceID clears the value of the "referrence_id" field.
-func (cu *CommentUpdate) ClearReferrenceID() *CommentUpdate {
-	cu.mutation.ClearReferrenceID()
+// ClearReferenceID clears the value of the "reference_id" field.
+func (cu *CommentUpdate) ClearReferenceID() *CommentUpdate {
+	cu.mutation.ClearReferenceID()
 	return cu
 }
 
@@ -301,14 +300,14 @@ func (cu *CommentUpdate) SetParent(c *Comment) *CommentUpdate {
 }
 
 // AddReplyIDs adds the "replies" edge to the Comment entity by IDs.
-func (cu *CommentUpdate) AddReplyIDs(ids ...uuid.UUID) *CommentUpdate {
+func (cu *CommentUpdate) AddReplyIDs(ids ...string) *CommentUpdate {
 	cu.mutation.AddReplyIDs(ids...)
 	return cu
 }
 
 // AddReplies adds the "replies" edges to the Comment entity.
 func (cu *CommentUpdate) AddReplies(c ...*Comment) *CommentUpdate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -338,14 +337,14 @@ func (cu *CommentUpdate) ClearReplies() *CommentUpdate {
 }
 
 // RemoveReplyIDs removes the "replies" edge to Comment entities by IDs.
-func (cu *CommentUpdate) RemoveReplyIDs(ids ...uuid.UUID) *CommentUpdate {
+func (cu *CommentUpdate) RemoveReplyIDs(ids ...string) *CommentUpdate {
 	cu.mutation.RemoveReplyIDs(ids...)
 	return cu
 }
 
 // RemoveReplies removes "replies" edges to Comment entities.
 func (cu *CommentUpdate) RemoveReplies(c ...*Comment) *CommentUpdate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -396,6 +395,11 @@ func (cu *CommentUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (cu *CommentUpdate) check() error {
+	if v, ok := cu.mutation.EntityType(); ok {
+		if err := comment.EntityTypeValidator(v); err != nil {
+			return &ValidationError{Name: "entity_type", err: fmt.Errorf(`ent: validator failed for field "Comment.entity_type": %w`, err)}
+		}
+	}
 	if v, ok := cu.mutation.AuthorName(); ok {
 		if err := comment.AuthorNameValidator(v); err != nil {
 			return &ValidationError{Name: "author_name", err: fmt.Errorf(`ent: validator failed for field "Comment.author_name": %w`, err)}
@@ -416,9 +420,14 @@ func (cu *CommentUpdate) check() error {
 			return &ValidationError{Name: "content", err: fmt.Errorf(`ent: validator failed for field "Comment.content": %w`, err)}
 		}
 	}
-	if v, ok := cu.mutation.ReferrenceID(); ok {
-		if err := comment.ReferrenceIDValidator(v); err != nil {
-			return &ValidationError{Name: "referrence_id", err: fmt.Errorf(`ent: validator failed for field "Comment.referrence_id": %w`, err)}
+	if v, ok := cu.mutation.GetType(); ok {
+		if err := comment.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Comment.type": %w`, err)}
+		}
+	}
+	if v, ok := cu.mutation.ReferenceID(); ok {
+		if err := comment.ReferenceIDValidator(v); err != nil {
+			return &ValidationError{Name: "reference_id", err: fmt.Errorf(`ent: validator failed for field "Comment.reference_id": %w`, err)}
 		}
 	}
 	if v, ok := cu.mutation.AttachmentID(); ok {
@@ -443,7 +452,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := cu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString))
 	if ps := cu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -452,10 +461,10 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := cu.mutation.EntityType(); ok {
-		_spec.SetField(comment.FieldEntityType, field.TypeString, value)
+		_spec.SetField(comment.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := cu.mutation.EntityID(); ok {
-		_spec.SetField(comment.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(comment.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.AuthorName(); ok {
 		_spec.SetField(comment.FieldAuthorName, field.TypeString, value)
@@ -473,13 +482,13 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(comment.FieldContent, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.GetType(); ok {
-		_spec.SetField(comment.FieldType, field.TypeString, value)
+		_spec.SetField(comment.FieldType, field.TypeEnum, value)
 	}
-	if value, ok := cu.mutation.ReferrenceID(); ok {
-		_spec.SetField(comment.FieldReferrenceID, field.TypeString, value)
+	if value, ok := cu.mutation.ReferenceID(); ok {
+		_spec.SetField(comment.FieldReferenceID, field.TypeString, value)
 	}
-	if cu.mutation.ReferrenceIDCleared() {
-		_spec.ClearField(comment.FieldReferrenceID, field.TypeString)
+	if cu.mutation.ReferenceIDCleared() {
+		_spec.ClearField(comment.FieldReferenceID, field.TypeString)
 	}
 	if value, ok := cu.mutation.AttachmentID(); ok {
 		_spec.SetField(comment.FieldAttachmentID, field.TypeString, value)
@@ -519,7 +528,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -532,7 +541,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -548,7 +557,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -561,7 +570,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -577,7 +586,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -635,43 +644,43 @@ type CommentUpdateOne struct {
 }
 
 // SetEntityType sets the "entity_type" field.
-func (cuo *CommentUpdateOne) SetEntityType(s string) *CommentUpdateOne {
-	cuo.mutation.SetEntityType(s)
+func (cuo *CommentUpdateOne) SetEntityType(ct comment.EntityType) *CommentUpdateOne {
+	cuo.mutation.SetEntityType(ct)
 	return cuo
 }
 
 // SetNillableEntityType sets the "entity_type" field if the given value is not nil.
-func (cuo *CommentUpdateOne) SetNillableEntityType(s *string) *CommentUpdateOne {
-	if s != nil {
-		cuo.SetEntityType(*s)
+func (cuo *CommentUpdateOne) SetNillableEntityType(ct *comment.EntityType) *CommentUpdateOne {
+	if ct != nil {
+		cuo.SetEntityType(*ct)
 	}
 	return cuo
 }
 
 // SetEntityID sets the "entity_id" field.
-func (cuo *CommentUpdateOne) SetEntityID(u uuid.UUID) *CommentUpdateOne {
-	cuo.mutation.SetEntityID(u)
+func (cuo *CommentUpdateOne) SetEntityID(s string) *CommentUpdateOne {
+	cuo.mutation.SetEntityID(s)
 	return cuo
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (cuo *CommentUpdateOne) SetNillableEntityID(u *uuid.UUID) *CommentUpdateOne {
-	if u != nil {
-		cuo.SetEntityID(*u)
+func (cuo *CommentUpdateOne) SetNillableEntityID(s *string) *CommentUpdateOne {
+	if s != nil {
+		cuo.SetEntityID(*s)
 	}
 	return cuo
 }
 
 // SetParentID sets the "parent_id" field.
-func (cuo *CommentUpdateOne) SetParentID(u uuid.UUID) *CommentUpdateOne {
-	cuo.mutation.SetParentID(u)
+func (cuo *CommentUpdateOne) SetParentID(s string) *CommentUpdateOne {
+	cuo.mutation.SetParentID(s)
 	return cuo
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (cuo *CommentUpdateOne) SetNillableParentID(u *uuid.UUID) *CommentUpdateOne {
-	if u != nil {
-		cuo.SetParentID(*u)
+func (cuo *CommentUpdateOne) SetNillableParentID(s *string) *CommentUpdateOne {
+	if s != nil {
+		cuo.SetParentID(*s)
 	}
 	return cuo
 }
@@ -745,36 +754,36 @@ func (cuo *CommentUpdateOne) SetNillableContent(s *string) *CommentUpdateOne {
 }
 
 // SetType sets the "type" field.
-func (cuo *CommentUpdateOne) SetType(s string) *CommentUpdateOne {
-	cuo.mutation.SetType(s)
+func (cuo *CommentUpdateOne) SetType(c comment.Type) *CommentUpdateOne {
+	cuo.mutation.SetType(c)
 	return cuo
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (cuo *CommentUpdateOne) SetNillableType(s *string) *CommentUpdateOne {
-	if s != nil {
-		cuo.SetType(*s)
+func (cuo *CommentUpdateOne) SetNillableType(c *comment.Type) *CommentUpdateOne {
+	if c != nil {
+		cuo.SetType(*c)
 	}
 	return cuo
 }
 
-// SetReferrenceID sets the "referrence_id" field.
-func (cuo *CommentUpdateOne) SetReferrenceID(s string) *CommentUpdateOne {
-	cuo.mutation.SetReferrenceID(s)
+// SetReferenceID sets the "reference_id" field.
+func (cuo *CommentUpdateOne) SetReferenceID(s string) *CommentUpdateOne {
+	cuo.mutation.SetReferenceID(s)
 	return cuo
 }
 
-// SetNillableReferrenceID sets the "referrence_id" field if the given value is not nil.
-func (cuo *CommentUpdateOne) SetNillableReferrenceID(s *string) *CommentUpdateOne {
+// SetNillableReferenceID sets the "reference_id" field if the given value is not nil.
+func (cuo *CommentUpdateOne) SetNillableReferenceID(s *string) *CommentUpdateOne {
 	if s != nil {
-		cuo.SetReferrenceID(*s)
+		cuo.SetReferenceID(*s)
 	}
 	return cuo
 }
 
-// ClearReferrenceID clears the value of the "referrence_id" field.
-func (cuo *CommentUpdateOne) ClearReferrenceID() *CommentUpdateOne {
-	cuo.mutation.ClearReferrenceID()
+// ClearReferenceID clears the value of the "reference_id" field.
+func (cuo *CommentUpdateOne) ClearReferenceID() *CommentUpdateOne {
+	cuo.mutation.ClearReferenceID()
 	return cuo
 }
 
@@ -905,14 +914,14 @@ func (cuo *CommentUpdateOne) SetParent(c *Comment) *CommentUpdateOne {
 }
 
 // AddReplyIDs adds the "replies" edge to the Comment entity by IDs.
-func (cuo *CommentUpdateOne) AddReplyIDs(ids ...uuid.UUID) *CommentUpdateOne {
+func (cuo *CommentUpdateOne) AddReplyIDs(ids ...string) *CommentUpdateOne {
 	cuo.mutation.AddReplyIDs(ids...)
 	return cuo
 }
 
 // AddReplies adds the "replies" edges to the Comment entity.
 func (cuo *CommentUpdateOne) AddReplies(c ...*Comment) *CommentUpdateOne {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -942,14 +951,14 @@ func (cuo *CommentUpdateOne) ClearReplies() *CommentUpdateOne {
 }
 
 // RemoveReplyIDs removes the "replies" edge to Comment entities by IDs.
-func (cuo *CommentUpdateOne) RemoveReplyIDs(ids ...uuid.UUID) *CommentUpdateOne {
+func (cuo *CommentUpdateOne) RemoveReplyIDs(ids ...string) *CommentUpdateOne {
 	cuo.mutation.RemoveReplyIDs(ids...)
 	return cuo
 }
 
 // RemoveReplies removes "replies" edges to Comment entities.
 func (cuo *CommentUpdateOne) RemoveReplies(c ...*Comment) *CommentUpdateOne {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -1013,6 +1022,11 @@ func (cuo *CommentUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (cuo *CommentUpdateOne) check() error {
+	if v, ok := cuo.mutation.EntityType(); ok {
+		if err := comment.EntityTypeValidator(v); err != nil {
+			return &ValidationError{Name: "entity_type", err: fmt.Errorf(`ent: validator failed for field "Comment.entity_type": %w`, err)}
+		}
+	}
 	if v, ok := cuo.mutation.AuthorName(); ok {
 		if err := comment.AuthorNameValidator(v); err != nil {
 			return &ValidationError{Name: "author_name", err: fmt.Errorf(`ent: validator failed for field "Comment.author_name": %w`, err)}
@@ -1033,9 +1047,14 @@ func (cuo *CommentUpdateOne) check() error {
 			return &ValidationError{Name: "content", err: fmt.Errorf(`ent: validator failed for field "Comment.content": %w`, err)}
 		}
 	}
-	if v, ok := cuo.mutation.ReferrenceID(); ok {
-		if err := comment.ReferrenceIDValidator(v); err != nil {
-			return &ValidationError{Name: "referrence_id", err: fmt.Errorf(`ent: validator failed for field "Comment.referrence_id": %w`, err)}
+	if v, ok := cuo.mutation.GetType(); ok {
+		if err := comment.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Comment.type": %w`, err)}
+		}
+	}
+	if v, ok := cuo.mutation.ReferenceID(); ok {
+		if err := comment.ReferenceIDValidator(v); err != nil {
+			return &ValidationError{Name: "reference_id", err: fmt.Errorf(`ent: validator failed for field "Comment.reference_id": %w`, err)}
 		}
 	}
 	if v, ok := cuo.mutation.AttachmentID(); ok {
@@ -1060,7 +1079,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 	if err := cuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString))
 	id, ok := cuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Comment.id" for update`)}
@@ -1086,10 +1105,10 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 		}
 	}
 	if value, ok := cuo.mutation.EntityType(); ok {
-		_spec.SetField(comment.FieldEntityType, field.TypeString, value)
+		_spec.SetField(comment.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := cuo.mutation.EntityID(); ok {
-		_spec.SetField(comment.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(comment.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.AuthorName(); ok {
 		_spec.SetField(comment.FieldAuthorName, field.TypeString, value)
@@ -1107,13 +1126,13 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 		_spec.SetField(comment.FieldContent, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.GetType(); ok {
-		_spec.SetField(comment.FieldType, field.TypeString, value)
+		_spec.SetField(comment.FieldType, field.TypeEnum, value)
 	}
-	if value, ok := cuo.mutation.ReferrenceID(); ok {
-		_spec.SetField(comment.FieldReferrenceID, field.TypeString, value)
+	if value, ok := cuo.mutation.ReferenceID(); ok {
+		_spec.SetField(comment.FieldReferenceID, field.TypeString, value)
 	}
-	if cuo.mutation.ReferrenceIDCleared() {
-		_spec.ClearField(comment.FieldReferrenceID, field.TypeString)
+	if cuo.mutation.ReferenceIDCleared() {
+		_spec.ClearField(comment.FieldReferenceID, field.TypeString)
 	}
 	if value, ok := cuo.mutation.AttachmentID(); ok {
 		_spec.SetField(comment.FieldAttachmentID, field.TypeString, value)
@@ -1153,7 +1172,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1166,7 +1185,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1182,7 +1201,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1195,7 +1214,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1211,7 +1230,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

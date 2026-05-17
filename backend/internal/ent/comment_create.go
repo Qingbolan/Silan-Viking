@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // CommentCreate is the builder for creating a Comment entity.
@@ -23,27 +22,27 @@ type CommentCreate struct {
 }
 
 // SetEntityType sets the "entity_type" field.
-func (cc *CommentCreate) SetEntityType(s string) *CommentCreate {
-	cc.mutation.SetEntityType(s)
+func (cc *CommentCreate) SetEntityType(ct comment.EntityType) *CommentCreate {
+	cc.mutation.SetEntityType(ct)
 	return cc
 }
 
 // SetEntityID sets the "entity_id" field.
-func (cc *CommentCreate) SetEntityID(u uuid.UUID) *CommentCreate {
-	cc.mutation.SetEntityID(u)
+func (cc *CommentCreate) SetEntityID(s string) *CommentCreate {
+	cc.mutation.SetEntityID(s)
 	return cc
 }
 
 // SetParentID sets the "parent_id" field.
-func (cc *CommentCreate) SetParentID(u uuid.UUID) *CommentCreate {
-	cc.mutation.SetParentID(u)
+func (cc *CommentCreate) SetParentID(s string) *CommentCreate {
+	cc.mutation.SetParentID(s)
 	return cc
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableParentID(u *uuid.UUID) *CommentCreate {
-	if u != nil {
-		cc.SetParentID(*u)
+func (cc *CommentCreate) SetNillableParentID(s *string) *CommentCreate {
+	if s != nil {
+		cc.SetParentID(*s)
 	}
 	return cc
 }
@@ -81,29 +80,29 @@ func (cc *CommentCreate) SetContent(s string) *CommentCreate {
 }
 
 // SetType sets the "type" field.
-func (cc *CommentCreate) SetType(s string) *CommentCreate {
-	cc.mutation.SetType(s)
+func (cc *CommentCreate) SetType(c comment.Type) *CommentCreate {
+	cc.mutation.SetType(c)
 	return cc
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableType(s *string) *CommentCreate {
-	if s != nil {
-		cc.SetType(*s)
+func (cc *CommentCreate) SetNillableType(c *comment.Type) *CommentCreate {
+	if c != nil {
+		cc.SetType(*c)
 	}
 	return cc
 }
 
-// SetReferrenceID sets the "referrence_id" field.
-func (cc *CommentCreate) SetReferrenceID(s string) *CommentCreate {
-	cc.mutation.SetReferrenceID(s)
+// SetReferenceID sets the "reference_id" field.
+func (cc *CommentCreate) SetReferenceID(s string) *CommentCreate {
+	cc.mutation.SetReferenceID(s)
 	return cc
 }
 
-// SetNillableReferrenceID sets the "referrence_id" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableReferrenceID(s *string) *CommentCreate {
+// SetNillableReferenceID sets the "reference_id" field if the given value is not nil.
+func (cc *CommentCreate) SetNillableReferenceID(s *string) *CommentCreate {
 	if s != nil {
-		cc.SetReferrenceID(*s)
+		cc.SetReferenceID(*s)
 	}
 	return cc
 }
@@ -221,15 +220,15 @@ func (cc *CommentCreate) SetNillableUpdatedAt(t *time.Time) *CommentCreate {
 }
 
 // SetID sets the "id" field.
-func (cc *CommentCreate) SetID(u uuid.UUID) *CommentCreate {
-	cc.mutation.SetID(u)
+func (cc *CommentCreate) SetID(s string) *CommentCreate {
+	cc.mutation.SetID(s)
 	return cc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableID(u *uuid.UUID) *CommentCreate {
-	if u != nil {
-		cc.SetID(*u)
+func (cc *CommentCreate) SetNillableID(s *string) *CommentCreate {
+	if s != nil {
+		cc.SetID(*s)
 	}
 	return cc
 }
@@ -240,14 +239,14 @@ func (cc *CommentCreate) SetParent(c *Comment) *CommentCreate {
 }
 
 // AddReplyIDs adds the "replies" edge to the Comment entity by IDs.
-func (cc *CommentCreate) AddReplyIDs(ids ...uuid.UUID) *CommentCreate {
+func (cc *CommentCreate) AddReplyIDs(ids ...string) *CommentCreate {
 	cc.mutation.AddReplyIDs(ids...)
 	return cc
 }
 
 // AddReplies adds the "replies" edges to the Comment entity.
 func (cc *CommentCreate) AddReplies(c ...*Comment) *CommentCreate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -325,6 +324,11 @@ func (cc *CommentCreate) check() error {
 	if _, ok := cc.mutation.EntityType(); !ok {
 		return &ValidationError{Name: "entity_type", err: errors.New(`ent: missing required field "Comment.entity_type"`)}
 	}
+	if v, ok := cc.mutation.EntityType(); ok {
+		if err := comment.EntityTypeValidator(v); err != nil {
+			return &ValidationError{Name: "entity_type", err: fmt.Errorf(`ent: validator failed for field "Comment.entity_type": %w`, err)}
+		}
+	}
 	if _, ok := cc.mutation.EntityID(); !ok {
 		return &ValidationError{Name: "entity_id", err: errors.New(`ent: missing required field "Comment.entity_id"`)}
 	}
@@ -360,9 +364,14 @@ func (cc *CommentCreate) check() error {
 	if _, ok := cc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Comment.type"`)}
 	}
-	if v, ok := cc.mutation.ReferrenceID(); ok {
-		if err := comment.ReferrenceIDValidator(v); err != nil {
-			return &ValidationError{Name: "referrence_id", err: fmt.Errorf(`ent: validator failed for field "Comment.referrence_id": %w`, err)}
+	if v, ok := cc.mutation.GetType(); ok {
+		if err := comment.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Comment.type": %w`, err)}
+		}
+	}
+	if v, ok := cc.mutation.ReferenceID(); ok {
+		if err := comment.ReferenceIDValidator(v); err != nil {
+			return &ValidationError{Name: "reference_id", err: fmt.Errorf(`ent: validator failed for field "Comment.reference_id": %w`, err)}
 		}
 	}
 	if v, ok := cc.mutation.AttachmentID(); ok {
@@ -407,10 +416,10 @@ func (cc *CommentCreate) sqlSave(ctx context.Context) (*Comment, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Comment.ID type: %T", _spec.ID.Value)
 		}
 	}
 	cc.mutation.id = &_node.ID
@@ -421,18 +430,18 @@ func (cc *CommentCreate) sqlSave(ctx context.Context) (*Comment, error) {
 func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Comment{config: cc.config}
-		_spec = sqlgraph.NewCreateSpec(comment.Table, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(comment.Table, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString))
 	)
 	if id, ok := cc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := cc.mutation.EntityType(); ok {
-		_spec.SetField(comment.FieldEntityType, field.TypeString, value)
+		_spec.SetField(comment.FieldEntityType, field.TypeEnum, value)
 		_node.EntityType = value
 	}
 	if value, ok := cc.mutation.EntityID(); ok {
-		_spec.SetField(comment.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(comment.FieldEntityID, field.TypeString, value)
 		_node.EntityID = value
 	}
 	if value, ok := cc.mutation.AuthorName(); ok {
@@ -452,12 +461,12 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 		_node.Content = value
 	}
 	if value, ok := cc.mutation.GetType(); ok {
-		_spec.SetField(comment.FieldType, field.TypeString, value)
+		_spec.SetField(comment.FieldType, field.TypeEnum, value)
 		_node.Type = value
 	}
-	if value, ok := cc.mutation.ReferrenceID(); ok {
-		_spec.SetField(comment.FieldReferrenceID, field.TypeString, value)
-		_node.ReferrenceID = value
+	if value, ok := cc.mutation.ReferenceID(); ok {
+		_spec.SetField(comment.FieldReferenceID, field.TypeString, value)
+		_node.ReferenceID = value
 	}
 	if value, ok := cc.mutation.AttachmentID(); ok {
 		_spec.SetField(comment.FieldAttachmentID, field.TypeString, value)
@@ -495,7 +504,7 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -512,7 +521,7 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

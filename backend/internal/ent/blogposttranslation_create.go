@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogPostTranslationCreate is the builder for creating a BlogPostTranslation entity.
@@ -24,8 +23,8 @@ type BlogPostTranslationCreate struct {
 }
 
 // SetBlogPostID sets the "blog_post_id" field.
-func (bptc *BlogPostTranslationCreate) SetBlogPostID(u uuid.UUID) *BlogPostTranslationCreate {
-	bptc.mutation.SetBlogPostID(u)
+func (bptc *BlogPostTranslationCreate) SetBlogPostID(s string) *BlogPostTranslationCreate {
+	bptc.mutation.SetBlogPostID(s)
 	return bptc
 }
 
@@ -76,15 +75,15 @@ func (bptc *BlogPostTranslationCreate) SetNillableCreatedAt(t *time.Time) *BlogP
 }
 
 // SetID sets the "id" field.
-func (bptc *BlogPostTranslationCreate) SetID(u uuid.UUID) *BlogPostTranslationCreate {
-	bptc.mutation.SetID(u)
+func (bptc *BlogPostTranslationCreate) SetID(s string) *BlogPostTranslationCreate {
+	bptc.mutation.SetID(s)
 	return bptc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (bptc *BlogPostTranslationCreate) SetNillableID(u *uuid.UUID) *BlogPostTranslationCreate {
-	if u != nil {
-		bptc.SetID(*u)
+func (bptc *BlogPostTranslationCreate) SetNillableID(s *string) *BlogPostTranslationCreate {
+	if s != nil {
+		bptc.SetID(*s)
 	}
 	return bptc
 }
@@ -203,10 +202,10 @@ func (bptc *BlogPostTranslationCreate) sqlSave(ctx context.Context) (*BlogPostTr
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected BlogPostTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	bptc.mutation.id = &_node.ID
@@ -217,11 +216,11 @@ func (bptc *BlogPostTranslationCreate) sqlSave(ctx context.Context) (*BlogPostTr
 func (bptc *BlogPostTranslationCreate) createSpec() (*BlogPostTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &BlogPostTranslation{config: bptc.config}
-		_spec = sqlgraph.NewCreateSpec(blogposttranslation.Table, sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(blogposttranslation.Table, sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString))
 	)
 	if id, ok := bptc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := bptc.mutation.Title(); ok {
 		_spec.SetField(blogposttranslation.FieldTitle, field.TypeString, value)
@@ -247,7 +246,7 @@ func (bptc *BlogPostTranslationCreate) createSpec() (*BlogPostTranslation, *sqlg
 			Columns: []string{blogposttranslation.BlogPostColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

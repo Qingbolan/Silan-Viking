@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.IdeaDetailTranslation {
+func ID(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDEQ(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDNEQ(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IDIn(ids ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IDNotIn(ids ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDGT(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDGTE(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDLT(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDLTE(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // IdeaDetailID applies equality check predicate on the "idea_detail_id" field. It's identical to IdeaDetailIDEQ.
-func IdeaDetailID(v uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailID(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldIdeaDetailID, v))
 }
 
@@ -66,49 +75,74 @@ func LanguageCode(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldLanguageCode, v))
 }
 
-// Progress applies equality check predicate on the "progress" field. It's identical to ProgressEQ.
-func Progress(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldProgress, v))
-}
-
-// Results applies equality check predicate on the "results" field. It's identical to ResultsEQ.
-func Results(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldResults, v))
-}
-
-// References applies equality check predicate on the "references" field. It's identical to ReferencesEQ.
-func References(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldReferences, v))
-}
-
-// RequiredResources applies equality check predicate on the "required_resources" field. It's identical to RequiredResourcesEQ.
-func RequiredResources(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldRequiredResources, v))
-}
-
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // IdeaDetailIDEQ applies the EQ predicate on the "idea_detail_id" field.
-func IdeaDetailIDEQ(v uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDEQ(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldIdeaDetailID, v))
 }
 
 // IdeaDetailIDNEQ applies the NEQ predicate on the "idea_detail_id" field.
-func IdeaDetailIDNEQ(v uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDNEQ(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldIdeaDetailID, v))
 }
 
 // IdeaDetailIDIn applies the In predicate on the "idea_detail_id" field.
-func IdeaDetailIDIn(vs ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDIn(vs ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldIdeaDetailID, vs...))
 }
 
 // IdeaDetailIDNotIn applies the NotIn predicate on the "idea_detail_id" field.
-func IdeaDetailIDNotIn(vs ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDNotIn(vs ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldIdeaDetailID, vs...))
+}
+
+// IdeaDetailIDGT applies the GT predicate on the "idea_detail_id" field.
+func IdeaDetailIDGT(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDGTE applies the GTE predicate on the "idea_detail_id" field.
+func IdeaDetailIDGTE(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDLT applies the LT predicate on the "idea_detail_id" field.
+func IdeaDetailIDLT(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDLTE applies the LTE predicate on the "idea_detail_id" field.
+func IdeaDetailIDLTE(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDContains applies the Contains predicate on the "idea_detail_id" field.
+func IdeaDetailIDContains(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldContains(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDHasPrefix applies the HasPrefix predicate on the "idea_detail_id" field.
+func IdeaDetailIDHasPrefix(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldHasPrefix(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDHasSuffix applies the HasSuffix predicate on the "idea_detail_id" field.
+func IdeaDetailIDHasSuffix(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldHasSuffix(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDEqualFold applies the EqualFold predicate on the "idea_detail_id" field.
+func IdeaDetailIDEqualFold(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDContainsFold applies the ContainsFold predicate on the "idea_detail_id" field.
+func IdeaDetailIDContainsFold(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldIdeaDetailID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.
@@ -174,306 +208,6 @@ func LanguageCodeEqualFold(v string) predicate.IdeaDetailTranslation {
 // LanguageCodeContainsFold applies the ContainsFold predicate on the "language_code" field.
 func LanguageCodeContainsFold(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldLanguageCode, v))
-}
-
-// ProgressEQ applies the EQ predicate on the "progress" field.
-func ProgressEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldProgress, v))
-}
-
-// ProgressNEQ applies the NEQ predicate on the "progress" field.
-func ProgressNEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldProgress, v))
-}
-
-// ProgressIn applies the In predicate on the "progress" field.
-func ProgressIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldProgress, vs...))
-}
-
-// ProgressNotIn applies the NotIn predicate on the "progress" field.
-func ProgressNotIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldProgress, vs...))
-}
-
-// ProgressGT applies the GT predicate on the "progress" field.
-func ProgressGT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldProgress, v))
-}
-
-// ProgressGTE applies the GTE predicate on the "progress" field.
-func ProgressGTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldProgress, v))
-}
-
-// ProgressLT applies the LT predicate on the "progress" field.
-func ProgressLT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldProgress, v))
-}
-
-// ProgressLTE applies the LTE predicate on the "progress" field.
-func ProgressLTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldProgress, v))
-}
-
-// ProgressContains applies the Contains predicate on the "progress" field.
-func ProgressContains(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContains(FieldProgress, v))
-}
-
-// ProgressHasPrefix applies the HasPrefix predicate on the "progress" field.
-func ProgressHasPrefix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasPrefix(FieldProgress, v))
-}
-
-// ProgressHasSuffix applies the HasSuffix predicate on the "progress" field.
-func ProgressHasSuffix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasSuffix(FieldProgress, v))
-}
-
-// ProgressIsNil applies the IsNil predicate on the "progress" field.
-func ProgressIsNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIsNull(FieldProgress))
-}
-
-// ProgressNotNil applies the NotNil predicate on the "progress" field.
-func ProgressNotNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotNull(FieldProgress))
-}
-
-// ProgressEqualFold applies the EqualFold predicate on the "progress" field.
-func ProgressEqualFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldProgress, v))
-}
-
-// ProgressContainsFold applies the ContainsFold predicate on the "progress" field.
-func ProgressContainsFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldProgress, v))
-}
-
-// ResultsEQ applies the EQ predicate on the "results" field.
-func ResultsEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldResults, v))
-}
-
-// ResultsNEQ applies the NEQ predicate on the "results" field.
-func ResultsNEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldResults, v))
-}
-
-// ResultsIn applies the In predicate on the "results" field.
-func ResultsIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldResults, vs...))
-}
-
-// ResultsNotIn applies the NotIn predicate on the "results" field.
-func ResultsNotIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldResults, vs...))
-}
-
-// ResultsGT applies the GT predicate on the "results" field.
-func ResultsGT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldResults, v))
-}
-
-// ResultsGTE applies the GTE predicate on the "results" field.
-func ResultsGTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldResults, v))
-}
-
-// ResultsLT applies the LT predicate on the "results" field.
-func ResultsLT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldResults, v))
-}
-
-// ResultsLTE applies the LTE predicate on the "results" field.
-func ResultsLTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldResults, v))
-}
-
-// ResultsContains applies the Contains predicate on the "results" field.
-func ResultsContains(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContains(FieldResults, v))
-}
-
-// ResultsHasPrefix applies the HasPrefix predicate on the "results" field.
-func ResultsHasPrefix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasPrefix(FieldResults, v))
-}
-
-// ResultsHasSuffix applies the HasSuffix predicate on the "results" field.
-func ResultsHasSuffix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasSuffix(FieldResults, v))
-}
-
-// ResultsIsNil applies the IsNil predicate on the "results" field.
-func ResultsIsNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIsNull(FieldResults))
-}
-
-// ResultsNotNil applies the NotNil predicate on the "results" field.
-func ResultsNotNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotNull(FieldResults))
-}
-
-// ResultsEqualFold applies the EqualFold predicate on the "results" field.
-func ResultsEqualFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldResults, v))
-}
-
-// ResultsContainsFold applies the ContainsFold predicate on the "results" field.
-func ResultsContainsFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldResults, v))
-}
-
-// ReferencesEQ applies the EQ predicate on the "references" field.
-func ReferencesEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldReferences, v))
-}
-
-// ReferencesNEQ applies the NEQ predicate on the "references" field.
-func ReferencesNEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldReferences, v))
-}
-
-// ReferencesIn applies the In predicate on the "references" field.
-func ReferencesIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldReferences, vs...))
-}
-
-// ReferencesNotIn applies the NotIn predicate on the "references" field.
-func ReferencesNotIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldReferences, vs...))
-}
-
-// ReferencesGT applies the GT predicate on the "references" field.
-func ReferencesGT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldReferences, v))
-}
-
-// ReferencesGTE applies the GTE predicate on the "references" field.
-func ReferencesGTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldReferences, v))
-}
-
-// ReferencesLT applies the LT predicate on the "references" field.
-func ReferencesLT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldReferences, v))
-}
-
-// ReferencesLTE applies the LTE predicate on the "references" field.
-func ReferencesLTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldReferences, v))
-}
-
-// ReferencesContains applies the Contains predicate on the "references" field.
-func ReferencesContains(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContains(FieldReferences, v))
-}
-
-// ReferencesHasPrefix applies the HasPrefix predicate on the "references" field.
-func ReferencesHasPrefix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasPrefix(FieldReferences, v))
-}
-
-// ReferencesHasSuffix applies the HasSuffix predicate on the "references" field.
-func ReferencesHasSuffix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasSuffix(FieldReferences, v))
-}
-
-// ReferencesIsNil applies the IsNil predicate on the "references" field.
-func ReferencesIsNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIsNull(FieldReferences))
-}
-
-// ReferencesNotNil applies the NotNil predicate on the "references" field.
-func ReferencesNotNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotNull(FieldReferences))
-}
-
-// ReferencesEqualFold applies the EqualFold predicate on the "references" field.
-func ReferencesEqualFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldReferences, v))
-}
-
-// ReferencesContainsFold applies the ContainsFold predicate on the "references" field.
-func ReferencesContainsFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldReferences, v))
-}
-
-// RequiredResourcesEQ applies the EQ predicate on the "required_resources" field.
-func RequiredResourcesEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldRequiredResources, v))
-}
-
-// RequiredResourcesNEQ applies the NEQ predicate on the "required_resources" field.
-func RequiredResourcesNEQ(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldRequiredResources, v))
-}
-
-// RequiredResourcesIn applies the In predicate on the "required_resources" field.
-func RequiredResourcesIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldRequiredResources, vs...))
-}
-
-// RequiredResourcesNotIn applies the NotIn predicate on the "required_resources" field.
-func RequiredResourcesNotIn(vs ...string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldRequiredResources, vs...))
-}
-
-// RequiredResourcesGT applies the GT predicate on the "required_resources" field.
-func RequiredResourcesGT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldRequiredResources, v))
-}
-
-// RequiredResourcesGTE applies the GTE predicate on the "required_resources" field.
-func RequiredResourcesGTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldRequiredResources, v))
-}
-
-// RequiredResourcesLT applies the LT predicate on the "required_resources" field.
-func RequiredResourcesLT(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldRequiredResources, v))
-}
-
-// RequiredResourcesLTE applies the LTE predicate on the "required_resources" field.
-func RequiredResourcesLTE(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldRequiredResources, v))
-}
-
-// RequiredResourcesContains applies the Contains predicate on the "required_resources" field.
-func RequiredResourcesContains(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContains(FieldRequiredResources, v))
-}
-
-// RequiredResourcesHasPrefix applies the HasPrefix predicate on the "required_resources" field.
-func RequiredResourcesHasPrefix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasPrefix(FieldRequiredResources, v))
-}
-
-// RequiredResourcesHasSuffix applies the HasSuffix predicate on the "required_resources" field.
-func RequiredResourcesHasSuffix(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldHasSuffix(FieldRequiredResources, v))
-}
-
-// RequiredResourcesIsNil applies the IsNil predicate on the "required_resources" field.
-func RequiredResourcesIsNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldIsNull(FieldRequiredResources))
-}
-
-// RequiredResourcesNotNil applies the NotNil predicate on the "required_resources" field.
-func RequiredResourcesNotNil() predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldNotNull(FieldRequiredResources))
-}
-
-// RequiredResourcesEqualFold applies the EqualFold predicate on the "required_resources" field.
-func RequiredResourcesEqualFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldRequiredResources, v))
-}
-
-// RequiredResourcesContainsFold applies the ContainsFold predicate on the "required_resources" field.
-func RequiredResourcesContainsFold(v string) predicate.IdeaDetailTranslation {
-	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldRequiredResources, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

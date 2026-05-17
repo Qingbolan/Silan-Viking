@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PersonalInfoTranslationUpdate is the builder for updating PersonalInfoTranslation entities.
@@ -31,15 +30,15 @@ func (pitu *PersonalInfoTranslationUpdate) Where(ps ...predicate.PersonalInfoTra
 }
 
 // SetPersonalInfoID sets the "personal_info_id" field.
-func (pitu *PersonalInfoTranslationUpdate) SetPersonalInfoID(u uuid.UUID) *PersonalInfoTranslationUpdate {
-	pitu.mutation.SetPersonalInfoID(u)
+func (pitu *PersonalInfoTranslationUpdate) SetPersonalInfoID(s string) *PersonalInfoTranslationUpdate {
+	pitu.mutation.SetPersonalInfoID(s)
 	return pitu
 }
 
 // SetNillablePersonalInfoID sets the "personal_info_id" field if the given value is not nil.
-func (pitu *PersonalInfoTranslationUpdate) SetNillablePersonalInfoID(u *uuid.UUID) *PersonalInfoTranslationUpdate {
-	if u != nil {
-		pitu.SetPersonalInfoID(*u)
+func (pitu *PersonalInfoTranslationUpdate) SetNillablePersonalInfoID(s *string) *PersonalInfoTranslationUpdate {
+	if s != nil {
+		pitu.SetPersonalInfoID(*s)
 	}
 	return pitu
 }
@@ -233,7 +232,7 @@ func (pitu *PersonalInfoTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if err := pitu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(personalinfotranslation.Table, personalinfotranslation.Columns, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(personalinfotranslation.Table, personalinfotranslation.Columns, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString))
 	if ps := pitu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -273,7 +272,7 @@ func (pitu *PersonalInfoTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{personalinfotranslation.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -286,7 +285,7 @@ func (pitu *PersonalInfoTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{personalinfotranslation.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -344,15 +343,15 @@ type PersonalInfoTranslationUpdateOne struct {
 }
 
 // SetPersonalInfoID sets the "personal_info_id" field.
-func (pituo *PersonalInfoTranslationUpdateOne) SetPersonalInfoID(u uuid.UUID) *PersonalInfoTranslationUpdateOne {
-	pituo.mutation.SetPersonalInfoID(u)
+func (pituo *PersonalInfoTranslationUpdateOne) SetPersonalInfoID(s string) *PersonalInfoTranslationUpdateOne {
+	pituo.mutation.SetPersonalInfoID(s)
 	return pituo
 }
 
 // SetNillablePersonalInfoID sets the "personal_info_id" field if the given value is not nil.
-func (pituo *PersonalInfoTranslationUpdateOne) SetNillablePersonalInfoID(u *uuid.UUID) *PersonalInfoTranslationUpdateOne {
-	if u != nil {
-		pituo.SetPersonalInfoID(*u)
+func (pituo *PersonalInfoTranslationUpdateOne) SetNillablePersonalInfoID(s *string) *PersonalInfoTranslationUpdateOne {
+	if s != nil {
+		pituo.SetPersonalInfoID(*s)
 	}
 	return pituo
 }
@@ -559,7 +558,7 @@ func (pituo *PersonalInfoTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	if err := pituo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(personalinfotranslation.Table, personalinfotranslation.Columns, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(personalinfotranslation.Table, personalinfotranslation.Columns, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString))
 	id, ok := pituo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PersonalInfoTranslation.id" for update`)}
@@ -616,7 +615,7 @@ func (pituo *PersonalInfoTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{personalinfotranslation.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -629,7 +628,7 @@ func (pituo *PersonalInfoTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{personalinfotranslation.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

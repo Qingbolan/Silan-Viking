@@ -26,17 +26,15 @@ func (ProjectDetail) Annotations() []schema.Annotation {
 // Fields of the ProjectDetail.
 func (ProjectDetail) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("project_id", uuid.UUID{}).
+		field.String("project_id").
 			StorageKey("project_id"),
 		field.String("project_details").
 			Optional(),
-		field.Text("quick_start").
-			Optional(),
-		field.Text("release_notes").
-			Optional(),
+		// M0.5a §11.8: quick_start/release_notes (Part body text) moved out
+		// to item_part. Structured attributes below stay.
 		field.Text("dependencies").
 			Optional(),
 		field.String("license").

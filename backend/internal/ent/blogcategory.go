@@ -10,14 +10,13 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // BlogCategory is the model entity for the BlogCategory schema.
 type BlogCategory struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Slug holds the value of the "slug" field.
@@ -74,12 +73,10 @@ func (*BlogCategory) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case blogcategory.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case blogcategory.FieldName, blogcategory.FieldSlug, blogcategory.FieldDescription, blogcategory.FieldColor:
+		case blogcategory.FieldID, blogcategory.FieldName, blogcategory.FieldSlug, blogcategory.FieldDescription, blogcategory.FieldColor:
 			values[i] = new(sql.NullString)
 		case blogcategory.FieldCreatedAt, blogcategory.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case blogcategory.FieldID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -96,10 +93,10 @@ func (bc *BlogCategory) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case blogcategory.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				bc.ID = *value
+			} else if value.Valid {
+				bc.ID = value.String
 			}
 		case blogcategory.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {

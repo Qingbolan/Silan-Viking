@@ -12,13 +12,11 @@ import (
 	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
-	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogPostCreate is the builder for creating a BlogPost entity.
@@ -29,49 +27,43 @@ type BlogPostCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (bpc *BlogPostCreate) SetUserID(u uuid.UUID) *BlogPostCreate {
-	bpc.mutation.SetUserID(u)
+func (bpc *BlogPostCreate) SetUserID(s string) *BlogPostCreate {
+	bpc.mutation.SetUserID(s)
+	return bpc
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (bpc *BlogPostCreate) SetNillableUserID(s *string) *BlogPostCreate {
+	if s != nil {
+		bpc.SetUserID(*s)
+	}
 	return bpc
 }
 
 // SetCategoryID sets the "category_id" field.
-func (bpc *BlogPostCreate) SetCategoryID(u uuid.UUID) *BlogPostCreate {
-	bpc.mutation.SetCategoryID(u)
+func (bpc *BlogPostCreate) SetCategoryID(s string) *BlogPostCreate {
+	bpc.mutation.SetCategoryID(s)
 	return bpc
 }
 
 // SetNillableCategoryID sets the "category_id" field if the given value is not nil.
-func (bpc *BlogPostCreate) SetNillableCategoryID(u *uuid.UUID) *BlogPostCreate {
-	if u != nil {
-		bpc.SetCategoryID(*u)
+func (bpc *BlogPostCreate) SetNillableCategoryID(s *string) *BlogPostCreate {
+	if s != nil {
+		bpc.SetCategoryID(*s)
 	}
 	return bpc
 }
 
 // SetSeriesID sets the "series_id" field.
-func (bpc *BlogPostCreate) SetSeriesID(u uuid.UUID) *BlogPostCreate {
-	bpc.mutation.SetSeriesID(u)
+func (bpc *BlogPostCreate) SetSeriesID(s string) *BlogPostCreate {
+	bpc.mutation.SetSeriesID(s)
 	return bpc
 }
 
 // SetNillableSeriesID sets the "series_id" field if the given value is not nil.
-func (bpc *BlogPostCreate) SetNillableSeriesID(u *uuid.UUID) *BlogPostCreate {
-	if u != nil {
-		bpc.SetSeriesID(*u)
-	}
-	return bpc
-}
-
-// SetIdeasID sets the "ideas_id" field.
-func (bpc *BlogPostCreate) SetIdeasID(u uuid.UUID) *BlogPostCreate {
-	bpc.mutation.SetIdeasID(u)
-	return bpc
-}
-
-// SetNillableIdeasID sets the "ideas_id" field if the given value is not nil.
-func (bpc *BlogPostCreate) SetNillableIdeasID(u *uuid.UUID) *BlogPostCreate {
-	if u != nil {
-		bpc.SetIdeasID(*u)
+func (bpc *BlogPostCreate) SetNillableSeriesID(s *string) *BlogPostCreate {
+	if s != nil {
+		bpc.SetSeriesID(*s)
 	}
 	return bpc
 }
@@ -79,6 +71,14 @@ func (bpc *BlogPostCreate) SetNillableIdeasID(u *uuid.UUID) *BlogPostCreate {
 // SetTitle sets the "title" field.
 func (bpc *BlogPostCreate) SetTitle(s string) *BlogPostCreate {
 	bpc.mutation.SetTitle(s)
+	return bpc
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (bpc *BlogPostCreate) SetNillableTitle(s *string) *BlogPostCreate {
+	if s != nil {
+		bpc.SetTitle(*s)
+	}
 	return bpc
 }
 
@@ -108,6 +108,14 @@ func (bpc *BlogPostCreate) SetContent(s string) *BlogPostCreate {
 	return bpc
 }
 
+// SetNillableContent sets the "content" field if the given value is not nil.
+func (bpc *BlogPostCreate) SetNillableContent(s *string) *BlogPostCreate {
+	if s != nil {
+		bpc.SetContent(*s)
+	}
+	return bpc
+}
+
 // SetContentType sets the "content_type" field.
 func (bpc *BlogPostCreate) SetContentType(bt blogpost.ContentType) *BlogPostCreate {
 	bpc.mutation.SetContentType(bt)
@@ -132,6 +140,20 @@ func (bpc *BlogPostCreate) SetStatus(b blogpost.Status) *BlogPostCreate {
 func (bpc *BlogPostCreate) SetNillableStatus(b *blogpost.Status) *BlogPostCreate {
 	if b != nil {
 		bpc.SetStatus(*b)
+	}
+	return bpc
+}
+
+// SetVisibility sets the "visibility" field.
+func (bpc *BlogPostCreate) SetVisibility(b blogpost.Visibility) *BlogPostCreate {
+	bpc.mutation.SetVisibility(b)
+	return bpc
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (bpc *BlogPostCreate) SetNillableVisibility(b *blogpost.Visibility) *BlogPostCreate {
+	if b != nil {
+		bpc.SetVisibility(*b)
 	}
 	return bpc
 }
@@ -277,15 +299,15 @@ func (bpc *BlogPostCreate) SetNillableUpdatedAt(t *time.Time) *BlogPostCreate {
 }
 
 // SetID sets the "id" field.
-func (bpc *BlogPostCreate) SetID(u uuid.UUID) *BlogPostCreate {
-	bpc.mutation.SetID(u)
+func (bpc *BlogPostCreate) SetID(s string) *BlogPostCreate {
+	bpc.mutation.SetID(s)
 	return bpc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (bpc *BlogPostCreate) SetNillableID(u *uuid.UUID) *BlogPostCreate {
-	if u != nil {
-		bpc.SetID(*u)
+func (bpc *BlogPostCreate) SetNillableID(s *string) *BlogPostCreate {
+	if s != nil {
+		bpc.SetID(*s)
 	}
 	return bpc
 }
@@ -305,20 +327,15 @@ func (bpc *BlogPostCreate) SetSeries(b *BlogSeries) *BlogPostCreate {
 	return bpc.SetSeriesID(b.ID)
 }
 
-// SetIdeas sets the "ideas" edge to the Idea entity.
-func (bpc *BlogPostCreate) SetIdeas(i *Idea) *BlogPostCreate {
-	return bpc.SetIdeasID(i.ID)
-}
-
 // AddTagIDs adds the "tags" edge to the BlogTag entity by IDs.
-func (bpc *BlogPostCreate) AddTagIDs(ids ...uuid.UUID) *BlogPostCreate {
+func (bpc *BlogPostCreate) AddTagIDs(ids ...string) *BlogPostCreate {
 	bpc.mutation.AddTagIDs(ids...)
 	return bpc
 }
 
 // AddTags adds the "tags" edges to the BlogTag entity.
 func (bpc *BlogPostCreate) AddTags(b ...*BlogTag) *BlogPostCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -326,14 +343,14 @@ func (bpc *BlogPostCreate) AddTags(b ...*BlogTag) *BlogPostCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the BlogPostTranslation entity by IDs.
-func (bpc *BlogPostCreate) AddTranslationIDs(ids ...uuid.UUID) *BlogPostCreate {
+func (bpc *BlogPostCreate) AddTranslationIDs(ids ...string) *BlogPostCreate {
 	bpc.mutation.AddTranslationIDs(ids...)
 	return bpc
 }
 
 // AddTranslations adds the "translations" edges to the BlogPostTranslation entity.
 func (bpc *BlogPostCreate) AddTranslations(b ...*BlogPostTranslation) *BlogPostCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -341,14 +358,14 @@ func (bpc *BlogPostCreate) AddTranslations(b ...*BlogPostTranslation) *BlogPostC
 }
 
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (bpc *BlogPostCreate) AddCommentIDs(ids ...uuid.UUID) *BlogPostCreate {
+func (bpc *BlogPostCreate) AddCommentIDs(ids ...string) *BlogPostCreate {
 	bpc.mutation.AddCommentIDs(ids...)
 	return bpc
 }
 
 // AddComments adds the "comments" edges to the Comment entity.
 func (bpc *BlogPostCreate) AddComments(c ...*Comment) *BlogPostCreate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -398,6 +415,10 @@ func (bpc *BlogPostCreate) defaults() {
 		v := blogpost.DefaultStatus
 		bpc.mutation.SetStatus(v)
 	}
+	if _, ok := bpc.mutation.Visibility(); !ok {
+		v := blogpost.DefaultVisibility
+		bpc.mutation.SetVisibility(v)
+	}
 	if _, ok := bpc.mutation.IsFeatured(); !ok {
 		v := blogpost.DefaultIsFeatured
 		bpc.mutation.SetIsFeatured(v)
@@ -430,12 +451,6 @@ func (bpc *BlogPostCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (bpc *BlogPostCreate) check() error {
-	if _, ok := bpc.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "BlogPost.user_id"`)}
-	}
-	if _, ok := bpc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "BlogPost.title"`)}
-	}
 	if v, ok := bpc.mutation.Title(); ok {
 		if err := blogpost.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "BlogPost.title": %w`, err)}
@@ -447,14 +462,6 @@ func (bpc *BlogPostCreate) check() error {
 	if v, ok := bpc.mutation.Slug(); ok {
 		if err := blogpost.SlugValidator(v); err != nil {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "BlogPost.slug": %w`, err)}
-		}
-	}
-	if _, ok := bpc.mutation.Content(); !ok {
-		return &ValidationError{Name: "content", err: errors.New(`ent: missing required field "BlogPost.content"`)}
-	}
-	if v, ok := bpc.mutation.Content(); ok {
-		if err := blogpost.ContentValidator(v); err != nil {
-			return &ValidationError{Name: "content", err: fmt.Errorf(`ent: validator failed for field "BlogPost.content": %w`, err)}
 		}
 	}
 	if _, ok := bpc.mutation.ContentType(); !ok {
@@ -471,6 +478,14 @@ func (bpc *BlogPostCreate) check() error {
 	if v, ok := bpc.mutation.Status(); ok {
 		if err := blogpost.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "BlogPost.status": %w`, err)}
+		}
+	}
+	if _, ok := bpc.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "BlogPost.visibility"`)}
+	}
+	if v, ok := bpc.mutation.Visibility(); ok {
+		if err := blogpost.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "BlogPost.visibility": %w`, err)}
 		}
 	}
 	if _, ok := bpc.mutation.IsFeatured(); !ok {
@@ -490,15 +505,6 @@ func (bpc *BlogPostCreate) check() error {
 	if _, ok := bpc.mutation.CommentCount(); !ok {
 		return &ValidationError{Name: "comment_count", err: errors.New(`ent: missing required field "BlogPost.comment_count"`)}
 	}
-	if _, ok := bpc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BlogPost.created_at"`)}
-	}
-	if _, ok := bpc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "BlogPost.updated_at"`)}
-	}
-	if len(bpc.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "BlogPost.user"`)}
-	}
 	return nil
 }
 
@@ -514,10 +520,10 @@ func (bpc *BlogPostCreate) sqlSave(ctx context.Context) (*BlogPost, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected BlogPost.ID type: %T", _spec.ID.Value)
 		}
 	}
 	bpc.mutation.id = &_node.ID
@@ -528,11 +534,11 @@ func (bpc *BlogPostCreate) sqlSave(ctx context.Context) (*BlogPost, error) {
 func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 	var (
 		_node = &BlogPost{config: bpc.config}
-		_spec = sqlgraph.NewCreateSpec(blogpost.Table, sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(blogpost.Table, sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString))
 	)
 	if id, ok := bpc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := bpc.mutation.Title(); ok {
 		_spec.SetField(blogpost.FieldTitle, field.TypeString, value)
@@ -557,6 +563,10 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 	if value, ok := bpc.mutation.Status(); ok {
 		_spec.SetField(blogpost.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := bpc.mutation.Visibility(); ok {
+		_spec.SetField(blogpost.FieldVisibility, field.TypeEnum, value)
+		_node.Visibility = value
 	}
 	if value, ok := bpc.mutation.IsFeatured(); ok {
 		_spec.SetField(blogpost.FieldIsFeatured, field.TypeBool, value)
@@ -606,7 +616,7 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			Columns: []string{blogpost.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -623,7 +633,7 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			Columns: []string{blogpost.CategoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -640,30 +650,13 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			Columns: []string{blogpost.SeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.SeriesID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := bpc.mutation.IdeasIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.IdeasTable,
-			Columns: []string{blogpost.IdeasColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.IdeasID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bpc.mutation.TagsIDs(); len(nodes) > 0 {
@@ -674,7 +667,7 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			Columns: blogpost.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -694,7 +687,7 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			Columns: []string{blogpost.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -710,7 +703,7 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			Columns: []string{blogpost.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

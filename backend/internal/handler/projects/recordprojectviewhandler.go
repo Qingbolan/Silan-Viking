@@ -17,6 +17,15 @@ func RecordProjectViewHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		if req.ClientIP == "" {
+			req.ClientIP = r.RemoteAddr
+		}
+		if req.UserAgentFull == "" {
+			req.UserAgentFull = r.UserAgent()
+		}
+		if req.Referrer == "" {
+			req.Referrer = r.Referer()
+		}
 
 		l := projects.NewRecordProjectViewLogic(r.Context(), svcCtx)
 		resp, err := l.RecordProjectView(&req)

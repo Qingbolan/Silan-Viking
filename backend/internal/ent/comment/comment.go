@@ -3,11 +3,11 @@
 package comment
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -31,8 +31,8 @@ const (
 	FieldContent = "content"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
-	// FieldReferrenceID holds the string denoting the referrence_id field in the database.
-	FieldReferrenceID = "referrence_id"
+	// FieldReferenceID holds the string denoting the reference_id field in the database.
+	FieldReferenceID = "reference_id"
 	// FieldAttachmentID holds the string denoting the attachment_id field in the database.
 	FieldAttachmentID = "attachment_id"
 	// FieldIsApproved holds the string denoting the is_approved field in the database.
@@ -85,7 +85,7 @@ var Columns = []string{
 	FieldAuthorWebsite,
 	FieldContent,
 	FieldType,
-	FieldReferrenceID,
+	FieldReferenceID,
 	FieldAttachmentID,
 	FieldIsApproved,
 	FieldIPAddress,
@@ -127,10 +127,8 @@ var (
 	AuthorWebsiteValidator func(string) error
 	// ContentValidator is a validator for the "content" field. It is called by the builders before save.
 	ContentValidator func(string) error
-	// DefaultType holds the default value on creation for the "type" field.
-	DefaultType string
-	// ReferrenceIDValidator is a validator for the "referrence_id" field. It is called by the builders before save.
-	ReferrenceIDValidator func(string) error
+	// ReferenceIDValidator is a validator for the "reference_id" field. It is called by the builders before save.
+	ReferenceIDValidator func(string) error
 	// AttachmentIDValidator is a validator for the "attachment_id" field. It is called by the builders before save.
 	AttachmentIDValidator func(string) error
 	// DefaultIsApproved holds the default value on creation for the "is_approved" field.
@@ -148,8 +146,62 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() string
 )
+
+// EntityType defines the type for the "entity_type" enum field.
+type EntityType string
+
+// EntityType values.
+const (
+	EntityTypeBlog    EntityType = "blog"
+	EntityTypeProject EntityType = "project"
+	EntityTypeIdea    EntityType = "idea"
+	EntityTypeEpisode EntityType = "episode"
+	EntityTypeResume  EntityType = "resume"
+	EntityTypeUpdate  EntityType = "update"
+)
+
+func (et EntityType) String() string {
+	return string(et)
+}
+
+// EntityTypeValidator is a validator for the "entity_type" field enum values. It is called by the builders before save.
+func EntityTypeValidator(et EntityType) error {
+	switch et {
+	case EntityTypeBlog, EntityTypeProject, EntityTypeIdea, EntityTypeEpisode, EntityTypeResume, EntityTypeUpdate:
+		return nil
+	default:
+		return fmt.Errorf("comment: invalid enum value for entity_type field: %q", et)
+	}
+}
+
+// Type defines the type for the "type" enum field.
+type Type string
+
+// TypeGeneral is the default value of the Type enum.
+const DefaultType = TypeGeneral
+
+// Type values.
+const (
+	TypeGeneral  Type = "general"
+	TypeQuestion Type = "question"
+	TypeFeedback Type = "feedback"
+)
+
+func (_type Type) String() string {
+	return string(_type)
+}
+
+// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
+func TypeValidator(_type Type) error {
+	switch _type {
+	case TypeGeneral, TypeQuestion, TypeFeedback:
+		return nil
+	default:
+		return fmt.Errorf("comment: invalid enum value for type field: %q", _type)
+	}
+}
 
 // OrderOption defines the ordering options for the Comment queries.
 type OrderOption func(*sql.Selector)
@@ -199,9 +251,9 @@ func ByType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldType, opts...).ToFunc()
 }
 
-// ByReferrenceID orders the results by the referrence_id field.
-func ByReferrenceID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldReferrenceID, opts...).ToFunc()
+// ByReferenceID orders the results by the reference_id field.
+func ByReferenceID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReferenceID, opts...).ToFunc()
 }
 
 // ByAttachmentID orders the results by the attachment_id field.

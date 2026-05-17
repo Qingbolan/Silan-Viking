@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectDetailTranslationUpdate is the builder for updating ResearchProjectDetailTranslation entities.
@@ -31,15 +30,15 @@ func (rpdtu *ResearchProjectDetailTranslationUpdate) Where(ps ...predicate.Resea
 }
 
 // SetResearchProjectDetailID sets the "research_project_detail_id" field.
-func (rpdtu *ResearchProjectDetailTranslationUpdate) SetResearchProjectDetailID(u uuid.UUID) *ResearchProjectDetailTranslationUpdate {
-	rpdtu.mutation.SetResearchProjectDetailID(u)
+func (rpdtu *ResearchProjectDetailTranslationUpdate) SetResearchProjectDetailID(s string) *ResearchProjectDetailTranslationUpdate {
+	rpdtu.mutation.SetResearchProjectDetailID(s)
 	return rpdtu
 }
 
 // SetNillableResearchProjectDetailID sets the "research_project_detail_id" field if the given value is not nil.
-func (rpdtu *ResearchProjectDetailTranslationUpdate) SetNillableResearchProjectDetailID(u *uuid.UUID) *ResearchProjectDetailTranslationUpdate {
-	if u != nil {
-		rpdtu.SetResearchProjectDetailID(*u)
+func (rpdtu *ResearchProjectDetailTranslationUpdate) SetNillableResearchProjectDetailID(s *string) *ResearchProjectDetailTranslationUpdate {
+	if s != nil {
+		rpdtu.SetResearchProjectDetailID(*s)
 	}
 	return rpdtu
 }
@@ -157,7 +156,7 @@ func (rpdtu *ResearchProjectDetailTranslationUpdate) sqlSave(ctx context.Context
 	if err := rpdtu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(researchprojectdetailtranslation.Table, researchprojectdetailtranslation.Columns, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(researchprojectdetailtranslation.Table, researchprojectdetailtranslation.Columns, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString))
 	if ps := rpdtu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -176,7 +175,7 @@ func (rpdtu *ResearchProjectDetailTranslationUpdate) sqlSave(ctx context.Context
 			Columns: []string{researchprojectdetailtranslation.ResearchProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -189,7 +188,7 @@ func (rpdtu *ResearchProjectDetailTranslationUpdate) sqlSave(ctx context.Context
 			Columns: []string{researchprojectdetailtranslation.ResearchProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -247,15 +246,15 @@ type ResearchProjectDetailTranslationUpdateOne struct {
 }
 
 // SetResearchProjectDetailID sets the "research_project_detail_id" field.
-func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) SetResearchProjectDetailID(u uuid.UUID) *ResearchProjectDetailTranslationUpdateOne {
-	rpdtuo.mutation.SetResearchProjectDetailID(u)
+func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) SetResearchProjectDetailID(s string) *ResearchProjectDetailTranslationUpdateOne {
+	rpdtuo.mutation.SetResearchProjectDetailID(s)
 	return rpdtuo
 }
 
 // SetNillableResearchProjectDetailID sets the "research_project_detail_id" field if the given value is not nil.
-func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) SetNillableResearchProjectDetailID(u *uuid.UUID) *ResearchProjectDetailTranslationUpdateOne {
-	if u != nil {
-		rpdtuo.SetResearchProjectDetailID(*u)
+func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) SetNillableResearchProjectDetailID(s *string) *ResearchProjectDetailTranslationUpdateOne {
+	if s != nil {
+		rpdtuo.SetResearchProjectDetailID(*s)
 	}
 	return rpdtuo
 }
@@ -386,7 +385,7 @@ func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) sqlSave(ctx context.Con
 	if err := rpdtuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(researchprojectdetailtranslation.Table, researchprojectdetailtranslation.Columns, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(researchprojectdetailtranslation.Table, researchprojectdetailtranslation.Columns, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString))
 	id, ok := rpdtuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ResearchProjectDetailTranslation.id" for update`)}
@@ -422,7 +421,7 @@ func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) sqlSave(ctx context.Con
 			Columns: []string{researchprojectdetailtranslation.ResearchProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -435,7 +434,7 @@ func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) sqlSave(ctx context.Con
 			Columns: []string{researchprojectdetailtranslation.ResearchProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

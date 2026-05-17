@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // Project is the model entity for the Project schema.
 type Project struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// Slug holds the value of the "slug" field.
@@ -46,8 +45,8 @@ type Project struct {
 	ThumbnailURL string `json:"thumbnail_url,omitempty"`
 	// IsFeatured holds the value of the "is_featured" field.
 	IsFeatured bool `json:"is_featured,omitempty"`
-	// IsPublic holds the value of the "is_public" field.
-	IsPublic bool `json:"is_public,omitempty"`
+	// Visibility holds the value of the "visibility" field.
+	Visibility project.Visibility `json:"visibility,omitempty"`
 	// ViewCount holds the value of the "view_count" field.
 	ViewCount int `json:"view_count,omitempty"`
 	// LikeCount holds the value of the "like_count" field.
@@ -76,17 +75,13 @@ type ProjectEdges struct {
 	Details *ProjectDetail `json:"details,omitempty"`
 	// Images holds the value of the images edge.
 	Images []*ProjectImage `json:"images,omitempty"`
-	// SourceRelationships holds the value of the source_relationships edge.
-	SourceRelationships []*ProjectRelationship `json:"source_relationships,omitempty"`
-	// TargetRelationships holds the value of the target_relationships edge.
-	TargetRelationships []*ProjectRelationship `json:"target_relationships,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*ProjectLike `json:"likes,omitempty"`
 	// Views holds the value of the views edge.
 	Views []*ProjectView `json:"views,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [7]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -138,28 +133,10 @@ func (e ProjectEdges) ImagesOrErr() ([]*ProjectImage, error) {
 	return nil, &NotLoadedError{edge: "images"}
 }
 
-// SourceRelationshipsOrErr returns the SourceRelationships value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProjectEdges) SourceRelationshipsOrErr() ([]*ProjectRelationship, error) {
-	if e.loadedTypes[5] {
-		return e.SourceRelationships, nil
-	}
-	return nil, &NotLoadedError{edge: "source_relationships"}
-}
-
-// TargetRelationshipsOrErr returns the TargetRelationships value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProjectEdges) TargetRelationshipsOrErr() ([]*ProjectRelationship, error) {
-	if e.loadedTypes[6] {
-		return e.TargetRelationships, nil
-	}
-	return nil, &NotLoadedError{edge: "target_relationships"}
-}
-
 // LikesOrErr returns the Likes value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) LikesOrErr() ([]*ProjectLike, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[5] {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
@@ -168,7 +145,7 @@ func (e ProjectEdges) LikesOrErr() ([]*ProjectLike, error) {
 // ViewsOrErr returns the Views value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) ViewsOrErr() ([]*ProjectView, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[6] {
 		return e.Views, nil
 	}
 	return nil, &NotLoadedError{edge: "views"}
@@ -179,16 +156,14 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case project.FieldIsFeatured, project.FieldIsPublic:
+		case project.FieldIsFeatured:
 			values[i] = new(sql.NullBool)
 		case project.FieldViewCount, project.FieldLikeCount, project.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case project.FieldTitle, project.FieldSlug, project.FieldDescription, project.FieldProjectType, project.FieldStatus, project.FieldGithubURL, project.FieldDemoURL, project.FieldDocumentationURL, project.FieldThumbnailURL:
+		case project.FieldID, project.FieldUserID, project.FieldTitle, project.FieldSlug, project.FieldDescription, project.FieldProjectType, project.FieldStatus, project.FieldGithubURL, project.FieldDemoURL, project.FieldDocumentationURL, project.FieldThumbnailURL, project.FieldVisibility:
 			values[i] = new(sql.NullString)
 		case project.FieldStartDate, project.FieldEndDate, project.FieldCreatedAt, project.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case project.FieldID, project.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -205,16 +180,16 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case project.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pr.ID = *value
+			} else if value.Valid {
+				pr.ID = value.String
 			}
 		case project.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				pr.UserID = *value
+			} else if value.Valid {
+				pr.UserID = value.String
 			}
 		case project.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -288,11 +263,11 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pr.IsFeatured = value.Bool
 			}
-		case project.FieldIsPublic:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field is_public", values[i])
+		case project.FieldVisibility:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field visibility", values[i])
 			} else if value.Valid {
-				pr.IsPublic = value.Bool
+				pr.Visibility = project.Visibility(value.String)
 			}
 		case project.FieldViewCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -362,16 +337,6 @@ func (pr *Project) QueryImages() *ProjectImageQuery {
 	return NewProjectClient(pr.config).QueryImages(pr)
 }
 
-// QuerySourceRelationships queries the "source_relationships" edge of the Project entity.
-func (pr *Project) QuerySourceRelationships() *ProjectRelationshipQuery {
-	return NewProjectClient(pr.config).QuerySourceRelationships(pr)
-}
-
-// QueryTargetRelationships queries the "target_relationships" edge of the Project entity.
-func (pr *Project) QueryTargetRelationships() *ProjectRelationshipQuery {
-	return NewProjectClient(pr.config).QueryTargetRelationships(pr)
-}
-
 // QueryLikes queries the "likes" edge of the Project entity.
 func (pr *Project) QueryLikes() *ProjectLikeQuery {
 	return NewProjectClient(pr.config).QueryLikes(pr)
@@ -406,7 +371,7 @@ func (pr *Project) String() string {
 	builder.WriteString("Project(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pr.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", pr.UserID))
+	builder.WriteString(pr.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(pr.Title)
@@ -444,8 +409,8 @@ func (pr *Project) String() string {
 	builder.WriteString("is_featured=")
 	builder.WriteString(fmt.Sprintf("%v", pr.IsFeatured))
 	builder.WriteString(", ")
-	builder.WriteString("is_public=")
-	builder.WriteString(fmt.Sprintf("%v", pr.IsPublic))
+	builder.WriteString("visibility=")
+	builder.WriteString(fmt.Sprintf("%v", pr.Visibility))
 	builder.WriteString(", ")
 	builder.WriteString("view_count=")
 	builder.WriteString(fmt.Sprintf("%v", pr.ViewCount))

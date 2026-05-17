@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -26,21 +27,39 @@ func (RecentUpdate) Annotations() []schema.Annotation {
 // Fields of the RecentUpdate.
 func (RecentUpdate) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("user_id", uuid.UUID{}).
+		field.String("user_id").
+			Optional().
 			StorageKey("user_id"),
 
-		// Basic information - matching Python model exactly
-		field.Enum("type").
+		// M0.5a §11.7.1: recent_updates is promoted to the content main table
+		// of the `update` type (ruling #3). It needs a stable slug.
+		field.String("slug").
+			MaxLen(200).
+			Unique().
+			NotEmpty(),
+		// Renamed from `type` (M0.5a §11.7.1): "which kind of thing this
+		// update is about" — kept alongside update_type, not the same axis.
+		field.Enum("subject_kind").
 			Values("work", "education", "research", "publication", "project").
-			Default("project"),
+			Default("project").
+			StorageKey("type"),
+		// M0.5a §11.7.1 / 10 §10.4.6: the 8 update_type values — "what kind
+		// of update this is".
+		field.Enum("update_type").
+			Values("milestone", "achievement", "progress", "release",
+				"announcement", "insight", "learning", "reflection").
+			Default("progress"),
+		field.Enum("visibility").
+			Values("private", "unlisted", "public").
+			Default("private"),
 		field.String("title").
 			MaxLen(200).
-			NotEmpty(),
+			Optional(),
 		field.Text("description").
-			NotEmpty(),
+			Optional(),
 		field.Time("date").
 			SchemaType(map[string]string{
 				"mysql": "date",
@@ -94,10 +113,20 @@ func (RecentUpdate) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
+	}
+}
+
+// Indexes of the RecentUpdate.
+func (RecentUpdate) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("update_type"),
+		index.Fields("visibility"),
 	}
 }
 
@@ -107,7 +136,6 @@ func (RecentUpdate) Edges() []ent.Edge {
 		edge.From("user", User.Type).
 			Ref("recent_updates").
 			Field("user_id").
-			Required().
 			Unique(),
 		edge.To("translations", RecentUpdateTranslation.Type),
 	}

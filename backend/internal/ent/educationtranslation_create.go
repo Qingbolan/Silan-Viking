@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EducationTranslationCreate is the builder for creating a EducationTranslation entity.
@@ -24,8 +23,8 @@ type EducationTranslationCreate struct {
 }
 
 // SetEducationID sets the "education_id" field.
-func (etc *EducationTranslationCreate) SetEducationID(u uuid.UUID) *EducationTranslationCreate {
-	etc.mutation.SetEducationID(u)
+func (etc *EducationTranslationCreate) SetEducationID(s string) *EducationTranslationCreate {
+	etc.mutation.SetEducationID(s)
 	return etc
 }
 
@@ -106,15 +105,15 @@ func (etc *EducationTranslationCreate) SetNillableCreatedAt(t *time.Time) *Educa
 }
 
 // SetID sets the "id" field.
-func (etc *EducationTranslationCreate) SetID(u uuid.UUID) *EducationTranslationCreate {
-	etc.mutation.SetID(u)
+func (etc *EducationTranslationCreate) SetID(s string) *EducationTranslationCreate {
+	etc.mutation.SetID(s)
 	return etc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (etc *EducationTranslationCreate) SetNillableID(u *uuid.UUID) *EducationTranslationCreate {
-	if u != nil {
-		etc.SetID(*u)
+func (etc *EducationTranslationCreate) SetNillableID(s *string) *EducationTranslationCreate {
+	if s != nil {
+		etc.SetID(*s)
 	}
 	return etc
 }
@@ -237,10 +236,10 @@ func (etc *EducationTranslationCreate) sqlSave(ctx context.Context) (*EducationT
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected EducationTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	etc.mutation.id = &_node.ID
@@ -251,11 +250,11 @@ func (etc *EducationTranslationCreate) sqlSave(ctx context.Context) (*EducationT
 func (etc *EducationTranslationCreate) createSpec() (*EducationTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &EducationTranslation{config: etc.config}
-		_spec = sqlgraph.NewCreateSpec(educationtranslation.Table, sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(educationtranslation.Table, sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString))
 	)
 	if id, ok := etc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := etc.mutation.Institution(); ok {
 		_spec.SetField(educationtranslation.FieldInstitution, field.TypeString, value)
@@ -285,7 +284,7 @@ func (etc *EducationTranslationCreate) createSpec() (*EducationTranslation, *sql
 			Columns: []string{educationtranslation.EducationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

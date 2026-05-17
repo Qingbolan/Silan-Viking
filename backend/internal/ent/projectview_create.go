@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectViewCreate is the builder for creating a ProjectView entity.
@@ -24,8 +23,8 @@ type ProjectViewCreate struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (pvc *ProjectViewCreate) SetProjectID(u uuid.UUID) *ProjectViewCreate {
-	pvc.mutation.SetProjectID(u)
+func (pvc *ProjectViewCreate) SetProjectID(s string) *ProjectViewCreate {
+	pvc.mutation.SetProjectID(s)
 	return pvc
 }
 
@@ -142,15 +141,15 @@ func (pvc *ProjectViewCreate) SetNillableUpdatedAt(t *time.Time) *ProjectViewCre
 }
 
 // SetID sets the "id" field.
-func (pvc *ProjectViewCreate) SetID(u uuid.UUID) *ProjectViewCreate {
-	pvc.mutation.SetID(u)
+func (pvc *ProjectViewCreate) SetID(s string) *ProjectViewCreate {
+	pvc.mutation.SetID(s)
 	return pvc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pvc *ProjectViewCreate) SetNillableID(u *uuid.UUID) *ProjectViewCreate {
-	if u != nil {
-		pvc.SetID(*u)
+func (pvc *ProjectViewCreate) SetNillableID(s *string) *ProjectViewCreate {
+	if s != nil {
+		pvc.SetID(*s)
 	}
 	return pvc
 }
@@ -252,10 +251,10 @@ func (pvc *ProjectViewCreate) sqlSave(ctx context.Context) (*ProjectView, error)
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ProjectView.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pvc.mutation.id = &_node.ID
@@ -266,11 +265,11 @@ func (pvc *ProjectViewCreate) sqlSave(ctx context.Context) (*ProjectView, error)
 func (pvc *ProjectViewCreate) createSpec() (*ProjectView, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ProjectView{config: pvc.config}
-		_spec = sqlgraph.NewCreateSpec(projectview.Table, sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(projectview.Table, sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString))
 	)
 	if id, ok := pvc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pvc.mutation.Fingerprint(); ok {
 		_spec.SetField(projectview.FieldFingerprint, field.TypeString, value)
@@ -308,7 +307,7 @@ func (pvc *ProjectViewCreate) createSpec() (*ProjectView, *sqlgraph.CreateSpec) 
 			Columns: []string{projectview.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

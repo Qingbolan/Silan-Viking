@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaTagUpdate is the builder for updating IdeaTag entities.
@@ -65,14 +64,14 @@ func (itu *IdeaTagUpdate) SetUpdatedAt(t time.Time) *IdeaTagUpdate {
 }
 
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
-func (itu *IdeaTagUpdate) AddIdeaIDs(ids ...uuid.UUID) *IdeaTagUpdate {
+func (itu *IdeaTagUpdate) AddIdeaIDs(ids ...string) *IdeaTagUpdate {
 	itu.mutation.AddIdeaIDs(ids...)
 	return itu
 }
 
 // AddIdeas adds the "ideas" edges to the Idea entity.
 func (itu *IdeaTagUpdate) AddIdeas(i ...*Idea) *IdeaTagUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -91,14 +90,14 @@ func (itu *IdeaTagUpdate) ClearIdeas() *IdeaTagUpdate {
 }
 
 // RemoveIdeaIDs removes the "ideas" edge to Idea entities by IDs.
-func (itu *IdeaTagUpdate) RemoveIdeaIDs(ids ...uuid.UUID) *IdeaTagUpdate {
+func (itu *IdeaTagUpdate) RemoveIdeaIDs(ids ...string) *IdeaTagUpdate {
 	itu.mutation.RemoveIdeaIDs(ids...)
 	return itu
 }
 
 // RemoveIdeas removes "ideas" edges to Idea entities.
 func (itu *IdeaTagUpdate) RemoveIdeas(i ...*Idea) *IdeaTagUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -160,7 +159,7 @@ func (itu *IdeaTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := itu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideatag.Table, ideatag.Columns, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideatag.Table, ideatag.Columns, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString))
 	if ps := itu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -185,7 +184,7 @@ func (itu *IdeaTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: ideatag.IdeasPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -198,7 +197,7 @@ func (itu *IdeaTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: ideatag.IdeasPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -214,7 +213,7 @@ func (itu *IdeaTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: ideatag.IdeasPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -277,14 +276,14 @@ func (ituo *IdeaTagUpdateOne) SetUpdatedAt(t time.Time) *IdeaTagUpdateOne {
 }
 
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
-func (ituo *IdeaTagUpdateOne) AddIdeaIDs(ids ...uuid.UUID) *IdeaTagUpdateOne {
+func (ituo *IdeaTagUpdateOne) AddIdeaIDs(ids ...string) *IdeaTagUpdateOne {
 	ituo.mutation.AddIdeaIDs(ids...)
 	return ituo
 }
 
 // AddIdeas adds the "ideas" edges to the Idea entity.
 func (ituo *IdeaTagUpdateOne) AddIdeas(i ...*Idea) *IdeaTagUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -303,14 +302,14 @@ func (ituo *IdeaTagUpdateOne) ClearIdeas() *IdeaTagUpdateOne {
 }
 
 // RemoveIdeaIDs removes the "ideas" edge to Idea entities by IDs.
-func (ituo *IdeaTagUpdateOne) RemoveIdeaIDs(ids ...uuid.UUID) *IdeaTagUpdateOne {
+func (ituo *IdeaTagUpdateOne) RemoveIdeaIDs(ids ...string) *IdeaTagUpdateOne {
 	ituo.mutation.RemoveIdeaIDs(ids...)
 	return ituo
 }
 
 // RemoveIdeas removes "ideas" edges to Idea entities.
 func (ituo *IdeaTagUpdateOne) RemoveIdeas(i ...*Idea) *IdeaTagUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -385,7 +384,7 @@ func (ituo *IdeaTagUpdateOne) sqlSave(ctx context.Context) (_node *IdeaTag, err 
 	if err := ituo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideatag.Table, ideatag.Columns, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideatag.Table, ideatag.Columns, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString))
 	id, ok := ituo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "IdeaTag.id" for update`)}
@@ -427,7 +426,7 @@ func (ituo *IdeaTagUpdateOne) sqlSave(ctx context.Context) (_node *IdeaTag, err 
 			Columns: ideatag.IdeasPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -440,7 +439,7 @@ func (ituo *IdeaTagUpdateOne) sqlSave(ctx context.Context) (_node *IdeaTag, err 
 			Columns: ideatag.IdeasPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -456,7 +455,7 @@ func (ituo *IdeaTagUpdateOne) sqlSave(ctx context.Context) (_node *IdeaTag, err 
 			Columns: ideatag.IdeasPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

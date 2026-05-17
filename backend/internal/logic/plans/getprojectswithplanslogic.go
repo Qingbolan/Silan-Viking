@@ -25,7 +25,16 @@ func NewGetProjectsWithPlansLogic(ctx context.Context, svcCtx *svc.ServiceContex
 }
 
 func (l *GetProjectsWithPlansLogic) GetProjectsWithPlans(req *types.ProjectsWithPlansRequest) (resp []types.Project, err error) {
-	// todo: add your logic here and delete this line
+	projects, err := fetchPublicProjects(l.ctx, l.svcCtx.DB)
+	if err != nil {
+		l.Logger.Errorf("Failed to fetch projects: %v", err)
+		return nil, err
+	}
 
-	return
+	resp = make([]types.Project, 0, len(projects))
+	for _, proj := range projects {
+		resp = append(resp, mapProject(proj))
+	}
+
+	return resp, nil
 }

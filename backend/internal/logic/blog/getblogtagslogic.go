@@ -38,7 +38,7 @@ func (l *GetBlogTagsLogic) GetBlogTags(req *types.BlogTagsRequest) (resp []types
 	var result []types.BlogTag
 	for _, tag := range tags {
 		result = append(result, types.BlogTag{
-			ID:         tag.ID.String(),
+			ID:         tag.ID,
 			Name:       tag.Name,
 			Slug:       tag.Slug,
 			UsageCount: len(tag.Edges.BlogPosts),

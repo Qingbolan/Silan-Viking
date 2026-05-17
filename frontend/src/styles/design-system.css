@@ -1,0 +1,294 @@
+/* =============================================================================
+   Silan Design System — Fluent skeleton, glass materials, academic restraint
+   -----------------------------------------------------------------------------
+   Token architecture follows EasyNet's Fluent layer (radius / motion / duration
+   scales, layered surfaces, Acrylic/Mica materials). The palette stays academic
+   (ink-blue accent + true-neutral graphite).
+
+   IMPORTANT — reset reconciliation:
+   index.css ships an aggressive legacy reset that does
+       button,input,div,span,... { border: none !important; outline: none !important }
+       input,textarea { background: transparent }
+   for the old "no borders, no surfaces" look. Design-system components must
+   opt OUT of that reset. Every ds component carries a `data-ds` attribute and
+   the rules at the bottom of this file restore borders / backgrounds / rings
+   for `[data-ds]` subtrees with matching `!important` specificity.
+   ========================================================================== */
+
+:root {
+  /* --- Radius scale (Fluent) ------------------------------------------------ */
+  --ds-radius-xs: 0.1875rem;  /* 3px  */
+  --ds-radius-sm: 0.3125rem;  /* 5px  */
+  --ds-radius-md: 0.5rem;     /* 8px  — default control radius */
+  --ds-radius-lg: 0.75rem;    /* 12px — cards, panels          */
+  --ds-radius-xl: 1rem;       /* 16px — modals                 */
+  --ds-radius-2xl: 1.375rem;  /* 22px — hero / feature         */
+  --ds-radius-full: 9999px;
+
+  /* --- Spacing scale (4px base) -------------------------------------------- */
+  --ds-space-1: 0.25rem;  --ds-space-2: 0.5rem;   --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;     --ds-space-5: 1.5rem;   --ds-space-6: 2rem;
+  --ds-space-7: 3rem;     --ds-space-8: 4rem;     --ds-space-9: 6rem;
+
+  /* --- Motion curves ------------------------------------------------------ */
+  --ds-ease-standard:   cubic-bezier(0.2, 0, 0, 1);
+  --ds-ease-emphasized: cubic-bezier(0.4, 0, 0.2, 1);
+  --ds-ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ds-ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ds-ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-ease-out-back:   cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* --- Duration scale ----------------------------------------------------- */
+  --ds-duration-instant: 67ms;  --ds-duration-fast: 120ms;
+  --ds-duration-normal: 180ms;  --ds-duration-slow: 260ms;
+  --ds-duration-slower: 400ms;
+
+  /* --- Backdrop blur ------------------------------------------------------ */
+  --ds-blur-sm: 14px;  --ds-blur-md: 28px;  --ds-blur-lg: 56px;
+
+  /* --- Elevation — layered, honest shadows -------------------------------- */
+  --ds-elevation-0: none;
+  --ds-elevation-1: 0 1px 2px oklch(0 0 0 / 0.06), 0 1px 1px oklch(0 0 0 / 0.04);
+  --ds-elevation-2: 0 4px 10px oklch(0 0 0 / 0.08), 0 1px 3px oklch(0 0 0 / 0.06);
+  --ds-elevation-3: 0 12px 28px oklch(0 0 0 / 0.12), 0 4px 10px oklch(0 0 0 / 0.07);
+  --ds-elevation-4: 0 24px 56px oklch(0 0 0 / 0.16), 0 8px 18px oklch(0 0 0 / 0.10);
+
+  /* --- Typography scale --------------------------------------------------- */
+  --ds-text-2xs: 0.6875rem; --ds-text-xs: 0.75rem;  --ds-text-sm: 0.8125rem;
+  --ds-text-base: 0.9375rem; --ds-text-md: 1rem;    --ds-text-lg: 1.125rem;
+  --ds-text-xl: 1.375rem;  --ds-text-2xl: 1.75rem;  --ds-text-3xl: 2.25rem;
+  --ds-text-4xl: 3rem;
+
+  /* --- Z-index ladder ----------------------------------------------------- */
+  --ds-z-raised: 10;  --ds-z-sticky: 100;  --ds-z-overlay: 1000;
+  --ds-z-modal: 1100; --ds-z-toast: 1200;
+
+  /* --- Material tints (light) — used by .ds-acrylic / .ds-mica ------------ */
+  --ds-glass-tint:   oklch(1 0 0 / 0.62);
+  --ds-glass-edge:   oklch(1 0 0 / 0.55);     /* top highlight stroke      */
+  --ds-glass-inner:  oklch(1 0 0 / 0.40);     /* inner glow                */
+  --ds-glass-shade:  oklch(0.2 0 0 / 0.06);   /* bottom shading            */
+  --ds-mica-tint:    oklch(0.985 0 0 / 0.86);
+}
+
+.dark {
+  --ds-elevation-1: 0 1px 2px oklch(0 0 0 / 0.40), 0 1px 1px oklch(0 0 0 / 0.30);
+  --ds-elevation-2: 0 4px 10px oklch(0 0 0 / 0.46), 0 1px 3px oklch(0 0 0 / 0.34);
+  --ds-elevation-3: 0 12px 28px oklch(0 0 0 / 0.56), 0 4px 10px oklch(0 0 0 / 0.38);
+  --ds-elevation-4: 0 24px 56px oklch(0 0 0 / 0.66), 0 8px 18px oklch(0 0 0 / 0.44);
+
+  --ds-glass-tint:  oklch(0.24 0.012 264 / 0.60);
+  --ds-glass-edge:  oklch(1 0 0 / 0.14);
+  --ds-glass-inner: oklch(1 0 0 / 0.06);
+  --ds-glass-shade: oklch(0 0 0 / 0.28);
+  --ds-mica-tint:   oklch(0.19 0.011 264 / 0.86);
+}
+
+/* =============================================================================
+   GLASS MATERIALS — the real thing, not a faint tint.
+   Each material layers: backdrop blur + tint fill + a top edge highlight +
+   an inner glow + a bottom shade. Built with layered backgrounds + an inset
+   box-shadow stack so the surface reads as a physical pane of glass.
+   ========================================================================== */
+
+/* Acrylic — frosted glass for cards / popovers / panels. */
+.ds-acrylic {
+  position: relative;
+  background: var(--ds-glass-tint);
+  backdrop-filter: saturate(180%) blur(var(--ds-blur-md));
+  -webkit-backdrop-filter: saturate(180%) blur(var(--ds-blur-md));
+  border: 1px solid var(--ds-color-border) !important;
+  box-shadow:
+    inset 0 1px 0 0 var(--ds-glass-edge),       /* crisp top highlight   */
+    inset 0 0 24px 0 var(--ds-glass-inner),     /* soft inner glow       */
+    inset 0 -16px 28px -20px var(--ds-glass-shade), /* bottom shading    */
+    var(--ds-elevation-2);
+}
+
+/* Mica — quieter, window-base material (deeper blur, less saturation). */
+.ds-mica {
+  background: var(--ds-mica-tint);
+  backdrop-filter: blur(var(--ds-blur-lg));
+  -webkit-backdrop-filter: blur(var(--ds-blur-lg));
+  border: 1px solid var(--ds-color-border) !important;
+  box-shadow: inset 0 1px 0 0 var(--ds-glass-edge);
+}
+
+/* Ridge — a bright gradient seam along the top edge of a panel. */
+.ds-ridge::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ds-glass-edge) 18%,
+    var(--ds-glass-edge) 82%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+/* Reveal border — a gradient border that brightens around the cursor.
+   Driven by --ds-mx / --ds-my (0-100%) set in JS on pointer move. */
+.ds-reveal {
+  position: relative;
+}
+.ds-reveal::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(
+    220px circle at var(--ds-mx, 50%) var(--ds-my, 50%),
+    var(--ds-color-primary) 0%,
+    transparent 65%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--ds-duration-normal) var(--ds-ease-standard);
+  pointer-events: none;
+}
+.ds-reveal:hover::after { opacity: 0.9; }
+
+/* Spotlight — a soft glow that follows the cursor across the surface. */
+.ds-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.ds-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    260px circle at var(--ds-mx, 50%) var(--ds-my, 50%),
+    color-mix(in oklch, var(--ds-color-primary) 22%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity var(--ds-duration-normal) var(--ds-ease-standard);
+  pointer-events: none;
+}
+.ds-spotlight:hover::before { opacity: 1; }
+
+/* Subtle fractal-noise grain for paper / matte surfaces. */
+.ds-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+/* Hairline — single 1px separator using the theme border token. */
+.ds-hairline { border: 1px solid var(--ds-color-border) !important; }
+
+/* =============================================================================
+   Keyframes & animation utilities
+   ========================================================================== */
+@keyframes ds-fade-in  { from { opacity: 0 } to { opacity: 1 } }
+@keyframes ds-fade-up  { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+@keyframes ds-pop-in   { 0% { opacity: 0; transform: scale(.96) } 60% { opacity: 1; transform: scale(1.01) } 100% { transform: scale(1) } }
+@keyframes ds-shimmer  { from { background-position: -150% 0 } to { background-position: 250% 0 } }
+@keyframes ds-spin     { to { transform: rotate(360deg) } }
+/* Flowing gradient — background pans left/right on a loop. Pairs with a
+   wide background-size on a bg-clip-text element (à la ReactBits). */
+@keyframes ds-gradient-flow {
+  0%   { background-position:   0% 50% }
+  50%  { background-position: 100% 50% }
+  100% { background-position:   0% 50% }
+}
+
+.ds-animate-fade-in { animation: ds-fade-in var(--ds-duration-normal) var(--ds-ease-standard) both; }
+.ds-animate-fade-up { animation: ds-fade-up var(--ds-duration-slow) var(--ds-ease-out-expo) both; }
+.ds-animate-pop-in  { animation: ds-pop-in var(--ds-duration-slow) var(--ds-ease-out-back) both; }
+
+/* Flowing brand-gradient text — fixed NUS hues, identical in light/dark.
+   The repeating gradient + wide background-size gives the pan room. */
+.ds-text-gradient-flow {
+  background-image: linear-gradient(
+    to right,
+    #EF7C00, #4A90D9, #EF7C00, #4A90D9, #EF7C00
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ds-gradient-flow 8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-animate-fade-in, .ds-animate-fade-up, .ds-animate-pop-in { animation: none; }
+  .ds-text-gradient-flow { animation: none; }
+}
+
+.ds-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ds-color-surface-2) 25%,
+    var(--ds-color-surface-3) 50%,
+    var(--ds-color-surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.4s linear infinite;
+}
+
+/* =============================================================================
+   RESET RECONCILIATION
+   index.css forces `border:none !important`, `outline:none !important`, and
+   `background:transparent` on bare elements. Restore them inside any [data-ds]
+   subtree so design-system components render their surfaces, borders & rings.
+   ========================================================================== */
+
+/* Restore the border BOX for every ds element: index.css forces
+   `border:none !important`, which also kills border-width/style. We give
+   ds elements a transparent, zero-width solid border by default — then
+   Tailwind's `border` + `border-ds-*` utilities just work normally
+   (they only need to win the width/colour cascade, not re-enable style).
+   `!important` is required to out-rank the legacy reset. */
+[data-ds],
+[data-ds] *,
+[data-ds]::before,
+[data-ds]::after {
+  box-sizing: border-box;
+}
+
+/* The legacy `border:none !important` reset in index.css is now scoped to
+   exclude `[data-ds]` subtrees (see index.css), so inside a ds component
+   Tailwind's border utilities — including opacity variants like
+   `border-ds-error/25` — work normally with no !important gymnastics.
+
+   We still give ds elements a sane default so a bare `border` utility
+   (width only, no colour class) shows the soft theme hairline rather than
+   inheriting `currentColor` (the near-black text colour — the old bug). */
+[data-ds],
+[data-ds] * {
+  border-color: var(--ds-color-border);
+}
+
+/* `.ds-hairline` is a complete border declaration — keep it winning. */
+[data-ds].ds-hairline,
+[data-ds] .ds-hairline {
+  border-width: 1px !important;
+  border-color: var(--ds-color-border) !important;
+}
+
+/* Note: the legacy index.css reset is now scoped to exclude `[data-ds]`,
+   so ds inputs / focus rings keep whatever their own Tailwind classes set —
+   no reconciliation rules are needed for background or box-shadow here. */
+
+/* ds buttons must keep their fill — never inherit the bare-element reset. */
+button[data-ds] {
+  -webkit-appearance: none;
+          appearance: none;
+}

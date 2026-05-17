@@ -1,114 +1,186 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
-// Vue.js inspired color scheme
+// Modern academic color scheme — Fluent skeleton, academic restraint.
+// OKLCH tokens, "Paper white" + "Graphite" presets. Neutrals are chroma 0
+// so surfaces stay true grey; a restrained ink-blue accent is reserved for
+// links, the current item, and key actions. No AI-gradient look.
+//
+// Unlike the old scheme, surfaces are now LIGHTLY ELEVATED (not flat
+// transparent): the design system expresses depth through stacked surface
+// layers (surface-1..3) + hairline borders + faint honest shadows. The
+// extra `ds*` tokens below are consumed by the new design-system components
+// (Button/Card/Badge/...) and the /gallery page; the legacy fields are kept
+// unchanged so existing components keep working until they are migrated.
 const colorSchemes = {
   light: {
-    // Primary colors - Simple green (same as dark)
-    primary: '#42b883',         // Vue green
-    primaryHover: '#4fc08d',    // Lighter green (same as dark)
-    primaryLight: '#e8f5f0',    // Very light green background
+    // Primary — academic ink blue, used sparingly for emphasis
+    primary: 'oklch(0.50 0.13 264)',
+    primaryHover: 'oklch(0.44 0.14 264)',
+    primaryLight: 'oklch(0.96 0.02 264)',   // faint wash for selected states
 
-    // Secondary colors - Simple gray
-    secondary: '#6b7280',       // Medium gray
-    secondaryHover: '#4b5563',  // Darker gray
-    secondaryLight: '#f3f4f6',  // Light gray
+    // Secondary — true neutral graphite
+    secondary: 'oklch(0.44 0 0)',
+    secondaryHover: 'oklch(0.32 0 0)',
+    secondaryLight: 'oklch(0.95 0 0)',
 
-    // Background colors - Clean white
-    background: '#ffffff',       // Pure white
-    backgroundSecondary: '#f9fafb',   // Very light gray
-    backgroundTertiary: '#f3f4f6',    // Light gray
+    // Background — Gallery "Paper white": flat, quiet
+    background: 'oklch(1.00 0 0)',
+    backgroundSecondary: 'oklch(0.965 0 0)',
+    backgroundTertiary: 'oklch(0.94 0 0)',
 
-    // Text colors - Simple grayscale
-    textPrimary: '#111827',     // Almost black
-    textSecondary: '#6b7280',   // Medium gray
-    textTertiary: '#9ca3af',    // Light gray
+    // Text — graphite ink on paper
+    textPrimary: 'oklch(0.12 0 0)',
+    textSecondary: 'oklch(0.50 0 0)',       // = gallery --muted-foreground
+    textTertiary: 'oklch(0.62 0 0)',
 
-    // Accent colors - Green (consistent with dark)
-    accent: '#42b883',          // Vue green
-    accentHover: '#4fc08d',     // Lighter green
+    // Accent — same ink blue
+    accent: 'oklch(0.50 0.13 264)',
+    accentHover: 'oklch(0.44 0.14 264)',
 
-    // Status colors - Same as dark
-    success: '#42b883',         // Green
-    warning: '#e6a23c',         // Yellow
-    error: '#f56c6c',           // Red
+    // Status
+    success: 'oklch(0.55 0.13 150)',
+    warning: 'oklch(0.62 0.13 70)',
+    error: 'oklch(0.55 0.20 25)',
 
-    // Gradients - Simple green gradients
-    gradientPrimary: 'linear-gradient(135deg, #42b883 0%, #4fc08d 100%)',
-    gradientSecondary: 'linear-gradient(135deg, #34d399 0%, #42b883 100%)',
-    gradientAccent: 'linear-gradient(135deg, #42b883 0%, #10b981 100%)',
+    // "Gradients" kept flat (solid) — no AI-gradient look
+    gradientPrimary: 'oklch(0.50 0.13 264)',
+    gradientSecondary: 'oklch(0.44 0 0)',
+    gradientAccent: 'oklch(0.50 0.13 264)',
 
-    // Surface colors - Clean white and gray
-    cardBackground: '#ffffff',
-    cardBorder: '#e5e7eb',      // Light gray border
-    surface: '#f9fafb',
-    surfaceSecondary: '#f3f4f6',
-    surfaceTertiary: '#e5e7eb',
-    surfaceElevated: '#ffffff',
+    // Legacy surface fields — kept transparent for un-migrated components.
+    cardBackground: 'transparent',
+    cardBorder: 'transparent',
+    surface: 'transparent',
+    surfaceSecondary: 'transparent',
+    surfaceTertiary: 'transparent',
+    surfaceElevated: 'transparent',
 
-    // Interactive states
-    hoverBackground: '#f3f4f6',
-    activeBackground: '#e5e7eb',
-    focusRing: '#42b883',
+    // Interactive states — kept faint so hover/active still gives feedback
+    hoverBackground: 'oklch(0.96 0 0)',
+    activeBackground: 'oklch(0.93 0 0)',
+    focusRing: 'oklch(0.50 0.13 264)',
 
-    // Shadows
-    shadowSm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-    shadowMd: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    shadowLg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-    shadowXl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+    // Legacy shadow fields — still off for un-migrated components.
+    shadowSm: 'none',
+    shadowMd: 'none',
+    shadowLg: 'none',
+    shadowXl: 'none',
+
+    // --- Design-system tokens (--ds-color-*) -------------------------------
+    // NUS brand palette: NUS Orange #EF7C00 (primary) + NUS Blue #003D7C
+    // (accent). Surfaces stay true-neutral; the brand colours are used
+    // sparingly — macOS-style restraint, not a wash of colour.
+    dsCanvas: 'oklch(0.985 0 0)',          // page background
+    dsSurface1: 'oklch(1.00 0 0)',         // resting card / panel
+    dsSurface2: 'oklch(0.975 0 0)',        // nested / inset surface
+    dsSurface3: 'oklch(0.95 0 0)',         // deepest inset (code, wells)
+    dsBorder: 'oklch(0.915 0 0)',          // hairline separator
+    dsBorderStrong: 'oklch(0.84 0 0)',     // emphasized hairline
+    dsOverlay: 'oklch(0.20 0 0 / 0.28)',   // modal scrim
+    dsRing: 'oklch(0.70 0.176 52 / 0.40)', // focus ring (NUS orange)
+
+    // Primary — NUS Orange #EF7C00
+    dsPrimary: 'oklch(0.702 0.176 52)',
+    dsPrimaryHover: 'oklch(0.652 0.178 50)',
+    dsPrimaryActive: 'oklch(0.602 0.175 48)',
+    dsPrimaryFg: 'oklch(1.00 0 0)',        // text on primary fill
+    dsPrimarySoft: 'oklch(0.955 0.035 60)',
+
+    // Accent — NUS Blue #003D7C
+    dsAccent: 'oklch(0.362 0.118 256)',
+    dsAccentHover: 'oklch(0.322 0.120 256)',
+    dsAccentFg: 'oklch(1.00 0 0)',
+    dsAccentSoft: 'oklch(0.95 0.03 256)',
+
+    // Status soft washes
+    dsSuccessSoft: 'oklch(0.95 0.04 150)',
+    dsWarningSoft: 'oklch(0.95 0.05 75)',
+    dsErrorSoft: 'oklch(0.95 0.04 25)',
   },
   dark: {
-    // Primary colors - Vue green for dark
-    primary: '#42b883',         // Vue green (same in dark)
-    primaryHover: '#4fc08d',    // Lighter Vue green
-    primaryLight: '#1a1a1a',    // Dark background
-    
-    // Secondary colors
-    secondary: '#a0a8b7',       // Light gray for dark mode
-    secondaryHover: '#c0c4cc',  // Lighter gray
-    secondaryLight: '#35495e',  // Vue dark blue
-    
-    // Background colors - Vue dark theme
-    background: '#1a1a1a',       // Very dark gray
-    backgroundSecondary: '#2c2c2c', // Dark gray
-    backgroundTertiary: '#35495e',  // Vue dark blue
-    
-    // Text colors - High contrast for dark
-    textPrimary: '#ffffff',     // Pure white
-    textSecondary: '#a0a8b7',   // Light gray
-    textTertiary: '#909399',    // Medium gray
-    
-    // Accent colors
-    accent: '#42b883',          // Vue green (consistent)
-    accentHover: '#4fc08d',     // Lighter Vue green
-    
-    // Status colors
-    success: '#67c23a',         // Vue success green
-    warning: '#e6a23c',         // Vue warning yellow  
-    error: '#f56c6c',           // Vue error red
-    
-    // Gradients - Vue dark style
-    gradientPrimary: 'linear-gradient(135deg, #42b883 0%, #4fc08d 100%)',
-    gradientSecondary: 'linear-gradient(135deg, #67c23a 0%, #42b883 100%)',
-    gradientAccent: 'linear-gradient(135deg, #a0a8b7 0%, #909399 100%)',
-    
-    // Surface colors
-    cardBackground: '#2c2c2c',   // Dark gray
-    cardBorder: '#35495e',       // Vue dark blue
-    surface: '#35495e',          // Vue dark blue
-    surfaceSecondary: '#2c2c2c', // Dark gray
-    surfaceTertiary: '#404040',  // Medium dark gray
-    surfaceElevated: '#2c2c2c',
-    
+    // Primary — lighter ink blue for contrast on graphite
+    primary: 'oklch(0.72 0.12 264)',
+    primaryHover: 'oklch(0.80 0.12 264)',
+    primaryLight: 'oklch(0.24 0.04 264)',
+
+    // Secondary — neutral
+    secondary: 'oklch(0.66 0 0)',
+    secondaryHover: 'oklch(0.80 0 0)',
+    secondaryLight: 'oklch(0.23 0 0)',
+
+    // Background — "Graphite": a layered near-neutral with a faint ink-blue
+    // cast, lifted enough that desk / window / surface read as distinct.
+    background: 'oklch(0.165 0.010 264)',
+    backgroundSecondary: 'oklch(0.21 0.012 264)',
+    backgroundTertiary: 'oklch(0.26 0.014 264)',
+
+    // Text
+    textPrimary: 'oklch(0.96 0.003 260)',
+    textSecondary: 'oklch(0.66 0.008 260)',
+    textTertiary: 'oklch(0.52 0.008 260)',
+
+    // Accent
+    accent: 'oklch(0.72 0.12 264)',
+    accentHover: 'oklch(0.80 0.12 264)',
+
+    // Status
+    success: 'oklch(0.72 0.15 150)',
+    warning: 'oklch(0.80 0.14 80)',
+    error: 'oklch(0.70 0.18 25)',
+
+    // Flat solid
+    gradientPrimary: 'oklch(0.72 0.12 264)',
+    gradientSecondary: 'oklch(0.66 0 0)',
+    gradientAccent: 'oklch(0.72 0.12 264)',
+
+    // Legacy surface fields — kept transparent for un-migrated components.
+    cardBackground: 'transparent',
+    cardBorder: 'transparent',
+    surface: 'transparent',
+    surfaceSecondary: 'transparent',
+    surfaceTertiary: 'transparent',
+    surfaceElevated: 'transparent',
+
     // Interactive states
-    hoverBackground: '#404040',
-    activeBackground: '#35495e',
-    focusRing: '#42b883',
-    
-    // Shadows for dark mode
-    shadowSm: '0 1px 2px 0 rgb(0 0 0 / 0.3)',
-    shadowMd: '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4)',
-    shadowLg: '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
-    shadowXl: '0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.4)',
+    hoverBackground: 'oklch(0.22 0.010 260)',
+    activeBackground: 'oklch(0.26 0.012 260)',
+    focusRing: 'oklch(0.72 0.12 264)',
+
+    // Legacy shadow fields — still off for un-migrated components.
+    shadowSm: 'none',
+    shadowMd: 'none',
+    shadowLg: 'none',
+    shadowXl: 'none',
+
+    // --- Design-system tokens (--ds-color-*) -------------------------------
+    // NUS brand palette on graphite: orange lifts slightly for contrast,
+    // blue lightens so it stays legible on the dark canvas.
+    dsCanvas: 'oklch(0.165 0.006 264)',
+    dsSurface1: 'oklch(0.205 0.007 264)',
+    dsSurface2: 'oklch(0.245 0.008 264)',
+    dsSurface3: 'oklch(0.285 0.009 264)',
+    dsBorder: 'oklch(0.305 0.008 264)',
+    dsBorderStrong: 'oklch(0.40 0.010 264)',
+    dsOverlay: 'oklch(0.05 0 0 / 0.62)',
+    dsRing: 'oklch(0.74 0.165 56 / 0.45)',
+
+    // Primary — NUS Orange, lifted for dark contrast
+    dsPrimary: 'oklch(0.745 0.165 56)',
+    dsPrimaryHover: 'oklch(0.795 0.150 58)',
+    dsPrimaryActive: 'oklch(0.695 0.170 54)',
+    dsPrimaryFg: 'oklch(0.16 0.02 56)',
+    dsPrimarySoft: 'oklch(0.30 0.055 56)',
+
+    // Accent — NUS Blue, lightened
+    dsAccent: 'oklch(0.68 0.115 256)',
+    dsAccentHover: 'oklch(0.74 0.110 256)',
+    dsAccentFg: 'oklch(0.16 0.02 256)',
+    dsAccentSoft: 'oklch(0.29 0.055 256)',
+
+    // Status soft washes
+    dsSuccessSoft: 'oklch(0.27 0.05 150)',
+    dsWarningSoft: 'oklch(0.29 0.06 75)',
+    dsErrorSoft: 'oklch(0.28 0.06 25)',
   }
 };
 
@@ -146,6 +218,27 @@ interface ColorScheme {
   shadowMd: string;
   shadowLg: string;
   shadowXl: string;
+  // Design-system tokens (NUS brand palette)
+  dsCanvas: string;
+  dsSurface1: string;
+  dsSurface2: string;
+  dsSurface3: string;
+  dsBorder: string;
+  dsBorderStrong: string;
+  dsOverlay: string;
+  dsRing: string;
+  dsPrimary: string;
+  dsPrimaryHover: string;
+  dsPrimaryActive: string;
+  dsPrimaryFg: string;
+  dsPrimarySoft: string;
+  dsAccent: string;
+  dsAccentHover: string;
+  dsAccentFg: string;
+  dsAccentSoft: string;
+  dsSuccessSoft: string;
+  dsWarningSoft: string;
+  dsErrorSoft: string;
 }
 
 interface ThemeContextType {
@@ -163,9 +256,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    // Check saved preference first, default to dark mode
+    // Check saved preference first; default to light mode (academic convention)
     const savedMode = localStorage.getItem('darkMode');
-    return savedMode !== null ? JSON.parse(savedMode) : true; // Default to dark mode
+    return savedMode !== null ? JSON.parse(savedMode) : false;
   });
 
   const toggleTheme = () => {
@@ -184,10 +277,20 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       document.documentElement.classList.remove('dark');
     }
     
-    // Apply CSS custom properties for dynamic theming
+    // Apply CSS custom properties for dynamic theming.
+    // Legacy fields → `--color-*`; design-system fields (ds*) → `--ds-color-*`
+    // in kebab-case (e.g. dsSurface1 → --ds-color-surface-1), matching the
+    // tokens consumed by design-system.css and the new UI components.
     const root = document.documentElement;
+    const toKebab = (s: string) =>
+      s.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase();
     Object.entries(colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value);
+      if (key.startsWith('ds')) {
+        // dsSurface1 → surface-1 ; dsPrimaryFg → primary-fg
+        const dsName = toKebab(key.slice(2));
+        root.style.setProperty(`--ds-color-${dsName}`, value);
+      }
     });
 
     // Apply shadow CSS custom properties

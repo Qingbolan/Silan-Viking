@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogTagQuery is the builder for querying BlogTag entities.
@@ -132,8 +131,8 @@ func (btq *BlogTagQuery) FirstX(ctx context.Context) *BlogTag {
 
 // FirstID returns the first BlogTag ID from the query.
 // Returns a *NotFoundError when no BlogTag ID was found.
-func (btq *BlogTagQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (btq *BlogTagQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = btq.Limit(1).IDs(setContextOp(ctx, btq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (btq *BlogTagQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (btq *BlogTagQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (btq *BlogTagQuery) FirstIDX(ctx context.Context) string {
 	id, err := btq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (btq *BlogTagQuery) OnlyX(ctx context.Context) *BlogTag {
 // OnlyID is like Only, but returns the only BlogTag ID in the query.
 // Returns a *NotSingularError when more than one BlogTag ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (btq *BlogTagQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (btq *BlogTagQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = btq.Limit(2).IDs(setContextOp(ctx, btq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (btq *BlogTagQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (btq *BlogTagQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (btq *BlogTagQuery) OnlyIDX(ctx context.Context) string {
 	id, err := btq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (btq *BlogTagQuery) AllX(ctx context.Context) []*BlogTag {
 }
 
 // IDs executes the query and returns a list of BlogTag IDs.
-func (btq *BlogTagQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (btq *BlogTagQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if btq.ctx.Unique == nil && btq.path != nil {
 		btq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (btq *BlogTagQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (btq *BlogTagQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (btq *BlogTagQuery) IDsX(ctx context.Context) []string {
 	ids, err := btq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -450,8 +449,8 @@ func (btq *BlogTagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Blo
 
 func (btq *BlogTagQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery, nodes []*BlogTag, init func(*BlogTag), assign func(*BlogTag, *BlogPost)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*BlogTag)
-	nids := make(map[uuid.UUID]map[*BlogTag]struct{})
+	byID := make(map[string]*BlogTag)
+	nids := make(map[string]map[*BlogTag]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -480,11 +479,11 @@ func (btq *BlogTagQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(uuid.UUID)}, values...), nil
+				return append([]any{new(sql.NullString)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
+				outValue := values[0].(*sql.NullString).String
+				inValue := values[1].(*sql.NullString).String
 				if nids[inValue] == nil {
 					nids[inValue] = map[*BlogTag]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
@@ -511,7 +510,7 @@ func (btq *BlogTagQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery
 }
 func (btq *BlogTagQuery) loadBlogPostTags(ctx context.Context, query *BlogPostTagQuery, nodes []*BlogTag, init func(*BlogTag), assign func(*BlogTag, *BlogPostTag)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogTag)
+	nodeids := make(map[string]*BlogTag)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -550,7 +549,7 @@ func (btq *BlogTagQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (btq *BlogTagQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(blogtag.Table, blogtag.Columns, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(blogtag.Table, blogtag.Columns, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString))
 	_spec.From = btq.sql
 	if unique := btq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

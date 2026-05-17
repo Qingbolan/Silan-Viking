@@ -1,0 +1,15 @@
+# L1 base — the pure-utility layer. No silan-viking dependencies; usable as-is
+# in any other project.
+[package]
+name = "silan-viking-base"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+ulid      = { workspace = true }
+time      = { workspace = true }
+serde     = { workspace = true }

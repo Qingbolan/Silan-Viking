@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PersonalInfoTranslationCreate is the builder for creating a PersonalInfoTranslation entity.
@@ -24,8 +23,8 @@ type PersonalInfoTranslationCreate struct {
 }
 
 // SetPersonalInfoID sets the "personal_info_id" field.
-func (pitc *PersonalInfoTranslationCreate) SetPersonalInfoID(u uuid.UUID) *PersonalInfoTranslationCreate {
-	pitc.mutation.SetPersonalInfoID(u)
+func (pitc *PersonalInfoTranslationCreate) SetPersonalInfoID(s string) *PersonalInfoTranslationCreate {
+	pitc.mutation.SetPersonalInfoID(s)
 	return pitc
 }
 
@@ -106,15 +105,15 @@ func (pitc *PersonalInfoTranslationCreate) SetNillableCreatedAt(t *time.Time) *P
 }
 
 // SetID sets the "id" field.
-func (pitc *PersonalInfoTranslationCreate) SetID(u uuid.UUID) *PersonalInfoTranslationCreate {
-	pitc.mutation.SetID(u)
+func (pitc *PersonalInfoTranslationCreate) SetID(s string) *PersonalInfoTranslationCreate {
+	pitc.mutation.SetID(s)
 	return pitc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pitc *PersonalInfoTranslationCreate) SetNillableID(u *uuid.UUID) *PersonalInfoTranslationCreate {
-	if u != nil {
-		pitc.SetID(*u)
+func (pitc *PersonalInfoTranslationCreate) SetNillableID(s *string) *PersonalInfoTranslationCreate {
+	if s != nil {
+		pitc.SetID(*s)
 	}
 	return pitc
 }
@@ -232,10 +231,10 @@ func (pitc *PersonalInfoTranslationCreate) sqlSave(ctx context.Context) (*Person
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected PersonalInfoTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pitc.mutation.id = &_node.ID
@@ -246,11 +245,11 @@ func (pitc *PersonalInfoTranslationCreate) sqlSave(ctx context.Context) (*Person
 func (pitc *PersonalInfoTranslationCreate) createSpec() (*PersonalInfoTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PersonalInfoTranslation{config: pitc.config}
-		_spec = sqlgraph.NewCreateSpec(personalinfotranslation.Table, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(personalinfotranslation.Table, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString))
 	)
 	if id, ok := pitc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pitc.mutation.FullName(); ok {
 		_spec.SetField(personalinfotranslation.FieldFullName, field.TypeString, value)
@@ -280,7 +279,7 @@ func (pitc *PersonalInfoTranslationCreate) createSpec() (*PersonalInfoTranslatio
 			Columns: []string{personalinfotranslation.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

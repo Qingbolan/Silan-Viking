@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // SocialLinkUpdate is the builder for updating SocialLink entities.
@@ -30,15 +29,15 @@ func (slu *SocialLinkUpdate) Where(ps ...predicate.SocialLink) *SocialLinkUpdate
 }
 
 // SetPersonalInfoID sets the "personal_info_id" field.
-func (slu *SocialLinkUpdate) SetPersonalInfoID(u uuid.UUID) *SocialLinkUpdate {
-	slu.mutation.SetPersonalInfoID(u)
+func (slu *SocialLinkUpdate) SetPersonalInfoID(s string) *SocialLinkUpdate {
+	slu.mutation.SetPersonalInfoID(s)
 	return slu
 }
 
 // SetNillablePersonalInfoID sets the "personal_info_id" field if the given value is not nil.
-func (slu *SocialLinkUpdate) SetNillablePersonalInfoID(u *uuid.UUID) *SocialLinkUpdate {
-	if u != nil {
-		slu.SetPersonalInfoID(*u)
+func (slu *SocialLinkUpdate) SetNillablePersonalInfoID(s *string) *SocialLinkUpdate {
+	if s != nil {
+		slu.SetPersonalInfoID(*s)
 	}
 	return slu
 }
@@ -196,7 +195,7 @@ func (slu *SocialLinkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := slu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(sociallink.Table, sociallink.Columns, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(sociallink.Table, sociallink.Columns, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString))
 	if ps := slu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -233,7 +232,7 @@ func (slu *SocialLinkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{sociallink.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -246,7 +245,7 @@ func (slu *SocialLinkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{sociallink.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -275,15 +274,15 @@ type SocialLinkUpdateOne struct {
 }
 
 // SetPersonalInfoID sets the "personal_info_id" field.
-func (sluo *SocialLinkUpdateOne) SetPersonalInfoID(u uuid.UUID) *SocialLinkUpdateOne {
-	sluo.mutation.SetPersonalInfoID(u)
+func (sluo *SocialLinkUpdateOne) SetPersonalInfoID(s string) *SocialLinkUpdateOne {
+	sluo.mutation.SetPersonalInfoID(s)
 	return sluo
 }
 
 // SetNillablePersonalInfoID sets the "personal_info_id" field if the given value is not nil.
-func (sluo *SocialLinkUpdateOne) SetNillablePersonalInfoID(u *uuid.UUID) *SocialLinkUpdateOne {
-	if u != nil {
-		sluo.SetPersonalInfoID(*u)
+func (sluo *SocialLinkUpdateOne) SetNillablePersonalInfoID(s *string) *SocialLinkUpdateOne {
+	if s != nil {
+		sluo.SetPersonalInfoID(*s)
 	}
 	return sluo
 }
@@ -454,7 +453,7 @@ func (sluo *SocialLinkUpdateOne) sqlSave(ctx context.Context) (_node *SocialLink
 	if err := sluo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(sociallink.Table, sociallink.Columns, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(sociallink.Table, sociallink.Columns, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString))
 	id, ok := sluo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "SocialLink.id" for update`)}
@@ -508,7 +507,7 @@ func (sluo *SocialLinkUpdateOne) sqlSave(ctx context.Context) (_node *SocialLink
 			Columns: []string{sociallink.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -521,7 +520,7 @@ func (sluo *SocialLinkUpdateOne) sqlSave(ctx context.Context) (_node *SocialLink
 			Columns: []string{sociallink.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -27,10 +27,10 @@ func (CommentLike) Annotations() []schema.Annotation {
 // Fields of the CommentLike.
 func (CommentLike) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("comment_id", uuid.UUID{}).
+		field.String("comment_id").
 			StorageKey("comment_id").
 			Comment("Generic comment ID - can reference any Comment"),
 		field.String("user_identity_id").

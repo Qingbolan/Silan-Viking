@@ -1,0 +1,10 @@
+# education entry_list — TOML array-of-tables (per 10 §10.4.5).
+
+[[entry]]
+entry_id    = "e_education_nus"
+institution = "National University of Singapore"
+degree      = "B.S. Computer Science"
+start_date  = "2019-08-01"
+end_date    = "2023-05-01"
+gpa         = "4.8/5.0"
+details     = ["Dean's List 2020-2023", "Thesis on distributed consensus"]

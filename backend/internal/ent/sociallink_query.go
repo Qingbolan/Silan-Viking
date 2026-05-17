@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // SocialLinkQuery is the builder for querying SocialLink entities.
@@ -107,8 +106,8 @@ func (slq *SocialLinkQuery) FirstX(ctx context.Context) *SocialLink {
 
 // FirstID returns the first SocialLink ID from the query.
 // Returns a *NotFoundError when no SocialLink ID was found.
-func (slq *SocialLinkQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (slq *SocialLinkQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = slq.Limit(1).IDs(setContextOp(ctx, slq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -120,7 +119,7 @@ func (slq *SocialLinkQuery) FirstID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (slq *SocialLinkQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (slq *SocialLinkQuery) FirstIDX(ctx context.Context) string {
 	id, err := slq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -158,8 +157,8 @@ func (slq *SocialLinkQuery) OnlyX(ctx context.Context) *SocialLink {
 // OnlyID is like Only, but returns the only SocialLink ID in the query.
 // Returns a *NotSingularError when more than one SocialLink ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (slq *SocialLinkQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (slq *SocialLinkQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = slq.Limit(2).IDs(setContextOp(ctx, slq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -175,7 +174,7 @@ func (slq *SocialLinkQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (slq *SocialLinkQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (slq *SocialLinkQuery) OnlyIDX(ctx context.Context) string {
 	id, err := slq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -203,7 +202,7 @@ func (slq *SocialLinkQuery) AllX(ctx context.Context) []*SocialLink {
 }
 
 // IDs executes the query and returns a list of SocialLink IDs.
-func (slq *SocialLinkQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (slq *SocialLinkQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if slq.ctx.Unique == nil && slq.path != nil {
 		slq.Unique(true)
 	}
@@ -215,7 +214,7 @@ func (slq *SocialLinkQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (slq *SocialLinkQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (slq *SocialLinkQuery) IDsX(ctx context.Context) []string {
 	ids, err := slq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -299,7 +298,7 @@ func (slq *SocialLinkQuery) WithPersonalInfo(opts ...func(*PersonalInfoQuery)) *
 // Example:
 //
 //	var v []struct {
-//		PersonalInfoID uuid.UUID `json:"personal_info_id,omitempty"`
+//		PersonalInfoID string `json:"personal_info_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +321,7 @@ func (slq *SocialLinkQuery) GroupBy(field string, fields ...string) *SocialLinkG
 // Example:
 //
 //	var v []struct {
-//		PersonalInfoID uuid.UUID `json:"personal_info_id,omitempty"`
+//		PersonalInfoID string `json:"personal_info_id,omitempty"`
 //	}
 //
 //	client.SocialLink.Query().
@@ -403,8 +402,8 @@ func (slq *SocialLinkQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 }
 
 func (slq *SocialLinkQuery) loadPersonalInfo(ctx context.Context, query *PersonalInfoQuery, nodes []*SocialLink, init func(*SocialLink), assign func(*SocialLink, *PersonalInfo)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*SocialLink)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*SocialLink)
 	for i := range nodes {
 		fk := nodes[i].PersonalInfoID
 		if _, ok := nodeids[fk]; !ok {
@@ -442,7 +441,7 @@ func (slq *SocialLinkQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (slq *SocialLinkQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(sociallink.Table, sociallink.Columns, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(sociallink.Table, sociallink.Columns, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString))
 	_spec.From = slq.sql
 	if unique := slq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

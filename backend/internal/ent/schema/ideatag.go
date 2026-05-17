@@ -26,8 +26,8 @@ func (IdeaTag) Annotations() []schema.Annotation {
 // Fields of the IdeaTag.
 func (IdeaTag) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.String("name").
 			MaxLen(100).
@@ -52,4 +52,3 @@ func (IdeaTag) Edges() []ent.Edge {
 			Ref("tags"),
 	}
 }
-

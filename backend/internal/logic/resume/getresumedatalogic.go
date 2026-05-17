@@ -3,6 +3,9 @@ package resume
 import (
 	"context"
 
+	"silan-backend/internal/ent"
+	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/ent/partentry"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -25,99 +28,92 @@ func NewGetResumeDataLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetResumeDataLogic) GetResumeData(req *types.ResumeRequest) (resp *types.ResumeData, err error) {
-	// Get personal info
 	personalInfoLogic := NewGetPersonalInfoLogic(l.ctx, l.svcCtx)
 	personalInfo, err := personalInfoLogic.GetPersonalInfo(&types.PersonalInfoRequest{Language: req.Language})
 	if err != nil {
 		return nil, err
 	}
 
-	// Get education
-	educationLogic := NewGetEducationLogic(l.ctx, l.svcCtx)
-	education, err := educationLogic.GetEducation(req)
+	parts, err := l.getResumeParts(req.Language)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get work experience
-	workExpLogic := NewGetWorkExperienceLogic(l.ctx, l.svcCtx)
-	experience, err := workExpLogic.GetWorkExperience(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get research projects
-	researchLogic := NewGetResearchProjectsLogic(l.ctx, l.svcCtx)
-	research, err := researchLogic.GetResearchProjects(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get publications
-	pubLogic := NewGetPublicationsLogic(l.ctx, l.svcCtx)
-	publications, err := pubLogic.GetPublications(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get awards
-	awardsLogic := NewGetAwardsLogic(l.ctx, l.svcCtx)
-	awards, err := awardsLogic.GetAwards(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get recent updates
-	updatesLogic := NewGetRecentUpdatesLogic(l.ctx, l.svcCtx)
-	recentUpdates, err := updatesLogic.GetRecentUpdates(req)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get skills from project technologies
-	skills, err := l.getSkillsFromProjects()
-	if err != nil {
-		l.Logger.Errorf("Failed to get skills: %v", err)
-		skills = []string{} // fallback to empty slice
 	}
 
 	return &types.ResumeData{
-		PersonalInfo:  *personalInfo,
-		Education:     education,
-		Experience:    experience,
-		Research:      research,
-		Publications:  publications,
-		Awards:        awards,
-		RecentUpdates: recentUpdates,
-		Skills:        skills,
+		PersonalInfo: *personalInfo,
+		Parts:        parts,
 	}, nil
 }
 
-// getSkillsFromProjects extracts unique skills from all project technologies
-func (l *GetResumeDataLogic) getSkillsFromProjects() ([]string, error) {
-	// Get all project technologies
-	technologies, err := l.svcCtx.DB.ProjectTechnology.Query().
-		WithProject().
+func (l *GetResumeDataLogic) getResumeParts(language string) ([]types.ResumePart, error) {
+	parts, err := l.svcCtx.DB.ItemPart.Query().
+		Where(itempart.EntityTypeEQ(itempart.EntityTypeResume)).
+		WithTranslations().
+		WithEntries(func(q *ent.PartEntryQuery) {
+			q.WithTranslations().Order(ent.Asc(partentry.FieldSortOrder))
+		}).
+		Order(ent.Asc(itempart.FieldSortOrder)).
 		All(l.ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use a map to collect unique skills
-	skillSet := make(map[string]bool)
-	
-	for _, tech := range technologies {
-		// Only include technologies from public projects
-		if tech.Edges.Project != nil && tech.Edges.Project.IsPublic {
-			skillSet[tech.TechnologyName] = true
+	result := make([]types.ResumePart, 0, len(parts))
+	for _, part := range parts {
+		body := make(map[string]string, len(part.Edges.Translations))
+		for _, translation := range part.Edges.Translations {
+			body[translation.LanguageCode] = translation.Body
+		}
+
+		entries := make([]types.ResumeEntry, 0, len(part.Edges.Entries))
+		for _, entry := range part.Edges.Entries {
+			entries = append(entries, types.ResumeEntry{
+				ID:               entry.ID,
+				EntryID:          entry.EntryID,
+				SortOrder:        entry.SortOrder,
+				SharedPayload:    entry.SharedPayload,
+				LocalizedPayload: localizedPartEntryPayload(entry.Edges.Translations, language, part.CanonicalLang),
+			})
+		}
+
+		shape := "prose"
+		if len(entries) > 0 {
+			shape = "entry_list"
+		}
+
+		result = append(result, types.ResumePart{
+			ID:            part.ID,
+			PartID:        part.PartID,
+			Role:          part.Role,
+			Shape:         shape,
+			SortOrder:     part.SortOrder,
+			CanonicalLang: part.CanonicalLang,
+			Body:          body,
+			Entries:       entries,
+		})
+	}
+
+	return result, nil
+}
+
+func localizedPartEntryPayload(translations []*ent.PartEntryTranslation, language string, canonicalLang string) map[string]interface{} {
+	if payload := findPartEntryPayload(translations, language); payload != nil {
+		return payload
+	}
+	if payload := findPartEntryPayload(translations, canonicalLang); payload != nil {
+		return payload
+	}
+	if len(translations) > 0 {
+		return translations[0].LocalizedPayload
+	}
+	return map[string]interface{}{}
+}
+
+func findPartEntryPayload(translations []*ent.PartEntryTranslation, language string) map[string]interface{} {
+	for _, translation := range translations {
+		if translation.LanguageCode == language {
+			return translation.LocalizedPayload
 		}
 	}
-
-	// Convert map to slice
-	skills := make([]string, 0, len(skillSet))
-	for skill := range skillSet {
-		skills = append(skills, skill)
-	}
-
-	return skills, nil
+	return nil
 }

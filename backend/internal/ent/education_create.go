@@ -14,7 +14,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EducationCreate is the builder for creating a Education entity.
@@ -25,8 +24,8 @@ type EducationCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (ec *EducationCreate) SetUserID(u uuid.UUID) *EducationCreate {
-	ec.mutation.SetUserID(u)
+func (ec *EducationCreate) SetUserID(s string) *EducationCreate {
+	ec.mutation.SetUserID(s)
 	return ec
 }
 
@@ -197,15 +196,15 @@ func (ec *EducationCreate) SetNillableUpdatedAt(t *time.Time) *EducationCreate {
 }
 
 // SetID sets the "id" field.
-func (ec *EducationCreate) SetID(u uuid.UUID) *EducationCreate {
-	ec.mutation.SetID(u)
+func (ec *EducationCreate) SetID(s string) *EducationCreate {
+	ec.mutation.SetID(s)
 	return ec
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ec *EducationCreate) SetNillableID(u *uuid.UUID) *EducationCreate {
-	if u != nil {
-		ec.SetID(*u)
+func (ec *EducationCreate) SetNillableID(s *string) *EducationCreate {
+	if s != nil {
+		ec.SetID(*s)
 	}
 	return ec
 }
@@ -216,14 +215,14 @@ func (ec *EducationCreate) SetUser(u *User) *EducationCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationTranslation entity by IDs.
-func (ec *EducationCreate) AddTranslationIDs(ids ...uuid.UUID) *EducationCreate {
+func (ec *EducationCreate) AddTranslationIDs(ids ...string) *EducationCreate {
 	ec.mutation.AddTranslationIDs(ids...)
 	return ec
 }
 
 // AddTranslations adds the "translations" edges to the EducationTranslation entity.
 func (ec *EducationCreate) AddTranslations(e ...*EducationTranslation) *EducationCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -231,14 +230,14 @@ func (ec *EducationCreate) AddTranslations(e ...*EducationTranslation) *Educatio
 }
 
 // AddDetailIDs adds the "details" edge to the EducationDetail entity by IDs.
-func (ec *EducationCreate) AddDetailIDs(ids ...uuid.UUID) *EducationCreate {
+func (ec *EducationCreate) AddDetailIDs(ids ...string) *EducationCreate {
 	ec.mutation.AddDetailIDs(ids...)
 	return ec
 }
 
 // AddDetails adds the "details" edges to the EducationDetail entity.
 func (ec *EducationCreate) AddDetails(e ...*EducationDetail) *EducationCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -378,10 +377,10 @@ func (ec *EducationCreate) sqlSave(ctx context.Context) (*Education, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Education.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ec.mutation.id = &_node.ID
@@ -392,11 +391,11 @@ func (ec *EducationCreate) sqlSave(ctx context.Context) (*Education, error) {
 func (ec *EducationCreate) createSpec() (*Education, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Education{config: ec.config}
-		_spec = sqlgraph.NewCreateSpec(education.Table, sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(education.Table, sqlgraph.NewFieldSpec(education.FieldID, field.TypeString))
 	)
 	if id, ok := ec.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ec.mutation.Institution(); ok {
 		_spec.SetField(education.FieldInstitution, field.TypeString, value)
@@ -458,7 +457,7 @@ func (ec *EducationCreate) createSpec() (*Education, *sqlgraph.CreateSpec) {
 			Columns: []string{education.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -475,7 +474,7 @@ func (ec *EducationCreate) createSpec() (*Education, *sqlgraph.CreateSpec) {
 			Columns: []string{education.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -491,7 +490,7 @@ func (ec *EducationCreate) createSpec() (*Education, *sqlgraph.CreateSpec) {
 			Columns: []string{education.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

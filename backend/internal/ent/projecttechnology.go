@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ProjectTechnology is the model entity for the ProjectTechnology schema.
 type ProjectTechnology struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
-	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 	// TechnologyName holds the value of the "technology_name" field.
 	TechnologyName string `json:"technology_name,omitempty"`
 	// TechnologyType holds the value of the "technology_type" field.
@@ -62,12 +61,10 @@ func (*ProjectTechnology) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case projecttechnology.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case projecttechnology.FieldTechnologyName, projecttechnology.FieldTechnologyType:
+		case projecttechnology.FieldID, projecttechnology.FieldProjectID, projecttechnology.FieldTechnologyName, projecttechnology.FieldTechnologyType:
 			values[i] = new(sql.NullString)
 		case projecttechnology.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case projecttechnology.FieldID, projecttechnology.FieldProjectID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -84,16 +81,16 @@ func (pt *ProjectTechnology) assignValues(columns []string, values []any) error 
 	for i := range columns {
 		switch columns[i] {
 		case projecttechnology.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pt.ID = *value
+			} else if value.Valid {
+				pt.ID = value.String
 			}
 		case projecttechnology.FieldProjectID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
-			} else if value != nil {
-				pt.ProjectID = *value
+			} else if value.Valid {
+				pt.ProjectID = value.String
 			}
 		case projecttechnology.FieldTechnologyName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -161,7 +158,7 @@ func (pt *ProjectTechnology) String() string {
 	builder.WriteString("ProjectTechnology(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pt.ID))
 	builder.WriteString("project_id=")
-	builder.WriteString(fmt.Sprintf("%v", pt.ProjectID))
+	builder.WriteString(pt.ProjectID)
 	builder.WriteString(", ")
 	builder.WriteString("technology_name=")
 	builder.WriteString(pt.TechnologyName)

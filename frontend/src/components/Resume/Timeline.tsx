@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { ExternalLink, MapPin } from 'lucide-react';
 
 interface TimelineItem {
   title: string;
@@ -17,72 +18,87 @@ interface TimelineProps {
 }
 
 const Timeline: React.FC<TimelineProps> = ({ items }) => {
-
   return (
-    <div className="space-y-6">
+    <ol className="space-y-6">
       {items.map((item, index) => (
-        <motion.div
-          key={index}
-          className="relative pl-2"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
+        <motion.li
+          key={`${item.title}-${index}`}
+          className="group relative"
+          initial={{ opacity: 0, x: -16 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.5, delay: index * 0.08 }}
         >
-          {/* Content */}
           <div className="space-y-3">
-            <div className="flex items-start space-x-3">
-              {/* Company/School Logo */}
+            <div className="flex items-start gap-3">
               {item.logo && (
-                <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden shadow-sm border border-gray-200">
-                  <img 
-                    src={item.logo} 
+                <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-theme-surface p-1">
+                  <img
+                    src={item.logo}
                     alt={`${item.subtitle} logo`}
-                    className="w-full h-full object-contain p-1"
+                    className="h-full w-full object-contain"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
                 </div>
               )}
-              
-              <div className="flex-1 min-w-0">
-                <h4 className="text-lg font-semibold text-theme-primary mb-1">
-                  {item.title}
-                </h4>
-                <div className="flex flex-wrap items-center gap-2 text-sm">
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <h4 className="min-w-0 text-lg font-bold leading-tight tracking-[-0.01em] text-theme-primary">
+                    {item.title}
+                  </h4>
+                  <span className="shrink-0 font-mono text-[0.7rem] font-medium uppercase tracking-[0.18em] text-theme-tertiary">
+                    {item.date}
+                  </span>
+                </div>
+
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                   {item.website ? (
-                    <a 
+                    <a
                       href={item.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium text-theme-accent hover:text-theme-primary transition-colors hover:underline"
+                      className="group/link inline-flex items-center gap-1 font-medium text-theme-accent transition-colors hover:text-theme-primary"
                     >
                       {item.subtitle}
+                      <ExternalLink
+                        aria-hidden
+                        focusable={false}
+                        size={12}
+                        className="opacity-0 transition-all duration-200 group-hover/link:opacity-100"
+                      />
                     </a>
                   ) : (
                     <span className="font-medium text-theme-accent">{item.subtitle}</span>
                   )}
-                  
-                  <span className="w-1 h-1 rounded-full bg-theme-secondary" />
-                  <span className="text-theme-secondary">{item.date}</span>
-                  
+
                   {item.location && (
                     <>
-                      <span className="w-1 h-1 rounded-full bg-theme-secondary" />
-                      <span className="text-theme-secondary text-xs">{item.location}</span>
+                      <span aria-hidden className="h-1 w-1 rounded-full bg-theme-secondary/50" />
+                      <span className="inline-flex items-center gap-1 text-xs text-theme-tertiary">
+                        <MapPin aria-hidden focusable={false} size={11} />
+                        {item.location}
+                      </span>
                     </>
                   )}
                 </div>
               </div>
             </div>
-            
+
             {item.details && Array.isArray(item.details) && item.details.length > 0 && (
-              <div className="bg-theme-surface-elevated rounded-lg p-4 border border-theme-card/50">
-                <ul className="space-y-2">
+              <div className="rounded-xl bg-theme-surface p-4 transition-colors duration-300">
+                <ul className="space-y-1.5">
                   {item.details.map((detail, i) => (
-                    <li key={i} className="flex items-start space-x-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-theme-accent mt-2 flex-shrink-0" />
-                      <span className="text-theme-secondary text-sm leading-relaxed">
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span
+                        aria-hidden
+                        className="select-none font-mono text-sm leading-relaxed text-theme-tertiary"
+                      >
+                        –
+                      </span>
+                      <span className="text-sm leading-relaxed text-theme-secondary">
                         {detail}
                       </span>
                     </li>
@@ -91,10 +107,10 @@ const Timeline: React.FC<TimelineProps> = ({ items }) => {
               </div>
             )}
           </div>
-        </motion.div>
+        </motion.li>
       ))}
-    </div>
+    </ol>
   );
 };
 
-export default Timeline; 
+export default Timeline;

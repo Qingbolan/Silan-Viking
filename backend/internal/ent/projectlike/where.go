@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.ProjectLike {
+func ID(id string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.ProjectLike {
+func IDEQ(id string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.ProjectLike {
+func IDNEQ(id string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.ProjectLike {
+func IDIn(ids ...string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.ProjectLike {
+func IDNotIn(ids ...string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.ProjectLike {
+func IDGT(id string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.ProjectLike {
+func IDGTE(id string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.ProjectLike {
+func IDLT(id string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.ProjectLike {
+func IDLTE(id string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldContainsFold(FieldID, id))
+}
+
 // ProjectID applies equality check predicate on the "project_id" field. It's identical to ProjectIDEQ.
-func ProjectID(v uuid.UUID) predicate.ProjectLike {
+func ProjectID(v string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldEQ(FieldProjectID, v))
 }
 
@@ -92,23 +101,68 @@ func UpdatedAt(v time.Time) predicate.ProjectLike {
 }
 
 // ProjectIDEQ applies the EQ predicate on the "project_id" field.
-func ProjectIDEQ(v uuid.UUID) predicate.ProjectLike {
+func ProjectIDEQ(v string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldEQ(FieldProjectID, v))
 }
 
 // ProjectIDNEQ applies the NEQ predicate on the "project_id" field.
-func ProjectIDNEQ(v uuid.UUID) predicate.ProjectLike {
+func ProjectIDNEQ(v string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldNEQ(FieldProjectID, v))
 }
 
 // ProjectIDIn applies the In predicate on the "project_id" field.
-func ProjectIDIn(vs ...uuid.UUID) predicate.ProjectLike {
+func ProjectIDIn(vs ...string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldIn(FieldProjectID, vs...))
 }
 
 // ProjectIDNotIn applies the NotIn predicate on the "project_id" field.
-func ProjectIDNotIn(vs ...uuid.UUID) predicate.ProjectLike {
+func ProjectIDNotIn(vs ...string) predicate.ProjectLike {
 	return predicate.ProjectLike(sql.FieldNotIn(FieldProjectID, vs...))
+}
+
+// ProjectIDGT applies the GT predicate on the "project_id" field.
+func ProjectIDGT(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldGT(FieldProjectID, v))
+}
+
+// ProjectIDGTE applies the GTE predicate on the "project_id" field.
+func ProjectIDGTE(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldGTE(FieldProjectID, v))
+}
+
+// ProjectIDLT applies the LT predicate on the "project_id" field.
+func ProjectIDLT(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldLT(FieldProjectID, v))
+}
+
+// ProjectIDLTE applies the LTE predicate on the "project_id" field.
+func ProjectIDLTE(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldLTE(FieldProjectID, v))
+}
+
+// ProjectIDContains applies the Contains predicate on the "project_id" field.
+func ProjectIDContains(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldContains(FieldProjectID, v))
+}
+
+// ProjectIDHasPrefix applies the HasPrefix predicate on the "project_id" field.
+func ProjectIDHasPrefix(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldHasPrefix(FieldProjectID, v))
+}
+
+// ProjectIDHasSuffix applies the HasSuffix predicate on the "project_id" field.
+func ProjectIDHasSuffix(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldHasSuffix(FieldProjectID, v))
+}
+
+// ProjectIDEqualFold applies the EqualFold predicate on the "project_id" field.
+func ProjectIDEqualFold(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldEqualFold(FieldProjectID, v))
+}
+
+// ProjectIDContainsFold applies the ContainsFold predicate on the "project_id" field.
+func ProjectIDContainsFold(v string) predicate.ProjectLike {
+	return predicate.ProjectLike(sql.FieldContainsFold(FieldProjectID, v))
 }
 
 // UserIdentityIDEQ applies the EQ predicate on the "user_identity_id" field.

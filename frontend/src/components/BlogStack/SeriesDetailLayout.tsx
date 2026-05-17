@@ -17,14 +17,14 @@ import {
   X,
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { useTheme } from '../ThemeContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
-import { BlogAPI } from '../../api';
+import { fetchEpisodeSeries } from '../../api';
+import type { EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
-import { BlogBreadcrumb } from './components/Breadcrumb';
 import { useTOC } from './hooks/useTOC';
 import { TableOfContents } from './components/TableOfContents';
 import BlogComments from './components/BlogComments';
+import { EpisodeList } from '../../components/ds';
 
 interface SeriesDetailLayoutProps {
   post: BlogData;
@@ -47,7 +47,6 @@ interface SeriesDetailLayoutProps {
 
 const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   post,
-  onBack,
   userAnnotations,
   annotations,
   showAnnotationForm,
@@ -65,7 +64,6 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
 }) => {
   const { language } = useLanguage();
   const navigate = useNavigate();
-  const { isDarkMode } = useTheme();
   const reduceMotion = useReducedMotion();
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [metaSidebarCollapsed, setMetaSidebarCollapsed] = useState(false); // Default open on desktop
@@ -74,7 +72,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   const [bookmarked, setBookmarked] = useState(false);
 
   // API state
-  const [seriesData, setSeriesData] = useState<BlogAPI.SeriesData | null>(null);
+  const [seriesData, setSeriesData] = useState<EpisodeSeriesData | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Scroll to top on component mount
@@ -114,29 +112,24 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   // Load series data
   useEffect(() => {
     const loadSeriesData = async () => {
-      console.log('🔍 SeriesDetailLayout - post object:', post);
-      console.log('🔍 SeriesDetailLayout - post.seriesId:', post.seriesId);
-      
-      if (!post.seriesId) {
-        console.log('❌ No seriesId found, skipping series data load');
+      if (!post.seriesSlug) {
+        setLoading(false);
         return;
       }
 
       try {
-        console.log('🚀 Loading series data for seriesId:', post.seriesId);
         setLoading(true);
-        const data = await BlogAPI.fetchSeriesData(post.seriesId, language as 'en' | 'zh');
-        console.log('✅ Series data loaded:', data);
+        const data = await fetchEpisodeSeries(post.seriesSlug, language as 'en' | 'zh');
         setSeriesData(data);
       } catch (error) {
-        console.error('❌ Failed to load series data:', error);
+        console.error('Failed to load series data:', error);
       } finally {
         setLoading(false);
       }
     };
 
     loadSeriesData();
-  }, [post.seriesId, language]);
+  }, [post.seriesSlug, language]);
 
   // Handle scroll for back to top button
   useEffect(() => {
@@ -153,21 +146,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
     if (!post.seriesId) return;
 
     try {
-      // Navigate to the episode page
       navigate(`/blog/${episodeId}`);
-      
-      // Optionally update series data to reflect the new current episode
-      // This is primarily for UI feedback, the actual navigation will load the new page
-      if (seriesData) {
-        const updatedEpisodes = seriesData.episodes.map(ep => ({
-          ...ep,
-          current: ep.id === episodeId
-        }));
-        setSeriesData({
-          ...seriesData,
-          episodes: updatedEpisodes
-        });
-      }
     } catch (error) {
       console.error('Failed to navigate to episode:', error);
     }
@@ -215,47 +194,6 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
 
   return (
     <div className="min-h-screen">
-
-      {/* Fixed Header - Y轴 0，考虑顶部导航栏 */}
-      <motion.div
-        role="region"
-        aria-label={language === 'en' ? 'Series header' : '系列页头'}
-        className={`fixed top-16 xs:top-18 sm:top-20 left-0 right-0 z-40 border-b border-theme-border ${metaSidebarCollapsed ? 'lg:ml-12' : 'lg:ml-80'} ${tocCollapsed ? 'lg:mr-12' : 'lg:mr-60'}`}
-        initial={reduceMotion ? false : { opacity: 0, y: -12 }}
-        animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        style={{
-          backgroundColor: isDarkMode ? 'rgba(26,26,26,0.50)' : 'rgba(255,255,255,0.70)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)'
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <BlogBreadcrumb
-              post={post}
-              onBack={onBack}
-              onFilterByCategory={(category) => {
-                // Navigate back to blog with category filter
-                navigate(`/blog?type=${category}`);
-              }}
-            />
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-4 text-sm text-theme-secondary">
-                <div className="flex items-center gap-1">
-                  <Eye size={14} />
-                  <span>{post.views}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Heart size={14} className={liked ? 'text-red-500 fill-current' : ''} />
-                  <span>{post.likes + (liked ? 1 : 0)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
       {/* Meta Sidebar - Y轴轨道 1 - Hidden on mobile */}
       <motion.div
         className={`fixed left-0 top-16 xs:top-18 sm:top-20 bottom-0 z-40 transition-all duration-300 hidden lg:block ${metaSidebarCollapsed ? 'w-12' : 'w-80'
@@ -263,16 +201,18 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
         initial={reduceMotion ? false : { opacity: 0, x: -20 }}
         animate={reduceMotion ? undefined : { opacity: 1, x: 0 }}
       >
-        <div className="h-full overflow-y-auto pt-3 pl-5">
+        {/* The container no longer carries a blanket pl-5; each block sets
+            its own left inset, so EpisodeList can sit flush-left. */}
+        <div className="h-full overflow-y-auto pt-3">
           {/* Sidebar Toggle */}
           <button
             onClick={() => {
               setMetaSidebarCollapsed(!metaSidebarCollapsed);
               sessionStorage.setItem('sidebar-user-interaction', 'true');
             }}
-            className="flex items-start gap-2 text-theme-secondary hover:text-theme-primary transition-colors w-full"
+            className="flex w-full items-start gap-2 pl-5 text-theme-secondary transition-colors hover:text-theme-primary"
           >
-            {metaSidebarCollapsed ? <ChevronRight size={16} /> : <List size={14} className="p-0.5 pt-0 text-purple-500 h-6 w-6" />}
+            {metaSidebarCollapsed && <ChevronRight size={16} />}
             {!metaSidebarCollapsed &&
               <h3 className="font-semibold text-theme-primary text-sm text-left">
                 {language === 'zh' && post.titleZh ? post.titleZh : post.title}
@@ -282,83 +222,78 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
 
           {!metaSidebarCollapsed && (
             <>
-              {/* Article Meta Info */}
-              <div className="rounded-lg border p-2 border-theme-border">
+              {/* Article Meta Info — keeps the sidebar's left inset. */}
+              <div className="rounded-lg border p-2 border-theme-border ml-5">
 
-                <div className="space-y-3 text-xs">
-                  <div className="flex items-center gap-2 text-theme-secondary">
-                    <User size={12} />
-                    <span>{post.author}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-theme-secondary">
-                    <Calendar size={12} />
-                    <span>{new Date(post.publishDate).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-theme-secondary">
-                    <Clock size={12} />
-                    <span>{post.readTime}</span>
+                {/* Meta — two compact rows: author + episode, date + read-time. */}
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                  <div className="flex min-w-0 items-center gap-1.5 text-theme-secondary">
+                    <User size={12} className="shrink-0" />
+                    <span className="truncate">{post.author}</span>
                   </div>
                   {post.episodeNumber && (
-                    <div className="flex items-center gap-2 text-theme-secondary">
-                      <Play size={12} />
-                      <span>{language === 'en' ? `Episode ${post.episodeNumber}` : `第${post.episodeNumber}集`}</span>
+                    <div className="flex min-w-0 items-center gap-1.5 text-theme-secondary">
+                      <Play size={12} className="shrink-0" />
+                      <span className="truncate">{language === 'en' ? `Episode ${post.episodeNumber}` : `第${post.episodeNumber}集`}</span>
                     </div>
                   )}
+                  <div className="flex min-w-0 items-center gap-1.5 text-theme-secondary">
+                    <Calendar size={12} className="shrink-0" />
+                    <span className="truncate">{new Date(post.publishDate).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex min-w-0 items-center gap-1.5 text-theme-secondary">
+                    <Clock size={12} className="shrink-0" />
+                    <span className="truncate">{post.readTime}</span>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-3 text-xs">
+                  <div className="flex flex-wrap items-center gap-4 border-t border-theme-border pt-3 text-sm text-theme-secondary">
+                    <div className="flex items-center gap-1.5">
+                      <Eye size={16} />
+                      <span>{post.views.toLocaleString()}</span>
+                    </div>
+                    <button
+                      onClick={handleLike}
+                      className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${liked ? 'text-red-500' : ''}`}
+                      aria-label={liked ? (language === 'en' ? 'Unlike' : '取消点赞') : (language === 'en' ? 'Like' : '点赞')}
+                      type="button"
+                    >
+                      <Heart size={16} className={liked ? 'text-red-500 fill-current' : ''} />
+                      <span>{(post.likes + (liked ? 1 : 0)).toLocaleString()}</span>
+                    </button>
+                    <button
+                      onClick={handleBookmark}
+                      className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${bookmarked ? 'text-yellow-500' : ''}`}
+                      aria-label={bookmarked ? (language === 'en' ? 'Remove bookmark' : '取消收藏') : (language === 'en' ? 'Bookmark' : '收藏')}
+                      type="button"
+                    >
+                      <BookOpen size={16} />
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="flex items-center gap-1.5 transition-colors hover:text-theme-primary"
+                      aria-label={language === 'en' ? 'Share' : '分享'}
+                      type="button"
+                    >
+                      <Share2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
-              {/* Series Navigation */}
+              {/* Series Navigation — the ds EpisodeList component. */}
               {seriesData && (
-                <div className="mt-3 rounded-lg border border-theme-border overflow-hidden">
-                  <div className="px-3 py-2 bg-theme-surface/50 border-b border-theme-border">
-                    <h4 className="text-xs font-semibold text-theme-primary uppercase tracking-wider">
-                      {language === 'en' ? 'Series Episodes' : '系列剧集'}
-                    </h4>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {seriesData.episodes.map((episode) => (
-                      <motion.div
-                        key={episode.id}
-                        className={`px-3 py-2 border-b border-theme-border/50 last:border-b-0 cursor-pointer transition-all duration-200 ${episode.id === post.id
-                          ? 'bg-theme-primary/10 text-theme-primary border-l-2 border-l-theme-primary'
-                          : 'hover:bg-theme-surface/70 text-theme-secondary hover:text-theme-primary'
-                          }`}
-                        onClick={() => handleEpisodeClick(episode.id)}
-                        whileHover={{ x: 2 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={`text-xs font-mono w-8 text-center px-1 py-0.5 rounded ${
-                            episode.id === post.id
-                              ? 'bg-theme-primary text-white' 
-                              : 'bg-theme-surface text-theme-secondary'
-                          }`}>
-                            {episode.order}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-medium truncate text-xs leading-4 ${
-                              episode.id === post.id ? 'text-theme-primary' : 'text-theme-primary/90'
-                            }`}>
-                              {language === 'zh' && episode.titleZh ? episode.titleZh : episode.title}
-                            </p>
-                            {episode.duration && (
-                              <p className={`text-xs mt-1 ${
-                                episode.id === post.id ? 'text-theme-primary/70' : 'text-theme-secondary'
-                              }`}>
-                                <Clock size={10} className="inline mr-1" />
-                                {episode.duration}
-                              </p>
-                            )}
-                          </div>
-                          {episode.id === post.id && (
-                            <div className="flex-shrink-0">
-                              <div className="w-2 h-2 bg-theme-primary rounded-full animate-pulse"></div>
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
+                <EpisodeList
+                  className="mt-3"
+                  hideHeader
+                  currentId={post.id}
+                  onSelect={handleEpisodeClick}
+                  items={seriesData.episodes.map((episode) => ({
+                    id: episode.id,
+                    title: episode.title,
+                    episodeNumber: episode.episode_number,
+                    durationMinutes: episode.duration_minutes,
+                  }))}
+                />
               )}
             </>
           )}
@@ -420,8 +355,8 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
                               {previousEpisode.title}
                             </p>
                             <p className="text-xs text-theme-secondary mt-1">
-                              {language === 'en' ? `Episode ${previousEpisode.order}` : `第${previousEpisode.order}集`}
-                              {previousEpisode.duration && ` • ${previousEpisode.duration}`}
+                              {language === 'en' ? `Episode ${previousEpisode.episode_number}` : `第${previousEpisode.episode_number}集`}
+                              {previousEpisode.duration_minutes ? ` • ${previousEpisode.duration_minutes}m` : ''}
                             </p>
                           </div>
                         </motion.button>
@@ -448,8 +383,8 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
                               {nextEpisode.title}
                             </p>
                             <p className="text-xs text-theme-secondary mt-1">
-                              {language === 'en' ? `Episode ${nextEpisode.order}` : `第${nextEpisode.order}集`}
-                              {nextEpisode.duration && ` • ${nextEpisode.duration}`}
+                              {language === 'en' ? `Episode ${nextEpisode.episode_number}` : `第${nextEpisode.episode_number}集`}
+                              {nextEpisode.duration_minutes ? ` • ${nextEpisode.duration_minutes}m` : ''}
                             </p>
                           </div>
                           <ChevronRight size={20} className="text-theme-secondary group-hover:text-theme-primary flex-shrink-0" />
@@ -586,7 +521,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
             {/* Same content as desktop meta sidebar - simplified */}
               <div className="rounded-lg p-4 border border-theme-border mb-4">
               <div className="flex items-center gap-2 mb-3">
-                <List size={14} className="text-purple-500" />
+                <List size={14} className="text-theme-accent" />
                 <h3 className="font-semibold text-theme-primary text-sm">
                   {language === 'zh' && post.titleZh ? post.titleZh : post.title}
                 </h3>
@@ -607,6 +542,37 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
                     <span>{language === 'en' ? `Episode ${post.episodeNumber}` : `第${post.episodeNumber}集`}</span>
                   </div>
                 )}
+                <div className="flex flex-wrap items-center gap-4 border-t border-theme-border pt-3 text-sm text-theme-secondary">
+                  <div className="flex items-center gap-1.5">
+                    <Eye size={16} />
+                    <span>{post.views.toLocaleString()}</span>
+                  </div>
+                  <button
+                    onClick={handleLike}
+                    className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${liked ? 'text-red-500' : ''}`}
+                    aria-label={liked ? (language === 'en' ? 'Unlike' : '取消点赞') : (language === 'en' ? 'Like' : '点赞')}
+                    type="button"
+                  >
+                    <Heart size={16} className={liked ? 'text-red-500 fill-current' : ''} />
+                    <span>{(post.likes + (liked ? 1 : 0)).toLocaleString()}</span>
+                  </button>
+                  <button
+                    onClick={handleBookmark}
+                    className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${bookmarked ? 'text-yellow-500' : ''}`}
+                    aria-label={bookmarked ? (language === 'en' ? 'Remove bookmark' : '取消收藏') : (language === 'en' ? 'Bookmark' : '收藏')}
+                    type="button"
+                  >
+                    <BookOpen size={16} />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-1.5 transition-colors hover:text-theme-primary"
+                    aria-label={language === 'en' ? 'Share' : '分享'}
+                    type="button"
+                  >
+                    <Share2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -629,37 +595,6 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
               </div>
             )}
 
-            {/* Quick Actions */}
-            <div className="rounded-lg p-4 border border-theme-border">
-              <h4 className="font-medium text-theme-primary text-sm mb-3">
-                {language === 'en' ? 'Actions' : '操作'}
-              </h4>
-              <div className="space-y-1">
-                <button
-                  onClick={handleLike}
-                  className={`flex items-center gap-2 w-full text-left text-xs transition-colors p-2 rounded hover:bg-theme-tertiary ${liked ? 'text-red-500' : 'text-theme-secondary hover:text-theme-primary'
-                    }`}
-                >
-                  <Heart size={12} className={liked ? 'fill-current' : ''} />
-                  <span>{liked ? (language === 'en' ? 'Liked' : '已点赞') : (language === 'en' ? 'Like' : '点赞')}</span>
-                </button>
-                <button
-                  onClick={handleBookmark}
-                  className={`flex items-center gap-2 w-full text-left text-xs transition-colors p-2 rounded hover:bg-theme-tertiary ${bookmarked ? 'text-yellow-500' : 'text-theme-secondary hover:text-theme-primary'
-                    }`}
-                >
-                  <BookOpen size={12} />
-                  <span>{bookmarked ? (language === 'en' ? 'Bookmarked' : '已收藏') : (language === 'en' ? 'Bookmark' : '收藏')}</span>
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-2 w-full text-left text-xs text-theme-secondary hover:text-theme-primary transition-colors p-2 rounded hover:bg-theme-tertiary"
-                >
-                  <Share2 size={12} />
-                  <span>{language === 'en' ? 'Share' : '分享'}</span>
-                </button>
-              </div>
-            </div>
           </div>
         </motion.div>
       </motion.div>

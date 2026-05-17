@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Tabs } from 'antd';
 import { Mail, Phone, MapPin, Github, Linkedin, Globe, Lightbulb, Briefcase, Contact, ArrowRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from '../components/ThemeContext';
 import { useLanguage } from '../components/LanguageContext';
 import {
   AuthProvider,
@@ -10,9 +8,32 @@ import {
 } from '../components/InteractiveContact';
 import ModernContactForm from '../components/InteractiveContact/ModernContactForm';
 import PublicMessagesWall from '../components/InteractiveContact/PublicMessagesWall';
+import {
+  BlogHeader,
+  Card,
+  CardContent,
+  Tabs,
+  Button,
+  Divider,
+} from '../components/ds';
+
+/** A single tappable list row — title + one-line description. */
+const ListRow: React.FC<{
+  title: string;
+  description: string;
+  onClick?: () => void;
+}> = ({ title, description, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="w-full rounded-ds-md border border-transparent px-3 py-2.5 text-left transition-colors duration-ds-fast hover:border-ds-border hover:bg-ds-surface-2"
+  >
+    <div className="text-ds-sm font-medium text-ds-fg">{title}</div>
+    <div className="mt-0.5 text-ds-xs text-ds-fg-muted">{description}</div>
+  </button>
+);
 
 const InteractiveContactPageContent: React.FC = () => {
-  const { colors } = useTheme();
   const { language } = useLanguage();
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState('thoughts');
@@ -22,13 +43,6 @@ const InteractiveContactPageContent: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    Object.entries(colors).forEach(([key, value]) => {
-      root.style.setProperty(`--color-${key}`, value);
-    });
-  }, [colors]);
 
   const contactInfo = [
     {
@@ -92,188 +106,168 @@ const InteractiveContactPageContent: React.FC = () => {
   return (
     <div className="min-h-screen py-20">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Hero Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
-            {isAuthenticated
+        {/* Hero header — same BlogHeader hero used by blog/ideas/projects,
+            but hero-only (no search / filter toolbar). */}
+        <BlogHeader
+          className="mb-12"
+          eyebrow={language === 'en' ? 'Contact' : '联系'}
+          title={
+            isAuthenticated
               ? (language === 'en' ? `Hi, ${user?.username}!` : `你好，${user?.username}！`)
               : (language === 'en' ? "Let's Connect" : '联系我')
-            }
-          </h1>
-          <p className="text-xl md:text-2xl max-w-3xl mx-auto text-theme-secondary font-light">
-            {language === 'en'
+          }
+          description={
+            language === 'en'
               ? 'Open to collaborations, job opportunities, and interesting conversations'
-              : '开放合作、工作机会和有趣的对话'}
-          </p>
-        </div>
+              : '开放合作、工作机会和有趣的对话'
+          }
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Contact Form */}
-          <div>
-            {/* Contact Form Card */}
-            <Card
-              className="card-interactive"
-              style={{ borderRadius: '16px', border: 'none' }}
-              styles={{ body: { padding: '24px' } }}
-            >
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          {/* Left — contact form. */}
+          <Card>
+            <CardContent>
               <ModernContactForm
                 onMessageTypeChange={(type) => {
                   setActiveTab(type === 'general' ? 'thoughts' : 'jobs');
                 }}
                 onMessageSent={() => {
-                  setRefreshKey(prev => prev + 1);
+                  setRefreshKey((prev) => prev + 1);
                 }}
               />
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Right Column - Content Display */}
-          <div className="space-y-6">
-            <Card
-              className="card-interactive"
-              style={{ borderRadius: '16px', border: 'none' }}
-              styles={{ body: { padding: '24px' } }}
-            >
+          {/* Right — tabbed content. */}
+          <Card>
+            <CardContent>
               <Tabs
-                activeKey={activeTab}
+                value={activeTab}
                 onChange={setActiveTab}
                 items={[
                   {
-                    key: 'thoughts',
-                    label: (
-                      <span className="flex items-center gap-2">
-                        <Lightbulb size={16} />
-                        {language === 'en' ? 'Recent Thoughts' : '最新想法'}
-                      </span>
-                    ),
-                    children: (
-                      <div className="space-y-3">
-                        {recentThoughts.map((thought) => (
-                          <div
-                            key={thought.id}
-                            className="p-3 rounded-lg bg-theme-surface hover:bg-theme-surface-elevated hover:shadow-sm transition-all cursor-pointer"
-                          >
-                            <h4 className="font-medium text-theme-primary mb-1 text-sm">
-                              {thought.title}
-                            </h4>
-                            <p className="text-xs text-theme-secondary">
-                              {thought.description}
-                            </p>
-                          </div>
-                        ))}
-
-                        {/* Show More Button */}
-                        <button
-                          onClick={() => navigate('/ideas')}
-                          className="w-full mt-2 py-2.5 px-4 rounded-lg bg-theme-surface hover:bg-gradient-primary hover:text-white transition-all duration-300 flex items-center justify-center gap-2 text-sm font-medium text-theme-secondary hover:shadow-md group"
-                        >
-                          <span>{language === 'en' ? 'Show More Ideas' : '查看更多想法'}</span>
-                          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                        </button>
-                      </div>
-                    ),
+                    value: 'thoughts',
+                    icon: <Lightbulb />,
+                    label: language === 'en' ? 'Recent Thoughts' : '最新想法',
                   },
                   {
-                    key: 'jobs',
-                    label: (
-                      <span className="flex items-center gap-2">
-                        <Briefcase size={16} />
-                        {language === 'en' ? 'Expected Jobs' : '期待职位'}
-                      </span>
-                    ),
-                    children: (
-                      <div className="space-y-3">
-                        {expectedJobs.map((job) => (
-                          <div
-                            key={job.id}
-                            className="p-3 rounded-lg bg-theme-surface hover:bg-theme-surface-elevated hover:shadow-sm transition-all cursor-pointer"
-                          >
-                            <h4 className="font-medium text-theme-primary mb-1 text-sm">
-                              {job.title}
-                            </h4>
-                            <p className="text-xs text-theme-secondary">
-                              {job.description}
-                            </p>
-                          </div>
-                        ))}
-
-                        {/* Who Am I Button */}
-                        <button
-                          onClick={() => navigate('/')}
-                          className="w-full mt-2 py-2.5 px-4 rounded-lg bg-theme-surface hover:bg-gradient-primary hover:text-white transition-all duration-300 flex items-center justify-center gap-2 text-sm font-medium text-theme-secondary hover:shadow-md group"
-                        >
-                          <User size={16} className="group-hover:scale-110 transition-transform" />
-                          <span>{language === 'en' ? 'Who Am I' : '关于我'}</span>
-                          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                        </button>
-                      </div>
-                    ),
+                    value: 'jobs',
+                    icon: <Briefcase />,
+                    label: language === 'en' ? 'Expected Jobs' : '期待职位',
                   },
                   {
-                    key: 'contact',
-                    label: (
-                      <span className="flex items-center gap-2">
-                        <Contact size={16} />
-                        {language === 'en' ? 'Quick Contact' : '快速联系'}
-                      </span>
-                    ),
-                    children: (
-                      <div className="space-y-3">
-                        {/* Contact Info */}
-                        <div className="space-y-1.5">
-                          {contactInfo.map((item, index) => (
-                            <a
-                              key={index}
-                              href={item.href}
-                              target={item.href.startsWith('http') ? '_blank' : undefined}
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-theme-surface-elevated transition-all group"
-                            >
-                              <div className="p-1.5 rounded-md bg-theme-primary-20 text-theme-accent group-hover:scale-110 transition-transform">
-                                {item.icon}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-xs text-theme-tertiary">{item.title}</div>
-                                <div className="text-sm text-theme-primary font-medium truncate">
-                                  {item.value}
-                                </div>
-                              </div>
-                            </a>
-                          ))}
-                        </div>
-
-                        {/* Social Links */}
-                        <div className="pt-3 border-t border-theme-card">
-                          <h4 className="text-xs font-medium text-theme-secondary mb-2">
-                            {language === 'en' ? 'Social Media' : '社交媒体'}
-                          </h4>
-                          <div className="grid grid-cols-3 gap-2">
-                            {socialLinks.map((social, index) => (
-                              <a
-                                key={index}
-                                href={social.href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex flex-col items-center gap-1.5 p-2.5 rounded-lg bg-theme-surface hover:bg-gradient-primary hover:text-white transition-all duration-300 group"
-                              >
-                                <div className="group-hover:scale-110 transition-transform">
-                                  {social.icon}
-                                </div>
-                                <span className="text-xs font-medium">{social.label}</span>
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ),
+                    value: 'contact',
+                    icon: <Contact />,
+                    label: language === 'en' ? 'Quick Contact' : '快速联系',
                   },
                 ]}
               />
-            </Card>
-          </div>
+
+              {/* Recent thoughts. */}
+              {activeTab === 'thoughts' && (
+                <div className="mt-4 space-y-1.5">
+                  {recentThoughts.map((thought) => (
+                    <ListRow
+                      key={thought.id}
+                      title={thought.title}
+                      description={thought.description}
+                      onClick={() => navigate('/ideas')}
+                    />
+                  ))}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    block
+                    className="mt-2"
+                    trailingIcon={<ArrowRight />}
+                    onClick={() => navigate('/ideas')}
+                  >
+                    {language === 'en' ? 'Show More Ideas' : '查看更多想法'}
+                  </Button>
+                </div>
+              )}
+
+              {/* Expected jobs. */}
+              {activeTab === 'jobs' && (
+                <div className="mt-4 space-y-1.5">
+                  {expectedJobs.map((job) => (
+                    <ListRow
+                      key={job.id}
+                      title={job.title}
+                      description={job.description}
+                      onClick={() => navigate('/')}
+                    />
+                  ))}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    block
+                    className="mt-2"
+                    leadingIcon={<User />}
+                    trailingIcon={<ArrowRight />}
+                    onClick={() => navigate('/')}
+                  >
+                    {language === 'en' ? 'Who Am I' : '关于我'}
+                  </Button>
+                </div>
+              )}
+
+              {/* Quick contact. */}
+              {activeTab === 'contact' && (
+                <div className="mt-4 space-y-3">
+                  {/* Contact info rows. */}
+                  <div className="space-y-1">
+                    {contactInfo.map((item, index) => (
+                      <a
+                        key={index}
+                        href={item.href}
+                        target={item.href.startsWith('http') ? '_blank' : undefined}
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 rounded-ds-md px-3 py-2.5 transition-colors duration-ds-fast hover:bg-ds-surface-2"
+                      >
+                        <span className="text-ds-primary [&_svg]:size-[18px]">
+                          {item.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-ds-2xs text-ds-fg-subtle">
+                            {item.title}
+                          </span>
+                          <span className="block truncate text-ds-sm font-medium text-ds-fg">
+                            {item.value}
+                          </span>
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+
+                  {/* Social links. */}
+                  <Divider />
+                  <div>
+                    <h4 className="mb-2 text-ds-2xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
+                      {language === 'en' ? 'Social Media' : '社交媒体'}
+                    </h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {socialLinks.map((social, index) => (
+                        <a
+                          key={index}
+                          href={social.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex flex-col items-center gap-1.5 rounded-ds-md border border-ds-border bg-ds-surface-1 px-2.5 py-3 text-ds-fg-muted transition-colors duration-ds-fast hover:border-ds-primary/30 hover:bg-ds-primary-soft hover:text-ds-primary [&_svg]:size-[18px]"
+                        >
+                          {social.icon}
+                          <span className="text-ds-2xs font-medium">{social.label}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Public Messages Wall - Full Width Section */}
+        {/* Public messages wall — full width. */}
         <div className="mt-16">
           <PublicMessagesWall key={refreshKey} />
         </div>

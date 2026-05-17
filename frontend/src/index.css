@@ -35,11 +35,11 @@
   --transition-slow: 500ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --transition-bounce: 600ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
   
-  /* Shadows - Apple's elevation system */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.16);
+  /* Shadows — disabled globally; separation is by surface + spacing. */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
   
   /* Typography scale - Apple-inspired */
   --text-xs: 0.75rem;     /* 12px */
@@ -82,23 +82,26 @@ body {
   font-size: 16px; /* Modern standard font size */
 }
 
-/* Remove all default borders and outlines */
-input, textarea, button, select, a, div, span, p, h1, h2, h3, h4, h5, h6,
-img, svg, canvas, video, audio, iframe, table, tr, td, th, ul, ol, li {
+/* Remove all default borders and outlines for LEGACY (non-design-system)
+   elements. Design-system components opt out via `[data-ds]` so their
+   Tailwind border utilities work — `:not([data-ds]):not([data-ds] *)`
+   excludes both a ds root and anything inside a ds subtree. */
+:is(input, textarea, button, select, a, div, span, p, h1, h2, h3, h4, h5, h6,
+img, svg, canvas, video, audio, iframe, table, tr, td, th, ul, ol, li):not([data-ds]):not([data-ds] *) {
   border: none !important;
   outline: none !important;
 }
 
-/* Focus styles without borders */
+/* Focus indication — soft ring, no hard outline (kept for a11y only) */
 *:focus-visible {
-  outline: 2px solid var(--color-focusRing, #0ea5e9) !important;
-  outline-offset: 2px;
-  border-radius: 0.5rem;
+  outline: none !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-focusRing) 30%, transparent) !important;
+  border-radius: 0.375rem;
 }
 
-/* Button reset */
+/* Button reset — buttons never carry a background or border.
+   !important overrides Tailwind bg-* utilities and inline styles. */
 button {
-  background: none;
   cursor: pointer;
   font-family: inherit;
   font-size: inherit;
@@ -158,43 +161,148 @@ a {
   color: var(--color-textSecondary);
 }
 
-/* Theme-aware markdown styles */
+/* ════════════════════════════════════════════════════════════════
+   Article typography — modern minimal academic.
+   A measured reading column, clear heading hierarchy, generous line
+   height, borderless code/quote blocks. Reads like a paper, not a blog.
+   ════════════════════════════════════════════════════════════════ */
 .markdown-body {
   color: var(--color-textSecondary);
+  font-size: 1.0625rem;          /* 17px — comfortable long-form reading */
+  line-height: 1.75;
+  letter-spacing: -0.003em;
 }
 
-.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+/* Body paragraphs — even vertical rhythm */
+.markdown-body p {
+  margin: 0 0 1.15em;
+}
+
+/* Heading hierarchy — tight tracking, clear size steps */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
   color: var(--color-textPrimary);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  scroll-margin-top: 6rem;       /* anchor offset under sticky nav */
 }
+.markdown-body h1 { font-size: 1.9rem;  margin: 2.2rem 0 1rem; }
+.markdown-body h2 { font-size: 1.5rem;  margin: 2rem 0 0.85rem; }
+.markdown-body h3 { font-size: 1.22rem; margin: 1.7rem 0 0.6rem; }
+.markdown-body h4 { font-size: 1.05rem; margin: 1.4rem 0 0.5rem; }
+.markdown-body h5,
+.markdown-body h6 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-textTertiary);
+  margin: 1.3rem 0 0.5rem;
+}
+.markdown-body > :first-child { margin-top: 0; }
 
+/* Links — academic ink-blue, a soft underline that firms up on hover */
 .markdown-body a {
   color: var(--color-primary);
   text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
+  transition: text-decoration-color 0.15s ease;
+}
+.markdown-body a:hover {
+  text-decoration-color: var(--color-primary);
 }
 
-.markdown-body pre.code-block, .markdown-body pre .code-block {
-  background-color: var(--color-surfaceElevated);
+/* Code block — borderless, tinted surface, monospace */
+.markdown-body pre,
+.markdown-body pre.code-block,
+.markdown-body pre .code-block {
+  background-color: var(--color-surface);
   color: var(--color-textPrimary);
-  padding: 1rem;
+  padding: 1rem 1.15rem;
   border-radius: 0.5rem;
   overflow-x: auto;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 1.3rem 0;
 }
 
-.markdown-body code.inline-code {
+/* Inline code — subtle tint, no border */
+.markdown-body code.inline-code,
+.markdown-body :not(pre) > code {
   background-color: var(--color-surface);
-  color: var(--color-primary);
-  padding: 0.125rem 0.375rem;
+  color: var(--color-textPrimary);
+  padding: 0.1rem 0.34rem;
   border-radius: 0.25rem;
   font-family: var(--font-mono);
+  font-size: 0.875em;
 }
 
+/* Blockquote — borderless: tinted surface, an editorial pull-quote */
 .markdown-body blockquote {
-  border-left: 4px solid var(--color-primary);
-  background-color: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  border: none;
+  background-color: var(--color-surface);
+  padding: 0.85rem 1.15rem;
+  border-radius: 0.375rem;
+  margin: 1.4rem 0;
+  color: var(--color-textSecondary);
+  font-style: italic;
+}
+.markdown-body blockquote p:last-child { margin-bottom: 0; }
+
+/* Horizontal rule — borderless: a thin tinted band, breathing room */
+.markdown-body hr {
+  border: none;
+  height: 1px;
+  background-color: var(--color-backgroundTertiary);
+  margin: 2.4rem 0;
 }
 
-.markdown-body hr {
-  border-color: var(--color-cardBorder);
+/* Tables — borderless: zebra rows carry the structure */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4rem 0;
+  font-size: 0.93rem;
+}
+.markdown-body th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-textPrimary);
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-surface);
+}
+.markdown-body td {
+  padding: 0.5rem 0.75rem;
+}
+.markdown-body tbody tr:nth-child(even) {
+  background-color: color-mix(in oklch, var(--color-surface) 55%, transparent);
+}
+
+/* Images — rounded, with room; figcaption as a caption */
+.markdown-body img {
+  border-radius: 0.5rem;
+  margin: 1.4rem 0;
+}
+.markdown-body figcaption {
+  font-size: 0.82rem;
+  color: var(--color-textTertiary);
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* List rhythm inside articles */
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.6rem 0 1.15rem;
+}
+.markdown-body li {
+  margin: 0.3rem 0;
 }
 
 /* Image optimization */
@@ -368,17 +476,13 @@ img {
     box-shadow: var(--color-shadowXl);
   }
 
-  /* Theme-aware borders */
-  .border-theme-primary {
-    border-color: var(--color-primary);
-  }
-
-  .border-theme-card {
-    border-color: var(--color-cardBorder);
-  }
-
+  /* Borderless design: legacy "border-theme-*" classes are kept as
+     no-ops so existing markup compiles, but paint no stroke. Separation
+     is by surface layer + spacing, never by a line. */
+  .border-theme-primary,
+  .border-theme-card,
   .border-theme-surface {
-    border-color: var(--color-surface);
+    border-color: transparent;
   }
 
   /* Ring utilities for focus states */
@@ -497,49 +601,47 @@ img {
     transform: translateY(-4px);
   }
 
-  /* Input focus styles */
+  /* Inputs — borderless: a tinted surface fill provides the affordance,
+     a soft ring marks focus. No border at any state. */
   .input-theme {
-    background-color: var(--color-surfaceElevated);
+    background-color: var(--color-surface);
     color: var(--color-textPrimary);
-    border: 2px solid transparent;
-    transition: all 0.3s ease;
+    border: none;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .input-theme:focus {
-    --tw-ring-color: var(--color-primary);
-    --tw-ring-offset-color: var(--color-background);
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    background-color: var(--color-surfaceElevated);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 22%, transparent);
   }
 
-  /* Form controls theme-aware styles */
+  /* Form controls — borderless tinted surfaces */
   input[type="checkbox"], input[type="radio"] {
     accent-color: var(--color-primary);
-    background-color: var(--color-surfaceElevated);
-    border-color: var(--color-cardBorder);
+    background-color: var(--color-surface);
   }
 
   select {
-    background-color: var(--color-surfaceElevated);
+    background-color: var(--color-surface);
     color: var(--color-textPrimary);
-    border-color: var(--color-cardBorder);
+    border: none;
   }
 
   select:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    background-color: var(--color-surfaceElevated);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 22%, transparent);
   }
 
   textarea {
-    background-color: var(--color-surfaceElevated);
+    background-color: var(--color-surface);
     color: var(--color-textPrimary);
-    border-color: var(--color-cardBorder);
-    transition: all 0.3s ease;
+    border: none;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   textarea:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+    background-color: var(--color-surfaceElevated);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 22%, transparent);
   }
 
   /* Dark mode specific adjustments */
@@ -742,7 +844,11 @@ img {
 }
 
 /* Modern Typography Scale */
-h1, h2, h3, h4, h5, h6 {
+/* Legacy heading typography — applies to NON-design-system headings only.
+   These rules are unlayered, so they would otherwise beat Tailwind's
+   layered `text-*` utilities regardless of specificity; `:not([data-ds] *)`
+   keeps design-system components in control of their own heading sizes. */
+:is(h1, h2, h3, h4, h5, h6):not([data-ds] *) {
   font-family: var(--font-display);
   font-weight: 700;
   line-height: 1.2;
@@ -750,43 +856,43 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }
 
-h1 {
+h1:not([data-ds] *) {
   font-size: 3rem;    /* 48px */
   font-weight: 700;
   line-height: 1.1;
 }
 
-h2 {
+h2:not([data-ds] *) {
   font-size: 2.25rem; /* 36px */
   font-weight: 700;
   line-height: 1.2;
 }
 
-h3 {
+h3:not([data-ds] *) {
   font-size: 1.875rem; /* 30px */
   font-weight: 600;
   line-height: 1.25;
 }
 
-h4 {
+h4:not([data-ds] *) {
   font-size: 1.5rem;  /* 24px */
   font-weight: 600;
   line-height: 1.3;
 }
 
-h5 {
+h5:not([data-ds] *) {
   font-size: 1.25rem; /* 20px */
   font-weight: 600;
   line-height: 1.4;
 }
 
-h6 {
+h6:not([data-ds] *) {
   font-size: 1.125rem; /* 18px */
   font-weight: 600;
   line-height: 1.4;
 }
 
-p {
+p:not([data-ds] *) {
   font-size: 1rem;    /* 16px */
   line-height: 1.6;
   font-weight: 400;
@@ -856,19 +962,18 @@ p {
   }
 }
 
-/* Fluent Design specific utilities */
+/* Card surface — borderless: fill + soft shadow carry the elevation */
 .fluent-card {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--color-cardBackground);
+  border: none;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .dark .fluent-card {
-  background: rgba(50, 49, 48, 0.8);
-  border: 1px solid rgba(72, 70, 68, 0.3);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  background: var(--color-cardBackground);
+  border: none;
+  box-shadow: var(--shadow-md);
 }
 
 .fluent-glass {
@@ -972,24 +1077,24 @@ code[class*="language-"] .token.italic { font-style: italic; }
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Ant Design Button Customizations */
+/* Ant Design Button — borderless */
 .ant-btn-secondary {
   background-color: var(--color-secondary) !important;
-  border-color: var(--color-secondary) !important;
+  border-color: transparent !important;
   color: white !important;
 }
 
 .ant-btn-secondary:hover {
   background-color: var(--color-secondary) !important;
-  border-color: var(--color-secondary) !important;
+  border-color: transparent !important;
   opacity: 0.8;
 }
 
-/* Ant Design Input and Search Customizations */
+/* Ant Design Input/Search — borderless: tinted surface + soft focus ring */
 .ant-input,
 .ant-input-affix-wrapper {
-  border-radius: 12px !important;
-  border-color: var(--color-cardBorder, rgba(229, 231, 235, 1)) !important;
+  border-radius: 8px !important;
+  border-color: transparent !important;
   background-color: var(--color-surface, white) !important;
   color: var(--color-textPrimary, #1f2937) !important;
 }
@@ -997,21 +1102,21 @@ code[class*="language-"] .token.italic { font-style: italic; }
 .ant-input:focus,
 .ant-input-affix-wrapper:focus,
 .ant-input-affix-wrapper-focused {
-  border-color: var(--color-primary, #0066FF) !important;
-  box-shadow: 0 0 0 2px var(--color-primary, #0066FF)20 !important;
+  border-color: transparent !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 22%, transparent) !important;
 }
 
-/* Ant Design Tag Customizations */
+/* Ant Design Tag — borderless */
 .ant-tag-checkable {
-  border-radius: 12px !important;
-  border-color: var(--color-cardBorder, rgba(229, 231, 235, 1)) !important;
+  border-radius: 8px !important;
+  border-color: transparent !important;
   background-color: var(--color-surface, white) !important;
   color: var(--color-textSecondary, #6b7280) !important;
 }
 
 .ant-tag-checkable-checked {
   background-color: var(--color-primary, #0066FF) !important;
-  border-color: var(--color-primary, #0066FF) !important;
+  border-color: transparent !important;
   color: white !important;
 }
 
@@ -1107,11 +1212,15 @@ code[class*="language-"] .token.italic { font-style: italic; }
   font-family: var(--font-body, 'Inter') !important;
 }
 
-.ant-tabs .ant-tabs-tab-active {
+.ant-tabs .ant-tabs-tab-active,
+.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-btn,
+.ant-tabs .ant-tabs-tab-active .ant-tabs-tab-btn * {
   color: var(--color-primary, #0066FF) !important;
 }
 
-.ant-tabs .ant-tabs-tab:hover {
+.ant-tabs .ant-tabs-tab:hover,
+.ant-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn,
+.ant-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn * {
   color: var(--color-primary, #0066FF) !important;
 }
 
@@ -1341,53 +1450,30 @@ code[class*="language-"] .token.italic { font-style: italic; }
   color: var(--color-primary, #0066FF) !important;
 }
 
-/* Blog Breadcrumb Styles */
-.blog-breadcrumb {
-  margin: 0 !important;
-  padding: 0 !important;
+
+/* ════════════════════════════════════════════════════════════════
+   Borderless / background-less containers.
+   Containers carry no fill and no stroke — separation is by spacing
+   and typography. Neutralises hardcoded Tailwind bg utilities on
+   container elements. (bg-black/* is left intact: those are
+   functional image/scrim overlays, not containers.)
+   ════════════════════════════════════════════════════════════════ */
+.bg-white,
+.bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-gray-700, .bg-gray-800, .bg-gray-900,
+.bg-slate-50, .bg-slate-100, .bg-slate-800, .bg-slate-900,
+.bg-neutral-50, .bg-neutral-100,
+.bg-green-50, .bg-green-100, .bg-blue-50, .bg-red-50, .bg-red-100, .bg-red-200 {
+  background-color: transparent !important;
 }
 
-.blog-breadcrumb .ant-breadcrumb-link {
-  color: var(--color-textSecondary, #6b7280) !important;
-  transition: color 0.2s ease !important;
-}
-
-.blog-breadcrumb .ant-breadcrumb-link:hover {
-  color: var(--color-primary, #42b883) !important;
-}
-
-.blog-breadcrumb .ant-breadcrumb-separator {
-  color: var(--color-textTertiary, #9ca3af) !important;
-  margin: 0 8px !important;
-  font-size: 14px !important;
-}
-
-/* Override default breadcrumb styles */
-.blog-breadcrumb ol {
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.blog-breadcrumb li {
-  display: flex !important;
-  align-items: center !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  font-size: 14px !important;
-}
-
-/* Dark theme for breadcrumb */
-.dark .blog-breadcrumb .ant-breadcrumb-link {
-  color: var(--color-textSecondary, #d1d5db) !important;
-}
-
-.dark .blog-breadcrumb .ant-breadcrumb-link:hover {
-  color: var(--color-primary, #42b883) !important;
-}
-
-.dark .blog-breadcrumb .ant-breadcrumb-separator {
-  color: var(--color-textTertiary, #9ca3af) !important;
+/* ════════════════════════════════════════════════════════════════
+   No drop shadows anywhere — separation is carried by surface
+   colour and spacing. Tailwind shadow-* utilities are zeroed in the
+   config; this neutralises Ant Design's elevated surfaces. Focus
+   rings (ring-* / :focus box-shadow) are intentionally left intact.
+   ════════════════════════════════════════════════════════════════ */
+.ant-card, .ant-modal-content, .ant-dropdown-menu, .ant-select-dropdown,
+.ant-popover-inner, .ant-notification-notice, .ant-message-notice-content,
+.ant-drawer-content, .ant-picker-dropdown, .ant-tooltip-inner {
+  box-shadow: none !important;
 }

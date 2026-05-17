@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationAuthorCreate is the builder for creating a PublicationAuthor entity.
@@ -23,8 +22,8 @@ type PublicationAuthorCreate struct {
 }
 
 // SetPublicationID sets the "publication_id" field.
-func (pac *PublicationAuthorCreate) SetPublicationID(u uuid.UUID) *PublicationAuthorCreate {
-	pac.mutation.SetPublicationID(u)
+func (pac *PublicationAuthorCreate) SetPublicationID(s string) *PublicationAuthorCreate {
+	pac.mutation.SetPublicationID(s)
 	return pac
 }
 
@@ -97,15 +96,15 @@ func (pac *PublicationAuthorCreate) SetNillableUpdatedAt(t *time.Time) *Publicat
 }
 
 // SetID sets the "id" field.
-func (pac *PublicationAuthorCreate) SetID(u uuid.UUID) *PublicationAuthorCreate {
-	pac.mutation.SetID(u)
+func (pac *PublicationAuthorCreate) SetID(s string) *PublicationAuthorCreate {
+	pac.mutation.SetID(s)
 	return pac
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pac *PublicationAuthorCreate) SetNillableID(u *uuid.UUID) *PublicationAuthorCreate {
-	if u != nil {
-		pac.SetID(*u)
+func (pac *PublicationAuthorCreate) SetNillableID(s *string) *PublicationAuthorCreate {
+	if s != nil {
+		pac.SetID(*s)
 	}
 	return pac
 }
@@ -216,10 +215,10 @@ func (pac *PublicationAuthorCreate) sqlSave(ctx context.Context) (*PublicationAu
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected PublicationAuthor.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pac.mutation.id = &_node.ID
@@ -230,11 +229,11 @@ func (pac *PublicationAuthorCreate) sqlSave(ctx context.Context) (*PublicationAu
 func (pac *PublicationAuthorCreate) createSpec() (*PublicationAuthor, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PublicationAuthor{config: pac.config}
-		_spec = sqlgraph.NewCreateSpec(publicationauthor.Table, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(publicationauthor.Table, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString))
 	)
 	if id, ok := pac.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pac.mutation.AuthorName(); ok {
 		_spec.SetField(publicationauthor.FieldAuthorName, field.TypeString, value)
@@ -268,7 +267,7 @@ func (pac *PublicationAuthorCreate) createSpec() (*PublicationAuthor, *sqlgraph.
 			Columns: []string{publicationauthor.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

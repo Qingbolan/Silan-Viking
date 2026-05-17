@@ -26,10 +26,10 @@ func (BlogSeriesTranslation) Annotations() []schema.Annotation {
 // Fields of the BlogSeriesTranslation.
 func (BlogSeriesTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("blog_series_id", uuid.UUID{}).
+		field.String("blog_series_id").
 			StorageKey("blog_series_id"),
 		field.String("language_code").
 			MaxLen(5).

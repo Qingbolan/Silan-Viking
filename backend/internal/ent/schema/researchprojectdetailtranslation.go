@@ -26,10 +26,10 @@ func (ResearchProjectDetailTranslation) Annotations() []schema.Annotation {
 // Fields of the ResearchProjectDetailTranslation.
 func (ResearchProjectDetailTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("research_project_detail_id", uuid.UUID{}).
+		field.String("research_project_detail_id").
 			StorageKey("research_project_detail_id"),
 		field.String("language_code").
 			MaxLen(5).

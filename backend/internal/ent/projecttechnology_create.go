@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectTechnologyCreate is the builder for creating a ProjectTechnology entity.
@@ -23,8 +22,8 @@ type ProjectTechnologyCreate struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (ptc *ProjectTechnologyCreate) SetProjectID(u uuid.UUID) *ProjectTechnologyCreate {
-	ptc.mutation.SetProjectID(u)
+func (ptc *ProjectTechnologyCreate) SetProjectID(s string) *ProjectTechnologyCreate {
+	ptc.mutation.SetProjectID(s)
 	return ptc
 }
 
@@ -77,15 +76,15 @@ func (ptc *ProjectTechnologyCreate) SetNillableCreatedAt(t *time.Time) *ProjectT
 }
 
 // SetID sets the "id" field.
-func (ptc *ProjectTechnologyCreate) SetID(u uuid.UUID) *ProjectTechnologyCreate {
-	ptc.mutation.SetID(u)
+func (ptc *ProjectTechnologyCreate) SetID(s string) *ProjectTechnologyCreate {
+	ptc.mutation.SetID(s)
 	return ptc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ptc *ProjectTechnologyCreate) SetNillableID(u *uuid.UUID) *ProjectTechnologyCreate {
-	if u != nil {
-		ptc.SetID(*u)
+func (ptc *ProjectTechnologyCreate) SetNillableID(s *string) *ProjectTechnologyCreate {
+	if s != nil {
+		ptc.SetID(*s)
 	}
 	return ptc
 }
@@ -186,10 +185,10 @@ func (ptc *ProjectTechnologyCreate) sqlSave(ctx context.Context) (*ProjectTechno
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ProjectTechnology.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ptc.mutation.id = &_node.ID
@@ -200,11 +199,11 @@ func (ptc *ProjectTechnologyCreate) sqlSave(ctx context.Context) (*ProjectTechno
 func (ptc *ProjectTechnologyCreate) createSpec() (*ProjectTechnology, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ProjectTechnology{config: ptc.config}
-		_spec = sqlgraph.NewCreateSpec(projecttechnology.Table, sqlgraph.NewFieldSpec(projecttechnology.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(projecttechnology.Table, sqlgraph.NewFieldSpec(projecttechnology.FieldID, field.TypeString))
 	)
 	if id, ok := ptc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ptc.mutation.TechnologyName(); ok {
 		_spec.SetField(projecttechnology.FieldTechnologyName, field.TypeString, value)
@@ -230,7 +229,7 @@ func (ptc *ProjectTechnologyCreate) createSpec() (*ProjectTechnology, *sqlgraph.
 			Columns: []string{projecttechnology.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

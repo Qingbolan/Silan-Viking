@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectDetailTranslationUpdate is the builder for updating ProjectDetailTranslation entities.
@@ -31,15 +30,15 @@ func (pdtu *ProjectDetailTranslationUpdate) Where(ps ...predicate.ProjectDetailT
 }
 
 // SetProjectDetailID sets the "project_detail_id" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetProjectDetailID(u uuid.UUID) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetProjectDetailID(u)
+func (pdtu *ProjectDetailTranslationUpdate) SetProjectDetailID(s string) *ProjectDetailTranslationUpdate {
+	pdtu.mutation.SetProjectDetailID(s)
 	return pdtu
 }
 
 // SetNillableProjectDetailID sets the "project_detail_id" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableProjectDetailID(u *uuid.UUID) *ProjectDetailTranslationUpdate {
-	if u != nil {
-		pdtu.SetProjectDetailID(*u)
+func (pdtu *ProjectDetailTranslationUpdate) SetNillableProjectDetailID(s *string) *ProjectDetailTranslationUpdate {
+	if s != nil {
+		pdtu.SetProjectDetailID(*s)
 	}
 	return pdtu
 }
@@ -55,126 +54,6 @@ func (pdtu *ProjectDetailTranslationUpdate) SetNillableLanguageCode(s *string) *
 	if s != nil {
 		pdtu.SetLanguageCode(*s)
 	}
-	return pdtu
-}
-
-// SetDetailedDescription sets the "detailed_description" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetDetailedDescription(s string) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetDetailedDescription(s)
-	return pdtu
-}
-
-// SetNillableDetailedDescription sets the "detailed_description" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableDetailedDescription(s *string) *ProjectDetailTranslationUpdate {
-	if s != nil {
-		pdtu.SetDetailedDescription(*s)
-	}
-	return pdtu
-}
-
-// ClearDetailedDescription clears the value of the "detailed_description" field.
-func (pdtu *ProjectDetailTranslationUpdate) ClearDetailedDescription() *ProjectDetailTranslationUpdate {
-	pdtu.mutation.ClearDetailedDescription()
-	return pdtu
-}
-
-// SetGoals sets the "goals" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetGoals(s string) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetGoals(s)
-	return pdtu
-}
-
-// SetNillableGoals sets the "goals" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableGoals(s *string) *ProjectDetailTranslationUpdate {
-	if s != nil {
-		pdtu.SetGoals(*s)
-	}
-	return pdtu
-}
-
-// ClearGoals clears the value of the "goals" field.
-func (pdtu *ProjectDetailTranslationUpdate) ClearGoals() *ProjectDetailTranslationUpdate {
-	pdtu.mutation.ClearGoals()
-	return pdtu
-}
-
-// SetChallenges sets the "challenges" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetChallenges(s string) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetChallenges(s)
-	return pdtu
-}
-
-// SetNillableChallenges sets the "challenges" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableChallenges(s *string) *ProjectDetailTranslationUpdate {
-	if s != nil {
-		pdtu.SetChallenges(*s)
-	}
-	return pdtu
-}
-
-// ClearChallenges clears the value of the "challenges" field.
-func (pdtu *ProjectDetailTranslationUpdate) ClearChallenges() *ProjectDetailTranslationUpdate {
-	pdtu.mutation.ClearChallenges()
-	return pdtu
-}
-
-// SetSolutions sets the "solutions" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetSolutions(s string) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetSolutions(s)
-	return pdtu
-}
-
-// SetNillableSolutions sets the "solutions" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableSolutions(s *string) *ProjectDetailTranslationUpdate {
-	if s != nil {
-		pdtu.SetSolutions(*s)
-	}
-	return pdtu
-}
-
-// ClearSolutions clears the value of the "solutions" field.
-func (pdtu *ProjectDetailTranslationUpdate) ClearSolutions() *ProjectDetailTranslationUpdate {
-	pdtu.mutation.ClearSolutions()
-	return pdtu
-}
-
-// SetLessonsLearned sets the "lessons_learned" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetLessonsLearned(s string) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetLessonsLearned(s)
-	return pdtu
-}
-
-// SetNillableLessonsLearned sets the "lessons_learned" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableLessonsLearned(s *string) *ProjectDetailTranslationUpdate {
-	if s != nil {
-		pdtu.SetLessonsLearned(*s)
-	}
-	return pdtu
-}
-
-// ClearLessonsLearned clears the value of the "lessons_learned" field.
-func (pdtu *ProjectDetailTranslationUpdate) ClearLessonsLearned() *ProjectDetailTranslationUpdate {
-	pdtu.mutation.ClearLessonsLearned()
-	return pdtu
-}
-
-// SetFutureEnhancements sets the "future_enhancements" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetFutureEnhancements(s string) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetFutureEnhancements(s)
-	return pdtu
-}
-
-// SetNillableFutureEnhancements sets the "future_enhancements" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableFutureEnhancements(s *string) *ProjectDetailTranslationUpdate {
-	if s != nil {
-		pdtu.SetFutureEnhancements(*s)
-	}
-	return pdtu
-}
-
-// ClearFutureEnhancements clears the value of the "future_enhancements" field.
-func (pdtu *ProjectDetailTranslationUpdate) ClearFutureEnhancements() *ProjectDetailTranslationUpdate {
-	pdtu.mutation.ClearFutureEnhancements()
 	return pdtu
 }
 
@@ -258,49 +137,13 @@ func (pdtu *ProjectDetailTranslationUpdate) sqlSave(ctx context.Context) (n int,
 	if err := pdtu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString))
 	if ps := pdtu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := pdtu.mutation.DetailedDescription(); ok {
-		_spec.SetField(projectdetailtranslation.FieldDetailedDescription, field.TypeString, value)
-	}
-	if pdtu.mutation.DetailedDescriptionCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldDetailedDescription, field.TypeString)
-	}
-	if value, ok := pdtu.mutation.Goals(); ok {
-		_spec.SetField(projectdetailtranslation.FieldGoals, field.TypeString, value)
-	}
-	if pdtu.mutation.GoalsCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldGoals, field.TypeString)
-	}
-	if value, ok := pdtu.mutation.Challenges(); ok {
-		_spec.SetField(projectdetailtranslation.FieldChallenges, field.TypeString, value)
-	}
-	if pdtu.mutation.ChallengesCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldChallenges, field.TypeString)
-	}
-	if value, ok := pdtu.mutation.Solutions(); ok {
-		_spec.SetField(projectdetailtranslation.FieldSolutions, field.TypeString, value)
-	}
-	if pdtu.mutation.SolutionsCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldSolutions, field.TypeString)
-	}
-	if value, ok := pdtu.mutation.LessonsLearned(); ok {
-		_spec.SetField(projectdetailtranslation.FieldLessonsLearned, field.TypeString, value)
-	}
-	if pdtu.mutation.LessonsLearnedCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldLessonsLearned, field.TypeString)
-	}
-	if value, ok := pdtu.mutation.FutureEnhancements(); ok {
-		_spec.SetField(projectdetailtranslation.FieldFutureEnhancements, field.TypeString, value)
-	}
-	if pdtu.mutation.FutureEnhancementsCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldFutureEnhancements, field.TypeString)
 	}
 	if pdtu.mutation.ProjectDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -310,7 +153,7 @@ func (pdtu *ProjectDetailTranslationUpdate) sqlSave(ctx context.Context) (n int,
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -323,7 +166,7 @@ func (pdtu *ProjectDetailTranslationUpdate) sqlSave(ctx context.Context) (n int,
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -381,15 +224,15 @@ type ProjectDetailTranslationUpdateOne struct {
 }
 
 // SetProjectDetailID sets the "project_detail_id" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetProjectDetailID(u uuid.UUID) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetProjectDetailID(u)
+func (pdtuo *ProjectDetailTranslationUpdateOne) SetProjectDetailID(s string) *ProjectDetailTranslationUpdateOne {
+	pdtuo.mutation.SetProjectDetailID(s)
 	return pdtuo
 }
 
 // SetNillableProjectDetailID sets the "project_detail_id" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableProjectDetailID(u *uuid.UUID) *ProjectDetailTranslationUpdateOne {
-	if u != nil {
-		pdtuo.SetProjectDetailID(*u)
+func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableProjectDetailID(s *string) *ProjectDetailTranslationUpdateOne {
+	if s != nil {
+		pdtuo.SetProjectDetailID(*s)
 	}
 	return pdtuo
 }
@@ -405,126 +248,6 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableLanguageCode(s *strin
 	if s != nil {
 		pdtuo.SetLanguageCode(*s)
 	}
-	return pdtuo
-}
-
-// SetDetailedDescription sets the "detailed_description" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetDetailedDescription(s string) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetDetailedDescription(s)
-	return pdtuo
-}
-
-// SetNillableDetailedDescription sets the "detailed_description" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableDetailedDescription(s *string) *ProjectDetailTranslationUpdateOne {
-	if s != nil {
-		pdtuo.SetDetailedDescription(*s)
-	}
-	return pdtuo
-}
-
-// ClearDetailedDescription clears the value of the "detailed_description" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) ClearDetailedDescription() *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.ClearDetailedDescription()
-	return pdtuo
-}
-
-// SetGoals sets the "goals" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetGoals(s string) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetGoals(s)
-	return pdtuo
-}
-
-// SetNillableGoals sets the "goals" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableGoals(s *string) *ProjectDetailTranslationUpdateOne {
-	if s != nil {
-		pdtuo.SetGoals(*s)
-	}
-	return pdtuo
-}
-
-// ClearGoals clears the value of the "goals" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) ClearGoals() *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.ClearGoals()
-	return pdtuo
-}
-
-// SetChallenges sets the "challenges" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetChallenges(s string) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetChallenges(s)
-	return pdtuo
-}
-
-// SetNillableChallenges sets the "challenges" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableChallenges(s *string) *ProjectDetailTranslationUpdateOne {
-	if s != nil {
-		pdtuo.SetChallenges(*s)
-	}
-	return pdtuo
-}
-
-// ClearChallenges clears the value of the "challenges" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) ClearChallenges() *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.ClearChallenges()
-	return pdtuo
-}
-
-// SetSolutions sets the "solutions" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetSolutions(s string) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetSolutions(s)
-	return pdtuo
-}
-
-// SetNillableSolutions sets the "solutions" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableSolutions(s *string) *ProjectDetailTranslationUpdateOne {
-	if s != nil {
-		pdtuo.SetSolutions(*s)
-	}
-	return pdtuo
-}
-
-// ClearSolutions clears the value of the "solutions" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) ClearSolutions() *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.ClearSolutions()
-	return pdtuo
-}
-
-// SetLessonsLearned sets the "lessons_learned" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetLessonsLearned(s string) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetLessonsLearned(s)
-	return pdtuo
-}
-
-// SetNillableLessonsLearned sets the "lessons_learned" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableLessonsLearned(s *string) *ProjectDetailTranslationUpdateOne {
-	if s != nil {
-		pdtuo.SetLessonsLearned(*s)
-	}
-	return pdtuo
-}
-
-// ClearLessonsLearned clears the value of the "lessons_learned" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) ClearLessonsLearned() *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.ClearLessonsLearned()
-	return pdtuo
-}
-
-// SetFutureEnhancements sets the "future_enhancements" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetFutureEnhancements(s string) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetFutureEnhancements(s)
-	return pdtuo
-}
-
-// SetNillableFutureEnhancements sets the "future_enhancements" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableFutureEnhancements(s *string) *ProjectDetailTranslationUpdateOne {
-	if s != nil {
-		pdtuo.SetFutureEnhancements(*s)
-	}
-	return pdtuo
-}
-
-// ClearFutureEnhancements clears the value of the "future_enhancements" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) ClearFutureEnhancements() *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.ClearFutureEnhancements()
 	return pdtuo
 }
 
@@ -621,7 +344,7 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 	if err := pdtuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString))
 	id, ok := pdtuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectDetailTranslation.id" for update`)}
@@ -646,42 +369,6 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 			}
 		}
 	}
-	if value, ok := pdtuo.mutation.DetailedDescription(); ok {
-		_spec.SetField(projectdetailtranslation.FieldDetailedDescription, field.TypeString, value)
-	}
-	if pdtuo.mutation.DetailedDescriptionCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldDetailedDescription, field.TypeString)
-	}
-	if value, ok := pdtuo.mutation.Goals(); ok {
-		_spec.SetField(projectdetailtranslation.FieldGoals, field.TypeString, value)
-	}
-	if pdtuo.mutation.GoalsCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldGoals, field.TypeString)
-	}
-	if value, ok := pdtuo.mutation.Challenges(); ok {
-		_spec.SetField(projectdetailtranslation.FieldChallenges, field.TypeString, value)
-	}
-	if pdtuo.mutation.ChallengesCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldChallenges, field.TypeString)
-	}
-	if value, ok := pdtuo.mutation.Solutions(); ok {
-		_spec.SetField(projectdetailtranslation.FieldSolutions, field.TypeString, value)
-	}
-	if pdtuo.mutation.SolutionsCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldSolutions, field.TypeString)
-	}
-	if value, ok := pdtuo.mutation.LessonsLearned(); ok {
-		_spec.SetField(projectdetailtranslation.FieldLessonsLearned, field.TypeString, value)
-	}
-	if pdtuo.mutation.LessonsLearnedCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldLessonsLearned, field.TypeString)
-	}
-	if value, ok := pdtuo.mutation.FutureEnhancements(); ok {
-		_spec.SetField(projectdetailtranslation.FieldFutureEnhancements, field.TypeString, value)
-	}
-	if pdtuo.mutation.FutureEnhancementsCleared() {
-		_spec.ClearField(projectdetailtranslation.FieldFutureEnhancements, field.TypeString)
-	}
 	if pdtuo.mutation.ProjectDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -690,7 +377,7 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -703,7 +390,7 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AwardTranslationUpdate is the builder for updating AwardTranslation entities.
@@ -31,15 +30,15 @@ func (atu *AwardTranslationUpdate) Where(ps ...predicate.AwardTranslation) *Awar
 }
 
 // SetAwardID sets the "award_id" field.
-func (atu *AwardTranslationUpdate) SetAwardID(u uuid.UUID) *AwardTranslationUpdate {
-	atu.mutation.SetAwardID(u)
+func (atu *AwardTranslationUpdate) SetAwardID(s string) *AwardTranslationUpdate {
+	atu.mutation.SetAwardID(s)
 	return atu
 }
 
 // SetNillableAwardID sets the "award_id" field if the given value is not nil.
-func (atu *AwardTranslationUpdate) SetNillableAwardID(u *uuid.UUID) *AwardTranslationUpdate {
-	if u != nil {
-		atu.SetAwardID(*u)
+func (atu *AwardTranslationUpdate) SetNillableAwardID(s *string) *AwardTranslationUpdate {
+	if s != nil {
+		atu.SetAwardID(*s)
 	}
 	return atu
 }
@@ -221,7 +220,7 @@ func (atu *AwardTranslationUpdate) sqlSave(ctx context.Context) (n int, err erro
 	if err := atu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(awardtranslation.Table, awardtranslation.Columns, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(awardtranslation.Table, awardtranslation.Columns, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString))
 	if ps := atu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -255,7 +254,7 @@ func (atu *AwardTranslationUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{awardtranslation.AwardColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -268,7 +267,7 @@ func (atu *AwardTranslationUpdate) sqlSave(ctx context.Context) (n int, err erro
 			Columns: []string{awardtranslation.AwardColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -326,15 +325,15 @@ type AwardTranslationUpdateOne struct {
 }
 
 // SetAwardID sets the "award_id" field.
-func (atuo *AwardTranslationUpdateOne) SetAwardID(u uuid.UUID) *AwardTranslationUpdateOne {
-	atuo.mutation.SetAwardID(u)
+func (atuo *AwardTranslationUpdateOne) SetAwardID(s string) *AwardTranslationUpdateOne {
+	atuo.mutation.SetAwardID(s)
 	return atuo
 }
 
 // SetNillableAwardID sets the "award_id" field if the given value is not nil.
-func (atuo *AwardTranslationUpdateOne) SetNillableAwardID(u *uuid.UUID) *AwardTranslationUpdateOne {
-	if u != nil {
-		atuo.SetAwardID(*u)
+func (atuo *AwardTranslationUpdateOne) SetNillableAwardID(s *string) *AwardTranslationUpdateOne {
+	if s != nil {
+		atuo.SetAwardID(*s)
 	}
 	return atuo
 }
@@ -529,7 +528,7 @@ func (atuo *AwardTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Awar
 	if err := atuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(awardtranslation.Table, awardtranslation.Columns, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(awardtranslation.Table, awardtranslation.Columns, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString))
 	id, ok := atuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "AwardTranslation.id" for update`)}
@@ -580,7 +579,7 @@ func (atuo *AwardTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Awar
 			Columns: []string{awardtranslation.AwardColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -593,7 +592,7 @@ func (atuo *AwardTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Awar
 			Columns: []string{awardtranslation.AwardColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

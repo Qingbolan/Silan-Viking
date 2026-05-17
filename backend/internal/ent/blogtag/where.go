@@ -8,52 +8,61 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.BlogTag {
+func ID(id string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.BlogTag {
+func IDEQ(id string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.BlogTag {
+func IDNEQ(id string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.BlogTag {
+func IDIn(ids ...string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.BlogTag {
+func IDNotIn(ids ...string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.BlogTag {
+func IDGT(id string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.BlogTag {
+func IDGTE(id string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.BlogTag {
+func IDLT(id string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.BlogTag {
+func IDLTE(id string) predicate.BlogTag {
 	return predicate.BlogTag(sql.FieldLTE(FieldID, id))
+}
+
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.BlogTag {
+	return predicate.BlogTag(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.BlogTag {
+	return predicate.BlogTag(sql.FieldContainsFold(FieldID, id))
 }
 
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.

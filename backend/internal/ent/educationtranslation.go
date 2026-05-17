@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // EducationTranslation is the model entity for the EducationTranslation schema.
 type EducationTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// EducationID holds the value of the "education_id" field.
-	EducationID uuid.UUID `json:"education_id,omitempty"`
+	EducationID string `json:"education_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Institution holds the value of the "institution" field.
@@ -78,12 +77,10 @@ func (*EducationTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case educationtranslation.FieldLanguageCode, educationtranslation.FieldInstitution, educationtranslation.FieldDegree, educationtranslation.FieldFieldOfStudy, educationtranslation.FieldLocation:
+		case educationtranslation.FieldID, educationtranslation.FieldEducationID, educationtranslation.FieldLanguageCode, educationtranslation.FieldInstitution, educationtranslation.FieldDegree, educationtranslation.FieldFieldOfStudy, educationtranslation.FieldLocation:
 			values[i] = new(sql.NullString)
 		case educationtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case educationtranslation.FieldID, educationtranslation.FieldEducationID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -100,16 +97,16 @@ func (et *EducationTranslation) assignValues(columns []string, values []any) err
 	for i := range columns {
 		switch columns[i] {
 		case educationtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				et.ID = *value
+			} else if value.Valid {
+				et.ID = value.String
 			}
 		case educationtranslation.FieldEducationID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field education_id", values[i])
-			} else if value != nil {
-				et.EducationID = *value
+			} else if value.Valid {
+				et.EducationID = value.String
 			}
 		case educationtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -194,7 +191,7 @@ func (et *EducationTranslation) String() string {
 	builder.WriteString("EducationTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", et.ID))
 	builder.WriteString("education_id=")
-	builder.WriteString(fmt.Sprintf("%v", et.EducationID))
+	builder.WriteString(et.EducationID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(et.LanguageCode)

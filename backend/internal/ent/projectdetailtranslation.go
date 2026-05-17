@@ -12,30 +12,17 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ProjectDetailTranslation is the model entity for the ProjectDetailTranslation schema.
 type ProjectDetailTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// ProjectDetailID holds the value of the "project_detail_id" field.
-	ProjectDetailID uuid.UUID `json:"project_detail_id,omitempty"`
+	ProjectDetailID string `json:"project_detail_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
-	// DetailedDescription holds the value of the "detailed_description" field.
-	DetailedDescription string `json:"detailed_description,omitempty"`
-	// Goals holds the value of the "goals" field.
-	Goals string `json:"goals,omitempty"`
-	// Challenges holds the value of the "challenges" field.
-	Challenges string `json:"challenges,omitempty"`
-	// Solutions holds the value of the "solutions" field.
-	Solutions string `json:"solutions,omitempty"`
-	// LessonsLearned holds the value of the "lessons_learned" field.
-	LessonsLearned string `json:"lessons_learned,omitempty"`
-	// FutureEnhancements holds the value of the "future_enhancements" field.
-	FutureEnhancements string `json:"future_enhancements,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -82,12 +69,10 @@ func (*ProjectDetailTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case projectdetailtranslation.FieldLanguageCode, projectdetailtranslation.FieldDetailedDescription, projectdetailtranslation.FieldGoals, projectdetailtranslation.FieldChallenges, projectdetailtranslation.FieldSolutions, projectdetailtranslation.FieldLessonsLearned, projectdetailtranslation.FieldFutureEnhancements:
+		case projectdetailtranslation.FieldID, projectdetailtranslation.FieldProjectDetailID, projectdetailtranslation.FieldLanguageCode:
 			values[i] = new(sql.NullString)
 		case projectdetailtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case projectdetailtranslation.FieldID, projectdetailtranslation.FieldProjectDetailID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -104,58 +89,22 @@ func (pdt *ProjectDetailTranslation) assignValues(columns []string, values []any
 	for i := range columns {
 		switch columns[i] {
 		case projectdetailtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pdt.ID = *value
+			} else if value.Valid {
+				pdt.ID = value.String
 			}
 		case projectdetailtranslation.FieldProjectDetailID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field project_detail_id", values[i])
-			} else if value != nil {
-				pdt.ProjectDetailID = *value
+			} else if value.Valid {
+				pdt.ProjectDetailID = value.String
 			}
 		case projectdetailtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field language_code", values[i])
 			} else if value.Valid {
 				pdt.LanguageCode = value.String
-			}
-		case projectdetailtranslation.FieldDetailedDescription:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field detailed_description", values[i])
-			} else if value.Valid {
-				pdt.DetailedDescription = value.String
-			}
-		case projectdetailtranslation.FieldGoals:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field goals", values[i])
-			} else if value.Valid {
-				pdt.Goals = value.String
-			}
-		case projectdetailtranslation.FieldChallenges:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field challenges", values[i])
-			} else if value.Valid {
-				pdt.Challenges = value.String
-			}
-		case projectdetailtranslation.FieldSolutions:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field solutions", values[i])
-			} else if value.Valid {
-				pdt.Solutions = value.String
-			}
-		case projectdetailtranslation.FieldLessonsLearned:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field lessons_learned", values[i])
-			} else if value.Valid {
-				pdt.LessonsLearned = value.String
-			}
-		case projectdetailtranslation.FieldFutureEnhancements:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field future_enhancements", values[i])
-			} else if value.Valid {
-				pdt.FutureEnhancements = value.String
 			}
 		case projectdetailtranslation.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -210,28 +159,10 @@ func (pdt *ProjectDetailTranslation) String() string {
 	builder.WriteString("ProjectDetailTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pdt.ID))
 	builder.WriteString("project_detail_id=")
-	builder.WriteString(fmt.Sprintf("%v", pdt.ProjectDetailID))
+	builder.WriteString(pdt.ProjectDetailID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(pdt.LanguageCode)
-	builder.WriteString(", ")
-	builder.WriteString("detailed_description=")
-	builder.WriteString(pdt.DetailedDescription)
-	builder.WriteString(", ")
-	builder.WriteString("goals=")
-	builder.WriteString(pdt.Goals)
-	builder.WriteString(", ")
-	builder.WriteString("challenges=")
-	builder.WriteString(pdt.Challenges)
-	builder.WriteString(", ")
-	builder.WriteString("solutions=")
-	builder.WriteString(pdt.Solutions)
-	builder.WriteString(", ")
-	builder.WriteString("lessons_learned=")
-	builder.WriteString(pdt.LessonsLearned)
-	builder.WriteString(", ")
-	builder.WriteString("future_enhancements=")
-	builder.WriteString(pdt.FutureEnhancements)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(pdt.CreatedAt.Format(time.ANSIC))

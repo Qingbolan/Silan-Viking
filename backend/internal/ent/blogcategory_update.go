@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogCategoryUpdate is the builder for updating BlogCategory entities.
@@ -127,14 +126,14 @@ func (bcu *BlogCategoryUpdate) SetUpdatedAt(t time.Time) *BlogCategoryUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the BlogCategoryTranslation entity by IDs.
-func (bcu *BlogCategoryUpdate) AddTranslationIDs(ids ...uuid.UUID) *BlogCategoryUpdate {
+func (bcu *BlogCategoryUpdate) AddTranslationIDs(ids ...string) *BlogCategoryUpdate {
 	bcu.mutation.AddTranslationIDs(ids...)
 	return bcu
 }
 
 // AddTranslations adds the "translations" edges to the BlogCategoryTranslation entity.
 func (bcu *BlogCategoryUpdate) AddTranslations(b ...*BlogCategoryTranslation) *BlogCategoryUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -142,14 +141,14 @@ func (bcu *BlogCategoryUpdate) AddTranslations(b ...*BlogCategoryTranslation) *B
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (bcu *BlogCategoryUpdate) AddBlogPostIDs(ids ...uuid.UUID) *BlogCategoryUpdate {
+func (bcu *BlogCategoryUpdate) AddBlogPostIDs(ids ...string) *BlogCategoryUpdate {
 	bcu.mutation.AddBlogPostIDs(ids...)
 	return bcu
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (bcu *BlogCategoryUpdate) AddBlogPosts(b ...*BlogPost) *BlogCategoryUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -168,14 +167,14 @@ func (bcu *BlogCategoryUpdate) ClearTranslations() *BlogCategoryUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to BlogCategoryTranslation entities by IDs.
-func (bcu *BlogCategoryUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *BlogCategoryUpdate {
+func (bcu *BlogCategoryUpdate) RemoveTranslationIDs(ids ...string) *BlogCategoryUpdate {
 	bcu.mutation.RemoveTranslationIDs(ids...)
 	return bcu
 }
 
 // RemoveTranslations removes "translations" edges to BlogCategoryTranslation entities.
 func (bcu *BlogCategoryUpdate) RemoveTranslations(b ...*BlogCategoryTranslation) *BlogCategoryUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -189,14 +188,14 @@ func (bcu *BlogCategoryUpdate) ClearBlogPosts() *BlogCategoryUpdate {
 }
 
 // RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (bcu *BlogCategoryUpdate) RemoveBlogPostIDs(ids ...uuid.UUID) *BlogCategoryUpdate {
+func (bcu *BlogCategoryUpdate) RemoveBlogPostIDs(ids ...string) *BlogCategoryUpdate {
 	bcu.mutation.RemoveBlogPostIDs(ids...)
 	return bcu
 }
 
 // RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
 func (bcu *BlogCategoryUpdate) RemoveBlogPosts(b ...*BlogPost) *BlogCategoryUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -263,7 +262,7 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := bcu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogcategory.Table, blogcategory.Columns, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogcategory.Table, blogcategory.Columns, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString))
 	if ps := bcu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -306,7 +305,7 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogcategory.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -319,7 +318,7 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogcategory.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -335,7 +334,7 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogcategory.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -351,7 +350,7 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogcategory.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -364,7 +363,7 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogcategory.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -380,7 +379,7 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogcategory.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -504,14 +503,14 @@ func (bcuo *BlogCategoryUpdateOne) SetUpdatedAt(t time.Time) *BlogCategoryUpdate
 }
 
 // AddTranslationIDs adds the "translations" edge to the BlogCategoryTranslation entity by IDs.
-func (bcuo *BlogCategoryUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *BlogCategoryUpdateOne {
+func (bcuo *BlogCategoryUpdateOne) AddTranslationIDs(ids ...string) *BlogCategoryUpdateOne {
 	bcuo.mutation.AddTranslationIDs(ids...)
 	return bcuo
 }
 
 // AddTranslations adds the "translations" edges to the BlogCategoryTranslation entity.
 func (bcuo *BlogCategoryUpdateOne) AddTranslations(b ...*BlogCategoryTranslation) *BlogCategoryUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -519,14 +518,14 @@ func (bcuo *BlogCategoryUpdateOne) AddTranslations(b ...*BlogCategoryTranslation
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (bcuo *BlogCategoryUpdateOne) AddBlogPostIDs(ids ...uuid.UUID) *BlogCategoryUpdateOne {
+func (bcuo *BlogCategoryUpdateOne) AddBlogPostIDs(ids ...string) *BlogCategoryUpdateOne {
 	bcuo.mutation.AddBlogPostIDs(ids...)
 	return bcuo
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (bcuo *BlogCategoryUpdateOne) AddBlogPosts(b ...*BlogPost) *BlogCategoryUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -545,14 +544,14 @@ func (bcuo *BlogCategoryUpdateOne) ClearTranslations() *BlogCategoryUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to BlogCategoryTranslation entities by IDs.
-func (bcuo *BlogCategoryUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *BlogCategoryUpdateOne {
+func (bcuo *BlogCategoryUpdateOne) RemoveTranslationIDs(ids ...string) *BlogCategoryUpdateOne {
 	bcuo.mutation.RemoveTranslationIDs(ids...)
 	return bcuo
 }
 
 // RemoveTranslations removes "translations" edges to BlogCategoryTranslation entities.
 func (bcuo *BlogCategoryUpdateOne) RemoveTranslations(b ...*BlogCategoryTranslation) *BlogCategoryUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -566,14 +565,14 @@ func (bcuo *BlogCategoryUpdateOne) ClearBlogPosts() *BlogCategoryUpdateOne {
 }
 
 // RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (bcuo *BlogCategoryUpdateOne) RemoveBlogPostIDs(ids ...uuid.UUID) *BlogCategoryUpdateOne {
+func (bcuo *BlogCategoryUpdateOne) RemoveBlogPostIDs(ids ...string) *BlogCategoryUpdateOne {
 	bcuo.mutation.RemoveBlogPostIDs(ids...)
 	return bcuo
 }
 
 // RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
 func (bcuo *BlogCategoryUpdateOne) RemoveBlogPosts(b ...*BlogPost) *BlogCategoryUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -653,7 +652,7 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 	if err := bcuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogcategory.Table, blogcategory.Columns, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogcategory.Table, blogcategory.Columns, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString))
 	id, ok := bcuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "BlogCategory.id" for update`)}
@@ -713,7 +712,7 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 			Columns: []string{blogcategory.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -726,7 +725,7 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 			Columns: []string{blogcategory.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -742,7 +741,7 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 			Columns: []string{blogcategory.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -758,7 +757,7 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 			Columns: []string{blogcategory.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -771,7 +770,7 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 			Columns: []string{blogcategory.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -787,7 +786,7 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 			Columns: []string{blogcategory.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

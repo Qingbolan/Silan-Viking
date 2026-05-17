@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogTagUpdate is the builder for updating BlogTag entities.
@@ -79,14 +78,14 @@ func (btu *BlogTagUpdate) AddUsageCount(i int) *BlogTagUpdate {
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (btu *BlogTagUpdate) AddBlogPostIDs(ids ...uuid.UUID) *BlogTagUpdate {
+func (btu *BlogTagUpdate) AddBlogPostIDs(ids ...string) *BlogTagUpdate {
 	btu.mutation.AddBlogPostIDs(ids...)
 	return btu
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (btu *BlogTagUpdate) AddBlogPosts(b ...*BlogPost) *BlogTagUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -105,14 +104,14 @@ func (btu *BlogTagUpdate) ClearBlogPosts() *BlogTagUpdate {
 }
 
 // RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (btu *BlogTagUpdate) RemoveBlogPostIDs(ids ...uuid.UUID) *BlogTagUpdate {
+func (btu *BlogTagUpdate) RemoveBlogPostIDs(ids ...string) *BlogTagUpdate {
 	btu.mutation.RemoveBlogPostIDs(ids...)
 	return btu
 }
 
 // RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
 func (btu *BlogTagUpdate) RemoveBlogPosts(b ...*BlogPost) *BlogTagUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -165,7 +164,7 @@ func (btu *BlogTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := btu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogtag.Table, blogtag.Columns, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogtag.Table, blogtag.Columns, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString))
 	if ps := btu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -193,7 +192,7 @@ func (btu *BlogTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: blogtag.BlogPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		createE := &BlogPostTagCreate{config: btu.config, mutation: newBlogPostTagMutation(btu.config, OpCreate)}
@@ -210,7 +209,7 @@ func (btu *BlogTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: blogtag.BlogPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -230,7 +229,7 @@ func (btu *BlogTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: blogtag.BlogPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -312,14 +311,14 @@ func (btuo *BlogTagUpdateOne) AddUsageCount(i int) *BlogTagUpdateOne {
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (btuo *BlogTagUpdateOne) AddBlogPostIDs(ids ...uuid.UUID) *BlogTagUpdateOne {
+func (btuo *BlogTagUpdateOne) AddBlogPostIDs(ids ...string) *BlogTagUpdateOne {
 	btuo.mutation.AddBlogPostIDs(ids...)
 	return btuo
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (btuo *BlogTagUpdateOne) AddBlogPosts(b ...*BlogPost) *BlogTagUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -338,14 +337,14 @@ func (btuo *BlogTagUpdateOne) ClearBlogPosts() *BlogTagUpdateOne {
 }
 
 // RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (btuo *BlogTagUpdateOne) RemoveBlogPostIDs(ids ...uuid.UUID) *BlogTagUpdateOne {
+func (btuo *BlogTagUpdateOne) RemoveBlogPostIDs(ids ...string) *BlogTagUpdateOne {
 	btuo.mutation.RemoveBlogPostIDs(ids...)
 	return btuo
 }
 
 // RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
 func (btuo *BlogTagUpdateOne) RemoveBlogPosts(b ...*BlogPost) *BlogTagUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -411,7 +410,7 @@ func (btuo *BlogTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogTag, err 
 	if err := btuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogtag.Table, blogtag.Columns, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogtag.Table, blogtag.Columns, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString))
 	id, ok := btuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "BlogTag.id" for update`)}
@@ -456,7 +455,7 @@ func (btuo *BlogTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogTag, err 
 			Columns: blogtag.BlogPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		createE := &BlogPostTagCreate{config: btuo.config, mutation: newBlogPostTagMutation(btuo.config, OpCreate)}
@@ -473,7 +472,7 @@ func (btuo *BlogTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogTag, err 
 			Columns: blogtag.BlogPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -493,7 +492,7 @@ func (btuo *BlogTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogTag, err 
 			Columns: blogtag.BlogPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

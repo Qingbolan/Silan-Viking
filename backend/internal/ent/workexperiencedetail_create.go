@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // WorkExperienceDetailCreate is the builder for creating a WorkExperienceDetail entity.
@@ -24,8 +23,8 @@ type WorkExperienceDetailCreate struct {
 }
 
 // SetWorkExperienceID sets the "work_experience_id" field.
-func (wedc *WorkExperienceDetailCreate) SetWorkExperienceID(u uuid.UUID) *WorkExperienceDetailCreate {
-	wedc.mutation.SetWorkExperienceID(u)
+func (wedc *WorkExperienceDetailCreate) SetWorkExperienceID(s string) *WorkExperienceDetailCreate {
+	wedc.mutation.SetWorkExperienceID(s)
 	return wedc
 }
 
@@ -78,15 +77,15 @@ func (wedc *WorkExperienceDetailCreate) SetNillableUpdatedAt(t *time.Time) *Work
 }
 
 // SetID sets the "id" field.
-func (wedc *WorkExperienceDetailCreate) SetID(u uuid.UUID) *WorkExperienceDetailCreate {
-	wedc.mutation.SetID(u)
+func (wedc *WorkExperienceDetailCreate) SetID(s string) *WorkExperienceDetailCreate {
+	wedc.mutation.SetID(s)
 	return wedc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (wedc *WorkExperienceDetailCreate) SetNillableID(u *uuid.UUID) *WorkExperienceDetailCreate {
-	if u != nil {
-		wedc.SetID(*u)
+func (wedc *WorkExperienceDetailCreate) SetNillableID(s *string) *WorkExperienceDetailCreate {
+	if s != nil {
+		wedc.SetID(*s)
 	}
 	return wedc
 }
@@ -97,14 +96,14 @@ func (wedc *WorkExperienceDetailCreate) SetWorkExperience(w *WorkExperience) *Wo
 }
 
 // AddTranslationIDs adds the "translations" edge to the WorkExperienceDetailTranslation entity by IDs.
-func (wedc *WorkExperienceDetailCreate) AddTranslationIDs(ids ...uuid.UUID) *WorkExperienceDetailCreate {
+func (wedc *WorkExperienceDetailCreate) AddTranslationIDs(ids ...string) *WorkExperienceDetailCreate {
 	wedc.mutation.AddTranslationIDs(ids...)
 	return wedc
 }
 
 // AddTranslations adds the "translations" edges to the WorkExperienceDetailTranslation entity.
 func (wedc *WorkExperienceDetailCreate) AddTranslations(w ...*WorkExperienceDetailTranslation) *WorkExperienceDetailCreate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -204,10 +203,10 @@ func (wedc *WorkExperienceDetailCreate) sqlSave(ctx context.Context) (*WorkExper
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected WorkExperienceDetail.ID type: %T", _spec.ID.Value)
 		}
 	}
 	wedc.mutation.id = &_node.ID
@@ -218,11 +217,11 @@ func (wedc *WorkExperienceDetailCreate) sqlSave(ctx context.Context) (*WorkExper
 func (wedc *WorkExperienceDetailCreate) createSpec() (*WorkExperienceDetail, *sqlgraph.CreateSpec) {
 	var (
 		_node = &WorkExperienceDetail{config: wedc.config}
-		_spec = sqlgraph.NewCreateSpec(workexperiencedetail.Table, sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(workexperiencedetail.Table, sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString))
 	)
 	if id, ok := wedc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := wedc.mutation.DetailText(); ok {
 		_spec.SetField(workexperiencedetail.FieldDetailText, field.TypeString, value)
@@ -248,7 +247,7 @@ func (wedc *WorkExperienceDetailCreate) createSpec() (*WorkExperienceDetail, *sq
 			Columns: []string{workexperiencedetail.WorkExperienceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -265,7 +264,7 @@ func (wedc *WorkExperienceDetailCreate) createSpec() (*WorkExperienceDetail, *sq
 			Columns: []string{workexperiencedetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

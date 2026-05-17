@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Tabs, Space, Tag } from 'antd';
+import { Tag } from 'antd';
+import { Tabs } from '../../components/ds';
 import { 
   BookOpen, 
   Download, 
@@ -66,78 +67,14 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({ projectData }) => {
   };
 
   const allTabItems = [
-    {
-      key: 'readme',
-      label: (
-        <Space>
-          <BookOpen size={16} />
-          {t('projects.readme')}
-        </Space>
-      ),
-    },
-    {
-      key: 'relatedblogs',
-      label: (
-        <Space>
-          <FileText size={16} />
-          {t('projects.relatedBlogs')}
-        </Space>
-      ),
-    },
-    {
-      key: 'releases',
-      label: (
-        <Space>
-          <Download size={16} />
-          {t('projects.releases')}
-        </Space>
-      ),
-    },
-    {
-      key: 'quickstart',
-      label: (
-        <Space>
-          <Play size={16} />
-          {t('projects.quickStart')}
-        </Space>
-      ),
-    },
-    {
-      key: 'community',
-      label: (
-        <Space>
-          <Users size={16} />
-          {t('projects.community')}
-        </Space>
-      ),
-    },
-    {
-      key: 'issues',
-      label: (
-        <Space>
-          <Bug size={16} />
-          {t('projects.issues')}
-        </Space>
-      ),
-    },
-    {
-      key: 'dependencies',
-      label: (
-        <Space>
-          <Settings size={16} />
-          {t('projects.dependencies')}
-        </Space>
-      ),
-    },
-    {
-      key: 'license',
-      label: (
-        <Space>
-          <Scale size={16} />
-          {t('projects.license')}
-        </Space>
-      ),
-    },
+    { key: 'readme', icon: <BookOpen size={16} />, label: t('projects.readme') },
+    { key: 'relatedblogs', icon: <FileText size={16} />, label: t('projects.relatedBlogs') },
+    { key: 'releases', icon: <Download size={16} />, label: t('projects.releases') },
+    { key: 'quickstart', icon: <Play size={16} />, label: t('projects.quickStart') },
+    { key: 'community', icon: <Users size={16} />, label: t('projects.community') },
+    { key: 'issues', icon: <Bug size={16} />, label: t('projects.issues') },
+    { key: 'dependencies', icon: <Settings size={16} />, label: t('projects.dependencies') },
+    { key: 'license', icon: <Scale size={16} />, label: t('projects.license') },
   ];
 
   // Filter tabs to only show those with content
@@ -561,36 +498,33 @@ const ProjectTabs: React.FC<ProjectTabsProps> = ({ projectData }) => {
   };
 
   return (
-    <div className="w-full">
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems.map(item => ({
-          ...item,
-          children: (
-            <motion.div
-              key={item.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="min-h-[400px]"
-            >
-              {renderContent(item.key)}
-            </motion.div>
-          )
-        }))}
-        style={{
-          '--antd-tabs-ink-bar-color': 'var(--color-primary)',
-          '--antd-tabs-item-color': 'var(--color-text-secondary)',
-          '--antd-tabs-item-active-color': 'var(--color-primary)',
-          '--antd-tabs-item-hover-color': 'var(--color-primary)'
-        } as any}
-        size="large"
-        tabBarStyle={{
-          borderBottom: '1px solid var(--color-card-border)',
-          marginBottom: '24px'
-        }}
-      />
+    <div className="flex w-full flex-col gap-6 md:flex-row md:gap-8">
+      {/* Left rail — ds vertical Tabs nav. Sticky on desktop, offset to
+          clear the sticky stats bar above it. */}
+      <nav className="shrink-0 md:w-56">
+        <div className="md:sticky md:top-16">
+          <Tabs
+            value={activeTab}
+            onChange={setActiveTab}
+            appearance="vertical"
+            items={tabItems.map(item => ({
+              value: item.key,
+              icon: item.icon,
+              label: item.label,
+            }))}
+          />
+        </div>
+      </nav>
+      {/* Active panel. */}
+      <motion.div
+        key={activeTab}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="min-w-0 flex-1"
+      >
+        {renderContent(activeTab)}
+      </motion.div>
     </div>
   );
 };

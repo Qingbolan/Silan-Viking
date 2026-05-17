@@ -7,29 +7,25 @@ import (
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogseries"
-	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // BlogPost is the model entity for the BlogPost schema.
 type BlogPost struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// CategoryID holds the value of the "category_id" field.
-	CategoryID uuid.UUID `json:"category_id,omitempty"`
+	CategoryID string `json:"category_id,omitempty"`
 	// SeriesID holds the value of the "series_id" field.
-	SeriesID uuid.UUID `json:"series_id,omitempty"`
-	// IdeasID holds the value of the "ideas_id" field.
-	IdeasID uuid.UUID `json:"ideas_id,omitempty"`
+	SeriesID string `json:"series_id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// Slug holds the value of the "slug" field.
@@ -42,6 +38,8 @@ type BlogPost struct {
 	ContentType blogpost.ContentType `json:"content_type,omitempty"`
 	// Status holds the value of the "status" field.
 	Status blogpost.Status `json:"status,omitempty"`
+	// Visibility holds the value of the "visibility" field.
+	Visibility blogpost.Visibility `json:"visibility,omitempty"`
 	// IsFeatured holds the value of the "is_featured" field.
 	IsFeatured bool `json:"is_featured,omitempty"`
 	// FeaturedImageURL holds the value of the "featured_image_url" field.
@@ -76,8 +74,6 @@ type BlogPostEdges struct {
 	Category *BlogCategory `json:"category,omitempty"`
 	// Series holds the value of the series edge.
 	Series *BlogSeries `json:"series,omitempty"`
-	// Ideas holds the value of the ideas edge.
-	Ideas *Idea `json:"ideas,omitempty"`
 	// Tags holds the value of the tags edge.
 	Tags []*BlogTag `json:"tags,omitempty"`
 	// Translations holds the value of the translations edge.
@@ -88,7 +84,7 @@ type BlogPostEdges struct {
 	BlogPostTags []*BlogPostTag `json:"blog_post_tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [8]bool
+	loadedTypes [7]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -124,21 +120,10 @@ func (e BlogPostEdges) SeriesOrErr() (*BlogSeries, error) {
 	return nil, &NotLoadedError{edge: "series"}
 }
 
-// IdeasOrErr returns the Ideas value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e BlogPostEdges) IdeasOrErr() (*Idea, error) {
-	if e.Ideas != nil {
-		return e.Ideas, nil
-	} else if e.loadedTypes[3] {
-		return nil, &NotFoundError{label: idea.Label}
-	}
-	return nil, &NotLoadedError{edge: "ideas"}
-}
-
 // TagsOrErr returns the Tags value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) TagsOrErr() ([]*BlogTag, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[3] {
 		return e.Tags, nil
 	}
 	return nil, &NotLoadedError{edge: "tags"}
@@ -147,7 +132,7 @@ func (e BlogPostEdges) TagsOrErr() ([]*BlogTag, error) {
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) TranslationsOrErr() ([]*BlogPostTranslation, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[4] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -156,7 +141,7 @@ func (e BlogPostEdges) TranslationsOrErr() ([]*BlogPostTranslation, error) {
 // CommentsOrErr returns the Comments value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) CommentsOrErr() ([]*Comment, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[5] {
 		return e.Comments, nil
 	}
 	return nil, &NotLoadedError{edge: "comments"}
@@ -165,7 +150,7 @@ func (e BlogPostEdges) CommentsOrErr() ([]*Comment, error) {
 // BlogPostTagsOrErr returns the BlogPostTags value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) BlogPostTagsOrErr() ([]*BlogPostTag, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[6] {
 		return e.BlogPostTags, nil
 	}
 	return nil, &NotLoadedError{edge: "blog_post_tags"}
@@ -180,12 +165,10 @@ func (*BlogPost) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case blogpost.FieldReadingTimeMinutes, blogpost.FieldViewCount, blogpost.FieldLikeCount, blogpost.FieldCommentCount, blogpost.FieldSeriesOrder:
 			values[i] = new(sql.NullInt64)
-		case blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldStatus, blogpost.FieldFeaturedImageURL:
+		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID, blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldStatus, blogpost.FieldVisibility, blogpost.FieldFeaturedImageURL:
 			values[i] = new(sql.NullString)
 		case blogpost.FieldPublishedAt, blogpost.FieldCreatedAt, blogpost.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID, blogpost.FieldIdeasID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -202,34 +185,28 @@ func (bp *BlogPost) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case blogpost.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				bp.ID = *value
+			} else if value.Valid {
+				bp.ID = value.String
 			}
 		case blogpost.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				bp.UserID = *value
+			} else if value.Valid {
+				bp.UserID = value.String
 			}
 		case blogpost.FieldCategoryID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field category_id", values[i])
-			} else if value != nil {
-				bp.CategoryID = *value
+			} else if value.Valid {
+				bp.CategoryID = value.String
 			}
 		case blogpost.FieldSeriesID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field series_id", values[i])
-			} else if value != nil {
-				bp.SeriesID = *value
-			}
-		case blogpost.FieldIdeasID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
-				return fmt.Errorf("unexpected type %T for field ideas_id", values[i])
-			} else if value != nil {
-				bp.IdeasID = *value
+			} else if value.Valid {
+				bp.SeriesID = value.String
 			}
 		case blogpost.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -266,6 +243,12 @@ func (bp *BlogPost) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				bp.Status = blogpost.Status(value.String)
+			}
+		case blogpost.FieldVisibility:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field visibility", values[i])
+			} else if value.Valid {
+				bp.Visibility = blogpost.Visibility(value.String)
 			}
 		case blogpost.FieldIsFeatured:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -355,11 +338,6 @@ func (bp *BlogPost) QuerySeries() *BlogSeriesQuery {
 	return NewBlogPostClient(bp.config).QuerySeries(bp)
 }
 
-// QueryIdeas queries the "ideas" edge of the BlogPost entity.
-func (bp *BlogPost) QueryIdeas() *IdeaQuery {
-	return NewBlogPostClient(bp.config).QueryIdeas(bp)
-}
-
 // QueryTags queries the "tags" edge of the BlogPost entity.
 func (bp *BlogPost) QueryTags() *BlogTagQuery {
 	return NewBlogPostClient(bp.config).QueryTags(bp)
@@ -404,16 +382,13 @@ func (bp *BlogPost) String() string {
 	builder.WriteString("BlogPost(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", bp.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", bp.UserID))
+	builder.WriteString(bp.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("category_id=")
-	builder.WriteString(fmt.Sprintf("%v", bp.CategoryID))
+	builder.WriteString(bp.CategoryID)
 	builder.WriteString(", ")
 	builder.WriteString("series_id=")
-	builder.WriteString(fmt.Sprintf("%v", bp.SeriesID))
-	builder.WriteString(", ")
-	builder.WriteString("ideas_id=")
-	builder.WriteString(fmt.Sprintf("%v", bp.IdeasID))
+	builder.WriteString(bp.SeriesID)
 	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(bp.Title)
@@ -432,6 +407,9 @@ func (bp *BlogPost) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", bp.Status))
+	builder.WriteString(", ")
+	builder.WriteString("visibility=")
+	builder.WriteString(fmt.Sprintf("%v", bp.Visibility))
 	builder.WriteString(", ")
 	builder.WriteString("is_featured=")
 	builder.WriteString(fmt.Sprintf("%v", bp.IsFeatured))

@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // Publication is the model entity for the Publication schema.
 type Publication struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// PublicationType holds the value of the "publication_type" field.
@@ -112,12 +111,10 @@ func (*Publication) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case publication.FieldCitationCount, publication.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case publication.FieldTitle, publication.FieldPublicationType, publication.FieldJournalName, publication.FieldConferenceName, publication.FieldVolume, publication.FieldIssue, publication.FieldPages, publication.FieldDoi, publication.FieldIsbn, publication.FieldURL, publication.FieldPdfURL:
+		case publication.FieldID, publication.FieldUserID, publication.FieldTitle, publication.FieldPublicationType, publication.FieldJournalName, publication.FieldConferenceName, publication.FieldVolume, publication.FieldIssue, publication.FieldPages, publication.FieldDoi, publication.FieldIsbn, publication.FieldURL, publication.FieldPdfURL:
 			values[i] = new(sql.NullString)
 		case publication.FieldPublicationDate, publication.FieldCreatedAt, publication.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case publication.FieldID, publication.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -134,16 +131,16 @@ func (pu *Publication) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case publication.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pu.ID = *value
+			} else if value.Valid {
+				pu.ID = value.String
 			}
 		case publication.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				pu.UserID = *value
+			} else if value.Valid {
+				pu.UserID = value.String
 			}
 		case publication.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -299,7 +296,7 @@ func (pu *Publication) String() string {
 	builder.WriteString("Publication(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pu.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", pu.UserID))
+	builder.WriteString(pu.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(pu.Title)

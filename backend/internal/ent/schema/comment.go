@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -26,15 +27,16 @@ func (Comment) Annotations() []schema.Annotation {
 // Fields of the Comment.
 func (Comment) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.String("entity_type").
-			Comment("Type of entity: 'blog' or 'idea'"),
-		field.UUID("entity_id", uuid.UUID{}).
+		field.Enum("entity_type").
+			Values("blog", "project", "idea", "episode", "resume", "update").
+			Comment("Type of the commented entity (M0.5a §11.6: enum)"),
+		field.String("entity_id").
 			StorageKey("entity_id").
 			Comment("ID of the blog post or idea"),
-		field.UUID("parent_id", uuid.UUID{}).
+		field.String("parent_id").
 			Optional().
 			StorageKey("parent_id"),
 		field.String("author_name").
@@ -48,12 +50,16 @@ func (Comment) Fields() []ent.Field {
 			MaxLen(500),
 		field.Text("content").
 			NotEmpty(),
-		field.String("type").
+		field.Enum("type").
+			Values("general", "question", "feedback").
 			Default("general").
-			Comment("Type of comment: general, question, suggestion, etc."),
-		field.String("referrence_id").
+			Comment("Type of comment (M0.5a §11.6: enum)"),
+		// Renamed from referrence_id (M0.5a §11.6). The runtime migration
+		// must ALTER TABLE comments RENAME COLUMN, not drop+add.
+		field.String("reference_id").
 			Optional().
-			MaxLen(500),
+			MaxLen(500).
+			StorageKey("reference_id"),
 		field.String("attachment_id").
 			Optional().
 			MaxLen(500),
@@ -77,6 +83,14 @@ func (Comment) Fields() []ent.Field {
 		field.Time("updated_at").
 			Default(time.Now).
 			UpdateDefault(time.Now),
+	}
+}
+
+// Indexes of the Comment.
+func (Comment) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("entity_type", "entity_id"),
+		index.Fields("parent_id"),
 	}
 }
 

@@ -8,57 +8,71 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.RecentUpdate {
+func ID(id string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.RecentUpdate {
+func IDEQ(id string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.RecentUpdate {
+func IDNEQ(id string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.RecentUpdate {
+func IDIn(ids ...string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.RecentUpdate {
+func IDNotIn(ids ...string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.RecentUpdate {
+func IDGT(id string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.RecentUpdate {
+func IDGTE(id string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.RecentUpdate {
+func IDLT(id string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.RecentUpdate {
+func IDLTE(id string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldContainsFold(FieldID, id))
+}
+
 // UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
-func UserID(v uuid.UUID) predicate.RecentUpdate {
+func UserID(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldUserID, v))
+}
+
+// Slug applies equality check predicate on the "slug" field. It's identical to SlugEQ.
+func Slug(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEQ(FieldSlug, v))
 }
 
 // Title applies equality check predicate on the "title" field. It's identical to TitleEQ.
@@ -127,43 +141,203 @@ func UpdatedAt(v time.Time) predicate.RecentUpdate {
 }
 
 // UserIDEQ applies the EQ predicate on the "user_id" field.
-func UserIDEQ(v uuid.UUID) predicate.RecentUpdate {
+func UserIDEQ(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldUserID, v))
 }
 
 // UserIDNEQ applies the NEQ predicate on the "user_id" field.
-func UserIDNEQ(v uuid.UUID) predicate.RecentUpdate {
+func UserIDNEQ(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNEQ(FieldUserID, v))
 }
 
 // UserIDIn applies the In predicate on the "user_id" field.
-func UserIDIn(vs ...uuid.UUID) predicate.RecentUpdate {
+func UserIDIn(vs ...string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldIn(FieldUserID, vs...))
 }
 
 // UserIDNotIn applies the NotIn predicate on the "user_id" field.
-func UserIDNotIn(vs ...uuid.UUID) predicate.RecentUpdate {
+func UserIDNotIn(vs ...string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNotIn(FieldUserID, vs...))
 }
 
-// TypeEQ applies the EQ predicate on the "type" field.
-func TypeEQ(v Type) predicate.RecentUpdate {
-	return predicate.RecentUpdate(sql.FieldEQ(FieldType, v))
+// UserIDGT applies the GT predicate on the "user_id" field.
+func UserIDGT(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldGT(FieldUserID, v))
 }
 
-// TypeNEQ applies the NEQ predicate on the "type" field.
-func TypeNEQ(v Type) predicate.RecentUpdate {
-	return predicate.RecentUpdate(sql.FieldNEQ(FieldType, v))
+// UserIDGTE applies the GTE predicate on the "user_id" field.
+func UserIDGTE(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldGTE(FieldUserID, v))
 }
 
-// TypeIn applies the In predicate on the "type" field.
-func TypeIn(vs ...Type) predicate.RecentUpdate {
-	return predicate.RecentUpdate(sql.FieldIn(FieldType, vs...))
+// UserIDLT applies the LT predicate on the "user_id" field.
+func UserIDLT(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldLT(FieldUserID, v))
 }
 
-// TypeNotIn applies the NotIn predicate on the "type" field.
-func TypeNotIn(vs ...Type) predicate.RecentUpdate {
-	return predicate.RecentUpdate(sql.FieldNotIn(FieldType, vs...))
+// UserIDLTE applies the LTE predicate on the "user_id" field.
+func UserIDLTE(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldLTE(FieldUserID, v))
+}
+
+// UserIDContains applies the Contains predicate on the "user_id" field.
+func UserIDContains(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldContains(FieldUserID, v))
+}
+
+// UserIDHasPrefix applies the HasPrefix predicate on the "user_id" field.
+func UserIDHasPrefix(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldHasPrefix(FieldUserID, v))
+}
+
+// UserIDHasSuffix applies the HasSuffix predicate on the "user_id" field.
+func UserIDHasSuffix(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldHasSuffix(FieldUserID, v))
+}
+
+// UserIDIsNil applies the IsNil predicate on the "user_id" field.
+func UserIDIsNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIsNull(FieldUserID))
+}
+
+// UserIDNotNil applies the NotNil predicate on the "user_id" field.
+func UserIDNotNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotNull(FieldUserID))
+}
+
+// UserIDEqualFold applies the EqualFold predicate on the "user_id" field.
+func UserIDEqualFold(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEqualFold(FieldUserID, v))
+}
+
+// UserIDContainsFold applies the ContainsFold predicate on the "user_id" field.
+func UserIDContainsFold(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldContainsFold(FieldUserID, v))
+}
+
+// SlugEQ applies the EQ predicate on the "slug" field.
+func SlugEQ(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEQ(FieldSlug, v))
+}
+
+// SlugNEQ applies the NEQ predicate on the "slug" field.
+func SlugNEQ(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNEQ(FieldSlug, v))
+}
+
+// SlugIn applies the In predicate on the "slug" field.
+func SlugIn(vs ...string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIn(FieldSlug, vs...))
+}
+
+// SlugNotIn applies the NotIn predicate on the "slug" field.
+func SlugNotIn(vs ...string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotIn(FieldSlug, vs...))
+}
+
+// SlugGT applies the GT predicate on the "slug" field.
+func SlugGT(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldGT(FieldSlug, v))
+}
+
+// SlugGTE applies the GTE predicate on the "slug" field.
+func SlugGTE(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldGTE(FieldSlug, v))
+}
+
+// SlugLT applies the LT predicate on the "slug" field.
+func SlugLT(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldLT(FieldSlug, v))
+}
+
+// SlugLTE applies the LTE predicate on the "slug" field.
+func SlugLTE(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldLTE(FieldSlug, v))
+}
+
+// SlugContains applies the Contains predicate on the "slug" field.
+func SlugContains(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldContains(FieldSlug, v))
+}
+
+// SlugHasPrefix applies the HasPrefix predicate on the "slug" field.
+func SlugHasPrefix(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldHasPrefix(FieldSlug, v))
+}
+
+// SlugHasSuffix applies the HasSuffix predicate on the "slug" field.
+func SlugHasSuffix(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldHasSuffix(FieldSlug, v))
+}
+
+// SlugEqualFold applies the EqualFold predicate on the "slug" field.
+func SlugEqualFold(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEqualFold(FieldSlug, v))
+}
+
+// SlugContainsFold applies the ContainsFold predicate on the "slug" field.
+func SlugContainsFold(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldContainsFold(FieldSlug, v))
+}
+
+// SubjectKindEQ applies the EQ predicate on the "subject_kind" field.
+func SubjectKindEQ(v SubjectKind) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEQ(FieldSubjectKind, v))
+}
+
+// SubjectKindNEQ applies the NEQ predicate on the "subject_kind" field.
+func SubjectKindNEQ(v SubjectKind) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNEQ(FieldSubjectKind, v))
+}
+
+// SubjectKindIn applies the In predicate on the "subject_kind" field.
+func SubjectKindIn(vs ...SubjectKind) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIn(FieldSubjectKind, vs...))
+}
+
+// SubjectKindNotIn applies the NotIn predicate on the "subject_kind" field.
+func SubjectKindNotIn(vs ...SubjectKind) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotIn(FieldSubjectKind, vs...))
+}
+
+// UpdateTypeEQ applies the EQ predicate on the "update_type" field.
+func UpdateTypeEQ(v UpdateType) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEQ(FieldUpdateType, v))
+}
+
+// UpdateTypeNEQ applies the NEQ predicate on the "update_type" field.
+func UpdateTypeNEQ(v UpdateType) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNEQ(FieldUpdateType, v))
+}
+
+// UpdateTypeIn applies the In predicate on the "update_type" field.
+func UpdateTypeIn(vs ...UpdateType) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIn(FieldUpdateType, vs...))
+}
+
+// UpdateTypeNotIn applies the NotIn predicate on the "update_type" field.
+func UpdateTypeNotIn(vs ...UpdateType) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotIn(FieldUpdateType, vs...))
+}
+
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v Visibility) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEQ(FieldVisibility, v))
+}
+
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v Visibility) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNEQ(FieldVisibility, v))
+}
+
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...Visibility) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIn(FieldVisibility, vs...))
+}
+
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...Visibility) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // TitleEQ applies the EQ predicate on the "title" field.
@@ -219,6 +393,16 @@ func TitleHasPrefix(v string) predicate.RecentUpdate {
 // TitleHasSuffix applies the HasSuffix predicate on the "title" field.
 func TitleHasSuffix(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldHasSuffix(FieldTitle, v))
+}
+
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotNull(FieldTitle))
 }
 
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
@@ -284,6 +468,16 @@ func DescriptionHasPrefix(v string) predicate.RecentUpdate {
 // DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
 func DescriptionHasSuffix(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldHasSuffix(FieldDescription, v))
+}
+
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIsNull(FieldDescription))
+}
+
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotNull(FieldDescription))
 }
 
 // DescriptionEqualFold applies the EqualFold predicate on the "description" field.
@@ -1031,6 +1225,16 @@ func CreatedAtLTE(v time.Time) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldUpdatedAt, v))
@@ -1069,6 +1273,16 @@ func UpdatedAtLT(v time.Time) predicate.RecentUpdate {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

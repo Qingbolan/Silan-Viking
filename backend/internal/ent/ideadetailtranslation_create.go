@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaDetailTranslationCreate is the builder for creating a IdeaDetailTranslation entity.
@@ -24,70 +23,14 @@ type IdeaDetailTranslationCreate struct {
 }
 
 // SetIdeaDetailID sets the "idea_detail_id" field.
-func (idtc *IdeaDetailTranslationCreate) SetIdeaDetailID(u uuid.UUID) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetIdeaDetailID(u)
+func (idtc *IdeaDetailTranslationCreate) SetIdeaDetailID(s string) *IdeaDetailTranslationCreate {
+	idtc.mutation.SetIdeaDetailID(s)
 	return idtc
 }
 
 // SetLanguageCode sets the "language_code" field.
 func (idtc *IdeaDetailTranslationCreate) SetLanguageCode(s string) *IdeaDetailTranslationCreate {
 	idtc.mutation.SetLanguageCode(s)
-	return idtc
-}
-
-// SetProgress sets the "progress" field.
-func (idtc *IdeaDetailTranslationCreate) SetProgress(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetProgress(s)
-	return idtc
-}
-
-// SetNillableProgress sets the "progress" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableProgress(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetProgress(*s)
-	}
-	return idtc
-}
-
-// SetResults sets the "results" field.
-func (idtc *IdeaDetailTranslationCreate) SetResults(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetResults(s)
-	return idtc
-}
-
-// SetNillableResults sets the "results" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableResults(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetResults(*s)
-	}
-	return idtc
-}
-
-// SetReferences sets the "references" field.
-func (idtc *IdeaDetailTranslationCreate) SetReferences(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetReferences(s)
-	return idtc
-}
-
-// SetNillableReferences sets the "references" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableReferences(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetReferences(*s)
-	}
-	return idtc
-}
-
-// SetRequiredResources sets the "required_resources" field.
-func (idtc *IdeaDetailTranslationCreate) SetRequiredResources(s string) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetRequiredResources(s)
-	return idtc
-}
-
-// SetNillableRequiredResources sets the "required_resources" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableRequiredResources(s *string) *IdeaDetailTranslationCreate {
-	if s != nil {
-		idtc.SetRequiredResources(*s)
-	}
 	return idtc
 }
 
@@ -106,15 +49,15 @@ func (idtc *IdeaDetailTranslationCreate) SetNillableCreatedAt(t *time.Time) *Ide
 }
 
 // SetID sets the "id" field.
-func (idtc *IdeaDetailTranslationCreate) SetID(u uuid.UUID) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetID(u)
+func (idtc *IdeaDetailTranslationCreate) SetID(s string) *IdeaDetailTranslationCreate {
+	idtc.mutation.SetID(s)
 	return idtc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableID(u *uuid.UUID) *IdeaDetailTranslationCreate {
-	if u != nil {
-		idtc.SetID(*u)
+func (idtc *IdeaDetailTranslationCreate) SetNillableID(s *string) *IdeaDetailTranslationCreate {
+	if s != nil {
+		idtc.SetID(*s)
 	}
 	return idtc
 }
@@ -217,10 +160,10 @@ func (idtc *IdeaDetailTranslationCreate) sqlSave(ctx context.Context) (*IdeaDeta
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected IdeaDetailTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	idtc.mutation.id = &_node.ID
@@ -231,27 +174,11 @@ func (idtc *IdeaDetailTranslationCreate) sqlSave(ctx context.Context) (*IdeaDeta
 func (idtc *IdeaDetailTranslationCreate) createSpec() (*IdeaDetailTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &IdeaDetailTranslation{config: idtc.config}
-		_spec = sqlgraph.NewCreateSpec(ideadetailtranslation.Table, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(ideadetailtranslation.Table, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString))
 	)
 	if id, ok := idtc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
-	}
-	if value, ok := idtc.mutation.Progress(); ok {
-		_spec.SetField(ideadetailtranslation.FieldProgress, field.TypeString, value)
-		_node.Progress = value
-	}
-	if value, ok := idtc.mutation.Results(); ok {
-		_spec.SetField(ideadetailtranslation.FieldResults, field.TypeString, value)
-		_node.Results = value
-	}
-	if value, ok := idtc.mutation.References(); ok {
-		_spec.SetField(ideadetailtranslation.FieldReferences, field.TypeString, value)
-		_node.References = value
-	}
-	if value, ok := idtc.mutation.RequiredResources(); ok {
-		_spec.SetField(ideadetailtranslation.FieldRequiredResources, field.TypeString, value)
-		_node.RequiredResources = value
+		_spec.ID.Value = id
 	}
 	if value, ok := idtc.mutation.CreatedAt(); ok {
 		_spec.SetField(ideadetailtranslation.FieldCreatedAt, field.TypeTime, value)
@@ -265,7 +192,7 @@ func (idtc *IdeaDetailTranslationCreate) createSpec() (*IdeaDetailTranslation, *
 			Columns: []string{ideadetailtranslation.IdeaDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectDetailTranslationCreate is the builder for creating a ProjectDetailTranslation entity.
@@ -24,98 +23,14 @@ type ProjectDetailTranslationCreate struct {
 }
 
 // SetProjectDetailID sets the "project_detail_id" field.
-func (pdtc *ProjectDetailTranslationCreate) SetProjectDetailID(u uuid.UUID) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetProjectDetailID(u)
+func (pdtc *ProjectDetailTranslationCreate) SetProjectDetailID(s string) *ProjectDetailTranslationCreate {
+	pdtc.mutation.SetProjectDetailID(s)
 	return pdtc
 }
 
 // SetLanguageCode sets the "language_code" field.
 func (pdtc *ProjectDetailTranslationCreate) SetLanguageCode(s string) *ProjectDetailTranslationCreate {
 	pdtc.mutation.SetLanguageCode(s)
-	return pdtc
-}
-
-// SetDetailedDescription sets the "detailed_description" field.
-func (pdtc *ProjectDetailTranslationCreate) SetDetailedDescription(s string) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetDetailedDescription(s)
-	return pdtc
-}
-
-// SetNillableDetailedDescription sets the "detailed_description" field if the given value is not nil.
-func (pdtc *ProjectDetailTranslationCreate) SetNillableDetailedDescription(s *string) *ProjectDetailTranslationCreate {
-	if s != nil {
-		pdtc.SetDetailedDescription(*s)
-	}
-	return pdtc
-}
-
-// SetGoals sets the "goals" field.
-func (pdtc *ProjectDetailTranslationCreate) SetGoals(s string) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetGoals(s)
-	return pdtc
-}
-
-// SetNillableGoals sets the "goals" field if the given value is not nil.
-func (pdtc *ProjectDetailTranslationCreate) SetNillableGoals(s *string) *ProjectDetailTranslationCreate {
-	if s != nil {
-		pdtc.SetGoals(*s)
-	}
-	return pdtc
-}
-
-// SetChallenges sets the "challenges" field.
-func (pdtc *ProjectDetailTranslationCreate) SetChallenges(s string) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetChallenges(s)
-	return pdtc
-}
-
-// SetNillableChallenges sets the "challenges" field if the given value is not nil.
-func (pdtc *ProjectDetailTranslationCreate) SetNillableChallenges(s *string) *ProjectDetailTranslationCreate {
-	if s != nil {
-		pdtc.SetChallenges(*s)
-	}
-	return pdtc
-}
-
-// SetSolutions sets the "solutions" field.
-func (pdtc *ProjectDetailTranslationCreate) SetSolutions(s string) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetSolutions(s)
-	return pdtc
-}
-
-// SetNillableSolutions sets the "solutions" field if the given value is not nil.
-func (pdtc *ProjectDetailTranslationCreate) SetNillableSolutions(s *string) *ProjectDetailTranslationCreate {
-	if s != nil {
-		pdtc.SetSolutions(*s)
-	}
-	return pdtc
-}
-
-// SetLessonsLearned sets the "lessons_learned" field.
-func (pdtc *ProjectDetailTranslationCreate) SetLessonsLearned(s string) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetLessonsLearned(s)
-	return pdtc
-}
-
-// SetNillableLessonsLearned sets the "lessons_learned" field if the given value is not nil.
-func (pdtc *ProjectDetailTranslationCreate) SetNillableLessonsLearned(s *string) *ProjectDetailTranslationCreate {
-	if s != nil {
-		pdtc.SetLessonsLearned(*s)
-	}
-	return pdtc
-}
-
-// SetFutureEnhancements sets the "future_enhancements" field.
-func (pdtc *ProjectDetailTranslationCreate) SetFutureEnhancements(s string) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetFutureEnhancements(s)
-	return pdtc
-}
-
-// SetNillableFutureEnhancements sets the "future_enhancements" field if the given value is not nil.
-func (pdtc *ProjectDetailTranslationCreate) SetNillableFutureEnhancements(s *string) *ProjectDetailTranslationCreate {
-	if s != nil {
-		pdtc.SetFutureEnhancements(*s)
-	}
 	return pdtc
 }
 
@@ -134,15 +49,15 @@ func (pdtc *ProjectDetailTranslationCreate) SetNillableCreatedAt(t *time.Time) *
 }
 
 // SetID sets the "id" field.
-func (pdtc *ProjectDetailTranslationCreate) SetID(u uuid.UUID) *ProjectDetailTranslationCreate {
-	pdtc.mutation.SetID(u)
+func (pdtc *ProjectDetailTranslationCreate) SetID(s string) *ProjectDetailTranslationCreate {
+	pdtc.mutation.SetID(s)
 	return pdtc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pdtc *ProjectDetailTranslationCreate) SetNillableID(u *uuid.UUID) *ProjectDetailTranslationCreate {
-	if u != nil {
-		pdtc.SetID(*u)
+func (pdtc *ProjectDetailTranslationCreate) SetNillableID(s *string) *ProjectDetailTranslationCreate {
+	if s != nil {
+		pdtc.SetID(*s)
 	}
 	return pdtc
 }
@@ -245,10 +160,10 @@ func (pdtc *ProjectDetailTranslationCreate) sqlSave(ctx context.Context) (*Proje
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ProjectDetailTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pdtc.mutation.id = &_node.ID
@@ -259,35 +174,11 @@ func (pdtc *ProjectDetailTranslationCreate) sqlSave(ctx context.Context) (*Proje
 func (pdtc *ProjectDetailTranslationCreate) createSpec() (*ProjectDetailTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ProjectDetailTranslation{config: pdtc.config}
-		_spec = sqlgraph.NewCreateSpec(projectdetailtranslation.Table, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(projectdetailtranslation.Table, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString))
 	)
 	if id, ok := pdtc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
-	}
-	if value, ok := pdtc.mutation.DetailedDescription(); ok {
-		_spec.SetField(projectdetailtranslation.FieldDetailedDescription, field.TypeString, value)
-		_node.DetailedDescription = value
-	}
-	if value, ok := pdtc.mutation.Goals(); ok {
-		_spec.SetField(projectdetailtranslation.FieldGoals, field.TypeString, value)
-		_node.Goals = value
-	}
-	if value, ok := pdtc.mutation.Challenges(); ok {
-		_spec.SetField(projectdetailtranslation.FieldChallenges, field.TypeString, value)
-		_node.Challenges = value
-	}
-	if value, ok := pdtc.mutation.Solutions(); ok {
-		_spec.SetField(projectdetailtranslation.FieldSolutions, field.TypeString, value)
-		_node.Solutions = value
-	}
-	if value, ok := pdtc.mutation.LessonsLearned(); ok {
-		_spec.SetField(projectdetailtranslation.FieldLessonsLearned, field.TypeString, value)
-		_node.LessonsLearned = value
-	}
-	if value, ok := pdtc.mutation.FutureEnhancements(); ok {
-		_spec.SetField(projectdetailtranslation.FieldFutureEnhancements, field.TypeString, value)
-		_node.FutureEnhancements = value
+		_spec.ID.Value = id
 	}
 	if value, ok := pdtc.mutation.CreatedAt(); ok {
 		_spec.SetField(projectdetailtranslation.FieldCreatedAt, field.TypeTime, value)
@@ -301,7 +192,7 @@ func (pdtc *ProjectDetailTranslationCreate) createSpec() (*ProjectDetailTranslat
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

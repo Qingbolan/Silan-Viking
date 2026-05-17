@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationAuthorQuery is the builder for querying PublicationAuthor entities.
@@ -107,8 +106,8 @@ func (paq *PublicationAuthorQuery) FirstX(ctx context.Context) *PublicationAutho
 
 // FirstID returns the first PublicationAuthor ID from the query.
 // Returns a *NotFoundError when no PublicationAuthor ID was found.
-func (paq *PublicationAuthorQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (paq *PublicationAuthorQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = paq.Limit(1).IDs(setContextOp(ctx, paq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -120,7 +119,7 @@ func (paq *PublicationAuthorQuery) FirstID(ctx context.Context) (id uuid.UUID, e
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (paq *PublicationAuthorQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (paq *PublicationAuthorQuery) FirstIDX(ctx context.Context) string {
 	id, err := paq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -158,8 +157,8 @@ func (paq *PublicationAuthorQuery) OnlyX(ctx context.Context) *PublicationAuthor
 // OnlyID is like Only, but returns the only PublicationAuthor ID in the query.
 // Returns a *NotSingularError when more than one PublicationAuthor ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (paq *PublicationAuthorQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (paq *PublicationAuthorQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = paq.Limit(2).IDs(setContextOp(ctx, paq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -175,7 +174,7 @@ func (paq *PublicationAuthorQuery) OnlyID(ctx context.Context) (id uuid.UUID, er
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (paq *PublicationAuthorQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (paq *PublicationAuthorQuery) OnlyIDX(ctx context.Context) string {
 	id, err := paq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -203,7 +202,7 @@ func (paq *PublicationAuthorQuery) AllX(ctx context.Context) []*PublicationAutho
 }
 
 // IDs executes the query and returns a list of PublicationAuthor IDs.
-func (paq *PublicationAuthorQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (paq *PublicationAuthorQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if paq.ctx.Unique == nil && paq.path != nil {
 		paq.Unique(true)
 	}
@@ -215,7 +214,7 @@ func (paq *PublicationAuthorQuery) IDs(ctx context.Context) (ids []uuid.UUID, er
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (paq *PublicationAuthorQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (paq *PublicationAuthorQuery) IDsX(ctx context.Context) []string {
 	ids, err := paq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -299,7 +298,7 @@ func (paq *PublicationAuthorQuery) WithPublication(opts ...func(*PublicationQuer
 // Example:
 //
 //	var v []struct {
-//		PublicationID uuid.UUID `json:"publication_id,omitempty"`
+//		PublicationID string `json:"publication_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +321,7 @@ func (paq *PublicationAuthorQuery) GroupBy(field string, fields ...string) *Publ
 // Example:
 //
 //	var v []struct {
-//		PublicationID uuid.UUID `json:"publication_id,omitempty"`
+//		PublicationID string `json:"publication_id,omitempty"`
 //	}
 //
 //	client.PublicationAuthor.Query().
@@ -403,8 +402,8 @@ func (paq *PublicationAuthorQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 }
 
 func (paq *PublicationAuthorQuery) loadPublication(ctx context.Context, query *PublicationQuery, nodes []*PublicationAuthor, init func(*PublicationAuthor), assign func(*PublicationAuthor, *Publication)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*PublicationAuthor)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*PublicationAuthor)
 	for i := range nodes {
 		fk := nodes[i].PublicationID
 		if _, ok := nodeids[fk]; !ok {
@@ -442,7 +441,7 @@ func (paq *PublicationAuthorQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (paq *PublicationAuthorQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(publicationauthor.Table, publicationauthor.Columns, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(publicationauthor.Table, publicationauthor.Columns, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString))
 	_spec.From = paq.sql
 	if unique := paq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

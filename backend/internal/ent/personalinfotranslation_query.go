@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PersonalInfoTranslationQuery is the builder for querying PersonalInfoTranslation entities.
@@ -131,8 +130,8 @@ func (pitq *PersonalInfoTranslationQuery) FirstX(ctx context.Context) *PersonalI
 
 // FirstID returns the first PersonalInfoTranslation ID from the query.
 // Returns a *NotFoundError when no PersonalInfoTranslation ID was found.
-func (pitq *PersonalInfoTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pitq *PersonalInfoTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pitq.Limit(1).IDs(setContextOp(ctx, pitq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (pitq *PersonalInfoTranslationQuery) FirstID(ctx context.Context) (id uuid.
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pitq *PersonalInfoTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (pitq *PersonalInfoTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := pitq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (pitq *PersonalInfoTranslationQuery) OnlyX(ctx context.Context) *PersonalIn
 // OnlyID is like Only, but returns the only PersonalInfoTranslation ID in the query.
 // Returns a *NotSingularError when more than one PersonalInfoTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pitq *PersonalInfoTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pitq *PersonalInfoTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pitq.Limit(2).IDs(setContextOp(ctx, pitq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (pitq *PersonalInfoTranslationQuery) OnlyID(ctx context.Context) (id uuid.U
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pitq *PersonalInfoTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (pitq *PersonalInfoTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := pitq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (pitq *PersonalInfoTranslationQuery) AllX(ctx context.Context) []*PersonalI
 }
 
 // IDs executes the query and returns a list of PersonalInfoTranslation IDs.
-func (pitq *PersonalInfoTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (pitq *PersonalInfoTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if pitq.ctx.Unique == nil && pitq.path != nil {
 		pitq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (pitq *PersonalInfoTranslationQuery) IDs(ctx context.Context) (ids []uuid.U
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pitq *PersonalInfoTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (pitq *PersonalInfoTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := pitq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (pitq *PersonalInfoTranslationQuery) WithLanguage(opts ...func(*LanguageQue
 // Example:
 //
 //	var v []struct {
-//		PersonalInfoID uuid.UUID `json:"personal_info_id,omitempty"`
+//		PersonalInfoID string `json:"personal_info_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (pitq *PersonalInfoTranslationQuery) GroupBy(field string, fields ...string
 // Example:
 //
 //	var v []struct {
-//		PersonalInfoID uuid.UUID `json:"personal_info_id,omitempty"`
+//		PersonalInfoID string `json:"personal_info_id,omitempty"`
 //	}
 //
 //	client.PersonalInfoTranslation.Query().
@@ -446,8 +445,8 @@ func (pitq *PersonalInfoTranslationQuery) sqlAll(ctx context.Context, hooks ...q
 }
 
 func (pitq *PersonalInfoTranslationQuery) loadPersonalInfo(ctx context.Context, query *PersonalInfoQuery, nodes []*PersonalInfoTranslation, init func(*PersonalInfoTranslation), assign func(*PersonalInfoTranslation, *PersonalInfo)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*PersonalInfoTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*PersonalInfoTranslation)
 	for i := range nodes {
 		fk := nodes[i].PersonalInfoID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (pitq *PersonalInfoTranslationQuery) sqlCount(ctx context.Context) (int, er
 }
 
 func (pitq *PersonalInfoTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(personalinfotranslation.Table, personalinfotranslation.Columns, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(personalinfotranslation.Table, personalinfotranslation.Columns, sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString))
 	_spec.From = pitq.sql
 	if unique := pitq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

@@ -6,10 +6,10 @@ import (
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectlike"
+	"silan-backend/internal/logic/analytics"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -29,11 +29,7 @@ func NewLikeProjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeP
 }
 
 func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *types.LikeProjectResponse, err error) {
-	// Parse project UUID
-	projectID, err := uuid.Parse(req.ProjectID)
-	if err != nil {
-		return nil, err
-	}
+	projectID := req.ProjectID
 
 	// Get client IP and user agent from context if available
 	clientIP := req.ClientIP
@@ -99,6 +95,20 @@ func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *typ
 		}
 
 		_, err = builder.Save(l.ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		err = analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
+			EntityType:     "project",
+			EntityID:       projectID,
+			Kind:           "like",
+			UserIdentityID: req.UserIdentityId,
+			Fingerprint:    req.Fingerprint,
+			IPAddress:      clientIP,
+			UserAgent:      userAgent,
+			Referrer:       req.Referrer,
+		})
 		if err != nil {
 			return nil, err
 		}

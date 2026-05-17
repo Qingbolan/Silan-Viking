@@ -104,6 +104,22 @@ silan frontend install --dev
 
 - `silan status` - Show project status
 - `silan help [topic]` - Get help
+- `silan skill install` - Install the bundled Claude Code skill for AI-assisted content management
+- `silan skill status` - Show installed skill state
+
+### AI-Assisted Content Management
+
+The package bundles a [Claude Code](https://claude.com/claude-code) skill (`silan-blog`)
+that teaches AI assistants how to create, edit, and sync your website content.
+Install it with a single command after `pip install`:
+
+```bash
+silan skill install            # installs into ~/.claude/skills
+silan skill install --project  # or into ./.claude/skills (shared via the repo)
+```
+
+Once installed, ask Claude Code things like "add a new blog post" or "sync my
+content to the database" and it will follow the correct `silan` workflow.
 
 ## Configuration
 

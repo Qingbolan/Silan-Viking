@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaDetailTranslationUpdate is the builder for updating IdeaDetailTranslation entities.
@@ -31,15 +30,15 @@ func (idtu *IdeaDetailTranslationUpdate) Where(ps ...predicate.IdeaDetailTransla
 }
 
 // SetIdeaDetailID sets the "idea_detail_id" field.
-func (idtu *IdeaDetailTranslationUpdate) SetIdeaDetailID(u uuid.UUID) *IdeaDetailTranslationUpdate {
-	idtu.mutation.SetIdeaDetailID(u)
+func (idtu *IdeaDetailTranslationUpdate) SetIdeaDetailID(s string) *IdeaDetailTranslationUpdate {
+	idtu.mutation.SetIdeaDetailID(s)
 	return idtu
 }
 
 // SetNillableIdeaDetailID sets the "idea_detail_id" field if the given value is not nil.
-func (idtu *IdeaDetailTranslationUpdate) SetNillableIdeaDetailID(u *uuid.UUID) *IdeaDetailTranslationUpdate {
-	if u != nil {
-		idtu.SetIdeaDetailID(*u)
+func (idtu *IdeaDetailTranslationUpdate) SetNillableIdeaDetailID(s *string) *IdeaDetailTranslationUpdate {
+	if s != nil {
+		idtu.SetIdeaDetailID(*s)
 	}
 	return idtu
 }
@@ -55,86 +54,6 @@ func (idtu *IdeaDetailTranslationUpdate) SetNillableLanguageCode(s *string) *Ide
 	if s != nil {
 		idtu.SetLanguageCode(*s)
 	}
-	return idtu
-}
-
-// SetProgress sets the "progress" field.
-func (idtu *IdeaDetailTranslationUpdate) SetProgress(s string) *IdeaDetailTranslationUpdate {
-	idtu.mutation.SetProgress(s)
-	return idtu
-}
-
-// SetNillableProgress sets the "progress" field if the given value is not nil.
-func (idtu *IdeaDetailTranslationUpdate) SetNillableProgress(s *string) *IdeaDetailTranslationUpdate {
-	if s != nil {
-		idtu.SetProgress(*s)
-	}
-	return idtu
-}
-
-// ClearProgress clears the value of the "progress" field.
-func (idtu *IdeaDetailTranslationUpdate) ClearProgress() *IdeaDetailTranslationUpdate {
-	idtu.mutation.ClearProgress()
-	return idtu
-}
-
-// SetResults sets the "results" field.
-func (idtu *IdeaDetailTranslationUpdate) SetResults(s string) *IdeaDetailTranslationUpdate {
-	idtu.mutation.SetResults(s)
-	return idtu
-}
-
-// SetNillableResults sets the "results" field if the given value is not nil.
-func (idtu *IdeaDetailTranslationUpdate) SetNillableResults(s *string) *IdeaDetailTranslationUpdate {
-	if s != nil {
-		idtu.SetResults(*s)
-	}
-	return idtu
-}
-
-// ClearResults clears the value of the "results" field.
-func (idtu *IdeaDetailTranslationUpdate) ClearResults() *IdeaDetailTranslationUpdate {
-	idtu.mutation.ClearResults()
-	return idtu
-}
-
-// SetReferences sets the "references" field.
-func (idtu *IdeaDetailTranslationUpdate) SetReferences(s string) *IdeaDetailTranslationUpdate {
-	idtu.mutation.SetReferences(s)
-	return idtu
-}
-
-// SetNillableReferences sets the "references" field if the given value is not nil.
-func (idtu *IdeaDetailTranslationUpdate) SetNillableReferences(s *string) *IdeaDetailTranslationUpdate {
-	if s != nil {
-		idtu.SetReferences(*s)
-	}
-	return idtu
-}
-
-// ClearReferences clears the value of the "references" field.
-func (idtu *IdeaDetailTranslationUpdate) ClearReferences() *IdeaDetailTranslationUpdate {
-	idtu.mutation.ClearReferences()
-	return idtu
-}
-
-// SetRequiredResources sets the "required_resources" field.
-func (idtu *IdeaDetailTranslationUpdate) SetRequiredResources(s string) *IdeaDetailTranslationUpdate {
-	idtu.mutation.SetRequiredResources(s)
-	return idtu
-}
-
-// SetNillableRequiredResources sets the "required_resources" field if the given value is not nil.
-func (idtu *IdeaDetailTranslationUpdate) SetNillableRequiredResources(s *string) *IdeaDetailTranslationUpdate {
-	if s != nil {
-		idtu.SetRequiredResources(*s)
-	}
-	return idtu
-}
-
-// ClearRequiredResources clears the value of the "required_resources" field.
-func (idtu *IdeaDetailTranslationUpdate) ClearRequiredResources() *IdeaDetailTranslationUpdate {
-	idtu.mutation.ClearRequiredResources()
 	return idtu
 }
 
@@ -218,37 +137,13 @@ func (idtu *IdeaDetailTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 	if err := idtu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideadetailtranslation.Table, ideadetailtranslation.Columns, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideadetailtranslation.Table, ideadetailtranslation.Columns, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString))
 	if ps := idtu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := idtu.mutation.Progress(); ok {
-		_spec.SetField(ideadetailtranslation.FieldProgress, field.TypeString, value)
-	}
-	if idtu.mutation.ProgressCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldProgress, field.TypeString)
-	}
-	if value, ok := idtu.mutation.Results(); ok {
-		_spec.SetField(ideadetailtranslation.FieldResults, field.TypeString, value)
-	}
-	if idtu.mutation.ResultsCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldResults, field.TypeString)
-	}
-	if value, ok := idtu.mutation.References(); ok {
-		_spec.SetField(ideadetailtranslation.FieldReferences, field.TypeString, value)
-	}
-	if idtu.mutation.ReferencesCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldReferences, field.TypeString)
-	}
-	if value, ok := idtu.mutation.RequiredResources(); ok {
-		_spec.SetField(ideadetailtranslation.FieldRequiredResources, field.TypeString, value)
-	}
-	if idtu.mutation.RequiredResourcesCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldRequiredResources, field.TypeString)
 	}
 	if idtu.mutation.IdeaDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -258,7 +153,7 @@ func (idtu *IdeaDetailTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{ideadetailtranslation.IdeaDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -271,7 +166,7 @@ func (idtu *IdeaDetailTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{ideadetailtranslation.IdeaDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -329,15 +224,15 @@ type IdeaDetailTranslationUpdateOne struct {
 }
 
 // SetIdeaDetailID sets the "idea_detail_id" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetIdeaDetailID(u uuid.UUID) *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.SetIdeaDetailID(u)
+func (idtuo *IdeaDetailTranslationUpdateOne) SetIdeaDetailID(s string) *IdeaDetailTranslationUpdateOne {
+	idtuo.mutation.SetIdeaDetailID(s)
 	return idtuo
 }
 
 // SetNillableIdeaDetailID sets the "idea_detail_id" field if the given value is not nil.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetNillableIdeaDetailID(u *uuid.UUID) *IdeaDetailTranslationUpdateOne {
-	if u != nil {
-		idtuo.SetIdeaDetailID(*u)
+func (idtuo *IdeaDetailTranslationUpdateOne) SetNillableIdeaDetailID(s *string) *IdeaDetailTranslationUpdateOne {
+	if s != nil {
+		idtuo.SetIdeaDetailID(*s)
 	}
 	return idtuo
 }
@@ -353,86 +248,6 @@ func (idtuo *IdeaDetailTranslationUpdateOne) SetNillableLanguageCode(s *string) 
 	if s != nil {
 		idtuo.SetLanguageCode(*s)
 	}
-	return idtuo
-}
-
-// SetProgress sets the "progress" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetProgress(s string) *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.SetProgress(s)
-	return idtuo
-}
-
-// SetNillableProgress sets the "progress" field if the given value is not nil.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetNillableProgress(s *string) *IdeaDetailTranslationUpdateOne {
-	if s != nil {
-		idtuo.SetProgress(*s)
-	}
-	return idtuo
-}
-
-// ClearProgress clears the value of the "progress" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) ClearProgress() *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.ClearProgress()
-	return idtuo
-}
-
-// SetResults sets the "results" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetResults(s string) *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.SetResults(s)
-	return idtuo
-}
-
-// SetNillableResults sets the "results" field if the given value is not nil.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetNillableResults(s *string) *IdeaDetailTranslationUpdateOne {
-	if s != nil {
-		idtuo.SetResults(*s)
-	}
-	return idtuo
-}
-
-// ClearResults clears the value of the "results" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) ClearResults() *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.ClearResults()
-	return idtuo
-}
-
-// SetReferences sets the "references" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetReferences(s string) *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.SetReferences(s)
-	return idtuo
-}
-
-// SetNillableReferences sets the "references" field if the given value is not nil.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetNillableReferences(s *string) *IdeaDetailTranslationUpdateOne {
-	if s != nil {
-		idtuo.SetReferences(*s)
-	}
-	return idtuo
-}
-
-// ClearReferences clears the value of the "references" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) ClearReferences() *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.ClearReferences()
-	return idtuo
-}
-
-// SetRequiredResources sets the "required_resources" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetRequiredResources(s string) *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.SetRequiredResources(s)
-	return idtuo
-}
-
-// SetNillableRequiredResources sets the "required_resources" field if the given value is not nil.
-func (idtuo *IdeaDetailTranslationUpdateOne) SetNillableRequiredResources(s *string) *IdeaDetailTranslationUpdateOne {
-	if s != nil {
-		idtuo.SetRequiredResources(*s)
-	}
-	return idtuo
-}
-
-// ClearRequiredResources clears the value of the "required_resources" field.
-func (idtuo *IdeaDetailTranslationUpdateOne) ClearRequiredResources() *IdeaDetailTranslationUpdateOne {
-	idtuo.mutation.ClearRequiredResources()
 	return idtuo
 }
 
@@ -529,7 +344,7 @@ func (idtuo *IdeaDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 	if err := idtuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideadetailtranslation.Table, ideadetailtranslation.Columns, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideadetailtranslation.Table, ideadetailtranslation.Columns, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString))
 	id, ok := idtuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "IdeaDetailTranslation.id" for update`)}
@@ -554,30 +369,6 @@ func (idtuo *IdeaDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 			}
 		}
 	}
-	if value, ok := idtuo.mutation.Progress(); ok {
-		_spec.SetField(ideadetailtranslation.FieldProgress, field.TypeString, value)
-	}
-	if idtuo.mutation.ProgressCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldProgress, field.TypeString)
-	}
-	if value, ok := idtuo.mutation.Results(); ok {
-		_spec.SetField(ideadetailtranslation.FieldResults, field.TypeString, value)
-	}
-	if idtuo.mutation.ResultsCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldResults, field.TypeString)
-	}
-	if value, ok := idtuo.mutation.References(); ok {
-		_spec.SetField(ideadetailtranslation.FieldReferences, field.TypeString, value)
-	}
-	if idtuo.mutation.ReferencesCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldReferences, field.TypeString)
-	}
-	if value, ok := idtuo.mutation.RequiredResources(); ok {
-		_spec.SetField(ideadetailtranslation.FieldRequiredResources, field.TypeString, value)
-	}
-	if idtuo.mutation.RequiredResourcesCleared() {
-		_spec.ClearField(ideadetailtranslation.FieldRequiredResources, field.TypeString)
-	}
 	if idtuo.mutation.IdeaDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -586,7 +377,7 @@ func (idtuo *IdeaDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{ideadetailtranslation.IdeaDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -599,7 +390,7 @@ func (idtuo *IdeaDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{ideadetailtranslation.IdeaDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

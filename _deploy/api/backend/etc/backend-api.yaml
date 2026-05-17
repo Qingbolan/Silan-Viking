@@ -1,0 +1,12 @@
+Name: backend-api
+Host: 0.0.0.0
+Port: 8888
+Database:
+  driver: sqlite3
+  source: ../../api-test-portfolio/portfolio.db
+  host: ""
+  port: ""
+  user: ""
+  password: ""
+  name: ""
+  ssl_mode: ""

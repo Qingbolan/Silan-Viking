@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // RecentUpdateUpdate is the builder for updating RecentUpdate entities.
@@ -33,29 +32,77 @@ func (ruu *RecentUpdateUpdate) Where(ps ...predicate.RecentUpdate) *RecentUpdate
 }
 
 // SetUserID sets the "user_id" field.
-func (ruu *RecentUpdateUpdate) SetUserID(u uuid.UUID) *RecentUpdateUpdate {
-	ruu.mutation.SetUserID(u)
+func (ruu *RecentUpdateUpdate) SetUserID(s string) *RecentUpdateUpdate {
+	ruu.mutation.SetUserID(s)
 	return ruu
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (ruu *RecentUpdateUpdate) SetNillableUserID(u *uuid.UUID) *RecentUpdateUpdate {
-	if u != nil {
-		ruu.SetUserID(*u)
+func (ruu *RecentUpdateUpdate) SetNillableUserID(s *string) *RecentUpdateUpdate {
+	if s != nil {
+		ruu.SetUserID(*s)
 	}
 	return ruu
 }
 
-// SetType sets the "type" field.
-func (ruu *RecentUpdateUpdate) SetType(r recentupdate.Type) *RecentUpdateUpdate {
-	ruu.mutation.SetType(r)
+// ClearUserID clears the value of the "user_id" field.
+func (ruu *RecentUpdateUpdate) ClearUserID() *RecentUpdateUpdate {
+	ruu.mutation.ClearUserID()
 	return ruu
 }
 
-// SetNillableType sets the "type" field if the given value is not nil.
-func (ruu *RecentUpdateUpdate) SetNillableType(r *recentupdate.Type) *RecentUpdateUpdate {
+// SetSlug sets the "slug" field.
+func (ruu *RecentUpdateUpdate) SetSlug(s string) *RecentUpdateUpdate {
+	ruu.mutation.SetSlug(s)
+	return ruu
+}
+
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableSlug(s *string) *RecentUpdateUpdate {
+	if s != nil {
+		ruu.SetSlug(*s)
+	}
+	return ruu
+}
+
+// SetSubjectKind sets the "subject_kind" field.
+func (ruu *RecentUpdateUpdate) SetSubjectKind(rk recentupdate.SubjectKind) *RecentUpdateUpdate {
+	ruu.mutation.SetSubjectKind(rk)
+	return ruu
+}
+
+// SetNillableSubjectKind sets the "subject_kind" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableSubjectKind(rk *recentupdate.SubjectKind) *RecentUpdateUpdate {
+	if rk != nil {
+		ruu.SetSubjectKind(*rk)
+	}
+	return ruu
+}
+
+// SetUpdateType sets the "update_type" field.
+func (ruu *RecentUpdateUpdate) SetUpdateType(rt recentupdate.UpdateType) *RecentUpdateUpdate {
+	ruu.mutation.SetUpdateType(rt)
+	return ruu
+}
+
+// SetNillableUpdateType sets the "update_type" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableUpdateType(rt *recentupdate.UpdateType) *RecentUpdateUpdate {
+	if rt != nil {
+		ruu.SetUpdateType(*rt)
+	}
+	return ruu
+}
+
+// SetVisibility sets the "visibility" field.
+func (ruu *RecentUpdateUpdate) SetVisibility(r recentupdate.Visibility) *RecentUpdateUpdate {
+	ruu.mutation.SetVisibility(r)
+	return ruu
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillableVisibility(r *recentupdate.Visibility) *RecentUpdateUpdate {
 	if r != nil {
-		ruu.SetType(*r)
+		ruu.SetVisibility(*r)
 	}
 	return ruu
 }
@@ -74,6 +121,12 @@ func (ruu *RecentUpdateUpdate) SetNillableTitle(s *string) *RecentUpdateUpdate {
 	return ruu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (ruu *RecentUpdateUpdate) ClearTitle() *RecentUpdateUpdate {
+	ruu.mutation.ClearTitle()
+	return ruu
+}
+
 // SetDescription sets the "description" field.
 func (ruu *RecentUpdateUpdate) SetDescription(s string) *RecentUpdateUpdate {
 	ruu.mutation.SetDescription(s)
@@ -85,6 +138,12 @@ func (ruu *RecentUpdateUpdate) SetNillableDescription(s *string) *RecentUpdateUp
 	if s != nil {
 		ruu.SetDescription(*s)
 	}
+	return ruu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (ruu *RecentUpdateUpdate) ClearDescription() *RecentUpdateUpdate {
+	ruu.mutation.ClearDescription()
 	return ruu
 }
 
@@ -381,20 +440,26 @@ func (ruu *RecentUpdateUpdate) SetUpdatedAt(t time.Time) *RecentUpdateUpdate {
 	return ruu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (ruu *RecentUpdateUpdate) ClearUpdatedAt() *RecentUpdateUpdate {
+	ruu.mutation.ClearUpdatedAt()
+	return ruu
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (ruu *RecentUpdateUpdate) SetUser(u *User) *RecentUpdateUpdate {
 	return ruu.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by IDs.
-func (ruu *RecentUpdateUpdate) AddTranslationIDs(ids ...uuid.UUID) *RecentUpdateUpdate {
+func (ruu *RecentUpdateUpdate) AddTranslationIDs(ids ...string) *RecentUpdateUpdate {
 	ruu.mutation.AddTranslationIDs(ids...)
 	return ruu
 }
 
 // AddTranslations adds the "translations" edges to the RecentUpdateTranslation entity.
 func (ruu *RecentUpdateUpdate) AddTranslations(r ...*RecentUpdateTranslation) *RecentUpdateUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -419,14 +484,14 @@ func (ruu *RecentUpdateUpdate) ClearTranslations() *RecentUpdateUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to RecentUpdateTranslation entities by IDs.
-func (ruu *RecentUpdateUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *RecentUpdateUpdate {
+func (ruu *RecentUpdateUpdate) RemoveTranslationIDs(ids ...string) *RecentUpdateUpdate {
 	ruu.mutation.RemoveTranslationIDs(ids...)
 	return ruu
 }
 
 // RemoveTranslations removes "translations" edges to RecentUpdateTranslation entities.
 func (ruu *RecentUpdateUpdate) RemoveTranslations(r ...*RecentUpdateTranslation) *RecentUpdateUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -463,7 +528,7 @@ func (ruu *RecentUpdateUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ruu *RecentUpdateUpdate) defaults() {
-	if _, ok := ruu.mutation.UpdatedAt(); !ok {
+	if _, ok := ruu.mutation.UpdatedAt(); !ok && !ruu.mutation.UpdatedAtCleared() {
 		v := recentupdate.UpdateDefaultUpdatedAt()
 		ruu.mutation.SetUpdatedAt(v)
 	}
@@ -471,19 +536,29 @@ func (ruu *RecentUpdateUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruu *RecentUpdateUpdate) check() error {
-	if v, ok := ruu.mutation.GetType(); ok {
-		if err := recentupdate.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.type": %w`, err)}
+	if v, ok := ruu.mutation.Slug(); ok {
+		if err := recentupdate.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.slug": %w`, err)}
+		}
+	}
+	if v, ok := ruu.mutation.SubjectKind(); ok {
+		if err := recentupdate.SubjectKindValidator(v); err != nil {
+			return &ValidationError{Name: "subject_kind", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.subject_kind": %w`, err)}
+		}
+	}
+	if v, ok := ruu.mutation.UpdateType(); ok {
+		if err := recentupdate.UpdateTypeValidator(v); err != nil {
+			return &ValidationError{Name: "update_type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.update_type": %w`, err)}
+		}
+	}
+	if v, ok := ruu.mutation.Visibility(); ok {
+		if err := recentupdate.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.visibility": %w`, err)}
 		}
 	}
 	if v, ok := ruu.mutation.Title(); ok {
 		if err := recentupdate.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.title": %w`, err)}
-		}
-	}
-	if v, ok := ruu.mutation.Description(); ok {
-		if err := recentupdate.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.description": %w`, err)}
 		}
 	}
 	if v, ok := ruu.mutation.Status(); ok {
@@ -531,9 +606,6 @@ func (ruu *RecentUpdateUpdate) check() error {
 			return &ValidationError{Name: "external_url", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.external_url": %w`, err)}
 		}
 	}
-	if ruu.mutation.UserCleared() && len(ruu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "RecentUpdate.user"`)
-	}
 	return nil
 }
 
@@ -541,7 +613,7 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := ruu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(recentupdate.Table, recentupdate.Columns, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(recentupdate.Table, recentupdate.Columns, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString))
 	if ps := ruu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -549,14 +621,29 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ruu.mutation.GetType(); ok {
-		_spec.SetField(recentupdate.FieldType, field.TypeEnum, value)
+	if value, ok := ruu.mutation.Slug(); ok {
+		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := ruu.mutation.SubjectKind(); ok {
+		_spec.SetField(recentupdate.FieldSubjectKind, field.TypeEnum, value)
+	}
+	if value, ok := ruu.mutation.UpdateType(); ok {
+		_spec.SetField(recentupdate.FieldUpdateType, field.TypeEnum, value)
+	}
+	if value, ok := ruu.mutation.Visibility(); ok {
+		_spec.SetField(recentupdate.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := ruu.mutation.Title(); ok {
 		_spec.SetField(recentupdate.FieldTitle, field.TypeString, value)
 	}
+	if ruu.mutation.TitleCleared() {
+		_spec.ClearField(recentupdate.FieldTitle, field.TypeString)
+	}
 	if value, ok := ruu.mutation.Description(); ok {
 		_spec.SetField(recentupdate.FieldDescription, field.TypeString, value)
+	}
+	if ruu.mutation.DescriptionCleared() {
+		_spec.ClearField(recentupdate.FieldDescription, field.TypeString)
 	}
 	if value, ok := ruu.mutation.Date(); ok {
 		_spec.SetField(recentupdate.FieldDate, field.TypeTime, value)
@@ -665,8 +752,14 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ruu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(recentupdate.FieldSortOrder, field.TypeInt, value)
 	}
+	if ruu.mutation.CreatedAtCleared() {
+		_spec.ClearField(recentupdate.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := ruu.mutation.UpdatedAt(); ok {
 		_spec.SetField(recentupdate.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ruu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(recentupdate.FieldUpdatedAt, field.TypeTime)
 	}
 	if ruu.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -676,7 +769,7 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{recentupdate.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -689,7 +782,7 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{recentupdate.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -705,7 +798,7 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{recentupdate.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -718,7 +811,7 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{recentupdate.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -734,7 +827,7 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{recentupdate.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -763,29 +856,77 @@ type RecentUpdateUpdateOne struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (ruuo *RecentUpdateUpdateOne) SetUserID(u uuid.UUID) *RecentUpdateUpdateOne {
-	ruuo.mutation.SetUserID(u)
+func (ruuo *RecentUpdateUpdateOne) SetUserID(s string) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetUserID(s)
 	return ruuo
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (ruuo *RecentUpdateUpdateOne) SetNillableUserID(u *uuid.UUID) *RecentUpdateUpdateOne {
-	if u != nil {
-		ruuo.SetUserID(*u)
+func (ruuo *RecentUpdateUpdateOne) SetNillableUserID(s *string) *RecentUpdateUpdateOne {
+	if s != nil {
+		ruuo.SetUserID(*s)
 	}
 	return ruuo
 }
 
-// SetType sets the "type" field.
-func (ruuo *RecentUpdateUpdateOne) SetType(r recentupdate.Type) *RecentUpdateUpdateOne {
-	ruuo.mutation.SetType(r)
+// ClearUserID clears the value of the "user_id" field.
+func (ruuo *RecentUpdateUpdateOne) ClearUserID() *RecentUpdateUpdateOne {
+	ruuo.mutation.ClearUserID()
 	return ruuo
 }
 
-// SetNillableType sets the "type" field if the given value is not nil.
-func (ruuo *RecentUpdateUpdateOne) SetNillableType(r *recentupdate.Type) *RecentUpdateUpdateOne {
+// SetSlug sets the "slug" field.
+func (ruuo *RecentUpdateUpdateOne) SetSlug(s string) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetSlug(s)
+	return ruuo
+}
+
+// SetNillableSlug sets the "slug" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableSlug(s *string) *RecentUpdateUpdateOne {
+	if s != nil {
+		ruuo.SetSlug(*s)
+	}
+	return ruuo
+}
+
+// SetSubjectKind sets the "subject_kind" field.
+func (ruuo *RecentUpdateUpdateOne) SetSubjectKind(rk recentupdate.SubjectKind) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetSubjectKind(rk)
+	return ruuo
+}
+
+// SetNillableSubjectKind sets the "subject_kind" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableSubjectKind(rk *recentupdate.SubjectKind) *RecentUpdateUpdateOne {
+	if rk != nil {
+		ruuo.SetSubjectKind(*rk)
+	}
+	return ruuo
+}
+
+// SetUpdateType sets the "update_type" field.
+func (ruuo *RecentUpdateUpdateOne) SetUpdateType(rt recentupdate.UpdateType) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetUpdateType(rt)
+	return ruuo
+}
+
+// SetNillableUpdateType sets the "update_type" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableUpdateType(rt *recentupdate.UpdateType) *RecentUpdateUpdateOne {
+	if rt != nil {
+		ruuo.SetUpdateType(*rt)
+	}
+	return ruuo
+}
+
+// SetVisibility sets the "visibility" field.
+func (ruuo *RecentUpdateUpdateOne) SetVisibility(r recentupdate.Visibility) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetVisibility(r)
+	return ruuo
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillableVisibility(r *recentupdate.Visibility) *RecentUpdateUpdateOne {
 	if r != nil {
-		ruuo.SetType(*r)
+		ruuo.SetVisibility(*r)
 	}
 	return ruuo
 }
@@ -804,6 +945,12 @@ func (ruuo *RecentUpdateUpdateOne) SetNillableTitle(s *string) *RecentUpdateUpda
 	return ruuo
 }
 
+// ClearTitle clears the value of the "title" field.
+func (ruuo *RecentUpdateUpdateOne) ClearTitle() *RecentUpdateUpdateOne {
+	ruuo.mutation.ClearTitle()
+	return ruuo
+}
+
 // SetDescription sets the "description" field.
 func (ruuo *RecentUpdateUpdateOne) SetDescription(s string) *RecentUpdateUpdateOne {
 	ruuo.mutation.SetDescription(s)
@@ -815,6 +962,12 @@ func (ruuo *RecentUpdateUpdateOne) SetNillableDescription(s *string) *RecentUpda
 	if s != nil {
 		ruuo.SetDescription(*s)
 	}
+	return ruuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (ruuo *RecentUpdateUpdateOne) ClearDescription() *RecentUpdateUpdateOne {
+	ruuo.mutation.ClearDescription()
 	return ruuo
 }
 
@@ -1111,20 +1264,26 @@ func (ruuo *RecentUpdateUpdateOne) SetUpdatedAt(t time.Time) *RecentUpdateUpdate
 	return ruuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (ruuo *RecentUpdateUpdateOne) ClearUpdatedAt() *RecentUpdateUpdateOne {
+	ruuo.mutation.ClearUpdatedAt()
+	return ruuo
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (ruuo *RecentUpdateUpdateOne) SetUser(u *User) *RecentUpdateUpdateOne {
 	return ruuo.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by IDs.
-func (ruuo *RecentUpdateUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *RecentUpdateUpdateOne {
+func (ruuo *RecentUpdateUpdateOne) AddTranslationIDs(ids ...string) *RecentUpdateUpdateOne {
 	ruuo.mutation.AddTranslationIDs(ids...)
 	return ruuo
 }
 
 // AddTranslations adds the "translations" edges to the RecentUpdateTranslation entity.
 func (ruuo *RecentUpdateUpdateOne) AddTranslations(r ...*RecentUpdateTranslation) *RecentUpdateUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1149,14 +1308,14 @@ func (ruuo *RecentUpdateUpdateOne) ClearTranslations() *RecentUpdateUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to RecentUpdateTranslation entities by IDs.
-func (ruuo *RecentUpdateUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *RecentUpdateUpdateOne {
+func (ruuo *RecentUpdateUpdateOne) RemoveTranslationIDs(ids ...string) *RecentUpdateUpdateOne {
 	ruuo.mutation.RemoveTranslationIDs(ids...)
 	return ruuo
 }
 
 // RemoveTranslations removes "translations" edges to RecentUpdateTranslation entities.
 func (ruuo *RecentUpdateUpdateOne) RemoveTranslations(r ...*RecentUpdateTranslation) *RecentUpdateUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1206,7 +1365,7 @@ func (ruuo *RecentUpdateUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ruuo *RecentUpdateUpdateOne) defaults() {
-	if _, ok := ruuo.mutation.UpdatedAt(); !ok {
+	if _, ok := ruuo.mutation.UpdatedAt(); !ok && !ruuo.mutation.UpdatedAtCleared() {
 		v := recentupdate.UpdateDefaultUpdatedAt()
 		ruuo.mutation.SetUpdatedAt(v)
 	}
@@ -1214,19 +1373,29 @@ func (ruuo *RecentUpdateUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruuo *RecentUpdateUpdateOne) check() error {
-	if v, ok := ruuo.mutation.GetType(); ok {
-		if err := recentupdate.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.type": %w`, err)}
+	if v, ok := ruuo.mutation.Slug(); ok {
+		if err := recentupdate.SlugValidator(v); err != nil {
+			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.slug": %w`, err)}
+		}
+	}
+	if v, ok := ruuo.mutation.SubjectKind(); ok {
+		if err := recentupdate.SubjectKindValidator(v); err != nil {
+			return &ValidationError{Name: "subject_kind", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.subject_kind": %w`, err)}
+		}
+	}
+	if v, ok := ruuo.mutation.UpdateType(); ok {
+		if err := recentupdate.UpdateTypeValidator(v); err != nil {
+			return &ValidationError{Name: "update_type", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.update_type": %w`, err)}
+		}
+	}
+	if v, ok := ruuo.mutation.Visibility(); ok {
+		if err := recentupdate.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.visibility": %w`, err)}
 		}
 	}
 	if v, ok := ruuo.mutation.Title(); ok {
 		if err := recentupdate.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.title": %w`, err)}
-		}
-	}
-	if v, ok := ruuo.mutation.Description(); ok {
-		if err := recentupdate.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.description": %w`, err)}
 		}
 	}
 	if v, ok := ruuo.mutation.Status(); ok {
@@ -1274,9 +1443,6 @@ func (ruuo *RecentUpdateUpdateOne) check() error {
 			return &ValidationError{Name: "external_url", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.external_url": %w`, err)}
 		}
 	}
-	if ruuo.mutation.UserCleared() && len(ruuo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "RecentUpdate.user"`)
-	}
 	return nil
 }
 
@@ -1284,7 +1450,7 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 	if err := ruuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(recentupdate.Table, recentupdate.Columns, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(recentupdate.Table, recentupdate.Columns, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString))
 	id, ok := ruuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "RecentUpdate.id" for update`)}
@@ -1309,14 +1475,29 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			}
 		}
 	}
-	if value, ok := ruuo.mutation.GetType(); ok {
-		_spec.SetField(recentupdate.FieldType, field.TypeEnum, value)
+	if value, ok := ruuo.mutation.Slug(); ok {
+		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
+	}
+	if value, ok := ruuo.mutation.SubjectKind(); ok {
+		_spec.SetField(recentupdate.FieldSubjectKind, field.TypeEnum, value)
+	}
+	if value, ok := ruuo.mutation.UpdateType(); ok {
+		_spec.SetField(recentupdate.FieldUpdateType, field.TypeEnum, value)
+	}
+	if value, ok := ruuo.mutation.Visibility(); ok {
+		_spec.SetField(recentupdate.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := ruuo.mutation.Title(); ok {
 		_spec.SetField(recentupdate.FieldTitle, field.TypeString, value)
 	}
+	if ruuo.mutation.TitleCleared() {
+		_spec.ClearField(recentupdate.FieldTitle, field.TypeString)
+	}
 	if value, ok := ruuo.mutation.Description(); ok {
 		_spec.SetField(recentupdate.FieldDescription, field.TypeString, value)
+	}
+	if ruuo.mutation.DescriptionCleared() {
+		_spec.ClearField(recentupdate.FieldDescription, field.TypeString)
 	}
 	if value, ok := ruuo.mutation.Date(); ok {
 		_spec.SetField(recentupdate.FieldDate, field.TypeTime, value)
@@ -1425,8 +1606,14 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 	if value, ok := ruuo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(recentupdate.FieldSortOrder, field.TypeInt, value)
 	}
+	if ruuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(recentupdate.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := ruuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(recentupdate.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ruuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(recentupdate.FieldUpdatedAt, field.TypeTime)
 	}
 	if ruuo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1436,7 +1623,7 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			Columns: []string{recentupdate.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1449,7 +1636,7 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			Columns: []string{recentupdate.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1465,7 +1652,7 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			Columns: []string{recentupdate.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1478,7 +1665,7 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			Columns: []string{recentupdate.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1494,7 +1681,7 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			Columns: []string{recentupdate.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

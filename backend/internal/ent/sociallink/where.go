@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.SocialLink {
+func ID(id string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.SocialLink {
+func IDEQ(id string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.SocialLink {
+func IDNEQ(id string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.SocialLink {
+func IDIn(ids ...string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.SocialLink {
+func IDNotIn(ids ...string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.SocialLink {
+func IDGT(id string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.SocialLink {
+func IDGTE(id string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.SocialLink {
+func IDLT(id string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.SocialLink {
+func IDLTE(id string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldContainsFold(FieldID, id))
+}
+
 // PersonalInfoID applies equality check predicate on the "personal_info_id" field. It's identical to PersonalInfoIDEQ.
-func PersonalInfoID(v uuid.UUID) predicate.SocialLink {
+func PersonalInfoID(v string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldEQ(FieldPersonalInfoID, v))
 }
 
@@ -92,23 +101,68 @@ func CreatedAt(v time.Time) predicate.SocialLink {
 }
 
 // PersonalInfoIDEQ applies the EQ predicate on the "personal_info_id" field.
-func PersonalInfoIDEQ(v uuid.UUID) predicate.SocialLink {
+func PersonalInfoIDEQ(v string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldEQ(FieldPersonalInfoID, v))
 }
 
 // PersonalInfoIDNEQ applies the NEQ predicate on the "personal_info_id" field.
-func PersonalInfoIDNEQ(v uuid.UUID) predicate.SocialLink {
+func PersonalInfoIDNEQ(v string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldNEQ(FieldPersonalInfoID, v))
 }
 
 // PersonalInfoIDIn applies the In predicate on the "personal_info_id" field.
-func PersonalInfoIDIn(vs ...uuid.UUID) predicate.SocialLink {
+func PersonalInfoIDIn(vs ...string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldIn(FieldPersonalInfoID, vs...))
 }
 
 // PersonalInfoIDNotIn applies the NotIn predicate on the "personal_info_id" field.
-func PersonalInfoIDNotIn(vs ...uuid.UUID) predicate.SocialLink {
+func PersonalInfoIDNotIn(vs ...string) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldNotIn(FieldPersonalInfoID, vs...))
+}
+
+// PersonalInfoIDGT applies the GT predicate on the "personal_info_id" field.
+func PersonalInfoIDGT(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldGT(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDGTE applies the GTE predicate on the "personal_info_id" field.
+func PersonalInfoIDGTE(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldGTE(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDLT applies the LT predicate on the "personal_info_id" field.
+func PersonalInfoIDLT(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldLT(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDLTE applies the LTE predicate on the "personal_info_id" field.
+func PersonalInfoIDLTE(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldLTE(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDContains applies the Contains predicate on the "personal_info_id" field.
+func PersonalInfoIDContains(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldContains(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDHasPrefix applies the HasPrefix predicate on the "personal_info_id" field.
+func PersonalInfoIDHasPrefix(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldHasPrefix(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDHasSuffix applies the HasSuffix predicate on the "personal_info_id" field.
+func PersonalInfoIDHasSuffix(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldHasSuffix(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDEqualFold applies the EqualFold predicate on the "personal_info_id" field.
+func PersonalInfoIDEqualFold(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldEqualFold(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDContainsFold applies the ContainsFold predicate on the "personal_info_id" field.
+func PersonalInfoIDContainsFold(v string) predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldContainsFold(FieldPersonalInfoID, v))
 }
 
 // PlatformEQ applies the EQ predicate on the "platform" field.

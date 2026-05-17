@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationUpdate is the builder for updating Publication entities.
@@ -33,15 +32,15 @@ func (pu *PublicationUpdate) Where(ps ...predicate.Publication) *PublicationUpda
 }
 
 // SetUserID sets the "user_id" field.
-func (pu *PublicationUpdate) SetUserID(u uuid.UUID) *PublicationUpdate {
-	pu.mutation.SetUserID(u)
+func (pu *PublicationUpdate) SetUserID(s string) *PublicationUpdate {
+	pu.mutation.SetUserID(s)
 	return pu
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (pu *PublicationUpdate) SetNillableUserID(u *uuid.UUID) *PublicationUpdate {
-	if u != nil {
-		pu.SetUserID(*u)
+func (pu *PublicationUpdate) SetNillableUserID(s *string) *PublicationUpdate {
+	if s != nil {
+		pu.SetUserID(*s)
 	}
 	return pu
 }
@@ -342,14 +341,14 @@ func (pu *PublicationUpdate) SetUser(u *User) *PublicationUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the PublicationTranslation entity by IDs.
-func (pu *PublicationUpdate) AddTranslationIDs(ids ...uuid.UUID) *PublicationUpdate {
+func (pu *PublicationUpdate) AddTranslationIDs(ids ...string) *PublicationUpdate {
 	pu.mutation.AddTranslationIDs(ids...)
 	return pu
 }
 
 // AddTranslations adds the "translations" edges to the PublicationTranslation entity.
 func (pu *PublicationUpdate) AddTranslations(p ...*PublicationTranslation) *PublicationUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -357,14 +356,14 @@ func (pu *PublicationUpdate) AddTranslations(p ...*PublicationTranslation) *Publ
 }
 
 // AddAuthorIDs adds the "authors" edge to the PublicationAuthor entity by IDs.
-func (pu *PublicationUpdate) AddAuthorIDs(ids ...uuid.UUID) *PublicationUpdate {
+func (pu *PublicationUpdate) AddAuthorIDs(ids ...string) *PublicationUpdate {
 	pu.mutation.AddAuthorIDs(ids...)
 	return pu
 }
 
 // AddAuthors adds the "authors" edges to the PublicationAuthor entity.
 func (pu *PublicationUpdate) AddAuthors(p ...*PublicationAuthor) *PublicationUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -389,14 +388,14 @@ func (pu *PublicationUpdate) ClearTranslations() *PublicationUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to PublicationTranslation entities by IDs.
-func (pu *PublicationUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *PublicationUpdate {
+func (pu *PublicationUpdate) RemoveTranslationIDs(ids ...string) *PublicationUpdate {
 	pu.mutation.RemoveTranslationIDs(ids...)
 	return pu
 }
 
 // RemoveTranslations removes "translations" edges to PublicationTranslation entities.
 func (pu *PublicationUpdate) RemoveTranslations(p ...*PublicationTranslation) *PublicationUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -410,14 +409,14 @@ func (pu *PublicationUpdate) ClearAuthors() *PublicationUpdate {
 }
 
 // RemoveAuthorIDs removes the "authors" edge to PublicationAuthor entities by IDs.
-func (pu *PublicationUpdate) RemoveAuthorIDs(ids ...uuid.UUID) *PublicationUpdate {
+func (pu *PublicationUpdate) RemoveAuthorIDs(ids ...string) *PublicationUpdate {
 	pu.mutation.RemoveAuthorIDs(ids...)
 	return pu
 }
 
 // RemoveAuthors removes "authors" edges to PublicationAuthor entities.
 func (pu *PublicationUpdate) RemoveAuthors(p ...*PublicationAuthor) *PublicationUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -527,7 +526,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := pu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(publication.Table, publication.Columns, sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(publication.Table, publication.Columns, sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -627,7 +626,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -640,7 +639,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -656,7 +655,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -669,7 +668,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -685,7 +684,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -701,7 +700,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -714,7 +713,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -730,7 +729,7 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{publication.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -759,15 +758,15 @@ type PublicationUpdateOne struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (puo *PublicationUpdateOne) SetUserID(u uuid.UUID) *PublicationUpdateOne {
-	puo.mutation.SetUserID(u)
+func (puo *PublicationUpdateOne) SetUserID(s string) *PublicationUpdateOne {
+	puo.mutation.SetUserID(s)
 	return puo
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (puo *PublicationUpdateOne) SetNillableUserID(u *uuid.UUID) *PublicationUpdateOne {
-	if u != nil {
-		puo.SetUserID(*u)
+func (puo *PublicationUpdateOne) SetNillableUserID(s *string) *PublicationUpdateOne {
+	if s != nil {
+		puo.SetUserID(*s)
 	}
 	return puo
 }
@@ -1068,14 +1067,14 @@ func (puo *PublicationUpdateOne) SetUser(u *User) *PublicationUpdateOne {
 }
 
 // AddTranslationIDs adds the "translations" edge to the PublicationTranslation entity by IDs.
-func (puo *PublicationUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *PublicationUpdateOne {
+func (puo *PublicationUpdateOne) AddTranslationIDs(ids ...string) *PublicationUpdateOne {
 	puo.mutation.AddTranslationIDs(ids...)
 	return puo
 }
 
 // AddTranslations adds the "translations" edges to the PublicationTranslation entity.
 func (puo *PublicationUpdateOne) AddTranslations(p ...*PublicationTranslation) *PublicationUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1083,14 +1082,14 @@ func (puo *PublicationUpdateOne) AddTranslations(p ...*PublicationTranslation) *
 }
 
 // AddAuthorIDs adds the "authors" edge to the PublicationAuthor entity by IDs.
-func (puo *PublicationUpdateOne) AddAuthorIDs(ids ...uuid.UUID) *PublicationUpdateOne {
+func (puo *PublicationUpdateOne) AddAuthorIDs(ids ...string) *PublicationUpdateOne {
 	puo.mutation.AddAuthorIDs(ids...)
 	return puo
 }
 
 // AddAuthors adds the "authors" edges to the PublicationAuthor entity.
 func (puo *PublicationUpdateOne) AddAuthors(p ...*PublicationAuthor) *PublicationUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1115,14 +1114,14 @@ func (puo *PublicationUpdateOne) ClearTranslations() *PublicationUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to PublicationTranslation entities by IDs.
-func (puo *PublicationUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *PublicationUpdateOne {
+func (puo *PublicationUpdateOne) RemoveTranslationIDs(ids ...string) *PublicationUpdateOne {
 	puo.mutation.RemoveTranslationIDs(ids...)
 	return puo
 }
 
 // RemoveTranslations removes "translations" edges to PublicationTranslation entities.
 func (puo *PublicationUpdateOne) RemoveTranslations(p ...*PublicationTranslation) *PublicationUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1136,14 +1135,14 @@ func (puo *PublicationUpdateOne) ClearAuthors() *PublicationUpdateOne {
 }
 
 // RemoveAuthorIDs removes the "authors" edge to PublicationAuthor entities by IDs.
-func (puo *PublicationUpdateOne) RemoveAuthorIDs(ids ...uuid.UUID) *PublicationUpdateOne {
+func (puo *PublicationUpdateOne) RemoveAuthorIDs(ids ...string) *PublicationUpdateOne {
 	puo.mutation.RemoveAuthorIDs(ids...)
 	return puo
 }
 
 // RemoveAuthors removes "authors" edges to PublicationAuthor entities.
 func (puo *PublicationUpdateOne) RemoveAuthors(p ...*PublicationAuthor) *PublicationUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1266,7 +1265,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 	if err := puo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(publication.Table, publication.Columns, sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(publication.Table, publication.Columns, sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString))
 	id, ok := puo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Publication.id" for update`)}
@@ -1383,7 +1382,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1396,7 +1395,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1412,7 +1411,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1425,7 +1424,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1441,7 +1440,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1457,7 +1456,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1470,7 +1469,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1486,7 +1485,7 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 			Columns: []string{publication.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

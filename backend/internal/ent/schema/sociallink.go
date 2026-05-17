@@ -26,10 +26,10 @@ func (SocialLink) Annotations() []schema.Annotation {
 // Fields of the SocialLink.
 func (SocialLink) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("personal_info_id", uuid.UUID{}).
+		field.String("personal_info_id").
 			StorageKey("personal_info_id"),
 		field.String("platform").
 			MaxLen(50).

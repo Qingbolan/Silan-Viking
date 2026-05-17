@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // SocialLinkCreate is the builder for creating a SocialLink entity.
@@ -23,8 +22,8 @@ type SocialLinkCreate struct {
 }
 
 // SetPersonalInfoID sets the "personal_info_id" field.
-func (slc *SocialLinkCreate) SetPersonalInfoID(u uuid.UUID) *SocialLinkCreate {
-	slc.mutation.SetPersonalInfoID(u)
+func (slc *SocialLinkCreate) SetPersonalInfoID(s string) *SocialLinkCreate {
+	slc.mutation.SetPersonalInfoID(s)
 	return slc
 }
 
@@ -97,15 +96,15 @@ func (slc *SocialLinkCreate) SetNillableCreatedAt(t *time.Time) *SocialLinkCreat
 }
 
 // SetID sets the "id" field.
-func (slc *SocialLinkCreate) SetID(u uuid.UUID) *SocialLinkCreate {
-	slc.mutation.SetID(u)
+func (slc *SocialLinkCreate) SetID(s string) *SocialLinkCreate {
+	slc.mutation.SetID(s)
 	return slc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (slc *SocialLinkCreate) SetNillableID(u *uuid.UUID) *SocialLinkCreate {
-	if u != nil {
-		slc.SetID(*u)
+func (slc *SocialLinkCreate) SetNillableID(s *string) *SocialLinkCreate {
+	if s != nil {
+		slc.SetID(*s)
 	}
 	return slc
 }
@@ -221,10 +220,10 @@ func (slc *SocialLinkCreate) sqlSave(ctx context.Context) (*SocialLink, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected SocialLink.ID type: %T", _spec.ID.Value)
 		}
 	}
 	slc.mutation.id = &_node.ID
@@ -235,11 +234,11 @@ func (slc *SocialLinkCreate) sqlSave(ctx context.Context) (*SocialLink, error) {
 func (slc *SocialLinkCreate) createSpec() (*SocialLink, *sqlgraph.CreateSpec) {
 	var (
 		_node = &SocialLink{config: slc.config}
-		_spec = sqlgraph.NewCreateSpec(sociallink.Table, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(sociallink.Table, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString))
 	)
 	if id, ok := slc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := slc.mutation.Platform(); ok {
 		_spec.SetField(sociallink.FieldPlatform, field.TypeString, value)
@@ -273,7 +272,7 @@ func (slc *SocialLinkCreate) createSpec() (*SocialLink, *sqlgraph.CreateSpec) {
 			Columns: []string{sociallink.PersonalInfoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

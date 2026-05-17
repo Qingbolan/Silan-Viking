@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogSeriesTranslationUpdate is the builder for updating BlogSeriesTranslation entities.
@@ -31,15 +30,15 @@ func (bstu *BlogSeriesTranslationUpdate) Where(ps ...predicate.BlogSeriesTransla
 }
 
 // SetBlogSeriesID sets the "blog_series_id" field.
-func (bstu *BlogSeriesTranslationUpdate) SetBlogSeriesID(u uuid.UUID) *BlogSeriesTranslationUpdate {
-	bstu.mutation.SetBlogSeriesID(u)
+func (bstu *BlogSeriesTranslationUpdate) SetBlogSeriesID(s string) *BlogSeriesTranslationUpdate {
+	bstu.mutation.SetBlogSeriesID(s)
 	return bstu
 }
 
 // SetNillableBlogSeriesID sets the "blog_series_id" field if the given value is not nil.
-func (bstu *BlogSeriesTranslationUpdate) SetNillableBlogSeriesID(u *uuid.UUID) *BlogSeriesTranslationUpdate {
-	if u != nil {
-		bstu.SetBlogSeriesID(*u)
+func (bstu *BlogSeriesTranslationUpdate) SetNillableBlogSeriesID(s *string) *BlogSeriesTranslationUpdate {
+	if s != nil {
+		bstu.SetBlogSeriesID(*s)
 	}
 	return bstu
 }
@@ -177,7 +176,7 @@ func (bstu *BlogSeriesTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 	if err := bstu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogseriestranslation.Table, blogseriestranslation.Columns, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogseriestranslation.Table, blogseriestranslation.Columns, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString))
 	if ps := bstu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -202,7 +201,7 @@ func (bstu *BlogSeriesTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{blogseriestranslation.BlogSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -215,7 +214,7 @@ func (bstu *BlogSeriesTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{blogseriestranslation.BlogSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -273,15 +272,15 @@ type BlogSeriesTranslationUpdateOne struct {
 }
 
 // SetBlogSeriesID sets the "blog_series_id" field.
-func (bstuo *BlogSeriesTranslationUpdateOne) SetBlogSeriesID(u uuid.UUID) *BlogSeriesTranslationUpdateOne {
-	bstuo.mutation.SetBlogSeriesID(u)
+func (bstuo *BlogSeriesTranslationUpdateOne) SetBlogSeriesID(s string) *BlogSeriesTranslationUpdateOne {
+	bstuo.mutation.SetBlogSeriesID(s)
 	return bstuo
 }
 
 // SetNillableBlogSeriesID sets the "blog_series_id" field if the given value is not nil.
-func (bstuo *BlogSeriesTranslationUpdateOne) SetNillableBlogSeriesID(u *uuid.UUID) *BlogSeriesTranslationUpdateOne {
-	if u != nil {
-		bstuo.SetBlogSeriesID(*u)
+func (bstuo *BlogSeriesTranslationUpdateOne) SetNillableBlogSeriesID(s *string) *BlogSeriesTranslationUpdateOne {
+	if s != nil {
+		bstuo.SetBlogSeriesID(*s)
 	}
 	return bstuo
 }
@@ -432,7 +431,7 @@ func (bstuo *BlogSeriesTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 	if err := bstuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogseriestranslation.Table, blogseriestranslation.Columns, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogseriestranslation.Table, blogseriestranslation.Columns, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString))
 	id, ok := bstuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "BlogSeriesTranslation.id" for update`)}
@@ -474,7 +473,7 @@ func (bstuo *BlogSeriesTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{blogseriestranslation.BlogSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -487,7 +486,7 @@ func (bstuo *BlogSeriesTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{blogseriestranslation.BlogSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

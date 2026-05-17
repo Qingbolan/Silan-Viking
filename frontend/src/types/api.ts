@@ -67,7 +67,10 @@ export interface ExperienceItem {
 export interface RecentUpdate {
   id: string;
   user_id: string;
+  slug: string;
   type: string;
+  update_type: string;
+  visibility: string;
   title: string;
   description: string;
   date: string;

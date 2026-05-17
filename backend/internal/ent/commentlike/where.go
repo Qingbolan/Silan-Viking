@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.CommentLike {
+func ID(id string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.CommentLike {
+func IDEQ(id string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.CommentLike {
+func IDNEQ(id string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.CommentLike {
+func IDIn(ids ...string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.CommentLike {
+func IDNotIn(ids ...string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.CommentLike {
+func IDGT(id string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.CommentLike {
+func IDGTE(id string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.CommentLike {
+func IDLT(id string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.CommentLike {
+func IDLTE(id string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.CommentLike {
+	return predicate.CommentLike(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.CommentLike {
+	return predicate.CommentLike(sql.FieldContainsFold(FieldID, id))
+}
+
 // CommentID applies equality check predicate on the "comment_id" field. It's identical to CommentIDEQ.
-func CommentID(v uuid.UUID) predicate.CommentLike {
+func CommentID(v string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldEQ(FieldCommentID, v))
 }
 
@@ -87,43 +96,68 @@ func UpdatedAt(v time.Time) predicate.CommentLike {
 }
 
 // CommentIDEQ applies the EQ predicate on the "comment_id" field.
-func CommentIDEQ(v uuid.UUID) predicate.CommentLike {
+func CommentIDEQ(v string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldEQ(FieldCommentID, v))
 }
 
 // CommentIDNEQ applies the NEQ predicate on the "comment_id" field.
-func CommentIDNEQ(v uuid.UUID) predicate.CommentLike {
+func CommentIDNEQ(v string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldNEQ(FieldCommentID, v))
 }
 
 // CommentIDIn applies the In predicate on the "comment_id" field.
-func CommentIDIn(vs ...uuid.UUID) predicate.CommentLike {
+func CommentIDIn(vs ...string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldIn(FieldCommentID, vs...))
 }
 
 // CommentIDNotIn applies the NotIn predicate on the "comment_id" field.
-func CommentIDNotIn(vs ...uuid.UUID) predicate.CommentLike {
+func CommentIDNotIn(vs ...string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldNotIn(FieldCommentID, vs...))
 }
 
 // CommentIDGT applies the GT predicate on the "comment_id" field.
-func CommentIDGT(v uuid.UUID) predicate.CommentLike {
+func CommentIDGT(v string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldGT(FieldCommentID, v))
 }
 
 // CommentIDGTE applies the GTE predicate on the "comment_id" field.
-func CommentIDGTE(v uuid.UUID) predicate.CommentLike {
+func CommentIDGTE(v string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldGTE(FieldCommentID, v))
 }
 
 // CommentIDLT applies the LT predicate on the "comment_id" field.
-func CommentIDLT(v uuid.UUID) predicate.CommentLike {
+func CommentIDLT(v string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldLT(FieldCommentID, v))
 }
 
 // CommentIDLTE applies the LTE predicate on the "comment_id" field.
-func CommentIDLTE(v uuid.UUID) predicate.CommentLike {
+func CommentIDLTE(v string) predicate.CommentLike {
 	return predicate.CommentLike(sql.FieldLTE(FieldCommentID, v))
+}
+
+// CommentIDContains applies the Contains predicate on the "comment_id" field.
+func CommentIDContains(v string) predicate.CommentLike {
+	return predicate.CommentLike(sql.FieldContains(FieldCommentID, v))
+}
+
+// CommentIDHasPrefix applies the HasPrefix predicate on the "comment_id" field.
+func CommentIDHasPrefix(v string) predicate.CommentLike {
+	return predicate.CommentLike(sql.FieldHasPrefix(FieldCommentID, v))
+}
+
+// CommentIDHasSuffix applies the HasSuffix predicate on the "comment_id" field.
+func CommentIDHasSuffix(v string) predicate.CommentLike {
+	return predicate.CommentLike(sql.FieldHasSuffix(FieldCommentID, v))
+}
+
+// CommentIDEqualFold applies the EqualFold predicate on the "comment_id" field.
+func CommentIDEqualFold(v string) predicate.CommentLike {
+	return predicate.CommentLike(sql.FieldEqualFold(FieldCommentID, v))
+}
+
+// CommentIDContainsFold applies the ContainsFold predicate on the "comment_id" field.
+func CommentIDContainsFold(v string) predicate.CommentLike {
+	return predicate.CommentLike(sql.FieldContainsFold(FieldCommentID, v))
 }
 
 // UserIdentityIDEQ applies the EQ predicate on the "user_identity_id" field.

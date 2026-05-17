@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectTranslationCreate is the builder for creating a ResearchProjectTranslation entity.
@@ -24,8 +23,8 @@ type ResearchProjectTranslationCreate struct {
 }
 
 // SetResearchProjectID sets the "research_project_id" field.
-func (rptc *ResearchProjectTranslationCreate) SetResearchProjectID(u uuid.UUID) *ResearchProjectTranslationCreate {
-	rptc.mutation.SetResearchProjectID(u)
+func (rptc *ResearchProjectTranslationCreate) SetResearchProjectID(s string) *ResearchProjectTranslationCreate {
+	rptc.mutation.SetResearchProjectID(s)
 	return rptc
 }
 
@@ -98,15 +97,15 @@ func (rptc *ResearchProjectTranslationCreate) SetNillableCreatedAt(t *time.Time)
 }
 
 // SetID sets the "id" field.
-func (rptc *ResearchProjectTranslationCreate) SetID(u uuid.UUID) *ResearchProjectTranslationCreate {
-	rptc.mutation.SetID(u)
+func (rptc *ResearchProjectTranslationCreate) SetID(s string) *ResearchProjectTranslationCreate {
+	rptc.mutation.SetID(s)
 	return rptc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (rptc *ResearchProjectTranslationCreate) SetNillableID(u *uuid.UUID) *ResearchProjectTranslationCreate {
-	if u != nil {
-		rptc.SetID(*u)
+func (rptc *ResearchProjectTranslationCreate) SetNillableID(s *string) *ResearchProjectTranslationCreate {
+	if s != nil {
+		rptc.SetID(*s)
 	}
 	return rptc
 }
@@ -232,10 +231,10 @@ func (rptc *ResearchProjectTranslationCreate) sqlSave(ctx context.Context) (*Res
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ResearchProjectTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	rptc.mutation.id = &_node.ID
@@ -246,11 +245,11 @@ func (rptc *ResearchProjectTranslationCreate) sqlSave(ctx context.Context) (*Res
 func (rptc *ResearchProjectTranslationCreate) createSpec() (*ResearchProjectTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ResearchProjectTranslation{config: rptc.config}
-		_spec = sqlgraph.NewCreateSpec(researchprojecttranslation.Table, sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(researchprojecttranslation.Table, sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString))
 	)
 	if id, ok := rptc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := rptc.mutation.Title(); ok {
 		_spec.SetField(researchprojecttranslation.FieldTitle, field.TypeString, value)
@@ -280,7 +279,7 @@ func (rptc *ResearchProjectTranslationCreate) createSpec() (*ResearchProjectTran
 			Columns: []string{researchprojecttranslation.ResearchProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogSeriesTranslationCreate is the builder for creating a BlogSeriesTranslation entity.
@@ -24,8 +23,8 @@ type BlogSeriesTranslationCreate struct {
 }
 
 // SetBlogSeriesID sets the "blog_series_id" field.
-func (bstc *BlogSeriesTranslationCreate) SetBlogSeriesID(u uuid.UUID) *BlogSeriesTranslationCreate {
-	bstc.mutation.SetBlogSeriesID(u)
+func (bstc *BlogSeriesTranslationCreate) SetBlogSeriesID(s string) *BlogSeriesTranslationCreate {
+	bstc.mutation.SetBlogSeriesID(s)
 	return bstc
 }
 
@@ -70,15 +69,15 @@ func (bstc *BlogSeriesTranslationCreate) SetNillableCreatedAt(t *time.Time) *Blo
 }
 
 // SetID sets the "id" field.
-func (bstc *BlogSeriesTranslationCreate) SetID(u uuid.UUID) *BlogSeriesTranslationCreate {
-	bstc.mutation.SetID(u)
+func (bstc *BlogSeriesTranslationCreate) SetID(s string) *BlogSeriesTranslationCreate {
+	bstc.mutation.SetID(s)
 	return bstc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (bstc *BlogSeriesTranslationCreate) SetNillableID(u *uuid.UUID) *BlogSeriesTranslationCreate {
-	if u != nil {
-		bstc.SetID(*u)
+func (bstc *BlogSeriesTranslationCreate) SetNillableID(s *string) *BlogSeriesTranslationCreate {
+	if s != nil {
+		bstc.SetID(*s)
 	}
 	return bstc
 }
@@ -189,10 +188,10 @@ func (bstc *BlogSeriesTranslationCreate) sqlSave(ctx context.Context) (*BlogSeri
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected BlogSeriesTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	bstc.mutation.id = &_node.ID
@@ -203,11 +202,11 @@ func (bstc *BlogSeriesTranslationCreate) sqlSave(ctx context.Context) (*BlogSeri
 func (bstc *BlogSeriesTranslationCreate) createSpec() (*BlogSeriesTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &BlogSeriesTranslation{config: bstc.config}
-		_spec = sqlgraph.NewCreateSpec(blogseriestranslation.Table, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(blogseriestranslation.Table, sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString))
 	)
 	if id, ok := bstc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := bstc.mutation.Title(); ok {
 		_spec.SetField(blogseriestranslation.FieldTitle, field.TypeString, value)
@@ -229,7 +228,7 @@ func (bstc *BlogSeriesTranslationCreate) createSpec() (*BlogSeriesTranslation, *
 			Columns: []string{blogseriestranslation.BlogSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

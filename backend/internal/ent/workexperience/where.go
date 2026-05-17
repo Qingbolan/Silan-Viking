@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.WorkExperience {
+func ID(id string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.WorkExperience {
+func IDEQ(id string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.WorkExperience {
+func IDNEQ(id string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.WorkExperience {
+func IDIn(ids ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.WorkExperience {
+func IDNotIn(ids ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.WorkExperience {
+func IDGT(id string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.WorkExperience {
+func IDGTE(id string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.WorkExperience {
+func IDLT(id string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.WorkExperience {
+func IDLTE(id string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldContainsFold(FieldID, id))
+}
+
 // UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
-func UserID(v uuid.UUID) predicate.WorkExperience {
+func UserID(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldUserID, v))
 }
 
@@ -117,23 +126,68 @@ func UpdatedAt(v time.Time) predicate.WorkExperience {
 }
 
 // UserIDEQ applies the EQ predicate on the "user_id" field.
-func UserIDEQ(v uuid.UUID) predicate.WorkExperience {
+func UserIDEQ(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldUserID, v))
 }
 
 // UserIDNEQ applies the NEQ predicate on the "user_id" field.
-func UserIDNEQ(v uuid.UUID) predicate.WorkExperience {
+func UserIDNEQ(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNEQ(FieldUserID, v))
 }
 
 // UserIDIn applies the In predicate on the "user_id" field.
-func UserIDIn(vs ...uuid.UUID) predicate.WorkExperience {
+func UserIDIn(vs ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldIn(FieldUserID, vs...))
 }
 
 // UserIDNotIn applies the NotIn predicate on the "user_id" field.
-func UserIDNotIn(vs ...uuid.UUID) predicate.WorkExperience {
+func UserIDNotIn(vs ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNotIn(FieldUserID, vs...))
+}
+
+// UserIDGT applies the GT predicate on the "user_id" field.
+func UserIDGT(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldGT(FieldUserID, v))
+}
+
+// UserIDGTE applies the GTE predicate on the "user_id" field.
+func UserIDGTE(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldGTE(FieldUserID, v))
+}
+
+// UserIDLT applies the LT predicate on the "user_id" field.
+func UserIDLT(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldLT(FieldUserID, v))
+}
+
+// UserIDLTE applies the LTE predicate on the "user_id" field.
+func UserIDLTE(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldLTE(FieldUserID, v))
+}
+
+// UserIDContains applies the Contains predicate on the "user_id" field.
+func UserIDContains(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldContains(FieldUserID, v))
+}
+
+// UserIDHasPrefix applies the HasPrefix predicate on the "user_id" field.
+func UserIDHasPrefix(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldHasPrefix(FieldUserID, v))
+}
+
+// UserIDHasSuffix applies the HasSuffix predicate on the "user_id" field.
+func UserIDHasSuffix(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldHasSuffix(FieldUserID, v))
+}
+
+// UserIDEqualFold applies the EqualFold predicate on the "user_id" field.
+func UserIDEqualFold(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldEqualFold(FieldUserID, v))
+}
+
+// UserIDContainsFold applies the ContainsFold predicate on the "user_id" field.
+func UserIDContainsFold(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldContainsFold(FieldUserID, v))
 }
 
 // CompanyEQ applies the EQ predicate on the "company" field.

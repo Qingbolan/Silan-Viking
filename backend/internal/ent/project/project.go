@@ -8,7 +8,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -42,8 +41,8 @@ const (
 	FieldThumbnailURL = "thumbnail_url"
 	// FieldIsFeatured holds the string denoting the is_featured field in the database.
 	FieldIsFeatured = "is_featured"
-	// FieldIsPublic holds the string denoting the is_public field in the database.
-	FieldIsPublic = "is_public"
+	// FieldVisibility holds the string denoting the visibility field in the database.
+	FieldVisibility = "visibility"
 	// FieldViewCount holds the string denoting the view_count field in the database.
 	FieldViewCount = "view_count"
 	// FieldLikeCount holds the string denoting the like_count field in the database.
@@ -64,10 +63,6 @@ const (
 	EdgeDetails = "details"
 	// EdgeImages holds the string denoting the images edge name in mutations.
 	EdgeImages = "images"
-	// EdgeSourceRelationships holds the string denoting the source_relationships edge name in mutations.
-	EdgeSourceRelationships = "source_relationships"
-	// EdgeTargetRelationships holds the string denoting the target_relationships edge name in mutations.
-	EdgeTargetRelationships = "target_relationships"
 	// EdgeLikes holds the string denoting the likes edge name in mutations.
 	EdgeLikes = "likes"
 	// EdgeViews holds the string denoting the views edge name in mutations.
@@ -109,20 +104,6 @@ const (
 	ImagesInverseTable = "project_images"
 	// ImagesColumn is the table column denoting the images relation/edge.
 	ImagesColumn = "project_id"
-	// SourceRelationshipsTable is the table that holds the source_relationships relation/edge.
-	SourceRelationshipsTable = "project_relationships"
-	// SourceRelationshipsInverseTable is the table name for the ProjectRelationship entity.
-	// It exists in this package in order to avoid circular dependency with the "projectrelationship" package.
-	SourceRelationshipsInverseTable = "project_relationships"
-	// SourceRelationshipsColumn is the table column denoting the source_relationships relation/edge.
-	SourceRelationshipsColumn = "source_project_id"
-	// TargetRelationshipsTable is the table that holds the target_relationships relation/edge.
-	TargetRelationshipsTable = "project_relationships"
-	// TargetRelationshipsInverseTable is the table name for the ProjectRelationship entity.
-	// It exists in this package in order to avoid circular dependency with the "projectrelationship" package.
-	TargetRelationshipsInverseTable = "project_relationships"
-	// TargetRelationshipsColumn is the table column denoting the target_relationships relation/edge.
-	TargetRelationshipsColumn = "target_project_id"
 	// LikesTable is the table that holds the likes relation/edge.
 	LikesTable = "project_likes"
 	// LikesInverseTable is the table name for the ProjectLike entity.
@@ -155,7 +136,7 @@ var Columns = []string{
 	FieldDocumentationURL,
 	FieldThumbnailURL,
 	FieldIsFeatured,
-	FieldIsPublic,
+	FieldVisibility,
 	FieldViewCount,
 	FieldLikeCount,
 	FieldSortOrder,
@@ -192,8 +173,6 @@ var (
 	ThumbnailURLValidator func(string) error
 	// DefaultIsFeatured holds the default value on creation for the "is_featured" field.
 	DefaultIsFeatured bool
-	// DefaultIsPublic holds the default value on creation for the "is_public" field.
-	DefaultIsPublic bool
 	// DefaultViewCount holds the default value on creation for the "view_count" field.
 	DefaultViewCount int
 	// DefaultLikeCount holds the default value on creation for the "like_count" field.
@@ -207,7 +186,7 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() string
 )
 
 // Status defines the type for the "status" enum field.
@@ -235,6 +214,33 @@ func StatusValidator(s Status) error {
 		return nil
 	default:
 		return fmt.Errorf("project: invalid enum value for status field: %q", s)
+	}
+}
+
+// Visibility defines the type for the "visibility" enum field.
+type Visibility string
+
+// VisibilityPrivate is the default value of the Visibility enum.
+const DefaultVisibility = VisibilityPrivate
+
+// Visibility values.
+const (
+	VisibilityPrivate  Visibility = "private"
+	VisibilityUnlisted Visibility = "unlisted"
+	VisibilityPublic   Visibility = "public"
+)
+
+func (v Visibility) String() string {
+	return string(v)
+}
+
+// VisibilityValidator is a validator for the "visibility" field enum values. It is called by the builders before save.
+func VisibilityValidator(v Visibility) error {
+	switch v {
+	case VisibilityPrivate, VisibilityUnlisted, VisibilityPublic:
+		return nil
+	default:
+		return fmt.Errorf("project: invalid enum value for visibility field: %q", v)
 	}
 }
 
@@ -311,9 +317,9 @@ func ByIsFeatured(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsFeatured, opts...).ToFunc()
 }
 
-// ByIsPublic orders the results by the is_public field.
-func ByIsPublic(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIsPublic, opts...).ToFunc()
+// ByVisibility orders the results by the visibility field.
+func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVisibility, opts...).ToFunc()
 }
 
 // ByViewCount orders the results by the view_count field.
@@ -397,34 +403,6 @@ func ByImages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// BySourceRelationshipsCount orders the results by source_relationships count.
-func BySourceRelationshipsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newSourceRelationshipsStep(), opts...)
-	}
-}
-
-// BySourceRelationships orders the results by source_relationships terms.
-func BySourceRelationships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSourceRelationshipsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByTargetRelationshipsCount orders the results by target_relationships count.
-func ByTargetRelationshipsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newTargetRelationshipsStep(), opts...)
-	}
-}
-
-// ByTargetRelationships orders the results by target_relationships terms.
-func ByTargetRelationships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newTargetRelationshipsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByLikesCount orders the results by likes count.
 func ByLikesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -485,20 +463,6 @@ func newImagesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ImagesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ImagesTable, ImagesColumn),
-	)
-}
-func newSourceRelationshipsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(SourceRelationshipsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, SourceRelationshipsTable, SourceRelationshipsColumn),
-	)
-}
-func newTargetRelationshipsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(TargetRelationshipsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, TargetRelationshipsTable, TargetRelationshipsColumn),
 	)
 }
 func newLikesStep() *sqlgraph.Step {

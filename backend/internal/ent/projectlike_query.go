@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectLikeQuery is the builder for querying ProjectLike entities.
@@ -131,8 +130,8 @@ func (plq *ProjectLikeQuery) FirstX(ctx context.Context) *ProjectLike {
 
 // FirstID returns the first ProjectLike ID from the query.
 // Returns a *NotFoundError when no ProjectLike ID was found.
-func (plq *ProjectLikeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (plq *ProjectLikeQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = plq.Limit(1).IDs(setContextOp(ctx, plq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (plq *ProjectLikeQuery) FirstID(ctx context.Context) (id uuid.UUID, err err
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (plq *ProjectLikeQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (plq *ProjectLikeQuery) FirstIDX(ctx context.Context) string {
 	id, err := plq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (plq *ProjectLikeQuery) OnlyX(ctx context.Context) *ProjectLike {
 // OnlyID is like Only, but returns the only ProjectLike ID in the query.
 // Returns a *NotSingularError when more than one ProjectLike ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (plq *ProjectLikeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (plq *ProjectLikeQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = plq.Limit(2).IDs(setContextOp(ctx, plq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (plq *ProjectLikeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (plq *ProjectLikeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (plq *ProjectLikeQuery) OnlyIDX(ctx context.Context) string {
 	id, err := plq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (plq *ProjectLikeQuery) AllX(ctx context.Context) []*ProjectLike {
 }
 
 // IDs executes the query and returns a list of ProjectLike IDs.
-func (plq *ProjectLikeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (plq *ProjectLikeQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if plq.ctx.Unique == nil && plq.path != nil {
 		plq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (plq *ProjectLikeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err erro
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (plq *ProjectLikeQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (plq *ProjectLikeQuery) IDsX(ctx context.Context) []string {
 	ids, err := plq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (plq *ProjectLikeQuery) WithUserIdentity(opts ...func(*UserIdentityQuery)) 
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (plq *ProjectLikeQuery) GroupBy(field string, fields ...string) *ProjectLik
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //	}
 //
 //	client.ProjectLike.Query().
@@ -446,8 +445,8 @@ func (plq *ProjectLikeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 }
 
 func (plq *ProjectLikeQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectLike, init func(*ProjectLike), assign func(*ProjectLike, *Project)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ProjectLike)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ProjectLike)
 	for i := range nodes {
 		fk := nodes[i].ProjectID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (plq *ProjectLikeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (plq *ProjectLikeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(projectlike.Table, projectlike.Columns, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(projectlike.Table, projectlike.Columns, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString))
 	_spec.From = plq.sql
 	if unique := plq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

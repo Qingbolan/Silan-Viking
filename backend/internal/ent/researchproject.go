@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ResearchProject is the model entity for the ResearchProject schema.
 type ResearchProject struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// StartDate holds the value of the "start_date" field.
@@ -102,12 +101,10 @@ func (*ResearchProject) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case researchproject.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case researchproject.FieldTitle, researchproject.FieldLocation, researchproject.FieldResearchType, researchproject.FieldFundingSource:
+		case researchproject.FieldID, researchproject.FieldUserID, researchproject.FieldTitle, researchproject.FieldLocation, researchproject.FieldResearchType, researchproject.FieldFundingSource:
 			values[i] = new(sql.NullString)
 		case researchproject.FieldStartDate, researchproject.FieldEndDate, researchproject.FieldCreatedAt, researchproject.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case researchproject.FieldID, researchproject.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -124,16 +121,16 @@ func (rp *ResearchProject) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case researchproject.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				rp.ID = *value
+			} else if value.Valid {
+				rp.ID = value.String
 			}
 		case researchproject.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				rp.UserID = *value
+			} else if value.Valid {
+				rp.UserID = value.String
 			}
 		case researchproject.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -253,7 +250,7 @@ func (rp *ResearchProject) String() string {
 	builder.WriteString("ResearchProject(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", rp.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", rp.UserID))
+	builder.WriteString(rp.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(rp.Title)

@@ -7,7 +7,6 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
-	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
@@ -20,7 +19,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaQuery is the builder for querying Idea entities.
@@ -33,7 +31,6 @@ type IdeaQuery struct {
 	withUser         *UserQuery
 	withTranslations *IdeaTranslationQuery
 	withDetails      *IdeaDetailQuery
-	withBlogPosts    *BlogPostQuery
 	withComments     *CommentQuery
 	withTags         *IdeaTagQuery
 	// intermediate query (i.e. traversal path).
@@ -138,28 +135,6 @@ func (iq *IdeaQuery) QueryDetails() *IdeaDetailQuery {
 	return query
 }
 
-// QueryBlogPosts chains the current query on the "blog_posts" edge.
-func (iq *IdeaQuery) QueryBlogPosts() *BlogPostQuery {
-	query := (&BlogPostClient{config: iq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := iq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(idea.Table, idea.FieldID, selector),
-			sqlgraph.To(blogpost.Table, blogpost.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, idea.BlogPostsTable, idea.BlogPostsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryComments chains the current query on the "comments" edge.
 func (iq *IdeaQuery) QueryComments() *CommentQuery {
 	query := (&CommentClient{config: iq.config}).Query()
@@ -228,8 +203,8 @@ func (iq *IdeaQuery) FirstX(ctx context.Context) *Idea {
 
 // FirstID returns the first Idea ID from the query.
 // Returns a *NotFoundError when no Idea ID was found.
-func (iq *IdeaQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (iq *IdeaQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = iq.Limit(1).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -241,7 +216,7 @@ func (iq *IdeaQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (iq *IdeaQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (iq *IdeaQuery) FirstIDX(ctx context.Context) string {
 	id, err := iq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -279,8 +254,8 @@ func (iq *IdeaQuery) OnlyX(ctx context.Context) *Idea {
 // OnlyID is like Only, but returns the only Idea ID in the query.
 // Returns a *NotSingularError when more than one Idea ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (iq *IdeaQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (iq *IdeaQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = iq.Limit(2).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -296,7 +271,7 @@ func (iq *IdeaQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (iq *IdeaQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (iq *IdeaQuery) OnlyIDX(ctx context.Context) string {
 	id, err := iq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -324,7 +299,7 @@ func (iq *IdeaQuery) AllX(ctx context.Context) []*Idea {
 }
 
 // IDs executes the query and returns a list of Idea IDs.
-func (iq *IdeaQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (iq *IdeaQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if iq.ctx.Unique == nil && iq.path != nil {
 		iq.Unique(true)
 	}
@@ -336,7 +311,7 @@ func (iq *IdeaQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (iq *IdeaQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (iq *IdeaQuery) IDsX(ctx context.Context) []string {
 	ids, err := iq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -399,7 +374,6 @@ func (iq *IdeaQuery) Clone() *IdeaQuery {
 		withUser:         iq.withUser.Clone(),
 		withTranslations: iq.withTranslations.Clone(),
 		withDetails:      iq.withDetails.Clone(),
-		withBlogPosts:    iq.withBlogPosts.Clone(),
 		withComments:     iq.withComments.Clone(),
 		withTags:         iq.withTags.Clone(),
 		// clone intermediate query.
@@ -441,17 +415,6 @@ func (iq *IdeaQuery) WithDetails(opts ...func(*IdeaDetailQuery)) *IdeaQuery {
 	return iq
 }
 
-// WithBlogPosts tells the query-builder to eager-load the nodes that are connected to
-// the "blog_posts" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *IdeaQuery) WithBlogPosts(opts ...func(*BlogPostQuery)) *IdeaQuery {
-	query := (&BlogPostClient{config: iq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	iq.withBlogPosts = query
-	return iq
-}
-
 // WithComments tells the query-builder to eager-load the nodes that are connected to
 // the "comments" edge. The optional arguments are used to configure the query builder of the edge.
 func (iq *IdeaQuery) WithComments(opts ...func(*CommentQuery)) *IdeaQuery {
@@ -480,7 +443,7 @@ func (iq *IdeaQuery) WithTags(opts ...func(*IdeaTagQuery)) *IdeaQuery {
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -503,7 +466,7 @@ func (iq *IdeaQuery) GroupBy(field string, fields ...string) *IdeaGroupBy {
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.Idea.Query().
@@ -552,11 +515,10 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	var (
 		nodes       = []*Idea{}
 		_spec       = iq.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [5]bool{
 			iq.withUser != nil,
 			iq.withTranslations != nil,
 			iq.withDetails != nil,
-			iq.withBlogPosts != nil,
 			iq.withComments != nil,
 			iq.withTags != nil,
 		}
@@ -598,13 +560,6 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 			return nil, err
 		}
 	}
-	if query := iq.withBlogPosts; query != nil {
-		if err := iq.loadBlogPosts(ctx, query, nodes,
-			func(n *Idea) { n.Edges.BlogPosts = []*BlogPost{} },
-			func(n *Idea, e *BlogPost) { n.Edges.BlogPosts = append(n.Edges.BlogPosts, e) }); err != nil {
-			return nil, err
-		}
-	}
 	if query := iq.withComments; query != nil {
 		if err := iq.loadComments(ctx, query, nodes,
 			func(n *Idea) { n.Edges.Comments = []*Comment{} },
@@ -623,8 +578,8 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 }
 
 func (iq *IdeaQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Idea)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Idea)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -653,7 +608,7 @@ func (iq *IdeaQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Id
 }
 func (iq *IdeaQuery) loadTranslations(ctx context.Context, query *IdeaTranslationQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Idea)
+	nodeids := make(map[string]*Idea)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -683,7 +638,7 @@ func (iq *IdeaQuery) loadTranslations(ctx context.Context, query *IdeaTranslatio
 }
 func (iq *IdeaQuery) loadDetails(ctx context.Context, query *IdeaDetailQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaDetail)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Idea)
+	nodeids := make(map[string]*Idea)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -708,39 +663,9 @@ func (iq *IdeaQuery) loadDetails(ctx context.Context, query *IdeaDetailQuery, no
 	}
 	return nil
 }
-func (iq *IdeaQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *BlogPost)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Idea)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(blogpost.FieldIdeasID)
-	}
-	query.Where(predicate.BlogPost(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(idea.BlogPostsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.IdeasID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "ideas_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
 func (iq *IdeaQuery) loadComments(ctx context.Context, query *CommentQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *Comment)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Idea)
+	nodeids := make(map[string]*Idea)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -771,8 +696,8 @@ func (iq *IdeaQuery) loadComments(ctx context.Context, query *CommentQuery, node
 }
 func (iq *IdeaQuery) loadTags(ctx context.Context, query *IdeaTagQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaTag)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*Idea)
-	nids := make(map[uuid.UUID]map[*Idea]struct{})
+	byID := make(map[string]*Idea)
+	nids := make(map[string]map[*Idea]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -801,11 +726,11 @@ func (iq *IdeaQuery) loadTags(ctx context.Context, query *IdeaTagQuery, nodes []
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(uuid.UUID)}, values...), nil
+				return append([]any{new(sql.NullString)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
+				outValue := values[0].(*sql.NullString).String
+				inValue := values[1].(*sql.NullString).String
 				if nids[inValue] == nil {
 					nids[inValue] = map[*Idea]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
@@ -841,7 +766,7 @@ func (iq *IdeaQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (iq *IdeaQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString))
 	_spec.From = iq.sql
 	if unique := iq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

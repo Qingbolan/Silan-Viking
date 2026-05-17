@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // RecentUpdateTranslationUpdate is the builder for updating RecentUpdateTranslation entities.
@@ -31,15 +30,15 @@ func (rutu *RecentUpdateTranslationUpdate) Where(ps ...predicate.RecentUpdateTra
 }
 
 // SetRecentUpdateID sets the "recent_update_id" field.
-func (rutu *RecentUpdateTranslationUpdate) SetRecentUpdateID(u uuid.UUID) *RecentUpdateTranslationUpdate {
-	rutu.mutation.SetRecentUpdateID(u)
+func (rutu *RecentUpdateTranslationUpdate) SetRecentUpdateID(s string) *RecentUpdateTranslationUpdate {
+	rutu.mutation.SetRecentUpdateID(s)
 	return rutu
 }
 
 // SetNillableRecentUpdateID sets the "recent_update_id" field if the given value is not nil.
-func (rutu *RecentUpdateTranslationUpdate) SetNillableRecentUpdateID(u *uuid.UUID) *RecentUpdateTranslationUpdate {
-	if u != nil {
-		rutu.SetRecentUpdateID(*u)
+func (rutu *RecentUpdateTranslationUpdate) SetNillableRecentUpdateID(s *string) *RecentUpdateTranslationUpdate {
+	if s != nil {
+		rutu.SetRecentUpdateID(*s)
 	}
 	return rutu
 }
@@ -176,7 +175,7 @@ func (rutu *RecentUpdateTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if err := rutu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(recentupdatetranslation.Table, recentupdatetranslation.Columns, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(recentupdatetranslation.Table, recentupdatetranslation.Columns, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString))
 	if ps := rutu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -198,7 +197,7 @@ func (rutu *RecentUpdateTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{recentupdatetranslation.RecentUpdateColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -211,7 +210,7 @@ func (rutu *RecentUpdateTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{recentupdatetranslation.RecentUpdateColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -269,15 +268,15 @@ type RecentUpdateTranslationUpdateOne struct {
 }
 
 // SetRecentUpdateID sets the "recent_update_id" field.
-func (rutuo *RecentUpdateTranslationUpdateOne) SetRecentUpdateID(u uuid.UUID) *RecentUpdateTranslationUpdateOne {
-	rutuo.mutation.SetRecentUpdateID(u)
+func (rutuo *RecentUpdateTranslationUpdateOne) SetRecentUpdateID(s string) *RecentUpdateTranslationUpdateOne {
+	rutuo.mutation.SetRecentUpdateID(s)
 	return rutuo
 }
 
 // SetNillableRecentUpdateID sets the "recent_update_id" field if the given value is not nil.
-func (rutuo *RecentUpdateTranslationUpdateOne) SetNillableRecentUpdateID(u *uuid.UUID) *RecentUpdateTranslationUpdateOne {
-	if u != nil {
-		rutuo.SetRecentUpdateID(*u)
+func (rutuo *RecentUpdateTranslationUpdateOne) SetNillableRecentUpdateID(s *string) *RecentUpdateTranslationUpdateOne {
+	if s != nil {
+		rutuo.SetRecentUpdateID(*s)
 	}
 	return rutuo
 }
@@ -427,7 +426,7 @@ func (rutuo *RecentUpdateTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	if err := rutuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(recentupdatetranslation.Table, recentupdatetranslation.Columns, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(recentupdatetranslation.Table, recentupdatetranslation.Columns, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString))
 	id, ok := rutuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "RecentUpdateTranslation.id" for update`)}
@@ -466,7 +465,7 @@ func (rutuo *RecentUpdateTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{recentupdatetranslation.RecentUpdateColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -479,7 +478,7 @@ func (rutuo *RecentUpdateTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{recentupdatetranslation.RecentUpdateColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

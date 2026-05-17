@@ -7,7 +7,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -17,12 +16,6 @@ const (
 	FieldID = "id"
 	// FieldIdeaID holds the string denoting the idea_id field in the database.
 	FieldIdeaID = "idea_id"
-	// FieldProgress holds the string denoting the progress field in the database.
-	FieldProgress = "progress"
-	// FieldResults holds the string denoting the results field in the database.
-	FieldResults = "results"
-	// FieldReferences holds the string denoting the references field in the database.
-	FieldReferences = "references"
 	// FieldEstimatedDurationMonths holds the string denoting the estimated_duration_months field in the database.
 	FieldEstimatedDurationMonths = "estimated_duration_months"
 	// FieldRequiredResources holds the string denoting the required_resources field in the database.
@@ -63,9 +56,6 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldIdeaID,
-	FieldProgress,
-	FieldResults,
-	FieldReferences,
 	FieldEstimatedDurationMonths,
 	FieldRequiredResources,
 	FieldCollaborationNeeded,
@@ -97,7 +87,7 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() string
 )
 
 // OrderOption defines the ordering options for the IdeaDetail queries.
@@ -111,21 +101,6 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByIdeaID orders the results by the idea_id field.
 func ByIdeaID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIdeaID, opts...).ToFunc()
-}
-
-// ByProgress orders the results by the progress field.
-func ByProgress(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProgress, opts...).ToFunc()
-}
-
-// ByResults orders the results by the results field.
-func ByResults(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldResults, opts...).ToFunc()
-}
-
-// ByReferences orders the results by the references field.
-func ByReferences(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldReferences, opts...).ToFunc()
 }
 
 // ByEstimatedDurationMonths orders the results by the estimated_duration_months field.

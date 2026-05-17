@@ -40,7 +40,7 @@ func (cld *CommentLikeDelete) ExecX(ctx context.Context) int {
 }
 
 func (cld *CommentLikeDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(commentlike.Table, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(commentlike.Table, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeString))
 	if ps := cld.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

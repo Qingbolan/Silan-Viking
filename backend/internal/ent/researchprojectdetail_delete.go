@@ -40,7 +40,7 @@ func (rpdd *ResearchProjectDetailDelete) ExecX(ctx context.Context) int {
 }
 
 func (rpdd *ResearchProjectDetailDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(researchprojectdetail.Table, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(researchprojectdetail.Table, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString))
 	if ps := rpdd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

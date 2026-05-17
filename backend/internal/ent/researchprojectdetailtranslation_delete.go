@@ -40,7 +40,7 @@ func (rpdtd *ResearchProjectDetailTranslationDelete) ExecX(ctx context.Context) 
 }
 
 func (rpdtd *ResearchProjectDetailTranslationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(researchprojectdetailtranslation.Table, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(researchprojectdetailtranslation.Table, sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString))
 	if ps := rpdtd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

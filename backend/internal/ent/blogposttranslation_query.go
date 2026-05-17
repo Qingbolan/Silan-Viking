@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogPostTranslationQuery is the builder for querying BlogPostTranslation entities.
@@ -131,8 +130,8 @@ func (bptq *BlogPostTranslationQuery) FirstX(ctx context.Context) *BlogPostTrans
 
 // FirstID returns the first BlogPostTranslation ID from the query.
 // Returns a *NotFoundError when no BlogPostTranslation ID was found.
-func (bptq *BlogPostTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bptq *BlogPostTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bptq.Limit(1).IDs(setContextOp(ctx, bptq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (bptq *BlogPostTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bptq *BlogPostTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (bptq *BlogPostTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := bptq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (bptq *BlogPostTranslationQuery) OnlyX(ctx context.Context) *BlogPostTransl
 // OnlyID is like Only, but returns the only BlogPostTranslation ID in the query.
 // Returns a *NotSingularError when more than one BlogPostTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bptq *BlogPostTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bptq *BlogPostTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bptq.Limit(2).IDs(setContextOp(ctx, bptq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (bptq *BlogPostTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID,
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bptq *BlogPostTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (bptq *BlogPostTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := bptq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (bptq *BlogPostTranslationQuery) AllX(ctx context.Context) []*BlogPostTrans
 }
 
 // IDs executes the query and returns a list of BlogPostTranslation IDs.
-func (bptq *BlogPostTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (bptq *BlogPostTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if bptq.ctx.Unique == nil && bptq.path != nil {
 		bptq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (bptq *BlogPostTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID,
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bptq *BlogPostTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (bptq *BlogPostTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := bptq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (bptq *BlogPostTranslationQuery) WithLanguage(opts ...func(*LanguageQuery))
 // Example:
 //
 //	var v []struct {
-//		BlogPostID uuid.UUID `json:"blog_post_id,omitempty"`
+//		BlogPostID string `json:"blog_post_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (bptq *BlogPostTranslationQuery) GroupBy(field string, fields ...string) *B
 // Example:
 //
 //	var v []struct {
-//		BlogPostID uuid.UUID `json:"blog_post_id,omitempty"`
+//		BlogPostID string `json:"blog_post_id,omitempty"`
 //	}
 //
 //	client.BlogPostTranslation.Query().
@@ -446,8 +445,8 @@ func (bptq *BlogPostTranslationQuery) sqlAll(ctx context.Context, hooks ...query
 }
 
 func (bptq *BlogPostTranslationQuery) loadBlogPost(ctx context.Context, query *BlogPostQuery, nodes []*BlogPostTranslation, init func(*BlogPostTranslation), assign func(*BlogPostTranslation, *BlogPost)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogPostTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogPostTranslation)
 	for i := range nodes {
 		fk := nodes[i].BlogPostID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (bptq *BlogPostTranslationQuery) sqlCount(ctx context.Context) (int, error)
 }
 
 func (bptq *BlogPostTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(blogposttranslation.Table, blogposttranslation.Columns, sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(blogposttranslation.Table, blogposttranslation.Columns, sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString))
 	_spec.From = bptq.sql
 	if unique := bptq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

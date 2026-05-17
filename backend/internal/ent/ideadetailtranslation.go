@@ -12,26 +12,17 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // IdeaDetailTranslation is the model entity for the IdeaDetailTranslation schema.
 type IdeaDetailTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// IdeaDetailID holds the value of the "idea_detail_id" field.
-	IdeaDetailID uuid.UUID `json:"idea_detail_id,omitempty"`
+	IdeaDetailID string `json:"idea_detail_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
-	// Progress holds the value of the "progress" field.
-	Progress string `json:"progress,omitempty"`
-	// Results holds the value of the "results" field.
-	Results string `json:"results,omitempty"`
-	// References holds the value of the "references" field.
-	References string `json:"references,omitempty"`
-	// RequiredResources holds the value of the "required_resources" field.
-	RequiredResources string `json:"required_resources,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -78,12 +69,10 @@ func (*IdeaDetailTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ideadetailtranslation.FieldLanguageCode, ideadetailtranslation.FieldProgress, ideadetailtranslation.FieldResults, ideadetailtranslation.FieldReferences, ideadetailtranslation.FieldRequiredResources:
+		case ideadetailtranslation.FieldID, ideadetailtranslation.FieldIdeaDetailID, ideadetailtranslation.FieldLanguageCode:
 			values[i] = new(sql.NullString)
 		case ideadetailtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case ideadetailtranslation.FieldID, ideadetailtranslation.FieldIdeaDetailID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -100,46 +89,22 @@ func (idt *IdeaDetailTranslation) assignValues(columns []string, values []any) e
 	for i := range columns {
 		switch columns[i] {
 		case ideadetailtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				idt.ID = *value
+			} else if value.Valid {
+				idt.ID = value.String
 			}
 		case ideadetailtranslation.FieldIdeaDetailID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field idea_detail_id", values[i])
-			} else if value != nil {
-				idt.IdeaDetailID = *value
+			} else if value.Valid {
+				idt.IdeaDetailID = value.String
 			}
 		case ideadetailtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field language_code", values[i])
 			} else if value.Valid {
 				idt.LanguageCode = value.String
-			}
-		case ideadetailtranslation.FieldProgress:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field progress", values[i])
-			} else if value.Valid {
-				idt.Progress = value.String
-			}
-		case ideadetailtranslation.FieldResults:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field results", values[i])
-			} else if value.Valid {
-				idt.Results = value.String
-			}
-		case ideadetailtranslation.FieldReferences:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field references", values[i])
-			} else if value.Valid {
-				idt.References = value.String
-			}
-		case ideadetailtranslation.FieldRequiredResources:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field required_resources", values[i])
-			} else if value.Valid {
-				idt.RequiredResources = value.String
 			}
 		case ideadetailtranslation.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -194,22 +159,10 @@ func (idt *IdeaDetailTranslation) String() string {
 	builder.WriteString("IdeaDetailTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", idt.ID))
 	builder.WriteString("idea_detail_id=")
-	builder.WriteString(fmt.Sprintf("%v", idt.IdeaDetailID))
+	builder.WriteString(idt.IdeaDetailID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(idt.LanguageCode)
-	builder.WriteString(", ")
-	builder.WriteString("progress=")
-	builder.WriteString(idt.Progress)
-	builder.WriteString(", ")
-	builder.WriteString("results=")
-	builder.WriteString(idt.Results)
-	builder.WriteString(", ")
-	builder.WriteString("references=")
-	builder.WriteString(idt.References)
-	builder.WriteString(", ")
-	builder.WriteString("required_resources=")
-	builder.WriteString(idt.RequiredResources)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(idt.CreatedAt.Format(time.ANSIC))

@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // RecentUpdateTranslation is the model entity for the RecentUpdateTranslation schema.
 type RecentUpdateTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// RecentUpdateID holds the value of the "recent_update_id" field.
-	RecentUpdateID uuid.UUID `json:"recent_update_id,omitempty"`
+	RecentUpdateID string `json:"recent_update_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Title holds the value of the "title" field.
@@ -74,12 +73,10 @@ func (*RecentUpdateTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case recentupdatetranslation.FieldLanguageCode, recentupdatetranslation.FieldTitle, recentupdatetranslation.FieldDescription:
+		case recentupdatetranslation.FieldID, recentupdatetranslation.FieldRecentUpdateID, recentupdatetranslation.FieldLanguageCode, recentupdatetranslation.FieldTitle, recentupdatetranslation.FieldDescription:
 			values[i] = new(sql.NullString)
 		case recentupdatetranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case recentupdatetranslation.FieldID, recentupdatetranslation.FieldRecentUpdateID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -96,16 +93,16 @@ func (rut *RecentUpdateTranslation) assignValues(columns []string, values []any)
 	for i := range columns {
 		switch columns[i] {
 		case recentupdatetranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				rut.ID = *value
+			} else if value.Valid {
+				rut.ID = value.String
 			}
 		case recentupdatetranslation.FieldRecentUpdateID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field recent_update_id", values[i])
-			} else if value != nil {
-				rut.RecentUpdateID = *value
+			} else if value.Valid {
+				rut.RecentUpdateID = value.String
 			}
 		case recentupdatetranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -178,7 +175,7 @@ func (rut *RecentUpdateTranslation) String() string {
 	builder.WriteString("RecentUpdateTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", rut.ID))
 	builder.WriteString("recent_update_id=")
-	builder.WriteString(fmt.Sprintf("%v", rut.RecentUpdateID))
+	builder.WriteString(rut.RecentUpdateID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(rut.LanguageCode)

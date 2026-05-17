@@ -2,7 +2,12 @@ package projects
 
 import (
 	"context"
+	"fmt"
+	"sort"
 
+	"silan-backend/internal/ent/blogpost"
+	"silan-backend/internal/ent/contentrelation"
+	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -25,6 +30,111 @@ func NewGetProjectRelatedBlogsLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectDetailRequest) (resp []types.ProjectBlogRef, err error) {
-	// Return empty slice as placeholder
-	return []types.ProjectBlogRef{}, nil
+	projectID := req.ID
+
+	exists, err := l.svcCtx.DB.Project.Query().
+		Where(project.ID(projectID), project.VisibilityEQ(project.VisibilityPublic)).
+		Exist(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return []types.ProjectBlogRef{}, nil
+	}
+
+	relations, err := l.svcCtx.DB.ContentRelation.Query().
+		Where(contentrelation.Or(
+			contentrelation.And(
+				contentrelation.FromTypeEQ(contentrelation.FromTypeProject),
+				contentrelation.FromIDEQ(projectID),
+				contentrelation.ToTypeEQ(contentrelation.ToTypeBlog),
+			),
+			contentrelation.And(
+				contentrelation.FromTypeEQ(contentrelation.FromTypeBlog),
+				contentrelation.ToTypeEQ(contentrelation.ToTypeProject),
+				contentrelation.ToIDEQ(projectID),
+			),
+		)).
+		All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(relations) == 0 {
+		return []types.ProjectBlogRef{}, nil
+	}
+
+	relevanceByBlogID := make(map[string]string)
+	blogIDs := make([]string, 0, len(relations))
+	seen := make(map[string]struct{})
+	for _, relation := range relations {
+		var blogID string
+		if relation.FromType == contentrelation.FromTypeBlog {
+			blogID = relation.FromID
+		} else if relation.ToType == contentrelation.ToTypeBlog {
+			blogID = relation.ToID
+		} else {
+			continue
+		}
+		if _, ok := seen[blogID]; !ok {
+			seen[blogID] = struct{}{}
+			blogIDs = append(blogIDs, blogID)
+		}
+		relevanceByBlogID[blogID] = string(relation.RelationType)
+	}
+
+	posts, err := l.svcCtx.DB.BlogPost.Query().
+		Where(
+			blogpost.IDIn(blogIDs...),
+			blogpost.StatusEQ(blogpost.StatusPublished),
+			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
+		).
+		WithCategory().
+		WithTags().
+		All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp = make([]types.ProjectBlogRef, 0, len(posts))
+	for _, post := range posts {
+		var category string
+		if post.Edges.Category != nil {
+			category = post.Edges.Category.Name
+		}
+
+		tags := make([]string, 0, len(post.Edges.Tags))
+		for _, tag := range post.Edges.Tags {
+			tags = append(tags, tag.Name)
+		}
+		sort.Strings(tags)
+
+		var publishDate string
+		if !post.PublishedAt.IsZero() {
+			publishDate = post.PublishedAt.Format("2006-01-02")
+		}
+
+		readTime := ""
+		if post.ReadingTimeMinutes > 0 {
+			readTime = fmt.Sprintf("%d min read", post.ReadingTimeMinutes)
+		}
+
+		resp = append(resp, types.ProjectBlogRef{
+			ID:          post.ID,
+			Title:       post.Title,
+			Summary:     post.Excerpt,
+			PublishDate: publishDate,
+			Category:    category,
+			Tags:        tags,
+			ReadTime:    readTime,
+			URL:         "/blog/" + post.Slug,
+			Relevance:   relevanceByBlogID[post.ID],
+			Description: post.Excerpt,
+		})
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].PublishDate > resp[j].PublishDate
+	})
+
+	return resp, nil
 }

@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // CommentLike is the model entity for the CommentLike schema.
 type CommentLike struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Generic comment ID - can reference any Comment
-	CommentID uuid.UUID `json:"comment_id,omitempty"`
+	CommentID string `json:"comment_id,omitempty"`
 	// ID of the authenticated user who liked
 	UserIdentityID string `json:"user_identity_id,omitempty"`
 	// Browser fingerprint for anonymous likes
@@ -62,12 +61,10 @@ func (*CommentLike) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case commentlike.FieldUserIdentityID, commentlike.FieldFingerprint, commentlike.FieldIPAddress:
+		case commentlike.FieldID, commentlike.FieldCommentID, commentlike.FieldUserIdentityID, commentlike.FieldFingerprint, commentlike.FieldIPAddress:
 			values[i] = new(sql.NullString)
 		case commentlike.FieldCreatedAt, commentlike.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case commentlike.FieldID, commentlike.FieldCommentID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -84,16 +81,16 @@ func (cl *CommentLike) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case commentlike.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				cl.ID = *value
+			} else if value.Valid {
+				cl.ID = value.String
 			}
 		case commentlike.FieldCommentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field comment_id", values[i])
-			} else if value != nil {
-				cl.CommentID = *value
+			} else if value.Valid {
+				cl.CommentID = value.String
 			}
 		case commentlike.FieldUserIdentityID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -167,7 +164,7 @@ func (cl *CommentLike) String() string {
 	builder.WriteString("CommentLike(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", cl.ID))
 	builder.WriteString("comment_id=")
-	builder.WriteString(fmt.Sprintf("%v", cl.CommentID))
+	builder.WriteString(cl.CommentID)
 	builder.WriteString(", ")
 	builder.WriteString("user_identity_id=")
 	builder.WriteString(cl.UserIdentityID)

@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // PersonalInfoTranslation is the model entity for the PersonalInfoTranslation schema.
 type PersonalInfoTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// PersonalInfoID holds the value of the "personal_info_id" field.
-	PersonalInfoID uuid.UUID `json:"personal_info_id,omitempty"`
+	PersonalInfoID string `json:"personal_info_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// FullName holds the value of the "full_name" field.
@@ -78,12 +77,10 @@ func (*PersonalInfoTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case personalinfotranslation.FieldLanguageCode, personalinfotranslation.FieldFullName, personalinfotranslation.FieldTitle, personalinfotranslation.FieldCurrentStatus, personalinfotranslation.FieldLocation:
+		case personalinfotranslation.FieldID, personalinfotranslation.FieldPersonalInfoID, personalinfotranslation.FieldLanguageCode, personalinfotranslation.FieldFullName, personalinfotranslation.FieldTitle, personalinfotranslation.FieldCurrentStatus, personalinfotranslation.FieldLocation:
 			values[i] = new(sql.NullString)
 		case personalinfotranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case personalinfotranslation.FieldID, personalinfotranslation.FieldPersonalInfoID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -100,16 +97,16 @@ func (pit *PersonalInfoTranslation) assignValues(columns []string, values []any)
 	for i := range columns {
 		switch columns[i] {
 		case personalinfotranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pit.ID = *value
+			} else if value.Valid {
+				pit.ID = value.String
 			}
 		case personalinfotranslation.FieldPersonalInfoID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field personal_info_id", values[i])
-			} else if value != nil {
-				pit.PersonalInfoID = *value
+			} else if value.Valid {
+				pit.PersonalInfoID = value.String
 			}
 		case personalinfotranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -194,7 +191,7 @@ func (pit *PersonalInfoTranslation) String() string {
 	builder.WriteString("PersonalInfoTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pit.ID))
 	builder.WriteString("personal_info_id=")
-	builder.WriteString(fmt.Sprintf("%v", pit.PersonalInfoID))
+	builder.WriteString(pit.PersonalInfoID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(pit.LanguageCode)

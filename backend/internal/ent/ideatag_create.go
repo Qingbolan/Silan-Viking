@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaTagCreate is the builder for creating a IdeaTag entity.
@@ -63,28 +62,28 @@ func (itc *IdeaTagCreate) SetNillableUpdatedAt(t *time.Time) *IdeaTagCreate {
 }
 
 // SetID sets the "id" field.
-func (itc *IdeaTagCreate) SetID(u uuid.UUID) *IdeaTagCreate {
-	itc.mutation.SetID(u)
+func (itc *IdeaTagCreate) SetID(s string) *IdeaTagCreate {
+	itc.mutation.SetID(s)
 	return itc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (itc *IdeaTagCreate) SetNillableID(u *uuid.UUID) *IdeaTagCreate {
-	if u != nil {
-		itc.SetID(*u)
+func (itc *IdeaTagCreate) SetNillableID(s *string) *IdeaTagCreate {
+	if s != nil {
+		itc.SetID(*s)
 	}
 	return itc
 }
 
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
-func (itc *IdeaTagCreate) AddIdeaIDs(ids ...uuid.UUID) *IdeaTagCreate {
+func (itc *IdeaTagCreate) AddIdeaIDs(ids ...string) *IdeaTagCreate {
 	itc.mutation.AddIdeaIDs(ids...)
 	return itc
 }
 
 // AddIdeas adds the "ideas" edges to the Idea entity.
 func (itc *IdeaTagCreate) AddIdeas(i ...*Idea) *IdeaTagCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -179,10 +178,10 @@ func (itc *IdeaTagCreate) sqlSave(ctx context.Context) (*IdeaTag, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected IdeaTag.ID type: %T", _spec.ID.Value)
 		}
 	}
 	itc.mutation.id = &_node.ID
@@ -193,11 +192,11 @@ func (itc *IdeaTagCreate) sqlSave(ctx context.Context) (*IdeaTag, error) {
 func (itc *IdeaTagCreate) createSpec() (*IdeaTag, *sqlgraph.CreateSpec) {
 	var (
 		_node = &IdeaTag{config: itc.config}
-		_spec = sqlgraph.NewCreateSpec(ideatag.Table, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(ideatag.Table, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString))
 	)
 	if id, ok := itc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := itc.mutation.Name(); ok {
 		_spec.SetField(ideatag.FieldName, field.TypeString, value)
@@ -223,7 +222,7 @@ func (itc *IdeaTagCreate) createSpec() (*IdeaTag, *sqlgraph.CreateSpec) {
 			Columns: ideatag.IdeasPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -1,71 +1,128 @@
 import React, { ReactNode, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import TopNavigation from './TopNavigation';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
+import TopNavigation, { NavBefore, NavAfter, NavAvatar } from './TopNavigation';
 import { useTheme } from '../components/ThemeContext';
-import Background from '../components/Background';
+import { NoiseBackground } from '../components/ds';
+
 interface MainLayoutProps {
   children: ReactNode;
 }
 
+// Browser-style layout: a chrome bar (a back/forward/reload control
+// capsule + the address bar) on a desk surface, with all page content
+// inside a rounded "tab content" window — like a browser tab.
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
+  const navigate = useNavigate();
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Track scroll progress
+  // Layered graphite (dark) / paper (light): the desk is the deepest
+  // layer, the content window sits a step above it. The desk base stays
+  // near-neutral; the NoiseBackground paints the NUS orange + blue glows
+  // on top of it, one in each corner.
+  const deskBg = isDarkMode ? 'oklch(0.125 0.006 264)' : 'oklch(0.935 0.004 264)';
+  const windowBg = isDarkMode ? 'oklch(0.165 0.010 264)' : 'oklch(1 0 0)';
+  // Chrome capsules sit on the desk, lifted one more step + a faint shadow.
+  const capsuleBg = isDarkMode ? 'oklch(0.21 0.012 264)' : 'oklch(1 0 0)';
+  const hoverBg = isDarkMode ? 'oklch(0.27 0.014 264)' : 'oklch(0.95 0 0)';
+
+  // Reading progress along the top edge of the content window.
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
-      setScrollProgress(Math.min(100, Math.max(0, progress)));
+    const el = document.getElementById('browser-window');
+    if (!el) return;
+    const onScroll = () => {
+      const sh = el.scrollHeight - el.clientHeight;
+      setScrollProgress(sh > 0 ? Math.min(100, Math.max(0, (el.scrollTop / sh) * 100)) : 0);
     };
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial call
-
-    return () => window.removeEventListener('scroll', handleScroll);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Simple Clean Background */}
-      <Background />
-      
-      {/* Global Reading Progress Bar */}
-      <div className="fixed top-0 left-0 z-50 w-full h-1">
-        <div 
-          className="h-full transition-all duration-300 ease-out"
-          style={{ 
-            width: `${scrollProgress}%`,
-            backgroundColor: colors.primary
-          }}
-        />
-      </div>
-      
-      {/* Navigation */}
-      <div className="relative z-20">
-        <TopNavigation />
-      </div>
+  // One control button inside the left control capsule.
+  const ControlButton: React.FC<{
+    label: string;
+    onClick: () => void;
+    children: React.ReactNode;
+  }> = ({ label, onClick, children }) => (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors"
+      style={{ color: colors.textSecondary }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+    >
+      {children}
+    </button>
+  );
 
-      {/* Main Content Area */}
-      <motion.main
-        className="relative z-10 pt-16 xs:pt-18 sm:pt-20" // Add top padding to account for fixed navbar
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ 
-          duration: 0.5, 
-          ease: [0.25, 0.1, 0.25, 1] // Smooth ease
-        }}
-      >
-        {/* Content wrapper with proper spacing and mobile optimization */}
-        <div className="mx-auto px-3 xs:px-4 sm:px-6 lg:px-8">
-          <div className="relative pt-4 xs:pt-6 sm:pt-8 md:pt-12 pb-8 xs:pb-12 sm:pb-16 md:pb-24">
-            {children}
-          </div>
+  return (
+    <div
+      className="relative flex h-screen w-screen flex-col overflow-hidden"
+      style={{ backgroundColor: deskBg }}
+    >
+      {/* Desk material — NUS orange (top-left) + NUS blue (bottom-right)
+          glows over a Gaussian-noise grain, behind the chrome and content
+          (z-0; the chrome and content window are lifted to z-10 below). */}
+      <NoiseBackground glow="nus-duo" intensity={isDarkMode ? 0.08 : 0.06} />
+
+      {/* ── Chrome bar ── */}
+      <header className="relative z-10 flex flex-shrink-0 items-center gap-2.5 px-3 py-1.5 sm:px-4">
+        {/* Personal avatar — leads to the contact page */}
+        <NavAvatar />
+
+        {/* Left control capsule: back / forward / reload */}
+        <div
+          className="flex flex-shrink-0 items-center gap-0.5 rounded-full p-1"
+          style={{ backgroundColor: capsuleBg, boxShadow: colors.shadowSm }}
+        >
+          <ControlButton label="Back" onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} />
+          </ControlButton>
+          <ControlButton label="Forward" onClick={() => navigate(1)}>
+            <ArrowRight size={16} />
+          </ControlButton>
+          <ControlButton label="Reload" onClick={() => window.location.reload()}>
+            <RotateCw size={14} />
+          </ControlButton>
         </div>
+
+        {/* Pages ordered before the current one */}
+        <NavBefore />
+
+        {/* Address bar — leads with the current page's icon */}
+        <TopNavigation />
+
+        {/* Pages ordered after the current one */}
+        <NavAfter />
+      </header>
+
+      {/* ── Content window: the "browser tab" ── */}
+      <motion.main
+        id="browser-window"
+        className="relative z-10 mx-1.5 mb-1.5 flex-1 overflow-y-auto rounded-xl sm:mx-2 sm:mb-2"
+        style={{ backgroundColor: windowBg }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+      >
+        {/* Reading progress line — NUS-orange brand colour. */}
+        <div className="sticky left-0 top-0 z-50 h-0.5 w-full">
+          <div
+            className="h-full transition-all duration-200 ease-out"
+            style={{ width: `${scrollProgress}%`, backgroundColor: 'var(--ds-color-primary)' }}
+          />
+        </div>
+
+        <div className="mx-auto px-4 pb-16 pt-2 sm:px-6 lg:px-8">{children}</div>
       </motion.main>
     </div>
   );
 };
 
-export default MainLayout; 
+export default MainLayout;

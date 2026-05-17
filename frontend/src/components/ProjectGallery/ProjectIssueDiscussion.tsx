@@ -238,12 +238,12 @@ const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({
     return status === 'open' ? (
       <AlertCircle className="w-4 h-4 text-green-600" />
     ) : (
-      <CheckCircle className="w-4 h-4 text-purple-600" />
+      <CheckCircle className="w-4 h-4 text-theme-accent" />
     );
   };
 
   const getStatusColor = (status: string) => {
-    return status === 'open' ? 'green' : 'purple';
+    return status === 'open' ? 'green' : 'blue';
   };
 
   const getLabelColor = (label: string) => {

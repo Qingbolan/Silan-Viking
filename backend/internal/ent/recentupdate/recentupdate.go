@@ -8,7 +8,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -18,8 +17,14 @@ const (
 	FieldID = "id"
 	// FieldUserID holds the string denoting the user_id field in the database.
 	FieldUserID = "user_id"
-	// FieldType holds the string denoting the type field in the database.
-	FieldType = "type"
+	// FieldSlug holds the string denoting the slug field in the database.
+	FieldSlug = "slug"
+	// FieldSubjectKind holds the string denoting the subject_kind field in the database.
+	FieldSubjectKind = "type"
+	// FieldUpdateType holds the string denoting the update_type field in the database.
+	FieldUpdateType = "update_type"
+	// FieldVisibility holds the string denoting the visibility field in the database.
+	FieldVisibility = "visibility"
 	// FieldTitle holds the string denoting the title field in the database.
 	FieldTitle = "title"
 	// FieldDescription holds the string denoting the description field in the database.
@@ -86,7 +91,10 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldUserID,
-	FieldType,
+	FieldSlug,
+	FieldSubjectKind,
+	FieldUpdateType,
+	FieldVisibility,
 	FieldTitle,
 	FieldDescription,
 	FieldDate,
@@ -120,10 +128,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	SlugValidator func(string) error
 	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	TitleValidator func(string) error
-	// DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	DescriptionValidator func(string) error
 	// ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
 	ExternalIDValidator func(string) error
 	// ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
@@ -147,35 +155,94 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() string
 )
 
-// Type defines the type for the "type" enum field.
-type Type string
+// SubjectKind defines the type for the "subject_kind" enum field.
+type SubjectKind string
 
-// TypeProject is the default value of the Type enum.
-const DefaultType = TypeProject
+// SubjectKindProject is the default value of the SubjectKind enum.
+const DefaultSubjectKind = SubjectKindProject
 
-// Type values.
+// SubjectKind values.
 const (
-	TypeWork        Type = "work"
-	TypeEducation   Type = "education"
-	TypeResearch    Type = "research"
-	TypePublication Type = "publication"
-	TypeProject     Type = "project"
+	SubjectKindWork        SubjectKind = "work"
+	SubjectKindEducation   SubjectKind = "education"
+	SubjectKindResearch    SubjectKind = "research"
+	SubjectKindPublication SubjectKind = "publication"
+	SubjectKindProject     SubjectKind = "project"
 )
 
-func (_type Type) String() string {
-	return string(_type)
+func (sk SubjectKind) String() string {
+	return string(sk)
 }
 
-// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
-func TypeValidator(_type Type) error {
-	switch _type {
-	case TypeWork, TypeEducation, TypeResearch, TypePublication, TypeProject:
+// SubjectKindValidator is a validator for the "subject_kind" field enum values. It is called by the builders before save.
+func SubjectKindValidator(sk SubjectKind) error {
+	switch sk {
+	case SubjectKindWork, SubjectKindEducation, SubjectKindResearch, SubjectKindPublication, SubjectKindProject:
 		return nil
 	default:
-		return fmt.Errorf("recentupdate: invalid enum value for type field: %q", _type)
+		return fmt.Errorf("recentupdate: invalid enum value for subject_kind field: %q", sk)
+	}
+}
+
+// UpdateType defines the type for the "update_type" enum field.
+type UpdateType string
+
+// UpdateTypeProgress is the default value of the UpdateType enum.
+const DefaultUpdateType = UpdateTypeProgress
+
+// UpdateType values.
+const (
+	UpdateTypeMilestone    UpdateType = "milestone"
+	UpdateTypeAchievement  UpdateType = "achievement"
+	UpdateTypeProgress     UpdateType = "progress"
+	UpdateTypeRelease      UpdateType = "release"
+	UpdateTypeAnnouncement UpdateType = "announcement"
+	UpdateTypeInsight      UpdateType = "insight"
+	UpdateTypeLearning     UpdateType = "learning"
+	UpdateTypeReflection   UpdateType = "reflection"
+)
+
+func (ut UpdateType) String() string {
+	return string(ut)
+}
+
+// UpdateTypeValidator is a validator for the "update_type" field enum values. It is called by the builders before save.
+func UpdateTypeValidator(ut UpdateType) error {
+	switch ut {
+	case UpdateTypeMilestone, UpdateTypeAchievement, UpdateTypeProgress, UpdateTypeRelease, UpdateTypeAnnouncement, UpdateTypeInsight, UpdateTypeLearning, UpdateTypeReflection:
+		return nil
+	default:
+		return fmt.Errorf("recentupdate: invalid enum value for update_type field: %q", ut)
+	}
+}
+
+// Visibility defines the type for the "visibility" enum field.
+type Visibility string
+
+// VisibilityPrivate is the default value of the Visibility enum.
+const DefaultVisibility = VisibilityPrivate
+
+// Visibility values.
+const (
+	VisibilityPrivate  Visibility = "private"
+	VisibilityUnlisted Visibility = "unlisted"
+	VisibilityPublic   Visibility = "public"
+)
+
+func (v Visibility) String() string {
+	return string(v)
+}
+
+// VisibilityValidator is a validator for the "visibility" field enum values. It is called by the builders before save.
+func VisibilityValidator(v Visibility) error {
+	switch v {
+	case VisibilityPrivate, VisibilityUnlisted, VisibilityPublic:
+		return nil
+	default:
+		return fmt.Errorf("recentupdate: invalid enum value for visibility field: %q", v)
 	}
 }
 
@@ -246,9 +313,24 @@ func ByUserID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUserID, opts...).ToFunc()
 }
 
-// ByType orders the results by the type field.
-func ByType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldType, opts...).ToFunc()
+// BySlug orders the results by the slug field.
+func BySlug(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSlug, opts...).ToFunc()
+}
+
+// BySubjectKind orders the results by the subject_kind field.
+func BySubjectKind(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubjectKind, opts...).ToFunc()
+}
+
+// ByUpdateType orders the results by the update_type field.
+func ByUpdateType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdateType, opts...).ToFunc()
+}
+
+// ByVisibility orders the results by the visibility field.
+func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVisibility, opts...).ToFunc()
 }
 
 // ByTitle orders the results by the title field.

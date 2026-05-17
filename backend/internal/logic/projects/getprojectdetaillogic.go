@@ -3,11 +3,11 @@ package projects
 import (
 	"context"
 	"strings"
+
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -62,15 +62,12 @@ func (l *GetProjectDetailLogic) GetLicenseText(str string) string {
 }
 
 func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest) (resp *types.ProjectDetail, err error) {
-	projectUUID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	projectUUID := req.ID
 
 	// Fetch project with all related data including details
 	proj, err := l.svcCtx.DB.Project.Query().
 		Where(project.ID(projectUUID)).
-		Where(project.IsPublic(true)).
+		Where(project.VisibilityEQ(project.VisibilityPublic)).
 		WithUser().
 		WithTechnologies().
 		WithDetails().
@@ -110,16 +107,13 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 
 	// Create detail information
 	var detailID string
-	var detailedDescription, release, dependencies, quickStart, license, version string
+	var detailedDescription, dependencies, license, version string
 	var licenseText string
 	var createdAt, updatedAt string
 	if proj.Edges.Details != nil {
 		detail := proj.Edges.Details
-		detailID = detail.ID.String()
-		detailedDescription = detail.ProjectDetails
-		release = detail.ReleaseNotes
+		detailID = detail.ID
 		dependencies = detail.Dependencies
-		quickStart = detail.QuickStart
 		license = l.GetLicenseText(detail.LicenseText)
 		licenseText = detail.LicenseText
 		version = detail.Version
@@ -127,27 +121,35 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		updatedAt = detail.UpdatedAt.Format("2006-01-02 15:04:05")
 	} else {
 		// No details found - return empty values
-		detailID = proj.ID.String()
-		detailedDescription = ""
+		detailID = proj.ID
 		license = "MIT"
 		version = "1.0.0"
 		createdAt = proj.CreatedAt.Format("2006-01-02 15:04:05")
 		updatedAt = proj.UpdatedAt.Format("2006-01-02 15:04:05")
 	}
 
+	// The prose body (overview Part) lives in item_part_translation — the
+	// content engine no longer populates project_details.project_details.
+	detailedDescription = projectPartBody(l.ctx, l.svcCtx, proj.ID, "overview", req.Language)
+
+	relatedBlogs, err := NewGetProjectRelatedBlogsLogic(l.ctx, l.svcCtx).GetProjectRelatedBlogs(req)
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.ProjectDetail{
 		ID:                  detailID,
-		ProjectID:           proj.ID.String(),
+		ProjectID:           proj.ID,
 		DetailedDescription: detailedDescription,
-		Release:             release,
-		QuickStart:          quickStart,
+		Release:             "", // M0.5a §11.8: moved to item_part
+		QuickStart:          "", // M0.5a §11.8: moved to item_part
 		Dependance:          dependencies,
 		License:             license,
 		LicenseText:         licenseText,
 		Version:             version,
 		Timeline:            timeline,
 		Metrics:             metrics,
-		RelatedBlogs:        []types.ProjectBlogRef{}, // This would need to be implemented
+		RelatedBlogs:        relatedBlogs,
 		CreatedAt:           createdAt,
 		UpdatedAt:           updatedAt,
 	}, nil

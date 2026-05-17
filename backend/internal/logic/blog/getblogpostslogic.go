@@ -32,13 +32,15 @@ func NewGetBlogPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetB
 
 func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *types.BlogListResponse, err error) {
 	query := l.svcCtx.DB.BlogPost.Query().
-		Where(blogpost.Or(
+		Where(
 			blogpost.StatusEQ(blogpost.StatusPublished),
-			blogpost.StatusEQ(blogpost.StatusDraft),
-		)).
+			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
+		).
 		WithUser().
 		WithCategory().
-		WithSeries().
+		WithSeries(func(q *ent.BlogSeriesQuery) {
+			q.WithTranslations()
+		}).
 		WithTags().
 		WithTranslations()
 
@@ -65,7 +67,6 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		))
 	}
 
-	// First, get all non-episode posts (posts without series_id) that match the filters
 	nonEpisodePosts, err := query.
 		Where(blogpost.SeriesIDIsNil()).
 		Order(ent.Desc(blogpost.FieldPublishedAt)).
@@ -74,12 +75,21 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		return nil, err
 	}
 
-	// Then get all series and find the latest episode for each
 	var seriesRepresentatives []*ent.BlogPost
 	allSeries, err := l.svcCtx.DB.BlogSeries.Query().
+		WithTranslations().
 		WithBlogPosts(func(bpq *ent.BlogPostQuery) {
-			bpq.WithUser().WithCategory().WithSeries().WithTags().WithTranslations().
-				Where(blogpost.StatusEQ(blogpost.StatusPublished))
+			bpq.WithUser().
+				WithCategory().
+				WithSeries(func(q *ent.BlogSeriesQuery) {
+					q.WithTranslations()
+				}).
+				WithTags().
+				WithTranslations().
+				Where(
+					blogpost.StatusEQ(blogpost.StatusPublished),
+					blogpost.VisibilityEQ(blogpost.VisibilityPublic),
+				)
 		}).
 		All(l.ctx)
 	if err != nil {
@@ -87,40 +97,33 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 	}
 
 	for _, series := range allSeries {
-		if len(series.Edges.BlogPosts) > 0 {
-			// Find the episode with the highest series_order
-			var latestEpisode *ent.BlogPost
-			for _, episode := range series.Edges.BlogPosts {
-				if latestEpisode == nil || episode.SeriesOrder > latestEpisode.SeriesOrder {
-					latestEpisode = episode
-				}
+		if len(series.Edges.BlogPosts) == 0 {
+			continue
+		}
+		var latestEpisode *ent.BlogPost
+		for _, episode := range series.Edges.BlogPosts {
+			if latestEpisode == nil || episode.SeriesOrder > latestEpisode.SeriesOrder {
+				latestEpisode = episode
 			}
-			if latestEpisode != nil {
-				seriesRepresentatives = append(seriesRepresentatives, latestEpisode)
-			}
+		}
+		if latestEpisode != nil {
+			seriesRepresentatives = append(seriesRepresentatives, latestEpisode)
 		}
 	}
 
-	// Combine all posts and sort by published date
-	var allFilteredPosts []*ent.BlogPost
-	allFilteredPosts = append(allFilteredPosts, nonEpisodePosts...)
+	allFilteredPosts := append([]*ent.BlogPost{}, nonEpisodePosts...)
 	allFilteredPosts = append(allFilteredPosts, seriesRepresentatives...)
-
-	// Sort all posts by published date (descending)
 	sort.Slice(allFilteredPosts, func(i, j int) bool {
 		return allFilteredPosts[i].PublishedAt.After(allFilteredPosts[j].PublishedAt)
 	})
 
-	// Calculate total count of final filtered results
 	total := len(allFilteredPosts)
-
-	// Apply pagination to the final filtered results
 	offset := (req.Page - 1) * req.Size
 	end := offset + req.Size
 	if end > len(allFilteredPosts) {
 		end = len(allFilteredPosts)
 	}
-	
+
 	var posts []*ent.BlogPost
 	if offset < len(allFilteredPosts) {
 		posts = allFilteredPosts[offset:end]
@@ -153,54 +156,86 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			author = post.Edges.User.FirstName + " " + post.Edges.User.LastName
 		}
 
-		// Handle language-specific content
+		// Resolve language-variant fields. The content engine keeps title /
+		// excerpt in blog_post_translations for every language (the main
+		// blog_posts row leaves them empty), so always consult translations:
+		// prefer the requested language, then "en", then any available.
 		title := post.Title
 		excerpt := post.Excerpt
-		
-		// If requesting non-English content, look for translations
-		if req.Language != "en" && post.Edges.Translations != nil {
-			for _, translation := range post.Edges.Translations {
-				if translation.LanguageCode == req.Language {
-					title = translation.Title
-					excerpt = translation.Excerpt
+
+		if post.Edges.Translations != nil {
+			lang := req.Language
+			if lang == "" {
+				lang = "en"
+			}
+			pick := func(code string) *ent.BlogPostTranslation {
+				for _, t := range post.Edges.Translations {
+					if t.LanguageCode == code {
+						return t
+					}
+				}
+				return nil
+			}
+			tr := pick(lang)
+			if tr == nil {
+				tr = pick("en")
+			}
+			if tr == nil && len(post.Edges.Translations) > 0 {
+				tr = post.Edges.Translations[0]
+			}
+			if tr != nil {
+				if tr.Title != "" {
+					title = tr.Title
+				}
+				if tr.Excerpt != "" {
+					excerpt = tr.Excerpt
+				}
+			}
+		}
+
+		var seriesID, seriesSlug, seriesTitle, seriesTitleZh, seriesDescription, seriesDescriptionZh, seriesImage string
+		var episodeNumber, totalEpisodes int
+		contentType := string(post.ContentType)
+		if post.Edges.Series != nil {
+			seriesID = post.Edges.Series.ID
+			seriesSlug = post.Edges.Series.Slug
+			seriesTitle = post.Edges.Series.Title
+			seriesDescription = post.Edges.Series.Description
+			seriesImage = post.Edges.Series.ThumbnailURL
+			episodeNumber = post.SeriesOrder
+			totalEpisodes = post.Edges.Series.EpisodeCount
+			contentType = "episode"
+			for _, translation := range post.Edges.Series.Edges.Translations {
+				if translation.LanguageCode == "zh" {
+					seriesTitleZh = translation.Title
+					seriesDescriptionZh = translation.Description
 					break
 				}
 			}
 		}
 
-		// Add series information if this is part of a series
-		var seriesID, seriesTitle, seriesDescription string
-		var episodeNumber, totalEpisodes int
-		var contentType string
-		if post.Edges.Series != nil {
-			seriesID = post.Edges.Series.ID.String()
-			seriesTitle = post.Edges.Series.Title
-			seriesDescription = post.Edges.Series.Description
-			episodeNumber = post.SeriesOrder
-			totalEpisodes = post.Edges.Series.EpisodeCount
-			contentType = "episode"  // Override type for posts with series
-		} else {
-			contentType = string(post.ContentType)
-		}
-
 		result = append(result, types.BlogData{
-			ID:                post.ID.String(),
-			Title:             title,
-			Slug:              post.Slug,
-			Author:            author,
-			PublishDate:       publishDate,
-			ReadTime:          readTime,
-			Category:          category,
-			Tags:              tags,
-			Likes:             int64(post.LikeCount),
-			Views:             int64(post.ViewCount),
-			Summary:           excerpt,
-			Type:              contentType,
-			SeriesID:          seriesID,
-			SeriesTitle:       seriesTitle,
-			SeriesDescription: seriesDescription,
-			EpisodeNumber:     episodeNumber,
-			TotalEpisodes:     totalEpisodes,
+			ID:                  post.ID,
+			Title:               title,
+			Slug:                post.Slug,
+			Author:              author,
+			PublishDate:         publishDate,
+			ReadTime:            readTime,
+			Category:            category,
+			Tags:                tags,
+			Likes:               int64(post.LikeCount),
+			Views:               int64(post.ViewCount),
+			Summary:             excerpt,
+			Type:                contentType,
+			SeriesID:            seriesID,
+			SeriesSlug:          seriesSlug,
+			SeriesTitle:         seriesTitle,
+			SeriesTitleZh:       seriesTitleZh,
+			SeriesDescription:   seriesDescription,
+			SeriesDescriptionZh: seriesDescriptionZh,
+			EpisodeNumber:       episodeNumber,
+			TotalEpisodes:       totalEpisodes,
+			SeriesImage:         seriesImage,
 		})
 	}
 

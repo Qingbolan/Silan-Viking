@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EducationDetailUpdate is the builder for updating EducationDetail entities.
@@ -32,15 +31,15 @@ func (edu *EducationDetailUpdate) Where(ps ...predicate.EducationDetail) *Educat
 }
 
 // SetEducationID sets the "education_id" field.
-func (edu *EducationDetailUpdate) SetEducationID(u uuid.UUID) *EducationDetailUpdate {
-	edu.mutation.SetEducationID(u)
+func (edu *EducationDetailUpdate) SetEducationID(s string) *EducationDetailUpdate {
+	edu.mutation.SetEducationID(s)
 	return edu
 }
 
 // SetNillableEducationID sets the "education_id" field if the given value is not nil.
-func (edu *EducationDetailUpdate) SetNillableEducationID(u *uuid.UUID) *EducationDetailUpdate {
-	if u != nil {
-		edu.SetEducationID(*u)
+func (edu *EducationDetailUpdate) SetNillableEducationID(s *string) *EducationDetailUpdate {
+	if s != nil {
+		edu.SetEducationID(*s)
 	}
 	return edu
 }
@@ -92,14 +91,14 @@ func (edu *EducationDetailUpdate) SetEducation(e *Education) *EducationDetailUpd
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationDetailTranslation entity by IDs.
-func (edu *EducationDetailUpdate) AddTranslationIDs(ids ...uuid.UUID) *EducationDetailUpdate {
+func (edu *EducationDetailUpdate) AddTranslationIDs(ids ...string) *EducationDetailUpdate {
 	edu.mutation.AddTranslationIDs(ids...)
 	return edu
 }
 
 // AddTranslations adds the "translations" edges to the EducationDetailTranslation entity.
 func (edu *EducationDetailUpdate) AddTranslations(e ...*EducationDetailTranslation) *EducationDetailUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -124,14 +123,14 @@ func (edu *EducationDetailUpdate) ClearTranslations() *EducationDetailUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to EducationDetailTranslation entities by IDs.
-func (edu *EducationDetailUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *EducationDetailUpdate {
+func (edu *EducationDetailUpdate) RemoveTranslationIDs(ids ...string) *EducationDetailUpdate {
 	edu.mutation.RemoveTranslationIDs(ids...)
 	return edu
 }
 
 // RemoveTranslations removes "translations" edges to EducationDetailTranslation entities.
 func (edu *EducationDetailUpdate) RemoveTranslations(e ...*EducationDetailTranslation) *EducationDetailUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -191,7 +190,7 @@ func (edu *EducationDetailUpdate) sqlSave(ctx context.Context) (n int, err error
 	if err := edu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(educationdetail.Table, educationdetail.Columns, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(educationdetail.Table, educationdetail.Columns, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString))
 	if ps := edu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -219,7 +218,7 @@ func (edu *EducationDetailUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{educationdetail.EducationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -232,7 +231,7 @@ func (edu *EducationDetailUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{educationdetail.EducationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -248,7 +247,7 @@ func (edu *EducationDetailUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{educationdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -261,7 +260,7 @@ func (edu *EducationDetailUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{educationdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -277,7 +276,7 @@ func (edu *EducationDetailUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{educationdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -306,15 +305,15 @@ type EducationDetailUpdateOne struct {
 }
 
 // SetEducationID sets the "education_id" field.
-func (eduo *EducationDetailUpdateOne) SetEducationID(u uuid.UUID) *EducationDetailUpdateOne {
-	eduo.mutation.SetEducationID(u)
+func (eduo *EducationDetailUpdateOne) SetEducationID(s string) *EducationDetailUpdateOne {
+	eduo.mutation.SetEducationID(s)
 	return eduo
 }
 
 // SetNillableEducationID sets the "education_id" field if the given value is not nil.
-func (eduo *EducationDetailUpdateOne) SetNillableEducationID(u *uuid.UUID) *EducationDetailUpdateOne {
-	if u != nil {
-		eduo.SetEducationID(*u)
+func (eduo *EducationDetailUpdateOne) SetNillableEducationID(s *string) *EducationDetailUpdateOne {
+	if s != nil {
+		eduo.SetEducationID(*s)
 	}
 	return eduo
 }
@@ -366,14 +365,14 @@ func (eduo *EducationDetailUpdateOne) SetEducation(e *Education) *EducationDetai
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationDetailTranslation entity by IDs.
-func (eduo *EducationDetailUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *EducationDetailUpdateOne {
+func (eduo *EducationDetailUpdateOne) AddTranslationIDs(ids ...string) *EducationDetailUpdateOne {
 	eduo.mutation.AddTranslationIDs(ids...)
 	return eduo
 }
 
 // AddTranslations adds the "translations" edges to the EducationDetailTranslation entity.
 func (eduo *EducationDetailUpdateOne) AddTranslations(e ...*EducationDetailTranslation) *EducationDetailUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -398,14 +397,14 @@ func (eduo *EducationDetailUpdateOne) ClearTranslations() *EducationDetailUpdate
 }
 
 // RemoveTranslationIDs removes the "translations" edge to EducationDetailTranslation entities by IDs.
-func (eduo *EducationDetailUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *EducationDetailUpdateOne {
+func (eduo *EducationDetailUpdateOne) RemoveTranslationIDs(ids ...string) *EducationDetailUpdateOne {
 	eduo.mutation.RemoveTranslationIDs(ids...)
 	return eduo
 }
 
 // RemoveTranslations removes "translations" edges to EducationDetailTranslation entities.
 func (eduo *EducationDetailUpdateOne) RemoveTranslations(e ...*EducationDetailTranslation) *EducationDetailUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -478,7 +477,7 @@ func (eduo *EducationDetailUpdateOne) sqlSave(ctx context.Context) (_node *Educa
 	if err := eduo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(educationdetail.Table, educationdetail.Columns, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(educationdetail.Table, educationdetail.Columns, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString))
 	id, ok := eduo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "EducationDetail.id" for update`)}
@@ -523,7 +522,7 @@ func (eduo *EducationDetailUpdateOne) sqlSave(ctx context.Context) (_node *Educa
 			Columns: []string{educationdetail.EducationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -536,7 +535,7 @@ func (eduo *EducationDetailUpdateOne) sqlSave(ctx context.Context) (_node *Educa
 			Columns: []string{educationdetail.EducationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -552,7 +551,7 @@ func (eduo *EducationDetailUpdateOne) sqlSave(ctx context.Context) (_node *Educa
 			Columns: []string{educationdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -565,7 +564,7 @@ func (eduo *EducationDetailUpdateOne) sqlSave(ctx context.Context) (_node *Educa
 			Columns: []string{educationdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -581,7 +580,7 @@ func (eduo *EducationDetailUpdateOne) sqlSave(ctx context.Context) (_node *Educa
 			Columns: []string{educationdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // SocialLink is the model entity for the SocialLink schema.
 type SocialLink struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// PersonalInfoID holds the value of the "personal_info_id" field.
-	PersonalInfoID uuid.UUID `json:"personal_info_id,omitempty"`
+	PersonalInfoID string `json:"personal_info_id,omitempty"`
 	// Platform holds the value of the "platform" field.
 	Platform string `json:"platform,omitempty"`
 	// URL holds the value of the "url" field.
@@ -68,12 +67,10 @@ func (*SocialLink) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case sociallink.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case sociallink.FieldPlatform, sociallink.FieldURL, sociallink.FieldDisplayName:
+		case sociallink.FieldID, sociallink.FieldPersonalInfoID, sociallink.FieldPlatform, sociallink.FieldURL, sociallink.FieldDisplayName:
 			values[i] = new(sql.NullString)
 		case sociallink.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case sociallink.FieldID, sociallink.FieldPersonalInfoID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -90,16 +87,16 @@ func (sl *SocialLink) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case sociallink.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				sl.ID = *value
+			} else if value.Valid {
+				sl.ID = value.String
 			}
 		case sociallink.FieldPersonalInfoID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field personal_info_id", values[i])
-			} else if value != nil {
-				sl.PersonalInfoID = *value
+			} else if value.Valid {
+				sl.PersonalInfoID = value.String
 			}
 		case sociallink.FieldPlatform:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -179,7 +176,7 @@ func (sl *SocialLink) String() string {
 	builder.WriteString("SocialLink(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", sl.ID))
 	builder.WriteString("personal_info_id=")
-	builder.WriteString(fmt.Sprintf("%v", sl.PersonalInfoID))
+	builder.WriteString(sl.PersonalInfoID)
 	builder.WriteString(", ")
 	builder.WriteString("platform=")
 	builder.WriteString(sl.Platform)

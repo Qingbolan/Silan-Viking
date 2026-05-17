@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PersonalInfoUpdate is the builder for updating PersonalInfo entities.
@@ -33,16 +32,22 @@ func (piu *PersonalInfoUpdate) Where(ps ...predicate.PersonalInfo) *PersonalInfo
 }
 
 // SetUserID sets the "user_id" field.
-func (piu *PersonalInfoUpdate) SetUserID(u uuid.UUID) *PersonalInfoUpdate {
-	piu.mutation.SetUserID(u)
+func (piu *PersonalInfoUpdate) SetUserID(s string) *PersonalInfoUpdate {
+	piu.mutation.SetUserID(s)
 	return piu
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (piu *PersonalInfoUpdate) SetNillableUserID(u *uuid.UUID) *PersonalInfoUpdate {
-	if u != nil {
-		piu.SetUserID(*u)
+func (piu *PersonalInfoUpdate) SetNillableUserID(s *string) *PersonalInfoUpdate {
+	if s != nil {
+		piu.SetUserID(*s)
 	}
+	return piu
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (piu *PersonalInfoUpdate) ClearUserID() *PersonalInfoUpdate {
+	piu.mutation.ClearUserID()
 	return piu
 }
 
@@ -60,6 +65,12 @@ func (piu *PersonalInfoUpdate) SetNillableFullName(s *string) *PersonalInfoUpdat
 	return piu
 }
 
+// ClearFullName clears the value of the "full_name" field.
+func (piu *PersonalInfoUpdate) ClearFullName() *PersonalInfoUpdate {
+	piu.mutation.ClearFullName()
+	return piu
+}
+
 // SetTitle sets the "title" field.
 func (piu *PersonalInfoUpdate) SetTitle(s string) *PersonalInfoUpdate {
 	piu.mutation.SetTitle(s)
@@ -71,6 +82,12 @@ func (piu *PersonalInfoUpdate) SetNillableTitle(s *string) *PersonalInfoUpdate {
 	if s != nil {
 		piu.SetTitle(*s)
 	}
+	return piu
+}
+
+// ClearTitle clears the value of the "title" field.
+func (piu *PersonalInfoUpdate) ClearTitle() *PersonalInfoUpdate {
+	piu.mutation.ClearTitle()
 	return piu
 }
 
@@ -214,20 +231,26 @@ func (piu *PersonalInfoUpdate) SetUpdatedAt(t time.Time) *PersonalInfoUpdate {
 	return piu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (piu *PersonalInfoUpdate) ClearUpdatedAt() *PersonalInfoUpdate {
+	piu.mutation.ClearUpdatedAt()
+	return piu
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (piu *PersonalInfoUpdate) SetUser(u *User) *PersonalInfoUpdate {
 	return piu.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the PersonalInfoTranslation entity by IDs.
-func (piu *PersonalInfoUpdate) AddTranslationIDs(ids ...uuid.UUID) *PersonalInfoUpdate {
+func (piu *PersonalInfoUpdate) AddTranslationIDs(ids ...string) *PersonalInfoUpdate {
 	piu.mutation.AddTranslationIDs(ids...)
 	return piu
 }
 
 // AddTranslations adds the "translations" edges to the PersonalInfoTranslation entity.
 func (piu *PersonalInfoUpdate) AddTranslations(p ...*PersonalInfoTranslation) *PersonalInfoUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -235,14 +258,14 @@ func (piu *PersonalInfoUpdate) AddTranslations(p ...*PersonalInfoTranslation) *P
 }
 
 // AddSocialLinkIDs adds the "social_links" edge to the SocialLink entity by IDs.
-func (piu *PersonalInfoUpdate) AddSocialLinkIDs(ids ...uuid.UUID) *PersonalInfoUpdate {
+func (piu *PersonalInfoUpdate) AddSocialLinkIDs(ids ...string) *PersonalInfoUpdate {
 	piu.mutation.AddSocialLinkIDs(ids...)
 	return piu
 }
 
 // AddSocialLinks adds the "social_links" edges to the SocialLink entity.
 func (piu *PersonalInfoUpdate) AddSocialLinks(s ...*SocialLink) *PersonalInfoUpdate {
-	ids := make([]uuid.UUID, len(s))
+	ids := make([]string, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
 	}
@@ -267,14 +290,14 @@ func (piu *PersonalInfoUpdate) ClearTranslations() *PersonalInfoUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to PersonalInfoTranslation entities by IDs.
-func (piu *PersonalInfoUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *PersonalInfoUpdate {
+func (piu *PersonalInfoUpdate) RemoveTranslationIDs(ids ...string) *PersonalInfoUpdate {
 	piu.mutation.RemoveTranslationIDs(ids...)
 	return piu
 }
 
 // RemoveTranslations removes "translations" edges to PersonalInfoTranslation entities.
 func (piu *PersonalInfoUpdate) RemoveTranslations(p ...*PersonalInfoTranslation) *PersonalInfoUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -288,14 +311,14 @@ func (piu *PersonalInfoUpdate) ClearSocialLinks() *PersonalInfoUpdate {
 }
 
 // RemoveSocialLinkIDs removes the "social_links" edge to SocialLink entities by IDs.
-func (piu *PersonalInfoUpdate) RemoveSocialLinkIDs(ids ...uuid.UUID) *PersonalInfoUpdate {
+func (piu *PersonalInfoUpdate) RemoveSocialLinkIDs(ids ...string) *PersonalInfoUpdate {
 	piu.mutation.RemoveSocialLinkIDs(ids...)
 	return piu
 }
 
 // RemoveSocialLinks removes "social_links" edges to SocialLink entities.
 func (piu *PersonalInfoUpdate) RemoveSocialLinks(s ...*SocialLink) *PersonalInfoUpdate {
-	ids := make([]uuid.UUID, len(s))
+	ids := make([]string, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
 	}
@@ -332,7 +355,7 @@ func (piu *PersonalInfoUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (piu *PersonalInfoUpdate) defaults() {
-	if _, ok := piu.mutation.UpdatedAt(); !ok {
+	if _, ok := piu.mutation.UpdatedAt(); !ok && !piu.mutation.UpdatedAtCleared() {
 		v := personalinfo.UpdateDefaultUpdatedAt()
 		piu.mutation.SetUpdatedAt(v)
 	}
@@ -375,9 +398,6 @@ func (piu *PersonalInfoUpdate) check() error {
 			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "PersonalInfo.avatar_url": %w`, err)}
 		}
 	}
-	if piu.mutation.UserCleared() && len(piu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "PersonalInfo.user"`)
-	}
 	return nil
 }
 
@@ -385,7 +405,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := piu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(personalinfo.Table, personalinfo.Columns, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(personalinfo.Table, personalinfo.Columns, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString))
 	if ps := piu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -396,8 +416,14 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := piu.mutation.FullName(); ok {
 		_spec.SetField(personalinfo.FieldFullName, field.TypeString, value)
 	}
+	if piu.mutation.FullNameCleared() {
+		_spec.ClearField(personalinfo.FieldFullName, field.TypeString)
+	}
 	if value, ok := piu.mutation.Title(); ok {
 		_spec.SetField(personalinfo.FieldTitle, field.TypeString, value)
+	}
+	if piu.mutation.TitleCleared() {
+		_spec.ClearField(personalinfo.FieldTitle, field.TypeString)
 	}
 	if value, ok := piu.mutation.CurrentStatus(); ok {
 		_spec.SetField(personalinfo.FieldCurrentStatus, field.TypeString, value)
@@ -438,8 +464,14 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := piu.mutation.IsPrimary(); ok {
 		_spec.SetField(personalinfo.FieldIsPrimary, field.TypeBool, value)
 	}
+	if piu.mutation.CreatedAtCleared() {
+		_spec.ClearField(personalinfo.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := piu.mutation.UpdatedAt(); ok {
 		_spec.SetField(personalinfo.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if piu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(personalinfo.FieldUpdatedAt, field.TypeTime)
 	}
 	if piu.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -449,7 +481,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -462,7 +494,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -478,7 +510,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -491,7 +523,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -507,7 +539,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -523,7 +555,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.SocialLinksColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -536,7 +568,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.SocialLinksColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -552,7 +584,7 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{personalinfo.SocialLinksColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -581,16 +613,22 @@ type PersonalInfoUpdateOne struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (piuo *PersonalInfoUpdateOne) SetUserID(u uuid.UUID) *PersonalInfoUpdateOne {
-	piuo.mutation.SetUserID(u)
+func (piuo *PersonalInfoUpdateOne) SetUserID(s string) *PersonalInfoUpdateOne {
+	piuo.mutation.SetUserID(s)
 	return piuo
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (piuo *PersonalInfoUpdateOne) SetNillableUserID(u *uuid.UUID) *PersonalInfoUpdateOne {
-	if u != nil {
-		piuo.SetUserID(*u)
+func (piuo *PersonalInfoUpdateOne) SetNillableUserID(s *string) *PersonalInfoUpdateOne {
+	if s != nil {
+		piuo.SetUserID(*s)
 	}
+	return piuo
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (piuo *PersonalInfoUpdateOne) ClearUserID() *PersonalInfoUpdateOne {
+	piuo.mutation.ClearUserID()
 	return piuo
 }
 
@@ -608,6 +646,12 @@ func (piuo *PersonalInfoUpdateOne) SetNillableFullName(s *string) *PersonalInfoU
 	return piuo
 }
 
+// ClearFullName clears the value of the "full_name" field.
+func (piuo *PersonalInfoUpdateOne) ClearFullName() *PersonalInfoUpdateOne {
+	piuo.mutation.ClearFullName()
+	return piuo
+}
+
 // SetTitle sets the "title" field.
 func (piuo *PersonalInfoUpdateOne) SetTitle(s string) *PersonalInfoUpdateOne {
 	piuo.mutation.SetTitle(s)
@@ -619,6 +663,12 @@ func (piuo *PersonalInfoUpdateOne) SetNillableTitle(s *string) *PersonalInfoUpda
 	if s != nil {
 		piuo.SetTitle(*s)
 	}
+	return piuo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (piuo *PersonalInfoUpdateOne) ClearTitle() *PersonalInfoUpdateOne {
+	piuo.mutation.ClearTitle()
 	return piuo
 }
 
@@ -762,20 +812,26 @@ func (piuo *PersonalInfoUpdateOne) SetUpdatedAt(t time.Time) *PersonalInfoUpdate
 	return piuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (piuo *PersonalInfoUpdateOne) ClearUpdatedAt() *PersonalInfoUpdateOne {
+	piuo.mutation.ClearUpdatedAt()
+	return piuo
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (piuo *PersonalInfoUpdateOne) SetUser(u *User) *PersonalInfoUpdateOne {
 	return piuo.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the PersonalInfoTranslation entity by IDs.
-func (piuo *PersonalInfoUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *PersonalInfoUpdateOne {
+func (piuo *PersonalInfoUpdateOne) AddTranslationIDs(ids ...string) *PersonalInfoUpdateOne {
 	piuo.mutation.AddTranslationIDs(ids...)
 	return piuo
 }
 
 // AddTranslations adds the "translations" edges to the PersonalInfoTranslation entity.
 func (piuo *PersonalInfoUpdateOne) AddTranslations(p ...*PersonalInfoTranslation) *PersonalInfoUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -783,14 +839,14 @@ func (piuo *PersonalInfoUpdateOne) AddTranslations(p ...*PersonalInfoTranslation
 }
 
 // AddSocialLinkIDs adds the "social_links" edge to the SocialLink entity by IDs.
-func (piuo *PersonalInfoUpdateOne) AddSocialLinkIDs(ids ...uuid.UUID) *PersonalInfoUpdateOne {
+func (piuo *PersonalInfoUpdateOne) AddSocialLinkIDs(ids ...string) *PersonalInfoUpdateOne {
 	piuo.mutation.AddSocialLinkIDs(ids...)
 	return piuo
 }
 
 // AddSocialLinks adds the "social_links" edges to the SocialLink entity.
 func (piuo *PersonalInfoUpdateOne) AddSocialLinks(s ...*SocialLink) *PersonalInfoUpdateOne {
-	ids := make([]uuid.UUID, len(s))
+	ids := make([]string, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
 	}
@@ -815,14 +871,14 @@ func (piuo *PersonalInfoUpdateOne) ClearTranslations() *PersonalInfoUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to PersonalInfoTranslation entities by IDs.
-func (piuo *PersonalInfoUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *PersonalInfoUpdateOne {
+func (piuo *PersonalInfoUpdateOne) RemoveTranslationIDs(ids ...string) *PersonalInfoUpdateOne {
 	piuo.mutation.RemoveTranslationIDs(ids...)
 	return piuo
 }
 
 // RemoveTranslations removes "translations" edges to PersonalInfoTranslation entities.
 func (piuo *PersonalInfoUpdateOne) RemoveTranslations(p ...*PersonalInfoTranslation) *PersonalInfoUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -836,14 +892,14 @@ func (piuo *PersonalInfoUpdateOne) ClearSocialLinks() *PersonalInfoUpdateOne {
 }
 
 // RemoveSocialLinkIDs removes the "social_links" edge to SocialLink entities by IDs.
-func (piuo *PersonalInfoUpdateOne) RemoveSocialLinkIDs(ids ...uuid.UUID) *PersonalInfoUpdateOne {
+func (piuo *PersonalInfoUpdateOne) RemoveSocialLinkIDs(ids ...string) *PersonalInfoUpdateOne {
 	piuo.mutation.RemoveSocialLinkIDs(ids...)
 	return piuo
 }
 
 // RemoveSocialLinks removes "social_links" edges to SocialLink entities.
 func (piuo *PersonalInfoUpdateOne) RemoveSocialLinks(s ...*SocialLink) *PersonalInfoUpdateOne {
-	ids := make([]uuid.UUID, len(s))
+	ids := make([]string, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
 	}
@@ -893,7 +949,7 @@ func (piuo *PersonalInfoUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (piuo *PersonalInfoUpdateOne) defaults() {
-	if _, ok := piuo.mutation.UpdatedAt(); !ok {
+	if _, ok := piuo.mutation.UpdatedAt(); !ok && !piuo.mutation.UpdatedAtCleared() {
 		v := personalinfo.UpdateDefaultUpdatedAt()
 		piuo.mutation.SetUpdatedAt(v)
 	}
@@ -936,9 +992,6 @@ func (piuo *PersonalInfoUpdateOne) check() error {
 			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "PersonalInfo.avatar_url": %w`, err)}
 		}
 	}
-	if piuo.mutation.UserCleared() && len(piuo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "PersonalInfo.user"`)
-	}
 	return nil
 }
 
@@ -946,7 +999,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 	if err := piuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(personalinfo.Table, personalinfo.Columns, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(personalinfo.Table, personalinfo.Columns, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString))
 	id, ok := piuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PersonalInfo.id" for update`)}
@@ -974,8 +1027,14 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 	if value, ok := piuo.mutation.FullName(); ok {
 		_spec.SetField(personalinfo.FieldFullName, field.TypeString, value)
 	}
+	if piuo.mutation.FullNameCleared() {
+		_spec.ClearField(personalinfo.FieldFullName, field.TypeString)
+	}
 	if value, ok := piuo.mutation.Title(); ok {
 		_spec.SetField(personalinfo.FieldTitle, field.TypeString, value)
+	}
+	if piuo.mutation.TitleCleared() {
+		_spec.ClearField(personalinfo.FieldTitle, field.TypeString)
 	}
 	if value, ok := piuo.mutation.CurrentStatus(); ok {
 		_spec.SetField(personalinfo.FieldCurrentStatus, field.TypeString, value)
@@ -1016,8 +1075,14 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 	if value, ok := piuo.mutation.IsPrimary(); ok {
 		_spec.SetField(personalinfo.FieldIsPrimary, field.TypeBool, value)
 	}
+	if piuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(personalinfo.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := piuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(personalinfo.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if piuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(personalinfo.FieldUpdatedAt, field.TypeTime)
 	}
 	if piuo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1027,7 +1092,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1040,7 +1105,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1056,7 +1121,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1069,7 +1134,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1085,7 +1150,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1101,7 +1166,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.SocialLinksColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1114,7 +1179,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.SocialLinksColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1130,7 +1195,7 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			Columns: []string{personalinfo.SocialLinksColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

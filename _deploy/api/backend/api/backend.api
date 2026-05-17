@@ -1,0 +1,947 @@
+syntax = "v1"
+
+info (
+	title:   "Silan Personal Website API"
+	desc:    "Content management and analytics API for personal website"
+	author:  "Silan Hu"
+	version: "v1"
+)
+
+type (
+	// User and Personal Info types
+	PersonalInfo {
+		ID            string       `json:"id"`
+		UserID        string       `json:"user_id"`
+		FullName      string       `json:"full_name"`
+		Title         string       `json:"title"`
+		CurrentStatus string       `json:"current_status,omitempty"`
+		Phone         string       `json:"phone,omitempty"`
+		Email         string       `json:"email,omitempty"`
+		Location      string       `json:"location,omitempty"`
+		Website       string       `json:"website,omitempty"`
+		AvatarURL     string       `json:"avatar_url,omitempty"`
+		IsPrimary     bool         `json:"is_primary"`
+		Contacts      []Contact    `json:"contacts"`
+		SocialLinks   []SocialLink `json:"social_links"`
+		CreatedAt     string       `json:"created_at"`
+		UpdatedAt     string       `json:"updated_at"`
+	}
+	Contact {
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	}
+	SocialLink {
+		ID          string `json:"id"`
+		Platform    string `json:"platform"`
+		URL         string `json:"url"`
+		DisplayName string `json:"display_name,omitempty"`
+		IsActive    bool   `json:"is_active"`
+		SortOrder   int    `json:"sort_order"`
+	}
+	// Education types
+	Education {
+		ID                 string   `json:"id"`
+		UserID             string   `json:"user_id"`
+		Institution        string   `json:"institution"`
+		Degree             string   `json:"degree"`
+		FieldOfStudy       string   `json:"field_of_study,omitempty"`
+		StartDate          string   `json:"start_date,omitempty"`
+		EndDate            string   `json:"end_date,omitempty"`
+		IsCurrent          bool     `json:"is_current"`
+		GPA                string   `json:"gpa,omitempty"`
+		Location           string   `json:"location,omitempty"`
+		InstitutionWebsite string   `json:"institution_website,omitempty"`
+		InstitutionLogoURL string   `json:"institution_logo_url,omitempty"`
+		Details            []string `json:"details"`
+		SortOrder          int      `json:"sort_order"`
+		CreatedAt          string   `json:"created_at"`
+		UpdatedAt          string   `json:"updated_at"`
+	}
+	// Experience types
+	WorkExperience {
+		ID             string   `json:"id"`
+		UserID         string   `json:"user_id"`
+		Company        string   `json:"company"`
+		Position       string   `json:"position"`
+		StartDate      string   `json:"start_date,omitempty"`
+		EndDate        string   `json:"end_date,omitempty"`
+		IsCurrent      bool     `json:"is_current"`
+		Location       string   `json:"location,omitempty"`
+		CompanyWebsite string   `json:"company_website,omitempty"`
+		CompanyLogoURL string   `json:"company_logo_url,omitempty"`
+		Details        []string `json:"details"`
+		SortOrder      int      `json:"sort_order"`
+		CreatedAt      string   `json:"created_at"`
+		UpdatedAt      string   `json:"updated_at"`
+	}
+	// Research types
+	ResearchProject {
+		ID          string   `json:"id"`
+		UserID      string   `json:"user_id"`
+		Title       string   `json:"title"`
+		Institution string   `json:"institution,omitempty"`
+		Location    string   `json:"location,omitempty"`
+		StartDate   string   `json:"start_date,omitempty"`
+		EndDate     string   `json:"end_date,omitempty"`
+		Details     []string `json:"details"`
+		SortOrder   int      `json:"sort_order"`
+		CreatedAt   string   `json:"created_at"`
+		UpdatedAt   string   `json:"updated_at"`
+	}
+	Publication {
+		ID            string `json:"id"`
+		UserID        string `json:"user_id"`
+		Title         string `json:"title"`
+		Authors       string `json:"authors"`
+		Journal       string `json:"journal,omitempty"`
+		Conference    string `json:"conference,omitempty"`
+		Publisher     string `json:"publisher,omitempty"`
+		PublishedAt   string `json:"published_at,omitempty"`
+		DOI           string `json:"doi,omitempty"`
+		URL           string `json:"url,omitempty"`
+		CitationCount int    `json:"citation_count"`
+		CreatedAt     string `json:"created_at"`
+		UpdatedAt     string `json:"updated_at"`
+	}
+	Award {
+		ID           string `json:"id"`
+		UserID       string `json:"user_id"`
+		Title        string `json:"title"`
+		Organization string `json:"organization"`
+		Description  string `json:"description,omitempty"`
+		AwardDate    string `json:"award_date,omitempty"`
+		Category     string `json:"category,omitempty"`
+		SortOrder    int    `json:"sort_order"`
+		CreatedAt    string `json:"created_at"`
+		UpdatedAt    string `json:"updated_at"`
+	}
+	// Recent Update types
+	RecentUpdate {
+		ID          string   `json:"id"`
+		UserID      string   `json:"user_id"`
+		Type        string   `json:"type"`
+		Title       string   `json:"title"`
+		Description string   `json:"description"`
+		Date        string   `json:"date"`
+		Tags        []string `json:"tags"`
+		Status      string   `json:"status"`
+		Priority    string   `json:"priority"`
+		CreatedAt   string   `json:"created_at"`
+		UpdatedAt   string   `json:"updated_at"`
+	}
+	// Resume Data aggregation
+	ResumeData {
+		PersonalInfo  PersonalInfo      `json:"personal_info"`
+		Education     []Education       `json:"education"`
+		Experience    []WorkExperience  `json:"experience"`
+		Research      []ResearchProject `json:"research"`
+		Publications  []Publication     `json:"publications"`
+		Awards        []Award           `json:"awards"`
+		RecentUpdates []RecentUpdate    `json:"recent_updates"`
+		Skills        []string          `json:"skills"`
+	}
+	// Project types
+	// Project types (updated to match frontend exactly)
+	Project {
+		ID          string   `json:"id"`
+		Name        string   `json:"name"`
+		Description string   `json:"description"`
+		Tags        []string `json:"tags"`
+		Year        int      `json:"year"`
+		AnnualPlan  string   `json:"annual_plan"`
+	}
+	// Extended project for detailed views
+	ProjectExtended {
+		ID               string   `json:"id"`
+		UserID           string   `json:"user_id"`
+		Title            string   `json:"title"`
+		Slug             string   `json:"slug"`
+		Description      string   `json:"description"`
+		FullDescription  string   `json:"full_description,omitempty"`
+		ProjectType      string   `json:"project_type"`
+		Status           string   `json:"status"`
+		StartDate        string   `json:"start_date,omitempty"`
+		EndDate          string   `json:"end_date,omitempty"`
+		Technologies     []string `json:"technologies"`
+		GithubURL        string   `json:"github_url,omitempty"`
+		DemoURL          string   `json:"demo_url,omitempty"`
+		DocumentationURL string   `json:"documentation_url,omitempty"`
+		ThumbnailURL     string   `json:"thumbnail_url,omitempty"`
+		IsFeatured       bool     `json:"is_featured"`
+		IsPublic         bool     `json:"is_public"`
+		ViewCount        int64    `json:"view_count"`
+		StarCount        int64    `json:"star_count"`
+		SortOrder        int      `json:"sort_order"`
+		Year             int      `json:"year"`
+		AnnualPlan       string   `json:"annual_plan,omitempty"`
+		TeamSize         int      `json:"team_size,omitempty"`
+		MyRole           string   `json:"my_role,omitempty"`
+		Features         []string `json:"features"`
+		LinesOfCode      int      `json:"lines_of_code,omitempty"`
+		Commits          int      `json:"commits,omitempty"`
+		Downloads        int      `json:"downloads,omitempty"`
+		CreatedAt        string   `json:"created_at"`
+		UpdatedAt        string   `json:"updated_at"`
+	}
+	ProjectDetail {
+		ID                  string           `json:"id"`
+		ProjectID           string           `json:"project_id"`
+		DetailedDescription string           `json:"detailed_description,omitempty"`
+		Goals               string           `json:"goals,omitempty"`
+		Challenges          string           `json:"challenges,omitempty"`
+		Solutions           string           `json:"solutions,omitempty"`
+		LessonsLearned      string           `json:"lessons_learned,omitempty"`
+		FutureEnhancements  string           `json:"future_enhancements,omitempty"`
+		License             string           `json:"license,omitempty"`
+		LicenseText         string           `json:"license_text,omitempty"`
+		Version             string           `json:"version,omitempty"`
+		Timeline            ProjectTimeline  `json:"timeline"`
+		Metrics             ProjectMetrics   `json:"metrics"`
+		RelatedBlogs        []ProjectBlogRef `json:"related_blogs"`
+		CreatedAt           string           `json:"created_at"`
+		UpdatedAt           string           `json:"updated_at"`
+	}
+	ProjectTimeline {
+		Start    string `json:"start"`
+		End      string `json:"end"`
+		Duration string `json:"duration"`
+	}
+	ProjectMetrics {
+		LinesOfCode int `json:"lines_of_code"`
+		Commits     int `json:"commits"`
+		Stars       int `json:"stars"`
+		Downloads   int `json:"downloads"`
+	}
+	ProjectBlogRef {
+		ID          string   `json:"id"`
+		Title       string   `json:"title"`
+		Summary     string   `json:"summary"`
+		PublishDate string   `json:"publish_date"`
+		Category    string   `json:"category"`
+		Tags        []string `json:"tags"`
+		ReadTime    string   `json:"read_time"`
+		URL         string   `json:"url"`
+		Relevance   string   `json:"relevance"`
+		Description string   `json:"description"`
+	}
+	// Annual Plan types
+	AnnualPlan {
+		ID           string        `json:"id"`
+		Year         int           `json:"year"`
+		Name         string        `json:"name"`
+		Description  string        `json:"description"`
+		Icon         string        `json:"icon,omitempty"`
+		Image        string        `json:"image,omitempty"`
+		ProjectCount int           `json:"project_count"`
+		Objectives   []string      `json:"objectives"`
+		Projects     []PlanProject `json:"projects"`
+		CreatedAt    string        `json:"created_at"`
+		UpdatedAt    string        `json:"updated_at"`
+	}
+	PlanProject {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	// Resume requests
+	ResumeRequest {
+		Language string `form:"lang,default=en"`
+	}
+	PersonalInfoRequest {
+		Language string `form:"lang,default=en"`
+	}
+	UpdatePersonalInfoRequest {
+		FullName      string       `json:"full_name,optional"`
+		Title         string       `json:"title,optional"`
+		CurrentStatus string       `json:"current_status,optional"`
+		Phone         string       `json:"phone,optional"`
+		Email         string       `json:"email,optional"`
+		Location      string       `json:"location,optional"`
+		Website       string       `json:"website,optional"`
+		AvatarURL     string       `json:"avatar_url,optional"`
+		Contacts      []Contact    `json:"contacts,optional"`
+		SocialLinks   []SocialLink `json:"social_links,optional"`
+	}
+	// Project requests (updated to match frontend exactly)
+	ProjectListRequest {
+		Page       int    `form:"page,default=1"`
+		Size       int    `form:"size,default=10"`
+		Type       string `form:"type,optional"`
+		Featured   bool   `form:"featured,optional"`
+		Status     string `form:"status,optional"`
+		Search     string `form:"search,optional"`
+		Year       int    `form:"year,optional"`
+		AnnualPlan string `form:"annual_plan,optional"`
+		Tags       string `form:"tags,optional"`
+		Language   string `form:"lang,default=en"`
+	}
+	// Project by ID request (frontend uses numeric ID)
+	ProjectByIdRequest {
+		ID       string `path:"id"`
+		Language string `form:"lang,default=en"`
+	}
+	ProjectListResponse {
+		Projects   []Project `json:"projects"`
+		Total      int64     `json:"total"`
+		Page       int       `json:"page"`
+		Size       int       `json:"size"`
+		TotalPages int       `json:"total_pages"`
+	}
+	ProjectRequest {
+		Slug     string `path:"slug"`
+		Language string `form:"lang,default=en"`
+	}
+	ProjectDetailRequest {
+		ID       string `path:"id"`
+		Language string `form:"lang,default=en"`
+	}
+	CreateProjectRequest {
+		Name        string   `json:"name"`
+		Description string   `json:"description,optional"`
+		Tags        []string `json:"tags,optional"`
+		Year        int      `json:"year"`
+		AnnualPlan  string   `json:"annual_plan"`
+	}
+	UpdateProjectRequest {
+		ID          string   `path:"id"`
+		Name        string   `json:"name,optional"`
+		Description string   `json:"description,optional"`
+		Tags        []string `json:"tags,optional"`
+		Year        int      `json:"year,optional"`
+		AnnualPlan  string   `json:"annual_plan,optional"`
+	}
+	DeleteProjectRequest {
+		ID string `path:"id"`
+	}
+	// Annual Plan requests
+	AnnualPlanListRequest {
+		Language string `form:"lang,default=en"`
+	}
+	AnnualPlanRequest {
+		Name     string `path:"name"`
+		Language string `form:"lang,default=en"`
+	}
+	ProjectsWithPlansRequest {
+		Language string `form:"lang,default=en"`
+	}
+	ProjectsByPlanRequest {
+		PlanName string `path:"plan_name"`
+		Language string `form:"lang,default=en"`
+	}
+	// Blog types (matching frontend BlogData interface)
+	BlogContent {
+		Type       string `json:"type"`
+		Content    string `json:"content"`
+		Caption    string `json:"caption,omitempty"`
+		Language   string `json:"language,omitempty"`
+		Annotation string `json:"annotation,omitempty"`
+		ID         string `json:"id"`
+	}
+	BlogData {
+		ID                  string        `json:"id"`
+		Title               string        `json:"title"`
+		TitleZh             string        `json:"title_zh,omitempty"`
+		Slug                string        `json:"slug,omitempty"`
+		Author              string        `json:"author"`
+		PublishDate         string        `json:"publish_date"`
+		ReadTime            string        `json:"read_time"`
+		Category            string        `json:"category"`
+		Tags                []string      `json:"tags"`
+		Content             []BlogContent `json:"content"`
+		Likes               int64         `json:"likes"`
+		Views               int64         `json:"views"`
+		Summary             string        `json:"summary"`
+		SummaryZh           string        `json:"summary_zh,omitempty"`
+		Type                string        `json:"type,omitempty"`
+		VideoURL            string        `json:"video_url,omitempty"`
+		VideoDuration       string        `json:"video_duration,omitempty"`
+		VideoThumbnail      string        `json:"video_thumbnail,omitempty"`
+		SeriesID            string        `json:"series_id,omitempty"`
+		SeriesTitle         string        `json:"series_title,omitempty"`
+		SeriesTitleZh       string        `json:"series_title_zh,omitempty"`
+		SeriesDescription   string        `json:"series_description,omitempty"`
+		SeriesDescriptionZh string        `json:"series_description_zh,omitempty"`
+		EpisodeNumber       int           `json:"episode_number,omitempty"`
+		TotalEpisodes       int           `json:"total_episodes,omitempty"`
+		SeriesImage         string        `json:"series_image,omitempty"`
+	}
+	BlogCategory {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description,omitempty"`
+		Color       string `json:"color,omitempty"`
+		SortOrder   int    `json:"sort_order"`
+	}
+	BlogTag {
+		ID         string `json:"id"`
+		Name       string `json:"name"`
+		Slug       string `json:"slug"`
+		UsageCount int    `json:"usage_count"`
+	}
+	BlogSeries {
+		ID             string          `json:"id"`
+		Title          string          `json:"title"`
+		Description    string          `json:"description"`
+		ThumbnailURL   string          `json:"thumbnail_url,omitempty"`
+		Episodes       []SeriesEpisode `json:"episodes"`
+		TotalDuration  string          `json:"total_duration"`
+		CompletedCount int             `json:"completed_count"`
+		CreatedAt      string          `json:"created_at"`
+		UpdatedAt      string          `json:"updated_at"`
+	}
+	SeriesEpisode {
+		ID        string `json:"id"`
+		Title     string `json:"title"`
+		Duration  string `json:"duration,omitempty"`
+		Completed bool   `json:"completed,omitempty"`
+		Current   bool   `json:"current,omitempty"`
+		Order     int    `json:"order"`
+	}
+	// Blog comments
+	BlogCommentData {
+		ID              string            `json:"id"`
+		BlogPostID      string            `json:"blog_post_id"`
+		ParentID        string            `json:"parent_id,optional"`
+		AuthorName      string            `json:"author_name"`
+		AuthorAvatarURL string            `json:"author_avatar_url,optional"`
+		Content         string            `json:"content"`
+		CreatedAt       string            `json:"created_at"`
+		UserIdentityID  string            `json:"user_identity_id,optional"`
+		LikesCount      int               `json:"likes_count"`
+		IsLikedByUser   bool              `json:"is_liked_by_user"`
+		Replies         []BlogCommentData `json:"replies,optional"`
+	}
+	BlogCommentListResponse {
+		Comments []BlogCommentData `json:"comments"`
+		Total    int               `json:"total"`
+	}
+	BlogCommentListRequest {
+		ID       string `path:"id"`
+		Language string `form:"lang,default=en"`
+	}
+	CreateBlogCommentRequest {
+		ID             string `path:"id"`
+		ParentId       string `json:"parent_id,optional"`
+		AuthorName     string `json:"author_name"`
+		AuthorEmail    string `json:"author_email"`
+		Content        string `json:"content"`
+		Fingerprint    string `json:"fingerprint"`
+		UserIdentityId string `json:"user_identity_id,optional"`
+		IdToken        string `json:"id_token,optional"`
+		ClientIP       string `json:"client_ip,optional"`
+		UserAgentFull  string `json:"user_agent_full,optional"`
+		Language       string `form:"lang,default=en"`
+	}
+	DeleteBlogCommentRequest {
+		CommentID      string `path:"comment_id"`
+		Fingerprint    string `json:"fingerprint"`
+		UserIdentityId string `json:"user_identity_id,optional"`
+		ClientIP       string `json:"client_ip,optional"`
+		UserAgentFull  string `json:"user_agent_full,optional"`
+		Language       string `form:"lang,default=en"`
+	}
+	LikeCommentRequest {
+		CommentID      string `path:"comment_id"`
+		Fingerprint    string `json:"fingerprint"`
+		UserIdentityId string `json:"user_identity_id,optional"`
+		ClientIP       string `json:"client_ip,optional"`
+		UserAgentFull  string `json:"user_agent_full,optional"`
+		Language       string `form:"lang,default=en"`
+	}
+	LikeCommentResponse {
+		LikesCount    int  `json:"likes_count"`
+		IsLikedByUser bool `json:"is_liked_by_user"`
+	}
+	BlogListRequest {
+		Page        int    `form:"page,default=1"`
+		Size        int    `form:"size,default=10"`
+		Status      string `form:"status,optional"`
+		ContentType string `form:"content_type,optional"`
+		Featured    bool   `form:"featured,optional"`
+		Tag         string `form:"tag,optional"`
+		Category    string `form:"category,optional"`
+		Author      string `form:"author,optional"`
+		Search      string `form:"search,optional"`
+		Language    string `form:"lang,default=en"`
+	}
+	BlogListResponse {
+		Posts      []BlogData `json:"posts"`
+		Total      int64      `json:"total"`
+		Page       int        `json:"page"`
+		Size       int        `json:"size"`
+		TotalPages int        `json:"total_pages"`
+	}
+	BlogRequest {
+		Slug     string `path:"slug"`
+		Language string `form:"lang,default=en"`
+	}
+	BlogByIdRequest {
+		ID       string `path:"id"`
+		Language string `form:"lang,default=en"`
+	}
+	// Graph Data for project visualization
+	GraphNode {
+		ID    string `json:"id"`
+		Group int    `json:"group"`
+	}
+	GraphLink {
+		Source string `json:"source"`
+		Target string `json:"target"`
+		Value  int    `json:"value"`
+	}
+	GraphData {
+		Nodes []GraphNode `json:"nodes"`
+		Links []GraphLink `json:"links"`
+	}
+	GraphRequest {
+		Category string `form:"category,default=all"`
+		Language string `form:"lang,default=en"`
+	}
+	BlogCategoriesRequest {
+		Language string `form:"lang,default=en"`
+	}
+	BlogTagsRequest {
+		Language string `form:"lang,default=en"`
+	}
+	UpdateBlogViewsRequest {
+		ID       string `path:"id"`
+		Language string `form:"lang,default=en"`
+	}
+	UpdateBlogLikesRequest {
+		ID        string `path:"id"`
+		Increment bool   `json:"increment,default=true"`
+		Language  string `form:"lang,default=en"`
+	}
+	UpdateBlogLikesResponse {
+		Likes int64 `json:"likes"`
+	}
+	BlogSeriesRequest {
+		SeriesID string `path:"series_id"`
+		Language string `form:"lang,default=en"`
+	}
+	UpdateSeriesProgressRequest {
+		SeriesID  string `path:"series_id"`
+		EpisodeID string `path:"episode_id"`
+		Completed bool   `json:"completed"`
+		Language  string `form:"lang,default=en"`
+	}
+	// Idea types (matching frontend IdeaData exactly)
+	IdeaData {
+		ID          string   `json:"id"`
+		Title       string   `json:"title"`
+		Description string   `json:"description"`
+		Category    string   `json:"category"`
+		Tags        []string `json:"tags"`
+		Status      string   `json:"status"`
+		CreatedAt   string   `json:"created_at"`
+		LastUpdated string   `json:"last_updated,omitempty"`
+		// Academic/Research oriented fields
+		Abstract     string `json:"abstract,omitempty"`
+		AbstractZh   string `json:"abstract_zh,omitempty"`
+		Hypothesis   string `json:"hypothesis,omitempty"`
+		HypothesisZh string `json:"hypothesis_zh,omitempty"`
+		Motivation   string `json:"motivation,omitempty"`
+		MotivationZh string `json:"motivation_zh,omitempty"`
+		// Research methodology
+		Methodology          string       `json:"methodology,omitempty"`
+		MethodologyZh        string       `json:"methodology_zh,omitempty"`
+		Experiments          []Experiment `json:"experiments,omitempty"`
+		PreliminaryResults   string       `json:"preliminary_results,omitempty"`
+		PreliminaryResultsZh string       `json:"preliminary_results_zh,omitempty"`
+		// Academic context
+		RelatedWorks       []Reference `json:"related_works,omitempty"`
+		Citations          []Reference `json:"citations,omitempty"`
+		FutureDirections   []string    `json:"future_directions,omitempty"`
+		FutureDirectionsZh []string    `json:"future_directions_zh,omitempty"`
+		// Implementation details
+		TechStack      []string `json:"tech_stack,omitempty"`
+		CodeRepository string   `json:"code_repository,omitempty"`
+		DemoURL        string   `json:"demo_url,omitempty"`
+		// Community and collaboration
+		Collaborators        []Collaborator `json:"collaborators,omitempty"`
+		OpenForCollaboration bool           `json:"open_for_collaboration,omitempty"`
+		FeedbackRequested    []FeedbackType `json:"feedback_requested,omitempty"`
+		// Publication status
+		Publications []IdeaPublicationRef `json:"publications,omitempty"`
+		Conferences  []string             `json:"conferences,omitempty"`
+		// Validation and results
+		ValidationStatus string   `json:"validation_status,omitempty"`
+		KeyFindings      []string `json:"key_findings,omitempty"`
+		KeyFindingsZh    []string `json:"key_findings_zh,omitempty"`
+		Limitations      []string `json:"limitations,omitempty"`
+		LimitationsZh    []string `json:"limitations_zh,omitempty"`
+		// Additional metadata
+		Difficulty        string   `json:"difficulty,omitempty"`
+		ResearchField     string   `json:"research_field,omitempty"`
+		Keywords          []string `json:"keywords,omitempty"`
+		EstimatedDuration string   `json:"estimated_duration,omitempty"`
+		FundingStatus     string   `json:"funding_status,omitempty"`
+	}
+	// Supporting types for IdeaData
+	Experiment {
+		ID            string `json:"id"`
+		Title         string `json:"title"`
+		TitleZh       string `json:"title_zh,omitempty"`
+		Description   string `json:"description"`
+		DescriptionZh string `json:"description_zh,omitempty"`
+		Status        string `json:"status"`
+		StartDate     string `json:"start_date,omitempty"`
+		EndDate       string `json:"end_date,omitempty"`
+		Results       string `json:"results,omitempty"`
+		ResultsZh     string `json:"results_zh,omitempty"`
+		DataURL       string `json:"data_url,omitempty"`
+	}
+	Reference {
+		ID      string   `json:"id"`
+		Title   string   `json:"title"`
+		Authors []string `json:"authors"`
+		Year    int      `json:"year"`
+		Venue   string   `json:"venue,omitempty"`
+		URL     string   `json:"url,omitempty"`
+		DOI     string   `json:"doi,omitempty"`
+		Notes   string   `json:"notes,omitempty"`
+		NotesZh string   `json:"notes_zh,omitempty"`
+	}
+	Collaborator {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Affiliation string `json:"affiliation,omitempty"`
+		Role        string `json:"role"`
+		Contact     string `json:"contact,omitempty"`
+	}
+	IdeaPublicationRef {
+		ID      string   `json:"id"`
+		Title   string   `json:"title"`
+		Authors []string `json:"authors"`
+		Venue   string   `json:"venue"`
+		Year    int      `json:"year"`
+		Status  string   `json:"status"`
+		URL     string   `json:"url,omitempty"`
+		DOI     string   `json:"doi,omitempty"`
+	}
+	FeedbackType {
+		Type          string `json:"type"`
+		Description   string `json:"description"`
+		DescriptionZh string `json:"description_zh,omitempty"`
+	}
+	IdeaListRequest {
+		Page          int    `form:"page,default=1"`
+		Size          int    `form:"size,default=10"`
+		Status        string `form:"status,optional"`
+		Category      string `form:"category,optional"`
+		Difficulty    string `form:"difficulty,optional"`
+		Collaboration bool   `form:"collaboration,optional"`
+		Funding       string `form:"funding,optional"`
+		Search        string `form:"search,optional"`
+		Tags          string `form:"tags,optional"`
+		Language      string `form:"lang,default=en"`
+	}
+	IdeaListResponse {
+		Ideas      []IdeaData `json:"ideas"`
+		Total      int64      `json:"total"`
+		Page       int        `json:"page"`
+		Size       int        `json:"size"`
+		TotalPages int        `json:"total_pages"`
+	}
+	IdeaRequest {
+		ID       string `path:"id"`
+		Language string `form:"lang,default=en"`
+	}
+	CreateIdeaRequest {
+		Title                string   `json:"title"`
+		Description          string   `json:"description"`
+		Category             string   `json:"category"`
+		Tags                 []string `json:"tags"`
+		Status               string   `json:"status,default=draft"`
+		Abstract             string   `json:"abstract,optional"`
+		Motivation           string   `json:"motivation,optional"`
+		TechStack            []string `json:"tech_stack,optional"`
+		Difficulty           string   `json:"difficulty"`
+		ResearchField        string   `json:"research_field"`
+		Keywords             []string `json:"keywords,optional"`
+		EstimatedDuration    string   `json:"estimated_duration,optional"`
+		OpenForCollaboration bool     `json:"open_for_collaboration,optional"`
+		FundingStatus        string   `json:"funding_status,optional"`
+	}
+	UpdateIdeaRequest {
+		ID                   string   `path:"id"`
+		Title                string   `json:"title,optional"`
+		Description          string   `json:"description,optional"`
+		Category             string   `json:"category,optional"`
+		Tags                 []string `json:"tags,optional"`
+		Status               string   `json:"status,optional"`
+		Abstract             string   `json:"abstract,optional"`
+		Motivation           string   `json:"motivation,optional"`
+		TechStack            []string `json:"tech_stack,optional"`
+		Difficulty           string   `json:"difficulty,optional"`
+		ResearchField        string   `json:"research_field,optional"`
+		Keywords             []string `json:"keywords,optional"`
+		EstimatedDuration    string   `json:"estimated_duration,optional"`
+		OpenForCollaboration bool     `json:"open_for_collaboration,optional"`
+		FundingStatus        string   `json:"funding_status,optional"`
+		DemoURL              string   `json:"demo_url,optional"`
+		CodeRepository       string   `json:"code_repository,optional"`
+	}
+	DeleteIdeaRequest {
+		ID string `path:"id"`
+	}
+	IdeaCategoriesRequest {
+		Language string `form:"lang,default=en"`
+	}
+	IdeaTagsRequest {
+		Language string `form:"lang,default=en"`
+	}
+	// Search request types
+	BlogSearchRequest {
+		Query    string `form:"query,optional"`
+		Category string `form:"category,optional"`
+		Tags     string `form:"tags,optional"`
+		Author   string `form:"author,optional"`
+		Language string `form:"lang,default=en"`
+		Page     int    `form:"page,default=1"`
+		Size     int    `form:"size,default=10"`
+	}
+	ProjectSearchRequest {
+		Query    string `form:"query,optional"`
+		Tags     string `form:"tags,optional"`
+		Year     int    `form:"year,optional"`
+		PlanID   string `form:"plan_id,optional"`
+		Language string `form:"lang,default=en"`
+	}
+	IdeaSearchRequest {
+		Query    string `form:"query,optional"`
+		Category string `form:"category,optional"`
+		Status   string `form:"status,optional"`
+		Tags     string `form:"tags,optional"`
+		Language string `form:"lang,default=en"`
+		Page     int    `form:"page,default=1"`
+		Size     int    `form:"size,default=10"`
+	}
+	// Auth types
+	GoogleVerifyRequest {
+		IdToken string `json:"id_token"`
+	}
+	GoogleVerifyResponse {
+		ID        string `json:"id"`
+		Email     string `json:"email"`
+		Name      string `json:"name,optional"`
+		AvatarURL string `json:"avatar_url,optional"`
+		Provider  string `json:"provider"`
+		Verified  bool   `json:"verified"`
+	}
+)
+
+// ========== RESUME PAGE GROUP ==========
+@server (
+	group:      resume
+	prefix:     /api/v1/resume
+	middleware: Cors
+)
+service backend-api {
+	@doc "Get complete resume data"
+	@handler GetResumeData
+	get / (ResumeRequest) returns (ResumeData)
+
+	@doc "Get personal information"
+	@handler GetPersonalInfo
+	get /personal (PersonalInfoRequest) returns (PersonalInfo)
+
+	@doc "Get education list"
+	@handler GetEducation
+	get /education (ResumeRequest) returns ([]Education)
+
+	@doc "Get work experience list"
+	@handler GetWorkExperience
+	get /experience (ResumeRequest) returns ([]WorkExperience)
+
+	@doc "Get research projects list"
+	@handler GetResearchProjects
+	get /research (ResumeRequest) returns ([]ResearchProject)
+
+	@doc "Get publications list"
+	@handler GetPublications
+	get /publications (ResumeRequest) returns ([]Publication)
+
+	@doc "Get awards list"
+	@handler GetAwards
+	get /awards (ResumeRequest) returns ([]Award)
+
+	@doc "Get recent updates"
+	@handler GetRecentUpdates
+	get /recent (ResumeRequest) returns ([]RecentUpdate)
+}
+
+// ========== PROJECTS PAGE GROUP ==========
+@server (
+	group:      projects
+	prefix:     /api/v1/projects
+	middleware: Cors
+)
+service backend-api {
+	@doc "Get projects list with pagination and filtering"
+	@handler GetProjects
+	get / (ProjectListRequest) returns (ProjectListResponse)
+
+	@doc "Get single project by slug"
+	@handler GetProject
+	get /:slug (ProjectRequest) returns (ProjectExtended)
+
+	@doc "Get single project by ID (numeric)"
+	@handler GetProjectById
+	get /id/:id (ProjectByIdRequest) returns (Project)
+
+	@doc "Get detailed project information"
+	@handler GetProjectDetail
+	get /:id/detail (ProjectDetailRequest) returns (ProjectDetail)
+
+	@doc "Get project categories"
+	@handler GetProjectCategories
+	get /categories (ResumeRequest) returns ([]string)
+
+	@doc "Get project technologies/tags"
+	@handler GetProjectTags
+	get /tags (ResumeRequest) returns ([]string)
+
+	@doc "Get project graph data for visualization"
+	@handler GetProjectGraphData
+	get /graph (GraphRequest) returns (GraphData)
+
+	@doc "Get project related blogs"
+	@handler GetProjectRelatedBlogs
+	get /:id/blogs (ProjectDetailRequest) returns ([]ProjectBlogRef)
+
+	@doc "Search project details with filters"
+	@handler SearchProjectDetails
+	get /search (ProjectSearchRequest) returns ([]ProjectDetail)
+}
+
+// ========== ANNUAL PLANS GROUP ==========
+@server (
+	group:      plans
+	prefix:     /api/v1/plans
+	middleware: Cors
+)
+service backend-api {
+	@doc "Get annual plans list"
+	@handler GetAnnualPlans
+	get /annual (AnnualPlanListRequest) returns ([]AnnualPlan)
+
+	@doc "Get current annual plan"
+	@handler GetCurrentAnnualPlan
+	get /annual/current (AnnualPlanListRequest) returns (AnnualPlan)
+
+	@doc "Get annual plan by name"
+	@handler GetAnnualPlanByName
+	get /annual/:name (AnnualPlanRequest) returns (AnnualPlan)
+
+	@doc "Get projects with their annual plans"
+	@handler GetProjectsWithPlans
+	get /projects (ProjectsWithPlansRequest) returns ([]Project)
+
+	@doc "Get projects by annual plan"
+	@handler GetProjectsByPlan
+	get /:plan_name/projects (ProjectsByPlanRequest) returns ([]Project)
+}
+
+// ========== BLOG PAGE GROUP ==========
+@server (
+	group:      blog
+	prefix:     /api/v1/blog
+	middleware: Cors
+)
+service backend-api {
+	@doc "Get blog posts list with pagination and filtering"
+	@handler GetBlogPosts
+	get /posts (BlogListRequest) returns (BlogListResponse)
+
+	@doc "Get single blog post by slug"
+	@handler GetBlogPost
+	get /posts/:slug (BlogRequest) returns (BlogData)
+
+	@doc "Get single blog post by ID"
+	@handler GetBlogPostById
+	get /posts/id/:id (BlogByIdRequest) returns (BlogData)
+
+	@doc "Update blog post view count"
+	@handler UpdateBlogViews
+	post /posts/:id/views (UpdateBlogViewsRequest)
+
+	@doc "Update blog post like count"
+	@handler UpdateBlogLikes
+	post /posts/:id/likes (UpdateBlogLikesRequest) returns (UpdateBlogLikesResponse)
+
+	@doc "Get blog categories"
+	@handler GetBlogCategories
+	get /categories (BlogCategoriesRequest) returns ([]BlogCategory)
+
+	@doc "Get blog tags"
+	@handler GetBlogTags
+	get /tags (BlogTagsRequest) returns ([]BlogTag)
+
+	@doc "Get blog series data"
+	@handler GetBlogSeries
+	get /series/:series_id (BlogSeriesRequest) returns (BlogSeries)
+
+	@doc "Search blog posts with filters"
+	@handler SearchBlogPosts
+	get /search (BlogSearchRequest) returns (BlogListResponse)
+
+	// ----- Comments -----
+	@doc "List comments for a blog post"
+	@handler ListBlogComments
+	get /posts/:id/comments (BlogCommentListRequest) returns (BlogCommentListResponse)
+
+	@doc "Create a comment for a blog post"
+	@handler CreateBlogComment
+	post /posts/:id/comments (CreateBlogCommentRequest) returns (BlogCommentData)
+
+	@doc "Delete a comment (fingerprint required)"
+	@handler DeleteBlogComment
+	delete /comments/:comment_id (DeleteBlogCommentRequest)
+
+	@doc "Like/Unlike a comment"
+	@handler LikeComment
+	post /comments/:comment_id/like (LikeCommentRequest) returns (LikeCommentResponse)
+}
+
+// ========== IDEAS PAGE GROUP ==========
+@server (
+	group:      ideas
+	prefix:     /api/v1/ideas
+	middleware: Cors
+)
+service backend-api {
+	@doc "Get ideas list with pagination and filtering"
+	@handler GetIdeas
+	get / (IdeaListRequest) returns (IdeaListResponse)
+
+	@doc "Get single idea by ID"
+	@handler GetIdea
+	get /:id (IdeaRequest) returns (IdeaData)
+
+	@doc "Get idea categories"
+	@handler GetIdeaCategories
+	get /categories (IdeaCategoriesRequest) returns ([]string)
+
+	@doc "Get idea tags"
+	@handler GetIdeaTags
+	get /tags (IdeaTagsRequest) returns ([]string)
+
+	@doc "Search ideas with filters"
+	@handler SearchIdeas
+	get /search (IdeaSearchRequest) returns (IdeaListResponse)
+}
+
+// ========== AUTH GROUP ==========
+@server (
+	group:      auth
+	prefix:     /api/v1/auth
+	middleware: Cors
+)
+service backend-api {
+	@doc "Verify Google ID token and upsert identity"
+	@handler GoogleVerify
+	post /google/verify (GoogleVerifyRequest) returns (GoogleVerifyResponse)
+}
+

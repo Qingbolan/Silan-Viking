@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.PersonalInfoTranslation {
+func ID(id string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.PersonalInfoTranslation {
+func IDEQ(id string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.PersonalInfoTranslation {
+func IDNEQ(id string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.PersonalInfoTranslation {
+func IDIn(ids ...string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.PersonalInfoTranslation {
+func IDNotIn(ids ...string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.PersonalInfoTranslation {
+func IDGT(id string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.PersonalInfoTranslation {
+func IDGTE(id string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.PersonalInfoTranslation {
+func IDLT(id string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.PersonalInfoTranslation {
+func IDLTE(id string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // PersonalInfoID applies equality check predicate on the "personal_info_id" field. It's identical to PersonalInfoIDEQ.
-func PersonalInfoID(v uuid.UUID) predicate.PersonalInfoTranslation {
+func PersonalInfoID(v string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldEQ(FieldPersonalInfoID, v))
 }
 
@@ -92,23 +101,68 @@ func CreatedAt(v time.Time) predicate.PersonalInfoTranslation {
 }
 
 // PersonalInfoIDEQ applies the EQ predicate on the "personal_info_id" field.
-func PersonalInfoIDEQ(v uuid.UUID) predicate.PersonalInfoTranslation {
+func PersonalInfoIDEQ(v string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldEQ(FieldPersonalInfoID, v))
 }
 
 // PersonalInfoIDNEQ applies the NEQ predicate on the "personal_info_id" field.
-func PersonalInfoIDNEQ(v uuid.UUID) predicate.PersonalInfoTranslation {
+func PersonalInfoIDNEQ(v string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldNEQ(FieldPersonalInfoID, v))
 }
 
 // PersonalInfoIDIn applies the In predicate on the "personal_info_id" field.
-func PersonalInfoIDIn(vs ...uuid.UUID) predicate.PersonalInfoTranslation {
+func PersonalInfoIDIn(vs ...string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldIn(FieldPersonalInfoID, vs...))
 }
 
 // PersonalInfoIDNotIn applies the NotIn predicate on the "personal_info_id" field.
-func PersonalInfoIDNotIn(vs ...uuid.UUID) predicate.PersonalInfoTranslation {
+func PersonalInfoIDNotIn(vs ...string) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldNotIn(FieldPersonalInfoID, vs...))
+}
+
+// PersonalInfoIDGT applies the GT predicate on the "personal_info_id" field.
+func PersonalInfoIDGT(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldGT(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDGTE applies the GTE predicate on the "personal_info_id" field.
+func PersonalInfoIDGTE(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldGTE(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDLT applies the LT predicate on the "personal_info_id" field.
+func PersonalInfoIDLT(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldLT(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDLTE applies the LTE predicate on the "personal_info_id" field.
+func PersonalInfoIDLTE(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldLTE(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDContains applies the Contains predicate on the "personal_info_id" field.
+func PersonalInfoIDContains(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldContains(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDHasPrefix applies the HasPrefix predicate on the "personal_info_id" field.
+func PersonalInfoIDHasPrefix(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldHasPrefix(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDHasSuffix applies the HasSuffix predicate on the "personal_info_id" field.
+func PersonalInfoIDHasSuffix(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldHasSuffix(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDEqualFold applies the EqualFold predicate on the "personal_info_id" field.
+func PersonalInfoIDEqualFold(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldEqualFold(FieldPersonalInfoID, v))
+}
+
+// PersonalInfoIDContainsFold applies the ContainsFold predicate on the "personal_info_id" field.
+func PersonalInfoIDContainsFold(v string) predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldContainsFold(FieldPersonalInfoID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

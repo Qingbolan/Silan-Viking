@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { 
+import {
   ChevronUp, 
   BookOpen, 
   Clock, 
@@ -17,11 +16,9 @@ import {
   Info
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { useTheme } from '../ThemeContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
 import BlogComments from './components/BlogComments';
-import { BlogBreadcrumb } from './components/Breadcrumb';
 import { TableOfContents } from './components/TableOfContents';
 import { useTOC } from './hooks/useTOC';
 
@@ -46,7 +43,6 @@ interface ArticleDetailLayoutProps {
 
 const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
   post,
-  onBack,
   userAnnotations,
   annotations,
   showAnnotationForm,
@@ -63,9 +59,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
   onCancelAnnotation
 }) => {
   const { language } = useLanguage();
-  const navigate = useNavigate();
   const { sections } = useTOC(post);
-  const { isDarkMode } = useTheme();
   const reduceMotion = useReducedMotion();
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [metaSidebarCollapsed, setMetaSidebarCollapsed] = useState(false); // Default open on desktop
@@ -154,46 +148,6 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
   return (
     <div className="min-h-screen">
-      {/* Fixed Header - Y轴 0，考虑顶部导航栏 */}
-      <motion.div
-        role="region"
-        aria-label={language === 'en' ? 'Article header' : '文章页头'}
-        className={`fixed top-16 xs:top-18 sm:top-20 left-0 right-0 z-40 border-b border-theme-border ${metaSidebarCollapsed ? 'lg:ml-12' : 'lg:ml-60'} ${tocCollapsed ? 'lg:mr-12' : 'lg:mr-60'}`}
-        initial={reduceMotion ? false : { opacity: 0, y: -12 }}
-        animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        style={{
-          backgroundColor: isDarkMode ? 'rgba(26,26,26,0.50)' : 'rgba(255,255,255,0.70)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)'
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <BlogBreadcrumb
-              post={post}
-              onBack={onBack}
-              onFilterByCategory={(category) => {
-                // Navigate back to blog with category filter
-                navigate(`/blog?type=${category}`);
-              }}
-            />
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-4 text-sm text-theme-secondary">
-                <div className="flex items-center gap-1">
-                  <Eye size={14} />
-                  <span>{post.views}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Heart size={14} className={liked ? 'text-red-500 fill-current' : ''} />
-                  <span>{post.likes + (liked ? 1 : 0)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
       {/* Meta Sidebar - Y轴轨道 1 - Hidden on mobile */}
       <motion.div
         className={`fixed left-0 top-16 xs:top-18 sm:top-20 bottom-0 z-40 transition-all duration-300 hidden lg:block ${metaSidebarCollapsed ? 'w-12' : 'w-60'
@@ -201,7 +155,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         initial={reduceMotion ? false : { opacity: 0, x: -20 }}
         animate={reduceMotion ? undefined : { opacity: 1, x: 0 }}
       >
-        <div className="h-full overflow-y-auto p-4 pt-3.5 pl-5">
+        <div className="h-full overflow-y-auto p-4 pt-0 pl-5">
                       {/* Sidebar Toggle */}
             <button
               onClick={() => {
@@ -247,20 +201,43 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                       <span>{post.videoDuration}</span>
                     </div>
                   )}
+                  <div className="flex flex-wrap items-center gap-4 border-t border-theme-border pt-3 text-sm text-theme-secondary">
+                    <div className="flex items-center gap-1.5">
+                      <Eye size={16} />
+                      <span>{post.views.toLocaleString()}</span>
+                    </div>
+                    <button
+                      onClick={handleLike}
+                      className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${liked ? 'text-red-500' : ''}`}
+                      aria-label={liked ? (language === 'en' ? 'Unlike' : '取消点赞') : (language === 'en' ? 'Like' : '点赞')}
+                      type="button"
+                    >
+                      <Heart size={16} className={liked ? 'text-red-500 fill-current' : ''} />
+                      <span>{(post.likes + (liked ? 1 : 0)).toLocaleString()}</span>
+                    </button>
+                    <button
+                      onClick={handleBookmark}
+                      className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${bookmarked ? 'text-yellow-500' : ''}`}
+                      aria-label={bookmarked ? (language === 'en' ? 'Remove bookmark' : '取消收藏') : (language === 'en' ? 'Bookmark' : '收藏')}
+                      type="button"
+                    >
+                      <BookOpen size={16} />
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="flex items-center gap-1.5 transition-colors hover:text-theme-primary"
+                      aria-label={language === 'en' ? 'Share' : '分享'}
+                      type="button"
+                    >
+                      <Share2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Statistics */}
               <div className="rounded-lg p-4 border border-theme-border">
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-theme-secondary">{language === 'en' ? 'Views' : '浏览量'}</span>
-                    <span className="text-theme-primary font-medium">{post.views.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-theme-secondary">{language === 'en' ? 'Likes' : '点赞'}</span>
-                    <span className="text-theme-primary font-medium">{(post.likes + (liked ? 1 : 0)).toLocaleString()}</span>
-                  </div>
                   <div className="flex justify-between">
                     <span className="text-theme-secondary">{language === 'en' ? 'Words' : '字数'}</span>
                     <span className="text-theme-primary font-medium">
@@ -287,36 +264,6 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                   </div>
                 </div>
               )}
-
-
-              {/* Quick Actions */}
-              <div className="rounded-lg p-4 border border-theme-border">
-                <div className="gap-1">
-                  <button
-                    onClick={handleLike}
-                    className={`flex items-center gap-2 w-full text-left text-xs transition-colors pr-2 py-1 rounded hover:bg-theme-tertiary ${liked ? 'text-red-500' : 'text-theme-secondary hover:text-theme-primary'
-                      }`}
-                  >
-                    <Heart size={12} className={liked ? 'fill-current' : ''} />
-                    <span>{liked ? (language === 'en' ? 'Liked' : '已点赞') : (language === 'en' ? 'Like' : '点赞')}</span>
-                  </button>
-                  <button
-                    onClick={handleBookmark}
-                    className={`flex items-center gap-2 w-full text-left text-xs transition-colors pr-2 py-1 rounded hover:bg-theme-tertiary ${bookmarked ? 'text-yellow-500' : 'text-theme-secondary hover:text-theme-primary'
-                      }`}
-                  >
-                    <BookOpen size={12} />
-                    <span>{bookmarked ? (language === 'en' ? 'Bookmarked' : '已收藏') : (language === 'en' ? 'Bookmark' : '收藏')}</span>
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="flex items-center gap-2 w-full text-left text-xs text-theme-secondary hover:text-theme-primary transition-colors pr-2 py-1 rounded hover:bg-theme-tertiary"
-                  >
-                    <Share2 size={12} />
-                    <span>{language === 'en' ? 'Share' : '分享'}</span>
-                  </button>
-                </div>
-              </div>
             </>
           )}
         </div>
@@ -324,9 +271,9 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
       {/* Main Content - Y轴轨道 2 - Responsive layout */}
       <div className={`transition-all duration-300 ${metaSidebarCollapsed ? 'lg:ml-12' : 'lg:ml-60'} ${tocCollapsed ? 'lg:mr-0' : 'lg:mr-60'}`}>
-        <div className="pt-24 sm:pt-28 lg:pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="pt-12 pb-20 px-4 sm:px-6 lg:px-8">
           <motion.div
-            className="mx-auto w-full max-w-4xl"
+            className="mx-auto w-full max-w-[var(--reading-max-width)]"
             initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           >
@@ -336,7 +283,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                 {/* Divider for Vlog */}
                 <div className="my-8 border-t border-theme-border"></div>
                 {/* Vlog Additional Content */}
-                <div className="prose-content space-y-6">
+                <div className="prose-content markdown-body">
                   <BlogContentRenderer
                     content={post.content}
                     isWideScreen={true}
@@ -359,7 +306,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
               </>
             ) : (
               /* Article Content */
-              <div className="prose-content space-y-6">
+              <div className="prose-content markdown-body">
                 <BlogContentRenderer
                   content={post.content}
                   isWideScreen={true}
@@ -386,7 +333,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
       {/* TOC Sidebar - Y轴轨道 3 - Hidden on mobile */}
       <motion.div
-        className={`fixed right-0 top-16 bottom-0 z-40 transition-all duration-300 hidden lg:block ${tocCollapsed ? 'w-12' : 'w-60'
+        className={`fixed right-0 top-16 xs:top-18 sm:top-20 bottom-0 z-40 transition-all duration-300 hidden lg:block ${tocCollapsed ? 'w-12' : 'w-60'
           }`}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -415,7 +362,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
       {/* Comments */}
       <div className={`transition-all duration-300 ${metaSidebarCollapsed ? 'lg:ml-12' : 'lg:ml-60'} ${tocCollapsed ? 'lg:mr-0' : 'lg:mr-60'}`}>
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-4xl">
+          <div className="mx-auto w-full max-w-[var(--reading-max-width)]">
             <BlogComments postId={post.id} postSlug={post.slug} />
           </div>
         </div>
@@ -518,6 +465,37 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                   <Clock size={12} />
                   <span>{post.readTime}</span>
                 </div>
+                <div className="flex flex-wrap items-center gap-4 border-t border-theme-border pt-3 text-sm text-theme-secondary">
+                  <div className="flex items-center gap-1.5">
+                    <Eye size={16} />
+                    <span>{post.views.toLocaleString()}</span>
+                  </div>
+                  <button
+                    onClick={handleLike}
+                    className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${liked ? 'text-red-500' : ''}`}
+                    aria-label={liked ? (language === 'en' ? 'Unlike' : '取消点赞') : (language === 'en' ? 'Like' : '点赞')}
+                    type="button"
+                  >
+                    <Heart size={16} className={liked ? 'text-red-500 fill-current' : ''} />
+                    <span>{(post.likes + (liked ? 1 : 0)).toLocaleString()}</span>
+                  </button>
+                  <button
+                    onClick={handleBookmark}
+                    className={`flex items-center gap-1.5 transition-colors hover:text-theme-primary ${bookmarked ? 'text-yellow-500' : ''}`}
+                    aria-label={bookmarked ? (language === 'en' ? 'Remove bookmark' : '取消收藏') : (language === 'en' ? 'Bookmark' : '收藏')}
+                    type="button"
+                  >
+                    <BookOpen size={16} />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-1.5 transition-colors hover:text-theme-primary"
+                    aria-label={language === 'en' ? 'Share' : '分享'}
+                    type="button"
+                  >
+                    <Share2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -540,37 +518,6 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
               </div>
             )}
 
-            {/* Quick Actions */}
-            <div className="rounded-lg p-4 border border-theme-border">
-              <h4 className="font-medium text-theme-primary text-sm mb-3">
-                {language === 'en' ? 'Actions' : '操作'}
-              </h4>
-              <div className="space-y-1">
-                <button
-                  onClick={handleLike}
-                  className={`flex items-center gap-2 w-full text-left text-xs transition-colors p-2 rounded hover:bg-theme-tertiary ${liked ? 'text-red-500' : 'text-theme-secondary hover:text-theme-primary'
-                    }`}
-                >
-                  <Heart size={12} className={liked ? 'fill-current' : ''} />
-                  <span>{liked ? (language === 'en' ? 'Liked' : '已点赞') : (language === 'en' ? 'Like' : '点赞')}</span>
-                </button>
-                <button
-                  onClick={handleBookmark}
-                  className={`flex items-center gap-2 w-full text-left text-xs transition-colors p-2 rounded hover:bg-theme-tertiary ${bookmarked ? 'text-yellow-500' : 'text-theme-secondary hover:text-theme-primary'
-                    }`}
-                >
-                  <BookOpen size={12} />
-                  <span>{bookmarked ? (language === 'en' ? 'Bookmarked' : '已收藏') : (language === 'en' ? 'Bookmark' : '收藏')}</span>
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-2 w-full text-left text-xs text-theme-secondary hover:text-theme-primary transition-colors p-2 rounded hover:bg-theme-tertiary"
-                >
-                  <Share2 size={12} />
-                  <span>{language === 'en' ? 'Share' : '分享'}</span>
-                </button>
-              </div>
-            </div>
           </div>
         </motion.div>
       </motion.div>

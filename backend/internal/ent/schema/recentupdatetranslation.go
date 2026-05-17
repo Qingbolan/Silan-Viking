@@ -26,10 +26,10 @@ func (RecentUpdateTranslation) Annotations() []schema.Annotation {
 // Fields of the RecentUpdateTranslation.
 func (RecentUpdateTranslation) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("recent_update_id", uuid.UUID{}).
+		field.String("recent_update_id").
 			StorageKey("recent_update_id"),
 		field.String("language_code").
 			MaxLen(5).

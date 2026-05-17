@@ -7,13 +7,14 @@ import { useAnnotations } from './hooks/useAnnotations';
 
 // Import all components
 import { BlogLoadingState } from './components/BlogLoadingState';
-import SeriesDetailLayout from './SeriesDetailLayout';
 import ArticleDetailLayout from './ArticleDetailLayout';
+import SeriesDetailLayout from './SeriesDetailLayout';
 
 // Import reading behavior utilities
 import { readingTracker } from '../../utils/readingBehavior';
 import { calculateReadingTime } from '../../utils/readingTime';
 import { useLanguage } from '../LanguageContext';
+import { useSetPageTitle } from '../../layout/PageTitleContext';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +40,9 @@ const BlogDetail: React.FC = () => {
     highlightAnnotation,
     cancelAnnotation
   } = useAnnotations(id);
+
+  // Reflect the post title in the address-bar breadcrumb.
+  useSetPageTitle(blog ? (language === 'zh' && blog.titleZh ? blog.titleZh : blog.title) : null);
 
   // Start reading tracking when blog is loaded
   useEffect(() => {
@@ -81,11 +85,10 @@ const BlogDetail: React.FC = () => {
     navigate('/blog');
   };
 
-  // Use series layout if blog post belongs to a series
   if (blog.seriesId) {
     return (
-      <SeriesDetailLayout 
-        post={blog} 
+      <SeriesDetailLayout
+        post={blog}
         onBack={handleBack}
         userAnnotations={userAnnotations}
         annotations={annotations}
@@ -105,7 +108,6 @@ const BlogDetail: React.FC = () => {
     );
   }
 
-  // Use three-track layout for all other types (article, vlog, etc.)
   return (
     <ArticleDetailLayout
       post={blog}

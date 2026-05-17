@@ -92,7 +92,7 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({
   const issueTypes = [
     { value: 'bug', label: 'Bug Report', icon: Bug, color: 'red', description: 'Report a bug or issue' },
     { value: 'enhancement', label: 'Feature Request', icon: Lightbulb, color: 'blue', description: 'Suggest a new feature' },
-    { value: 'question', label: 'Question', icon: HelpCircle, color: 'purple', description: 'Ask a question' },
+    { value: 'question', label: 'Question', icon: HelpCircle, color: 'blue', description: 'Ask a question' },
     { value: 'documentation', label: 'Documentation', icon: FileText, color: 'green', description: 'Documentation improvement' }
   ];
 

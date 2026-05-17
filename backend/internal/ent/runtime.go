@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"silan-backend/internal/ent/annotation"
 	"silan-backend/internal/ent/award"
 	"silan-backend/internal/ent/awardtranslation"
 	"silan-backend/internal/ent/blogcategory"
@@ -15,16 +16,26 @@ import (
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
+	"silan-backend/internal/ent/contentinteraction"
+	"silan-backend/internal/ent/contentrelation"
 	"silan-backend/internal/ent/education"
 	"silan-backend/internal/ent/educationdetail"
 	"silan-backend/internal/ent/educationdetailtranslation"
 	"silan-backend/internal/ent/educationtranslation"
+	"silan-backend/internal/ent/episode"
+	"silan-backend/internal/ent/episodeseries"
+	"silan-backend/internal/ent/episodeseriestranslation"
+	"silan-backend/internal/ent/episodetranslation"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideadetailtranslation"
 	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
+	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/ent/itemparttranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/partentry"
+	"silan-backend/internal/ent/partentrytranslation"
 	"silan-backend/internal/ent/personalinfo"
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/project"
@@ -33,7 +44,6 @@ import (
 	"silan-backend/internal/ent/projectimage"
 	"silan-backend/internal/ent/projectimagetranslation"
 	"silan-backend/internal/ent/projectlike"
-	"silan-backend/internal/ent/projectrelationship"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/projectview"
@@ -42,6 +52,7 @@ import (
 	"silan-backend/internal/ent/publicationtranslation"
 	"silan-backend/internal/ent/recentupdate"
 	"silan-backend/internal/ent/recentupdatetranslation"
+	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
 	"silan-backend/internal/ent/researchprojectdetailtranslation"
@@ -55,14 +66,28 @@ import (
 	"silan-backend/internal/ent/workexperiencedetailtranslation"
 	"silan-backend/internal/ent/workexperiencetranslation"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	annotationFields := schema.Annotation{}.Fields()
+	_ = annotationFields
+	// annotationDescCreatedAt is the schema descriptor for created_at field.
+	annotationDescCreatedAt := annotationFields[8].Descriptor()
+	// annotation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	annotation.DefaultCreatedAt = annotationDescCreatedAt.Default.(func() time.Time)
+	// annotationDescUpdatedAt is the schema descriptor for updated_at field.
+	annotationDescUpdatedAt := annotationFields[9].Descriptor()
+	// annotation.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	annotation.DefaultUpdatedAt = annotationDescUpdatedAt.Default.(func() time.Time)
+	// annotation.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	annotation.UpdateDefaultUpdatedAt = annotationDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// annotationDescID is the schema descriptor for id field.
+	annotationDescID := annotationFields[0].Descriptor()
+	// annotation.DefaultID holds the default value on creation for the id field.
+	annotation.DefaultID = annotationDescID.Default.(func() string)
 	awardFields := schema.Award{}.Fields()
 	_ = awardFields
 	// awardDescTitle is the schema descriptor for title field.
@@ -126,7 +151,7 @@ func init() {
 	// awardDescID is the schema descriptor for id field.
 	awardDescID := awardFields[0].Descriptor()
 	// award.DefaultID holds the default value on creation for the id field.
-	award.DefaultID = awardDescID.Default.(func() uuid.UUID)
+	award.DefaultID = awardDescID.Default.(func() string)
 	awardtranslationFields := schema.AwardTranslation{}.Fields()
 	_ = awardtranslationFields
 	// awardtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -180,7 +205,7 @@ func init() {
 	// awardtranslationDescID is the schema descriptor for id field.
 	awardtranslationDescID := awardtranslationFields[0].Descriptor()
 	// awardtranslation.DefaultID holds the default value on creation for the id field.
-	awardtranslation.DefaultID = awardtranslationDescID.Default.(func() uuid.UUID)
+	awardtranslation.DefaultID = awardtranslationDescID.Default.(func() string)
 	blogcategoryFields := schema.BlogCategory{}.Fields()
 	_ = blogcategoryFields
 	// blogcategoryDescName is the schema descriptor for name field.
@@ -240,7 +265,7 @@ func init() {
 	// blogcategoryDescID is the schema descriptor for id field.
 	blogcategoryDescID := blogcategoryFields[0].Descriptor()
 	// blogcategory.DefaultID holds the default value on creation for the id field.
-	blogcategory.DefaultID = blogcategoryDescID.Default.(func() uuid.UUID)
+	blogcategory.DefaultID = blogcategoryDescID.Default.(func() string)
 	blogcategorytranslationFields := schema.BlogCategoryTranslation{}.Fields()
 	_ = blogcategorytranslationFields
 	// blogcategorytranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -272,29 +297,15 @@ func init() {
 	// blogcategorytranslationDescID is the schema descriptor for id field.
 	blogcategorytranslationDescID := blogcategorytranslationFields[0].Descriptor()
 	// blogcategorytranslation.DefaultID holds the default value on creation for the id field.
-	blogcategorytranslation.DefaultID = blogcategorytranslationDescID.Default.(func() uuid.UUID)
+	blogcategorytranslation.DefaultID = blogcategorytranslationDescID.Default.(func() string)
 	blogpostFields := schema.BlogPost{}.Fields()
 	_ = blogpostFields
 	// blogpostDescTitle is the schema descriptor for title field.
-	blogpostDescTitle := blogpostFields[5].Descriptor()
+	blogpostDescTitle := blogpostFields[4].Descriptor()
 	// blogpost.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	blogpost.TitleValidator = func() func(string) error {
-		validators := blogpostDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	blogpost.TitleValidator = blogpostDescTitle.Validators[0].(func(string) error)
 	// blogpostDescSlug is the schema descriptor for slug field.
-	blogpostDescSlug := blogpostFields[6].Descriptor()
+	blogpostDescSlug := blogpostFields[5].Descriptor()
 	// blogpost.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
 	blogpost.SlugValidator = func() func(string) error {
 		validators := blogpostDescSlug.Validators
@@ -311,10 +322,6 @@ func init() {
 			return nil
 		}
 	}()
-	// blogpostDescContent is the schema descriptor for content field.
-	blogpostDescContent := blogpostFields[8].Descriptor()
-	// blogpost.ContentValidator is a validator for the "content" field. It is called by the builders before save.
-	blogpost.ContentValidator = blogpostDescContent.Validators[0].(func(string) error)
 	// blogpostDescIsFeatured is the schema descriptor for is_featured field.
 	blogpostDescIsFeatured := blogpostFields[11].Descriptor()
 	// blogpost.DefaultIsFeatured holds the default value on creation for the is_featured field.
@@ -348,7 +355,7 @@ func init() {
 	// blogpostDescID is the schema descriptor for id field.
 	blogpostDescID := blogpostFields[0].Descriptor()
 	// blogpost.DefaultID holds the default value on creation for the id field.
-	blogpost.DefaultID = blogpostDescID.Default.(func() uuid.UUID)
+	blogpost.DefaultID = blogpostDescID.Default.(func() string)
 	blogposttagFields := schema.BlogPostTag{}.Fields()
 	_ = blogposttagFields
 	// blogposttagDescCreatedAt is the schema descriptor for created_at field.
@@ -390,7 +397,7 @@ func init() {
 	// blogposttranslationDescID is the schema descriptor for id field.
 	blogposttranslationDescID := blogposttranslationFields[0].Descriptor()
 	// blogposttranslation.DefaultID holds the default value on creation for the id field.
-	blogposttranslation.DefaultID = blogposttranslationDescID.Default.(func() uuid.UUID)
+	blogposttranslation.DefaultID = blogposttranslationDescID.Default.(func() string)
 	blogseriesFields := schema.BlogSeries{}.Fields()
 	_ = blogseriesFields
 	// blogseriesDescTitle is the schema descriptor for title field.
@@ -456,7 +463,7 @@ func init() {
 	// blogseriesDescID is the schema descriptor for id field.
 	blogseriesDescID := blogseriesFields[0].Descriptor()
 	// blogseries.DefaultID holds the default value on creation for the id field.
-	blogseries.DefaultID = blogseriesDescID.Default.(func() uuid.UUID)
+	blogseries.DefaultID = blogseriesDescID.Default.(func() string)
 	blogseriestranslationFields := schema.BlogSeriesTranslation{}.Fields()
 	_ = blogseriestranslationFields
 	// blogseriestranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -488,7 +495,7 @@ func init() {
 	// blogseriestranslationDescID is the schema descriptor for id field.
 	blogseriestranslationDescID := blogseriestranslationFields[0].Descriptor()
 	// blogseriestranslation.DefaultID holds the default value on creation for the id field.
-	blogseriestranslation.DefaultID = blogseriestranslationDescID.Default.(func() uuid.UUID)
+	blogseriestranslation.DefaultID = blogseriestranslationDescID.Default.(func() string)
 	blogtagFields := schema.BlogTag{}.Fields()
 	_ = blogtagFields
 	// blogtagDescName is the schema descriptor for name field.
@@ -538,7 +545,7 @@ func init() {
 	// blogtagDescID is the schema descriptor for id field.
 	blogtagDescID := blogtagFields[0].Descriptor()
 	// blogtag.DefaultID holds the default value on creation for the id field.
-	blogtag.DefaultID = blogtagDescID.Default.(func() uuid.UUID)
+	blogtag.DefaultID = blogtagDescID.Default.(func() string)
 	commentFields := schema.Comment{}.Fields()
 	_ = commentFields
 	// commentDescAuthorName is the schema descriptor for author_name field.
@@ -585,14 +592,10 @@ func init() {
 	commentDescContent := commentFields[7].Descriptor()
 	// comment.ContentValidator is a validator for the "content" field. It is called by the builders before save.
 	comment.ContentValidator = commentDescContent.Validators[0].(func(string) error)
-	// commentDescType is the schema descriptor for type field.
-	commentDescType := commentFields[8].Descriptor()
-	// comment.DefaultType holds the default value on creation for the type field.
-	comment.DefaultType = commentDescType.Default.(string)
-	// commentDescReferrenceID is the schema descriptor for referrence_id field.
-	commentDescReferrenceID := commentFields[9].Descriptor()
-	// comment.ReferrenceIDValidator is a validator for the "referrence_id" field. It is called by the builders before save.
-	comment.ReferrenceIDValidator = commentDescReferrenceID.Validators[0].(func(string) error)
+	// commentDescReferenceID is the schema descriptor for reference_id field.
+	commentDescReferenceID := commentFields[9].Descriptor()
+	// comment.ReferenceIDValidator is a validator for the "reference_id" field. It is called by the builders before save.
+	comment.ReferenceIDValidator = commentDescReferenceID.Validators[0].(func(string) error)
 	// commentDescAttachmentID is the schema descriptor for attachment_id field.
 	commentDescAttachmentID := commentFields[10].Descriptor()
 	// comment.AttachmentIDValidator is a validator for the "attachment_id" field. It is called by the builders before save.
@@ -626,7 +629,7 @@ func init() {
 	// commentDescID is the schema descriptor for id field.
 	commentDescID := commentFields[0].Descriptor()
 	// comment.DefaultID holds the default value on creation for the id field.
-	comment.DefaultID = commentDescID.Default.(func() uuid.UUID)
+	comment.DefaultID = commentDescID.Default.(func() string)
 	commentlikeFields := schema.CommentLike{}.Fields()
 	_ = commentlikeFields
 	// commentlikeDescIPAddress is the schema descriptor for ip_address field.
@@ -646,7 +649,39 @@ func init() {
 	// commentlikeDescID is the schema descriptor for id field.
 	commentlikeDescID := commentlikeFields[0].Descriptor()
 	// commentlike.DefaultID holds the default value on creation for the id field.
-	commentlike.DefaultID = commentlikeDescID.Default.(func() uuid.UUID)
+	commentlike.DefaultID = commentlikeDescID.Default.(func() string)
+	contentinteractionFields := schema.ContentInteraction{}.Fields()
+	_ = contentinteractionFields
+	// contentinteractionDescSessionDuration is the schema descriptor for session_duration field.
+	contentinteractionDescSessionDuration := contentinteractionFields[12].Descriptor()
+	// contentinteraction.DefaultSessionDuration holds the default value on creation for the session_duration field.
+	contentinteraction.DefaultSessionDuration = contentinteractionDescSessionDuration.Default.(int)
+	// contentinteractionDescScrollProgress is the schema descriptor for scroll_progress field.
+	contentinteractionDescScrollProgress := contentinteractionFields[13].Descriptor()
+	// contentinteraction.DefaultScrollProgress holds the default value on creation for the scroll_progress field.
+	contentinteraction.DefaultScrollProgress = contentinteractionDescScrollProgress.Default.(float64)
+	// contentinteractionDescCreatedAt is the schema descriptor for created_at field.
+	contentinteractionDescCreatedAt := contentinteractionFields[14].Descriptor()
+	// contentinteraction.DefaultCreatedAt holds the default value on creation for the created_at field.
+	contentinteraction.DefaultCreatedAt = contentinteractionDescCreatedAt.Default.(func() time.Time)
+	// contentinteractionDescID is the schema descriptor for id field.
+	contentinteractionDescID := contentinteractionFields[0].Descriptor()
+	// contentinteraction.DefaultID holds the default value on creation for the id field.
+	contentinteraction.DefaultID = contentinteractionDescID.Default.(func() string)
+	contentrelationFields := schema.ContentRelation{}.Fields()
+	_ = contentrelationFields
+	// contentrelationDescSortOrder is the schema descriptor for sort_order field.
+	contentrelationDescSortOrder := contentrelationFields[6].Descriptor()
+	// contentrelation.DefaultSortOrder holds the default value on creation for the sort_order field.
+	contentrelation.DefaultSortOrder = contentrelationDescSortOrder.Default.(int)
+	// contentrelationDescCreatedAt is the schema descriptor for created_at field.
+	contentrelationDescCreatedAt := contentrelationFields[7].Descriptor()
+	// contentrelation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	contentrelation.DefaultCreatedAt = contentrelationDescCreatedAt.Default.(func() time.Time)
+	// contentrelationDescID is the schema descriptor for id field.
+	contentrelationDescID := contentrelationFields[0].Descriptor()
+	// contentrelation.DefaultID holds the default value on creation for the id field.
+	contentrelation.DefaultID = contentrelationDescID.Default.(func() string)
 	educationFields := schema.Education{}.Fields()
 	_ = educationFields
 	// educationDescInstitution is the schema descriptor for institution field.
@@ -726,7 +761,7 @@ func init() {
 	// educationDescID is the schema descriptor for id field.
 	educationDescID := educationFields[0].Descriptor()
 	// education.DefaultID holds the default value on creation for the id field.
-	education.DefaultID = educationDescID.Default.(func() uuid.UUID)
+	education.DefaultID = educationDescID.Default.(func() string)
 	educationdetailFields := schema.EducationDetail{}.Fields()
 	_ = educationdetailFields
 	// educationdetailDescDetailText is the schema descriptor for detail_text field.
@@ -750,7 +785,7 @@ func init() {
 	// educationdetailDescID is the schema descriptor for id field.
 	educationdetailDescID := educationdetailFields[0].Descriptor()
 	// educationdetail.DefaultID holds the default value on creation for the id field.
-	educationdetail.DefaultID = educationdetailDescID.Default.(func() uuid.UUID)
+	educationdetail.DefaultID = educationdetailDescID.Default.(func() string)
 	educationdetailtranslationFields := schema.EducationDetailTranslation{}.Fields()
 	_ = educationdetailtranslationFields
 	// educationdetailtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -768,7 +803,7 @@ func init() {
 	// educationdetailtranslationDescID is the schema descriptor for id field.
 	educationdetailtranslationDescID := educationdetailtranslationFields[0].Descriptor()
 	// educationdetailtranslation.DefaultID holds the default value on creation for the id field.
-	educationdetailtranslation.DefaultID = educationdetailtranslationDescID.Default.(func() uuid.UUID)
+	educationdetailtranslation.DefaultID = educationdetailtranslationDescID.Default.(func() string)
 	educationtranslationFields := schema.EducationTranslation{}.Fields()
 	_ = educationtranslationFields
 	// educationtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -798,14 +833,108 @@ func init() {
 	// educationtranslationDescID is the schema descriptor for id field.
 	educationtranslationDescID := educationtranslationFields[0].Descriptor()
 	// educationtranslation.DefaultID holds the default value on creation for the id field.
-	educationtranslation.DefaultID = educationtranslationDescID.Default.(func() uuid.UUID)
-	ideaFields := schema.Idea{}.Fields()
-	_ = ideaFields
-	// ideaDescTitle is the schema descriptor for title field.
-	ideaDescTitle := ideaFields[2].Descriptor()
-	// idea.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	idea.TitleValidator = func() func(string) error {
-		validators := ideaDescTitle.Validators
+	educationtranslation.DefaultID = educationtranslationDescID.Default.(func() string)
+	episodeFields := schema.Episode{}.Fields()
+	_ = episodeFields
+	// episodeDescSlug is the schema descriptor for slug field.
+	episodeDescSlug := episodeFields[2].Descriptor()
+	// episode.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	episode.SlugValidator = func() func(string) error {
+		validators := episodeDescSlug.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(slug string) error {
+			for _, fn := range fns {
+				if err := fn(slug); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// episodeDescTitle is the schema descriptor for title field.
+	episodeDescTitle := episodeFields[3].Descriptor()
+	// episode.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	episode.TitleValidator = episodeDescTitle.Validators[0].(func(string) error)
+	// episodeDescCreatedAt is the schema descriptor for created_at field.
+	episodeDescCreatedAt := episodeFields[9].Descriptor()
+	// episode.DefaultCreatedAt holds the default value on creation for the created_at field.
+	episode.DefaultCreatedAt = episodeDescCreatedAt.Default.(func() time.Time)
+	// episodeDescUpdatedAt is the schema descriptor for updated_at field.
+	episodeDescUpdatedAt := episodeFields[10].Descriptor()
+	// episode.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	episode.DefaultUpdatedAt = episodeDescUpdatedAt.Default.(func() time.Time)
+	// episode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	episode.UpdateDefaultUpdatedAt = episodeDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// episodeDescID is the schema descriptor for id field.
+	episodeDescID := episodeFields[0].Descriptor()
+	// episode.DefaultID holds the default value on creation for the id field.
+	episode.DefaultID = episodeDescID.Default.(func() string)
+	episodeseriesFields := schema.EpisodeSeries{}.Fields()
+	_ = episodeseriesFields
+	// episodeseriesDescSlug is the schema descriptor for slug field.
+	episodeseriesDescSlug := episodeseriesFields[1].Descriptor()
+	// episodeseries.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	episodeseries.SlugValidator = func() func(string) error {
+		validators := episodeseriesDescSlug.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(slug string) error {
+			for _, fn := range fns {
+				if err := fn(slug); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// episodeseriesDescTitle is the schema descriptor for title field.
+	episodeseriesDescTitle := episodeseriesFields[2].Descriptor()
+	// episodeseries.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	episodeseries.TitleValidator = episodeseriesDescTitle.Validators[0].(func(string) error)
+	// episodeseriesDescCreatedAt is the schema descriptor for created_at field.
+	episodeseriesDescCreatedAt := episodeseriesFields[5].Descriptor()
+	// episodeseries.DefaultCreatedAt holds the default value on creation for the created_at field.
+	episodeseries.DefaultCreatedAt = episodeseriesDescCreatedAt.Default.(func() time.Time)
+	// episodeseriesDescUpdatedAt is the schema descriptor for updated_at field.
+	episodeseriesDescUpdatedAt := episodeseriesFields[6].Descriptor()
+	// episodeseries.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	episodeseries.DefaultUpdatedAt = episodeseriesDescUpdatedAt.Default.(func() time.Time)
+	// episodeseries.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	episodeseries.UpdateDefaultUpdatedAt = episodeseriesDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// episodeseriesDescID is the schema descriptor for id field.
+	episodeseriesDescID := episodeseriesFields[0].Descriptor()
+	// episodeseries.DefaultID holds the default value on creation for the id field.
+	episodeseries.DefaultID = episodeseriesDescID.Default.(func() string)
+	episodeseriestranslationFields := schema.EpisodeSeriesTranslation{}.Fields()
+	_ = episodeseriestranslationFields
+	// episodeseriestranslationDescLanguageCode is the schema descriptor for language_code field.
+	episodeseriestranslationDescLanguageCode := episodeseriestranslationFields[2].Descriptor()
+	// episodeseriestranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
+	episodeseriestranslation.LanguageCodeValidator = func() func(string) error {
+		validators := episodeseriestranslationDescLanguageCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(language_code string) error {
+			for _, fn := range fns {
+				if err := fn(language_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// episodeseriestranslationDescTitle is the schema descriptor for title field.
+	episodeseriestranslationDescTitle := episodeseriestranslationFields[3].Descriptor()
+	// episodeseriestranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	episodeseriestranslation.TitleValidator = func() func(string) error {
+		validators := episodeseriestranslationDescTitle.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
@@ -819,6 +948,66 @@ func init() {
 			return nil
 		}
 	}()
+	// episodeseriestranslationDescCreatedAt is the schema descriptor for created_at field.
+	episodeseriestranslationDescCreatedAt := episodeseriestranslationFields[5].Descriptor()
+	// episodeseriestranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	episodeseriestranslation.DefaultCreatedAt = episodeseriestranslationDescCreatedAt.Default.(func() time.Time)
+	// episodeseriestranslationDescID is the schema descriptor for id field.
+	episodeseriestranslationDescID := episodeseriestranslationFields[0].Descriptor()
+	// episodeseriestranslation.DefaultID holds the default value on creation for the id field.
+	episodeseriestranslation.DefaultID = episodeseriestranslationDescID.Default.(func() string)
+	episodetranslationFields := schema.EpisodeTranslation{}.Fields()
+	_ = episodetranslationFields
+	// episodetranslationDescLanguageCode is the schema descriptor for language_code field.
+	episodetranslationDescLanguageCode := episodetranslationFields[2].Descriptor()
+	// episodetranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
+	episodetranslation.LanguageCodeValidator = func() func(string) error {
+		validators := episodetranslationDescLanguageCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(language_code string) error {
+			for _, fn := range fns {
+				if err := fn(language_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// episodetranslationDescTitle is the schema descriptor for title field.
+	episodetranslationDescTitle := episodetranslationFields[3].Descriptor()
+	// episodetranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	episodetranslation.TitleValidator = func() func(string) error {
+		validators := episodetranslationDescTitle.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(title string) error {
+			for _, fn := range fns {
+				if err := fn(title); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// episodetranslationDescCreatedAt is the schema descriptor for created_at field.
+	episodetranslationDescCreatedAt := episodetranslationFields[5].Descriptor()
+	// episodetranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	episodetranslation.DefaultCreatedAt = episodetranslationDescCreatedAt.Default.(func() time.Time)
+	// episodetranslationDescID is the schema descriptor for id field.
+	episodetranslationDescID := episodetranslationFields[0].Descriptor()
+	// episodetranslation.DefaultID holds the default value on creation for the id field.
+	episodetranslation.DefaultID = episodetranslationDescID.Default.(func() string)
+	ideaFields := schema.Idea{}.Fields()
+	_ = ideaFields
+	// ideaDescTitle is the schema descriptor for title field.
+	ideaDescTitle := ideaFields[2].Descriptor()
+	// idea.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	idea.TitleValidator = ideaDescTitle.Validators[0].(func(string) error)
 	// ideaDescSlug is the schema descriptor for slug field.
 	ideaDescSlug := ideaFields[3].Descriptor()
 	// idea.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
@@ -837,10 +1026,6 @@ func init() {
 			return nil
 		}
 	}()
-	// ideaDescIsPublic is the schema descriptor for is_public field.
-	ideaDescIsPublic := ideaFields[7].Descriptor()
-	// idea.DefaultIsPublic holds the default value on creation for the is_public field.
-	idea.DefaultIsPublic = ideaDescIsPublic.Default.(bool)
 	// ideaDescViewCount is the schema descriptor for view_count field.
 	ideaDescViewCount := ideaFields[8].Descriptor()
 	// idea.DefaultViewCount holds the default value on creation for the view_count field.
@@ -868,23 +1053,23 @@ func init() {
 	// ideaDescID is the schema descriptor for id field.
 	ideaDescID := ideaFields[0].Descriptor()
 	// idea.DefaultID holds the default value on creation for the id field.
-	idea.DefaultID = ideaDescID.Default.(func() uuid.UUID)
+	idea.DefaultID = ideaDescID.Default.(func() string)
 	ideadetailFields := schema.IdeaDetail{}.Fields()
 	_ = ideadetailFields
 	// ideadetailDescCollaborationNeeded is the schema descriptor for collaboration_needed field.
-	ideadetailDescCollaborationNeeded := ideadetailFields[7].Descriptor()
+	ideadetailDescCollaborationNeeded := ideadetailFields[4].Descriptor()
 	// ideadetail.DefaultCollaborationNeeded holds the default value on creation for the collaboration_needed field.
 	ideadetail.DefaultCollaborationNeeded = ideadetailDescCollaborationNeeded.Default.(bool)
 	// ideadetailDescFundingRequired is the schema descriptor for funding_required field.
-	ideadetailDescFundingRequired := ideadetailFields[8].Descriptor()
+	ideadetailDescFundingRequired := ideadetailFields[5].Descriptor()
 	// ideadetail.DefaultFundingRequired holds the default value on creation for the funding_required field.
 	ideadetail.DefaultFundingRequired = ideadetailDescFundingRequired.Default.(bool)
 	// ideadetailDescCreatedAt is the schema descriptor for created_at field.
-	ideadetailDescCreatedAt := ideadetailFields[10].Descriptor()
+	ideadetailDescCreatedAt := ideadetailFields[7].Descriptor()
 	// ideadetail.DefaultCreatedAt holds the default value on creation for the created_at field.
 	ideadetail.DefaultCreatedAt = ideadetailDescCreatedAt.Default.(func() time.Time)
 	// ideadetailDescUpdatedAt is the schema descriptor for updated_at field.
-	ideadetailDescUpdatedAt := ideadetailFields[11].Descriptor()
+	ideadetailDescUpdatedAt := ideadetailFields[8].Descriptor()
 	// ideadetail.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	ideadetail.DefaultUpdatedAt = ideadetailDescUpdatedAt.Default.(func() time.Time)
 	// ideadetail.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -892,7 +1077,7 @@ func init() {
 	// ideadetailDescID is the schema descriptor for id field.
 	ideadetailDescID := ideadetailFields[0].Descriptor()
 	// ideadetail.DefaultID holds the default value on creation for the id field.
-	ideadetail.DefaultID = ideadetailDescID.Default.(func() uuid.UUID)
+	ideadetail.DefaultID = ideadetailDescID.Default.(func() string)
 	ideadetailtranslationFields := schema.IdeaDetailTranslation{}.Fields()
 	_ = ideadetailtranslationFields
 	// ideadetailtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -900,13 +1085,13 @@ func init() {
 	// ideadetailtranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
 	ideadetailtranslation.LanguageCodeValidator = ideadetailtranslationDescLanguageCode.Validators[0].(func(string) error)
 	// ideadetailtranslationDescCreatedAt is the schema descriptor for created_at field.
-	ideadetailtranslationDescCreatedAt := ideadetailtranslationFields[7].Descriptor()
+	ideadetailtranslationDescCreatedAt := ideadetailtranslationFields[3].Descriptor()
 	// ideadetailtranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
 	ideadetailtranslation.DefaultCreatedAt = ideadetailtranslationDescCreatedAt.Default.(func() time.Time)
 	// ideadetailtranslationDescID is the schema descriptor for id field.
 	ideadetailtranslationDescID := ideadetailtranslationFields[0].Descriptor()
 	// ideadetailtranslation.DefaultID holds the default value on creation for the id field.
-	ideadetailtranslation.DefaultID = ideadetailtranslationDescID.Default.(func() uuid.UUID)
+	ideadetailtranslation.DefaultID = ideadetailtranslationDescID.Default.(func() string)
 	ideatagFields := schema.IdeaTag{}.Fields()
 	_ = ideatagFields
 	// ideatagDescName is the schema descriptor for name field.
@@ -958,7 +1143,7 @@ func init() {
 	// ideatagDescID is the schema descriptor for id field.
 	ideatagDescID := ideatagFields[0].Descriptor()
 	// ideatag.DefaultID holds the default value on creation for the id field.
-	ideatag.DefaultID = ideatagDescID.Default.(func() uuid.UUID)
+	ideatag.DefaultID = ideatagDescID.Default.(func() string)
 	ideatranslationFields := schema.IdeaTranslation{}.Fields()
 	_ = ideatranslationFields
 	// ideatranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -990,7 +1175,37 @@ func init() {
 	// ideatranslationDescID is the schema descriptor for id field.
 	ideatranslationDescID := ideatranslationFields[0].Descriptor()
 	// ideatranslation.DefaultID holds the default value on creation for the id field.
-	ideatranslation.DefaultID = ideatranslationDescID.Default.(func() uuid.UUID)
+	ideatranslation.DefaultID = ideatranslationDescID.Default.(func() string)
+	itempartFields := schema.ItemPart{}.Fields()
+	_ = itempartFields
+	// itempartDescSortOrder is the schema descriptor for sort_order field.
+	itempartDescSortOrder := itempartFields[5].Descriptor()
+	// itempart.DefaultSortOrder holds the default value on creation for the sort_order field.
+	itempart.DefaultSortOrder = itempartDescSortOrder.Default.(int)
+	// itempartDescCreatedAt is the schema descriptor for created_at field.
+	itempartDescCreatedAt := itempartFields[7].Descriptor()
+	// itempart.DefaultCreatedAt holds the default value on creation for the created_at field.
+	itempart.DefaultCreatedAt = itempartDescCreatedAt.Default.(func() time.Time)
+	// itempartDescUpdatedAt is the schema descriptor for updated_at field.
+	itempartDescUpdatedAt := itempartFields[8].Descriptor()
+	// itempart.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	itempart.DefaultUpdatedAt = itempartDescUpdatedAt.Default.(func() time.Time)
+	// itempart.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	itempart.UpdateDefaultUpdatedAt = itempartDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// itempartDescID is the schema descriptor for id field.
+	itempartDescID := itempartFields[0].Descriptor()
+	// itempart.DefaultID holds the default value on creation for the id field.
+	itempart.DefaultID = itempartDescID.Default.(func() string)
+	itemparttranslationFields := schema.ItemPartTranslation{}.Fields()
+	_ = itemparttranslationFields
+	// itemparttranslationDescCreatedAt is the schema descriptor for created_at field.
+	itemparttranslationDescCreatedAt := itemparttranslationFields[4].Descriptor()
+	// itemparttranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	itemparttranslation.DefaultCreatedAt = itemparttranslationDescCreatedAt.Default.(func() time.Time)
+	// itemparttranslationDescID is the schema descriptor for id field.
+	itemparttranslationDescID := itemparttranslationFields[0].Descriptor()
+	// itemparttranslation.DefaultID holds the default value on creation for the id field.
+	itemparttranslation.DefaultID = itemparttranslationDescID.Default.(func() string)
 	languageFields := schema.Language{}.Fields()
 	_ = languageFields
 	// languageDescName is the schema descriptor for name field.
@@ -1055,44 +1270,40 @@ func init() {
 			return nil
 		}
 	}()
+	partentryFields := schema.PartEntry{}.Fields()
+	_ = partentryFields
+	// partentryDescSortOrder is the schema descriptor for sort_order field.
+	partentryDescSortOrder := partentryFields[3].Descriptor()
+	// partentry.DefaultSortOrder holds the default value on creation for the sort_order field.
+	partentry.DefaultSortOrder = partentryDescSortOrder.Default.(int)
+	// partentryDescCreatedAt is the schema descriptor for created_at field.
+	partentryDescCreatedAt := partentryFields[5].Descriptor()
+	// partentry.DefaultCreatedAt holds the default value on creation for the created_at field.
+	partentry.DefaultCreatedAt = partentryDescCreatedAt.Default.(func() time.Time)
+	// partentryDescID is the schema descriptor for id field.
+	partentryDescID := partentryFields[0].Descriptor()
+	// partentry.DefaultID holds the default value on creation for the id field.
+	partentry.DefaultID = partentryDescID.Default.(func() string)
+	partentrytranslationFields := schema.PartEntryTranslation{}.Fields()
+	_ = partentrytranslationFields
+	// partentrytranslationDescCreatedAt is the schema descriptor for created_at field.
+	partentrytranslationDescCreatedAt := partentrytranslationFields[4].Descriptor()
+	// partentrytranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	partentrytranslation.DefaultCreatedAt = partentrytranslationDescCreatedAt.Default.(func() time.Time)
+	// partentrytranslationDescID is the schema descriptor for id field.
+	partentrytranslationDescID := partentrytranslationFields[0].Descriptor()
+	// partentrytranslation.DefaultID holds the default value on creation for the id field.
+	partentrytranslation.DefaultID = partentrytranslationDescID.Default.(func() string)
 	personalinfoFields := schema.PersonalInfo{}.Fields()
 	_ = personalinfoFields
 	// personalinfoDescFullName is the schema descriptor for full_name field.
 	personalinfoDescFullName := personalinfoFields[2].Descriptor()
 	// personalinfo.FullNameValidator is a validator for the "full_name" field. It is called by the builders before save.
-	personalinfo.FullNameValidator = func() func(string) error {
-		validators := personalinfoDescFullName.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(full_name string) error {
-			for _, fn := range fns {
-				if err := fn(full_name); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	personalinfo.FullNameValidator = personalinfoDescFullName.Validators[0].(func(string) error)
 	// personalinfoDescTitle is the schema descriptor for title field.
 	personalinfoDescTitle := personalinfoFields[3].Descriptor()
 	// personalinfo.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	personalinfo.TitleValidator = func() func(string) error {
-		validators := personalinfoDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	personalinfo.TitleValidator = personalinfoDescTitle.Validators[0].(func(string) error)
 	// personalinfoDescPhone is the schema descriptor for phone field.
 	personalinfoDescPhone := personalinfoFields[5].Descriptor()
 	// personalinfo.PhoneValidator is a validator for the "phone" field. It is called by the builders before save.
@@ -1130,7 +1341,7 @@ func init() {
 	// personalinfoDescID is the schema descriptor for id field.
 	personalinfoDescID := personalinfoFields[0].Descriptor()
 	// personalinfo.DefaultID holds the default value on creation for the id field.
-	personalinfo.DefaultID = personalinfoDescID.Default.(func() uuid.UUID)
+	personalinfo.DefaultID = personalinfoDescID.Default.(func() string)
 	personalinfotranslationFields := schema.PersonalInfoTranslation{}.Fields()
 	_ = personalinfotranslationFields
 	// personalinfotranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1156,27 +1367,13 @@ func init() {
 	// personalinfotranslationDescID is the schema descriptor for id field.
 	personalinfotranslationDescID := personalinfotranslationFields[0].Descriptor()
 	// personalinfotranslation.DefaultID holds the default value on creation for the id field.
-	personalinfotranslation.DefaultID = personalinfotranslationDescID.Default.(func() uuid.UUID)
+	personalinfotranslation.DefaultID = personalinfotranslationDescID.Default.(func() string)
 	projectFields := schema.Project{}.Fields()
 	_ = projectFields
 	// projectDescTitle is the schema descriptor for title field.
 	projectDescTitle := projectFields[2].Descriptor()
 	// project.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	project.TitleValidator = func() func(string) error {
-		validators := projectDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	project.TitleValidator = projectDescTitle.Validators[0].(func(string) error)
 	// projectDescSlug is the schema descriptor for slug field.
 	projectDescSlug := projectFields[3].Descriptor()
 	// project.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
@@ -1235,10 +1432,6 @@ func init() {
 	projectDescIsFeatured := projectFields[13].Descriptor()
 	// project.DefaultIsFeatured holds the default value on creation for the is_featured field.
 	project.DefaultIsFeatured = projectDescIsFeatured.Default.(bool)
-	// projectDescIsPublic is the schema descriptor for is_public field.
-	projectDescIsPublic := projectFields[14].Descriptor()
-	// project.DefaultIsPublic holds the default value on creation for the is_public field.
-	project.DefaultIsPublic = projectDescIsPublic.Default.(bool)
 	// projectDescViewCount is the schema descriptor for view_count field.
 	projectDescViewCount := projectFields[15].Descriptor()
 	// project.DefaultViewCount holds the default value on creation for the view_count field.
@@ -1264,23 +1457,23 @@ func init() {
 	// projectDescID is the schema descriptor for id field.
 	projectDescID := projectFields[0].Descriptor()
 	// project.DefaultID holds the default value on creation for the id field.
-	project.DefaultID = projectDescID.Default.(func() uuid.UUID)
+	project.DefaultID = projectDescID.Default.(func() string)
 	projectdetailFields := schema.ProjectDetail{}.Fields()
 	_ = projectdetailFields
 	// projectdetailDescLicense is the schema descriptor for license field.
-	projectdetailDescLicense := projectdetailFields[6].Descriptor()
+	projectdetailDescLicense := projectdetailFields[4].Descriptor()
 	// projectdetail.LicenseValidator is a validator for the "license" field. It is called by the builders before save.
 	projectdetail.LicenseValidator = projectdetailDescLicense.Validators[0].(func(string) error)
 	// projectdetailDescVersion is the schema descriptor for version field.
-	projectdetailDescVersion := projectdetailFields[8].Descriptor()
+	projectdetailDescVersion := projectdetailFields[6].Descriptor()
 	// projectdetail.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	projectdetail.VersionValidator = projectdetailDescVersion.Validators[0].(func(string) error)
 	// projectdetailDescCreatedAt is the schema descriptor for created_at field.
-	projectdetailDescCreatedAt := projectdetailFields[9].Descriptor()
+	projectdetailDescCreatedAt := projectdetailFields[7].Descriptor()
 	// projectdetail.DefaultCreatedAt holds the default value on creation for the created_at field.
 	projectdetail.DefaultCreatedAt = projectdetailDescCreatedAt.Default.(func() time.Time)
 	// projectdetailDescUpdatedAt is the schema descriptor for updated_at field.
-	projectdetailDescUpdatedAt := projectdetailFields[10].Descriptor()
+	projectdetailDescUpdatedAt := projectdetailFields[8].Descriptor()
 	// projectdetail.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	projectdetail.DefaultUpdatedAt = projectdetailDescUpdatedAt.Default.(func() time.Time)
 	// projectdetail.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -1288,7 +1481,7 @@ func init() {
 	// projectdetailDescID is the schema descriptor for id field.
 	projectdetailDescID := projectdetailFields[0].Descriptor()
 	// projectdetail.DefaultID holds the default value on creation for the id field.
-	projectdetail.DefaultID = projectdetailDescID.Default.(func() uuid.UUID)
+	projectdetail.DefaultID = projectdetailDescID.Default.(func() string)
 	projectdetailtranslationFields := schema.ProjectDetailTranslation{}.Fields()
 	_ = projectdetailtranslationFields
 	// projectdetailtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1296,13 +1489,13 @@ func init() {
 	// projectdetailtranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
 	projectdetailtranslation.LanguageCodeValidator = projectdetailtranslationDescLanguageCode.Validators[0].(func(string) error)
 	// projectdetailtranslationDescCreatedAt is the schema descriptor for created_at field.
-	projectdetailtranslationDescCreatedAt := projectdetailtranslationFields[9].Descriptor()
+	projectdetailtranslationDescCreatedAt := projectdetailtranslationFields[3].Descriptor()
 	// projectdetailtranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
 	projectdetailtranslation.DefaultCreatedAt = projectdetailtranslationDescCreatedAt.Default.(func() time.Time)
 	// projectdetailtranslationDescID is the schema descriptor for id field.
 	projectdetailtranslationDescID := projectdetailtranslationFields[0].Descriptor()
 	// projectdetailtranslation.DefaultID holds the default value on creation for the id field.
-	projectdetailtranslation.DefaultID = projectdetailtranslationDescID.Default.(func() uuid.UUID)
+	projectdetailtranslation.DefaultID = projectdetailtranslationDescID.Default.(func() string)
 	projectimageFields := schema.ProjectImage{}.Fields()
 	_ = projectimageFields
 	// projectimageDescImageURL is the schema descriptor for image_url field.
@@ -1348,7 +1541,7 @@ func init() {
 	// projectimageDescID is the schema descriptor for id field.
 	projectimageDescID := projectimageFields[0].Descriptor()
 	// projectimage.DefaultID holds the default value on creation for the id field.
-	projectimage.DefaultID = projectimageDescID.Default.(func() uuid.UUID)
+	projectimage.DefaultID = projectimageDescID.Default.(func() string)
 	projectimagetranslationFields := schema.ProjectImageTranslation{}.Fields()
 	_ = projectimagetranslationFields
 	// projectimagetranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1366,7 +1559,7 @@ func init() {
 	// projectimagetranslationDescID is the schema descriptor for id field.
 	projectimagetranslationDescID := projectimagetranslationFields[0].Descriptor()
 	// projectimagetranslation.DefaultID holds the default value on creation for the id field.
-	projectimagetranslation.DefaultID = projectimagetranslationDescID.Default.(func() uuid.UUID)
+	projectimagetranslation.DefaultID = projectimagetranslationDescID.Default.(func() string)
 	projectlikeFields := schema.ProjectLike{}.Fields()
 	_ = projectlikeFields
 	// projectlikeDescIPAddress is the schema descriptor for ip_address field.
@@ -1386,35 +1579,7 @@ func init() {
 	// projectlikeDescID is the schema descriptor for id field.
 	projectlikeDescID := projectlikeFields[0].Descriptor()
 	// projectlike.DefaultID holds the default value on creation for the id field.
-	projectlike.DefaultID = projectlikeDescID.Default.(func() uuid.UUID)
-	projectrelationshipFields := schema.ProjectRelationship{}.Fields()
-	_ = projectrelationshipFields
-	// projectrelationshipDescRelationshipType is the schema descriptor for relationship_type field.
-	projectrelationshipDescRelationshipType := projectrelationshipFields[3].Descriptor()
-	// projectrelationship.RelationshipTypeValidator is a validator for the "relationship_type" field. It is called by the builders before save.
-	projectrelationship.RelationshipTypeValidator = func() func(string) error {
-		validators := projectrelationshipDescRelationshipType.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(relationship_type string) error {
-			for _, fn := range fns {
-				if err := fn(relationship_type); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// projectrelationshipDescCreatedAt is the schema descriptor for created_at field.
-	projectrelationshipDescCreatedAt := projectrelationshipFields[4].Descriptor()
-	// projectrelationship.DefaultCreatedAt holds the default value on creation for the created_at field.
-	projectrelationship.DefaultCreatedAt = projectrelationshipDescCreatedAt.Default.(func() time.Time)
-	// projectrelationshipDescID is the schema descriptor for id field.
-	projectrelationshipDescID := projectrelationshipFields[0].Descriptor()
-	// projectrelationship.DefaultID holds the default value on creation for the id field.
-	projectrelationship.DefaultID = projectrelationshipDescID.Default.(func() uuid.UUID)
+	projectlike.DefaultID = projectlikeDescID.Default.(func() string)
 	projecttechnologyFields := schema.ProjectTechnology{}.Fields()
 	_ = projecttechnologyFields
 	// projecttechnologyDescTechnologyName is the schema descriptor for technology_name field.
@@ -1450,7 +1615,7 @@ func init() {
 	// projecttechnologyDescID is the schema descriptor for id field.
 	projecttechnologyDescID := projecttechnologyFields[0].Descriptor()
 	// projecttechnology.DefaultID holds the default value on creation for the id field.
-	projecttechnology.DefaultID = projecttechnologyDescID.Default.(func() uuid.UUID)
+	projecttechnology.DefaultID = projecttechnologyDescID.Default.(func() string)
 	projecttranslationFields := schema.ProjectTranslation{}.Fields()
 	_ = projecttranslationFields
 	// projecttranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1486,7 +1651,7 @@ func init() {
 	// projecttranslationDescID is the schema descriptor for id field.
 	projecttranslationDescID := projecttranslationFields[0].Descriptor()
 	// projecttranslation.DefaultID holds the default value on creation for the id field.
-	projecttranslation.DefaultID = projecttranslationDescID.Default.(func() uuid.UUID)
+	projecttranslation.DefaultID = projecttranslationDescID.Default.(func() string)
 	projectviewFields := schema.ProjectView{}.Fields()
 	_ = projectviewFields
 	// projectviewDescIPAddress is the schema descriptor for ip_address field.
@@ -1510,7 +1675,7 @@ func init() {
 	// projectviewDescID is the schema descriptor for id field.
 	projectviewDescID := projectviewFields[0].Descriptor()
 	// projectview.DefaultID holds the default value on creation for the id field.
-	projectview.DefaultID = projectviewDescID.Default.(func() uuid.UUID)
+	projectview.DefaultID = projectviewDescID.Default.(func() string)
 	publicationFields := schema.Publication{}.Fields()
 	_ = publicationFields
 	// publicationDescTitle is the schema descriptor for title field.
@@ -1610,7 +1775,7 @@ func init() {
 	// publicationDescID is the schema descriptor for id field.
 	publicationDescID := publicationFields[0].Descriptor()
 	// publication.DefaultID holds the default value on creation for the id field.
-	publication.DefaultID = publicationDescID.Default.(func() uuid.UUID)
+	publication.DefaultID = publicationDescID.Default.(func() string)
 	publicationauthorFields := schema.PublicationAuthor{}.Fields()
 	_ = publicationauthorFields
 	// publicationauthorDescAuthorName is the schema descriptor for author_name field.
@@ -1652,7 +1817,7 @@ func init() {
 	// publicationauthorDescID is the schema descriptor for id field.
 	publicationauthorDescID := publicationauthorFields[0].Descriptor()
 	// publicationauthor.DefaultID holds the default value on creation for the id field.
-	publicationauthor.DefaultID = publicationauthorDescID.Default.(func() uuid.UUID)
+	publicationauthor.DefaultID = publicationauthorDescID.Default.(func() string)
 	publicationtranslationFields := schema.PublicationTranslation{}.Fields()
 	_ = publicationtranslationFields
 	// publicationtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1692,69 +1857,69 @@ func init() {
 	// publicationtranslationDescID is the schema descriptor for id field.
 	publicationtranslationDescID := publicationtranslationFields[0].Descriptor()
 	// publicationtranslation.DefaultID holds the default value on creation for the id field.
-	publicationtranslation.DefaultID = publicationtranslationDescID.Default.(func() uuid.UUID)
+	publicationtranslation.DefaultID = publicationtranslationDescID.Default.(func() string)
 	recentupdateFields := schema.RecentUpdate{}.Fields()
 	_ = recentupdateFields
-	// recentupdateDescTitle is the schema descriptor for title field.
-	recentupdateDescTitle := recentupdateFields[3].Descriptor()
-	// recentupdate.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	recentupdate.TitleValidator = func() func(string) error {
-		validators := recentupdateDescTitle.Validators
+	// recentupdateDescSlug is the schema descriptor for slug field.
+	recentupdateDescSlug := recentupdateFields[2].Descriptor()
+	// recentupdate.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	recentupdate.SlugValidator = func() func(string) error {
+		validators := recentupdateDescSlug.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
 		}
-		return func(title string) error {
+		return func(slug string) error {
 			for _, fn := range fns {
-				if err := fn(title); err != nil {
+				if err := fn(slug); err != nil {
 					return err
 				}
 			}
 			return nil
 		}
 	}()
-	// recentupdateDescDescription is the schema descriptor for description field.
-	recentupdateDescDescription := recentupdateFields[4].Descriptor()
-	// recentupdate.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	recentupdate.DescriptionValidator = recentupdateDescDescription.Validators[0].(func(string) error)
+	// recentupdateDescTitle is the schema descriptor for title field.
+	recentupdateDescTitle := recentupdateFields[6].Descriptor()
+	// recentupdate.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	recentupdate.TitleValidator = recentupdateDescTitle.Validators[0].(func(string) error)
 	// recentupdateDescExternalID is the schema descriptor for external_id field.
-	recentupdateDescExternalID := recentupdateFields[9].Descriptor()
+	recentupdateDescExternalID := recentupdateFields[12].Descriptor()
 	// recentupdate.ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
 	recentupdate.ExternalIDValidator = recentupdateDescExternalID.Validators[0].(func(string) error)
 	// recentupdateDescImageURL is the schema descriptor for image_url field.
-	recentupdateDescImageURL := recentupdateFields[10].Descriptor()
+	recentupdateDescImageURL := recentupdateFields[13].Descriptor()
 	// recentupdate.ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
 	recentupdate.ImageURLValidator = recentupdateDescImageURL.Validators[0].(func(string) error)
 	// recentupdateDescVideoURL is the schema descriptor for video_url field.
-	recentupdateDescVideoURL := recentupdateFields[11].Descriptor()
+	recentupdateDescVideoURL := recentupdateFields[14].Descriptor()
 	// recentupdate.VideoURLValidator is a validator for the "video_url" field. It is called by the builders before save.
 	recentupdate.VideoURLValidator = recentupdateDescVideoURL.Validators[0].(func(string) error)
 	// recentupdateDescDocumentURL is the schema descriptor for document_url field.
-	recentupdateDescDocumentURL := recentupdateFields[12].Descriptor()
+	recentupdateDescDocumentURL := recentupdateFields[15].Descriptor()
 	// recentupdate.DocumentURLValidator is a validator for the "document_url" field. It is called by the builders before save.
 	recentupdate.DocumentURLValidator = recentupdateDescDocumentURL.Validators[0].(func(string) error)
 	// recentupdateDescDemoURL is the schema descriptor for demo_url field.
-	recentupdateDescDemoURL := recentupdateFields[16].Descriptor()
+	recentupdateDescDemoURL := recentupdateFields[19].Descriptor()
 	// recentupdate.DemoURLValidator is a validator for the "demo_url" field. It is called by the builders before save.
 	recentupdate.DemoURLValidator = recentupdateDescDemoURL.Validators[0].(func(string) error)
 	// recentupdateDescGithubURL is the schema descriptor for github_url field.
-	recentupdateDescGithubURL := recentupdateFields[17].Descriptor()
+	recentupdateDescGithubURL := recentupdateFields[20].Descriptor()
 	// recentupdate.GithubURLValidator is a validator for the "github_url" field. It is called by the builders before save.
 	recentupdate.GithubURLValidator = recentupdateDescGithubURL.Validators[0].(func(string) error)
 	// recentupdateDescExternalURL is the schema descriptor for external_url field.
-	recentupdateDescExternalURL := recentupdateFields[18].Descriptor()
+	recentupdateDescExternalURL := recentupdateFields[21].Descriptor()
 	// recentupdate.ExternalURLValidator is a validator for the "external_url" field. It is called by the builders before save.
 	recentupdate.ExternalURLValidator = recentupdateDescExternalURL.Validators[0].(func(string) error)
 	// recentupdateDescSortOrder is the schema descriptor for sort_order field.
-	recentupdateDescSortOrder := recentupdateFields[20].Descriptor()
+	recentupdateDescSortOrder := recentupdateFields[23].Descriptor()
 	// recentupdate.DefaultSortOrder holds the default value on creation for the sort_order field.
 	recentupdate.DefaultSortOrder = recentupdateDescSortOrder.Default.(int)
 	// recentupdateDescCreatedAt is the schema descriptor for created_at field.
-	recentupdateDescCreatedAt := recentupdateFields[21].Descriptor()
+	recentupdateDescCreatedAt := recentupdateFields[24].Descriptor()
 	// recentupdate.DefaultCreatedAt holds the default value on creation for the created_at field.
 	recentupdate.DefaultCreatedAt = recentupdateDescCreatedAt.Default.(func() time.Time)
 	// recentupdateDescUpdatedAt is the schema descriptor for updated_at field.
-	recentupdateDescUpdatedAt := recentupdateFields[22].Descriptor()
+	recentupdateDescUpdatedAt := recentupdateFields[25].Descriptor()
 	// recentupdate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	recentupdate.DefaultUpdatedAt = recentupdateDescUpdatedAt.Default.(func() time.Time)
 	// recentupdate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -1762,7 +1927,7 @@ func init() {
 	// recentupdateDescID is the schema descriptor for id field.
 	recentupdateDescID := recentupdateFields[0].Descriptor()
 	// recentupdate.DefaultID holds the default value on creation for the id field.
-	recentupdate.DefaultID = recentupdateDescID.Default.(func() uuid.UUID)
+	recentupdate.DefaultID = recentupdateDescID.Default.(func() string)
 	recentupdatetranslationFields := schema.RecentUpdateTranslation{}.Fields()
 	_ = recentupdatetranslationFields
 	// recentupdatetranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1812,27 +1977,43 @@ func init() {
 	// recentupdatetranslationDescID is the schema descriptor for id field.
 	recentupdatetranslationDescID := recentupdatetranslationFields[0].Descriptor()
 	// recentupdatetranslation.DefaultID holds the default value on creation for the id field.
-	recentupdatetranslation.DefaultID = recentupdatetranslationDescID.Default.(func() uuid.UUID)
+	recentupdatetranslation.DefaultID = recentupdatetranslationDescID.Default.(func() string)
+	requestlogFields := schema.RequestLog{}.Fields()
+	_ = requestlogFields
+	// requestlogDescMethod is the schema descriptor for method field.
+	requestlogDescMethod := requestlogFields[1].Descriptor()
+	// requestlog.MethodValidator is a validator for the "method" field. It is called by the builders before save.
+	requestlog.MethodValidator = requestlogDescMethod.Validators[0].(func(string) error)
+	// requestlogDescPath is the schema descriptor for path field.
+	requestlogDescPath := requestlogFields[2].Descriptor()
+	// requestlog.PathValidator is a validator for the "path" field. It is called by the builders before save.
+	requestlog.PathValidator = requestlogDescPath.Validators[0].(func(string) error)
+	// requestlogDescReferrer is the schema descriptor for referrer field.
+	requestlogDescReferrer := requestlogFields[5].Descriptor()
+	// requestlog.ReferrerValidator is a validator for the "referrer" field. It is called by the builders before save.
+	requestlog.ReferrerValidator = requestlogDescReferrer.Validators[0].(func(string) error)
+	// requestlogDescUserAgent is the schema descriptor for user_agent field.
+	requestlogDescUserAgent := requestlogFields[6].Descriptor()
+	// requestlog.UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
+	requestlog.UserAgentValidator = requestlogDescUserAgent.Validators[0].(func(string) error)
+	// requestlogDescIP is the schema descriptor for ip field.
+	requestlogDescIP := requestlogFields[7].Descriptor()
+	// requestlog.IPValidator is a validator for the "ip" field. It is called by the builders before save.
+	requestlog.IPValidator = requestlogDescIP.Validators[0].(func(string) error)
+	// requestlogDescLang is the schema descriptor for lang field.
+	requestlogDescLang := requestlogFields[8].Descriptor()
+	// requestlog.LangValidator is a validator for the "lang" field. It is called by the builders before save.
+	requestlog.LangValidator = requestlogDescLang.Validators[0].(func(string) error)
+	// requestlogDescCreatedAt is the schema descriptor for created_at field.
+	requestlogDescCreatedAt := requestlogFields[9].Descriptor()
+	// requestlog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	requestlog.DefaultCreatedAt = requestlogDescCreatedAt.Default.(func() time.Time)
 	researchprojectFields := schema.ResearchProject{}.Fields()
 	_ = researchprojectFields
 	// researchprojectDescTitle is the schema descriptor for title field.
 	researchprojectDescTitle := researchprojectFields[2].Descriptor()
 	// researchproject.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	researchproject.TitleValidator = func() func(string) error {
-		validators := researchprojectDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	researchproject.TitleValidator = researchprojectDescTitle.Validators[0].(func(string) error)
 	// researchprojectDescIsOngoing is the schema descriptor for is_ongoing field.
 	researchprojectDescIsOngoing := researchprojectFields[5].Descriptor()
 	// researchproject.DefaultIsOngoing holds the default value on creation for the is_ongoing field.
@@ -1866,7 +2047,7 @@ func init() {
 	// researchprojectDescID is the schema descriptor for id field.
 	researchprojectDescID := researchprojectFields[0].Descriptor()
 	// researchproject.DefaultID holds the default value on creation for the id field.
-	researchproject.DefaultID = researchprojectDescID.Default.(func() uuid.UUID)
+	researchproject.DefaultID = researchprojectDescID.Default.(func() string)
 	researchprojectdetailFields := schema.ResearchProjectDetail{}.Fields()
 	_ = researchprojectdetailFields
 	// researchprojectdetailDescDetailText is the schema descriptor for detail_text field.
@@ -1890,7 +2071,7 @@ func init() {
 	// researchprojectdetailDescID is the schema descriptor for id field.
 	researchprojectdetailDescID := researchprojectdetailFields[0].Descriptor()
 	// researchprojectdetail.DefaultID holds the default value on creation for the id field.
-	researchprojectdetail.DefaultID = researchprojectdetailDescID.Default.(func() uuid.UUID)
+	researchprojectdetail.DefaultID = researchprojectdetailDescID.Default.(func() string)
 	researchprojectdetailtranslationFields := schema.ResearchProjectDetailTranslation{}.Fields()
 	_ = researchprojectdetailtranslationFields
 	// researchprojectdetailtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1908,7 +2089,7 @@ func init() {
 	// researchprojectdetailtranslationDescID is the schema descriptor for id field.
 	researchprojectdetailtranslationDescID := researchprojectdetailtranslationFields[0].Descriptor()
 	// researchprojectdetailtranslation.DefaultID holds the default value on creation for the id field.
-	researchprojectdetailtranslation.DefaultID = researchprojectdetailtranslationDescID.Default.(func() uuid.UUID)
+	researchprojectdetailtranslation.DefaultID = researchprojectdetailtranslationDescID.Default.(func() string)
 	researchprojecttranslationFields := schema.ResearchProjectTranslation{}.Fields()
 	_ = researchprojecttranslationFields
 	// researchprojecttranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1952,7 +2133,7 @@ func init() {
 	// researchprojecttranslationDescID is the schema descriptor for id field.
 	researchprojecttranslationDescID := researchprojecttranslationFields[0].Descriptor()
 	// researchprojecttranslation.DefaultID holds the default value on creation for the id field.
-	researchprojecttranslation.DefaultID = researchprojecttranslationDescID.Default.(func() uuid.UUID)
+	researchprojecttranslation.DefaultID = researchprojecttranslationDescID.Default.(func() string)
 	sociallinkFields := schema.SocialLink{}.Fields()
 	_ = sociallinkFields
 	// sociallinkDescPlatform is the schema descriptor for platform field.
@@ -2010,7 +2191,7 @@ func init() {
 	// sociallinkDescID is the schema descriptor for id field.
 	sociallinkDescID := sociallinkFields[0].Descriptor()
 	// sociallink.DefaultID holds the default value on creation for the id field.
-	sociallink.DefaultID = sociallinkDescID.Default.(func() uuid.UUID)
+	sociallink.DefaultID = sociallinkDescID.Default.(func() string)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescUsername is the schema descriptor for username field.
@@ -2128,7 +2309,7 @@ func init() {
 	// userDescID is the schema descriptor for id field.
 	userDescID := userFields[0].Descriptor()
 	// user.DefaultID holds the default value on creation for the id field.
-	user.DefaultID = userDescID.Default.(func() uuid.UUID)
+	user.DefaultID = userDescID.Default.(func() string)
 	useridentityFields := schema.UserIdentity{}.Fields()
 	_ = useridentityFields
 	// useridentityDescProvider is the schema descriptor for provider field.
@@ -2224,7 +2405,7 @@ func init() {
 	// workexperienceDescID is the schema descriptor for id field.
 	workexperienceDescID := workexperienceFields[0].Descriptor()
 	// workexperience.DefaultID holds the default value on creation for the id field.
-	workexperience.DefaultID = workexperienceDescID.Default.(func() uuid.UUID)
+	workexperience.DefaultID = workexperienceDescID.Default.(func() string)
 	workexperiencedetailFields := schema.WorkExperienceDetail{}.Fields()
 	_ = workexperiencedetailFields
 	// workexperiencedetailDescDetailText is the schema descriptor for detail_text field.
@@ -2248,7 +2429,7 @@ func init() {
 	// workexperiencedetailDescID is the schema descriptor for id field.
 	workexperiencedetailDescID := workexperiencedetailFields[0].Descriptor()
 	// workexperiencedetail.DefaultID holds the default value on creation for the id field.
-	workexperiencedetail.DefaultID = workexperiencedetailDescID.Default.(func() uuid.UUID)
+	workexperiencedetail.DefaultID = workexperiencedetailDescID.Default.(func() string)
 	workexperiencedetailtranslationFields := schema.WorkExperienceDetailTranslation{}.Fields()
 	_ = workexperiencedetailtranslationFields
 	// workexperiencedetailtranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -2266,7 +2447,7 @@ func init() {
 	// workexperiencedetailtranslationDescID is the schema descriptor for id field.
 	workexperiencedetailtranslationDescID := workexperiencedetailtranslationFields[0].Descriptor()
 	// workexperiencedetailtranslation.DefaultID holds the default value on creation for the id field.
-	workexperiencedetailtranslation.DefaultID = workexperiencedetailtranslationDescID.Default.(func() uuid.UUID)
+	workexperiencedetailtranslation.DefaultID = workexperiencedetailtranslationDescID.Default.(func() string)
 	workexperiencetranslationFields := schema.WorkExperienceTranslation{}.Fields()
 	_ = workexperiencetranslationFields
 	// workexperiencetranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -2292,5 +2473,5 @@ func init() {
 	// workexperiencetranslationDescID is the schema descriptor for id field.
 	workexperiencetranslationDescID := workexperiencetranslationFields[0].Descriptor()
 	// workexperiencetranslation.DefaultID holds the default value on creation for the id field.
-	workexperiencetranslation.DefaultID = workexperiencetranslationDescID.Default.(func() uuid.UUID)
+	workexperiencetranslation.DefaultID = workexperiencetranslationDescID.Default.(func() string)
 }

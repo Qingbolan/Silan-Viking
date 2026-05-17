@@ -77,7 +77,7 @@ where = ["."]
 include = ["silan*"]
 
 [tool.setuptools.package-data]
-silan = ["bin/*", "bin/**/*", "templates/*", "templates/**/*"]
+silan = ["bin/*", "bin/**/*", "templates/*", "templates/**/*", "skills/*", "skills/**/*"]
 
 [tool.setuptools]
 include-package-data = true

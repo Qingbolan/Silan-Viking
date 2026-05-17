@@ -1,0 +1,10 @@
+# education entry_list — Chinese variant, same entry_id binds the entries.
+
+[[entry]]
+entry_id    = "e_education_nus"
+institution = "新加坡国立大学"
+degree      = "计算机科学学士"
+start_date  = "2019-08-01"
+end_date    = "2023-05-01"
+gpa         = "4.8/5.0"
+details     = ["院长荣誉名单 2020-2023", "分布式共识方向毕业论文"]

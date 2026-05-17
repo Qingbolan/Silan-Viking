@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // BlogPostTagQuery is the builder for querying BlogPostTag entities.
@@ -262,7 +261,7 @@ func (bptq *BlogPostTagQuery) WithBlogTag(opts ...func(*BlogTagQuery)) *BlogPost
 // Example:
 //
 //	var v []struct {
-//		BlogPostID uuid.UUID `json:"blog_post_id,omitempty"`
+//		BlogPostID string `json:"blog_post_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -285,7 +284,7 @@ func (bptq *BlogPostTagQuery) GroupBy(field string, fields ...string) *BlogPostT
 // Example:
 //
 //	var v []struct {
-//		BlogPostID uuid.UUID `json:"blog_post_id,omitempty"`
+//		BlogPostID string `json:"blog_post_id,omitempty"`
 //	}
 //
 //	client.BlogPostTag.Query().
@@ -373,8 +372,8 @@ func (bptq *BlogPostTagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 }
 
 func (bptq *BlogPostTagQuery) loadBlogPost(ctx context.Context, query *BlogPostQuery, nodes []*BlogPostTag, init func(*BlogPostTag), assign func(*BlogPostTag, *BlogPost)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogPostTag)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogPostTag)
 	for i := range nodes {
 		fk := nodes[i].BlogPostID
 		if _, ok := nodeids[fk]; !ok {
@@ -402,8 +401,8 @@ func (bptq *BlogPostTagQuery) loadBlogPost(ctx context.Context, query *BlogPostQ
 	return nil
 }
 func (bptq *BlogPostTagQuery) loadBlogTag(ctx context.Context, query *BlogTagQuery, nodes []*BlogPostTag, init func(*BlogPostTag), assign func(*BlogPostTag, *BlogTag)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogPostTag)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogPostTag)
 	for i := range nodes {
 		fk := nodes[i].BlogTagID
 		if _, ok := nodeids[fk]; !ok {

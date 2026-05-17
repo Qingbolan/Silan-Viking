@@ -7,13 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"silan-backend/internal/auth"
 	"silan-backend/internal/ent"
-	"silan-backend/internal/ent/useridentity"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -37,21 +35,13 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		return nil, fmt.Errorf("content is required")
 	}
 
-	postID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, err
-	}
+	postID := req.ID
 
 	// Validate parent comment if this is a reply
-	var parentID *uuid.UUID
+	var parentID string
 	if req.ParentId != "" {
-		pid, err := uuid.Parse(req.ParentId)
-		if err != nil {
-			return nil, fmt.Errorf("invalid parent_id format")
-		}
-
 		// Check if parent comment exists and belongs to the same post
-		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, pid)
+		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, req.ParentId)
 		if err != nil {
 			return nil, fmt.Errorf("parent comment not found")
 		}
@@ -59,18 +49,22 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 			return nil, fmt.Errorf("parent comment belongs to different post")
 		}
 
-		parentID = &pid
+		parentID = req.ParentId
 	}
 
 	// Handle authentication
 	var userIdentity *ent.UserIdentity
 	var authorName, authorEmail, avatarURL string
 
-	// If user provides an ID token, verify and get user info
+	// If user provides an ID token, verify it against Google and upsert.
 	if req.IdToken != "" {
-		userIdentity, err = l.verifyAndGetUser(req.IdToken)
+		claims, vErr := auth.VerifyGoogleIDToken(l.ctx, req.IdToken, l.svcCtx.Config.Auth.GoogleClientID)
+		if vErr != nil {
+			return nil, fmt.Errorf("token verification failed: %v", vErr)
+		}
+		userIdentity, err = auth.UpsertGoogleIdentity(l.ctx, l.svcCtx.DB, claims)
 		if err != nil {
-			return nil, fmt.Errorf("token verification failed: %v", err)
+			return nil, fmt.Errorf("failed to process user identity: %v", err)
 		}
 		authorName = userIdentity.DisplayName
 		authorEmail = userIdentity.Email
@@ -122,8 +116,8 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		createBuilder = createBuilder.SetIPAddress(req.ClientIP)
 	}
 
-	if parentID != nil {
-		createBuilder = createBuilder.SetParentID(*parentID)
+	if parentID != "" {
+		createBuilder = createBuilder.SetParentID(parentID)
 	}
 
 	if userIdentity != nil {
@@ -137,7 +131,7 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 
 	// Log the comment creation for audit trail
 	commentType := "root"
-	if parentID != nil {
+	if parentID != "" {
 		commentType = "reply"
 	}
 	userType := "anonymous"
@@ -148,131 +142,22 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 	l.Infof("Created %s comment %s by %s user (author: %s, ip: %s, fingerprint: %s)",
 		commentType, c.ID, userType, authorName, req.ClientIP, req.Fingerprint)
 
-	var parentIDStr string
-	if parentID != nil {
-		parentIDStr = parentID.String()
-	}
-
 	var userIdentityIDStr string
 	if userIdentity != nil {
 		userIdentityIDStr = userIdentity.ID
 	}
 
 	return &types.BlogCommentData{
-		ID:             c.ID.String(),
-		BlogPostID:     c.EntityID.String(),
-		ParentID:       parentIDStr,
-		AuthorName:     c.AuthorName,
+		ID:              c.ID,
+		BlogPostID:      c.EntityID,
+		ParentID:        parentID,
+		AuthorName:      c.AuthorName,
 		AuthorAvatarURL: avatarURL,
-		Content:        c.Content,
-		CreatedAt:      c.CreatedAt.Format(time.RFC3339),
-		UserIdentityID: userIdentityIDStr,
-		Replies:        []types.BlogCommentData{},
+		Content:         c.Content,
+		CreatedAt:       c.CreatedAt.Format(time.RFC3339),
+		UserIdentityID:  userIdentityIDStr,
+		Replies:         []types.BlogCommentData{},
 	}, nil
-}
-
-// GoogleClaims represents the claims in a Google ID token
-type GoogleClaims struct {
-	Email         string `json:"email"`
-	EmailVerified bool   `json:"email_verified"`
-	Name          string `json:"name"`
-	Picture       string `json:"picture"`
-	GivenName     string `json:"given_name"`
-	FamilyName    string `json:"family_name"`
-	Sub           string `json:"sub"` // User ID
-	Aud           string `json:"aud"` // Audience (client ID)
-	jwt.StandardClaims
-}
-
-func (l *CreateBlogCommentLogic) verifyAndGetUser(idToken string) (*ent.UserIdentity, error) {
-	// Parse the JWT token without verification (Google signs it, we trust it for now)
-	// In production, you should verify the signature using Google's public keys
-	token, _, err := new(jwt.Parser).ParseUnverified(idToken, &GoogleClaims{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %v", err)
-	}
-
-	claims, ok := token.Claims.(*GoogleClaims)
-	if !ok {
-		return nil, fmt.Errorf("invalid token claims")
-	}
-
-	// Basic validation
-	if !claims.EmailVerified {
-		return nil, fmt.Errorf("email not verified")
-	}
-
-	// Optional audience (client id) check if configured
-	if l.svcCtx.Config.Auth.GoogleClientID != "" {
-		if claims.Aud != l.svcCtx.Config.Auth.GoogleClientID {
-			return nil, fmt.Errorf("invalid audience")
-		}
-	}
-
-	// Find or create user identity
-	existingUser, err := l.svcCtx.DB.UserIdentity.
-		Query().
-		Where(
-			useridentity.ProviderEQ("google"),
-			useridentity.ExternalIDEQ(claims.Sub),
-		).
-		First(l.ctx)
-
-	if err == nil {
-		// Update existing user with latest info from Google
-		updateBuilder := existingUser.Update()
-
-		if claims.Email != "" && existingUser.Email != claims.Email {
-			updateBuilder = updateBuilder.SetEmail(claims.Email)
-		}
-		if claims.Name != "" && existingUser.DisplayName != claims.Name {
-			updateBuilder = updateBuilder.SetDisplayName(claims.Name)
-		}
-		if claims.Picture != "" && existingUser.AvatarURL != claims.Picture {
-			updateBuilder = updateBuilder.SetAvatarURL(claims.Picture)
-		}
-		updateBuilder = updateBuilder.SetVerified(claims.EmailVerified)
-
-		updatedUser, updateErr := updateBuilder.Save(l.ctx)
-		if updateErr != nil {
-			// If update fails, return the existing user
-			return existingUser, nil
-		}
-		return updatedUser, nil
-	}
-
-	// Create new identity if not found
-	createBuilder := l.svcCtx.DB.UserIdentity.
-		Create().
-		SetID(l.generateUserID()).
-		SetProvider("google").
-		SetExternalID(claims.Sub)
-
-	if claims.Email != "" {
-		createBuilder = createBuilder.SetEmail(claims.Email)
-	}
-
-	// Use the proper display name from Google
-	displayName := claims.Name
-	if displayName == "" && claims.Email != "" {
-		// Fallback to email prefix if no name provided
-		emailParts := strings.Split(claims.Email, "@")
-		if len(emailParts) > 0 {
-			displayName = emailParts[0]
-		}
-	}
-	if displayName != "" {
-		createBuilder = createBuilder.SetDisplayName(displayName)
-	}
-
-	// Set avatar URL from Google
-	if claims.Picture != "" {
-		createBuilder = createBuilder.SetAvatarURL(claims.Picture)
-	}
-
-	createBuilder = createBuilder.SetVerified(claims.EmailVerified)
-
-	return createBuilder.Save(l.ctx)
 }
 
 func (l *CreateBlogCommentLogic) lookupAvatarByEmail(email string) string {
@@ -293,9 +178,4 @@ func (l *CreateBlogCommentLogic) lookupAvatarByEmail(email string) string {
 		return avatar.String
 	}
 	return ""
-}
-
-func (l *CreateBlogCommentLogic) generateUserID() string {
-	uuid := uuid.New()
-	return "u_" + strings.ReplaceAll(uuid.String(), "-", "")
 }

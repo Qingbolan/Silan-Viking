@@ -39,6 +39,7 @@ export interface BlogData {
   vlogCover?: string; // Vlog cover image for display
   // Series specific fields
   seriesId?: string;
+  seriesSlug?: string;
   seriesTitle?: string;
   seriesTitleZh?: string;
   seriesDescription?: string;

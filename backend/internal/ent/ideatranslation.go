@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // IdeaTranslation is the model entity for the IdeaTranslation schema.
 type IdeaTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// IdeaID holds the value of the "idea_id" field.
-	IdeaID uuid.UUID `json:"idea_id,omitempty"`
+	IdeaID string `json:"idea_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Title holds the value of the "title" field.
@@ -82,12 +81,10 @@ func (*IdeaTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ideatranslation.FieldLanguageCode, ideatranslation.FieldTitle, ideatranslation.FieldAbstract, ideatranslation.FieldMotivation, ideatranslation.FieldMethodology, ideatranslation.FieldExpectedOutcome, ideatranslation.FieldRequiredResources:
+		case ideatranslation.FieldID, ideatranslation.FieldIdeaID, ideatranslation.FieldLanguageCode, ideatranslation.FieldTitle, ideatranslation.FieldAbstract, ideatranslation.FieldMotivation, ideatranslation.FieldMethodology, ideatranslation.FieldExpectedOutcome, ideatranslation.FieldRequiredResources:
 			values[i] = new(sql.NullString)
 		case ideatranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case ideatranslation.FieldID, ideatranslation.FieldIdeaID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -104,16 +101,16 @@ func (it *IdeaTranslation) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case ideatranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				it.ID = *value
+			} else if value.Valid {
+				it.ID = value.String
 			}
 		case ideatranslation.FieldIdeaID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field idea_id", values[i])
-			} else if value != nil {
-				it.IdeaID = *value
+			} else if value.Valid {
+				it.IdeaID = value.String
 			}
 		case ideatranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -210,7 +207,7 @@ func (it *IdeaTranslation) String() string {
 	builder.WriteString("IdeaTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", it.ID))
 	builder.WriteString("idea_id=")
-	builder.WriteString(fmt.Sprintf("%v", it.IdeaID))
+	builder.WriteString(it.IdeaID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(it.LanguageCode)

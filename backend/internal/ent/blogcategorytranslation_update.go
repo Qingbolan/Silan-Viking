@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogCategoryTranslationUpdate is the builder for updating BlogCategoryTranslation entities.
@@ -31,15 +30,15 @@ func (bctu *BlogCategoryTranslationUpdate) Where(ps ...predicate.BlogCategoryTra
 }
 
 // SetBlogCategoryID sets the "blog_category_id" field.
-func (bctu *BlogCategoryTranslationUpdate) SetBlogCategoryID(u uuid.UUID) *BlogCategoryTranslationUpdate {
-	bctu.mutation.SetBlogCategoryID(u)
+func (bctu *BlogCategoryTranslationUpdate) SetBlogCategoryID(s string) *BlogCategoryTranslationUpdate {
+	bctu.mutation.SetBlogCategoryID(s)
 	return bctu
 }
 
 // SetNillableBlogCategoryID sets the "blog_category_id" field if the given value is not nil.
-func (bctu *BlogCategoryTranslationUpdate) SetNillableBlogCategoryID(u *uuid.UUID) *BlogCategoryTranslationUpdate {
-	if u != nil {
-		bctu.SetBlogCategoryID(*u)
+func (bctu *BlogCategoryTranslationUpdate) SetNillableBlogCategoryID(s *string) *BlogCategoryTranslationUpdate {
+	if s != nil {
+		bctu.SetBlogCategoryID(*s)
 	}
 	return bctu
 }
@@ -177,7 +176,7 @@ func (bctu *BlogCategoryTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if err := bctu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogcategorytranslation.Table, blogcategorytranslation.Columns, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogcategorytranslation.Table, blogcategorytranslation.Columns, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString))
 	if ps := bctu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -202,7 +201,7 @@ func (bctu *BlogCategoryTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{blogcategorytranslation.BlogCategoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -215,7 +214,7 @@ func (bctu *BlogCategoryTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{blogcategorytranslation.BlogCategoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -273,15 +272,15 @@ type BlogCategoryTranslationUpdateOne struct {
 }
 
 // SetBlogCategoryID sets the "blog_category_id" field.
-func (bctuo *BlogCategoryTranslationUpdateOne) SetBlogCategoryID(u uuid.UUID) *BlogCategoryTranslationUpdateOne {
-	bctuo.mutation.SetBlogCategoryID(u)
+func (bctuo *BlogCategoryTranslationUpdateOne) SetBlogCategoryID(s string) *BlogCategoryTranslationUpdateOne {
+	bctuo.mutation.SetBlogCategoryID(s)
 	return bctuo
 }
 
 // SetNillableBlogCategoryID sets the "blog_category_id" field if the given value is not nil.
-func (bctuo *BlogCategoryTranslationUpdateOne) SetNillableBlogCategoryID(u *uuid.UUID) *BlogCategoryTranslationUpdateOne {
-	if u != nil {
-		bctuo.SetBlogCategoryID(*u)
+func (bctuo *BlogCategoryTranslationUpdateOne) SetNillableBlogCategoryID(s *string) *BlogCategoryTranslationUpdateOne {
+	if s != nil {
+		bctuo.SetBlogCategoryID(*s)
 	}
 	return bctuo
 }
@@ -432,7 +431,7 @@ func (bctuo *BlogCategoryTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	if err := bctuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogcategorytranslation.Table, blogcategorytranslation.Columns, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogcategorytranslation.Table, blogcategorytranslation.Columns, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString))
 	id, ok := bctuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "BlogCategoryTranslation.id" for update`)}
@@ -474,7 +473,7 @@ func (bctuo *BlogCategoryTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{blogcategorytranslation.BlogCategoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -487,7 +486,7 @@ func (bctuo *BlogCategoryTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{blogcategorytranslation.BlogCategoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

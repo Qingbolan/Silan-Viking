@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/types"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -29,11 +28,7 @@ func NewLikeProjectCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *LikeProjectCommentLogic) LikeProjectComment(req *types.LikeCommentRequest) (resp *types.LikeCommentResponse, err error) {
-	// Validate comment id format
-	commentUUID, err := uuid.Parse(req.CommentID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid comment id")
-	}
+	commentUUID := req.CommentID
 
 	// Check if like exists using entgo
 	likeQuery := l.svcCtx.DB.CommentLike.Query().Where(commentlike.CommentIDEQ(commentUUID))

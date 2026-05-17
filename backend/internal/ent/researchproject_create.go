@@ -14,7 +14,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectCreate is the builder for creating a ResearchProject entity.
@@ -25,14 +24,30 @@ type ResearchProjectCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (rpc *ResearchProjectCreate) SetUserID(u uuid.UUID) *ResearchProjectCreate {
-	rpc.mutation.SetUserID(u)
+func (rpc *ResearchProjectCreate) SetUserID(s string) *ResearchProjectCreate {
+	rpc.mutation.SetUserID(s)
+	return rpc
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (rpc *ResearchProjectCreate) SetNillableUserID(s *string) *ResearchProjectCreate {
+	if s != nil {
+		rpc.SetUserID(*s)
+	}
 	return rpc
 }
 
 // SetTitle sets the "title" field.
 func (rpc *ResearchProjectCreate) SetTitle(s string) *ResearchProjectCreate {
 	rpc.mutation.SetTitle(s)
+	return rpc
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (rpc *ResearchProjectCreate) SetNillableTitle(s *string) *ResearchProjectCreate {
+	if s != nil {
+		rpc.SetTitle(*s)
+	}
 	return rpc
 }
 
@@ -177,15 +192,15 @@ func (rpc *ResearchProjectCreate) SetNillableUpdatedAt(t *time.Time) *ResearchPr
 }
 
 // SetID sets the "id" field.
-func (rpc *ResearchProjectCreate) SetID(u uuid.UUID) *ResearchProjectCreate {
-	rpc.mutation.SetID(u)
+func (rpc *ResearchProjectCreate) SetID(s string) *ResearchProjectCreate {
+	rpc.mutation.SetID(s)
 	return rpc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (rpc *ResearchProjectCreate) SetNillableID(u *uuid.UUID) *ResearchProjectCreate {
-	if u != nil {
-		rpc.SetID(*u)
+func (rpc *ResearchProjectCreate) SetNillableID(s *string) *ResearchProjectCreate {
+	if s != nil {
+		rpc.SetID(*s)
 	}
 	return rpc
 }
@@ -196,14 +211,14 @@ func (rpc *ResearchProjectCreate) SetUser(u *User) *ResearchProjectCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectTranslation entity by IDs.
-func (rpc *ResearchProjectCreate) AddTranslationIDs(ids ...uuid.UUID) *ResearchProjectCreate {
+func (rpc *ResearchProjectCreate) AddTranslationIDs(ids ...string) *ResearchProjectCreate {
 	rpc.mutation.AddTranslationIDs(ids...)
 	return rpc
 }
 
 // AddTranslations adds the "translations" edges to the ResearchProjectTranslation entity.
 func (rpc *ResearchProjectCreate) AddTranslations(r ...*ResearchProjectTranslation) *ResearchProjectCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -211,14 +226,14 @@ func (rpc *ResearchProjectCreate) AddTranslations(r ...*ResearchProjectTranslati
 }
 
 // AddDetailIDs adds the "details" edge to the ResearchProjectDetail entity by IDs.
-func (rpc *ResearchProjectCreate) AddDetailIDs(ids ...uuid.UUID) *ResearchProjectCreate {
+func (rpc *ResearchProjectCreate) AddDetailIDs(ids ...string) *ResearchProjectCreate {
 	rpc.mutation.AddDetailIDs(ids...)
 	return rpc
 }
 
 // AddDetails adds the "details" edges to the ResearchProjectDetail entity.
 func (rpc *ResearchProjectCreate) AddDetails(r ...*ResearchProjectDetail) *ResearchProjectCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -284,12 +299,6 @@ func (rpc *ResearchProjectCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (rpc *ResearchProjectCreate) check() error {
-	if _, ok := rpc.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "ResearchProject.user_id"`)}
-	}
-	if _, ok := rpc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "ResearchProject.title"`)}
-	}
 	if v, ok := rpc.mutation.Title(); ok {
 		if err := researchproject.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.title": %w`, err)}
@@ -316,15 +325,6 @@ func (rpc *ResearchProjectCreate) check() error {
 	if _, ok := rpc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "ResearchProject.sort_order"`)}
 	}
-	if _, ok := rpc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ResearchProject.created_at"`)}
-	}
-	if _, ok := rpc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ResearchProject.updated_at"`)}
-	}
-	if len(rpc.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "ResearchProject.user"`)}
-	}
 	return nil
 }
 
@@ -340,10 +340,10 @@ func (rpc *ResearchProjectCreate) sqlSave(ctx context.Context) (*ResearchProject
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ResearchProject.ID type: %T", _spec.ID.Value)
 		}
 	}
 	rpc.mutation.id = &_node.ID
@@ -354,11 +354,11 @@ func (rpc *ResearchProjectCreate) sqlSave(ctx context.Context) (*ResearchProject
 func (rpc *ResearchProjectCreate) createSpec() (*ResearchProject, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ResearchProject{config: rpc.config}
-		_spec = sqlgraph.NewCreateSpec(researchproject.Table, sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(researchproject.Table, sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString))
 	)
 	if id, ok := rpc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := rpc.mutation.Title(); ok {
 		_spec.SetField(researchproject.FieldTitle, field.TypeString, value)
@@ -412,7 +412,7 @@ func (rpc *ResearchProjectCreate) createSpec() (*ResearchProject, *sqlgraph.Crea
 			Columns: []string{researchproject.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -429,7 +429,7 @@ func (rpc *ResearchProjectCreate) createSpec() (*ResearchProject, *sqlgraph.Crea
 			Columns: []string{researchproject.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojecttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -445,7 +445,7 @@ func (rpc *ResearchProjectCreate) createSpec() (*ResearchProject, *sqlgraph.Crea
 			Columns: []string{researchproject.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

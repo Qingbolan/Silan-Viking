@@ -26,17 +26,13 @@ func (IdeaDetail) Annotations() []schema.Annotation {
 // Fields of the IdeaDetail.
 func (IdeaDetail) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("idea_id", uuid.UUID{}).
+		field.String("idea_id").
 			StorageKey("idea_id"),
-		field.Text("progress").
-			Optional(),
-		field.Text("results").
-			Optional(),
-		field.Text("references").
-			Optional(),
+		// M0.5a §11.8: progress/results/references (Part body text) moved
+		// out to item_part. Structured attributes below stay.
 		field.Int("estimated_duration_months").
 			Optional(),
 		field.Text("required_resources").

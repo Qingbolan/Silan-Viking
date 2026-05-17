@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // WorkExperienceUpdate is the builder for updating WorkExperience entities.
@@ -33,15 +32,15 @@ func (weu *WorkExperienceUpdate) Where(ps ...predicate.WorkExperience) *WorkExpe
 }
 
 // SetUserID sets the "user_id" field.
-func (weu *WorkExperienceUpdate) SetUserID(u uuid.UUID) *WorkExperienceUpdate {
-	weu.mutation.SetUserID(u)
+func (weu *WorkExperienceUpdate) SetUserID(s string) *WorkExperienceUpdate {
+	weu.mutation.SetUserID(s)
 	return weu
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (weu *WorkExperienceUpdate) SetNillableUserID(u *uuid.UUID) *WorkExperienceUpdate {
-	if u != nil {
-		weu.SetUserID(*u)
+func (weu *WorkExperienceUpdate) SetNillableUserID(s *string) *WorkExperienceUpdate {
+	if s != nil {
+		weu.SetUserID(*s)
 	}
 	return weu
 }
@@ -221,14 +220,14 @@ func (weu *WorkExperienceUpdate) SetUser(u *User) *WorkExperienceUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the WorkExperienceTranslation entity by IDs.
-func (weu *WorkExperienceUpdate) AddTranslationIDs(ids ...uuid.UUID) *WorkExperienceUpdate {
+func (weu *WorkExperienceUpdate) AddTranslationIDs(ids ...string) *WorkExperienceUpdate {
 	weu.mutation.AddTranslationIDs(ids...)
 	return weu
 }
 
 // AddTranslations adds the "translations" edges to the WorkExperienceTranslation entity.
 func (weu *WorkExperienceUpdate) AddTranslations(w ...*WorkExperienceTranslation) *WorkExperienceUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -236,14 +235,14 @@ func (weu *WorkExperienceUpdate) AddTranslations(w ...*WorkExperienceTranslation
 }
 
 // AddDetailIDs adds the "details" edge to the WorkExperienceDetail entity by IDs.
-func (weu *WorkExperienceUpdate) AddDetailIDs(ids ...uuid.UUID) *WorkExperienceUpdate {
+func (weu *WorkExperienceUpdate) AddDetailIDs(ids ...string) *WorkExperienceUpdate {
 	weu.mutation.AddDetailIDs(ids...)
 	return weu
 }
 
 // AddDetails adds the "details" edges to the WorkExperienceDetail entity.
 func (weu *WorkExperienceUpdate) AddDetails(w ...*WorkExperienceDetail) *WorkExperienceUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -268,14 +267,14 @@ func (weu *WorkExperienceUpdate) ClearTranslations() *WorkExperienceUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to WorkExperienceTranslation entities by IDs.
-func (weu *WorkExperienceUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *WorkExperienceUpdate {
+func (weu *WorkExperienceUpdate) RemoveTranslationIDs(ids ...string) *WorkExperienceUpdate {
 	weu.mutation.RemoveTranslationIDs(ids...)
 	return weu
 }
 
 // RemoveTranslations removes "translations" edges to WorkExperienceTranslation entities.
 func (weu *WorkExperienceUpdate) RemoveTranslations(w ...*WorkExperienceTranslation) *WorkExperienceUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -289,14 +288,14 @@ func (weu *WorkExperienceUpdate) ClearDetails() *WorkExperienceUpdate {
 }
 
 // RemoveDetailIDs removes the "details" edge to WorkExperienceDetail entities by IDs.
-func (weu *WorkExperienceUpdate) RemoveDetailIDs(ids ...uuid.UUID) *WorkExperienceUpdate {
+func (weu *WorkExperienceUpdate) RemoveDetailIDs(ids ...string) *WorkExperienceUpdate {
 	weu.mutation.RemoveDetailIDs(ids...)
 	return weu
 }
 
 // RemoveDetails removes "details" edges to WorkExperienceDetail entities.
 func (weu *WorkExperienceUpdate) RemoveDetails(w ...*WorkExperienceDetail) *WorkExperienceUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -376,7 +375,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 	if err := weu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(workexperience.Table, workexperience.Columns, sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(workexperience.Table, workexperience.Columns, sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString))
 	if ps := weu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -440,7 +439,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -453,7 +452,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -469,7 +468,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -482,7 +481,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -498,7 +497,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -514,7 +513,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -527,7 +526,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -543,7 +542,7 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			Columns: []string{workexperience.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -572,15 +571,15 @@ type WorkExperienceUpdateOne struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (weuo *WorkExperienceUpdateOne) SetUserID(u uuid.UUID) *WorkExperienceUpdateOne {
-	weuo.mutation.SetUserID(u)
+func (weuo *WorkExperienceUpdateOne) SetUserID(s string) *WorkExperienceUpdateOne {
+	weuo.mutation.SetUserID(s)
 	return weuo
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (weuo *WorkExperienceUpdateOne) SetNillableUserID(u *uuid.UUID) *WorkExperienceUpdateOne {
-	if u != nil {
-		weuo.SetUserID(*u)
+func (weuo *WorkExperienceUpdateOne) SetNillableUserID(s *string) *WorkExperienceUpdateOne {
+	if s != nil {
+		weuo.SetUserID(*s)
 	}
 	return weuo
 }
@@ -760,14 +759,14 @@ func (weuo *WorkExperienceUpdateOne) SetUser(u *User) *WorkExperienceUpdateOne {
 }
 
 // AddTranslationIDs adds the "translations" edge to the WorkExperienceTranslation entity by IDs.
-func (weuo *WorkExperienceUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *WorkExperienceUpdateOne {
+func (weuo *WorkExperienceUpdateOne) AddTranslationIDs(ids ...string) *WorkExperienceUpdateOne {
 	weuo.mutation.AddTranslationIDs(ids...)
 	return weuo
 }
 
 // AddTranslations adds the "translations" edges to the WorkExperienceTranslation entity.
 func (weuo *WorkExperienceUpdateOne) AddTranslations(w ...*WorkExperienceTranslation) *WorkExperienceUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -775,14 +774,14 @@ func (weuo *WorkExperienceUpdateOne) AddTranslations(w ...*WorkExperienceTransla
 }
 
 // AddDetailIDs adds the "details" edge to the WorkExperienceDetail entity by IDs.
-func (weuo *WorkExperienceUpdateOne) AddDetailIDs(ids ...uuid.UUID) *WorkExperienceUpdateOne {
+func (weuo *WorkExperienceUpdateOne) AddDetailIDs(ids ...string) *WorkExperienceUpdateOne {
 	weuo.mutation.AddDetailIDs(ids...)
 	return weuo
 }
 
 // AddDetails adds the "details" edges to the WorkExperienceDetail entity.
 func (weuo *WorkExperienceUpdateOne) AddDetails(w ...*WorkExperienceDetail) *WorkExperienceUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -807,14 +806,14 @@ func (weuo *WorkExperienceUpdateOne) ClearTranslations() *WorkExperienceUpdateOn
 }
 
 // RemoveTranslationIDs removes the "translations" edge to WorkExperienceTranslation entities by IDs.
-func (weuo *WorkExperienceUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *WorkExperienceUpdateOne {
+func (weuo *WorkExperienceUpdateOne) RemoveTranslationIDs(ids ...string) *WorkExperienceUpdateOne {
 	weuo.mutation.RemoveTranslationIDs(ids...)
 	return weuo
 }
 
 // RemoveTranslations removes "translations" edges to WorkExperienceTranslation entities.
 func (weuo *WorkExperienceUpdateOne) RemoveTranslations(w ...*WorkExperienceTranslation) *WorkExperienceUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -828,14 +827,14 @@ func (weuo *WorkExperienceUpdateOne) ClearDetails() *WorkExperienceUpdateOne {
 }
 
 // RemoveDetailIDs removes the "details" edge to WorkExperienceDetail entities by IDs.
-func (weuo *WorkExperienceUpdateOne) RemoveDetailIDs(ids ...uuid.UUID) *WorkExperienceUpdateOne {
+func (weuo *WorkExperienceUpdateOne) RemoveDetailIDs(ids ...string) *WorkExperienceUpdateOne {
 	weuo.mutation.RemoveDetailIDs(ids...)
 	return weuo
 }
 
 // RemoveDetails removes "details" edges to WorkExperienceDetail entities.
 func (weuo *WorkExperienceUpdateOne) RemoveDetails(w ...*WorkExperienceDetail) *WorkExperienceUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -928,7 +927,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 	if err := weuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(workexperience.Table, workexperience.Columns, sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(workexperience.Table, workexperience.Columns, sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString))
 	id, ok := weuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "WorkExperience.id" for update`)}
@@ -1009,7 +1008,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1022,7 +1021,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1038,7 +1037,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1051,7 +1050,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1067,7 +1066,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1083,7 +1082,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1096,7 +1095,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1112,7 +1111,7 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			Columns: []string{workexperience.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

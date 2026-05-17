@@ -1,0 +1,3 @@
+# skills key_value_list — top-level category keys (per 10 §10.4.5).
+Languages = ["Rust", "Go", "Python"]
+Systems   = ["Linux", "SQLite", "MCP"]

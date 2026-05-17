@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // WorkExperienceTranslationQuery is the builder for querying WorkExperienceTranslation entities.
@@ -131,8 +130,8 @@ func (wetq *WorkExperienceTranslationQuery) FirstX(ctx context.Context) *WorkExp
 
 // FirstID returns the first WorkExperienceTranslation ID from the query.
 // Returns a *NotFoundError when no WorkExperienceTranslation ID was found.
-func (wetq *WorkExperienceTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (wetq *WorkExperienceTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = wetq.Limit(1).IDs(setContextOp(ctx, wetq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (wetq *WorkExperienceTranslationQuery) FirstID(ctx context.Context) (id uui
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (wetq *WorkExperienceTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (wetq *WorkExperienceTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := wetq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (wetq *WorkExperienceTranslationQuery) OnlyX(ctx context.Context) *WorkExpe
 // OnlyID is like Only, but returns the only WorkExperienceTranslation ID in the query.
 // Returns a *NotSingularError when more than one WorkExperienceTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (wetq *WorkExperienceTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (wetq *WorkExperienceTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = wetq.Limit(2).IDs(setContextOp(ctx, wetq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (wetq *WorkExperienceTranslationQuery) OnlyID(ctx context.Context) (id uuid
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (wetq *WorkExperienceTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (wetq *WorkExperienceTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := wetq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (wetq *WorkExperienceTranslationQuery) AllX(ctx context.Context) []*WorkExp
 }
 
 // IDs executes the query and returns a list of WorkExperienceTranslation IDs.
-func (wetq *WorkExperienceTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (wetq *WorkExperienceTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if wetq.ctx.Unique == nil && wetq.path != nil {
 		wetq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (wetq *WorkExperienceTranslationQuery) IDs(ctx context.Context) (ids []uuid
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (wetq *WorkExperienceTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (wetq *WorkExperienceTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := wetq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (wetq *WorkExperienceTranslationQuery) WithLanguage(opts ...func(*LanguageQ
 // Example:
 //
 //	var v []struct {
-//		WorkExperienceID uuid.UUID `json:"work_experience_id,omitempty"`
+//		WorkExperienceID string `json:"work_experience_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (wetq *WorkExperienceTranslationQuery) GroupBy(field string, fields ...stri
 // Example:
 //
 //	var v []struct {
-//		WorkExperienceID uuid.UUID `json:"work_experience_id,omitempty"`
+//		WorkExperienceID string `json:"work_experience_id,omitempty"`
 //	}
 //
 //	client.WorkExperienceTranslation.Query().
@@ -446,8 +445,8 @@ func (wetq *WorkExperienceTranslationQuery) sqlAll(ctx context.Context, hooks ..
 }
 
 func (wetq *WorkExperienceTranslationQuery) loadWorkExperience(ctx context.Context, query *WorkExperienceQuery, nodes []*WorkExperienceTranslation, init func(*WorkExperienceTranslation), assign func(*WorkExperienceTranslation, *WorkExperience)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*WorkExperienceTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*WorkExperienceTranslation)
 	for i := range nodes {
 		fk := nodes[i].WorkExperienceID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (wetq *WorkExperienceTranslationQuery) sqlCount(ctx context.Context) (int, 
 }
 
 func (wetq *WorkExperienceTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(workexperiencetranslation.Table, workexperiencetranslation.Columns, sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(workexperiencetranslation.Table, workexperiencetranslation.Columns, sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString))
 	_spec.From = wetq.sql
 	if unique := wetq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

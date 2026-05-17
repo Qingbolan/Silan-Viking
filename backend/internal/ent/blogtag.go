@@ -10,14 +10,13 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // BlogTag is the model entity for the BlogTag schema.
 type BlogTag struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Slug holds the value of the "slug" field.
@@ -68,12 +67,10 @@ func (*BlogTag) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case blogtag.FieldUsageCount:
 			values[i] = new(sql.NullInt64)
-		case blogtag.FieldName, blogtag.FieldSlug:
+		case blogtag.FieldID, blogtag.FieldName, blogtag.FieldSlug:
 			values[i] = new(sql.NullString)
 		case blogtag.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case blogtag.FieldID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -90,10 +87,10 @@ func (bt *BlogTag) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case blogtag.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				bt.ID = *value
+			} else if value.Valid {
+				bt.ID = value.String
 			}
 		case blogtag.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {

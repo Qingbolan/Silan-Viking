@@ -2,6 +2,7 @@ import type { BlogData } from '../../components/BlogStack/types/blog';
 import { get, post, formatLanguage, del } from '../utils';
 import { type PaginationRequest, type SearchRequest } from '../config';
 import { processRawContent } from '../../utils/markdownParser';
+import { getClientFingerprint } from '../../utils/fingerprint';
 
 // Backend API request/response types
 interface BlogListRequest extends PaginationRequest {
@@ -25,29 +26,24 @@ interface UpdateBlogLikesResponse {
   likes: number;
 }
 
-// Series-specific API functions
-export interface SeriesEpisode {
-  id: string;
-  title: string;
-  titleZh?: string;
-  duration?: string;
-  completed?: boolean;
-  current?: boolean;
-  order: number;
-}
-
-export interface SeriesData {
-  id: string;
-  title: string;
-  titleZh?: string;
-  description: string;
-  descriptionZh?: string;
-  episodes: SeriesEpisode[];
-  totalDuration: string;
-  completedCount: number;
-}
-
 // API functions
+
+const mapBlogData = (post: any, content?: BlogData['content']): BlogData => ({
+  ...post,
+  tags: post.tags || [],
+  ...(content ? { content } : {}),
+  seriesId: post.series_id,
+  seriesSlug: post.series_slug,
+  seriesTitle: post.series_title,
+  seriesTitleZh: post.series_title_zh,
+  seriesDescription: post.series_description,
+  seriesDescriptionZh: post.series_description_zh,
+  episodeNumber: post.episode_number,
+  totalEpisodes: post.total_episodes,
+  seriesImage: post.series_image,
+  publishDate: post.publish_date,
+  readTime: post.read_time
+}) as BlogData;
 
 /**
  * Get blog posts list with pagination and filtering
@@ -62,22 +58,7 @@ export const fetchBlogPosts = async (
   });
   
   // Ensure consistent data structure and map fields
-  const posts = (response.posts || []).map((post: any) => ({
-    ...post,
-    tags: post.tags || [],
-    // Map series fields from snake_case to camelCase
-    seriesId: post.series_id,
-    seriesTitle: post.series_title,
-    seriesTitleZh: post.series_title_zh,
-    seriesDescription: post.series_description,
-    seriesDescriptionZh: post.series_description_zh,
-    episodeNumber: post.episode_number,
-    totalEpisodes: post.total_episodes,
-    seriesImage: post.series_image,
-    // Map other fields
-    publishDate: post.publish_date,
-    readTime: post.read_time
-  })) as BlogData[];
+  const posts = (response.posts || []).map((post: any) => mapBlogData(post));
   
   return posts;
 };
@@ -115,23 +96,7 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
       }, {} as Record<string, number>));
       
       // Map backend response to frontend structure
-      return {
-        ...response,
-        tags: response.tags || [],
-        content: processedContent, // Use processed content instead of raw
-        // Map series fields from snake_case to camelCase
-        seriesId: response.series_id,
-        seriesTitle: response.series_title,
-        seriesTitleZh: response.series_title_zh,
-        seriesDescription: response.series_description,
-        seriesDescriptionZh: response.series_description_zh,
-        episodeNumber: response.episode_number,
-        totalEpisodes: response.total_episodes,
-        seriesImage: response.series_image,
-        // Map other fields
-        publishDate: response.publish_date,
-        readTime: response.read_time
-      } as BlogData;
+      return mapBlogData(response, processedContent);
     }
   } catch (error) {
     console.log(`Failed to fetch by ${isUUID ? 'ID' : 'slug'}, will try getting all posts to find the correct slug`);
@@ -154,23 +119,7 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
         // Process the content with markdown parser
         const processedContent = response.content ? processRawContent(response.content) : [];        
         // Map backend response to frontend structure
-        return {
-          ...response,
-          tags: response.tags || [],
-          content: processedContent, // Use processed content instead of raw
-          // Map series fields from snake_case to camelCase
-          seriesId: response.series_id,
-          seriesTitle: response.series_title,
-          seriesTitleZh: response.series_title_zh,
-          seriesDescription: response.series_description,
-          seriesDescriptionZh: response.series_description_zh,
-          episodeNumber: response.episode_number,
-          totalEpisodes: response.total_episodes,
-          seriesImage: response.series_image,
-          // Map other fields
-          publishDate: response.publish_date,
-          readTime: response.read_time
-        } as BlogData;
+        return mapBlogData(response, processedContent);
       }
     }
   } catch (error) {
@@ -193,22 +142,7 @@ export const searchBlogPosts = async (
   });
   
   // Ensure consistent data structure and map fields
-  const posts = (response.posts || []).map((post: any) => ({
-    ...post,
-    tags: post.tags || [],
-    // Map series fields from snake_case to camelCase
-    seriesId: post.series_id,
-    seriesTitle: post.series_title,
-    seriesTitleZh: post.series_title_zh,
-    seriesDescription: post.series_description,
-    seriesDescriptionZh: post.series_description_zh,
-    episodeNumber: post.episode_number,
-    totalEpisodes: post.total_episodes,
-    seriesImage: post.series_image,
-    // Map other fields
-    publishDate: post.publish_date,
-    readTime: post.read_time
-  })) as BlogData[];
+  const posts = (response.posts || []).map((post: any) => mapBlogData(post));
   
   return posts;
 };
@@ -237,17 +171,17 @@ export const getBlogTags = async (language: 'en' | 'zh' = 'en'): Promise<string[
  * Update blog views
  */
 export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'): Promise<void> => {
-  // Use form data to avoid CORS preflight request
-  const formData = new URLSearchParams();
-  formData.append('lang', formatLanguage(language));
-  
   try {
-    const response = await fetch(`/api/v1/blog/posts/${id}/views`, {
+    const response = await fetch(`/api/v1/blog/posts/${id}/views?lang=${formatLanguage(language)}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: formData.toString(),
+      body: JSON.stringify({
+        fingerprint: getClientFingerprint(),
+        user_agent_full: navigator.userAgent,
+        referrer: document.referrer,
+      }),
     });
     
     if (!response.ok) {
@@ -262,72 +196,13 @@ export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'):
  * Update blog likes
  */
 export const updateBlogLikes = async (id: string, increment: boolean = true, language: 'en' | 'zh' = 'en'): Promise<number> => {
-  const response = await post<UpdateBlogLikesResponse>(`/api/v1/blog/posts/${id}/likes`, {
+  const response = await post<UpdateBlogLikesResponse>(`/api/v1/blog/posts/${id}/likes?lang=${formatLanguage(language)}`, {
     increment,
-    lang: formatLanguage(language)
+    fingerprint: getClientFingerprint(),
+    user_agent_full: navigator.userAgent,
+    referrer: document.referrer,
   });
   return response.likes;
-};
-
-/**
- * Get blog series data
- */
-export const fetchSeriesData = async (seriesId: string, language: 'en' | 'zh' = 'en'): Promise<SeriesData | null> => {
-  const response = await get<any>(`/api/v1/blog/series/${seriesId}`, {
-    lang: formatLanguage(language)
-  });
-  
-  if (!response) return null;
-  
-  // Map backend response to frontend structure
-  return {
-    id: response.id,
-    title: response.title,
-    titleZh: response.title_zh,
-    description: response.description,
-    descriptionZh: response.description_zh,
-    episodes: (response.episodes || []).map((episode: any) => ({
-      id: episode.id,
-      title: episode.title,
-      titleZh: episode.title_zh,
-      duration: episode.duration,
-      completed: episode.completed || false,
-      current: episode.current || false,
-      order: episode.order
-    })),
-    totalDuration: response.total_duration || '',
-    completedCount: response.completed_count || 0
-  } as SeriesData;
-};
-
-/**
- * Update series progress
- */
-export const updateSeriesProgress = async (
-  seriesId: string, 
-  episodeId: string, 
-  completed: boolean, 
-  language: 'en' | 'zh' = 'en'
-): Promise<SeriesData> => {
-  const response = await post<SeriesData>(`/api/v1/blog/series/${seriesId}/episodes/${episodeId}/progress`, {
-    completed,
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Set current episode
- */
-export const setCurrentEpisode = async (
-  seriesId: string, 
-  episodeId: string, 
-  language: 'en' | 'zh' = 'en'
-): Promise<SeriesData> => {
-  const response = await post<SeriesData>(`/api/v1/blog/series/${seriesId}/episodes/${episodeId}/current`, {
-    lang: formatLanguage(language)
-  });
-  return response;
 };
 
 // ----- Comments API -----

@@ -26,17 +26,18 @@ func (PersonalInfo) Annotations() []schema.Annotation {
 // Fields of the PersonalInfo.
 func (PersonalInfo) Fields() []ent.Field {
 	return []ent.Field{
-		field.UUID("id", uuid.UUID{}).
-			Default(uuid.New).
+		field.String("id").
+			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
-		field.UUID("user_id", uuid.UUID{}).
+		field.String("user_id").
+			Optional().
 			StorageKey("user_id"),
 		field.String("full_name").
 			MaxLen(200).
-			NotEmpty(),
+			Optional(),
 		field.String("title").
 			MaxLen(200).
-			NotEmpty(),
+			Optional(),
 		field.Text("current_status").
 			Optional(),
 		field.String("phone").
@@ -58,9 +59,11 @@ func (PersonalInfo) Fields() []ent.Field {
 			Default(false),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -71,7 +74,6 @@ func (PersonalInfo) Edges() []ent.Edge {
 		edge.From("user", User.Type).
 			Ref("personal_infos").
 			Field("user_id").
-			Required().
 			Unique(),
 		edge.To("translations", PersonalInfoTranslation.Type),
 		edge.To("social_links", SocialLink.Type),

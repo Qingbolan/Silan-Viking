@@ -40,7 +40,7 @@ func (pid *ProjectImageDelete) ExecX(ctx context.Context) int {
 }
 
 func (pid *ProjectImageDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(projectimage.Table, sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(projectimage.Table, sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString))
 	if ps := pid.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

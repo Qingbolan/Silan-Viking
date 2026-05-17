@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // WorkExperienceDetailTranslationUpdate is the builder for updating WorkExperienceDetailTranslation entities.
@@ -31,15 +30,15 @@ func (wedtu *WorkExperienceDetailTranslationUpdate) Where(ps ...predicate.WorkEx
 }
 
 // SetWorkExperienceDetailID sets the "work_experience_detail_id" field.
-func (wedtu *WorkExperienceDetailTranslationUpdate) SetWorkExperienceDetailID(u uuid.UUID) *WorkExperienceDetailTranslationUpdate {
-	wedtu.mutation.SetWorkExperienceDetailID(u)
+func (wedtu *WorkExperienceDetailTranslationUpdate) SetWorkExperienceDetailID(s string) *WorkExperienceDetailTranslationUpdate {
+	wedtu.mutation.SetWorkExperienceDetailID(s)
 	return wedtu
 }
 
 // SetNillableWorkExperienceDetailID sets the "work_experience_detail_id" field if the given value is not nil.
-func (wedtu *WorkExperienceDetailTranslationUpdate) SetNillableWorkExperienceDetailID(u *uuid.UUID) *WorkExperienceDetailTranslationUpdate {
-	if u != nil {
-		wedtu.SetWorkExperienceDetailID(*u)
+func (wedtu *WorkExperienceDetailTranslationUpdate) SetNillableWorkExperienceDetailID(s *string) *WorkExperienceDetailTranslationUpdate {
+	if s != nil {
+		wedtu.SetWorkExperienceDetailID(*s)
 	}
 	return wedtu
 }
@@ -157,7 +156,7 @@ func (wedtu *WorkExperienceDetailTranslationUpdate) sqlSave(ctx context.Context)
 	if err := wedtu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(workexperiencedetailtranslation.Table, workexperiencedetailtranslation.Columns, sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(workexperiencedetailtranslation.Table, workexperiencedetailtranslation.Columns, sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString))
 	if ps := wedtu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -176,7 +175,7 @@ func (wedtu *WorkExperienceDetailTranslationUpdate) sqlSave(ctx context.Context)
 			Columns: []string{workexperiencedetailtranslation.WorkExperienceDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -189,7 +188,7 @@ func (wedtu *WorkExperienceDetailTranslationUpdate) sqlSave(ctx context.Context)
 			Columns: []string{workexperiencedetailtranslation.WorkExperienceDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -247,15 +246,15 @@ type WorkExperienceDetailTranslationUpdateOne struct {
 }
 
 // SetWorkExperienceDetailID sets the "work_experience_detail_id" field.
-func (wedtuo *WorkExperienceDetailTranslationUpdateOne) SetWorkExperienceDetailID(u uuid.UUID) *WorkExperienceDetailTranslationUpdateOne {
-	wedtuo.mutation.SetWorkExperienceDetailID(u)
+func (wedtuo *WorkExperienceDetailTranslationUpdateOne) SetWorkExperienceDetailID(s string) *WorkExperienceDetailTranslationUpdateOne {
+	wedtuo.mutation.SetWorkExperienceDetailID(s)
 	return wedtuo
 }
 
 // SetNillableWorkExperienceDetailID sets the "work_experience_detail_id" field if the given value is not nil.
-func (wedtuo *WorkExperienceDetailTranslationUpdateOne) SetNillableWorkExperienceDetailID(u *uuid.UUID) *WorkExperienceDetailTranslationUpdateOne {
-	if u != nil {
-		wedtuo.SetWorkExperienceDetailID(*u)
+func (wedtuo *WorkExperienceDetailTranslationUpdateOne) SetNillableWorkExperienceDetailID(s *string) *WorkExperienceDetailTranslationUpdateOne {
+	if s != nil {
+		wedtuo.SetWorkExperienceDetailID(*s)
 	}
 	return wedtuo
 }
@@ -386,7 +385,7 @@ func (wedtuo *WorkExperienceDetailTranslationUpdateOne) sqlSave(ctx context.Cont
 	if err := wedtuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(workexperiencedetailtranslation.Table, workexperiencedetailtranslation.Columns, sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(workexperiencedetailtranslation.Table, workexperiencedetailtranslation.Columns, sqlgraph.NewFieldSpec(workexperiencedetailtranslation.FieldID, field.TypeString))
 	id, ok := wedtuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "WorkExperienceDetailTranslation.id" for update`)}
@@ -422,7 +421,7 @@ func (wedtuo *WorkExperienceDetailTranslationUpdateOne) sqlSave(ctx context.Cont
 			Columns: []string{workexperiencedetailtranslation.WorkExperienceDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -435,7 +434,7 @@ func (wedtuo *WorkExperienceDetailTranslationUpdateOne) sqlSave(ctx context.Cont
 			Columns: []string{workexperiencedetailtranslation.WorkExperienceDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperiencedetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

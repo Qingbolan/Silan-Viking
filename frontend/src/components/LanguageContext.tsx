@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import i18n from '../i18n/index';
 import type { Language } from '../types/api';
 
@@ -25,25 +25,30 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     return navigator.language.startsWith('zh') ? 'zh' : 'en';
   });
 
-  const changeLanguage = (lang: Language) => {
+  const applyLanguage = useCallback((lang: Language) => {
     setLanguage(lang);
-  };
-
-  const t = (key: string): string => {
-    return i18n.t(key);
-  };
+    localStorage.setItem('language', lang);
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    void i18n.changeLanguage(lang);
+  }, []);
 
   useEffect(() => {
-    i18n.changeLanguage(language);
-    localStorage.setItem('language', language);
+    document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+    if (i18n.language !== language) {
+      void i18n.changeLanguage(language);
+    }
   }, [language]);
 
-  const contextValue: LanguageContextType = {
+  const t = useCallback((key: string): string => {
+    return i18n.t(key);
+  }, []);
+
+  const contextValue: LanguageContextType = useMemo(() => ({
     language,
-    setLanguage,
-    changeLanguage,
+    setLanguage: applyLanguage,
+    changeLanguage: applyLanguage,
     t,
-  };
+  }), [language, applyLanguage, t]);
 
   return (
     <LanguageContext.Provider value={contextValue}>

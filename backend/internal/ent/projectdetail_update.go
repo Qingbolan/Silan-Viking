@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectDetailUpdate is the builder for updating ProjectDetail entities.
@@ -32,15 +31,15 @@ func (pdu *ProjectDetailUpdate) Where(ps ...predicate.ProjectDetail) *ProjectDet
 }
 
 // SetProjectID sets the "project_id" field.
-func (pdu *ProjectDetailUpdate) SetProjectID(u uuid.UUID) *ProjectDetailUpdate {
-	pdu.mutation.SetProjectID(u)
+func (pdu *ProjectDetailUpdate) SetProjectID(s string) *ProjectDetailUpdate {
+	pdu.mutation.SetProjectID(s)
 	return pdu
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (pdu *ProjectDetailUpdate) SetNillableProjectID(u *uuid.UUID) *ProjectDetailUpdate {
-	if u != nil {
-		pdu.SetProjectID(*u)
+func (pdu *ProjectDetailUpdate) SetNillableProjectID(s *string) *ProjectDetailUpdate {
+	if s != nil {
+		pdu.SetProjectID(*s)
 	}
 	return pdu
 }
@@ -62,46 +61,6 @@ func (pdu *ProjectDetailUpdate) SetNillableProjectDetails(s *string) *ProjectDet
 // ClearProjectDetails clears the value of the "project_details" field.
 func (pdu *ProjectDetailUpdate) ClearProjectDetails() *ProjectDetailUpdate {
 	pdu.mutation.ClearProjectDetails()
-	return pdu
-}
-
-// SetQuickStart sets the "quick_start" field.
-func (pdu *ProjectDetailUpdate) SetQuickStart(s string) *ProjectDetailUpdate {
-	pdu.mutation.SetQuickStart(s)
-	return pdu
-}
-
-// SetNillableQuickStart sets the "quick_start" field if the given value is not nil.
-func (pdu *ProjectDetailUpdate) SetNillableQuickStart(s *string) *ProjectDetailUpdate {
-	if s != nil {
-		pdu.SetQuickStart(*s)
-	}
-	return pdu
-}
-
-// ClearQuickStart clears the value of the "quick_start" field.
-func (pdu *ProjectDetailUpdate) ClearQuickStart() *ProjectDetailUpdate {
-	pdu.mutation.ClearQuickStart()
-	return pdu
-}
-
-// SetReleaseNotes sets the "release_notes" field.
-func (pdu *ProjectDetailUpdate) SetReleaseNotes(s string) *ProjectDetailUpdate {
-	pdu.mutation.SetReleaseNotes(s)
-	return pdu
-}
-
-// SetNillableReleaseNotes sets the "release_notes" field if the given value is not nil.
-func (pdu *ProjectDetailUpdate) SetNillableReleaseNotes(s *string) *ProjectDetailUpdate {
-	if s != nil {
-		pdu.SetReleaseNotes(*s)
-	}
-	return pdu
-}
-
-// ClearReleaseNotes clears the value of the "release_notes" field.
-func (pdu *ProjectDetailUpdate) ClearReleaseNotes() *ProjectDetailUpdate {
-	pdu.mutation.ClearReleaseNotes()
 	return pdu
 }
 
@@ -197,14 +156,14 @@ func (pdu *ProjectDetailUpdate) SetProject(p *Project) *ProjectDetailUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the ProjectDetailTranslation entity by IDs.
-func (pdu *ProjectDetailUpdate) AddTranslationIDs(ids ...uuid.UUID) *ProjectDetailUpdate {
+func (pdu *ProjectDetailUpdate) AddTranslationIDs(ids ...string) *ProjectDetailUpdate {
 	pdu.mutation.AddTranslationIDs(ids...)
 	return pdu
 }
 
 // AddTranslations adds the "translations" edges to the ProjectDetailTranslation entity.
 func (pdu *ProjectDetailUpdate) AddTranslations(p ...*ProjectDetailTranslation) *ProjectDetailUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -229,14 +188,14 @@ func (pdu *ProjectDetailUpdate) ClearTranslations() *ProjectDetailUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ProjectDetailTranslation entities by IDs.
-func (pdu *ProjectDetailUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *ProjectDetailUpdate {
+func (pdu *ProjectDetailUpdate) RemoveTranslationIDs(ids ...string) *ProjectDetailUpdate {
 	pdu.mutation.RemoveTranslationIDs(ids...)
 	return pdu
 }
 
 // RemoveTranslations removes "translations" edges to ProjectDetailTranslation entities.
 func (pdu *ProjectDetailUpdate) RemoveTranslations(p ...*ProjectDetailTranslation) *ProjectDetailUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -301,7 +260,7 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if err := pdu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectdetail.Table, projectdetail.Columns, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectdetail.Table, projectdetail.Columns, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString))
 	if ps := pdu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -314,18 +273,6 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if pdu.mutation.ProjectDetailsCleared() {
 		_spec.ClearField(projectdetail.FieldProjectDetails, field.TypeString)
-	}
-	if value, ok := pdu.mutation.QuickStart(); ok {
-		_spec.SetField(projectdetail.FieldQuickStart, field.TypeString, value)
-	}
-	if pdu.mutation.QuickStartCleared() {
-		_spec.ClearField(projectdetail.FieldQuickStart, field.TypeString)
-	}
-	if value, ok := pdu.mutation.ReleaseNotes(); ok {
-		_spec.SetField(projectdetail.FieldReleaseNotes, field.TypeString, value)
-	}
-	if pdu.mutation.ReleaseNotesCleared() {
-		_spec.ClearField(projectdetail.FieldReleaseNotes, field.TypeString)
 	}
 	if value, ok := pdu.mutation.Dependencies(); ok {
 		_spec.SetField(projectdetail.FieldDependencies, field.TypeString, value)
@@ -362,7 +309,7 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{projectdetail.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -375,7 +322,7 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{projectdetail.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -391,7 +338,7 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{projectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -404,7 +351,7 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{projectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -420,7 +367,7 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 			Columns: []string{projectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -449,15 +396,15 @@ type ProjectDetailUpdateOne struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (pduo *ProjectDetailUpdateOne) SetProjectID(u uuid.UUID) *ProjectDetailUpdateOne {
-	pduo.mutation.SetProjectID(u)
+func (pduo *ProjectDetailUpdateOne) SetProjectID(s string) *ProjectDetailUpdateOne {
+	pduo.mutation.SetProjectID(s)
 	return pduo
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (pduo *ProjectDetailUpdateOne) SetNillableProjectID(u *uuid.UUID) *ProjectDetailUpdateOne {
-	if u != nil {
-		pduo.SetProjectID(*u)
+func (pduo *ProjectDetailUpdateOne) SetNillableProjectID(s *string) *ProjectDetailUpdateOne {
+	if s != nil {
+		pduo.SetProjectID(*s)
 	}
 	return pduo
 }
@@ -479,46 +426,6 @@ func (pduo *ProjectDetailUpdateOne) SetNillableProjectDetails(s *string) *Projec
 // ClearProjectDetails clears the value of the "project_details" field.
 func (pduo *ProjectDetailUpdateOne) ClearProjectDetails() *ProjectDetailUpdateOne {
 	pduo.mutation.ClearProjectDetails()
-	return pduo
-}
-
-// SetQuickStart sets the "quick_start" field.
-func (pduo *ProjectDetailUpdateOne) SetQuickStart(s string) *ProjectDetailUpdateOne {
-	pduo.mutation.SetQuickStart(s)
-	return pduo
-}
-
-// SetNillableQuickStart sets the "quick_start" field if the given value is not nil.
-func (pduo *ProjectDetailUpdateOne) SetNillableQuickStart(s *string) *ProjectDetailUpdateOne {
-	if s != nil {
-		pduo.SetQuickStart(*s)
-	}
-	return pduo
-}
-
-// ClearQuickStart clears the value of the "quick_start" field.
-func (pduo *ProjectDetailUpdateOne) ClearQuickStart() *ProjectDetailUpdateOne {
-	pduo.mutation.ClearQuickStart()
-	return pduo
-}
-
-// SetReleaseNotes sets the "release_notes" field.
-func (pduo *ProjectDetailUpdateOne) SetReleaseNotes(s string) *ProjectDetailUpdateOne {
-	pduo.mutation.SetReleaseNotes(s)
-	return pduo
-}
-
-// SetNillableReleaseNotes sets the "release_notes" field if the given value is not nil.
-func (pduo *ProjectDetailUpdateOne) SetNillableReleaseNotes(s *string) *ProjectDetailUpdateOne {
-	if s != nil {
-		pduo.SetReleaseNotes(*s)
-	}
-	return pduo
-}
-
-// ClearReleaseNotes clears the value of the "release_notes" field.
-func (pduo *ProjectDetailUpdateOne) ClearReleaseNotes() *ProjectDetailUpdateOne {
-	pduo.mutation.ClearReleaseNotes()
 	return pduo
 }
 
@@ -614,14 +521,14 @@ func (pduo *ProjectDetailUpdateOne) SetProject(p *Project) *ProjectDetailUpdateO
 }
 
 // AddTranslationIDs adds the "translations" edge to the ProjectDetailTranslation entity by IDs.
-func (pduo *ProjectDetailUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *ProjectDetailUpdateOne {
+func (pduo *ProjectDetailUpdateOne) AddTranslationIDs(ids ...string) *ProjectDetailUpdateOne {
 	pduo.mutation.AddTranslationIDs(ids...)
 	return pduo
 }
 
 // AddTranslations adds the "translations" edges to the ProjectDetailTranslation entity.
 func (pduo *ProjectDetailUpdateOne) AddTranslations(p ...*ProjectDetailTranslation) *ProjectDetailUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -646,14 +553,14 @@ func (pduo *ProjectDetailUpdateOne) ClearTranslations() *ProjectDetailUpdateOne 
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ProjectDetailTranslation entities by IDs.
-func (pduo *ProjectDetailUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *ProjectDetailUpdateOne {
+func (pduo *ProjectDetailUpdateOne) RemoveTranslationIDs(ids ...string) *ProjectDetailUpdateOne {
 	pduo.mutation.RemoveTranslationIDs(ids...)
 	return pduo
 }
 
 // RemoveTranslations removes "translations" edges to ProjectDetailTranslation entities.
 func (pduo *ProjectDetailUpdateOne) RemoveTranslations(p ...*ProjectDetailTranslation) *ProjectDetailUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -731,7 +638,7 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 	if err := pduo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectdetail.Table, projectdetail.Columns, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectdetail.Table, projectdetail.Columns, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString))
 	id, ok := pduo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectDetail.id" for update`)}
@@ -761,18 +668,6 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 	}
 	if pduo.mutation.ProjectDetailsCleared() {
 		_spec.ClearField(projectdetail.FieldProjectDetails, field.TypeString)
-	}
-	if value, ok := pduo.mutation.QuickStart(); ok {
-		_spec.SetField(projectdetail.FieldQuickStart, field.TypeString, value)
-	}
-	if pduo.mutation.QuickStartCleared() {
-		_spec.ClearField(projectdetail.FieldQuickStart, field.TypeString)
-	}
-	if value, ok := pduo.mutation.ReleaseNotes(); ok {
-		_spec.SetField(projectdetail.FieldReleaseNotes, field.TypeString, value)
-	}
-	if pduo.mutation.ReleaseNotesCleared() {
-		_spec.ClearField(projectdetail.FieldReleaseNotes, field.TypeString)
 	}
 	if value, ok := pduo.mutation.Dependencies(); ok {
 		_spec.SetField(projectdetail.FieldDependencies, field.TypeString, value)
@@ -809,7 +704,7 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 			Columns: []string{projectdetail.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -822,7 +717,7 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 			Columns: []string{projectdetail.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -838,7 +733,7 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 			Columns: []string{projectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -851,7 +746,7 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 			Columns: []string{projectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -867,7 +762,7 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 			Columns: []string{projectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

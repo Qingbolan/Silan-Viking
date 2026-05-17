@@ -11,20 +11,19 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // Comment is the model entity for the Comment schema.
 type Comment struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
-	// Type of entity: 'blog' or 'idea'
-	EntityType string `json:"entity_type,omitempty"`
+	ID string `json:"id,omitempty"`
+	// Type of the commented entity (M0.5a §11.6: enum)
+	EntityType comment.EntityType `json:"entity_type,omitempty"`
 	// ID of the blog post or idea
-	EntityID uuid.UUID `json:"entity_id,omitempty"`
+	EntityID string `json:"entity_id,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
-	ParentID uuid.UUID `json:"parent_id,omitempty"`
+	ParentID string `json:"parent_id,omitempty"`
 	// AuthorName holds the value of the "author_name" field.
 	AuthorName string `json:"author_name,omitempty"`
 	// AuthorEmail holds the value of the "author_email" field.
@@ -33,10 +32,10 @@ type Comment struct {
 	AuthorWebsite string `json:"author_website,omitempty"`
 	// Content holds the value of the "content" field.
 	Content string `json:"content,omitempty"`
-	// Type of comment: general, question, suggestion, etc.
-	Type string `json:"type,omitempty"`
-	// ReferrenceID holds the value of the "referrence_id" field.
-	ReferrenceID string `json:"referrence_id,omitempty"`
+	// Type of comment (M0.5a §11.6: enum)
+	Type comment.Type `json:"type,omitempty"`
+	// ReferenceID holds the value of the "reference_id" field.
+	ReferenceID string `json:"reference_id,omitempty"`
 	// AttachmentID holds the value of the "attachment_id" field.
 	AttachmentID string `json:"attachment_id,omitempty"`
 	// IsApproved holds the value of the "is_approved" field.
@@ -56,8 +55,8 @@ type Comment struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CommentQuery when eager-loading is set.
 	Edges              CommentEdges `json:"edges"`
-	blog_post_comments *uuid.UUID
-	idea_comments      *uuid.UUID
+	blog_post_comments *string
+	idea_comments      *string
 	selectValues       sql.SelectValues
 }
 
@@ -114,16 +113,14 @@ func (*Comment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case comment.FieldLikesCount:
 			values[i] = new(sql.NullInt64)
-		case comment.FieldEntityType, comment.FieldAuthorName, comment.FieldAuthorEmail, comment.FieldAuthorWebsite, comment.FieldContent, comment.FieldType, comment.FieldReferrenceID, comment.FieldAttachmentID, comment.FieldIPAddress, comment.FieldUserAgent, comment.FieldUserIdentityID:
+		case comment.FieldID, comment.FieldEntityType, comment.FieldEntityID, comment.FieldParentID, comment.FieldAuthorName, comment.FieldAuthorEmail, comment.FieldAuthorWebsite, comment.FieldContent, comment.FieldType, comment.FieldReferenceID, comment.FieldAttachmentID, comment.FieldIPAddress, comment.FieldUserAgent, comment.FieldUserIdentityID:
 			values[i] = new(sql.NullString)
 		case comment.FieldCreatedAt, comment.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case comment.FieldID, comment.FieldEntityID, comment.FieldParentID:
-			values[i] = new(uuid.UUID)
 		case comment.ForeignKeys[0]: // blog_post_comments
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = new(sql.NullString)
 		case comment.ForeignKeys[1]: // idea_comments
-			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -140,28 +137,28 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case comment.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				c.ID = *value
+			} else if value.Valid {
+				c.ID = value.String
 			}
 		case comment.FieldEntityType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entity_type", values[i])
 			} else if value.Valid {
-				c.EntityType = value.String
+				c.EntityType = comment.EntityType(value.String)
 			}
 		case comment.FieldEntityID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entity_id", values[i])
-			} else if value != nil {
-				c.EntityID = *value
+			} else if value.Valid {
+				c.EntityID = value.String
 			}
 		case comment.FieldParentID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
-			} else if value != nil {
-				c.ParentID = *value
+			} else if value.Valid {
+				c.ParentID = value.String
 			}
 		case comment.FieldAuthorName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -191,13 +188,13 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
-				c.Type = value.String
+				c.Type = comment.Type(value.String)
 			}
-		case comment.FieldReferrenceID:
+		case comment.FieldReferenceID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field referrence_id", values[i])
+				return fmt.Errorf("unexpected type %T for field reference_id", values[i])
 			} else if value.Valid {
-				c.ReferrenceID = value.String
+				c.ReferenceID = value.String
 			}
 		case comment.FieldAttachmentID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -248,18 +245,18 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 				c.UpdatedAt = value.Time
 			}
 		case comment.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field blog_post_comments", values[i])
 			} else if value.Valid {
-				c.blog_post_comments = new(uuid.UUID)
-				*c.blog_post_comments = *value.S.(*uuid.UUID)
+				c.blog_post_comments = new(string)
+				*c.blog_post_comments = value.String
 			}
 		case comment.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullScanner); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field idea_comments", values[i])
 			} else if value.Valid {
-				c.idea_comments = new(uuid.UUID)
-				*c.idea_comments = *value.S.(*uuid.UUID)
+				c.idea_comments = new(string)
+				*c.idea_comments = value.String
 			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
@@ -313,13 +310,13 @@ func (c *Comment) String() string {
 	builder.WriteString("Comment(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", c.ID))
 	builder.WriteString("entity_type=")
-	builder.WriteString(c.EntityType)
+	builder.WriteString(fmt.Sprintf("%v", c.EntityType))
 	builder.WriteString(", ")
 	builder.WriteString("entity_id=")
-	builder.WriteString(fmt.Sprintf("%v", c.EntityID))
+	builder.WriteString(c.EntityID)
 	builder.WriteString(", ")
 	builder.WriteString("parent_id=")
-	builder.WriteString(fmt.Sprintf("%v", c.ParentID))
+	builder.WriteString(c.ParentID)
 	builder.WriteString(", ")
 	builder.WriteString("author_name=")
 	builder.WriteString(c.AuthorName)
@@ -334,10 +331,10 @@ func (c *Comment) String() string {
 	builder.WriteString(c.Content)
 	builder.WriteString(", ")
 	builder.WriteString("type=")
-	builder.WriteString(c.Type)
+	builder.WriteString(fmt.Sprintf("%v", c.Type))
 	builder.WriteString(", ")
-	builder.WriteString("referrence_id=")
-	builder.WriteString(c.ReferrenceID)
+	builder.WriteString("reference_id=")
+	builder.WriteString(c.ReferenceID)
 	builder.WriteString(", ")
 	builder.WriteString("attachment_id=")
 	builder.WriteString(c.AttachmentID)

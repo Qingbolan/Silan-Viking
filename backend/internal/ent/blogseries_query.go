@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogSeriesQuery is the builder for querying BlogSeries entities.
@@ -132,8 +131,8 @@ func (bsq *BlogSeriesQuery) FirstX(ctx context.Context) *BlogSeries {
 
 // FirstID returns the first BlogSeries ID from the query.
 // Returns a *NotFoundError when no BlogSeries ID was found.
-func (bsq *BlogSeriesQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bsq *BlogSeriesQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bsq.Limit(1).IDs(setContextOp(ctx, bsq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (bsq *BlogSeriesQuery) FirstID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bsq *BlogSeriesQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (bsq *BlogSeriesQuery) FirstIDX(ctx context.Context) string {
 	id, err := bsq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (bsq *BlogSeriesQuery) OnlyX(ctx context.Context) *BlogSeries {
 // OnlyID is like Only, but returns the only BlogSeries ID in the query.
 // Returns a *NotSingularError when more than one BlogSeries ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bsq *BlogSeriesQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bsq *BlogSeriesQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bsq.Limit(2).IDs(setContextOp(ctx, bsq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (bsq *BlogSeriesQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bsq *BlogSeriesQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (bsq *BlogSeriesQuery) OnlyIDX(ctx context.Context) string {
 	id, err := bsq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (bsq *BlogSeriesQuery) AllX(ctx context.Context) []*BlogSeries {
 }
 
 // IDs executes the query and returns a list of BlogSeries IDs.
-func (bsq *BlogSeriesQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (bsq *BlogSeriesQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if bsq.ctx.Unique == nil && bsq.path != nil {
 		bsq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (bsq *BlogSeriesQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bsq *BlogSeriesQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (bsq *BlogSeriesQuery) IDsX(ctx context.Context) []string {
 	ids, err := bsq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -450,7 +449,7 @@ func (bsq *BlogSeriesQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 
 func (bsq *BlogSeriesQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery, nodes []*BlogSeries, init func(*BlogSeries), assign func(*BlogSeries, *BlogPost)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogSeries)
+	nodeids := make(map[string]*BlogSeries)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -480,7 +479,7 @@ func (bsq *BlogSeriesQuery) loadBlogPosts(ctx context.Context, query *BlogPostQu
 }
 func (bsq *BlogSeriesQuery) loadTranslations(ctx context.Context, query *BlogSeriesTranslationQuery, nodes []*BlogSeries, init func(*BlogSeries), assign func(*BlogSeries, *BlogSeriesTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogSeries)
+	nodeids := make(map[string]*BlogSeries)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -519,7 +518,7 @@ func (bsq *BlogSeriesQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (bsq *BlogSeriesQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(blogseries.Table, blogseries.Columns, sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(blogseries.Table, blogseries.Columns, sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString))
 	_spec.From = bsq.sql
 	if unique := bsq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"silan-backend/internal/ent"
+	entcomment "silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -35,26 +35,22 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 	if strings.TrimSpace(req.Content) == "" {
 		return nil, fmt.Errorf("content is required")
 	}
-	if _, err := uuid.Parse(req.ID); err != nil {
+	if req.ID == "" {
 		return nil, fmt.Errorf("invalid project id")
 	}
 
 	// Validate parent comment if provided
-	var parentUUID *uuid.UUID
+	var parentID string
 	if req.ParentId != "" {
-		parentIDParsed, err := uuid.Parse(req.ParentId)
-		if err != nil {
-			return nil, fmt.Errorf("invalid parent_id format")
-		}
 		// Ensure parent exists and belongs to same project using entgo
-		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, parentIDParsed)
+		parentComment, err := l.svcCtx.DB.Comment.Get(l.ctx, req.ParentId)
 		if err != nil {
 			return nil, errors.New("parent comment not found")
 		}
-		if parentComment.EntityID.String() != req.ID {
+		if parentComment.EntityID != req.ID {
 			return nil, errors.New("parent comment belongs to different project")
 		}
-		parentUUID = &parentIDParsed
+		parentID = req.ParentId
 	}
 
 	// Resolve author
@@ -94,27 +90,21 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		userAgent += " | " + req.UserAgentFull
 	}
 
-	// Parse project ID
-	projectUUID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid project id")
-	}
-
 	// Create comment using entgo
 	// Use entity_type with project_<type> for better filtering while keeping the type field
 	entityType := "project_" + strings.ToLower(req.Type)
 	commentBuilder := l.svcCtx.DB.Comment.Create().
-		SetEntityType(entityType).
-		SetEntityID(projectUUID).
-		SetType(req.Type).
+		SetEntityType(entcomment.EntityType(entityType)).
+		SetEntityID(req.ID).
+		SetType(entcomment.Type(req.Type)).
 		SetAuthorName(authorName).
 		SetAuthorEmail(authorEmail).
 		SetContent(req.Content).
 		SetIsApproved(true). // Auto-approve for now
 		SetLikesCount(0)
 
-	if parentUUID != nil {
-		commentBuilder = commentBuilder.SetParentID(*parentUUID)
+	if parentID != "" {
+		commentBuilder = commentBuilder.SetParentID(parentID)
 	}
 	if req.AuthorWebsite != "" {
 		commentBuilder = commentBuilder.SetAuthorWebsite(req.AuthorWebsite)
@@ -134,19 +124,14 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		return nil, err
 	}
 
-	parentIDStr := ""
-	if comment.ParentID != (uuid.UUID{}) {
-		parentIDStr = comment.ParentID.String()
-	}
-
 	return &types.ProjectCommentData{
-		ID:              comment.ID.String(),
-		ProjectID:       comment.EntityID.String(),
-		ParentID:        parentIDStr,
+		ID:              comment.ID,
+		ProjectID:       comment.EntityID,
+		ParentID:        comment.ParentID,
 		AuthorName:      comment.AuthorName,
 		AuthorAvatarURL: avatarURL,
 		Content:         comment.Content,
-		Type:            comment.Type,
+		Type:            string(comment.Type),
 		CreatedAt:       comment.CreatedAt.Format(time.RFC3339),
 		UserIdentityID:  comment.UserIdentityID,
 		LikesCount:      comment.LikesCount,

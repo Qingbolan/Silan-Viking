@@ -8,7 +8,6 @@ import (
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -28,17 +27,14 @@ func NewGetProjectByIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 }
 
 func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (resp *types.Project, err error) {
-	// Parse the UUID from the request ID
-	projectID, err := uuid.Parse(req.ID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid project ID format: %v", err)
-	}
+	projectID := req.ID
 
-	// Get the project by UUID
+	// Get the project by id
 	proj, err := l.svcCtx.DB.Project.Query().
 		Where(project.ID(projectID)).
-		Where(project.IsPublic(true)).
+		Where(project.VisibilityEQ(project.VisibilityPublic)).
 		WithTechnologies().
+		WithTranslations().
 		First(l.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("project with ID %s not found", req.ID)
@@ -58,12 +54,22 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 	// Generate annual plan name based on year
 	annualPlan := fmt.Sprintf("Annual Plan %d", year)
 
-	// Handle description field (now non-nullable)
+	// title/description live in project_translations — the content engine
+	// leaves the main projects row's title/description empty.
+	name := proj.Title
 	description := proj.Description
+	if tr := pickProjectTranslation(proj.Edges.Translations, req.Language); tr != nil {
+		if tr.Title != "" {
+			name = tr.Title
+		}
+		if tr.Description != "" {
+			description = tr.Description
+		}
+	}
 
 	return &types.Project{
-		ID:          proj.ID.String(),
-		Name:        proj.Title,
+		ID:          proj.ID,
+		Name:        name,
 		Description: description,
 		Tags:        technologies,
 		Year:        year,

@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Annotation is the predicate function for annotation builders.
+type Annotation func(*sql.Selector)
+
 // Award is the predicate function for award builders.
 type Award func(*sql.Selector)
 
@@ -42,6 +45,12 @@ type Comment func(*sql.Selector)
 // CommentLike is the predicate function for commentlike builders.
 type CommentLike func(*sql.Selector)
 
+// ContentInteraction is the predicate function for contentinteraction builders.
+type ContentInteraction func(*sql.Selector)
+
+// ContentRelation is the predicate function for contentrelation builders.
+type ContentRelation func(*sql.Selector)
+
 // Education is the predicate function for education builders.
 type Education func(*sql.Selector)
 
@@ -53,6 +62,18 @@ type EducationDetailTranslation func(*sql.Selector)
 
 // EducationTranslation is the predicate function for educationtranslation builders.
 type EducationTranslation func(*sql.Selector)
+
+// Episode is the predicate function for episode builders.
+type Episode func(*sql.Selector)
+
+// EpisodeSeries is the predicate function for episodeseries builders.
+type EpisodeSeries func(*sql.Selector)
+
+// EpisodeSeriesTranslation is the predicate function for episodeseriestranslation builders.
+type EpisodeSeriesTranslation func(*sql.Selector)
+
+// EpisodeTranslation is the predicate function for episodetranslation builders.
+type EpisodeTranslation func(*sql.Selector)
 
 // Idea is the predicate function for idea builders.
 type Idea func(*sql.Selector)
@@ -69,8 +90,20 @@ type IdeaTag func(*sql.Selector)
 // IdeaTranslation is the predicate function for ideatranslation builders.
 type IdeaTranslation func(*sql.Selector)
 
+// ItemPart is the predicate function for itempart builders.
+type ItemPart func(*sql.Selector)
+
+// ItemPartTranslation is the predicate function for itemparttranslation builders.
+type ItemPartTranslation func(*sql.Selector)
+
 // Language is the predicate function for language builders.
 type Language func(*sql.Selector)
+
+// PartEntry is the predicate function for partentry builders.
+type PartEntry func(*sql.Selector)
+
+// PartEntryTranslation is the predicate function for partentrytranslation builders.
+type PartEntryTranslation func(*sql.Selector)
 
 // PersonalInfo is the predicate function for personalinfo builders.
 type PersonalInfo func(*sql.Selector)
@@ -96,9 +129,6 @@ type ProjectImageTranslation func(*sql.Selector)
 // ProjectLike is the predicate function for projectlike builders.
 type ProjectLike func(*sql.Selector)
 
-// ProjectRelationship is the predicate function for projectrelationship builders.
-type ProjectRelationship func(*sql.Selector)
-
 // ProjectTechnology is the predicate function for projecttechnology builders.
 type ProjectTechnology func(*sql.Selector)
 
@@ -122,6 +152,9 @@ type RecentUpdate func(*sql.Selector)
 
 // RecentUpdateTranslation is the predicate function for recentupdatetranslation builders.
 type RecentUpdateTranslation func(*sql.Selector)
+
+// RequestLog is the predicate function for requestlog builders.
+type RequestLog func(*sql.Selector)
 
 // ResearchProject is the predicate function for researchproject builders.
 type ResearchProject func(*sql.Selector)

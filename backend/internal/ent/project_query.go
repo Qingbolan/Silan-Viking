@@ -12,7 +12,6 @@ import (
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projectimage"
 	"silan-backend/internal/ent/projectlike"
-	"silan-backend/internal/ent/projectrelationship"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/projectview"
@@ -22,25 +21,22 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectQuery is the builder for querying Project entities.
 type ProjectQuery struct {
 	config
-	ctx                     *QueryContext
-	order                   []project.OrderOption
-	inters                  []Interceptor
-	predicates              []predicate.Project
-	withUser                *UserQuery
-	withTranslations        *ProjectTranslationQuery
-	withTechnologies        *ProjectTechnologyQuery
-	withDetails             *ProjectDetailQuery
-	withImages              *ProjectImageQuery
-	withSourceRelationships *ProjectRelationshipQuery
-	withTargetRelationships *ProjectRelationshipQuery
-	withLikes               *ProjectLikeQuery
-	withViews               *ProjectViewQuery
+	ctx              *QueryContext
+	order            []project.OrderOption
+	inters           []Interceptor
+	predicates       []predicate.Project
+	withUser         *UserQuery
+	withTranslations *ProjectTranslationQuery
+	withTechnologies *ProjectTechnologyQuery
+	withDetails      *ProjectDetailQuery
+	withImages       *ProjectImageQuery
+	withLikes        *ProjectLikeQuery
+	withViews        *ProjectViewQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -187,50 +183,6 @@ func (pq *ProjectQuery) QueryImages() *ProjectImageQuery {
 	return query
 }
 
-// QuerySourceRelationships chains the current query on the "source_relationships" edge.
-func (pq *ProjectQuery) QuerySourceRelationships() *ProjectRelationshipQuery {
-	query := (&ProjectRelationshipClient{config: pq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(projectrelationship.Table, projectrelationship.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, project.SourceRelationshipsTable, project.SourceRelationshipsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryTargetRelationships chains the current query on the "target_relationships" edge.
-func (pq *ProjectQuery) QueryTargetRelationships() *ProjectRelationshipQuery {
-	query := (&ProjectRelationshipClient{config: pq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, selector),
-			sqlgraph.To(projectrelationship.Table, projectrelationship.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, project.TargetRelationshipsTable, project.TargetRelationshipsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryLikes chains the current query on the "likes" edge.
 func (pq *ProjectQuery) QueryLikes() *ProjectLikeQuery {
 	query := (&ProjectLikeClient{config: pq.config}).Query()
@@ -299,8 +251,8 @@ func (pq *ProjectQuery) FirstX(ctx context.Context) *Project {
 
 // FirstID returns the first Project ID from the query.
 // Returns a *NotFoundError when no Project ID was found.
-func (pq *ProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pq *ProjectQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pq.Limit(1).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -312,7 +264,7 @@ func (pq *ProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pq *ProjectQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (pq *ProjectQuery) FirstIDX(ctx context.Context) string {
 	id, err := pq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -350,8 +302,8 @@ func (pq *ProjectQuery) OnlyX(ctx context.Context) *Project {
 // OnlyID is like Only, but returns the only Project ID in the query.
 // Returns a *NotSingularError when more than one Project ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pq *ProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pq *ProjectQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pq.Limit(2).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -367,7 +319,7 @@ func (pq *ProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pq *ProjectQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (pq *ProjectQuery) OnlyIDX(ctx context.Context) string {
 	id, err := pq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -395,7 +347,7 @@ func (pq *ProjectQuery) AllX(ctx context.Context) []*Project {
 }
 
 // IDs executes the query and returns a list of Project IDs.
-func (pq *ProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (pq *ProjectQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if pq.ctx.Unique == nil && pq.path != nil {
 		pq.Unique(true)
 	}
@@ -407,7 +359,7 @@ func (pq *ProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pq *ProjectQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (pq *ProjectQuery) IDsX(ctx context.Context) []string {
 	ids, err := pq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -462,20 +414,18 @@ func (pq *ProjectQuery) Clone() *ProjectQuery {
 		return nil
 	}
 	return &ProjectQuery{
-		config:                  pq.config,
-		ctx:                     pq.ctx.Clone(),
-		order:                   append([]project.OrderOption{}, pq.order...),
-		inters:                  append([]Interceptor{}, pq.inters...),
-		predicates:              append([]predicate.Project{}, pq.predicates...),
-		withUser:                pq.withUser.Clone(),
-		withTranslations:        pq.withTranslations.Clone(),
-		withTechnologies:        pq.withTechnologies.Clone(),
-		withDetails:             pq.withDetails.Clone(),
-		withImages:              pq.withImages.Clone(),
-		withSourceRelationships: pq.withSourceRelationships.Clone(),
-		withTargetRelationships: pq.withTargetRelationships.Clone(),
-		withLikes:               pq.withLikes.Clone(),
-		withViews:               pq.withViews.Clone(),
+		config:           pq.config,
+		ctx:              pq.ctx.Clone(),
+		order:            append([]project.OrderOption{}, pq.order...),
+		inters:           append([]Interceptor{}, pq.inters...),
+		predicates:       append([]predicate.Project{}, pq.predicates...),
+		withUser:         pq.withUser.Clone(),
+		withTranslations: pq.withTranslations.Clone(),
+		withTechnologies: pq.withTechnologies.Clone(),
+		withDetails:      pq.withDetails.Clone(),
+		withImages:       pq.withImages.Clone(),
+		withLikes:        pq.withLikes.Clone(),
+		withViews:        pq.withViews.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -537,28 +487,6 @@ func (pq *ProjectQuery) WithImages(opts ...func(*ProjectImageQuery)) *ProjectQue
 	return pq
 }
 
-// WithSourceRelationships tells the query-builder to eager-load the nodes that are connected to
-// the "source_relationships" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithSourceRelationships(opts ...func(*ProjectRelationshipQuery)) *ProjectQuery {
-	query := (&ProjectRelationshipClient{config: pq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withSourceRelationships = query
-	return pq
-}
-
-// WithTargetRelationships tells the query-builder to eager-load the nodes that are connected to
-// the "target_relationships" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *ProjectQuery) WithTargetRelationships(opts ...func(*ProjectRelationshipQuery)) *ProjectQuery {
-	query := (&ProjectRelationshipClient{config: pq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withTargetRelationships = query
-	return pq
-}
-
 // WithLikes tells the query-builder to eager-load the nodes that are connected to
 // the "likes" edge. The optional arguments are used to configure the query builder of the edge.
 func (pq *ProjectQuery) WithLikes(opts ...func(*ProjectLikeQuery)) *ProjectQuery {
@@ -587,7 +515,7 @@ func (pq *ProjectQuery) WithViews(opts ...func(*ProjectViewQuery)) *ProjectQuery
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -610,7 +538,7 @@ func (pq *ProjectQuery) GroupBy(field string, fields ...string) *ProjectGroupBy 
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.Project.Query().
@@ -659,14 +587,12 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 	var (
 		nodes       = []*Project{}
 		_spec       = pq.querySpec()
-		loadedTypes = [9]bool{
+		loadedTypes = [7]bool{
 			pq.withUser != nil,
 			pq.withTranslations != nil,
 			pq.withTechnologies != nil,
 			pq.withDetails != nil,
 			pq.withImages != nil,
-			pq.withSourceRelationships != nil,
-			pq.withTargetRelationships != nil,
 			pq.withLikes != nil,
 			pq.withViews != nil,
 		}
@@ -722,24 +648,6 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 			return nil, err
 		}
 	}
-	if query := pq.withSourceRelationships; query != nil {
-		if err := pq.loadSourceRelationships(ctx, query, nodes,
-			func(n *Project) { n.Edges.SourceRelationships = []*ProjectRelationship{} },
-			func(n *Project, e *ProjectRelationship) {
-				n.Edges.SourceRelationships = append(n.Edges.SourceRelationships, e)
-			}); err != nil {
-			return nil, err
-		}
-	}
-	if query := pq.withTargetRelationships; query != nil {
-		if err := pq.loadTargetRelationships(ctx, query, nodes,
-			func(n *Project) { n.Edges.TargetRelationships = []*ProjectRelationship{} },
-			func(n *Project, e *ProjectRelationship) {
-				n.Edges.TargetRelationships = append(n.Edges.TargetRelationships, e)
-			}); err != nil {
-			return nil, err
-		}
-	}
 	if query := pq.withLikes; query != nil {
 		if err := pq.loadLikes(ctx, query, nodes,
 			func(n *Project) { n.Edges.Likes = []*ProjectLike{} },
@@ -758,8 +666,8 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 }
 
 func (pq *ProjectQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Project, init func(*Project), assign func(*Project, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Project)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Project)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -788,7 +696,7 @@ func (pq *ProjectQuery) loadUser(ctx context.Context, query *UserQuery, nodes []
 }
 func (pq *ProjectQuery) loadTranslations(ctx context.Context, query *ProjectTranslationQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -818,7 +726,7 @@ func (pq *ProjectQuery) loadTranslations(ctx context.Context, query *ProjectTran
 }
 func (pq *ProjectQuery) loadTechnologies(ctx context.Context, query *ProjectTechnologyQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectTechnology)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -848,7 +756,7 @@ func (pq *ProjectQuery) loadTechnologies(ctx context.Context, query *ProjectTech
 }
 func (pq *ProjectQuery) loadDetails(ctx context.Context, query *ProjectDetailQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectDetail)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -875,7 +783,7 @@ func (pq *ProjectQuery) loadDetails(ctx context.Context, query *ProjectDetailQue
 }
 func (pq *ProjectQuery) loadImages(ctx context.Context, query *ProjectImageQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectImage)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -903,69 +811,9 @@ func (pq *ProjectQuery) loadImages(ctx context.Context, query *ProjectImageQuery
 	}
 	return nil
 }
-func (pq *ProjectQuery) loadSourceRelationships(ctx context.Context, query *ProjectRelationshipQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectRelationship)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(projectrelationship.FieldSourceProjectID)
-	}
-	query.Where(predicate.ProjectRelationship(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(project.SourceRelationshipsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.SourceProjectID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "source_project_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (pq *ProjectQuery) loadTargetRelationships(ctx context.Context, query *ProjectRelationshipQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectRelationship)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(projectrelationship.FieldTargetProjectID)
-	}
-	query.Where(predicate.ProjectRelationship(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(project.TargetRelationshipsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.TargetProjectID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "target_project_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
 func (pq *ProjectQuery) loadLikes(ctx context.Context, query *ProjectLikeQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectLike)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -995,7 +843,7 @@ func (pq *ProjectQuery) loadLikes(ctx context.Context, query *ProjectLikeQuery, 
 }
 func (pq *ProjectQuery) loadViews(ctx context.Context, query *ProjectViewQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectView)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1034,7 +882,7 @@ func (pq *ProjectQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pq *ProjectQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(project.Table, project.Columns, sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(project.Table, project.Columns, sqlgraph.NewFieldSpec(project.FieldID, field.TypeString))
 	_spec.From = pq.sql
 	if unique := pq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

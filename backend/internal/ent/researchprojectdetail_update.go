@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectDetailUpdate is the builder for updating ResearchProjectDetail entities.
@@ -32,15 +31,15 @@ func (rpdu *ResearchProjectDetailUpdate) Where(ps ...predicate.ResearchProjectDe
 }
 
 // SetResearchProjectID sets the "research_project_id" field.
-func (rpdu *ResearchProjectDetailUpdate) SetResearchProjectID(u uuid.UUID) *ResearchProjectDetailUpdate {
-	rpdu.mutation.SetResearchProjectID(u)
+func (rpdu *ResearchProjectDetailUpdate) SetResearchProjectID(s string) *ResearchProjectDetailUpdate {
+	rpdu.mutation.SetResearchProjectID(s)
 	return rpdu
 }
 
 // SetNillableResearchProjectID sets the "research_project_id" field if the given value is not nil.
-func (rpdu *ResearchProjectDetailUpdate) SetNillableResearchProjectID(u *uuid.UUID) *ResearchProjectDetailUpdate {
-	if u != nil {
-		rpdu.SetResearchProjectID(*u)
+func (rpdu *ResearchProjectDetailUpdate) SetNillableResearchProjectID(s *string) *ResearchProjectDetailUpdate {
+	if s != nil {
+		rpdu.SetResearchProjectID(*s)
 	}
 	return rpdu
 }
@@ -92,14 +91,14 @@ func (rpdu *ResearchProjectDetailUpdate) SetResearchProject(r *ResearchProject) 
 }
 
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectDetailTranslation entity by IDs.
-func (rpdu *ResearchProjectDetailUpdate) AddTranslationIDs(ids ...uuid.UUID) *ResearchProjectDetailUpdate {
+func (rpdu *ResearchProjectDetailUpdate) AddTranslationIDs(ids ...string) *ResearchProjectDetailUpdate {
 	rpdu.mutation.AddTranslationIDs(ids...)
 	return rpdu
 }
 
 // AddTranslations adds the "translations" edges to the ResearchProjectDetailTranslation entity.
 func (rpdu *ResearchProjectDetailUpdate) AddTranslations(r ...*ResearchProjectDetailTranslation) *ResearchProjectDetailUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -124,14 +123,14 @@ func (rpdu *ResearchProjectDetailUpdate) ClearTranslations() *ResearchProjectDet
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ResearchProjectDetailTranslation entities by IDs.
-func (rpdu *ResearchProjectDetailUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *ResearchProjectDetailUpdate {
+func (rpdu *ResearchProjectDetailUpdate) RemoveTranslationIDs(ids ...string) *ResearchProjectDetailUpdate {
 	rpdu.mutation.RemoveTranslationIDs(ids...)
 	return rpdu
 }
 
 // RemoveTranslations removes "translations" edges to ResearchProjectDetailTranslation entities.
 func (rpdu *ResearchProjectDetailUpdate) RemoveTranslations(r ...*ResearchProjectDetailTranslation) *ResearchProjectDetailUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -191,7 +190,7 @@ func (rpdu *ResearchProjectDetailUpdate) sqlSave(ctx context.Context) (n int, er
 	if err := rpdu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(researchprojectdetail.Table, researchprojectdetail.Columns, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(researchprojectdetail.Table, researchprojectdetail.Columns, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString))
 	if ps := rpdu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -219,7 +218,7 @@ func (rpdu *ResearchProjectDetailUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{researchprojectdetail.ResearchProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -232,7 +231,7 @@ func (rpdu *ResearchProjectDetailUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{researchprojectdetail.ResearchProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -248,7 +247,7 @@ func (rpdu *ResearchProjectDetailUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{researchprojectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -261,7 +260,7 @@ func (rpdu *ResearchProjectDetailUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{researchprojectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -277,7 +276,7 @@ func (rpdu *ResearchProjectDetailUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{researchprojectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -306,15 +305,15 @@ type ResearchProjectDetailUpdateOne struct {
 }
 
 // SetResearchProjectID sets the "research_project_id" field.
-func (rpduo *ResearchProjectDetailUpdateOne) SetResearchProjectID(u uuid.UUID) *ResearchProjectDetailUpdateOne {
-	rpduo.mutation.SetResearchProjectID(u)
+func (rpduo *ResearchProjectDetailUpdateOne) SetResearchProjectID(s string) *ResearchProjectDetailUpdateOne {
+	rpduo.mutation.SetResearchProjectID(s)
 	return rpduo
 }
 
 // SetNillableResearchProjectID sets the "research_project_id" field if the given value is not nil.
-func (rpduo *ResearchProjectDetailUpdateOne) SetNillableResearchProjectID(u *uuid.UUID) *ResearchProjectDetailUpdateOne {
-	if u != nil {
-		rpduo.SetResearchProjectID(*u)
+func (rpduo *ResearchProjectDetailUpdateOne) SetNillableResearchProjectID(s *string) *ResearchProjectDetailUpdateOne {
+	if s != nil {
+		rpduo.SetResearchProjectID(*s)
 	}
 	return rpduo
 }
@@ -366,14 +365,14 @@ func (rpduo *ResearchProjectDetailUpdateOne) SetResearchProject(r *ResearchProje
 }
 
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectDetailTranslation entity by IDs.
-func (rpduo *ResearchProjectDetailUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *ResearchProjectDetailUpdateOne {
+func (rpduo *ResearchProjectDetailUpdateOne) AddTranslationIDs(ids ...string) *ResearchProjectDetailUpdateOne {
 	rpduo.mutation.AddTranslationIDs(ids...)
 	return rpduo
 }
 
 // AddTranslations adds the "translations" edges to the ResearchProjectDetailTranslation entity.
 func (rpduo *ResearchProjectDetailUpdateOne) AddTranslations(r ...*ResearchProjectDetailTranslation) *ResearchProjectDetailUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -398,14 +397,14 @@ func (rpduo *ResearchProjectDetailUpdateOne) ClearTranslations() *ResearchProjec
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ResearchProjectDetailTranslation entities by IDs.
-func (rpduo *ResearchProjectDetailUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *ResearchProjectDetailUpdateOne {
+func (rpduo *ResearchProjectDetailUpdateOne) RemoveTranslationIDs(ids ...string) *ResearchProjectDetailUpdateOne {
 	rpduo.mutation.RemoveTranslationIDs(ids...)
 	return rpduo
 }
 
 // RemoveTranslations removes "translations" edges to ResearchProjectDetailTranslation entities.
 func (rpduo *ResearchProjectDetailUpdateOne) RemoveTranslations(r ...*ResearchProjectDetailTranslation) *ResearchProjectDetailUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -478,7 +477,7 @@ func (rpduo *ResearchProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node
 	if err := rpduo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(researchprojectdetail.Table, researchprojectdetail.Columns, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(researchprojectdetail.Table, researchprojectdetail.Columns, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString))
 	id, ok := rpduo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ResearchProjectDetail.id" for update`)}
@@ -523,7 +522,7 @@ func (rpduo *ResearchProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{researchprojectdetail.ResearchProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -536,7 +535,7 @@ func (rpduo *ResearchProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{researchprojectdetail.ResearchProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -552,7 +551,7 @@ func (rpduo *ResearchProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{researchprojectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -565,7 +564,7 @@ func (rpduo *ResearchProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{researchprojectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -581,7 +580,7 @@ func (rpduo *ResearchProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{researchprojectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

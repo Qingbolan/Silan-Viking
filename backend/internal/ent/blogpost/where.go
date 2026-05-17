@@ -8,72 +8,76 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.BlogPost {
+func ID(id string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.BlogPost {
+func IDEQ(id string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.BlogPost {
+func IDNEQ(id string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.BlogPost {
+func IDIn(ids ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.BlogPost {
+func IDNotIn(ids ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.BlogPost {
+func IDGT(id string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.BlogPost {
+func IDGTE(id string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.BlogPost {
+func IDLT(id string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.BlogPost {
+func IDLTE(id string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContainsFold(FieldID, id))
+}
+
 // UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
-func UserID(v uuid.UUID) predicate.BlogPost {
+func UserID(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldUserID, v))
 }
 
 // CategoryID applies equality check predicate on the "category_id" field. It's identical to CategoryIDEQ.
-func CategoryID(v uuid.UUID) predicate.BlogPost {
+func CategoryID(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldCategoryID, v))
 }
 
 // SeriesID applies equality check predicate on the "series_id" field. It's identical to SeriesIDEQ.
-func SeriesID(v uuid.UUID) predicate.BlogPost {
+func SeriesID(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldSeriesID, v))
-}
-
-// IdeasID applies equality check predicate on the "ideas_id" field. It's identical to IdeasIDEQ.
-func IdeasID(v uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldEQ(FieldIdeasID, v))
 }
 
 // Title applies equality check predicate on the "title" field. It's identical to TitleEQ.
@@ -147,43 +151,133 @@ func UpdatedAt(v time.Time) predicate.BlogPost {
 }
 
 // UserIDEQ applies the EQ predicate on the "user_id" field.
-func UserIDEQ(v uuid.UUID) predicate.BlogPost {
+func UserIDEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldUserID, v))
 }
 
 // UserIDNEQ applies the NEQ predicate on the "user_id" field.
-func UserIDNEQ(v uuid.UUID) predicate.BlogPost {
+func UserIDNEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNEQ(FieldUserID, v))
 }
 
 // UserIDIn applies the In predicate on the "user_id" field.
-func UserIDIn(vs ...uuid.UUID) predicate.BlogPost {
+func UserIDIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldIn(FieldUserID, vs...))
 }
 
 // UserIDNotIn applies the NotIn predicate on the "user_id" field.
-func UserIDNotIn(vs ...uuid.UUID) predicate.BlogPost {
+func UserIDNotIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldUserID, vs...))
 }
 
+// UserIDGT applies the GT predicate on the "user_id" field.
+func UserIDGT(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldGT(FieldUserID, v))
+}
+
+// UserIDGTE applies the GTE predicate on the "user_id" field.
+func UserIDGTE(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldGTE(FieldUserID, v))
+}
+
+// UserIDLT applies the LT predicate on the "user_id" field.
+func UserIDLT(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldLT(FieldUserID, v))
+}
+
+// UserIDLTE applies the LTE predicate on the "user_id" field.
+func UserIDLTE(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldLTE(FieldUserID, v))
+}
+
+// UserIDContains applies the Contains predicate on the "user_id" field.
+func UserIDContains(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContains(FieldUserID, v))
+}
+
+// UserIDHasPrefix applies the HasPrefix predicate on the "user_id" field.
+func UserIDHasPrefix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasPrefix(FieldUserID, v))
+}
+
+// UserIDHasSuffix applies the HasSuffix predicate on the "user_id" field.
+func UserIDHasSuffix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasSuffix(FieldUserID, v))
+}
+
+// UserIDIsNil applies the IsNil predicate on the "user_id" field.
+func UserIDIsNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldIsNull(FieldUserID))
+}
+
+// UserIDNotNil applies the NotNil predicate on the "user_id" field.
+func UserIDNotNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNotNull(FieldUserID))
+}
+
+// UserIDEqualFold applies the EqualFold predicate on the "user_id" field.
+func UserIDEqualFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldEqualFold(FieldUserID, v))
+}
+
+// UserIDContainsFold applies the ContainsFold predicate on the "user_id" field.
+func UserIDContainsFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContainsFold(FieldUserID, v))
+}
+
 // CategoryIDEQ applies the EQ predicate on the "category_id" field.
-func CategoryIDEQ(v uuid.UUID) predicate.BlogPost {
+func CategoryIDEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldCategoryID, v))
 }
 
 // CategoryIDNEQ applies the NEQ predicate on the "category_id" field.
-func CategoryIDNEQ(v uuid.UUID) predicate.BlogPost {
+func CategoryIDNEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNEQ(FieldCategoryID, v))
 }
 
 // CategoryIDIn applies the In predicate on the "category_id" field.
-func CategoryIDIn(vs ...uuid.UUID) predicate.BlogPost {
+func CategoryIDIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldIn(FieldCategoryID, vs...))
 }
 
 // CategoryIDNotIn applies the NotIn predicate on the "category_id" field.
-func CategoryIDNotIn(vs ...uuid.UUID) predicate.BlogPost {
+func CategoryIDNotIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldCategoryID, vs...))
+}
+
+// CategoryIDGT applies the GT predicate on the "category_id" field.
+func CategoryIDGT(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldGT(FieldCategoryID, v))
+}
+
+// CategoryIDGTE applies the GTE predicate on the "category_id" field.
+func CategoryIDGTE(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldGTE(FieldCategoryID, v))
+}
+
+// CategoryIDLT applies the LT predicate on the "category_id" field.
+func CategoryIDLT(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldLT(FieldCategoryID, v))
+}
+
+// CategoryIDLTE applies the LTE predicate on the "category_id" field.
+func CategoryIDLTE(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldLTE(FieldCategoryID, v))
+}
+
+// CategoryIDContains applies the Contains predicate on the "category_id" field.
+func CategoryIDContains(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContains(FieldCategoryID, v))
+}
+
+// CategoryIDHasPrefix applies the HasPrefix predicate on the "category_id" field.
+func CategoryIDHasPrefix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasPrefix(FieldCategoryID, v))
+}
+
+// CategoryIDHasSuffix applies the HasSuffix predicate on the "category_id" field.
+func CategoryIDHasSuffix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasSuffix(FieldCategoryID, v))
 }
 
 // CategoryIDIsNil applies the IsNil predicate on the "category_id" field.
@@ -196,24 +290,69 @@ func CategoryIDNotNil() predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotNull(FieldCategoryID))
 }
 
+// CategoryIDEqualFold applies the EqualFold predicate on the "category_id" field.
+func CategoryIDEqualFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldEqualFold(FieldCategoryID, v))
+}
+
+// CategoryIDContainsFold applies the ContainsFold predicate on the "category_id" field.
+func CategoryIDContainsFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContainsFold(FieldCategoryID, v))
+}
+
 // SeriesIDEQ applies the EQ predicate on the "series_id" field.
-func SeriesIDEQ(v uuid.UUID) predicate.BlogPost {
+func SeriesIDEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldSeriesID, v))
 }
 
 // SeriesIDNEQ applies the NEQ predicate on the "series_id" field.
-func SeriesIDNEQ(v uuid.UUID) predicate.BlogPost {
+func SeriesIDNEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNEQ(FieldSeriesID, v))
 }
 
 // SeriesIDIn applies the In predicate on the "series_id" field.
-func SeriesIDIn(vs ...uuid.UUID) predicate.BlogPost {
+func SeriesIDIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldIn(FieldSeriesID, vs...))
 }
 
 // SeriesIDNotIn applies the NotIn predicate on the "series_id" field.
-func SeriesIDNotIn(vs ...uuid.UUID) predicate.BlogPost {
+func SeriesIDNotIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldSeriesID, vs...))
+}
+
+// SeriesIDGT applies the GT predicate on the "series_id" field.
+func SeriesIDGT(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldGT(FieldSeriesID, v))
+}
+
+// SeriesIDGTE applies the GTE predicate on the "series_id" field.
+func SeriesIDGTE(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldGTE(FieldSeriesID, v))
+}
+
+// SeriesIDLT applies the LT predicate on the "series_id" field.
+func SeriesIDLT(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldLT(FieldSeriesID, v))
+}
+
+// SeriesIDLTE applies the LTE predicate on the "series_id" field.
+func SeriesIDLTE(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldLTE(FieldSeriesID, v))
+}
+
+// SeriesIDContains applies the Contains predicate on the "series_id" field.
+func SeriesIDContains(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContains(FieldSeriesID, v))
+}
+
+// SeriesIDHasPrefix applies the HasPrefix predicate on the "series_id" field.
+func SeriesIDHasPrefix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasPrefix(FieldSeriesID, v))
+}
+
+// SeriesIDHasSuffix applies the HasSuffix predicate on the "series_id" field.
+func SeriesIDHasSuffix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasSuffix(FieldSeriesID, v))
 }
 
 // SeriesIDIsNil applies the IsNil predicate on the "series_id" field.
@@ -226,34 +365,14 @@ func SeriesIDNotNil() predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotNull(FieldSeriesID))
 }
 
-// IdeasIDEQ applies the EQ predicate on the "ideas_id" field.
-func IdeasIDEQ(v uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldEQ(FieldIdeasID, v))
+// SeriesIDEqualFold applies the EqualFold predicate on the "series_id" field.
+func SeriesIDEqualFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldEqualFold(FieldSeriesID, v))
 }
 
-// IdeasIDNEQ applies the NEQ predicate on the "ideas_id" field.
-func IdeasIDNEQ(v uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNEQ(FieldIdeasID, v))
-}
-
-// IdeasIDIn applies the In predicate on the "ideas_id" field.
-func IdeasIDIn(vs ...uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldIn(FieldIdeasID, vs...))
-}
-
-// IdeasIDNotIn applies the NotIn predicate on the "ideas_id" field.
-func IdeasIDNotIn(vs ...uuid.UUID) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNotIn(FieldIdeasID, vs...))
-}
-
-// IdeasIDIsNil applies the IsNil predicate on the "ideas_id" field.
-func IdeasIDIsNil() predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldIsNull(FieldIdeasID))
-}
-
-// IdeasIDNotNil applies the NotNil predicate on the "ideas_id" field.
-func IdeasIDNotNil() predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNotNull(FieldIdeasID))
+// SeriesIDContainsFold applies the ContainsFold predicate on the "series_id" field.
+func SeriesIDContainsFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContainsFold(FieldSeriesID, v))
 }
 
 // TitleEQ applies the EQ predicate on the "title" field.
@@ -309,6 +428,16 @@ func TitleHasPrefix(v string) predicate.BlogPost {
 // TitleHasSuffix applies the HasSuffix predicate on the "title" field.
 func TitleHasSuffix(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldHasSuffix(FieldTitle, v))
+}
+
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNotNull(FieldTitle))
 }
 
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
@@ -516,6 +645,16 @@ func ContentHasSuffix(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldHasSuffix(FieldContent, v))
 }
 
+// ContentIsNil applies the IsNil predicate on the "content" field.
+func ContentIsNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldIsNull(FieldContent))
+}
+
+// ContentNotNil applies the NotNil predicate on the "content" field.
+func ContentNotNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNotNull(FieldContent))
+}
+
 // ContentEqualFold applies the EqualFold predicate on the "content" field.
 func ContentEqualFold(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEqualFold(FieldContent, v))
@@ -564,6 +703,26 @@ func StatusIn(vs ...Status) predicate.BlogPost {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldEQ(FieldVisibility, v))
+}
+
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNEQ(FieldVisibility, v))
+}
+
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldIn(FieldVisibility, vs...))
+}
+
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...Visibility) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
 // IsFeaturedEQ applies the EQ predicate on the "is_featured" field.
@@ -961,6 +1120,16 @@ func CreatedAtLTE(v time.Time) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldUpdatedAt, v))
@@ -999,6 +1168,16 @@ func UpdatedAtLT(v time.Time) predicate.BlogPost {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.
@@ -1062,29 +1241,6 @@ func HasSeries() predicate.BlogPost {
 func HasSeriesWith(preds ...predicate.BlogSeries) predicate.BlogPost {
 	return predicate.BlogPost(func(s *sql.Selector) {
 		step := newSeriesStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasIdeas applies the HasEdge predicate on the "ideas" edge.
-func HasIdeas() predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, IdeasTable, IdeasColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasIdeasWith applies the HasEdge predicate on the "ideas" edge with a given conditions (other predicates).
-func HasIdeasWith(preds ...predicate.Idea) predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := newIdeasStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

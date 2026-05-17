@@ -40,7 +40,7 @@ func (pld *ProjectLikeDelete) ExecX(ctx context.Context) int {
 }
 
 func (pld *ProjectLikeDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(projectlike.Table, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(projectlike.Table, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString))
 	if ps := pld.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

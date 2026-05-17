@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
@@ -17,7 +16,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaCreate is the builder for creating a Idea entity.
@@ -28,14 +26,30 @@ type IdeaCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (ic *IdeaCreate) SetUserID(u uuid.UUID) *IdeaCreate {
-	ic.mutation.SetUserID(u)
+func (ic *IdeaCreate) SetUserID(s string) *IdeaCreate {
+	ic.mutation.SetUserID(s)
+	return ic
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (ic *IdeaCreate) SetNillableUserID(s *string) *IdeaCreate {
+	if s != nil {
+		ic.SetUserID(*s)
+	}
 	return ic
 }
 
 // SetTitle sets the "title" field.
 func (ic *IdeaCreate) SetTitle(s string) *IdeaCreate {
 	ic.mutation.SetTitle(s)
+	return ic
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (ic *IdeaCreate) SetNillableTitle(s *string) *IdeaCreate {
+	if s != nil {
+		ic.SetTitle(*s)
+	}
 	return ic
 }
 
@@ -87,16 +101,16 @@ func (ic *IdeaCreate) SetNillableStatus(i *idea.Status) *IdeaCreate {
 	return ic
 }
 
-// SetIsPublic sets the "is_public" field.
-func (ic *IdeaCreate) SetIsPublic(b bool) *IdeaCreate {
-	ic.mutation.SetIsPublic(b)
+// SetVisibility sets the "visibility" field.
+func (ic *IdeaCreate) SetVisibility(i idea.Visibility) *IdeaCreate {
+	ic.mutation.SetVisibility(i)
 	return ic
 }
 
-// SetNillableIsPublic sets the "is_public" field if the given value is not nil.
-func (ic *IdeaCreate) SetNillableIsPublic(b *bool) *IdeaCreate {
-	if b != nil {
-		ic.SetIsPublic(*b)
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (ic *IdeaCreate) SetNillableVisibility(i *idea.Visibility) *IdeaCreate {
+	if i != nil {
+		ic.SetVisibility(*i)
 	}
 	return ic
 }
@@ -172,15 +186,15 @@ func (ic *IdeaCreate) SetNillableUpdatedAt(t *time.Time) *IdeaCreate {
 }
 
 // SetID sets the "id" field.
-func (ic *IdeaCreate) SetID(u uuid.UUID) *IdeaCreate {
-	ic.mutation.SetID(u)
+func (ic *IdeaCreate) SetID(s string) *IdeaCreate {
+	ic.mutation.SetID(s)
 	return ic
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ic *IdeaCreate) SetNillableID(u *uuid.UUID) *IdeaCreate {
-	if u != nil {
-		ic.SetID(*u)
+func (ic *IdeaCreate) SetNillableID(s *string) *IdeaCreate {
+	if s != nil {
+		ic.SetID(*s)
 	}
 	return ic
 }
@@ -191,14 +205,14 @@ func (ic *IdeaCreate) SetUser(u *User) *IdeaCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by IDs.
-func (ic *IdeaCreate) AddTranslationIDs(ids ...uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) AddTranslationIDs(ids ...string) *IdeaCreate {
 	ic.mutation.AddTranslationIDs(ids...)
 	return ic
 }
 
 // AddTranslations adds the "translations" edges to the IdeaTranslation entity.
 func (ic *IdeaCreate) AddTranslations(i ...*IdeaTranslation) *IdeaCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -206,13 +220,13 @@ func (ic *IdeaCreate) AddTranslations(i ...*IdeaTranslation) *IdeaCreate {
 }
 
 // SetDetailsID sets the "details" edge to the IdeaDetail entity by ID.
-func (ic *IdeaCreate) SetDetailsID(id uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) SetDetailsID(id string) *IdeaCreate {
 	ic.mutation.SetDetailsID(id)
 	return ic
 }
 
 // SetNillableDetailsID sets the "details" edge to the IdeaDetail entity by ID if the given value is not nil.
-func (ic *IdeaCreate) SetNillableDetailsID(id *uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) SetNillableDetailsID(id *string) *IdeaCreate {
 	if id != nil {
 		ic = ic.SetDetailsID(*id)
 	}
@@ -224,30 +238,15 @@ func (ic *IdeaCreate) SetDetails(i *IdeaDetail) *IdeaCreate {
 	return ic.SetDetailsID(i.ID)
 }
 
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (ic *IdeaCreate) AddBlogPostIDs(ids ...uuid.UUID) *IdeaCreate {
-	ic.mutation.AddBlogPostIDs(ids...)
-	return ic
-}
-
-// AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
-func (ic *IdeaCreate) AddBlogPosts(b ...*BlogPost) *IdeaCreate {
-	ids := make([]uuid.UUID, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return ic.AddBlogPostIDs(ids...)
-}
-
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (ic *IdeaCreate) AddCommentIDs(ids ...uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) AddCommentIDs(ids ...string) *IdeaCreate {
 	ic.mutation.AddCommentIDs(ids...)
 	return ic
 }
 
 // AddComments adds the "comments" edges to the Comment entity.
 func (ic *IdeaCreate) AddComments(c ...*Comment) *IdeaCreate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -255,14 +254,14 @@ func (ic *IdeaCreate) AddComments(c ...*Comment) *IdeaCreate {
 }
 
 // AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
-func (ic *IdeaCreate) AddTagIDs(ids ...uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) AddTagIDs(ids ...string) *IdeaCreate {
 	ic.mutation.AddTagIDs(ids...)
 	return ic
 }
 
 // AddTags adds the "tags" edges to the IdeaTag entity.
 func (ic *IdeaCreate) AddTags(i ...*IdeaTag) *IdeaCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -308,9 +307,9 @@ func (ic *IdeaCreate) defaults() {
 		v := idea.DefaultStatus
 		ic.mutation.SetStatus(v)
 	}
-	if _, ok := ic.mutation.IsPublic(); !ok {
-		v := idea.DefaultIsPublic
-		ic.mutation.SetIsPublic(v)
+	if _, ok := ic.mutation.Visibility(); !ok {
+		v := idea.DefaultVisibility
+		ic.mutation.SetVisibility(v)
 	}
 	if _, ok := ic.mutation.ViewCount(); !ok {
 		v := idea.DefaultViewCount
@@ -340,12 +339,6 @@ func (ic *IdeaCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ic *IdeaCreate) check() error {
-	if _, ok := ic.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "Idea.user_id"`)}
-	}
-	if _, ok := ic.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "Idea.title"`)}
-	}
 	if v, ok := ic.mutation.Title(); ok {
 		if err := idea.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Idea.title": %w`, err)}
@@ -367,8 +360,13 @@ func (ic *IdeaCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Idea.status": %w`, err)}
 		}
 	}
-	if _, ok := ic.mutation.IsPublic(); !ok {
-		return &ValidationError{Name: "is_public", err: errors.New(`ent: missing required field "Idea.is_public"`)}
+	if _, ok := ic.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "Idea.visibility"`)}
+	}
+	if v, ok := ic.mutation.Visibility(); ok {
+		if err := idea.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Idea.visibility": %w`, err)}
+		}
 	}
 	if _, ok := ic.mutation.ViewCount(); !ok {
 		return &ValidationError{Name: "view_count", err: errors.New(`ent: missing required field "Idea.view_count"`)}
@@ -380,15 +378,6 @@ func (ic *IdeaCreate) check() error {
 		if err := idea.CategoryValidator(v); err != nil {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Idea.category": %w`, err)}
 		}
-	}
-	if _, ok := ic.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Idea.created_at"`)}
-	}
-	if _, ok := ic.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Idea.updated_at"`)}
-	}
-	if len(ic.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Idea.user"`)}
 	}
 	return nil
 }
@@ -405,10 +394,10 @@ func (ic *IdeaCreate) sqlSave(ctx context.Context) (*Idea, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Idea.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ic.mutation.id = &_node.ID
@@ -419,11 +408,11 @@ func (ic *IdeaCreate) sqlSave(ctx context.Context) (*Idea, error) {
 func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Idea{config: ic.config}
-		_spec = sqlgraph.NewCreateSpec(idea.Table, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(idea.Table, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString))
 	)
 	if id, ok := ic.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ic.mutation.Title(); ok {
 		_spec.SetField(idea.FieldTitle, field.TypeString, value)
@@ -445,9 +434,9 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 		_spec.SetField(idea.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
 	}
-	if value, ok := ic.mutation.IsPublic(); ok {
-		_spec.SetField(idea.FieldIsPublic, field.TypeBool, value)
-		_node.IsPublic = value
+	if value, ok := ic.mutation.Visibility(); ok {
+		_spec.SetField(idea.FieldVisibility, field.TypeEnum, value)
+		_node.Visibility = value
 	}
 	if value, ok := ic.mutation.ViewCount(); ok {
 		_spec.SetField(idea.FieldViewCount, field.TypeInt, value)
@@ -477,7 +466,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -494,7 +483,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -510,23 +499,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := ic.mutation.BlogPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.BlogPostsTable,
-			Columns: []string{idea.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -542,7 +515,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -558,7 +531,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
