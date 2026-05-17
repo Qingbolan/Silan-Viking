@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EpisodeTranslationQuery is the builder for querying EpisodeTranslation entities.
@@ -107,8 +106,8 @@ func (etq *EpisodeTranslationQuery) FirstX(ctx context.Context) *EpisodeTranslat
 
 // FirstID returns the first EpisodeTranslation ID from the query.
 // Returns a *NotFoundError when no EpisodeTranslation ID was found.
-func (etq *EpisodeTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (etq *EpisodeTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = etq.Limit(1).IDs(setContextOp(ctx, etq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -120,7 +119,7 @@ func (etq *EpisodeTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (etq *EpisodeTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (etq *EpisodeTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := etq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -158,8 +157,8 @@ func (etq *EpisodeTranslationQuery) OnlyX(ctx context.Context) *EpisodeTranslati
 // OnlyID is like Only, but returns the only EpisodeTranslation ID in the query.
 // Returns a *NotSingularError when more than one EpisodeTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (etq *EpisodeTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (etq *EpisodeTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = etq.Limit(2).IDs(setContextOp(ctx, etq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -175,7 +174,7 @@ func (etq *EpisodeTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, e
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (etq *EpisodeTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (etq *EpisodeTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := etq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -203,7 +202,7 @@ func (etq *EpisodeTranslationQuery) AllX(ctx context.Context) []*EpisodeTranslat
 }
 
 // IDs executes the query and returns a list of EpisodeTranslation IDs.
-func (etq *EpisodeTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (etq *EpisodeTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if etq.ctx.Unique == nil && etq.path != nil {
 		etq.Unique(true)
 	}
@@ -215,7 +214,7 @@ func (etq *EpisodeTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, e
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (etq *EpisodeTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (etq *EpisodeTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := etq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -299,7 +298,7 @@ func (etq *EpisodeTranslationQuery) WithEpisode(opts ...func(*EpisodeQuery)) *Ep
 // Example:
 //
 //	var v []struct {
-//		EpisodeID uuid.UUID `json:"episode_id,omitempty"`
+//		EpisodeID string `json:"episode_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +321,7 @@ func (etq *EpisodeTranslationQuery) GroupBy(field string, fields ...string) *Epi
 // Example:
 //
 //	var v []struct {
-//		EpisodeID uuid.UUID `json:"episode_id,omitempty"`
+//		EpisodeID string `json:"episode_id,omitempty"`
 //	}
 //
 //	client.EpisodeTranslation.Query().
@@ -403,8 +402,8 @@ func (etq *EpisodeTranslationQuery) sqlAll(ctx context.Context, hooks ...queryHo
 }
 
 func (etq *EpisodeTranslationQuery) loadEpisode(ctx context.Context, query *EpisodeQuery, nodes []*EpisodeTranslation, init func(*EpisodeTranslation), assign func(*EpisodeTranslation, *Episode)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*EpisodeTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*EpisodeTranslation)
 	for i := range nodes {
 		fk := nodes[i].EpisodeID
 		if _, ok := nodeids[fk]; !ok {
@@ -442,7 +441,7 @@ func (etq *EpisodeTranslationQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (etq *EpisodeTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(episodetranslation.Table, episodetranslation.Columns, sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(episodetranslation.Table, episodetranslation.Columns, sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString))
 	_spec.From = etq.sql
 	if unique := etq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

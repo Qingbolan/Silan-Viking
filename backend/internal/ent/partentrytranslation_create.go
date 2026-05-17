@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PartEntryTranslationCreate is the builder for creating a PartEntryTranslation entity.
@@ -23,8 +22,8 @@ type PartEntryTranslationCreate struct {
 }
 
 // SetPartEntryID sets the "part_entry_id" field.
-func (petc *PartEntryTranslationCreate) SetPartEntryID(u uuid.UUID) *PartEntryTranslationCreate {
-	petc.mutation.SetPartEntryID(u)
+func (petc *PartEntryTranslationCreate) SetPartEntryID(s string) *PartEntryTranslationCreate {
+	petc.mutation.SetPartEntryID(s)
 	return petc
 }
 
@@ -55,15 +54,15 @@ func (petc *PartEntryTranslationCreate) SetNillableCreatedAt(t *time.Time) *Part
 }
 
 // SetID sets the "id" field.
-func (petc *PartEntryTranslationCreate) SetID(u uuid.UUID) *PartEntryTranslationCreate {
-	petc.mutation.SetID(u)
+func (petc *PartEntryTranslationCreate) SetID(s string) *PartEntryTranslationCreate {
+	petc.mutation.SetID(s)
 	return petc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (petc *PartEntryTranslationCreate) SetNillableID(u *uuid.UUID) *PartEntryTranslationCreate {
-	if u != nil {
-		petc.SetID(*u)
+func (petc *PartEntryTranslationCreate) SetNillableID(s *string) *PartEntryTranslationCreate {
+	if s != nil {
+		petc.SetID(*s)
 	}
 	return petc
 }
@@ -150,10 +149,10 @@ func (petc *PartEntryTranslationCreate) sqlSave(ctx context.Context) (*PartEntry
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected PartEntryTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	petc.mutation.id = &_node.ID
@@ -164,11 +163,11 @@ func (petc *PartEntryTranslationCreate) sqlSave(ctx context.Context) (*PartEntry
 func (petc *PartEntryTranslationCreate) createSpec() (*PartEntryTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PartEntryTranslation{config: petc.config}
-		_spec = sqlgraph.NewCreateSpec(partentrytranslation.Table, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(partentrytranslation.Table, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString))
 	)
 	if id, ok := petc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := petc.mutation.LanguageCode(); ok {
 		_spec.SetField(partentrytranslation.FieldLanguageCode, field.TypeString, value)
@@ -190,7 +189,7 @@ func (petc *PartEntryTranslationCreate) createSpec() (*PartEntryTranslation, *sq
 			Columns: []string{partentrytranslation.PartEntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

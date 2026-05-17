@@ -8,52 +8,61 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.BlogSeries {
+func ID(id string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.BlogSeries {
+func IDEQ(id string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.BlogSeries {
+func IDNEQ(id string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.BlogSeries {
+func IDIn(ids ...string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.BlogSeries {
+func IDNotIn(ids ...string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.BlogSeries {
+func IDGT(id string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.BlogSeries {
+func IDGTE(id string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.BlogSeries {
+func IDLT(id string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.BlogSeries {
+func IDLTE(id string) predicate.BlogSeries {
 	return predicate.BlogSeries(sql.FieldLTE(FieldID, id))
+}
+
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.BlogSeries {
+	return predicate.BlogSeries(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.BlogSeries {
+	return predicate.BlogSeries(sql.FieldContainsFold(FieldID, id))
 }
 
 // Title applies equality check predicate on the "title" field. It's identical to TitleEQ.

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogSeriesCreate is the builder for creating a BlogSeries entity.
@@ -120,28 +119,28 @@ func (bsc *BlogSeriesCreate) SetNillableUpdatedAt(t *time.Time) *BlogSeriesCreat
 }
 
 // SetID sets the "id" field.
-func (bsc *BlogSeriesCreate) SetID(u uuid.UUID) *BlogSeriesCreate {
-	bsc.mutation.SetID(u)
+func (bsc *BlogSeriesCreate) SetID(s string) *BlogSeriesCreate {
+	bsc.mutation.SetID(s)
 	return bsc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (bsc *BlogSeriesCreate) SetNillableID(u *uuid.UUID) *BlogSeriesCreate {
-	if u != nil {
-		bsc.SetID(*u)
+func (bsc *BlogSeriesCreate) SetNillableID(s *string) *BlogSeriesCreate {
+	if s != nil {
+		bsc.SetID(*s)
 	}
 	return bsc
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (bsc *BlogSeriesCreate) AddBlogPostIDs(ids ...uuid.UUID) *BlogSeriesCreate {
+func (bsc *BlogSeriesCreate) AddBlogPostIDs(ids ...string) *BlogSeriesCreate {
 	bsc.mutation.AddBlogPostIDs(ids...)
 	return bsc
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (bsc *BlogSeriesCreate) AddBlogPosts(b ...*BlogPost) *BlogSeriesCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -149,14 +148,14 @@ func (bsc *BlogSeriesCreate) AddBlogPosts(b ...*BlogPost) *BlogSeriesCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the BlogSeriesTranslation entity by IDs.
-func (bsc *BlogSeriesCreate) AddTranslationIDs(ids ...uuid.UUID) *BlogSeriesCreate {
+func (bsc *BlogSeriesCreate) AddTranslationIDs(ids ...string) *BlogSeriesCreate {
 	bsc.mutation.AddTranslationIDs(ids...)
 	return bsc
 }
 
 // AddTranslations adds the "translations" edges to the BlogSeriesTranslation entity.
 func (bsc *BlogSeriesCreate) AddTranslations(b ...*BlogSeriesTranslation) *BlogSeriesCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -275,10 +274,10 @@ func (bsc *BlogSeriesCreate) sqlSave(ctx context.Context) (*BlogSeries, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected BlogSeries.ID type: %T", _spec.ID.Value)
 		}
 	}
 	bsc.mutation.id = &_node.ID
@@ -289,11 +288,11 @@ func (bsc *BlogSeriesCreate) sqlSave(ctx context.Context) (*BlogSeries, error) {
 func (bsc *BlogSeriesCreate) createSpec() (*BlogSeries, *sqlgraph.CreateSpec) {
 	var (
 		_node = &BlogSeries{config: bsc.config}
-		_spec = sqlgraph.NewCreateSpec(blogseries.Table, sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(blogseries.Table, sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString))
 	)
 	if id, ok := bsc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := bsc.mutation.Title(); ok {
 		_spec.SetField(blogseries.FieldTitle, field.TypeString, value)
@@ -335,7 +334,7 @@ func (bsc *BlogSeriesCreate) createSpec() (*BlogSeries, *sqlgraph.CreateSpec) {
 			Columns: []string{blogseries.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -351,7 +350,7 @@ func (bsc *BlogSeriesCreate) createSpec() (*BlogSeries, *sqlgraph.CreateSpec) {
 			Columns: []string{blogseries.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

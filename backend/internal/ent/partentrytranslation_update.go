@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PartEntryTranslationUpdate is the builder for updating PartEntryTranslation entities.
@@ -30,15 +29,15 @@ func (petu *PartEntryTranslationUpdate) Where(ps ...predicate.PartEntryTranslati
 }
 
 // SetPartEntryID sets the "part_entry_id" field.
-func (petu *PartEntryTranslationUpdate) SetPartEntryID(u uuid.UUID) *PartEntryTranslationUpdate {
-	petu.mutation.SetPartEntryID(u)
+func (petu *PartEntryTranslationUpdate) SetPartEntryID(s string) *PartEntryTranslationUpdate {
+	petu.mutation.SetPartEntryID(s)
 	return petu
 }
 
 // SetNillablePartEntryID sets the "part_entry_id" field if the given value is not nil.
-func (petu *PartEntryTranslationUpdate) SetNillablePartEntryID(u *uuid.UUID) *PartEntryTranslationUpdate {
-	if u != nil {
-		petu.SetPartEntryID(*u)
+func (petu *PartEntryTranslationUpdate) SetNillablePartEntryID(s *string) *PartEntryTranslationUpdate {
+	if s != nil {
+		petu.SetPartEntryID(*s)
 	}
 	return petu
 }
@@ -118,7 +117,7 @@ func (petu *PartEntryTranslationUpdate) sqlSave(ctx context.Context) (n int, err
 	if err := petu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(partentrytranslation.Table, partentrytranslation.Columns, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(partentrytranslation.Table, partentrytranslation.Columns, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString))
 	if ps := petu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -140,7 +139,7 @@ func (petu *PartEntryTranslationUpdate) sqlSave(ctx context.Context) (n int, err
 			Columns: []string{partentrytranslation.PartEntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -153,7 +152,7 @@ func (petu *PartEntryTranslationUpdate) sqlSave(ctx context.Context) (n int, err
 			Columns: []string{partentrytranslation.PartEntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -182,15 +181,15 @@ type PartEntryTranslationUpdateOne struct {
 }
 
 // SetPartEntryID sets the "part_entry_id" field.
-func (petuo *PartEntryTranslationUpdateOne) SetPartEntryID(u uuid.UUID) *PartEntryTranslationUpdateOne {
-	petuo.mutation.SetPartEntryID(u)
+func (petuo *PartEntryTranslationUpdateOne) SetPartEntryID(s string) *PartEntryTranslationUpdateOne {
+	petuo.mutation.SetPartEntryID(s)
 	return petuo
 }
 
 // SetNillablePartEntryID sets the "part_entry_id" field if the given value is not nil.
-func (petuo *PartEntryTranslationUpdateOne) SetNillablePartEntryID(u *uuid.UUID) *PartEntryTranslationUpdateOne {
-	if u != nil {
-		petuo.SetPartEntryID(*u)
+func (petuo *PartEntryTranslationUpdateOne) SetNillablePartEntryID(s *string) *PartEntryTranslationUpdateOne {
+	if s != nil {
+		petuo.SetPartEntryID(*s)
 	}
 	return petuo
 }
@@ -283,7 +282,7 @@ func (petuo *PartEntryTranslationUpdateOne) sqlSave(ctx context.Context) (_node 
 	if err := petuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(partentrytranslation.Table, partentrytranslation.Columns, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(partentrytranslation.Table, partentrytranslation.Columns, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString))
 	id, ok := petuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PartEntryTranslation.id" for update`)}
@@ -322,7 +321,7 @@ func (petuo *PartEntryTranslationUpdateOne) sqlSave(ctx context.Context) (_node 
 			Columns: []string{partentrytranslation.PartEntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -335,7 +334,7 @@ func (petuo *PartEntryTranslationUpdateOne) sqlSave(ctx context.Context) (_node 
 			Columns: []string{partentrytranslation.PartEntryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

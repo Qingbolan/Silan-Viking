@@ -40,7 +40,7 @@ func (pdd *ProjectDetailDelete) ExecX(ctx context.Context) int {
 }
 
 func (pdd *ProjectDetailDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(projectdetail.Table, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(projectdetail.Table, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString))
 	if ps := pdd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

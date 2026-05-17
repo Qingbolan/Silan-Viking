@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AwardCreate is the builder for creating a Award entity.
@@ -24,8 +23,8 @@ type AwardCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (ac *AwardCreate) SetUserID(u uuid.UUID) *AwardCreate {
-	ac.mutation.SetUserID(u)
+func (ac *AwardCreate) SetUserID(s string) *AwardCreate {
+	ac.mutation.SetUserID(s)
 	return ac
 }
 
@@ -154,15 +153,15 @@ func (ac *AwardCreate) SetNillableUpdatedAt(t *time.Time) *AwardCreate {
 }
 
 // SetID sets the "id" field.
-func (ac *AwardCreate) SetID(u uuid.UUID) *AwardCreate {
-	ac.mutation.SetID(u)
+func (ac *AwardCreate) SetID(s string) *AwardCreate {
+	ac.mutation.SetID(s)
 	return ac
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ac *AwardCreate) SetNillableID(u *uuid.UUID) *AwardCreate {
-	if u != nil {
-		ac.SetID(*u)
+func (ac *AwardCreate) SetNillableID(s *string) *AwardCreate {
+	if s != nil {
+		ac.SetID(*s)
 	}
 	return ac
 }
@@ -173,14 +172,14 @@ func (ac *AwardCreate) SetUser(u *User) *AwardCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the AwardTranslation entity by IDs.
-func (ac *AwardCreate) AddTranslationIDs(ids ...uuid.UUID) *AwardCreate {
+func (ac *AwardCreate) AddTranslationIDs(ids ...string) *AwardCreate {
 	ac.mutation.AddTranslationIDs(ids...)
 	return ac
 }
 
 // AddTranslations adds the "translations" edges to the AwardTranslation entity.
 func (ac *AwardCreate) AddTranslations(a ...*AwardTranslation) *AwardCreate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -298,10 +297,10 @@ func (ac *AwardCreate) sqlSave(ctx context.Context) (*Award, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Award.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ac.mutation.id = &_node.ID
@@ -312,11 +311,11 @@ func (ac *AwardCreate) sqlSave(ctx context.Context) (*Award, error) {
 func (ac *AwardCreate) createSpec() (*Award, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Award{config: ac.config}
-		_spec = sqlgraph.NewCreateSpec(award.Table, sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(award.Table, sqlgraph.NewFieldSpec(award.FieldID, field.TypeString))
 	)
 	if id, ok := ac.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ac.mutation.Title(); ok {
 		_spec.SetField(award.FieldTitle, field.TypeString, value)
@@ -366,7 +365,7 @@ func (ac *AwardCreate) createSpec() (*Award, *sqlgraph.CreateSpec) {
 			Columns: []string{award.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -383,7 +382,7 @@ func (ac *AwardCreate) createSpec() (*Award, *sqlgraph.CreateSpec) {
 			Columns: []string{award.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

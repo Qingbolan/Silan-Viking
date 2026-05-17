@@ -7,56 +7,65 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Annotation {
+func ID(id string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Annotation {
+func IDEQ(id string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Annotation {
+func IDNEQ(id string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Annotation {
+func IDIn(ids ...string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Annotation {
+func IDNotIn(ids ...string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Annotation {
+func IDGT(id string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Annotation {
+func IDGTE(id string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Annotation {
+func IDLT(id string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Annotation {
+func IDLTE(id string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldContainsFold(FieldID, id))
+}
+
 // EntityID applies equality check predicate on the "entity_id" field. It's identical to EntityIDEQ.
-func EntityID(v uuid.UUID) predicate.Annotation {
+func EntityID(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldEntityID, v))
 }
 
@@ -111,43 +120,68 @@ func EntityTypeNotIn(vs ...EntityType) predicate.Annotation {
 }
 
 // EntityIDEQ applies the EQ predicate on the "entity_id" field.
-func EntityIDEQ(v uuid.UUID) predicate.Annotation {
+func EntityIDEQ(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldEQ(FieldEntityID, v))
 }
 
 // EntityIDNEQ applies the NEQ predicate on the "entity_id" field.
-func EntityIDNEQ(v uuid.UUID) predicate.Annotation {
+func EntityIDNEQ(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldNEQ(FieldEntityID, v))
 }
 
 // EntityIDIn applies the In predicate on the "entity_id" field.
-func EntityIDIn(vs ...uuid.UUID) predicate.Annotation {
+func EntityIDIn(vs ...string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldIn(FieldEntityID, vs...))
 }
 
 // EntityIDNotIn applies the NotIn predicate on the "entity_id" field.
-func EntityIDNotIn(vs ...uuid.UUID) predicate.Annotation {
+func EntityIDNotIn(vs ...string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldNotIn(FieldEntityID, vs...))
 }
 
 // EntityIDGT applies the GT predicate on the "entity_id" field.
-func EntityIDGT(v uuid.UUID) predicate.Annotation {
+func EntityIDGT(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldGT(FieldEntityID, v))
 }
 
 // EntityIDGTE applies the GTE predicate on the "entity_id" field.
-func EntityIDGTE(v uuid.UUID) predicate.Annotation {
+func EntityIDGTE(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldGTE(FieldEntityID, v))
 }
 
 // EntityIDLT applies the LT predicate on the "entity_id" field.
-func EntityIDLT(v uuid.UUID) predicate.Annotation {
+func EntityIDLT(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldLT(FieldEntityID, v))
 }
 
 // EntityIDLTE applies the LTE predicate on the "entity_id" field.
-func EntityIDLTE(v uuid.UUID) predicate.Annotation {
+func EntityIDLTE(v string) predicate.Annotation {
 	return predicate.Annotation(sql.FieldLTE(FieldEntityID, v))
+}
+
+// EntityIDContains applies the Contains predicate on the "entity_id" field.
+func EntityIDContains(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldContains(FieldEntityID, v))
+}
+
+// EntityIDHasPrefix applies the HasPrefix predicate on the "entity_id" field.
+func EntityIDHasPrefix(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldHasPrefix(FieldEntityID, v))
+}
+
+// EntityIDHasSuffix applies the HasSuffix predicate on the "entity_id" field.
+func EntityIDHasSuffix(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldHasSuffix(FieldEntityID, v))
+}
+
+// EntityIDEqualFold applies the EqualFold predicate on the "entity_id" field.
+func EntityIDEqualFold(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldEqualFold(FieldEntityID, v))
+}
+
+// EntityIDContainsFold applies the ContainsFold predicate on the "entity_id" field.
+func EntityIDContainsFold(v string) predicate.Annotation {
+	return predicate.Annotation(sql.FieldContainsFold(FieldEntityID, v))
 }
 
 // PartRoleEQ applies the EQ predicate on the "part_role" field.

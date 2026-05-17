@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectImageTranslationUpdate is the builder for updating ProjectImageTranslation entities.
@@ -31,15 +30,15 @@ func (pitu *ProjectImageTranslationUpdate) Where(ps ...predicate.ProjectImageTra
 }
 
 // SetProjectImageID sets the "project_image_id" field.
-func (pitu *ProjectImageTranslationUpdate) SetProjectImageID(u uuid.UUID) *ProjectImageTranslationUpdate {
-	pitu.mutation.SetProjectImageID(u)
+func (pitu *ProjectImageTranslationUpdate) SetProjectImageID(s string) *ProjectImageTranslationUpdate {
+	pitu.mutation.SetProjectImageID(s)
 	return pitu
 }
 
 // SetNillableProjectImageID sets the "project_image_id" field if the given value is not nil.
-func (pitu *ProjectImageTranslationUpdate) SetNillableProjectImageID(u *uuid.UUID) *ProjectImageTranslationUpdate {
-	if u != nil {
-		pitu.SetProjectImageID(*u)
+func (pitu *ProjectImageTranslationUpdate) SetNillableProjectImageID(s *string) *ProjectImageTranslationUpdate {
+	if s != nil {
+		pitu.SetProjectImageID(*s)
 	}
 	return pitu
 }
@@ -183,7 +182,7 @@ func (pitu *ProjectImageTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if err := pitu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectimagetranslation.Table, projectimagetranslation.Columns, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectimagetranslation.Table, projectimagetranslation.Columns, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString))
 	if ps := pitu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -211,7 +210,7 @@ func (pitu *ProjectImageTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{projectimagetranslation.ProjectImageColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -224,7 +223,7 @@ func (pitu *ProjectImageTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 			Columns: []string{projectimagetranslation.ProjectImageColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -282,15 +281,15 @@ type ProjectImageTranslationUpdateOne struct {
 }
 
 // SetProjectImageID sets the "project_image_id" field.
-func (pituo *ProjectImageTranslationUpdateOne) SetProjectImageID(u uuid.UUID) *ProjectImageTranslationUpdateOne {
-	pituo.mutation.SetProjectImageID(u)
+func (pituo *ProjectImageTranslationUpdateOne) SetProjectImageID(s string) *ProjectImageTranslationUpdateOne {
+	pituo.mutation.SetProjectImageID(s)
 	return pituo
 }
 
 // SetNillableProjectImageID sets the "project_image_id" field if the given value is not nil.
-func (pituo *ProjectImageTranslationUpdateOne) SetNillableProjectImageID(u *uuid.UUID) *ProjectImageTranslationUpdateOne {
-	if u != nil {
-		pituo.SetProjectImageID(*u)
+func (pituo *ProjectImageTranslationUpdateOne) SetNillableProjectImageID(s *string) *ProjectImageTranslationUpdateOne {
+	if s != nil {
+		pituo.SetProjectImageID(*s)
 	}
 	return pituo
 }
@@ -447,7 +446,7 @@ func (pituo *ProjectImageTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	if err := pituo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectimagetranslation.Table, projectimagetranslation.Columns, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectimagetranslation.Table, projectimagetranslation.Columns, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString))
 	id, ok := pituo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectImageTranslation.id" for update`)}
@@ -492,7 +491,7 @@ func (pituo *ProjectImageTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{projectimagetranslation.ProjectImageColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -505,7 +504,7 @@ func (pituo *ProjectImageTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 			Columns: []string{projectimagetranslation.ProjectImageColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

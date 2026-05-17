@@ -40,7 +40,7 @@ func (edtd *EducationDetailTranslationDelete) ExecX(ctx context.Context) int {
 }
 
 func (edtd *EducationDetailTranslationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(educationdetailtranslation.Table, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(educationdetailtranslation.Table, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString))
 	if ps := edtd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

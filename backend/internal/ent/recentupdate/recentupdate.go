@@ -8,7 +8,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -133,8 +132,6 @@ var (
 	SlugValidator func(string) error
 	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	TitleValidator func(string) error
-	// DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	DescriptionValidator func(string) error
 	// ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
 	ExternalIDValidator func(string) error
 	// ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
@@ -158,7 +155,7 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() string
 )
 
 // SubjectKind defines the type for the "subject_kind" enum field.

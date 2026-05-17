@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ItemPartTranslationQuery is the builder for querying ItemPartTranslation entities.
@@ -107,8 +106,8 @@ func (iptq *ItemPartTranslationQuery) FirstX(ctx context.Context) *ItemPartTrans
 
 // FirstID returns the first ItemPartTranslation ID from the query.
 // Returns a *NotFoundError when no ItemPartTranslation ID was found.
-func (iptq *ItemPartTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (iptq *ItemPartTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = iptq.Limit(1).IDs(setContextOp(ctx, iptq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -120,7 +119,7 @@ func (iptq *ItemPartTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (iptq *ItemPartTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (iptq *ItemPartTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := iptq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -158,8 +157,8 @@ func (iptq *ItemPartTranslationQuery) OnlyX(ctx context.Context) *ItemPartTransl
 // OnlyID is like Only, but returns the only ItemPartTranslation ID in the query.
 // Returns a *NotSingularError when more than one ItemPartTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (iptq *ItemPartTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (iptq *ItemPartTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = iptq.Limit(2).IDs(setContextOp(ctx, iptq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -175,7 +174,7 @@ func (iptq *ItemPartTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID,
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (iptq *ItemPartTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (iptq *ItemPartTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := iptq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -203,7 +202,7 @@ func (iptq *ItemPartTranslationQuery) AllX(ctx context.Context) []*ItemPartTrans
 }
 
 // IDs executes the query and returns a list of ItemPartTranslation IDs.
-func (iptq *ItemPartTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (iptq *ItemPartTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if iptq.ctx.Unique == nil && iptq.path != nil {
 		iptq.Unique(true)
 	}
@@ -215,7 +214,7 @@ func (iptq *ItemPartTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID,
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (iptq *ItemPartTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (iptq *ItemPartTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := iptq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -299,7 +298,7 @@ func (iptq *ItemPartTranslationQuery) WithItemPart(opts ...func(*ItemPartQuery))
 // Example:
 //
 //	var v []struct {
-//		ItemPartID uuid.UUID `json:"item_part_id,omitempty"`
+//		ItemPartID string `json:"item_part_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +321,7 @@ func (iptq *ItemPartTranslationQuery) GroupBy(field string, fields ...string) *I
 // Example:
 //
 //	var v []struct {
-//		ItemPartID uuid.UUID `json:"item_part_id,omitempty"`
+//		ItemPartID string `json:"item_part_id,omitempty"`
 //	}
 //
 //	client.ItemPartTranslation.Query().
@@ -403,8 +402,8 @@ func (iptq *ItemPartTranslationQuery) sqlAll(ctx context.Context, hooks ...query
 }
 
 func (iptq *ItemPartTranslationQuery) loadItemPart(ctx context.Context, query *ItemPartQuery, nodes []*ItemPartTranslation, init func(*ItemPartTranslation), assign func(*ItemPartTranslation, *ItemPart)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ItemPartTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ItemPartTranslation)
 	for i := range nodes {
 		fk := nodes[i].ItemPartID
 		if _, ok := nodeids[fk]; !ok {
@@ -442,7 +441,7 @@ func (iptq *ItemPartTranslationQuery) sqlCount(ctx context.Context) (int, error)
 }
 
 func (iptq *ItemPartTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(itemparttranslation.Table, itemparttranslation.Columns, sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(itemparttranslation.Table, itemparttranslation.Columns, sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString))
 	_spec.From = iptq.sql
 	if unique := iptq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // RecentUpdate is the model entity for the RecentUpdate schema.
 type RecentUpdate struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
 	// SubjectKind holds the value of the "subject_kind" field.
@@ -116,12 +115,10 @@ func (*RecentUpdate) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case recentupdate.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case recentupdate.FieldSlug, recentupdate.FieldSubjectKind, recentupdate.FieldUpdateType, recentupdate.FieldVisibility, recentupdate.FieldTitle, recentupdate.FieldDescription, recentupdate.FieldStatus, recentupdate.FieldPriority, recentupdate.FieldExternalID, recentupdate.FieldImageURL, recentupdate.FieldVideoURL, recentupdate.FieldDocumentURL, recentupdate.FieldDemoURL, recentupdate.FieldGithubURL, recentupdate.FieldExternalURL:
+		case recentupdate.FieldID, recentupdate.FieldUserID, recentupdate.FieldSlug, recentupdate.FieldSubjectKind, recentupdate.FieldUpdateType, recentupdate.FieldVisibility, recentupdate.FieldTitle, recentupdate.FieldDescription, recentupdate.FieldStatus, recentupdate.FieldPriority, recentupdate.FieldExternalID, recentupdate.FieldImageURL, recentupdate.FieldVideoURL, recentupdate.FieldDocumentURL, recentupdate.FieldDemoURL, recentupdate.FieldGithubURL, recentupdate.FieldExternalURL:
 			values[i] = new(sql.NullString)
 		case recentupdate.FieldDate, recentupdate.FieldCreatedAt, recentupdate.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case recentupdate.FieldID, recentupdate.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -138,16 +135,16 @@ func (ru *RecentUpdate) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case recentupdate.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				ru.ID = *value
+			} else if value.Valid {
+				ru.ID = value.String
 			}
 		case recentupdate.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				ru.UserID = *value
+			} else if value.Valid {
+				ru.UserID = value.String
 			}
 		case recentupdate.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -350,7 +347,7 @@ func (ru *RecentUpdate) String() string {
 	builder.WriteString("RecentUpdate(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ru.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", ru.UserID))
+	builder.WriteString(ru.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("slug=")
 	builder.WriteString(ru.Slug)

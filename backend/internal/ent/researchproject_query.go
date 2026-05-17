@@ -17,7 +17,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectQuery is the builder for querying ResearchProject entities.
@@ -156,8 +155,8 @@ func (rpq *ResearchProjectQuery) FirstX(ctx context.Context) *ResearchProject {
 
 // FirstID returns the first ResearchProject ID from the query.
 // Returns a *NotFoundError when no ResearchProject ID was found.
-func (rpq *ResearchProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (rpq *ResearchProjectQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = rpq.Limit(1).IDs(setContextOp(ctx, rpq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -169,7 +168,7 @@ func (rpq *ResearchProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (rpq *ResearchProjectQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (rpq *ResearchProjectQuery) FirstIDX(ctx context.Context) string {
 	id, err := rpq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -207,8 +206,8 @@ func (rpq *ResearchProjectQuery) OnlyX(ctx context.Context) *ResearchProject {
 // OnlyID is like Only, but returns the only ResearchProject ID in the query.
 // Returns a *NotSingularError when more than one ResearchProject ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (rpq *ResearchProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (rpq *ResearchProjectQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = rpq.Limit(2).IDs(setContextOp(ctx, rpq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -224,7 +223,7 @@ func (rpq *ResearchProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (rpq *ResearchProjectQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (rpq *ResearchProjectQuery) OnlyIDX(ctx context.Context) string {
 	id, err := rpq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -252,7 +251,7 @@ func (rpq *ResearchProjectQuery) AllX(ctx context.Context) []*ResearchProject {
 }
 
 // IDs executes the query and returns a list of ResearchProject IDs.
-func (rpq *ResearchProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (rpq *ResearchProjectQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if rpq.ctx.Unique == nil && rpq.path != nil {
 		rpq.Unique(true)
 	}
@@ -264,7 +263,7 @@ func (rpq *ResearchProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err 
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (rpq *ResearchProjectQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (rpq *ResearchProjectQuery) IDsX(ctx context.Context) []string {
 	ids, err := rpq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -372,7 +371,7 @@ func (rpq *ResearchProjectQuery) WithDetails(opts ...func(*ResearchProjectDetail
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -395,7 +394,7 @@ func (rpq *ResearchProjectQuery) GroupBy(field string, fields ...string) *Resear
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.ResearchProject.Query().
@@ -494,8 +493,8 @@ func (rpq *ResearchProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 }
 
 func (rpq *ResearchProjectQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*ResearchProject, init func(*ResearchProject), assign func(*ResearchProject, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ResearchProject)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ResearchProject)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -524,7 +523,7 @@ func (rpq *ResearchProjectQuery) loadUser(ctx context.Context, query *UserQuery,
 }
 func (rpq *ResearchProjectQuery) loadTranslations(ctx context.Context, query *ResearchProjectTranslationQuery, nodes []*ResearchProject, init func(*ResearchProject), assign func(*ResearchProject, *ResearchProjectTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*ResearchProject)
+	nodeids := make(map[string]*ResearchProject)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -554,7 +553,7 @@ func (rpq *ResearchProjectQuery) loadTranslations(ctx context.Context, query *Re
 }
 func (rpq *ResearchProjectQuery) loadDetails(ctx context.Context, query *ResearchProjectDetailQuery, nodes []*ResearchProject, init func(*ResearchProject), assign func(*ResearchProject, *ResearchProjectDetail)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*ResearchProject)
+	nodeids := make(map[string]*ResearchProject)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -593,7 +592,7 @@ func (rpq *ResearchProjectQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (rpq *ResearchProjectQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(researchproject.Table, researchproject.Columns, sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(researchproject.Table, researchproject.Columns, sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString))
 	_spec.From = rpq.sql
 	if unique := rpq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

@@ -18,7 +18,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaUpdate is the builder for updating Idea entities.
@@ -35,16 +34,22 @@ func (iu *IdeaUpdate) Where(ps ...predicate.Idea) *IdeaUpdate {
 }
 
 // SetUserID sets the "user_id" field.
-func (iu *IdeaUpdate) SetUserID(u uuid.UUID) *IdeaUpdate {
-	iu.mutation.SetUserID(u)
+func (iu *IdeaUpdate) SetUserID(s string) *IdeaUpdate {
+	iu.mutation.SetUserID(s)
 	return iu
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (iu *IdeaUpdate) SetNillableUserID(u *uuid.UUID) *IdeaUpdate {
-	if u != nil {
-		iu.SetUserID(*u)
+func (iu *IdeaUpdate) SetNillableUserID(s *string) *IdeaUpdate {
+	if s != nil {
+		iu.SetUserID(*s)
 	}
+	return iu
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (iu *IdeaUpdate) ClearUserID() *IdeaUpdate {
+	iu.mutation.ClearUserID()
 	return iu
 }
 
@@ -59,6 +64,12 @@ func (iu *IdeaUpdate) SetNillableTitle(s *string) *IdeaUpdate {
 	if s != nil {
 		iu.SetTitle(*s)
 	}
+	return iu
+}
+
+// ClearTitle clears the value of the "title" field.
+func (iu *IdeaUpdate) ClearTitle() *IdeaUpdate {
+	iu.mutation.ClearTitle()
 	return iu
 }
 
@@ -212,20 +223,26 @@ func (iu *IdeaUpdate) SetUpdatedAt(t time.Time) *IdeaUpdate {
 	return iu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (iu *IdeaUpdate) ClearUpdatedAt() *IdeaUpdate {
+	iu.mutation.ClearUpdatedAt()
+	return iu
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (iu *IdeaUpdate) SetUser(u *User) *IdeaUpdate {
 	return iu.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by IDs.
-func (iu *IdeaUpdate) AddTranslationIDs(ids ...uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) AddTranslationIDs(ids ...string) *IdeaUpdate {
 	iu.mutation.AddTranslationIDs(ids...)
 	return iu
 }
 
 // AddTranslations adds the "translations" edges to the IdeaTranslation entity.
 func (iu *IdeaUpdate) AddTranslations(i ...*IdeaTranslation) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -233,13 +250,13 @@ func (iu *IdeaUpdate) AddTranslations(i ...*IdeaTranslation) *IdeaUpdate {
 }
 
 // SetDetailsID sets the "details" edge to the IdeaDetail entity by ID.
-func (iu *IdeaUpdate) SetDetailsID(id uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) SetDetailsID(id string) *IdeaUpdate {
 	iu.mutation.SetDetailsID(id)
 	return iu
 }
 
 // SetNillableDetailsID sets the "details" edge to the IdeaDetail entity by ID if the given value is not nil.
-func (iu *IdeaUpdate) SetNillableDetailsID(id *uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) SetNillableDetailsID(id *string) *IdeaUpdate {
 	if id != nil {
 		iu = iu.SetDetailsID(*id)
 	}
@@ -252,14 +269,14 @@ func (iu *IdeaUpdate) SetDetails(i *IdeaDetail) *IdeaUpdate {
 }
 
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (iu *IdeaUpdate) AddCommentIDs(ids ...uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) AddCommentIDs(ids ...string) *IdeaUpdate {
 	iu.mutation.AddCommentIDs(ids...)
 	return iu
 }
 
 // AddComments adds the "comments" edges to the Comment entity.
 func (iu *IdeaUpdate) AddComments(c ...*Comment) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -267,14 +284,14 @@ func (iu *IdeaUpdate) AddComments(c ...*Comment) *IdeaUpdate {
 }
 
 // AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
-func (iu *IdeaUpdate) AddTagIDs(ids ...uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) AddTagIDs(ids ...string) *IdeaUpdate {
 	iu.mutation.AddTagIDs(ids...)
 	return iu
 }
 
 // AddTags adds the "tags" edges to the IdeaTag entity.
 func (iu *IdeaUpdate) AddTags(i ...*IdeaTag) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -299,14 +316,14 @@ func (iu *IdeaUpdate) ClearTranslations() *IdeaUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to IdeaTranslation entities by IDs.
-func (iu *IdeaUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) RemoveTranslationIDs(ids ...string) *IdeaUpdate {
 	iu.mutation.RemoveTranslationIDs(ids...)
 	return iu
 }
 
 // RemoveTranslations removes "translations" edges to IdeaTranslation entities.
 func (iu *IdeaUpdate) RemoveTranslations(i ...*IdeaTranslation) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -326,14 +343,14 @@ func (iu *IdeaUpdate) ClearComments() *IdeaUpdate {
 }
 
 // RemoveCommentIDs removes the "comments" edge to Comment entities by IDs.
-func (iu *IdeaUpdate) RemoveCommentIDs(ids ...uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) RemoveCommentIDs(ids ...string) *IdeaUpdate {
 	iu.mutation.RemoveCommentIDs(ids...)
 	return iu
 }
 
 // RemoveComments removes "comments" edges to Comment entities.
 func (iu *IdeaUpdate) RemoveComments(c ...*Comment) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -347,14 +364,14 @@ func (iu *IdeaUpdate) ClearTags() *IdeaUpdate {
 }
 
 // RemoveTagIDs removes the "tags" edge to IdeaTag entities by IDs.
-func (iu *IdeaUpdate) RemoveTagIDs(ids ...uuid.UUID) *IdeaUpdate {
+func (iu *IdeaUpdate) RemoveTagIDs(ids ...string) *IdeaUpdate {
 	iu.mutation.RemoveTagIDs(ids...)
 	return iu
 }
 
 // RemoveTags removes "tags" edges to IdeaTag entities.
 func (iu *IdeaUpdate) RemoveTags(i ...*IdeaTag) *IdeaUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -391,7 +408,7 @@ func (iu *IdeaUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (iu *IdeaUpdate) defaults() {
-	if _, ok := iu.mutation.UpdatedAt(); !ok {
+	if _, ok := iu.mutation.UpdatedAt(); !ok && !iu.mutation.UpdatedAtCleared() {
 		v := idea.UpdateDefaultUpdatedAt()
 		iu.mutation.SetUpdatedAt(v)
 	}
@@ -424,9 +441,6 @@ func (iu *IdeaUpdate) check() error {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Idea.category": %w`, err)}
 		}
 	}
-	if iu.mutation.UserCleared() && len(iu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Idea.user"`)
-	}
 	return nil
 }
 
@@ -434,7 +448,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := iu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString))
 	if ps := iu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -444,6 +458,9 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := iu.mutation.Title(); ok {
 		_spec.SetField(idea.FieldTitle, field.TypeString, value)
+	}
+	if iu.mutation.TitleCleared() {
+		_spec.ClearField(idea.FieldTitle, field.TypeString)
 	}
 	if value, ok := iu.mutation.Slug(); ok {
 		_spec.SetField(idea.FieldSlug, field.TypeString, value)
@@ -484,8 +501,14 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if iu.mutation.CategoryCleared() {
 		_spec.ClearField(idea.FieldCategory, field.TypeString)
 	}
+	if iu.mutation.CreatedAtCleared() {
+		_spec.ClearField(idea.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := iu.mutation.UpdatedAt(); ok {
 		_spec.SetField(idea.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if iu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(idea.FieldUpdatedAt, field.TypeTime)
 	}
 	if iu.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -495,7 +518,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -508,7 +531,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -524,7 +547,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -537,7 +560,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -553,7 +576,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -569,7 +592,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -582,7 +605,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -598,7 +621,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -611,7 +634,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -627,7 +650,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -643,7 +666,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -656,7 +679,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -672,7 +695,7 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -701,16 +724,22 @@ type IdeaUpdateOne struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (iuo *IdeaUpdateOne) SetUserID(u uuid.UUID) *IdeaUpdateOne {
-	iuo.mutation.SetUserID(u)
+func (iuo *IdeaUpdateOne) SetUserID(s string) *IdeaUpdateOne {
+	iuo.mutation.SetUserID(s)
 	return iuo
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (iuo *IdeaUpdateOne) SetNillableUserID(u *uuid.UUID) *IdeaUpdateOne {
-	if u != nil {
-		iuo.SetUserID(*u)
+func (iuo *IdeaUpdateOne) SetNillableUserID(s *string) *IdeaUpdateOne {
+	if s != nil {
+		iuo.SetUserID(*s)
 	}
+	return iuo
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (iuo *IdeaUpdateOne) ClearUserID() *IdeaUpdateOne {
+	iuo.mutation.ClearUserID()
 	return iuo
 }
 
@@ -725,6 +754,12 @@ func (iuo *IdeaUpdateOne) SetNillableTitle(s *string) *IdeaUpdateOne {
 	if s != nil {
 		iuo.SetTitle(*s)
 	}
+	return iuo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (iuo *IdeaUpdateOne) ClearTitle() *IdeaUpdateOne {
+	iuo.mutation.ClearTitle()
 	return iuo
 }
 
@@ -878,20 +913,26 @@ func (iuo *IdeaUpdateOne) SetUpdatedAt(t time.Time) *IdeaUpdateOne {
 	return iuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (iuo *IdeaUpdateOne) ClearUpdatedAt() *IdeaUpdateOne {
+	iuo.mutation.ClearUpdatedAt()
+	return iuo
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (iuo *IdeaUpdateOne) SetUser(u *User) *IdeaUpdateOne {
 	return iuo.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by IDs.
-func (iuo *IdeaUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) AddTranslationIDs(ids ...string) *IdeaUpdateOne {
 	iuo.mutation.AddTranslationIDs(ids...)
 	return iuo
 }
 
 // AddTranslations adds the "translations" edges to the IdeaTranslation entity.
 func (iuo *IdeaUpdateOne) AddTranslations(i ...*IdeaTranslation) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -899,13 +940,13 @@ func (iuo *IdeaUpdateOne) AddTranslations(i ...*IdeaTranslation) *IdeaUpdateOne 
 }
 
 // SetDetailsID sets the "details" edge to the IdeaDetail entity by ID.
-func (iuo *IdeaUpdateOne) SetDetailsID(id uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) SetDetailsID(id string) *IdeaUpdateOne {
 	iuo.mutation.SetDetailsID(id)
 	return iuo
 }
 
 // SetNillableDetailsID sets the "details" edge to the IdeaDetail entity by ID if the given value is not nil.
-func (iuo *IdeaUpdateOne) SetNillableDetailsID(id *uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) SetNillableDetailsID(id *string) *IdeaUpdateOne {
 	if id != nil {
 		iuo = iuo.SetDetailsID(*id)
 	}
@@ -918,14 +959,14 @@ func (iuo *IdeaUpdateOne) SetDetails(i *IdeaDetail) *IdeaUpdateOne {
 }
 
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (iuo *IdeaUpdateOne) AddCommentIDs(ids ...uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) AddCommentIDs(ids ...string) *IdeaUpdateOne {
 	iuo.mutation.AddCommentIDs(ids...)
 	return iuo
 }
 
 // AddComments adds the "comments" edges to the Comment entity.
 func (iuo *IdeaUpdateOne) AddComments(c ...*Comment) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -933,14 +974,14 @@ func (iuo *IdeaUpdateOne) AddComments(c ...*Comment) *IdeaUpdateOne {
 }
 
 // AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
-func (iuo *IdeaUpdateOne) AddTagIDs(ids ...uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) AddTagIDs(ids ...string) *IdeaUpdateOne {
 	iuo.mutation.AddTagIDs(ids...)
 	return iuo
 }
 
 // AddTags adds the "tags" edges to the IdeaTag entity.
 func (iuo *IdeaUpdateOne) AddTags(i ...*IdeaTag) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -965,14 +1006,14 @@ func (iuo *IdeaUpdateOne) ClearTranslations() *IdeaUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to IdeaTranslation entities by IDs.
-func (iuo *IdeaUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) RemoveTranslationIDs(ids ...string) *IdeaUpdateOne {
 	iuo.mutation.RemoveTranslationIDs(ids...)
 	return iuo
 }
 
 // RemoveTranslations removes "translations" edges to IdeaTranslation entities.
 func (iuo *IdeaUpdateOne) RemoveTranslations(i ...*IdeaTranslation) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -992,14 +1033,14 @@ func (iuo *IdeaUpdateOne) ClearComments() *IdeaUpdateOne {
 }
 
 // RemoveCommentIDs removes the "comments" edge to Comment entities by IDs.
-func (iuo *IdeaUpdateOne) RemoveCommentIDs(ids ...uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) RemoveCommentIDs(ids ...string) *IdeaUpdateOne {
 	iuo.mutation.RemoveCommentIDs(ids...)
 	return iuo
 }
 
 // RemoveComments removes "comments" edges to Comment entities.
 func (iuo *IdeaUpdateOne) RemoveComments(c ...*Comment) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -1013,14 +1054,14 @@ func (iuo *IdeaUpdateOne) ClearTags() *IdeaUpdateOne {
 }
 
 // RemoveTagIDs removes the "tags" edge to IdeaTag entities by IDs.
-func (iuo *IdeaUpdateOne) RemoveTagIDs(ids ...uuid.UUID) *IdeaUpdateOne {
+func (iuo *IdeaUpdateOne) RemoveTagIDs(ids ...string) *IdeaUpdateOne {
 	iuo.mutation.RemoveTagIDs(ids...)
 	return iuo
 }
 
 // RemoveTags removes "tags" edges to IdeaTag entities.
 func (iuo *IdeaUpdateOne) RemoveTags(i ...*IdeaTag) *IdeaUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -1070,7 +1111,7 @@ func (iuo *IdeaUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (iuo *IdeaUpdateOne) defaults() {
-	if _, ok := iuo.mutation.UpdatedAt(); !ok {
+	if _, ok := iuo.mutation.UpdatedAt(); !ok && !iuo.mutation.UpdatedAtCleared() {
 		v := idea.UpdateDefaultUpdatedAt()
 		iuo.mutation.SetUpdatedAt(v)
 	}
@@ -1103,9 +1144,6 @@ func (iuo *IdeaUpdateOne) check() error {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Idea.category": %w`, err)}
 		}
 	}
-	if iuo.mutation.UserCleared() && len(iuo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Idea.user"`)
-	}
 	return nil
 }
 
@@ -1113,7 +1151,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 	if err := iuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString))
 	id, ok := iuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Idea.id" for update`)}
@@ -1140,6 +1178,9 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 	}
 	if value, ok := iuo.mutation.Title(); ok {
 		_spec.SetField(idea.FieldTitle, field.TypeString, value)
+	}
+	if iuo.mutation.TitleCleared() {
+		_spec.ClearField(idea.FieldTitle, field.TypeString)
 	}
 	if value, ok := iuo.mutation.Slug(); ok {
 		_spec.SetField(idea.FieldSlug, field.TypeString, value)
@@ -1180,8 +1221,14 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 	if iuo.mutation.CategoryCleared() {
 		_spec.ClearField(idea.FieldCategory, field.TypeString)
 	}
+	if iuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(idea.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := iuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(idea.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if iuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(idea.FieldUpdatedAt, field.TypeTime)
 	}
 	if iuo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1191,7 +1238,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1204,7 +1251,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1220,7 +1267,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1233,7 +1280,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1249,7 +1296,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1265,7 +1312,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1278,7 +1325,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1294,7 +1341,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1307,7 +1354,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1323,7 +1370,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1339,7 +1386,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1352,7 +1399,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1368,7 +1415,7 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

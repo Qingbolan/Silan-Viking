@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectViewQuery is the builder for querying ProjectView entities.
@@ -131,8 +130,8 @@ func (pvq *ProjectViewQuery) FirstX(ctx context.Context) *ProjectView {
 
 // FirstID returns the first ProjectView ID from the query.
 // Returns a *NotFoundError when no ProjectView ID was found.
-func (pvq *ProjectViewQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pvq *ProjectViewQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pvq.Limit(1).IDs(setContextOp(ctx, pvq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (pvq *ProjectViewQuery) FirstID(ctx context.Context) (id uuid.UUID, err err
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pvq *ProjectViewQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (pvq *ProjectViewQuery) FirstIDX(ctx context.Context) string {
 	id, err := pvq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (pvq *ProjectViewQuery) OnlyX(ctx context.Context) *ProjectView {
 // OnlyID is like Only, but returns the only ProjectView ID in the query.
 // Returns a *NotSingularError when more than one ProjectView ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pvq *ProjectViewQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pvq *ProjectViewQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pvq.Limit(2).IDs(setContextOp(ctx, pvq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (pvq *ProjectViewQuery) OnlyID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pvq *ProjectViewQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (pvq *ProjectViewQuery) OnlyIDX(ctx context.Context) string {
 	id, err := pvq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (pvq *ProjectViewQuery) AllX(ctx context.Context) []*ProjectView {
 }
 
 // IDs executes the query and returns a list of ProjectView IDs.
-func (pvq *ProjectViewQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (pvq *ProjectViewQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if pvq.ctx.Unique == nil && pvq.path != nil {
 		pvq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (pvq *ProjectViewQuery) IDs(ctx context.Context) (ids []uuid.UUID, err erro
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pvq *ProjectViewQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (pvq *ProjectViewQuery) IDsX(ctx context.Context) []string {
 	ids, err := pvq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (pvq *ProjectViewQuery) WithUserIdentity(opts ...func(*UserIdentityQuery)) 
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (pvq *ProjectViewQuery) GroupBy(field string, fields ...string) *ProjectVie
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //	}
 //
 //	client.ProjectView.Query().
@@ -446,8 +445,8 @@ func (pvq *ProjectViewQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 }
 
 func (pvq *ProjectViewQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectView, init func(*ProjectView), assign func(*ProjectView, *Project)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ProjectView)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ProjectView)
 	for i := range nodes {
 		fk := nodes[i].ProjectID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (pvq *ProjectViewQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pvq *ProjectViewQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(projectview.Table, projectview.Columns, sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(projectview.Table, projectview.Columns, sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString))
 	_spec.From = pvq.sql
 	if unique := pvq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

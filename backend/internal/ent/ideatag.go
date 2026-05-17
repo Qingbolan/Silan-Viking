@@ -10,14 +10,13 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // IdeaTag is the model entity for the IdeaTag schema.
 type IdeaTag struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Slug holds the value of the "slug" field.
@@ -55,12 +54,10 @@ func (*IdeaTag) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ideatag.FieldName, ideatag.FieldSlug:
+		case ideatag.FieldID, ideatag.FieldName, ideatag.FieldSlug:
 			values[i] = new(sql.NullString)
 		case ideatag.FieldCreatedAt, ideatag.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case ideatag.FieldID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -77,10 +74,10 @@ func (it *IdeaTag) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case ideatag.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				it.ID = *value
+			} else if value.Valid {
+				it.ID = value.String
 			}
 		case ideatag.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {

@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EpisodeSeriesTranslationUpdate is the builder for updating EpisodeSeriesTranslation entities.
@@ -30,15 +29,15 @@ func (estu *EpisodeSeriesTranslationUpdate) Where(ps ...predicate.EpisodeSeriesT
 }
 
 // SetEpisodeSeriesID sets the "episode_series_id" field.
-func (estu *EpisodeSeriesTranslationUpdate) SetEpisodeSeriesID(u uuid.UUID) *EpisodeSeriesTranslationUpdate {
-	estu.mutation.SetEpisodeSeriesID(u)
+func (estu *EpisodeSeriesTranslationUpdate) SetEpisodeSeriesID(s string) *EpisodeSeriesTranslationUpdate {
+	estu.mutation.SetEpisodeSeriesID(s)
 	return estu
 }
 
 // SetNillableEpisodeSeriesID sets the "episode_series_id" field if the given value is not nil.
-func (estu *EpisodeSeriesTranslationUpdate) SetNillableEpisodeSeriesID(u *uuid.UUID) *EpisodeSeriesTranslationUpdate {
-	if u != nil {
-		estu.SetEpisodeSeriesID(*u)
+func (estu *EpisodeSeriesTranslationUpdate) SetNillableEpisodeSeriesID(s *string) *EpisodeSeriesTranslationUpdate {
+	if s != nil {
+		estu.SetEpisodeSeriesID(*s)
 	}
 	return estu
 }
@@ -156,7 +155,7 @@ func (estu *EpisodeSeriesTranslationUpdate) sqlSave(ctx context.Context) (n int,
 	if err := estu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(episodeseriestranslation.Table, episodeseriestranslation.Columns, sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(episodeseriestranslation.Table, episodeseriestranslation.Columns, sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeString))
 	if ps := estu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -184,7 +183,7 @@ func (estu *EpisodeSeriesTranslationUpdate) sqlSave(ctx context.Context) (n int,
 			Columns: []string{episodeseriestranslation.EpisodeSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -197,7 +196,7 @@ func (estu *EpisodeSeriesTranslationUpdate) sqlSave(ctx context.Context) (n int,
 			Columns: []string{episodeseriestranslation.EpisodeSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -226,15 +225,15 @@ type EpisodeSeriesTranslationUpdateOne struct {
 }
 
 // SetEpisodeSeriesID sets the "episode_series_id" field.
-func (estuo *EpisodeSeriesTranslationUpdateOne) SetEpisodeSeriesID(u uuid.UUID) *EpisodeSeriesTranslationUpdateOne {
-	estuo.mutation.SetEpisodeSeriesID(u)
+func (estuo *EpisodeSeriesTranslationUpdateOne) SetEpisodeSeriesID(s string) *EpisodeSeriesTranslationUpdateOne {
+	estuo.mutation.SetEpisodeSeriesID(s)
 	return estuo
 }
 
 // SetNillableEpisodeSeriesID sets the "episode_series_id" field if the given value is not nil.
-func (estuo *EpisodeSeriesTranslationUpdateOne) SetNillableEpisodeSeriesID(u *uuid.UUID) *EpisodeSeriesTranslationUpdateOne {
-	if u != nil {
-		estuo.SetEpisodeSeriesID(*u)
+func (estuo *EpisodeSeriesTranslationUpdateOne) SetNillableEpisodeSeriesID(s *string) *EpisodeSeriesTranslationUpdateOne {
+	if s != nil {
+		estuo.SetEpisodeSeriesID(*s)
 	}
 	return estuo
 }
@@ -365,7 +364,7 @@ func (estuo *EpisodeSeriesTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 	if err := estuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(episodeseriestranslation.Table, episodeseriestranslation.Columns, sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(episodeseriestranslation.Table, episodeseriestranslation.Columns, sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeString))
 	id, ok := estuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "EpisodeSeriesTranslation.id" for update`)}
@@ -410,7 +409,7 @@ func (estuo *EpisodeSeriesTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 			Columns: []string{episodeseriestranslation.EpisodeSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -423,7 +422,7 @@ func (estuo *EpisodeSeriesTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 			Columns: []string{episodeseriestranslation.EpisodeSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

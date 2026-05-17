@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // IdeaDetail is the model entity for the IdeaDetail schema.
 type IdeaDetail struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// IdeaID holds the value of the "idea_id" field.
-	IdeaID uuid.UUID `json:"idea_id,omitempty"`
+	IdeaID string `json:"idea_id,omitempty"`
 	// EstimatedDurationMonths holds the value of the "estimated_duration_months" field.
 	EstimatedDurationMonths int `json:"estimated_duration_months,omitempty"`
 	// RequiredResources holds the value of the "required_resources" field.
@@ -83,12 +82,10 @@ func (*IdeaDetail) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case ideadetail.FieldEstimatedDurationMonths:
 			values[i] = new(sql.NullInt64)
-		case ideadetail.FieldRequiredResources:
+		case ideadetail.FieldID, ideadetail.FieldIdeaID, ideadetail.FieldRequiredResources:
 			values[i] = new(sql.NullString)
 		case ideadetail.FieldCreatedAt, ideadetail.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case ideadetail.FieldID, ideadetail.FieldIdeaID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -105,16 +102,16 @@ func (id *IdeaDetail) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case ideadetail.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				id.ID = *value
+			} else if value.Valid {
+				id.ID = value.String
 			}
 		case ideadetail.FieldIdeaID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field idea_id", values[i])
-			} else if value != nil {
-				id.IdeaID = *value
+			} else if value.Valid {
+				id.IdeaID = value.String
 			}
 		case ideadetail.FieldEstimatedDurationMonths:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -205,7 +202,7 @@ func (id *IdeaDetail) String() string {
 	builder.WriteString("IdeaDetail(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", id.ID))
 	builder.WriteString("idea_id=")
-	builder.WriteString(fmt.Sprintf("%v", id.IdeaID))
+	builder.WriteString(id.IdeaID)
 	builder.WriteString(", ")
 	builder.WriteString("estimated_duration_months=")
 	builder.WriteString(fmt.Sprintf("%v", id.EstimatedDurationMonths))

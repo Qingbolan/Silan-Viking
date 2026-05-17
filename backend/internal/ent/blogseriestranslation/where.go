@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.BlogSeriesTranslation {
+func ID(id string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.BlogSeriesTranslation {
+func IDEQ(id string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.BlogSeriesTranslation {
+func IDNEQ(id string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.BlogSeriesTranslation {
+func IDIn(ids ...string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.BlogSeriesTranslation {
+func IDNotIn(ids ...string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.BlogSeriesTranslation {
+func IDGT(id string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.BlogSeriesTranslation {
+func IDGTE(id string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.BlogSeriesTranslation {
+func IDLT(id string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.BlogSeriesTranslation {
+func IDLTE(id string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // BlogSeriesID applies equality check predicate on the "blog_series_id" field. It's identical to BlogSeriesIDEQ.
-func BlogSeriesID(v uuid.UUID) predicate.BlogSeriesTranslation {
+func BlogSeriesID(v string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldEQ(FieldBlogSeriesID, v))
 }
 
@@ -82,23 +91,68 @@ func CreatedAt(v time.Time) predicate.BlogSeriesTranslation {
 }
 
 // BlogSeriesIDEQ applies the EQ predicate on the "blog_series_id" field.
-func BlogSeriesIDEQ(v uuid.UUID) predicate.BlogSeriesTranslation {
+func BlogSeriesIDEQ(v string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldEQ(FieldBlogSeriesID, v))
 }
 
 // BlogSeriesIDNEQ applies the NEQ predicate on the "blog_series_id" field.
-func BlogSeriesIDNEQ(v uuid.UUID) predicate.BlogSeriesTranslation {
+func BlogSeriesIDNEQ(v string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldNEQ(FieldBlogSeriesID, v))
 }
 
 // BlogSeriesIDIn applies the In predicate on the "blog_series_id" field.
-func BlogSeriesIDIn(vs ...uuid.UUID) predicate.BlogSeriesTranslation {
+func BlogSeriesIDIn(vs ...string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldIn(FieldBlogSeriesID, vs...))
 }
 
 // BlogSeriesIDNotIn applies the NotIn predicate on the "blog_series_id" field.
-func BlogSeriesIDNotIn(vs ...uuid.UUID) predicate.BlogSeriesTranslation {
+func BlogSeriesIDNotIn(vs ...string) predicate.BlogSeriesTranslation {
 	return predicate.BlogSeriesTranslation(sql.FieldNotIn(FieldBlogSeriesID, vs...))
+}
+
+// BlogSeriesIDGT applies the GT predicate on the "blog_series_id" field.
+func BlogSeriesIDGT(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldGT(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDGTE applies the GTE predicate on the "blog_series_id" field.
+func BlogSeriesIDGTE(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldGTE(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDLT applies the LT predicate on the "blog_series_id" field.
+func BlogSeriesIDLT(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldLT(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDLTE applies the LTE predicate on the "blog_series_id" field.
+func BlogSeriesIDLTE(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldLTE(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDContains applies the Contains predicate on the "blog_series_id" field.
+func BlogSeriesIDContains(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldContains(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDHasPrefix applies the HasPrefix predicate on the "blog_series_id" field.
+func BlogSeriesIDHasPrefix(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldHasPrefix(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDHasSuffix applies the HasSuffix predicate on the "blog_series_id" field.
+func BlogSeriesIDHasSuffix(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldHasSuffix(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDEqualFold applies the EqualFold predicate on the "blog_series_id" field.
+func BlogSeriesIDEqualFold(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldEqualFold(FieldBlogSeriesID, v))
+}
+
+// BlogSeriesIDContainsFold applies the ContainsFold predicate on the "blog_series_id" field.
+func BlogSeriesIDContainsFold(v string) predicate.BlogSeriesTranslation {
+	return predicate.BlogSeriesTranslation(sql.FieldContainsFold(FieldBlogSeriesID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

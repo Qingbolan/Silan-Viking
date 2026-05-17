@@ -7,61 +7,70 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.ContentRelation {
+func ID(id string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.ContentRelation {
+func IDEQ(id string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.ContentRelation {
+func IDNEQ(id string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.ContentRelation {
+func IDIn(ids ...string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.ContentRelation {
+func IDNotIn(ids ...string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.ContentRelation {
+func IDGT(id string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.ContentRelation {
+func IDGTE(id string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.ContentRelation {
+func IDLT(id string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.ContentRelation {
+func IDLTE(id string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldContainsFold(FieldID, id))
+}
+
 // FromID applies equality check predicate on the "from_id" field. It's identical to FromIDEQ.
-func FromID(v uuid.UUID) predicate.ContentRelation {
+func FromID(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldEQ(FieldFromID, v))
 }
 
 // ToID applies equality check predicate on the "to_id" field. It's identical to ToIDEQ.
-func ToID(v uuid.UUID) predicate.ContentRelation {
+func ToID(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldEQ(FieldToID, v))
 }
 
@@ -96,43 +105,68 @@ func FromTypeNotIn(vs ...FromType) predicate.ContentRelation {
 }
 
 // FromIDEQ applies the EQ predicate on the "from_id" field.
-func FromIDEQ(v uuid.UUID) predicate.ContentRelation {
+func FromIDEQ(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldEQ(FieldFromID, v))
 }
 
 // FromIDNEQ applies the NEQ predicate on the "from_id" field.
-func FromIDNEQ(v uuid.UUID) predicate.ContentRelation {
+func FromIDNEQ(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldNEQ(FieldFromID, v))
 }
 
 // FromIDIn applies the In predicate on the "from_id" field.
-func FromIDIn(vs ...uuid.UUID) predicate.ContentRelation {
+func FromIDIn(vs ...string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldIn(FieldFromID, vs...))
 }
 
 // FromIDNotIn applies the NotIn predicate on the "from_id" field.
-func FromIDNotIn(vs ...uuid.UUID) predicate.ContentRelation {
+func FromIDNotIn(vs ...string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldNotIn(FieldFromID, vs...))
 }
 
 // FromIDGT applies the GT predicate on the "from_id" field.
-func FromIDGT(v uuid.UUID) predicate.ContentRelation {
+func FromIDGT(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldGT(FieldFromID, v))
 }
 
 // FromIDGTE applies the GTE predicate on the "from_id" field.
-func FromIDGTE(v uuid.UUID) predicate.ContentRelation {
+func FromIDGTE(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldGTE(FieldFromID, v))
 }
 
 // FromIDLT applies the LT predicate on the "from_id" field.
-func FromIDLT(v uuid.UUID) predicate.ContentRelation {
+func FromIDLT(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLT(FieldFromID, v))
 }
 
 // FromIDLTE applies the LTE predicate on the "from_id" field.
-func FromIDLTE(v uuid.UUID) predicate.ContentRelation {
+func FromIDLTE(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLTE(FieldFromID, v))
+}
+
+// FromIDContains applies the Contains predicate on the "from_id" field.
+func FromIDContains(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldContains(FieldFromID, v))
+}
+
+// FromIDHasPrefix applies the HasPrefix predicate on the "from_id" field.
+func FromIDHasPrefix(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldHasPrefix(FieldFromID, v))
+}
+
+// FromIDHasSuffix applies the HasSuffix predicate on the "from_id" field.
+func FromIDHasSuffix(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldHasSuffix(FieldFromID, v))
+}
+
+// FromIDEqualFold applies the EqualFold predicate on the "from_id" field.
+func FromIDEqualFold(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldEqualFold(FieldFromID, v))
+}
+
+// FromIDContainsFold applies the ContainsFold predicate on the "from_id" field.
+func FromIDContainsFold(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldContainsFold(FieldFromID, v))
 }
 
 // ToTypeEQ applies the EQ predicate on the "to_type" field.
@@ -156,43 +190,68 @@ func ToTypeNotIn(vs ...ToType) predicate.ContentRelation {
 }
 
 // ToIDEQ applies the EQ predicate on the "to_id" field.
-func ToIDEQ(v uuid.UUID) predicate.ContentRelation {
+func ToIDEQ(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldEQ(FieldToID, v))
 }
 
 // ToIDNEQ applies the NEQ predicate on the "to_id" field.
-func ToIDNEQ(v uuid.UUID) predicate.ContentRelation {
+func ToIDNEQ(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldNEQ(FieldToID, v))
 }
 
 // ToIDIn applies the In predicate on the "to_id" field.
-func ToIDIn(vs ...uuid.UUID) predicate.ContentRelation {
+func ToIDIn(vs ...string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldIn(FieldToID, vs...))
 }
 
 // ToIDNotIn applies the NotIn predicate on the "to_id" field.
-func ToIDNotIn(vs ...uuid.UUID) predicate.ContentRelation {
+func ToIDNotIn(vs ...string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldNotIn(FieldToID, vs...))
 }
 
 // ToIDGT applies the GT predicate on the "to_id" field.
-func ToIDGT(v uuid.UUID) predicate.ContentRelation {
+func ToIDGT(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldGT(FieldToID, v))
 }
 
 // ToIDGTE applies the GTE predicate on the "to_id" field.
-func ToIDGTE(v uuid.UUID) predicate.ContentRelation {
+func ToIDGTE(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldGTE(FieldToID, v))
 }
 
 // ToIDLT applies the LT predicate on the "to_id" field.
-func ToIDLT(v uuid.UUID) predicate.ContentRelation {
+func ToIDLT(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLT(FieldToID, v))
 }
 
 // ToIDLTE applies the LTE predicate on the "to_id" field.
-func ToIDLTE(v uuid.UUID) predicate.ContentRelation {
+func ToIDLTE(v string) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLTE(FieldToID, v))
+}
+
+// ToIDContains applies the Contains predicate on the "to_id" field.
+func ToIDContains(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldContains(FieldToID, v))
+}
+
+// ToIDHasPrefix applies the HasPrefix predicate on the "to_id" field.
+func ToIDHasPrefix(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldHasPrefix(FieldToID, v))
+}
+
+// ToIDHasSuffix applies the HasSuffix predicate on the "to_id" field.
+func ToIDHasSuffix(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldHasSuffix(FieldToID, v))
+}
+
+// ToIDEqualFold applies the EqualFold predicate on the "to_id" field.
+func ToIDEqualFold(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldEqualFold(FieldToID, v))
+}
+
+// ToIDContainsFold applies the ContainsFold predicate on the "to_id" field.
+func ToIDContainsFold(v string) predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldContainsFold(FieldToID, v))
 }
 
 // RelationTypeEQ applies the EQ predicate on the "relation_type" field.

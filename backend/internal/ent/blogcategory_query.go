@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogCategoryQuery is the builder for querying BlogCategory entities.
@@ -132,8 +131,8 @@ func (bcq *BlogCategoryQuery) FirstX(ctx context.Context) *BlogCategory {
 
 // FirstID returns the first BlogCategory ID from the query.
 // Returns a *NotFoundError when no BlogCategory ID was found.
-func (bcq *BlogCategoryQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bcq *BlogCategoryQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bcq.Limit(1).IDs(setContextOp(ctx, bcq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (bcq *BlogCategoryQuery) FirstID(ctx context.Context) (id uuid.UUID, err er
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bcq *BlogCategoryQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (bcq *BlogCategoryQuery) FirstIDX(ctx context.Context) string {
 	id, err := bcq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (bcq *BlogCategoryQuery) OnlyX(ctx context.Context) *BlogCategory {
 // OnlyID is like Only, but returns the only BlogCategory ID in the query.
 // Returns a *NotSingularError when more than one BlogCategory ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bcq *BlogCategoryQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bcq *BlogCategoryQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bcq.Limit(2).IDs(setContextOp(ctx, bcq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (bcq *BlogCategoryQuery) OnlyID(ctx context.Context) (id uuid.UUID, err err
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bcq *BlogCategoryQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (bcq *BlogCategoryQuery) OnlyIDX(ctx context.Context) string {
 	id, err := bcq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (bcq *BlogCategoryQuery) AllX(ctx context.Context) []*BlogCategory {
 }
 
 // IDs executes the query and returns a list of BlogCategory IDs.
-func (bcq *BlogCategoryQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (bcq *BlogCategoryQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if bcq.ctx.Unique == nil && bcq.path != nil {
 		bcq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (bcq *BlogCategoryQuery) IDs(ctx context.Context) (ids []uuid.UUID, err err
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bcq *BlogCategoryQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (bcq *BlogCategoryQuery) IDsX(ctx context.Context) []string {
 	ids, err := bcq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -452,7 +451,7 @@ func (bcq *BlogCategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 
 func (bcq *BlogCategoryQuery) loadTranslations(ctx context.Context, query *BlogCategoryTranslationQuery, nodes []*BlogCategory, init func(*BlogCategory), assign func(*BlogCategory, *BlogCategoryTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogCategory)
+	nodeids := make(map[string]*BlogCategory)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -482,7 +481,7 @@ func (bcq *BlogCategoryQuery) loadTranslations(ctx context.Context, query *BlogC
 }
 func (bcq *BlogCategoryQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery, nodes []*BlogCategory, init func(*BlogCategory), assign func(*BlogCategory, *BlogPost)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogCategory)
+	nodeids := make(map[string]*BlogCategory)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -521,7 +520,7 @@ func (bcq *BlogCategoryQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (bcq *BlogCategoryQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(blogcategory.Table, blogcategory.Columns, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(blogcategory.Table, blogcategory.Columns, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString))
 	_spec.From = bcq.sql
 	if unique := bcq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

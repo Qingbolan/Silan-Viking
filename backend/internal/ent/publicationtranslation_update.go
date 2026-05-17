@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationTranslationUpdate is the builder for updating PublicationTranslation entities.
@@ -31,15 +30,15 @@ func (ptu *PublicationTranslationUpdate) Where(ps ...predicate.PublicationTransl
 }
 
 // SetPublicationID sets the "publication_id" field.
-func (ptu *PublicationTranslationUpdate) SetPublicationID(u uuid.UUID) *PublicationTranslationUpdate {
-	ptu.mutation.SetPublicationID(u)
+func (ptu *PublicationTranslationUpdate) SetPublicationID(s string) *PublicationTranslationUpdate {
+	ptu.mutation.SetPublicationID(s)
 	return ptu
 }
 
 // SetNillablePublicationID sets the "publication_id" field if the given value is not nil.
-func (ptu *PublicationTranslationUpdate) SetNillablePublicationID(u *uuid.UUID) *PublicationTranslationUpdate {
-	if u != nil {
-		ptu.SetPublicationID(*u)
+func (ptu *PublicationTranslationUpdate) SetNillablePublicationID(s *string) *PublicationTranslationUpdate {
+	if s != nil {
+		ptu.SetPublicationID(*s)
 	}
 	return ptu
 }
@@ -207,7 +206,7 @@ func (ptu *PublicationTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 	if err := ptu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(publicationtranslation.Table, publicationtranslation.Columns, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(publicationtranslation.Table, publicationtranslation.Columns, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString))
 	if ps := ptu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -238,7 +237,7 @@ func (ptu *PublicationTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{publicationtranslation.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -251,7 +250,7 @@ func (ptu *PublicationTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 			Columns: []string{publicationtranslation.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -309,15 +308,15 @@ type PublicationTranslationUpdateOne struct {
 }
 
 // SetPublicationID sets the "publication_id" field.
-func (ptuo *PublicationTranslationUpdateOne) SetPublicationID(u uuid.UUID) *PublicationTranslationUpdateOne {
-	ptuo.mutation.SetPublicationID(u)
+func (ptuo *PublicationTranslationUpdateOne) SetPublicationID(s string) *PublicationTranslationUpdateOne {
+	ptuo.mutation.SetPublicationID(s)
 	return ptuo
 }
 
 // SetNillablePublicationID sets the "publication_id" field if the given value is not nil.
-func (ptuo *PublicationTranslationUpdateOne) SetNillablePublicationID(u *uuid.UUID) *PublicationTranslationUpdateOne {
-	if u != nil {
-		ptuo.SetPublicationID(*u)
+func (ptuo *PublicationTranslationUpdateOne) SetNillablePublicationID(s *string) *PublicationTranslationUpdateOne {
+	if s != nil {
+		ptuo.SetPublicationID(*s)
 	}
 	return ptuo
 }
@@ -498,7 +497,7 @@ func (ptuo *PublicationTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 	if err := ptuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(publicationtranslation.Table, publicationtranslation.Columns, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(publicationtranslation.Table, publicationtranslation.Columns, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString))
 	id, ok := ptuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PublicationTranslation.id" for update`)}
@@ -546,7 +545,7 @@ func (ptuo *PublicationTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{publicationtranslation.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -559,7 +558,7 @@ func (ptuo *PublicationTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 			Columns: []string{publicationtranslation.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

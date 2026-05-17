@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // PublicationTranslation is the model entity for the PublicationTranslation schema.
 type PublicationTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// PublicationID holds the value of the "publication_id" field.
-	PublicationID uuid.UUID `json:"publication_id,omitempty"`
+	PublicationID string `json:"publication_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Title holds the value of the "title" field.
@@ -76,12 +75,10 @@ func (*PublicationTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case publicationtranslation.FieldLanguageCode, publicationtranslation.FieldTitle, publicationtranslation.FieldJournalName, publicationtranslation.FieldConferenceName:
+		case publicationtranslation.FieldID, publicationtranslation.FieldPublicationID, publicationtranslation.FieldLanguageCode, publicationtranslation.FieldTitle, publicationtranslation.FieldJournalName, publicationtranslation.FieldConferenceName:
 			values[i] = new(sql.NullString)
 		case publicationtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case publicationtranslation.FieldID, publicationtranslation.FieldPublicationID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -98,16 +95,16 @@ func (pt *PublicationTranslation) assignValues(columns []string, values []any) e
 	for i := range columns {
 		switch columns[i] {
 		case publicationtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pt.ID = *value
+			} else if value.Valid {
+				pt.ID = value.String
 			}
 		case publicationtranslation.FieldPublicationID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field publication_id", values[i])
-			} else if value != nil {
-				pt.PublicationID = *value
+			} else if value.Valid {
+				pt.PublicationID = value.String
 			}
 		case publicationtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -186,7 +183,7 @@ func (pt *PublicationTranslation) String() string {
 	builder.WriteString("PublicationTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pt.ID))
 	builder.WriteString("publication_id=")
-	builder.WriteString(fmt.Sprintf("%v", pt.PublicationID))
+	builder.WriteString(pt.PublicationID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(pt.LanguageCode)

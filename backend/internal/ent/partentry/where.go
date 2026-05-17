@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.PartEntry {
+func ID(id string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.PartEntry {
+func IDEQ(id string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.PartEntry {
+func IDNEQ(id string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.PartEntry {
+func IDIn(ids ...string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.PartEntry {
+func IDNotIn(ids ...string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.PartEntry {
+func IDGT(id string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.PartEntry {
+func IDGTE(id string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.PartEntry {
+func IDLT(id string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.PartEntry {
+func IDLTE(id string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldContainsFold(FieldID, id))
+}
+
 // ItemPartID applies equality check predicate on the "item_part_id" field. It's identical to ItemPartIDEQ.
-func ItemPartID(v uuid.UUID) predicate.PartEntry {
+func ItemPartID(v string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldEQ(FieldItemPartID, v))
 }
 
@@ -77,23 +86,68 @@ func CreatedAt(v time.Time) predicate.PartEntry {
 }
 
 // ItemPartIDEQ applies the EQ predicate on the "item_part_id" field.
-func ItemPartIDEQ(v uuid.UUID) predicate.PartEntry {
+func ItemPartIDEQ(v string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldEQ(FieldItemPartID, v))
 }
 
 // ItemPartIDNEQ applies the NEQ predicate on the "item_part_id" field.
-func ItemPartIDNEQ(v uuid.UUID) predicate.PartEntry {
+func ItemPartIDNEQ(v string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldNEQ(FieldItemPartID, v))
 }
 
 // ItemPartIDIn applies the In predicate on the "item_part_id" field.
-func ItemPartIDIn(vs ...uuid.UUID) predicate.PartEntry {
+func ItemPartIDIn(vs ...string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldIn(FieldItemPartID, vs...))
 }
 
 // ItemPartIDNotIn applies the NotIn predicate on the "item_part_id" field.
-func ItemPartIDNotIn(vs ...uuid.UUID) predicate.PartEntry {
+func ItemPartIDNotIn(vs ...string) predicate.PartEntry {
 	return predicate.PartEntry(sql.FieldNotIn(FieldItemPartID, vs...))
+}
+
+// ItemPartIDGT applies the GT predicate on the "item_part_id" field.
+func ItemPartIDGT(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldGT(FieldItemPartID, v))
+}
+
+// ItemPartIDGTE applies the GTE predicate on the "item_part_id" field.
+func ItemPartIDGTE(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldGTE(FieldItemPartID, v))
+}
+
+// ItemPartIDLT applies the LT predicate on the "item_part_id" field.
+func ItemPartIDLT(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldLT(FieldItemPartID, v))
+}
+
+// ItemPartIDLTE applies the LTE predicate on the "item_part_id" field.
+func ItemPartIDLTE(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldLTE(FieldItemPartID, v))
+}
+
+// ItemPartIDContains applies the Contains predicate on the "item_part_id" field.
+func ItemPartIDContains(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldContains(FieldItemPartID, v))
+}
+
+// ItemPartIDHasPrefix applies the HasPrefix predicate on the "item_part_id" field.
+func ItemPartIDHasPrefix(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldHasPrefix(FieldItemPartID, v))
+}
+
+// ItemPartIDHasSuffix applies the HasSuffix predicate on the "item_part_id" field.
+func ItemPartIDHasSuffix(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldHasSuffix(FieldItemPartID, v))
+}
+
+// ItemPartIDEqualFold applies the EqualFold predicate on the "item_part_id" field.
+func ItemPartIDEqualFold(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldEqualFold(FieldItemPartID, v))
+}
+
+// ItemPartIDContainsFold applies the ContainsFold predicate on the "item_part_id" field.
+func ItemPartIDContainsFold(v string) predicate.PartEntry {
+	return predicate.PartEntry(sql.FieldContainsFold(FieldItemPartID, v))
 }
 
 // EntryIDEQ applies the EQ predicate on the "entry_id" field.

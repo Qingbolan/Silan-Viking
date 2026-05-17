@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectTranslationUpdate is the builder for updating ProjectTranslation entities.
@@ -31,15 +30,15 @@ func (ptu *ProjectTranslationUpdate) Where(ps ...predicate.ProjectTranslation) *
 }
 
 // SetProjectID sets the "project_id" field.
-func (ptu *ProjectTranslationUpdate) SetProjectID(u uuid.UUID) *ProjectTranslationUpdate {
-	ptu.mutation.SetProjectID(u)
+func (ptu *ProjectTranslationUpdate) SetProjectID(s string) *ProjectTranslationUpdate {
+	ptu.mutation.SetProjectID(s)
 	return ptu
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (ptu *ProjectTranslationUpdate) SetNillableProjectID(u *uuid.UUID) *ProjectTranslationUpdate {
-	if u != nil {
-		ptu.SetProjectID(*u)
+func (ptu *ProjectTranslationUpdate) SetNillableProjectID(s *string) *ProjectTranslationUpdate {
+	if s != nil {
+		ptu.SetProjectID(*s)
 	}
 	return ptu
 }
@@ -202,7 +201,7 @@ func (ptu *ProjectTranslationUpdate) sqlSave(ctx context.Context) (n int, err er
 	if err := ptu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projecttranslation.Table, projecttranslation.Columns, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projecttranslation.Table, projecttranslation.Columns, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString))
 	if ps := ptu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -233,7 +232,7 @@ func (ptu *ProjectTranslationUpdate) sqlSave(ctx context.Context) (n int, err er
 			Columns: []string{projecttranslation.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -246,7 +245,7 @@ func (ptu *ProjectTranslationUpdate) sqlSave(ctx context.Context) (n int, err er
 			Columns: []string{projecttranslation.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -304,15 +303,15 @@ type ProjectTranslationUpdateOne struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (ptuo *ProjectTranslationUpdateOne) SetProjectID(u uuid.UUID) *ProjectTranslationUpdateOne {
-	ptuo.mutation.SetProjectID(u)
+func (ptuo *ProjectTranslationUpdateOne) SetProjectID(s string) *ProjectTranslationUpdateOne {
+	ptuo.mutation.SetProjectID(s)
 	return ptuo
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (ptuo *ProjectTranslationUpdateOne) SetNillableProjectID(u *uuid.UUID) *ProjectTranslationUpdateOne {
-	if u != nil {
-		ptuo.SetProjectID(*u)
+func (ptuo *ProjectTranslationUpdateOne) SetNillableProjectID(s *string) *ProjectTranslationUpdateOne {
+	if s != nil {
+		ptuo.SetProjectID(*s)
 	}
 	return ptuo
 }
@@ -488,7 +487,7 @@ func (ptuo *ProjectTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Pr
 	if err := ptuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projecttranslation.Table, projecttranslation.Columns, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projecttranslation.Table, projecttranslation.Columns, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString))
 	id, ok := ptuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectTranslation.id" for update`)}
@@ -536,7 +535,7 @@ func (ptuo *ProjectTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Pr
 			Columns: []string{projecttranslation.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -549,7 +548,7 @@ func (ptuo *ProjectTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Pr
 			Columns: []string{projecttranslation.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

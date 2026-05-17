@@ -17,7 +17,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // WorkExperienceQuery is the builder for querying WorkExperience entities.
@@ -156,8 +155,8 @@ func (weq *WorkExperienceQuery) FirstX(ctx context.Context) *WorkExperience {
 
 // FirstID returns the first WorkExperience ID from the query.
 // Returns a *NotFoundError when no WorkExperience ID was found.
-func (weq *WorkExperienceQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (weq *WorkExperienceQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = weq.Limit(1).IDs(setContextOp(ctx, weq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -169,7 +168,7 @@ func (weq *WorkExperienceQuery) FirstID(ctx context.Context) (id uuid.UUID, err 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (weq *WorkExperienceQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (weq *WorkExperienceQuery) FirstIDX(ctx context.Context) string {
 	id, err := weq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -207,8 +206,8 @@ func (weq *WorkExperienceQuery) OnlyX(ctx context.Context) *WorkExperience {
 // OnlyID is like Only, but returns the only WorkExperience ID in the query.
 // Returns a *NotSingularError when more than one WorkExperience ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (weq *WorkExperienceQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (weq *WorkExperienceQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = weq.Limit(2).IDs(setContextOp(ctx, weq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -224,7 +223,7 @@ func (weq *WorkExperienceQuery) OnlyID(ctx context.Context) (id uuid.UUID, err e
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (weq *WorkExperienceQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (weq *WorkExperienceQuery) OnlyIDX(ctx context.Context) string {
 	id, err := weq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -252,7 +251,7 @@ func (weq *WorkExperienceQuery) AllX(ctx context.Context) []*WorkExperience {
 }
 
 // IDs executes the query and returns a list of WorkExperience IDs.
-func (weq *WorkExperienceQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (weq *WorkExperienceQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if weq.ctx.Unique == nil && weq.path != nil {
 		weq.Unique(true)
 	}
@@ -264,7 +263,7 @@ func (weq *WorkExperienceQuery) IDs(ctx context.Context) (ids []uuid.UUID, err e
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (weq *WorkExperienceQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (weq *WorkExperienceQuery) IDsX(ctx context.Context) []string {
 	ids, err := weq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -372,7 +371,7 @@ func (weq *WorkExperienceQuery) WithDetails(opts ...func(*WorkExperienceDetailQu
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -395,7 +394,7 @@ func (weq *WorkExperienceQuery) GroupBy(field string, fields ...string) *WorkExp
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.WorkExperience.Query().
@@ -494,8 +493,8 @@ func (weq *WorkExperienceQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 }
 
 func (weq *WorkExperienceQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*WorkExperience, init func(*WorkExperience), assign func(*WorkExperience, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*WorkExperience)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*WorkExperience)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -524,7 +523,7 @@ func (weq *WorkExperienceQuery) loadUser(ctx context.Context, query *UserQuery, 
 }
 func (weq *WorkExperienceQuery) loadTranslations(ctx context.Context, query *WorkExperienceTranslationQuery, nodes []*WorkExperience, init func(*WorkExperience), assign func(*WorkExperience, *WorkExperienceTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*WorkExperience)
+	nodeids := make(map[string]*WorkExperience)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -554,7 +553,7 @@ func (weq *WorkExperienceQuery) loadTranslations(ctx context.Context, query *Wor
 }
 func (weq *WorkExperienceQuery) loadDetails(ctx context.Context, query *WorkExperienceDetailQuery, nodes []*WorkExperience, init func(*WorkExperience), assign func(*WorkExperience, *WorkExperienceDetail)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*WorkExperience)
+	nodeids := make(map[string]*WorkExperience)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -593,7 +592,7 @@ func (weq *WorkExperienceQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (weq *WorkExperienceQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(workexperience.Table, workexperience.Columns, sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(workexperience.Table, workexperience.Columns, sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString))
 	_spec.From = weq.sql
 	if unique := weq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

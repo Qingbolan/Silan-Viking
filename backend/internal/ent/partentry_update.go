@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PartEntryUpdate is the builder for updating PartEntry entities.
@@ -31,15 +30,15 @@ func (peu *PartEntryUpdate) Where(ps ...predicate.PartEntry) *PartEntryUpdate {
 }
 
 // SetItemPartID sets the "item_part_id" field.
-func (peu *PartEntryUpdate) SetItemPartID(u uuid.UUID) *PartEntryUpdate {
-	peu.mutation.SetItemPartID(u)
+func (peu *PartEntryUpdate) SetItemPartID(s string) *PartEntryUpdate {
+	peu.mutation.SetItemPartID(s)
 	return peu
 }
 
 // SetNillableItemPartID sets the "item_part_id" field if the given value is not nil.
-func (peu *PartEntryUpdate) SetNillableItemPartID(u *uuid.UUID) *PartEntryUpdate {
-	if u != nil {
-		peu.SetItemPartID(*u)
+func (peu *PartEntryUpdate) SetNillableItemPartID(s *string) *PartEntryUpdate {
+	if s != nil {
+		peu.SetItemPartID(*s)
 	}
 	return peu
 }
@@ -91,14 +90,14 @@ func (peu *PartEntryUpdate) SetItemPart(i *ItemPart) *PartEntryUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the PartEntryTranslation entity by IDs.
-func (peu *PartEntryUpdate) AddTranslationIDs(ids ...uuid.UUID) *PartEntryUpdate {
+func (peu *PartEntryUpdate) AddTranslationIDs(ids ...string) *PartEntryUpdate {
 	peu.mutation.AddTranslationIDs(ids...)
 	return peu
 }
 
 // AddTranslations adds the "translations" edges to the PartEntryTranslation entity.
 func (peu *PartEntryUpdate) AddTranslations(p ...*PartEntryTranslation) *PartEntryUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -123,14 +122,14 @@ func (peu *PartEntryUpdate) ClearTranslations() *PartEntryUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to PartEntryTranslation entities by IDs.
-func (peu *PartEntryUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *PartEntryUpdate {
+func (peu *PartEntryUpdate) RemoveTranslationIDs(ids ...string) *PartEntryUpdate {
 	peu.mutation.RemoveTranslationIDs(ids...)
 	return peu
 }
 
 // RemoveTranslations removes "translations" edges to PartEntryTranslation entities.
 func (peu *PartEntryUpdate) RemoveTranslations(p ...*PartEntryTranslation) *PartEntryUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -176,7 +175,7 @@ func (peu *PartEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := peu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(partentry.Table, partentry.Columns, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(partentry.Table, partentry.Columns, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString))
 	if ps := peu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -204,7 +203,7 @@ func (peu *PartEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{partentry.ItemPartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -217,7 +216,7 @@ func (peu *PartEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{partentry.ItemPartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -233,7 +232,7 @@ func (peu *PartEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{partentry.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -246,7 +245,7 @@ func (peu *PartEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{partentry.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -262,7 +261,7 @@ func (peu *PartEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{partentry.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -291,15 +290,15 @@ type PartEntryUpdateOne struct {
 }
 
 // SetItemPartID sets the "item_part_id" field.
-func (peuo *PartEntryUpdateOne) SetItemPartID(u uuid.UUID) *PartEntryUpdateOne {
-	peuo.mutation.SetItemPartID(u)
+func (peuo *PartEntryUpdateOne) SetItemPartID(s string) *PartEntryUpdateOne {
+	peuo.mutation.SetItemPartID(s)
 	return peuo
 }
 
 // SetNillableItemPartID sets the "item_part_id" field if the given value is not nil.
-func (peuo *PartEntryUpdateOne) SetNillableItemPartID(u *uuid.UUID) *PartEntryUpdateOne {
-	if u != nil {
-		peuo.SetItemPartID(*u)
+func (peuo *PartEntryUpdateOne) SetNillableItemPartID(s *string) *PartEntryUpdateOne {
+	if s != nil {
+		peuo.SetItemPartID(*s)
 	}
 	return peuo
 }
@@ -351,14 +350,14 @@ func (peuo *PartEntryUpdateOne) SetItemPart(i *ItemPart) *PartEntryUpdateOne {
 }
 
 // AddTranslationIDs adds the "translations" edge to the PartEntryTranslation entity by IDs.
-func (peuo *PartEntryUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *PartEntryUpdateOne {
+func (peuo *PartEntryUpdateOne) AddTranslationIDs(ids ...string) *PartEntryUpdateOne {
 	peuo.mutation.AddTranslationIDs(ids...)
 	return peuo
 }
 
 // AddTranslations adds the "translations" edges to the PartEntryTranslation entity.
 func (peuo *PartEntryUpdateOne) AddTranslations(p ...*PartEntryTranslation) *PartEntryUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -383,14 +382,14 @@ func (peuo *PartEntryUpdateOne) ClearTranslations() *PartEntryUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to PartEntryTranslation entities by IDs.
-func (peuo *PartEntryUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *PartEntryUpdateOne {
+func (peuo *PartEntryUpdateOne) RemoveTranslationIDs(ids ...string) *PartEntryUpdateOne {
 	peuo.mutation.RemoveTranslationIDs(ids...)
 	return peuo
 }
 
 // RemoveTranslations removes "translations" edges to PartEntryTranslation entities.
 func (peuo *PartEntryUpdateOne) RemoveTranslations(p ...*PartEntryTranslation) *PartEntryUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -449,7 +448,7 @@ func (peuo *PartEntryUpdateOne) sqlSave(ctx context.Context) (_node *PartEntry, 
 	if err := peuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(partentry.Table, partentry.Columns, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(partentry.Table, partentry.Columns, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString))
 	id, ok := peuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PartEntry.id" for update`)}
@@ -494,7 +493,7 @@ func (peuo *PartEntryUpdateOne) sqlSave(ctx context.Context) (_node *PartEntry, 
 			Columns: []string{partentry.ItemPartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -507,7 +506,7 @@ func (peuo *PartEntryUpdateOne) sqlSave(ctx context.Context) (_node *PartEntry, 
 			Columns: []string{partentry.ItemPartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -523,7 +522,7 @@ func (peuo *PartEntryUpdateOne) sqlSave(ctx context.Context) (_node *PartEntry, 
 			Columns: []string{partentry.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -536,7 +535,7 @@ func (peuo *PartEntryUpdateOne) sqlSave(ctx context.Context) (_node *PartEntry, 
 			Columns: []string{partentry.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -552,7 +551,7 @@ func (peuo *PartEntryUpdateOne) sqlSave(ctx context.Context) (_node *PartEntry, 
 			Columns: []string{partentry.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

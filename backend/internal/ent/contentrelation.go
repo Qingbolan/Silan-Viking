@@ -10,22 +10,21 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ContentRelation is the model entity for the ContentRelation schema.
 type ContentRelation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// FromType holds the value of the "from_type" field.
 	FromType contentrelation.FromType `json:"from_type,omitempty"`
 	// FromID holds the value of the "from_id" field.
-	FromID uuid.UUID `json:"from_id,omitempty"`
+	FromID string `json:"from_id,omitempty"`
 	// ToType holds the value of the "to_type" field.
 	ToType contentrelation.ToType `json:"to_type,omitempty"`
 	// ToID holds the value of the "to_id" field.
-	ToID uuid.UUID `json:"to_id,omitempty"`
+	ToID string `json:"to_id,omitempty"`
 	// RelationType holds the value of the "relation_type" field.
 	RelationType contentrelation.RelationType `json:"relation_type,omitempty"`
 	// SortOrder holds the value of the "sort_order" field.
@@ -42,12 +41,10 @@ func (*ContentRelation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case contentrelation.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case contentrelation.FieldFromType, contentrelation.FieldToType, contentrelation.FieldRelationType:
+		case contentrelation.FieldID, contentrelation.FieldFromType, contentrelation.FieldFromID, contentrelation.FieldToType, contentrelation.FieldToID, contentrelation.FieldRelationType:
 			values[i] = new(sql.NullString)
 		case contentrelation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case contentrelation.FieldID, contentrelation.FieldFromID, contentrelation.FieldToID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -64,10 +61,10 @@ func (cr *ContentRelation) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case contentrelation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				cr.ID = *value
+			} else if value.Valid {
+				cr.ID = value.String
 			}
 		case contentrelation.FieldFromType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -76,10 +73,10 @@ func (cr *ContentRelation) assignValues(columns []string, values []any) error {
 				cr.FromType = contentrelation.FromType(value.String)
 			}
 		case contentrelation.FieldFromID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field from_id", values[i])
-			} else if value != nil {
-				cr.FromID = *value
+			} else if value.Valid {
+				cr.FromID = value.String
 			}
 		case contentrelation.FieldToType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -88,10 +85,10 @@ func (cr *ContentRelation) assignValues(columns []string, values []any) error {
 				cr.ToType = contentrelation.ToType(value.String)
 			}
 		case contentrelation.FieldToID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field to_id", values[i])
-			} else if value != nil {
-				cr.ToID = *value
+			} else if value.Valid {
+				cr.ToID = value.String
 			}
 		case contentrelation.FieldRelationType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -151,13 +148,13 @@ func (cr *ContentRelation) String() string {
 	builder.WriteString(fmt.Sprintf("%v", cr.FromType))
 	builder.WriteString(", ")
 	builder.WriteString("from_id=")
-	builder.WriteString(fmt.Sprintf("%v", cr.FromID))
+	builder.WriteString(cr.FromID)
 	builder.WriteString(", ")
 	builder.WriteString("to_type=")
 	builder.WriteString(fmt.Sprintf("%v", cr.ToType))
 	builder.WriteString(", ")
 	builder.WriteString("to_id=")
-	builder.WriteString(fmt.Sprintf("%v", cr.ToID))
+	builder.WriteString(cr.ToID)
 	builder.WriteString(", ")
 	builder.WriteString("relation_type=")
 	builder.WriteString(fmt.Sprintf("%v", cr.RelationType))

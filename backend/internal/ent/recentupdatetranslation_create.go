@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // RecentUpdateTranslationCreate is the builder for creating a RecentUpdateTranslation entity.
@@ -24,8 +23,8 @@ type RecentUpdateTranslationCreate struct {
 }
 
 // SetRecentUpdateID sets the "recent_update_id" field.
-func (rutc *RecentUpdateTranslationCreate) SetRecentUpdateID(u uuid.UUID) *RecentUpdateTranslationCreate {
-	rutc.mutation.SetRecentUpdateID(u)
+func (rutc *RecentUpdateTranslationCreate) SetRecentUpdateID(s string) *RecentUpdateTranslationCreate {
+	rutc.mutation.SetRecentUpdateID(s)
 	return rutc
 }
 
@@ -62,15 +61,15 @@ func (rutc *RecentUpdateTranslationCreate) SetNillableCreatedAt(t *time.Time) *R
 }
 
 // SetID sets the "id" field.
-func (rutc *RecentUpdateTranslationCreate) SetID(u uuid.UUID) *RecentUpdateTranslationCreate {
-	rutc.mutation.SetID(u)
+func (rutc *RecentUpdateTranslationCreate) SetID(s string) *RecentUpdateTranslationCreate {
+	rutc.mutation.SetID(s)
 	return rutc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (rutc *RecentUpdateTranslationCreate) SetNillableID(u *uuid.UUID) *RecentUpdateTranslationCreate {
-	if u != nil {
-		rutc.SetID(*u)
+func (rutc *RecentUpdateTranslationCreate) SetNillableID(s *string) *RecentUpdateTranslationCreate {
+	if s != nil {
+		rutc.SetID(*s)
 	}
 	return rutc
 }
@@ -189,10 +188,10 @@ func (rutc *RecentUpdateTranslationCreate) sqlSave(ctx context.Context) (*Recent
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected RecentUpdateTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	rutc.mutation.id = &_node.ID
@@ -203,11 +202,11 @@ func (rutc *RecentUpdateTranslationCreate) sqlSave(ctx context.Context) (*Recent
 func (rutc *RecentUpdateTranslationCreate) createSpec() (*RecentUpdateTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &RecentUpdateTranslation{config: rutc.config}
-		_spec = sqlgraph.NewCreateSpec(recentupdatetranslation.Table, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(recentupdatetranslation.Table, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString))
 	)
 	if id, ok := rutc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := rutc.mutation.Title(); ok {
 		_spec.SetField(recentupdatetranslation.FieldTitle, field.TypeString, value)
@@ -229,7 +228,7 @@ func (rutc *RecentUpdateTranslationCreate) createSpec() (*RecentUpdateTranslatio
 			Columns: []string{recentupdatetranslation.RecentUpdateColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

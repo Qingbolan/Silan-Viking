@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationTranslationQuery is the builder for querying PublicationTranslation entities.
@@ -131,8 +130,8 @@ func (ptq *PublicationTranslationQuery) FirstX(ctx context.Context) *Publication
 
 // FirstID returns the first PublicationTranslation ID from the query.
 // Returns a *NotFoundError when no PublicationTranslation ID was found.
-func (ptq *PublicationTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ptq *PublicationTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ptq.Limit(1).IDs(setContextOp(ctx, ptq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (ptq *PublicationTranslationQuery) FirstID(ctx context.Context) (id uuid.UU
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (ptq *PublicationTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (ptq *PublicationTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := ptq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (ptq *PublicationTranslationQuery) OnlyX(ctx context.Context) *PublicationT
 // OnlyID is like Only, but returns the only PublicationTranslation ID in the query.
 // Returns a *NotSingularError when more than one PublicationTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (ptq *PublicationTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ptq *PublicationTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ptq.Limit(2).IDs(setContextOp(ctx, ptq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (ptq *PublicationTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUI
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (ptq *PublicationTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (ptq *PublicationTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := ptq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (ptq *PublicationTranslationQuery) AllX(ctx context.Context) []*Publication
 }
 
 // IDs executes the query and returns a list of PublicationTranslation IDs.
-func (ptq *PublicationTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (ptq *PublicationTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if ptq.ctx.Unique == nil && ptq.path != nil {
 		ptq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (ptq *PublicationTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUI
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (ptq *PublicationTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (ptq *PublicationTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := ptq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (ptq *PublicationTranslationQuery) WithLanguage(opts ...func(*LanguageQuery
 // Example:
 //
 //	var v []struct {
-//		PublicationID uuid.UUID `json:"publication_id,omitempty"`
+//		PublicationID string `json:"publication_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (ptq *PublicationTranslationQuery) GroupBy(field string, fields ...string) 
 // Example:
 //
 //	var v []struct {
-//		PublicationID uuid.UUID `json:"publication_id,omitempty"`
+//		PublicationID string `json:"publication_id,omitempty"`
 //	}
 //
 //	client.PublicationTranslation.Query().
@@ -446,8 +445,8 @@ func (ptq *PublicationTranslationQuery) sqlAll(ctx context.Context, hooks ...que
 }
 
 func (ptq *PublicationTranslationQuery) loadPublication(ctx context.Context, query *PublicationQuery, nodes []*PublicationTranslation, init func(*PublicationTranslation), assign func(*PublicationTranslation, *Publication)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*PublicationTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*PublicationTranslation)
 	for i := range nodes {
 		fk := nodes[i].PublicationID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (ptq *PublicationTranslationQuery) sqlCount(ctx context.Context) (int, erro
 }
 
 func (ptq *PublicationTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(publicationtranslation.Table, publicationtranslation.Columns, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(publicationtranslation.Table, publicationtranslation.Columns, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString))
 	_spec.From = ptq.sql
 	if unique := ptq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

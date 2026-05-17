@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ContentRelationUpdate is the builder for updating ContentRelation entities.
@@ -43,15 +42,15 @@ func (cru *ContentRelationUpdate) SetNillableFromType(ct *contentrelation.FromTy
 }
 
 // SetFromID sets the "from_id" field.
-func (cru *ContentRelationUpdate) SetFromID(u uuid.UUID) *ContentRelationUpdate {
-	cru.mutation.SetFromID(u)
+func (cru *ContentRelationUpdate) SetFromID(s string) *ContentRelationUpdate {
+	cru.mutation.SetFromID(s)
 	return cru
 }
 
 // SetNillableFromID sets the "from_id" field if the given value is not nil.
-func (cru *ContentRelationUpdate) SetNillableFromID(u *uuid.UUID) *ContentRelationUpdate {
-	if u != nil {
-		cru.SetFromID(*u)
+func (cru *ContentRelationUpdate) SetNillableFromID(s *string) *ContentRelationUpdate {
+	if s != nil {
+		cru.SetFromID(*s)
 	}
 	return cru
 }
@@ -71,15 +70,15 @@ func (cru *ContentRelationUpdate) SetNillableToType(ct *contentrelation.ToType) 
 }
 
 // SetToID sets the "to_id" field.
-func (cru *ContentRelationUpdate) SetToID(u uuid.UUID) *ContentRelationUpdate {
-	cru.mutation.SetToID(u)
+func (cru *ContentRelationUpdate) SetToID(s string) *ContentRelationUpdate {
+	cru.mutation.SetToID(s)
 	return cru
 }
 
 // SetNillableToID sets the "to_id" field if the given value is not nil.
-func (cru *ContentRelationUpdate) SetNillableToID(u *uuid.UUID) *ContentRelationUpdate {
-	if u != nil {
-		cru.SetToID(*u)
+func (cru *ContentRelationUpdate) SetNillableToID(s *string) *ContentRelationUpdate {
+	if s != nil {
+		cru.SetToID(*s)
 	}
 	return cru
 }
@@ -175,7 +174,7 @@ func (cru *ContentRelationUpdate) sqlSave(ctx context.Context) (n int, err error
 	if err := cru.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(contentrelation.Table, contentrelation.Columns, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(contentrelation.Table, contentrelation.Columns, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeString))
 	if ps := cru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -187,13 +186,13 @@ func (cru *ContentRelationUpdate) sqlSave(ctx context.Context) (n int, err error
 		_spec.SetField(contentrelation.FieldFromType, field.TypeEnum, value)
 	}
 	if value, ok := cru.mutation.FromID(); ok {
-		_spec.SetField(contentrelation.FieldFromID, field.TypeUUID, value)
+		_spec.SetField(contentrelation.FieldFromID, field.TypeString, value)
 	}
 	if value, ok := cru.mutation.ToType(); ok {
 		_spec.SetField(contentrelation.FieldToType, field.TypeEnum, value)
 	}
 	if value, ok := cru.mutation.ToID(); ok {
-		_spec.SetField(contentrelation.FieldToID, field.TypeUUID, value)
+		_spec.SetField(contentrelation.FieldToID, field.TypeString, value)
 	}
 	if value, ok := cru.mutation.RelationType(); ok {
 		_spec.SetField(contentrelation.FieldRelationType, field.TypeEnum, value)
@@ -239,15 +238,15 @@ func (cruo *ContentRelationUpdateOne) SetNillableFromType(ct *contentrelation.Fr
 }
 
 // SetFromID sets the "from_id" field.
-func (cruo *ContentRelationUpdateOne) SetFromID(u uuid.UUID) *ContentRelationUpdateOne {
-	cruo.mutation.SetFromID(u)
+func (cruo *ContentRelationUpdateOne) SetFromID(s string) *ContentRelationUpdateOne {
+	cruo.mutation.SetFromID(s)
 	return cruo
 }
 
 // SetNillableFromID sets the "from_id" field if the given value is not nil.
-func (cruo *ContentRelationUpdateOne) SetNillableFromID(u *uuid.UUID) *ContentRelationUpdateOne {
-	if u != nil {
-		cruo.SetFromID(*u)
+func (cruo *ContentRelationUpdateOne) SetNillableFromID(s *string) *ContentRelationUpdateOne {
+	if s != nil {
+		cruo.SetFromID(*s)
 	}
 	return cruo
 }
@@ -267,15 +266,15 @@ func (cruo *ContentRelationUpdateOne) SetNillableToType(ct *contentrelation.ToTy
 }
 
 // SetToID sets the "to_id" field.
-func (cruo *ContentRelationUpdateOne) SetToID(u uuid.UUID) *ContentRelationUpdateOne {
-	cruo.mutation.SetToID(u)
+func (cruo *ContentRelationUpdateOne) SetToID(s string) *ContentRelationUpdateOne {
+	cruo.mutation.SetToID(s)
 	return cruo
 }
 
 // SetNillableToID sets the "to_id" field if the given value is not nil.
-func (cruo *ContentRelationUpdateOne) SetNillableToID(u *uuid.UUID) *ContentRelationUpdateOne {
-	if u != nil {
-		cruo.SetToID(*u)
+func (cruo *ContentRelationUpdateOne) SetNillableToID(s *string) *ContentRelationUpdateOne {
+	if s != nil {
+		cruo.SetToID(*s)
 	}
 	return cruo
 }
@@ -384,7 +383,7 @@ func (cruo *ContentRelationUpdateOne) sqlSave(ctx context.Context) (_node *Conte
 	if err := cruo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(contentrelation.Table, contentrelation.Columns, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(contentrelation.Table, contentrelation.Columns, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeString))
 	id, ok := cruo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ContentRelation.id" for update`)}
@@ -413,13 +412,13 @@ func (cruo *ContentRelationUpdateOne) sqlSave(ctx context.Context) (_node *Conte
 		_spec.SetField(contentrelation.FieldFromType, field.TypeEnum, value)
 	}
 	if value, ok := cruo.mutation.FromID(); ok {
-		_spec.SetField(contentrelation.FieldFromID, field.TypeUUID, value)
+		_spec.SetField(contentrelation.FieldFromID, field.TypeString, value)
 	}
 	if value, ok := cruo.mutation.ToType(); ok {
 		_spec.SetField(contentrelation.FieldToType, field.TypeEnum, value)
 	}
 	if value, ok := cruo.mutation.ToID(); ok {
-		_spec.SetField(contentrelation.FieldToID, field.TypeUUID, value)
+		_spec.SetField(contentrelation.FieldToID, field.TypeString, value)
 	}
 	if value, ok := cruo.mutation.RelationType(); ok {
 		_spec.SetField(contentrelation.FieldRelationType, field.TypeEnum, value)

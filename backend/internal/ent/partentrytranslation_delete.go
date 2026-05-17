@@ -40,7 +40,7 @@ func (petd *PartEntryTranslationDelete) ExecX(ctx context.Context) int {
 }
 
 func (petd *PartEntryTranslationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(partentrytranslation.Table, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(partentrytranslation.Table, sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString))
 	if ps := petd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

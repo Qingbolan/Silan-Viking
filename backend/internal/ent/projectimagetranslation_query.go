@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectImageTranslationQuery is the builder for querying ProjectImageTranslation entities.
@@ -131,8 +130,8 @@ func (pitq *ProjectImageTranslationQuery) FirstX(ctx context.Context) *ProjectIm
 
 // FirstID returns the first ProjectImageTranslation ID from the query.
 // Returns a *NotFoundError when no ProjectImageTranslation ID was found.
-func (pitq *ProjectImageTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pitq *ProjectImageTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pitq.Limit(1).IDs(setContextOp(ctx, pitq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (pitq *ProjectImageTranslationQuery) FirstID(ctx context.Context) (id uuid.
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pitq *ProjectImageTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (pitq *ProjectImageTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := pitq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (pitq *ProjectImageTranslationQuery) OnlyX(ctx context.Context) *ProjectIma
 // OnlyID is like Only, but returns the only ProjectImageTranslation ID in the query.
 // Returns a *NotSingularError when more than one ProjectImageTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pitq *ProjectImageTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pitq *ProjectImageTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pitq.Limit(2).IDs(setContextOp(ctx, pitq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (pitq *ProjectImageTranslationQuery) OnlyID(ctx context.Context) (id uuid.U
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pitq *ProjectImageTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (pitq *ProjectImageTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := pitq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (pitq *ProjectImageTranslationQuery) AllX(ctx context.Context) []*ProjectIm
 }
 
 // IDs executes the query and returns a list of ProjectImageTranslation IDs.
-func (pitq *ProjectImageTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (pitq *ProjectImageTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if pitq.ctx.Unique == nil && pitq.path != nil {
 		pitq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (pitq *ProjectImageTranslationQuery) IDs(ctx context.Context) (ids []uuid.U
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pitq *ProjectImageTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (pitq *ProjectImageTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := pitq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (pitq *ProjectImageTranslationQuery) WithLanguage(opts ...func(*LanguageQue
 // Example:
 //
 //	var v []struct {
-//		ProjectImageID uuid.UUID `json:"project_image_id,omitempty"`
+//		ProjectImageID string `json:"project_image_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (pitq *ProjectImageTranslationQuery) GroupBy(field string, fields ...string
 // Example:
 //
 //	var v []struct {
-//		ProjectImageID uuid.UUID `json:"project_image_id,omitempty"`
+//		ProjectImageID string `json:"project_image_id,omitempty"`
 //	}
 //
 //	client.ProjectImageTranslation.Query().
@@ -446,8 +445,8 @@ func (pitq *ProjectImageTranslationQuery) sqlAll(ctx context.Context, hooks ...q
 }
 
 func (pitq *ProjectImageTranslationQuery) loadProjectImage(ctx context.Context, query *ProjectImageQuery, nodes []*ProjectImageTranslation, init func(*ProjectImageTranslation), assign func(*ProjectImageTranslation, *ProjectImage)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ProjectImageTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ProjectImageTranslation)
 	for i := range nodes {
 		fk := nodes[i].ProjectImageID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (pitq *ProjectImageTranslationQuery) sqlCount(ctx context.Context) (int, er
 }
 
 func (pitq *ProjectImageTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(projectimagetranslation.Table, projectimagetranslation.Columns, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(projectimagetranslation.Table, projectimagetranslation.Columns, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString))
 	_spec.From = pitq.sql
 	if unique := pitq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

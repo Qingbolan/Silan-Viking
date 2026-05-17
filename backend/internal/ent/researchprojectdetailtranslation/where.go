@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func ID(id string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDEQ(id string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDNEQ(id string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDIn(ids ...string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDNotIn(ids ...string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDGT(id string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDGTE(id string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDLT(id string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func IDLTE(id string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // ResearchProjectDetailID applies equality check predicate on the "research_project_detail_id" field. It's identical to ResearchProjectDetailIDEQ.
-func ResearchProjectDetailID(v uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func ResearchProjectDetailID(v string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldEQ(FieldResearchProjectDetailID, v))
 }
 
@@ -77,23 +86,68 @@ func CreatedAt(v time.Time) predicate.ResearchProjectDetailTranslation {
 }
 
 // ResearchProjectDetailIDEQ applies the EQ predicate on the "research_project_detail_id" field.
-func ResearchProjectDetailIDEQ(v uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func ResearchProjectDetailIDEQ(v string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldEQ(FieldResearchProjectDetailID, v))
 }
 
 // ResearchProjectDetailIDNEQ applies the NEQ predicate on the "research_project_detail_id" field.
-func ResearchProjectDetailIDNEQ(v uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func ResearchProjectDetailIDNEQ(v string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldNEQ(FieldResearchProjectDetailID, v))
 }
 
 // ResearchProjectDetailIDIn applies the In predicate on the "research_project_detail_id" field.
-func ResearchProjectDetailIDIn(vs ...uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func ResearchProjectDetailIDIn(vs ...string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldIn(FieldResearchProjectDetailID, vs...))
 }
 
 // ResearchProjectDetailIDNotIn applies the NotIn predicate on the "research_project_detail_id" field.
-func ResearchProjectDetailIDNotIn(vs ...uuid.UUID) predicate.ResearchProjectDetailTranslation {
+func ResearchProjectDetailIDNotIn(vs ...string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldNotIn(FieldResearchProjectDetailID, vs...))
+}
+
+// ResearchProjectDetailIDGT applies the GT predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDGT(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldGT(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDGTE applies the GTE predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDGTE(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldGTE(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDLT applies the LT predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDLT(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldLT(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDLTE applies the LTE predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDLTE(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldLTE(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDContains applies the Contains predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDContains(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldContains(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDHasPrefix applies the HasPrefix predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDHasPrefix(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldHasPrefix(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDHasSuffix applies the HasSuffix predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDHasSuffix(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldHasSuffix(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDEqualFold applies the EqualFold predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDEqualFold(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldEqualFold(FieldResearchProjectDetailID, v))
+}
+
+// ResearchProjectDetailIDContainsFold applies the ContainsFold predicate on the "research_project_detail_id" field.
+func ResearchProjectDetailIDContainsFold(v string) predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldContainsFold(FieldResearchProjectDetailID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

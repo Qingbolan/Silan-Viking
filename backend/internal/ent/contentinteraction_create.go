@@ -11,7 +11,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ContentInteractionCreate is the builder for creating a ContentInteraction entity.
@@ -28,8 +27,8 @@ func (cic *ContentInteractionCreate) SetEntityType(ct contentinteraction.EntityT
 }
 
 // SetEntityID sets the "entity_id" field.
-func (cic *ContentInteractionCreate) SetEntityID(u uuid.UUID) *ContentInteractionCreate {
-	cic.mutation.SetEntityID(u)
+func (cic *ContentInteractionCreate) SetEntityID(s string) *ContentInteractionCreate {
+	cic.mutation.SetEntityID(s)
 	return cic
 }
 
@@ -194,15 +193,15 @@ func (cic *ContentInteractionCreate) SetNillableCreatedAt(t *time.Time) *Content
 }
 
 // SetID sets the "id" field.
-func (cic *ContentInteractionCreate) SetID(u uuid.UUID) *ContentInteractionCreate {
-	cic.mutation.SetID(u)
+func (cic *ContentInteractionCreate) SetID(s string) *ContentInteractionCreate {
+	cic.mutation.SetID(s)
 	return cic
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (cic *ContentInteractionCreate) SetNillableID(u *uuid.UUID) *ContentInteractionCreate {
-	if u != nil {
-		cic.SetID(*u)
+func (cic *ContentInteractionCreate) SetNillableID(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetID(*s)
 	}
 	return cic
 }
@@ -329,10 +328,10 @@ func (cic *ContentInteractionCreate) sqlSave(ctx context.Context) (*ContentInter
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ContentInteraction.ID type: %T", _spec.ID.Value)
 		}
 	}
 	cic.mutation.id = &_node.ID
@@ -343,18 +342,18 @@ func (cic *ContentInteractionCreate) sqlSave(ctx context.Context) (*ContentInter
 func (cic *ContentInteractionCreate) createSpec() (*ContentInteraction, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ContentInteraction{config: cic.config}
-		_spec = sqlgraph.NewCreateSpec(contentinteraction.Table, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(contentinteraction.Table, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeString))
 	)
 	if id, ok := cic.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := cic.mutation.EntityType(); ok {
 		_spec.SetField(contentinteraction.FieldEntityType, field.TypeEnum, value)
 		_node.EntityType = value
 	}
 	if value, ok := cic.mutation.EntityID(); ok {
-		_spec.SetField(contentinteraction.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(contentinteraction.FieldEntityID, field.TypeString, value)
 		_node.EntityID = value
 	}
 	if value, ok := cic.mutation.SectionAnchor(); ok {

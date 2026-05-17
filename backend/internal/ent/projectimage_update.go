@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectImageUpdate is the builder for updating ProjectImage entities.
@@ -32,15 +31,15 @@ func (piu *ProjectImageUpdate) Where(ps ...predicate.ProjectImage) *ProjectImage
 }
 
 // SetProjectID sets the "project_id" field.
-func (piu *ProjectImageUpdate) SetProjectID(u uuid.UUID) *ProjectImageUpdate {
-	piu.mutation.SetProjectID(u)
+func (piu *ProjectImageUpdate) SetProjectID(s string) *ProjectImageUpdate {
+	piu.mutation.SetProjectID(s)
 	return piu
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (piu *ProjectImageUpdate) SetNillableProjectID(u *uuid.UUID) *ProjectImageUpdate {
-	if u != nil {
-		piu.SetProjectID(*u)
+func (piu *ProjectImageUpdate) SetNillableProjectID(s *string) *ProjectImageUpdate {
+	if s != nil {
+		piu.SetProjectID(*s)
 	}
 	return piu
 }
@@ -152,14 +151,14 @@ func (piu *ProjectImageUpdate) SetProject(p *Project) *ProjectImageUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the ProjectImageTranslation entity by IDs.
-func (piu *ProjectImageUpdate) AddTranslationIDs(ids ...uuid.UUID) *ProjectImageUpdate {
+func (piu *ProjectImageUpdate) AddTranslationIDs(ids ...string) *ProjectImageUpdate {
 	piu.mutation.AddTranslationIDs(ids...)
 	return piu
 }
 
 // AddTranslations adds the "translations" edges to the ProjectImageTranslation entity.
 func (piu *ProjectImageUpdate) AddTranslations(p ...*ProjectImageTranslation) *ProjectImageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -184,14 +183,14 @@ func (piu *ProjectImageUpdate) ClearTranslations() *ProjectImageUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ProjectImageTranslation entities by IDs.
-func (piu *ProjectImageUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *ProjectImageUpdate {
+func (piu *ProjectImageUpdate) RemoveTranslationIDs(ids ...string) *ProjectImageUpdate {
 	piu.mutation.RemoveTranslationIDs(ids...)
 	return piu
 }
 
 // RemoveTranslations removes "translations" edges to ProjectImageTranslation entities.
 func (piu *ProjectImageUpdate) RemoveTranslations(p ...*ProjectImageTranslation) *ProjectImageUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -261,7 +260,7 @@ func (piu *ProjectImageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := piu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectimage.Table, projectimage.Columns, sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectimage.Table, projectimage.Columns, sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString))
 	if ps := piu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -307,7 +306,7 @@ func (piu *ProjectImageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{projectimage.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -320,7 +319,7 @@ func (piu *ProjectImageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{projectimage.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -336,7 +335,7 @@ func (piu *ProjectImageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{projectimage.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -349,7 +348,7 @@ func (piu *ProjectImageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{projectimage.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -365,7 +364,7 @@ func (piu *ProjectImageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{projectimage.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -394,15 +393,15 @@ type ProjectImageUpdateOne struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (piuo *ProjectImageUpdateOne) SetProjectID(u uuid.UUID) *ProjectImageUpdateOne {
-	piuo.mutation.SetProjectID(u)
+func (piuo *ProjectImageUpdateOne) SetProjectID(s string) *ProjectImageUpdateOne {
+	piuo.mutation.SetProjectID(s)
 	return piuo
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (piuo *ProjectImageUpdateOne) SetNillableProjectID(u *uuid.UUID) *ProjectImageUpdateOne {
-	if u != nil {
-		piuo.SetProjectID(*u)
+func (piuo *ProjectImageUpdateOne) SetNillableProjectID(s *string) *ProjectImageUpdateOne {
+	if s != nil {
+		piuo.SetProjectID(*s)
 	}
 	return piuo
 }
@@ -514,14 +513,14 @@ func (piuo *ProjectImageUpdateOne) SetProject(p *Project) *ProjectImageUpdateOne
 }
 
 // AddTranslationIDs adds the "translations" edge to the ProjectImageTranslation entity by IDs.
-func (piuo *ProjectImageUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *ProjectImageUpdateOne {
+func (piuo *ProjectImageUpdateOne) AddTranslationIDs(ids ...string) *ProjectImageUpdateOne {
 	piuo.mutation.AddTranslationIDs(ids...)
 	return piuo
 }
 
 // AddTranslations adds the "translations" edges to the ProjectImageTranslation entity.
 func (piuo *ProjectImageUpdateOne) AddTranslations(p ...*ProjectImageTranslation) *ProjectImageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -546,14 +545,14 @@ func (piuo *ProjectImageUpdateOne) ClearTranslations() *ProjectImageUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ProjectImageTranslation entities by IDs.
-func (piuo *ProjectImageUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *ProjectImageUpdateOne {
+func (piuo *ProjectImageUpdateOne) RemoveTranslationIDs(ids ...string) *ProjectImageUpdateOne {
 	piuo.mutation.RemoveTranslationIDs(ids...)
 	return piuo
 }
 
 // RemoveTranslations removes "translations" edges to ProjectImageTranslation entities.
 func (piuo *ProjectImageUpdateOne) RemoveTranslations(p ...*ProjectImageTranslation) *ProjectImageUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -636,7 +635,7 @@ func (piuo *ProjectImageUpdateOne) sqlSave(ctx context.Context) (_node *ProjectI
 	if err := piuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectimage.Table, projectimage.Columns, sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectimage.Table, projectimage.Columns, sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString))
 	id, ok := piuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectImage.id" for update`)}
@@ -699,7 +698,7 @@ func (piuo *ProjectImageUpdateOne) sqlSave(ctx context.Context) (_node *ProjectI
 			Columns: []string{projectimage.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -712,7 +711,7 @@ func (piuo *ProjectImageUpdateOne) sqlSave(ctx context.Context) (_node *ProjectI
 			Columns: []string{projectimage.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -728,7 +727,7 @@ func (piuo *ProjectImageUpdateOne) sqlSave(ctx context.Context) (_node *ProjectI
 			Columns: []string{projectimage.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -741,7 +740,7 @@ func (piuo *ProjectImageUpdateOne) sqlSave(ctx context.Context) (_node *ProjectI
 			Columns: []string{projectimage.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -757,7 +756,7 @@ func (piuo *ProjectImageUpdateOne) sqlSave(ctx context.Context) (_node *ProjectI
 			Columns: []string{projectimage.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

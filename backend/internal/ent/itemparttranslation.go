@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ItemPartTranslation is the model entity for the ItemPartTranslation schema.
 type ItemPartTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// ItemPartID holds the value of the "item_part_id" field.
-	ItemPartID uuid.UUID `json:"item_part_id,omitempty"`
+	ItemPartID string `json:"item_part_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Body holds the value of the "body" field.
@@ -58,12 +57,10 @@ func (*ItemPartTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case itemparttranslation.FieldLanguageCode, itemparttranslation.FieldBody:
+		case itemparttranslation.FieldID, itemparttranslation.FieldItemPartID, itemparttranslation.FieldLanguageCode, itemparttranslation.FieldBody:
 			values[i] = new(sql.NullString)
 		case itemparttranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case itemparttranslation.FieldID, itemparttranslation.FieldItemPartID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -80,16 +77,16 @@ func (ipt *ItemPartTranslation) assignValues(columns []string, values []any) err
 	for i := range columns {
 		switch columns[i] {
 		case itemparttranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				ipt.ID = *value
+			} else if value.Valid {
+				ipt.ID = value.String
 			}
 		case itemparttranslation.FieldItemPartID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field item_part_id", values[i])
-			} else if value != nil {
-				ipt.ItemPartID = *value
+			} else if value.Valid {
+				ipt.ItemPartID = value.String
 			}
 		case itemparttranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -151,7 +148,7 @@ func (ipt *ItemPartTranslation) String() string {
 	builder.WriteString("ItemPartTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ipt.ID))
 	builder.WriteString("item_part_id=")
-	builder.WriteString(fmt.Sprintf("%v", ipt.ItemPartID))
+	builder.WriteString(ipt.ItemPartID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(ipt.LanguageCode)

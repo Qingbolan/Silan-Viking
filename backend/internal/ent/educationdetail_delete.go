@@ -40,7 +40,7 @@ func (edd *EducationDetailDelete) ExecX(ctx context.Context) int {
 }
 
 func (edd *EducationDetailDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(educationdetail.Table, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(educationdetail.Table, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString))
 	if ps := edd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

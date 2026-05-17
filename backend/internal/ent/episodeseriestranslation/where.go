@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.EpisodeSeriesTranslation {
+func ID(id string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDEQ(id string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDNEQ(id string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDIn(ids ...string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDNotIn(ids ...string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDGT(id string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDGTE(id string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDLT(id string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.EpisodeSeriesTranslation {
+func IDLTE(id string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // EpisodeSeriesID applies equality check predicate on the "episode_series_id" field. It's identical to EpisodeSeriesIDEQ.
-func EpisodeSeriesID(v uuid.UUID) predicate.EpisodeSeriesTranslation {
+func EpisodeSeriesID(v string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldEQ(FieldEpisodeSeriesID, v))
 }
 
@@ -82,23 +91,68 @@ func CreatedAt(v time.Time) predicate.EpisodeSeriesTranslation {
 }
 
 // EpisodeSeriesIDEQ applies the EQ predicate on the "episode_series_id" field.
-func EpisodeSeriesIDEQ(v uuid.UUID) predicate.EpisodeSeriesTranslation {
+func EpisodeSeriesIDEQ(v string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldEQ(FieldEpisodeSeriesID, v))
 }
 
 // EpisodeSeriesIDNEQ applies the NEQ predicate on the "episode_series_id" field.
-func EpisodeSeriesIDNEQ(v uuid.UUID) predicate.EpisodeSeriesTranslation {
+func EpisodeSeriesIDNEQ(v string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldNEQ(FieldEpisodeSeriesID, v))
 }
 
 // EpisodeSeriesIDIn applies the In predicate on the "episode_series_id" field.
-func EpisodeSeriesIDIn(vs ...uuid.UUID) predicate.EpisodeSeriesTranslation {
+func EpisodeSeriesIDIn(vs ...string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldIn(FieldEpisodeSeriesID, vs...))
 }
 
 // EpisodeSeriesIDNotIn applies the NotIn predicate on the "episode_series_id" field.
-func EpisodeSeriesIDNotIn(vs ...uuid.UUID) predicate.EpisodeSeriesTranslation {
+func EpisodeSeriesIDNotIn(vs ...string) predicate.EpisodeSeriesTranslation {
 	return predicate.EpisodeSeriesTranslation(sql.FieldNotIn(FieldEpisodeSeriesID, vs...))
+}
+
+// EpisodeSeriesIDGT applies the GT predicate on the "episode_series_id" field.
+func EpisodeSeriesIDGT(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldGT(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDGTE applies the GTE predicate on the "episode_series_id" field.
+func EpisodeSeriesIDGTE(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldGTE(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDLT applies the LT predicate on the "episode_series_id" field.
+func EpisodeSeriesIDLT(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldLT(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDLTE applies the LTE predicate on the "episode_series_id" field.
+func EpisodeSeriesIDLTE(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldLTE(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDContains applies the Contains predicate on the "episode_series_id" field.
+func EpisodeSeriesIDContains(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldContains(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDHasPrefix applies the HasPrefix predicate on the "episode_series_id" field.
+func EpisodeSeriesIDHasPrefix(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldHasPrefix(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDHasSuffix applies the HasSuffix predicate on the "episode_series_id" field.
+func EpisodeSeriesIDHasSuffix(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldHasSuffix(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDEqualFold applies the EqualFold predicate on the "episode_series_id" field.
+func EpisodeSeriesIDEqualFold(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldEqualFold(FieldEpisodeSeriesID, v))
+}
+
+// EpisodeSeriesIDContainsFold applies the ContainsFold predicate on the "episode_series_id" field.
+func EpisodeSeriesIDContainsFold(v string) predicate.EpisodeSeriesTranslation {
+	return predicate.EpisodeSeriesTranslation(sql.FieldContainsFold(FieldEpisodeSeriesID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

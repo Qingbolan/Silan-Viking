@@ -21,7 +21,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogPostQuery is the builder for querying BlogPost entities.
@@ -252,8 +251,8 @@ func (bpq *BlogPostQuery) FirstX(ctx context.Context) *BlogPost {
 
 // FirstID returns the first BlogPost ID from the query.
 // Returns a *NotFoundError when no BlogPost ID was found.
-func (bpq *BlogPostQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bpq *BlogPostQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bpq.Limit(1).IDs(setContextOp(ctx, bpq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -265,7 +264,7 @@ func (bpq *BlogPostQuery) FirstID(ctx context.Context) (id uuid.UUID, err error)
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bpq *BlogPostQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (bpq *BlogPostQuery) FirstIDX(ctx context.Context) string {
 	id, err := bpq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -303,8 +302,8 @@ func (bpq *BlogPostQuery) OnlyX(ctx context.Context) *BlogPost {
 // OnlyID is like Only, but returns the only BlogPost ID in the query.
 // Returns a *NotSingularError when more than one BlogPost ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bpq *BlogPostQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bpq *BlogPostQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bpq.Limit(2).IDs(setContextOp(ctx, bpq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -320,7 +319,7 @@ func (bpq *BlogPostQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bpq *BlogPostQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (bpq *BlogPostQuery) OnlyIDX(ctx context.Context) string {
 	id, err := bpq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -348,7 +347,7 @@ func (bpq *BlogPostQuery) AllX(ctx context.Context) []*BlogPost {
 }
 
 // IDs executes the query and returns a list of BlogPost IDs.
-func (bpq *BlogPostQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (bpq *BlogPostQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if bpq.ctx.Unique == nil && bpq.path != nil {
 		bpq.Unique(true)
 	}
@@ -360,7 +359,7 @@ func (bpq *BlogPostQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) 
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bpq *BlogPostQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (bpq *BlogPostQuery) IDsX(ctx context.Context) []string {
 	ids, err := bpq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -516,7 +515,7 @@ func (bpq *BlogPostQuery) WithBlogPostTags(opts ...func(*BlogPostTagQuery)) *Blo
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -539,7 +538,7 @@ func (bpq *BlogPostQuery) GroupBy(field string, fields ...string) *BlogPostGroup
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.BlogPost.Query().
@@ -666,8 +665,8 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 }
 
 func (bpq *BlogPostQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogPost)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogPost)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -695,8 +694,8 @@ func (bpq *BlogPostQuery) loadUser(ctx context.Context, query *UserQuery, nodes 
 	return nil
 }
 func (bpq *BlogPostQuery) loadCategory(ctx context.Context, query *BlogCategoryQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogCategory)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogPost)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogPost)
 	for i := range nodes {
 		fk := nodes[i].CategoryID
 		if _, ok := nodeids[fk]; !ok {
@@ -724,8 +723,8 @@ func (bpq *BlogPostQuery) loadCategory(ctx context.Context, query *BlogCategoryQ
 	return nil
 }
 func (bpq *BlogPostQuery) loadSeries(ctx context.Context, query *BlogSeriesQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogSeries)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogPost)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogPost)
 	for i := range nodes {
 		fk := nodes[i].SeriesID
 		if _, ok := nodeids[fk]; !ok {
@@ -754,8 +753,8 @@ func (bpq *BlogPostQuery) loadSeries(ctx context.Context, query *BlogSeriesQuery
 }
 func (bpq *BlogPostQuery) loadTags(ctx context.Context, query *BlogTagQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogTag)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*BlogPost)
-	nids := make(map[uuid.UUID]map[*BlogPost]struct{})
+	byID := make(map[string]*BlogPost)
+	nids := make(map[string]map[*BlogPost]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -784,11 +783,11 @@ func (bpq *BlogPostQuery) loadTags(ctx context.Context, query *BlogTagQuery, nod
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(uuid.UUID)}, values...), nil
+				return append([]any{new(sql.NullString)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
+				outValue := values[0].(*sql.NullString).String
+				inValue := values[1].(*sql.NullString).String
 				if nids[inValue] == nil {
 					nids[inValue] = map[*BlogPost]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
@@ -815,7 +814,7 @@ func (bpq *BlogPostQuery) loadTags(ctx context.Context, query *BlogTagQuery, nod
 }
 func (bpq *BlogPostQuery) loadTranslations(ctx context.Context, query *BlogPostTranslationQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogPostTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogPost)
+	nodeids := make(map[string]*BlogPost)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -845,7 +844,7 @@ func (bpq *BlogPostQuery) loadTranslations(ctx context.Context, query *BlogPostT
 }
 func (bpq *BlogPostQuery) loadComments(ctx context.Context, query *CommentQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *Comment)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogPost)
+	nodeids := make(map[string]*BlogPost)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -876,7 +875,7 @@ func (bpq *BlogPostQuery) loadComments(ctx context.Context, query *CommentQuery,
 }
 func (bpq *BlogPostQuery) loadBlogPostTags(ctx context.Context, query *BlogPostTagQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogPostTag)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*BlogPost)
+	nodeids := make(map[string]*BlogPost)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -915,7 +914,7 @@ func (bpq *BlogPostQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (bpq *BlogPostQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(blogpost.Table, blogpost.Columns, sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(blogpost.Table, blogpost.Columns, sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString))
 	_spec.From = bpq.sql
 	if unique := bpq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

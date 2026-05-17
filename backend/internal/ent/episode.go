@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // Episode is the model entity for the Episode schema.
 type Episode struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// SeriesID holds the value of the "series_id" field.
-	SeriesID uuid.UUID `json:"series_id,omitempty"`
+	SeriesID string `json:"series_id,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
 	// Title holds the value of the "title" field.
@@ -83,12 +82,10 @@ func (*Episode) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case episode.FieldEpisodeNumber, episode.FieldDurationMinutes:
 			values[i] = new(sql.NullInt64)
-		case episode.FieldSlug, episode.FieldTitle, episode.FieldStatus, episode.FieldVisibility:
+		case episode.FieldID, episode.FieldSeriesID, episode.FieldSlug, episode.FieldTitle, episode.FieldStatus, episode.FieldVisibility:
 			values[i] = new(sql.NullString)
 		case episode.FieldPublishedAt, episode.FieldCreatedAt, episode.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case episode.FieldID, episode.FieldSeriesID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -105,16 +102,16 @@ func (e *Episode) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case episode.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				e.ID = *value
+			} else if value.Valid {
+				e.ID = value.String
 			}
 		case episode.FieldSeriesID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field series_id", values[i])
-			} else if value != nil {
-				e.SeriesID = *value
+			} else if value.Valid {
+				e.SeriesID = value.String
 			}
 		case episode.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -219,7 +216,7 @@ func (e *Episode) String() string {
 	builder.WriteString("Episode(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", e.ID))
 	builder.WriteString("series_id=")
-	builder.WriteString(fmt.Sprintf("%v", e.SeriesID))
+	builder.WriteString(e.SeriesID)
 	builder.WriteString(", ")
 	builder.WriteString("slug=")
 	builder.WriteString(e.Slug)

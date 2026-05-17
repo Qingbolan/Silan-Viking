@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ProjectLike is the model entity for the ProjectLike schema.
 type ProjectLike struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Project ID that was liked
-	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 	// ID of the authenticated user who liked
 	UserIdentityID string `json:"user_identity_id,omitempty"`
 	// Browser fingerprint for anonymous likes
@@ -78,12 +77,10 @@ func (*ProjectLike) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case projectlike.FieldUserIdentityID, projectlike.FieldFingerprint, projectlike.FieldIPAddress, projectlike.FieldUserAgent:
+		case projectlike.FieldID, projectlike.FieldProjectID, projectlike.FieldUserIdentityID, projectlike.FieldFingerprint, projectlike.FieldIPAddress, projectlike.FieldUserAgent:
 			values[i] = new(sql.NullString)
 		case projectlike.FieldCreatedAt, projectlike.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case projectlike.FieldID, projectlike.FieldProjectID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -100,16 +97,16 @@ func (pl *ProjectLike) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case projectlike.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pl.ID = *value
+			} else if value.Valid {
+				pl.ID = value.String
 			}
 		case projectlike.FieldProjectID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
-			} else if value != nil {
-				pl.ProjectID = *value
+			} else if value.Valid {
+				pl.ProjectID = value.String
 			}
 		case projectlike.FieldUserIdentityID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -194,7 +191,7 @@ func (pl *ProjectLike) String() string {
 	builder.WriteString("ProjectLike(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pl.ID))
 	builder.WriteString("project_id=")
-	builder.WriteString(fmt.Sprintf("%v", pl.ProjectID))
+	builder.WriteString(pl.ProjectID)
 	builder.WriteString(", ")
 	builder.WriteString("user_identity_id=")
 	builder.WriteString(pl.UserIdentityID)

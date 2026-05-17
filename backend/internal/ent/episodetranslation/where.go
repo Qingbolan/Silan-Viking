@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.EpisodeTranslation {
+func ID(id string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.EpisodeTranslation {
+func IDEQ(id string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.EpisodeTranslation {
+func IDNEQ(id string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.EpisodeTranslation {
+func IDIn(ids ...string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.EpisodeTranslation {
+func IDNotIn(ids ...string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.EpisodeTranslation {
+func IDGT(id string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.EpisodeTranslation {
+func IDGTE(id string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.EpisodeTranslation {
+func IDLT(id string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.EpisodeTranslation {
+func IDLTE(id string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // EpisodeID applies equality check predicate on the "episode_id" field. It's identical to EpisodeIDEQ.
-func EpisodeID(v uuid.UUID) predicate.EpisodeTranslation {
+func EpisodeID(v string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldEQ(FieldEpisodeID, v))
 }
 
@@ -82,23 +91,68 @@ func CreatedAt(v time.Time) predicate.EpisodeTranslation {
 }
 
 // EpisodeIDEQ applies the EQ predicate on the "episode_id" field.
-func EpisodeIDEQ(v uuid.UUID) predicate.EpisodeTranslation {
+func EpisodeIDEQ(v string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldEQ(FieldEpisodeID, v))
 }
 
 // EpisodeIDNEQ applies the NEQ predicate on the "episode_id" field.
-func EpisodeIDNEQ(v uuid.UUID) predicate.EpisodeTranslation {
+func EpisodeIDNEQ(v string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldNEQ(FieldEpisodeID, v))
 }
 
 // EpisodeIDIn applies the In predicate on the "episode_id" field.
-func EpisodeIDIn(vs ...uuid.UUID) predicate.EpisodeTranslation {
+func EpisodeIDIn(vs ...string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldIn(FieldEpisodeID, vs...))
 }
 
 // EpisodeIDNotIn applies the NotIn predicate on the "episode_id" field.
-func EpisodeIDNotIn(vs ...uuid.UUID) predicate.EpisodeTranslation {
+func EpisodeIDNotIn(vs ...string) predicate.EpisodeTranslation {
 	return predicate.EpisodeTranslation(sql.FieldNotIn(FieldEpisodeID, vs...))
+}
+
+// EpisodeIDGT applies the GT predicate on the "episode_id" field.
+func EpisodeIDGT(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldGT(FieldEpisodeID, v))
+}
+
+// EpisodeIDGTE applies the GTE predicate on the "episode_id" field.
+func EpisodeIDGTE(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldGTE(FieldEpisodeID, v))
+}
+
+// EpisodeIDLT applies the LT predicate on the "episode_id" field.
+func EpisodeIDLT(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldLT(FieldEpisodeID, v))
+}
+
+// EpisodeIDLTE applies the LTE predicate on the "episode_id" field.
+func EpisodeIDLTE(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldLTE(FieldEpisodeID, v))
+}
+
+// EpisodeIDContains applies the Contains predicate on the "episode_id" field.
+func EpisodeIDContains(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldContains(FieldEpisodeID, v))
+}
+
+// EpisodeIDHasPrefix applies the HasPrefix predicate on the "episode_id" field.
+func EpisodeIDHasPrefix(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldHasPrefix(FieldEpisodeID, v))
+}
+
+// EpisodeIDHasSuffix applies the HasSuffix predicate on the "episode_id" field.
+func EpisodeIDHasSuffix(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldHasSuffix(FieldEpisodeID, v))
+}
+
+// EpisodeIDEqualFold applies the EqualFold predicate on the "episode_id" field.
+func EpisodeIDEqualFold(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldEqualFold(FieldEpisodeID, v))
+}
+
+// EpisodeIDContainsFold applies the ContainsFold predicate on the "episode_id" field.
+func EpisodeIDContainsFold(v string) predicate.EpisodeTranslation {
+	return predicate.EpisodeTranslation(sql.FieldContainsFold(FieldEpisodeID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

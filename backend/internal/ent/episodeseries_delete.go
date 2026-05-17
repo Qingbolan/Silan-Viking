@@ -40,7 +40,7 @@ func (esd *EpisodeSeriesDelete) ExecX(ctx context.Context) int {
 }
 
 func (esd *EpisodeSeriesDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(episodeseries.Table, sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(episodeseries.Table, sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString))
 	if ps := esd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

@@ -7,56 +7,65 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.ContentInteraction {
+func ID(id string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.ContentInteraction {
+func IDEQ(id string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.ContentInteraction {
+func IDNEQ(id string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.ContentInteraction {
+func IDIn(ids ...string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.ContentInteraction {
+func IDNotIn(ids ...string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.ContentInteraction {
+func IDGT(id string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.ContentInteraction {
+func IDGTE(id string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.ContentInteraction {
+func IDLT(id string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.ContentInteraction {
+func IDLTE(id string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldID, id))
+}
+
 // EntityID applies equality check predicate on the "entity_id" field. It's identical to EntityIDEQ.
-func EntityID(v uuid.UUID) predicate.ContentInteraction {
+func EntityID(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldEntityID, v))
 }
 
@@ -126,43 +135,68 @@ func EntityTypeNotIn(vs ...EntityType) predicate.ContentInteraction {
 }
 
 // EntityIDEQ applies the EQ predicate on the "entity_id" field.
-func EntityIDEQ(v uuid.UUID) predicate.ContentInteraction {
+func EntityIDEQ(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldEntityID, v))
 }
 
 // EntityIDNEQ applies the NEQ predicate on the "entity_id" field.
-func EntityIDNEQ(v uuid.UUID) predicate.ContentInteraction {
+func EntityIDNEQ(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldNEQ(FieldEntityID, v))
 }
 
 // EntityIDIn applies the In predicate on the "entity_id" field.
-func EntityIDIn(vs ...uuid.UUID) predicate.ContentInteraction {
+func EntityIDIn(vs ...string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldIn(FieldEntityID, vs...))
 }
 
 // EntityIDNotIn applies the NotIn predicate on the "entity_id" field.
-func EntityIDNotIn(vs ...uuid.UUID) predicate.ContentInteraction {
+func EntityIDNotIn(vs ...string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldNotIn(FieldEntityID, vs...))
 }
 
 // EntityIDGT applies the GT predicate on the "entity_id" field.
-func EntityIDGT(v uuid.UUID) predicate.ContentInteraction {
+func EntityIDGT(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldGT(FieldEntityID, v))
 }
 
 // EntityIDGTE applies the GTE predicate on the "entity_id" field.
-func EntityIDGTE(v uuid.UUID) predicate.ContentInteraction {
+func EntityIDGTE(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldGTE(FieldEntityID, v))
 }
 
 // EntityIDLT applies the LT predicate on the "entity_id" field.
-func EntityIDLT(v uuid.UUID) predicate.ContentInteraction {
+func EntityIDLT(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldLT(FieldEntityID, v))
 }
 
 // EntityIDLTE applies the LTE predicate on the "entity_id" field.
-func EntityIDLTE(v uuid.UUID) predicate.ContentInteraction {
+func EntityIDLTE(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldLTE(FieldEntityID, v))
+}
+
+// EntityIDContains applies the Contains predicate on the "entity_id" field.
+func EntityIDContains(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContains(FieldEntityID, v))
+}
+
+// EntityIDHasPrefix applies the HasPrefix predicate on the "entity_id" field.
+func EntityIDHasPrefix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasPrefix(FieldEntityID, v))
+}
+
+// EntityIDHasSuffix applies the HasSuffix predicate on the "entity_id" field.
+func EntityIDHasSuffix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasSuffix(FieldEntityID, v))
+}
+
+// EntityIDEqualFold applies the EqualFold predicate on the "entity_id" field.
+func EntityIDEqualFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldEntityID, v))
+}
+
+// EntityIDContainsFold applies the ContainsFold predicate on the "entity_id" field.
+func EntityIDContainsFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldEntityID, v))
 }
 
 // SectionAnchorEQ applies the EQ predicate on the "section_anchor" field.

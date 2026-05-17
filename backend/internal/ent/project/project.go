@@ -8,7 +8,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 const (
@@ -187,7 +186,7 @@ var (
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
-	DefaultID func() uuid.UUID
+	DefaultID func() string
 )
 
 // Status defines the type for the "status" enum field.
@@ -221,8 +220,8 @@ func StatusValidator(s Status) error {
 // Visibility defines the type for the "visibility" enum field.
 type Visibility string
 
-// VisibilityPublic is the default value of the Visibility enum.
-const DefaultVisibility = VisibilityPublic
+// VisibilityPrivate is the default value of the Visibility enum.
+const DefaultVisibility = VisibilityPrivate
 
 // Visibility values.
 const (

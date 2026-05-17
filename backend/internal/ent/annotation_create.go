@@ -11,7 +11,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AnnotationCreate is the builder for creating a Annotation entity.
@@ -28,8 +27,8 @@ func (ac *AnnotationCreate) SetEntityType(at annotation.EntityType) *AnnotationC
 }
 
 // SetEntityID sets the "entity_id" field.
-func (ac *AnnotationCreate) SetEntityID(u uuid.UUID) *AnnotationCreate {
-	ac.mutation.SetEntityID(u)
+func (ac *AnnotationCreate) SetEntityID(s string) *AnnotationCreate {
+	ac.mutation.SetEntityID(s)
 	return ac
 }
 
@@ -116,15 +115,15 @@ func (ac *AnnotationCreate) SetNillableUpdatedAt(t *time.Time) *AnnotationCreate
 }
 
 // SetID sets the "id" field.
-func (ac *AnnotationCreate) SetID(u uuid.UUID) *AnnotationCreate {
-	ac.mutation.SetID(u)
+func (ac *AnnotationCreate) SetID(s string) *AnnotationCreate {
+	ac.mutation.SetID(s)
 	return ac
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ac *AnnotationCreate) SetNillableID(u *uuid.UUID) *AnnotationCreate {
-	if u != nil {
-		ac.SetID(*u)
+func (ac *AnnotationCreate) SetNillableID(s *string) *AnnotationCreate {
+	if s != nil {
+		ac.SetID(*s)
 	}
 	return ac
 }
@@ -223,10 +222,10 @@ func (ac *AnnotationCreate) sqlSave(ctx context.Context) (*Annotation, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Annotation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ac.mutation.id = &_node.ID
@@ -237,18 +236,18 @@ func (ac *AnnotationCreate) sqlSave(ctx context.Context) (*Annotation, error) {
 func (ac *AnnotationCreate) createSpec() (*Annotation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Annotation{config: ac.config}
-		_spec = sqlgraph.NewCreateSpec(annotation.Table, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(annotation.Table, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeString))
 	)
 	if id, ok := ac.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ac.mutation.EntityType(); ok {
 		_spec.SetField(annotation.FieldEntityType, field.TypeEnum, value)
 		_node.EntityType = value
 	}
 	if value, ok := ac.mutation.EntityID(); ok {
-		_spec.SetField(annotation.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(annotation.FieldEntityID, field.TypeString, value)
 		_node.EntityID = value
 	}
 	if value, ok := ac.mutation.PartRole(); ok {

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AwardTranslationCreate is the builder for creating a AwardTranslation entity.
@@ -24,8 +23,8 @@ type AwardTranslationCreate struct {
 }
 
 // SetAwardID sets the "award_id" field.
-func (atc *AwardTranslationCreate) SetAwardID(u uuid.UUID) *AwardTranslationCreate {
-	atc.mutation.SetAwardID(u)
+func (atc *AwardTranslationCreate) SetAwardID(s string) *AwardTranslationCreate {
+	atc.mutation.SetAwardID(s)
 	return atc
 }
 
@@ -90,15 +89,15 @@ func (atc *AwardTranslationCreate) SetNillableCreatedAt(t *time.Time) *AwardTran
 }
 
 // SetID sets the "id" field.
-func (atc *AwardTranslationCreate) SetID(u uuid.UUID) *AwardTranslationCreate {
-	atc.mutation.SetID(u)
+func (atc *AwardTranslationCreate) SetID(s string) *AwardTranslationCreate {
+	atc.mutation.SetID(s)
 	return atc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (atc *AwardTranslationCreate) SetNillableID(u *uuid.UUID) *AwardTranslationCreate {
-	if u != nil {
-		atc.SetID(*u)
+func (atc *AwardTranslationCreate) SetNillableID(s *string) *AwardTranslationCreate {
+	if s != nil {
+		atc.SetID(*s)
 	}
 	return atc
 }
@@ -222,10 +221,10 @@ func (atc *AwardTranslationCreate) sqlSave(ctx context.Context) (*AwardTranslati
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected AwardTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	atc.mutation.id = &_node.ID
@@ -236,11 +235,11 @@ func (atc *AwardTranslationCreate) sqlSave(ctx context.Context) (*AwardTranslati
 func (atc *AwardTranslationCreate) createSpec() (*AwardTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &AwardTranslation{config: atc.config}
-		_spec = sqlgraph.NewCreateSpec(awardtranslation.Table, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(awardtranslation.Table, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString))
 	)
 	if id, ok := atc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := atc.mutation.Title(); ok {
 		_spec.SetField(awardtranslation.FieldTitle, field.TypeString, value)
@@ -270,7 +269,7 @@ func (atc *AwardTranslationCreate) createSpec() (*AwardTranslation, *sqlgraph.Cr
 			Columns: []string{awardtranslation.AwardColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

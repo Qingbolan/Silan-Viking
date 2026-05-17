@@ -14,7 +14,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationCreate is the builder for creating a Publication entity.
@@ -25,8 +24,8 @@ type PublicationCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (pc *PublicationCreate) SetUserID(u uuid.UUID) *PublicationCreate {
-	pc.mutation.SetUserID(u)
+func (pc *PublicationCreate) SetUserID(s string) *PublicationCreate {
+	pc.mutation.SetUserID(s)
 	return pc
 }
 
@@ -253,15 +252,15 @@ func (pc *PublicationCreate) SetNillableUpdatedAt(t *time.Time) *PublicationCrea
 }
 
 // SetID sets the "id" field.
-func (pc *PublicationCreate) SetID(u uuid.UUID) *PublicationCreate {
-	pc.mutation.SetID(u)
+func (pc *PublicationCreate) SetID(s string) *PublicationCreate {
+	pc.mutation.SetID(s)
 	return pc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pc *PublicationCreate) SetNillableID(u *uuid.UUID) *PublicationCreate {
-	if u != nil {
-		pc.SetID(*u)
+func (pc *PublicationCreate) SetNillableID(s *string) *PublicationCreate {
+	if s != nil {
+		pc.SetID(*s)
 	}
 	return pc
 }
@@ -272,14 +271,14 @@ func (pc *PublicationCreate) SetUser(u *User) *PublicationCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the PublicationTranslation entity by IDs.
-func (pc *PublicationCreate) AddTranslationIDs(ids ...uuid.UUID) *PublicationCreate {
+func (pc *PublicationCreate) AddTranslationIDs(ids ...string) *PublicationCreate {
 	pc.mutation.AddTranslationIDs(ids...)
 	return pc
 }
 
 // AddTranslations adds the "translations" edges to the PublicationTranslation entity.
 func (pc *PublicationCreate) AddTranslations(p ...*PublicationTranslation) *PublicationCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -287,14 +286,14 @@ func (pc *PublicationCreate) AddTranslations(p ...*PublicationTranslation) *Publ
 }
 
 // AddAuthorIDs adds the "authors" edge to the PublicationAuthor entity by IDs.
-func (pc *PublicationCreate) AddAuthorIDs(ids ...uuid.UUID) *PublicationCreate {
+func (pc *PublicationCreate) AddAuthorIDs(ids ...string) *PublicationCreate {
 	pc.mutation.AddAuthorIDs(ids...)
 	return pc
 }
 
 // AddAuthors adds the "authors" edges to the PublicationAuthor entity.
 func (pc *PublicationCreate) AddAuthors(p ...*PublicationAuthor) *PublicationCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -461,10 +460,10 @@ func (pc *PublicationCreate) sqlSave(ctx context.Context) (*Publication, error) 
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Publication.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pc.mutation.id = &_node.ID
@@ -475,11 +474,11 @@ func (pc *PublicationCreate) sqlSave(ctx context.Context) (*Publication, error) 
 func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Publication{config: pc.config}
-		_spec = sqlgraph.NewCreateSpec(publication.Table, sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(publication.Table, sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString))
 	)
 	if id, ok := pc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pc.mutation.Title(); ok {
 		_spec.SetField(publication.FieldTitle, field.TypeString, value)
@@ -557,7 +556,7 @@ func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 			Columns: []string{publication.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -574,7 +573,7 @@ func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 			Columns: []string{publication.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -590,7 +589,7 @@ func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 			Columns: []string{publication.AuthorsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

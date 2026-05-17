@@ -10,18 +10,17 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // Annotation is the model entity for the Annotation schema.
 type Annotation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// EntityType holds the value of the "entity_type" field.
 	EntityType annotation.EntityType `json:"entity_type,omitempty"`
 	// EntityID holds the value of the "entity_id" field.
-	EntityID uuid.UUID `json:"entity_id,omitempty"`
+	EntityID string `json:"entity_id,omitempty"`
 	// PartRole holds the value of the "part_role" field.
 	PartRole *string `json:"part_role,omitempty"`
 	// Anchor holds the value of the "anchor" field.
@@ -44,12 +43,10 @@ func (*Annotation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case annotation.FieldEntityType, annotation.FieldPartRole, annotation.FieldAnchor, annotation.FieldBody, annotation.FieldAuthorKind, annotation.FieldUserIdentityID:
+		case annotation.FieldID, annotation.FieldEntityType, annotation.FieldEntityID, annotation.FieldPartRole, annotation.FieldAnchor, annotation.FieldBody, annotation.FieldAuthorKind, annotation.FieldUserIdentityID:
 			values[i] = new(sql.NullString)
 		case annotation.FieldCreatedAt, annotation.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case annotation.FieldID, annotation.FieldEntityID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -66,10 +63,10 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case annotation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				a.ID = *value
+			} else if value.Valid {
+				a.ID = value.String
 			}
 		case annotation.FieldEntityType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -78,10 +75,10 @@ func (a *Annotation) assignValues(columns []string, values []any) error {
 				a.EntityType = annotation.EntityType(value.String)
 			}
 		case annotation.FieldEntityID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entity_id", values[i])
-			} else if value != nil {
-				a.EntityID = *value
+			} else if value.Valid {
+				a.EntityID = value.String
 			}
 		case annotation.FieldPartRole:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -168,7 +165,7 @@ func (a *Annotation) String() string {
 	builder.WriteString(fmt.Sprintf("%v", a.EntityType))
 	builder.WriteString(", ")
 	builder.WriteString("entity_id=")
-	builder.WriteString(fmt.Sprintf("%v", a.EntityID))
+	builder.WriteString(a.EntityID)
 	builder.WriteString(", ")
 	if v := a.PartRole; v != nil {
 		builder.WriteString("part_role=")

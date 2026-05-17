@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PartEntryQuery is the builder for querying PartEntry entities.
@@ -132,8 +131,8 @@ func (peq *PartEntryQuery) FirstX(ctx context.Context) *PartEntry {
 
 // FirstID returns the first PartEntry ID from the query.
 // Returns a *NotFoundError when no PartEntry ID was found.
-func (peq *PartEntryQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (peq *PartEntryQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = peq.Limit(1).IDs(setContextOp(ctx, peq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (peq *PartEntryQuery) FirstID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (peq *PartEntryQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (peq *PartEntryQuery) FirstIDX(ctx context.Context) string {
 	id, err := peq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (peq *PartEntryQuery) OnlyX(ctx context.Context) *PartEntry {
 // OnlyID is like Only, but returns the only PartEntry ID in the query.
 // Returns a *NotSingularError when more than one PartEntry ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (peq *PartEntryQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (peq *PartEntryQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = peq.Limit(2).IDs(setContextOp(ctx, peq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (peq *PartEntryQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error)
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (peq *PartEntryQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (peq *PartEntryQuery) OnlyIDX(ctx context.Context) string {
 	id, err := peq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (peq *PartEntryQuery) AllX(ctx context.Context) []*PartEntry {
 }
 
 // IDs executes the query and returns a list of PartEntry IDs.
-func (peq *PartEntryQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (peq *PartEntryQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if peq.ctx.Unique == nil && peq.path != nil {
 		peq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (peq *PartEntryQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error)
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (peq *PartEntryQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (peq *PartEntryQuery) IDsX(ctx context.Context) []string {
 	ids, err := peq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -336,7 +335,7 @@ func (peq *PartEntryQuery) WithTranslations(opts ...func(*PartEntryTranslationQu
 // Example:
 //
 //	var v []struct {
-//		ItemPartID uuid.UUID `json:"item_part_id,omitempty"`
+//		ItemPartID string `json:"item_part_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -359,7 +358,7 @@ func (peq *PartEntryQuery) GroupBy(field string, fields ...string) *PartEntryGro
 // Example:
 //
 //	var v []struct {
-//		ItemPartID uuid.UUID `json:"item_part_id,omitempty"`
+//		ItemPartID string `json:"item_part_id,omitempty"`
 //	}
 //
 //	client.PartEntry.Query().
@@ -448,8 +447,8 @@ func (peq *PartEntryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*P
 }
 
 func (peq *PartEntryQuery) loadItemPart(ctx context.Context, query *ItemPartQuery, nodes []*PartEntry, init func(*PartEntry), assign func(*PartEntry, *ItemPart)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*PartEntry)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*PartEntry)
 	for i := range nodes {
 		fk := nodes[i].ItemPartID
 		if _, ok := nodeids[fk]; !ok {
@@ -478,7 +477,7 @@ func (peq *PartEntryQuery) loadItemPart(ctx context.Context, query *ItemPartQuer
 }
 func (peq *PartEntryQuery) loadTranslations(ctx context.Context, query *PartEntryTranslationQuery, nodes []*PartEntry, init func(*PartEntry), assign func(*PartEntry, *PartEntryTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*PartEntry)
+	nodeids := make(map[string]*PartEntry)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -517,7 +516,7 @@ func (peq *PartEntryQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (peq *PartEntryQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(partentry.Table, partentry.Columns, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(partentry.Table, partentry.Columns, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString))
 	_spec.From = peq.sql
 	if unique := peq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

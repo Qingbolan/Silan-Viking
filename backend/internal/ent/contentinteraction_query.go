@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ContentInteractionQuery is the builder for querying ContentInteraction entities.
@@ -83,8 +82,8 @@ func (ciq *ContentInteractionQuery) FirstX(ctx context.Context) *ContentInteract
 
 // FirstID returns the first ContentInteraction ID from the query.
 // Returns a *NotFoundError when no ContentInteraction ID was found.
-func (ciq *ContentInteractionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ciq *ContentInteractionQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ciq.Limit(1).IDs(setContextOp(ctx, ciq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -96,7 +95,7 @@ func (ciq *ContentInteractionQuery) FirstID(ctx context.Context) (id uuid.UUID, 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (ciq *ContentInteractionQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (ciq *ContentInteractionQuery) FirstIDX(ctx context.Context) string {
 	id, err := ciq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -134,8 +133,8 @@ func (ciq *ContentInteractionQuery) OnlyX(ctx context.Context) *ContentInteracti
 // OnlyID is like Only, but returns the only ContentInteraction ID in the query.
 // Returns a *NotSingularError when more than one ContentInteraction ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (ciq *ContentInteractionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ciq *ContentInteractionQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ciq.Limit(2).IDs(setContextOp(ctx, ciq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -151,7 +150,7 @@ func (ciq *ContentInteractionQuery) OnlyID(ctx context.Context) (id uuid.UUID, e
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (ciq *ContentInteractionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (ciq *ContentInteractionQuery) OnlyIDX(ctx context.Context) string {
 	id, err := ciq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -179,7 +178,7 @@ func (ciq *ContentInteractionQuery) AllX(ctx context.Context) []*ContentInteract
 }
 
 // IDs executes the query and returns a list of ContentInteraction IDs.
-func (ciq *ContentInteractionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (ciq *ContentInteractionQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if ciq.ctx.Unique == nil && ciq.path != nil {
 		ciq.Unique(true)
 	}
@@ -191,7 +190,7 @@ func (ciq *ContentInteractionQuery) IDs(ctx context.Context) (ids []uuid.UUID, e
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (ciq *ContentInteractionQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (ciq *ContentInteractionQuery) IDsX(ctx context.Context) []string {
 	ids, err := ciq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -366,7 +365,7 @@ func (ciq *ContentInteractionQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (ciq *ContentInteractionQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(contentinteraction.Table, contentinteraction.Columns, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(contentinteraction.Table, contentinteraction.Columns, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeString))
 	_spec.From = ciq.sql
 	if unique := ciq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

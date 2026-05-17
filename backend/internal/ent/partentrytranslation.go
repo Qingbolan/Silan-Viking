@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // PartEntryTranslation is the model entity for the PartEntryTranslation schema.
 type PartEntryTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// PartEntryID holds the value of the "part_entry_id" field.
-	PartEntryID uuid.UUID `json:"part_entry_id,omitempty"`
+	PartEntryID string `json:"part_entry_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// LocalizedPayload holds the value of the "localized_payload" field.
@@ -61,12 +60,10 @@ func (*PartEntryTranslation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case partentrytranslation.FieldLocalizedPayload:
 			values[i] = new([]byte)
-		case partentrytranslation.FieldLanguageCode:
+		case partentrytranslation.FieldID, partentrytranslation.FieldPartEntryID, partentrytranslation.FieldLanguageCode:
 			values[i] = new(sql.NullString)
 		case partentrytranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case partentrytranslation.FieldID, partentrytranslation.FieldPartEntryID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -83,16 +80,16 @@ func (pet *PartEntryTranslation) assignValues(columns []string, values []any) er
 	for i := range columns {
 		switch columns[i] {
 		case partentrytranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pet.ID = *value
+			} else if value.Valid {
+				pet.ID = value.String
 			}
 		case partentrytranslation.FieldPartEntryID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field part_entry_id", values[i])
-			} else if value != nil {
-				pet.PartEntryID = *value
+			} else if value.Valid {
+				pet.PartEntryID = value.String
 			}
 		case partentrytranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -156,7 +153,7 @@ func (pet *PartEntryTranslation) String() string {
 	builder.WriteString("PartEntryTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pet.ID))
 	builder.WriteString("part_entry_id=")
-	builder.WriteString(fmt.Sprintf("%v", pet.PartEntryID))
+	builder.WriteString(pet.PartEntryID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(pet.LanguageCode)

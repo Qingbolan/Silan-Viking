@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EpisodeQuery is the builder for querying Episode entities.
@@ -132,8 +131,8 @@ func (eq *EpisodeQuery) FirstX(ctx context.Context) *Episode {
 
 // FirstID returns the first Episode ID from the query.
 // Returns a *NotFoundError when no Episode ID was found.
-func (eq *EpisodeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (eq *EpisodeQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = eq.Limit(1).IDs(setContextOp(ctx, eq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (eq *EpisodeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (eq *EpisodeQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (eq *EpisodeQuery) FirstIDX(ctx context.Context) string {
 	id, err := eq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (eq *EpisodeQuery) OnlyX(ctx context.Context) *Episode {
 // OnlyID is like Only, but returns the only Episode ID in the query.
 // Returns a *NotSingularError when more than one Episode ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (eq *EpisodeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (eq *EpisodeQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = eq.Limit(2).IDs(setContextOp(ctx, eq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (eq *EpisodeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (eq *EpisodeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (eq *EpisodeQuery) OnlyIDX(ctx context.Context) string {
 	id, err := eq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (eq *EpisodeQuery) AllX(ctx context.Context) []*Episode {
 }
 
 // IDs executes the query and returns a list of Episode IDs.
-func (eq *EpisodeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (eq *EpisodeQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if eq.ctx.Unique == nil && eq.path != nil {
 		eq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (eq *EpisodeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (eq *EpisodeQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (eq *EpisodeQuery) IDsX(ctx context.Context) []string {
 	ids, err := eq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -336,7 +335,7 @@ func (eq *EpisodeQuery) WithTranslations(opts ...func(*EpisodeTranslationQuery))
 // Example:
 //
 //	var v []struct {
-//		SeriesID uuid.UUID `json:"series_id,omitempty"`
+//		SeriesID string `json:"series_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -359,7 +358,7 @@ func (eq *EpisodeQuery) GroupBy(field string, fields ...string) *EpisodeGroupBy 
 // Example:
 //
 //	var v []struct {
-//		SeriesID uuid.UUID `json:"series_id,omitempty"`
+//		SeriesID string `json:"series_id,omitempty"`
 //	}
 //
 //	client.Episode.Query().
@@ -448,8 +447,8 @@ func (eq *EpisodeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Epis
 }
 
 func (eq *EpisodeQuery) loadSeries(ctx context.Context, query *EpisodeSeriesQuery, nodes []*Episode, init func(*Episode), assign func(*Episode, *EpisodeSeries)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Episode)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Episode)
 	for i := range nodes {
 		fk := nodes[i].SeriesID
 		if _, ok := nodeids[fk]; !ok {
@@ -478,7 +477,7 @@ func (eq *EpisodeQuery) loadSeries(ctx context.Context, query *EpisodeSeriesQuer
 }
 func (eq *EpisodeQuery) loadTranslations(ctx context.Context, query *EpisodeTranslationQuery, nodes []*Episode, init func(*Episode), assign func(*Episode, *EpisodeTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Episode)
+	nodeids := make(map[string]*Episode)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -517,7 +516,7 @@ func (eq *EpisodeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (eq *EpisodeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(episode.Table, episode.Columns, sqlgraph.NewFieldSpec(episode.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(episode.Table, episode.Columns, sqlgraph.NewFieldSpec(episode.FieldID, field.TypeString))
 	_spec.From = eq.sql
 	if unique := eq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

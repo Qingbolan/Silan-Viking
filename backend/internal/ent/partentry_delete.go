@@ -40,7 +40,7 @@ func (ped *PartEntryDelete) ExecX(ctx context.Context) int {
 }
 
 func (ped *PartEntryDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(partentry.Table, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(partentry.Table, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString))
 	if ps := ped.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AnnotationUpdate is the builder for updating Annotation entities.
@@ -44,15 +43,15 @@ func (au *AnnotationUpdate) SetNillableEntityType(at *annotation.EntityType) *An
 }
 
 // SetEntityID sets the "entity_id" field.
-func (au *AnnotationUpdate) SetEntityID(u uuid.UUID) *AnnotationUpdate {
-	au.mutation.SetEntityID(u)
+func (au *AnnotationUpdate) SetEntityID(s string) *AnnotationUpdate {
+	au.mutation.SetEntityID(s)
 	return au
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (au *AnnotationUpdate) SetNillableEntityID(u *uuid.UUID) *AnnotationUpdate {
-	if u != nil {
-		au.SetEntityID(*u)
+func (au *AnnotationUpdate) SetNillableEntityID(s *string) *AnnotationUpdate {
+	if s != nil {
+		au.SetEntityID(*s)
 	}
 	return au
 }
@@ -211,7 +210,7 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := au.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeString))
 	if ps := au.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -223,7 +222,7 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(annotation.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := au.mutation.EntityID(); ok {
-		_spec.SetField(annotation.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(annotation.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := au.mutation.PartRole(); ok {
 		_spec.SetField(annotation.FieldPartRole, field.TypeString, value)
@@ -287,15 +286,15 @@ func (auo *AnnotationUpdateOne) SetNillableEntityType(at *annotation.EntityType)
 }
 
 // SetEntityID sets the "entity_id" field.
-func (auo *AnnotationUpdateOne) SetEntityID(u uuid.UUID) *AnnotationUpdateOne {
-	auo.mutation.SetEntityID(u)
+func (auo *AnnotationUpdateOne) SetEntityID(s string) *AnnotationUpdateOne {
+	auo.mutation.SetEntityID(s)
 	return auo
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (auo *AnnotationUpdateOne) SetNillableEntityID(u *uuid.UUID) *AnnotationUpdateOne {
-	if u != nil {
-		auo.SetEntityID(*u)
+func (auo *AnnotationUpdateOne) SetNillableEntityID(s *string) *AnnotationUpdateOne {
+	if s != nil {
+		auo.SetEntityID(*s)
 	}
 	return auo
 }
@@ -467,7 +466,7 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 	if err := auo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeString))
 	id, ok := auo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Annotation.id" for update`)}
@@ -496,7 +495,7 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 		_spec.SetField(annotation.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := auo.mutation.EntityID(); ok {
-		_spec.SetField(annotation.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(annotation.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := auo.mutation.PartRole(); ok {
 		_spec.SetField(annotation.FieldPartRole, field.TypeString, value)

@@ -40,7 +40,7 @@ func (etd *EpisodeTranslationDelete) ExecX(ctx context.Context) int {
 }
 
 func (etd *EpisodeTranslationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(episodetranslation.Table, sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(episodetranslation.Table, sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString))
 	if ps := etd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

@@ -40,7 +40,7 @@ func (sld *SocialLinkDelete) ExecX(ctx context.Context) int {
 }
 
 func (sld *SocialLinkDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(sociallink.Table, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(sociallink.Table, sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString))
 	if ps := sld.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

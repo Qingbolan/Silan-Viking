@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectDetailTranslationUpdate is the builder for updating ProjectDetailTranslation entities.
@@ -31,15 +30,15 @@ func (pdtu *ProjectDetailTranslationUpdate) Where(ps ...predicate.ProjectDetailT
 }
 
 // SetProjectDetailID sets the "project_detail_id" field.
-func (pdtu *ProjectDetailTranslationUpdate) SetProjectDetailID(u uuid.UUID) *ProjectDetailTranslationUpdate {
-	pdtu.mutation.SetProjectDetailID(u)
+func (pdtu *ProjectDetailTranslationUpdate) SetProjectDetailID(s string) *ProjectDetailTranslationUpdate {
+	pdtu.mutation.SetProjectDetailID(s)
 	return pdtu
 }
 
 // SetNillableProjectDetailID sets the "project_detail_id" field if the given value is not nil.
-func (pdtu *ProjectDetailTranslationUpdate) SetNillableProjectDetailID(u *uuid.UUID) *ProjectDetailTranslationUpdate {
-	if u != nil {
-		pdtu.SetProjectDetailID(*u)
+func (pdtu *ProjectDetailTranslationUpdate) SetNillableProjectDetailID(s *string) *ProjectDetailTranslationUpdate {
+	if s != nil {
+		pdtu.SetProjectDetailID(*s)
 	}
 	return pdtu
 }
@@ -138,7 +137,7 @@ func (pdtu *ProjectDetailTranslationUpdate) sqlSave(ctx context.Context) (n int,
 	if err := pdtu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString))
 	if ps := pdtu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -154,7 +153,7 @@ func (pdtu *ProjectDetailTranslationUpdate) sqlSave(ctx context.Context) (n int,
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -167,7 +166,7 @@ func (pdtu *ProjectDetailTranslationUpdate) sqlSave(ctx context.Context) (n int,
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -225,15 +224,15 @@ type ProjectDetailTranslationUpdateOne struct {
 }
 
 // SetProjectDetailID sets the "project_detail_id" field.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetProjectDetailID(u uuid.UUID) *ProjectDetailTranslationUpdateOne {
-	pdtuo.mutation.SetProjectDetailID(u)
+func (pdtuo *ProjectDetailTranslationUpdateOne) SetProjectDetailID(s string) *ProjectDetailTranslationUpdateOne {
+	pdtuo.mutation.SetProjectDetailID(s)
 	return pdtuo
 }
 
 // SetNillableProjectDetailID sets the "project_detail_id" field if the given value is not nil.
-func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableProjectDetailID(u *uuid.UUID) *ProjectDetailTranslationUpdateOne {
-	if u != nil {
-		pdtuo.SetProjectDetailID(*u)
+func (pdtuo *ProjectDetailTranslationUpdateOne) SetNillableProjectDetailID(s *string) *ProjectDetailTranslationUpdateOne {
+	if s != nil {
+		pdtuo.SetProjectDetailID(*s)
 	}
 	return pdtuo
 }
@@ -345,7 +344,7 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 	if err := pdtuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectdetailtranslation.Table, projectdetailtranslation.Columns, sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString))
 	id, ok := pdtuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectDetailTranslation.id" for update`)}
@@ -378,7 +377,7 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -391,7 +390,7 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 			Columns: []string{projectdetailtranslation.ProjectDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.ProjectImageTranslation {
+func ID(id string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.ProjectImageTranslation {
+func IDEQ(id string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.ProjectImageTranslation {
+func IDNEQ(id string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.ProjectImageTranslation {
+func IDIn(ids ...string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.ProjectImageTranslation {
+func IDNotIn(ids ...string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.ProjectImageTranslation {
+func IDGT(id string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.ProjectImageTranslation {
+func IDGTE(id string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.ProjectImageTranslation {
+func IDLT(id string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.ProjectImageTranslation {
+func IDLTE(id string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // ProjectImageID applies equality check predicate on the "project_image_id" field. It's identical to ProjectImageIDEQ.
-func ProjectImageID(v uuid.UUID) predicate.ProjectImageTranslation {
+func ProjectImageID(v string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldEQ(FieldProjectImageID, v))
 }
 
@@ -82,23 +91,68 @@ func CreatedAt(v time.Time) predicate.ProjectImageTranslation {
 }
 
 // ProjectImageIDEQ applies the EQ predicate on the "project_image_id" field.
-func ProjectImageIDEQ(v uuid.UUID) predicate.ProjectImageTranslation {
+func ProjectImageIDEQ(v string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldEQ(FieldProjectImageID, v))
 }
 
 // ProjectImageIDNEQ applies the NEQ predicate on the "project_image_id" field.
-func ProjectImageIDNEQ(v uuid.UUID) predicate.ProjectImageTranslation {
+func ProjectImageIDNEQ(v string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldNEQ(FieldProjectImageID, v))
 }
 
 // ProjectImageIDIn applies the In predicate on the "project_image_id" field.
-func ProjectImageIDIn(vs ...uuid.UUID) predicate.ProjectImageTranslation {
+func ProjectImageIDIn(vs ...string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldIn(FieldProjectImageID, vs...))
 }
 
 // ProjectImageIDNotIn applies the NotIn predicate on the "project_image_id" field.
-func ProjectImageIDNotIn(vs ...uuid.UUID) predicate.ProjectImageTranslation {
+func ProjectImageIDNotIn(vs ...string) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldNotIn(FieldProjectImageID, vs...))
+}
+
+// ProjectImageIDGT applies the GT predicate on the "project_image_id" field.
+func ProjectImageIDGT(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldGT(FieldProjectImageID, v))
+}
+
+// ProjectImageIDGTE applies the GTE predicate on the "project_image_id" field.
+func ProjectImageIDGTE(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldGTE(FieldProjectImageID, v))
+}
+
+// ProjectImageIDLT applies the LT predicate on the "project_image_id" field.
+func ProjectImageIDLT(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldLT(FieldProjectImageID, v))
+}
+
+// ProjectImageIDLTE applies the LTE predicate on the "project_image_id" field.
+func ProjectImageIDLTE(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldLTE(FieldProjectImageID, v))
+}
+
+// ProjectImageIDContains applies the Contains predicate on the "project_image_id" field.
+func ProjectImageIDContains(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldContains(FieldProjectImageID, v))
+}
+
+// ProjectImageIDHasPrefix applies the HasPrefix predicate on the "project_image_id" field.
+func ProjectImageIDHasPrefix(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldHasPrefix(FieldProjectImageID, v))
+}
+
+// ProjectImageIDHasSuffix applies the HasSuffix predicate on the "project_image_id" field.
+func ProjectImageIDHasSuffix(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldHasSuffix(FieldProjectImageID, v))
+}
+
+// ProjectImageIDEqualFold applies the EqualFold predicate on the "project_image_id" field.
+func ProjectImageIDEqualFold(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldEqualFold(FieldProjectImageID, v))
+}
+
+// ProjectImageIDContainsFold applies the ContainsFold predicate on the "project_image_id" field.
+func ProjectImageIDContainsFold(v string) predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldContainsFold(FieldProjectImageID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

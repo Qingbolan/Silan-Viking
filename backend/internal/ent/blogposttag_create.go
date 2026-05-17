@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogPostTagCreate is the builder for creating a BlogPostTag entity.
@@ -24,14 +23,14 @@ type BlogPostTagCreate struct {
 }
 
 // SetBlogPostID sets the "blog_post_id" field.
-func (bptc *BlogPostTagCreate) SetBlogPostID(u uuid.UUID) *BlogPostTagCreate {
-	bptc.mutation.SetBlogPostID(u)
+func (bptc *BlogPostTagCreate) SetBlogPostID(s string) *BlogPostTagCreate {
+	bptc.mutation.SetBlogPostID(s)
 	return bptc
 }
 
 // SetBlogTagID sets the "blog_tag_id" field.
-func (bptc *BlogPostTagCreate) SetBlogTagID(u uuid.UUID) *BlogPostTagCreate {
-	bptc.mutation.SetBlogTagID(u)
+func (bptc *BlogPostTagCreate) SetBlogTagID(s string) *BlogPostTagCreate {
+	bptc.mutation.SetBlogTagID(s)
 	return bptc
 }
 
@@ -151,7 +150,7 @@ func (bptc *BlogPostTagCreate) createSpec() (*BlogPostTag, *sqlgraph.CreateSpec)
 			Columns: []string{blogposttag.BlogPostColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -168,7 +167,7 @@ func (bptc *BlogPostTagCreate) createSpec() (*BlogPostTag, *sqlgraph.CreateSpec)
 			Columns: []string{blogposttag.BlogTagColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

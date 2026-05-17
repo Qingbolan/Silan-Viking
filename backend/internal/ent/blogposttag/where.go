@@ -8,16 +8,15 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // BlogPostID applies equality check predicate on the "blog_post_id" field. It's identical to BlogPostIDEQ.
-func BlogPostID(v uuid.UUID) predicate.BlogPostTag {
+func BlogPostID(v string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldEQ(FieldBlogPostID, v))
 }
 
 // BlogTagID applies equality check predicate on the "blog_tag_id" field. It's identical to BlogTagIDEQ.
-func BlogTagID(v uuid.UUID) predicate.BlogPostTag {
+func BlogTagID(v string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldEQ(FieldBlogTagID, v))
 }
 
@@ -27,43 +26,133 @@ func CreatedAt(v time.Time) predicate.BlogPostTag {
 }
 
 // BlogPostIDEQ applies the EQ predicate on the "blog_post_id" field.
-func BlogPostIDEQ(v uuid.UUID) predicate.BlogPostTag {
+func BlogPostIDEQ(v string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldEQ(FieldBlogPostID, v))
 }
 
 // BlogPostIDNEQ applies the NEQ predicate on the "blog_post_id" field.
-func BlogPostIDNEQ(v uuid.UUID) predicate.BlogPostTag {
+func BlogPostIDNEQ(v string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldNEQ(FieldBlogPostID, v))
 }
 
 // BlogPostIDIn applies the In predicate on the "blog_post_id" field.
-func BlogPostIDIn(vs ...uuid.UUID) predicate.BlogPostTag {
+func BlogPostIDIn(vs ...string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldIn(FieldBlogPostID, vs...))
 }
 
 // BlogPostIDNotIn applies the NotIn predicate on the "blog_post_id" field.
-func BlogPostIDNotIn(vs ...uuid.UUID) predicate.BlogPostTag {
+func BlogPostIDNotIn(vs ...string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldNotIn(FieldBlogPostID, vs...))
 }
 
+// BlogPostIDGT applies the GT predicate on the "blog_post_id" field.
+func BlogPostIDGT(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldGT(FieldBlogPostID, v))
+}
+
+// BlogPostIDGTE applies the GTE predicate on the "blog_post_id" field.
+func BlogPostIDGTE(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldGTE(FieldBlogPostID, v))
+}
+
+// BlogPostIDLT applies the LT predicate on the "blog_post_id" field.
+func BlogPostIDLT(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldLT(FieldBlogPostID, v))
+}
+
+// BlogPostIDLTE applies the LTE predicate on the "blog_post_id" field.
+func BlogPostIDLTE(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldLTE(FieldBlogPostID, v))
+}
+
+// BlogPostIDContains applies the Contains predicate on the "blog_post_id" field.
+func BlogPostIDContains(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldContains(FieldBlogPostID, v))
+}
+
+// BlogPostIDHasPrefix applies the HasPrefix predicate on the "blog_post_id" field.
+func BlogPostIDHasPrefix(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldHasPrefix(FieldBlogPostID, v))
+}
+
+// BlogPostIDHasSuffix applies the HasSuffix predicate on the "blog_post_id" field.
+func BlogPostIDHasSuffix(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldHasSuffix(FieldBlogPostID, v))
+}
+
+// BlogPostIDEqualFold applies the EqualFold predicate on the "blog_post_id" field.
+func BlogPostIDEqualFold(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldEqualFold(FieldBlogPostID, v))
+}
+
+// BlogPostIDContainsFold applies the ContainsFold predicate on the "blog_post_id" field.
+func BlogPostIDContainsFold(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldContainsFold(FieldBlogPostID, v))
+}
+
 // BlogTagIDEQ applies the EQ predicate on the "blog_tag_id" field.
-func BlogTagIDEQ(v uuid.UUID) predicate.BlogPostTag {
+func BlogTagIDEQ(v string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldEQ(FieldBlogTagID, v))
 }
 
 // BlogTagIDNEQ applies the NEQ predicate on the "blog_tag_id" field.
-func BlogTagIDNEQ(v uuid.UUID) predicate.BlogPostTag {
+func BlogTagIDNEQ(v string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldNEQ(FieldBlogTagID, v))
 }
 
 // BlogTagIDIn applies the In predicate on the "blog_tag_id" field.
-func BlogTagIDIn(vs ...uuid.UUID) predicate.BlogPostTag {
+func BlogTagIDIn(vs ...string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldIn(FieldBlogTagID, vs...))
 }
 
 // BlogTagIDNotIn applies the NotIn predicate on the "blog_tag_id" field.
-func BlogTagIDNotIn(vs ...uuid.UUID) predicate.BlogPostTag {
+func BlogTagIDNotIn(vs ...string) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldNotIn(FieldBlogTagID, vs...))
+}
+
+// BlogTagIDGT applies the GT predicate on the "blog_tag_id" field.
+func BlogTagIDGT(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldGT(FieldBlogTagID, v))
+}
+
+// BlogTagIDGTE applies the GTE predicate on the "blog_tag_id" field.
+func BlogTagIDGTE(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldGTE(FieldBlogTagID, v))
+}
+
+// BlogTagIDLT applies the LT predicate on the "blog_tag_id" field.
+func BlogTagIDLT(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldLT(FieldBlogTagID, v))
+}
+
+// BlogTagIDLTE applies the LTE predicate on the "blog_tag_id" field.
+func BlogTagIDLTE(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldLTE(FieldBlogTagID, v))
+}
+
+// BlogTagIDContains applies the Contains predicate on the "blog_tag_id" field.
+func BlogTagIDContains(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldContains(FieldBlogTagID, v))
+}
+
+// BlogTagIDHasPrefix applies the HasPrefix predicate on the "blog_tag_id" field.
+func BlogTagIDHasPrefix(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldHasPrefix(FieldBlogTagID, v))
+}
+
+// BlogTagIDHasSuffix applies the HasSuffix predicate on the "blog_tag_id" field.
+func BlogTagIDHasSuffix(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldHasSuffix(FieldBlogTagID, v))
+}
+
+// BlogTagIDEqualFold applies the EqualFold predicate on the "blog_tag_id" field.
+func BlogTagIDEqualFold(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldEqualFold(FieldBlogTagID, v))
+}
+
+// BlogTagIDContainsFold applies the ContainsFold predicate on the "blog_tag_id" field.
+func BlogTagIDContainsFold(v string) predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldContainsFold(FieldBlogTagID, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

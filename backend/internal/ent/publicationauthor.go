@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // PublicationAuthor is the model entity for the PublicationAuthor schema.
 type PublicationAuthor struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// PublicationID holds the value of the "publication_id" field.
-	PublicationID uuid.UUID `json:"publication_id,omitempty"`
+	PublicationID string `json:"publication_id,omitempty"`
 	// AuthorName holds the value of the "author_name" field.
 	AuthorName string `json:"author_name,omitempty"`
 	// AuthorOrder holds the value of the "author_order" field.
@@ -68,12 +67,10 @@ func (*PublicationAuthor) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case publicationauthor.FieldAuthorOrder:
 			values[i] = new(sql.NullInt64)
-		case publicationauthor.FieldAuthorName, publicationauthor.FieldAffiliation:
+		case publicationauthor.FieldID, publicationauthor.FieldPublicationID, publicationauthor.FieldAuthorName, publicationauthor.FieldAffiliation:
 			values[i] = new(sql.NullString)
 		case publicationauthor.FieldCreatedAt, publicationauthor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case publicationauthor.FieldID, publicationauthor.FieldPublicationID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -90,16 +87,16 @@ func (pa *PublicationAuthor) assignValues(columns []string, values []any) error 
 	for i := range columns {
 		switch columns[i] {
 		case publicationauthor.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pa.ID = *value
+			} else if value.Valid {
+				pa.ID = value.String
 			}
 		case publicationauthor.FieldPublicationID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field publication_id", values[i])
-			} else if value != nil {
-				pa.PublicationID = *value
+			} else if value.Valid {
+				pa.PublicationID = value.String
 			}
 		case publicationauthor.FieldAuthorName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -179,7 +176,7 @@ func (pa *PublicationAuthor) String() string {
 	builder.WriteString("PublicationAuthor(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pa.ID))
 	builder.WriteString("publication_id=")
-	builder.WriteString(fmt.Sprintf("%v", pa.PublicationID))
+	builder.WriteString(pa.PublicationID)
 	builder.WriteString(", ")
 	builder.WriteString("author_name=")
 	builder.WriteString(pa.AuthorName)

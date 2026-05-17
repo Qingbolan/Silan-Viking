@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogCategoryTranslationCreate is the builder for creating a BlogCategoryTranslation entity.
@@ -24,8 +23,8 @@ type BlogCategoryTranslationCreate struct {
 }
 
 // SetBlogCategoryID sets the "blog_category_id" field.
-func (bctc *BlogCategoryTranslationCreate) SetBlogCategoryID(u uuid.UUID) *BlogCategoryTranslationCreate {
-	bctc.mutation.SetBlogCategoryID(u)
+func (bctc *BlogCategoryTranslationCreate) SetBlogCategoryID(s string) *BlogCategoryTranslationCreate {
+	bctc.mutation.SetBlogCategoryID(s)
 	return bctc
 }
 
@@ -70,15 +69,15 @@ func (bctc *BlogCategoryTranslationCreate) SetNillableCreatedAt(t *time.Time) *B
 }
 
 // SetID sets the "id" field.
-func (bctc *BlogCategoryTranslationCreate) SetID(u uuid.UUID) *BlogCategoryTranslationCreate {
-	bctc.mutation.SetID(u)
+func (bctc *BlogCategoryTranslationCreate) SetID(s string) *BlogCategoryTranslationCreate {
+	bctc.mutation.SetID(s)
 	return bctc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (bctc *BlogCategoryTranslationCreate) SetNillableID(u *uuid.UUID) *BlogCategoryTranslationCreate {
-	if u != nil {
-		bctc.SetID(*u)
+func (bctc *BlogCategoryTranslationCreate) SetNillableID(s *string) *BlogCategoryTranslationCreate {
+	if s != nil {
+		bctc.SetID(*s)
 	}
 	return bctc
 }
@@ -189,10 +188,10 @@ func (bctc *BlogCategoryTranslationCreate) sqlSave(ctx context.Context) (*BlogCa
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected BlogCategoryTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	bctc.mutation.id = &_node.ID
@@ -203,11 +202,11 @@ func (bctc *BlogCategoryTranslationCreate) sqlSave(ctx context.Context) (*BlogCa
 func (bctc *BlogCategoryTranslationCreate) createSpec() (*BlogCategoryTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &BlogCategoryTranslation{config: bctc.config}
-		_spec = sqlgraph.NewCreateSpec(blogcategorytranslation.Table, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(blogcategorytranslation.Table, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString))
 	)
 	if id, ok := bctc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := bctc.mutation.Name(); ok {
 		_spec.SetField(blogcategorytranslation.FieldName, field.TypeString, value)
@@ -229,7 +228,7 @@ func (bctc *BlogCategoryTranslationCreate) createSpec() (*BlogCategoryTranslatio
 			Columns: []string{blogcategorytranslation.BlogCategoryColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EpisodeSeriesCreate is the builder for creating a EpisodeSeries entity.
@@ -32,6 +31,14 @@ func (esc *EpisodeSeriesCreate) SetSlug(s string) *EpisodeSeriesCreate {
 // SetTitle sets the "title" field.
 func (esc *EpisodeSeriesCreate) SetTitle(s string) *EpisodeSeriesCreate {
 	esc.mutation.SetTitle(s)
+	return esc
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (esc *EpisodeSeriesCreate) SetNillableTitle(s *string) *EpisodeSeriesCreate {
+	if s != nil {
+		esc.SetTitle(*s)
+	}
 	return esc
 }
 
@@ -92,28 +99,28 @@ func (esc *EpisodeSeriesCreate) SetNillableUpdatedAt(t *time.Time) *EpisodeSerie
 }
 
 // SetID sets the "id" field.
-func (esc *EpisodeSeriesCreate) SetID(u uuid.UUID) *EpisodeSeriesCreate {
-	esc.mutation.SetID(u)
+func (esc *EpisodeSeriesCreate) SetID(s string) *EpisodeSeriesCreate {
+	esc.mutation.SetID(s)
 	return esc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (esc *EpisodeSeriesCreate) SetNillableID(u *uuid.UUID) *EpisodeSeriesCreate {
-	if u != nil {
-		esc.SetID(*u)
+func (esc *EpisodeSeriesCreate) SetNillableID(s *string) *EpisodeSeriesCreate {
+	if s != nil {
+		esc.SetID(*s)
 	}
 	return esc
 }
 
 // AddEpisodeIDs adds the "episodes" edge to the Episode entity by IDs.
-func (esc *EpisodeSeriesCreate) AddEpisodeIDs(ids ...uuid.UUID) *EpisodeSeriesCreate {
+func (esc *EpisodeSeriesCreate) AddEpisodeIDs(ids ...string) *EpisodeSeriesCreate {
 	esc.mutation.AddEpisodeIDs(ids...)
 	return esc
 }
 
 // AddEpisodes adds the "episodes" edges to the Episode entity.
 func (esc *EpisodeSeriesCreate) AddEpisodes(e ...*Episode) *EpisodeSeriesCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -121,14 +128,14 @@ func (esc *EpisodeSeriesCreate) AddEpisodes(e ...*Episode) *EpisodeSeriesCreate 
 }
 
 // AddTranslationIDs adds the "translations" edge to the EpisodeSeriesTranslation entity by IDs.
-func (esc *EpisodeSeriesCreate) AddTranslationIDs(ids ...uuid.UUID) *EpisodeSeriesCreate {
+func (esc *EpisodeSeriesCreate) AddTranslationIDs(ids ...string) *EpisodeSeriesCreate {
 	esc.mutation.AddTranslationIDs(ids...)
 	return esc
 }
 
 // AddTranslations adds the "translations" edges to the EpisodeSeriesTranslation entity.
 func (esc *EpisodeSeriesCreate) AddTranslations(e ...*EpisodeSeriesTranslation) *EpisodeSeriesCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -198,9 +205,6 @@ func (esc *EpisodeSeriesCreate) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.slug": %w`, err)}
 		}
 	}
-	if _, ok := esc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "EpisodeSeries.title"`)}
-	}
 	if v, ok := esc.mutation.Title(); ok {
 		if err := episodeseries.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.title": %w`, err)}
@@ -213,12 +217,6 @@ func (esc *EpisodeSeriesCreate) check() error {
 		if err := episodeseries.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.status": %w`, err)}
 		}
-	}
-	if _, ok := esc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "EpisodeSeries.created_at"`)}
-	}
-	if _, ok := esc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "EpisodeSeries.updated_at"`)}
 	}
 	return nil
 }
@@ -235,10 +233,10 @@ func (esc *EpisodeSeriesCreate) sqlSave(ctx context.Context) (*EpisodeSeries, er
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected EpisodeSeries.ID type: %T", _spec.ID.Value)
 		}
 	}
 	esc.mutation.id = &_node.ID
@@ -249,11 +247,11 @@ func (esc *EpisodeSeriesCreate) sqlSave(ctx context.Context) (*EpisodeSeries, er
 func (esc *EpisodeSeriesCreate) createSpec() (*EpisodeSeries, *sqlgraph.CreateSpec) {
 	var (
 		_node = &EpisodeSeries{config: esc.config}
-		_spec = sqlgraph.NewCreateSpec(episodeseries.Table, sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(episodeseries.Table, sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString))
 	)
 	if id, ok := esc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := esc.mutation.Slug(); ok {
 		_spec.SetField(episodeseries.FieldSlug, field.TypeString, value)
@@ -287,7 +285,7 @@ func (esc *EpisodeSeriesCreate) createSpec() (*EpisodeSeries, *sqlgraph.CreateSp
 			Columns: []string{episodeseries.EpisodesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episode.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episode.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -303,7 +301,7 @@ func (esc *EpisodeSeriesCreate) createSpec() (*EpisodeSeries, *sqlgraph.CreateSp
 			Columns: []string{episodeseries.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -40,7 +40,7 @@ func (pvd *ProjectViewDelete) ExecX(ctx context.Context) int {
 }
 
 func (pvd *ProjectViewDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(projectview.Table, sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(projectview.Table, sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString))
 	if ps := pvd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

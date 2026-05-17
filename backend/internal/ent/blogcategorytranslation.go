@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // BlogCategoryTranslation is the model entity for the BlogCategoryTranslation schema.
 type BlogCategoryTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// BlogCategoryID holds the value of the "blog_category_id" field.
-	BlogCategoryID uuid.UUID `json:"blog_category_id,omitempty"`
+	BlogCategoryID string `json:"blog_category_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Name holds the value of the "name" field.
@@ -74,12 +73,10 @@ func (*BlogCategoryTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case blogcategorytranslation.FieldLanguageCode, blogcategorytranslation.FieldName, blogcategorytranslation.FieldDescription:
+		case blogcategorytranslation.FieldID, blogcategorytranslation.FieldBlogCategoryID, blogcategorytranslation.FieldLanguageCode, blogcategorytranslation.FieldName, blogcategorytranslation.FieldDescription:
 			values[i] = new(sql.NullString)
 		case blogcategorytranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case blogcategorytranslation.FieldID, blogcategorytranslation.FieldBlogCategoryID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -96,16 +93,16 @@ func (bct *BlogCategoryTranslation) assignValues(columns []string, values []any)
 	for i := range columns {
 		switch columns[i] {
 		case blogcategorytranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				bct.ID = *value
+			} else if value.Valid {
+				bct.ID = value.String
 			}
 		case blogcategorytranslation.FieldBlogCategoryID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field blog_category_id", values[i])
-			} else if value != nil {
-				bct.BlogCategoryID = *value
+			} else if value.Valid {
+				bct.BlogCategoryID = value.String
 			}
 		case blogcategorytranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -178,7 +175,7 @@ func (bct *BlogCategoryTranslation) String() string {
 	builder.WriteString("BlogCategoryTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", bct.ID))
 	builder.WriteString("blog_category_id=")
-	builder.WriteString(fmt.Sprintf("%v", bct.BlogCategoryID))
+	builder.WriteString(bct.BlogCategoryID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(bct.LanguageCode)

@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogTagCreate is the builder for creating a BlogTag entity.
@@ -63,28 +62,28 @@ func (btc *BlogTagCreate) SetNillableCreatedAt(t *time.Time) *BlogTagCreate {
 }
 
 // SetID sets the "id" field.
-func (btc *BlogTagCreate) SetID(u uuid.UUID) *BlogTagCreate {
-	btc.mutation.SetID(u)
+func (btc *BlogTagCreate) SetID(s string) *BlogTagCreate {
+	btc.mutation.SetID(s)
 	return btc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (btc *BlogTagCreate) SetNillableID(u *uuid.UUID) *BlogTagCreate {
-	if u != nil {
-		btc.SetID(*u)
+func (btc *BlogTagCreate) SetNillableID(s *string) *BlogTagCreate {
+	if s != nil {
+		btc.SetID(*s)
 	}
 	return btc
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (btc *BlogTagCreate) AddBlogPostIDs(ids ...uuid.UUID) *BlogTagCreate {
+func (btc *BlogTagCreate) AddBlogPostIDs(ids ...string) *BlogTagCreate {
 	btc.mutation.AddBlogPostIDs(ids...)
 	return btc
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (btc *BlogTagCreate) AddBlogPosts(b ...*BlogPost) *BlogTagCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -179,10 +178,10 @@ func (btc *BlogTagCreate) sqlSave(ctx context.Context) (*BlogTag, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected BlogTag.ID type: %T", _spec.ID.Value)
 		}
 	}
 	btc.mutation.id = &_node.ID
@@ -193,11 +192,11 @@ func (btc *BlogTagCreate) sqlSave(ctx context.Context) (*BlogTag, error) {
 func (btc *BlogTagCreate) createSpec() (*BlogTag, *sqlgraph.CreateSpec) {
 	var (
 		_node = &BlogTag{config: btc.config}
-		_spec = sqlgraph.NewCreateSpec(blogtag.Table, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(blogtag.Table, sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString))
 	)
 	if id, ok := btc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := btc.mutation.Name(); ok {
 		_spec.SetField(blogtag.FieldName, field.TypeString, value)
@@ -223,7 +222,7 @@ func (btc *BlogTagCreate) createSpec() (*BlogTag, *sqlgraph.CreateSpec) {
 			Columns: blogtag.BlogPostsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

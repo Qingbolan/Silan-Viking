@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AwardUpdate is the builder for updating Award entities.
@@ -32,15 +31,15 @@ func (au *AwardUpdate) Where(ps ...predicate.Award) *AwardUpdate {
 }
 
 // SetUserID sets the "user_id" field.
-func (au *AwardUpdate) SetUserID(u uuid.UUID) *AwardUpdate {
-	au.mutation.SetUserID(u)
+func (au *AwardUpdate) SetUserID(s string) *AwardUpdate {
+	au.mutation.SetUserID(s)
 	return au
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (au *AwardUpdate) SetNillableUserID(u *uuid.UUID) *AwardUpdate {
-	if u != nil {
-		au.SetUserID(*u)
+func (au *AwardUpdate) SetNillableUserID(s *string) *AwardUpdate {
+	if s != nil {
+		au.SetUserID(*s)
 	}
 	return au
 }
@@ -213,14 +212,14 @@ func (au *AwardUpdate) SetUser(u *User) *AwardUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the AwardTranslation entity by IDs.
-func (au *AwardUpdate) AddTranslationIDs(ids ...uuid.UUID) *AwardUpdate {
+func (au *AwardUpdate) AddTranslationIDs(ids ...string) *AwardUpdate {
 	au.mutation.AddTranslationIDs(ids...)
 	return au
 }
 
 // AddTranslations adds the "translations" edges to the AwardTranslation entity.
 func (au *AwardUpdate) AddTranslations(a ...*AwardTranslation) *AwardUpdate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -245,14 +244,14 @@ func (au *AwardUpdate) ClearTranslations() *AwardUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to AwardTranslation entities by IDs.
-func (au *AwardUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *AwardUpdate {
+func (au *AwardUpdate) RemoveTranslationIDs(ids ...string) *AwardUpdate {
 	au.mutation.RemoveTranslationIDs(ids...)
 	return au
 }
 
 // RemoveTranslations removes "translations" edges to AwardTranslation entities.
 func (au *AwardUpdate) RemoveTranslations(a ...*AwardTranslation) *AwardUpdate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -327,7 +326,7 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := au.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(award.Table, award.Columns, sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(award.Table, award.Columns, sqlgraph.NewFieldSpec(award.FieldID, field.TypeString))
 	if ps := au.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -391,7 +390,7 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{award.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -404,7 +403,7 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{award.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -420,7 +419,7 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{award.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -433,7 +432,7 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{award.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -449,7 +448,7 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{award.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -478,15 +477,15 @@ type AwardUpdateOne struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (auo *AwardUpdateOne) SetUserID(u uuid.UUID) *AwardUpdateOne {
-	auo.mutation.SetUserID(u)
+func (auo *AwardUpdateOne) SetUserID(s string) *AwardUpdateOne {
+	auo.mutation.SetUserID(s)
 	return auo
 }
 
 // SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (auo *AwardUpdateOne) SetNillableUserID(u *uuid.UUID) *AwardUpdateOne {
-	if u != nil {
-		auo.SetUserID(*u)
+func (auo *AwardUpdateOne) SetNillableUserID(s *string) *AwardUpdateOne {
+	if s != nil {
+		auo.SetUserID(*s)
 	}
 	return auo
 }
@@ -659,14 +658,14 @@ func (auo *AwardUpdateOne) SetUser(u *User) *AwardUpdateOne {
 }
 
 // AddTranslationIDs adds the "translations" edge to the AwardTranslation entity by IDs.
-func (auo *AwardUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *AwardUpdateOne {
+func (auo *AwardUpdateOne) AddTranslationIDs(ids ...string) *AwardUpdateOne {
 	auo.mutation.AddTranslationIDs(ids...)
 	return auo
 }
 
 // AddTranslations adds the "translations" edges to the AwardTranslation entity.
 func (auo *AwardUpdateOne) AddTranslations(a ...*AwardTranslation) *AwardUpdateOne {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -691,14 +690,14 @@ func (auo *AwardUpdateOne) ClearTranslations() *AwardUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to AwardTranslation entities by IDs.
-func (auo *AwardUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *AwardUpdateOne {
+func (auo *AwardUpdateOne) RemoveTranslationIDs(ids ...string) *AwardUpdateOne {
 	auo.mutation.RemoveTranslationIDs(ids...)
 	return auo
 }
 
 // RemoveTranslations removes "translations" edges to AwardTranslation entities.
 func (auo *AwardUpdateOne) RemoveTranslations(a ...*AwardTranslation) *AwardUpdateOne {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -786,7 +785,7 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 	if err := auo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(award.Table, award.Columns, sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(award.Table, award.Columns, sqlgraph.NewFieldSpec(award.FieldID, field.TypeString))
 	id, ok := auo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Award.id" for update`)}
@@ -867,7 +866,7 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 			Columns: []string{award.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -880,7 +879,7 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 			Columns: []string{award.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -896,7 +895,7 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 			Columns: []string{award.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -909,7 +908,7 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 			Columns: []string{award.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -925,7 +924,7 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 			Columns: []string{award.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

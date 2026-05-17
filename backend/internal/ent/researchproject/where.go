@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.ResearchProject {
+func ID(id string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.ResearchProject {
+func IDEQ(id string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.ResearchProject {
+func IDNEQ(id string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.ResearchProject {
+func IDIn(ids ...string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.ResearchProject {
+func IDNotIn(ids ...string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.ResearchProject {
+func IDGT(id string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.ResearchProject {
+func IDGTE(id string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.ResearchProject {
+func IDLT(id string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.ResearchProject {
+func IDLTE(id string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldContainsFold(FieldID, id))
+}
+
 // UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
-func UserID(v uuid.UUID) predicate.ResearchProject {
+func UserID(v string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldEQ(FieldUserID, v))
 }
 
@@ -117,23 +126,78 @@ func UpdatedAt(v time.Time) predicate.ResearchProject {
 }
 
 // UserIDEQ applies the EQ predicate on the "user_id" field.
-func UserIDEQ(v uuid.UUID) predicate.ResearchProject {
+func UserIDEQ(v string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldEQ(FieldUserID, v))
 }
 
 // UserIDNEQ applies the NEQ predicate on the "user_id" field.
-func UserIDNEQ(v uuid.UUID) predicate.ResearchProject {
+func UserIDNEQ(v string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldNEQ(FieldUserID, v))
 }
 
 // UserIDIn applies the In predicate on the "user_id" field.
-func UserIDIn(vs ...uuid.UUID) predicate.ResearchProject {
+func UserIDIn(vs ...string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldIn(FieldUserID, vs...))
 }
 
 // UserIDNotIn applies the NotIn predicate on the "user_id" field.
-func UserIDNotIn(vs ...uuid.UUID) predicate.ResearchProject {
+func UserIDNotIn(vs ...string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldNotIn(FieldUserID, vs...))
+}
+
+// UserIDGT applies the GT predicate on the "user_id" field.
+func UserIDGT(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldGT(FieldUserID, v))
+}
+
+// UserIDGTE applies the GTE predicate on the "user_id" field.
+func UserIDGTE(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldGTE(FieldUserID, v))
+}
+
+// UserIDLT applies the LT predicate on the "user_id" field.
+func UserIDLT(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldLT(FieldUserID, v))
+}
+
+// UserIDLTE applies the LTE predicate on the "user_id" field.
+func UserIDLTE(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldLTE(FieldUserID, v))
+}
+
+// UserIDContains applies the Contains predicate on the "user_id" field.
+func UserIDContains(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldContains(FieldUserID, v))
+}
+
+// UserIDHasPrefix applies the HasPrefix predicate on the "user_id" field.
+func UserIDHasPrefix(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldHasPrefix(FieldUserID, v))
+}
+
+// UserIDHasSuffix applies the HasSuffix predicate on the "user_id" field.
+func UserIDHasSuffix(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldHasSuffix(FieldUserID, v))
+}
+
+// UserIDIsNil applies the IsNil predicate on the "user_id" field.
+func UserIDIsNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldIsNull(FieldUserID))
+}
+
+// UserIDNotNil applies the NotNil predicate on the "user_id" field.
+func UserIDNotNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldNotNull(FieldUserID))
+}
+
+// UserIDEqualFold applies the EqualFold predicate on the "user_id" field.
+func UserIDEqualFold(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldEqualFold(FieldUserID, v))
+}
+
+// UserIDContainsFold applies the ContainsFold predicate on the "user_id" field.
+func UserIDContainsFold(v string) predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldContainsFold(FieldUserID, v))
 }
 
 // TitleEQ applies the EQ predicate on the "title" field.
@@ -189,6 +253,16 @@ func TitleHasPrefix(v string) predicate.ResearchProject {
 // TitleHasSuffix applies the HasSuffix predicate on the "title" field.
 func TitleHasSuffix(v string) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldHasSuffix(FieldTitle, v))
+}
+
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldNotNull(FieldTitle))
 }
 
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
@@ -666,6 +740,16 @@ func CreatedAtLTE(v time.Time) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldEQ(FieldUpdatedAt, v))
@@ -704,6 +788,16 @@ func UpdatedAtLT(v time.Time) predicate.ResearchProject {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.ResearchProject {
 	return predicate.ResearchProject(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.ResearchProject {
+	return predicate.ResearchProject(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

@@ -13,20 +13,19 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // BlogPost is the model entity for the BlogPost schema.
 type BlogPost struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// CategoryID holds the value of the "category_id" field.
-	CategoryID uuid.UUID `json:"category_id,omitempty"`
+	CategoryID string `json:"category_id,omitempty"`
 	// SeriesID holds the value of the "series_id" field.
-	SeriesID uuid.UUID `json:"series_id,omitempty"`
+	SeriesID string `json:"series_id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// Slug holds the value of the "slug" field.
@@ -166,12 +165,10 @@ func (*BlogPost) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case blogpost.FieldReadingTimeMinutes, blogpost.FieldViewCount, blogpost.FieldLikeCount, blogpost.FieldCommentCount, blogpost.FieldSeriesOrder:
 			values[i] = new(sql.NullInt64)
-		case blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldStatus, blogpost.FieldVisibility, blogpost.FieldFeaturedImageURL:
+		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID, blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldStatus, blogpost.FieldVisibility, blogpost.FieldFeaturedImageURL:
 			values[i] = new(sql.NullString)
 		case blogpost.FieldPublishedAt, blogpost.FieldCreatedAt, blogpost.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -188,28 +185,28 @@ func (bp *BlogPost) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case blogpost.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				bp.ID = *value
+			} else if value.Valid {
+				bp.ID = value.String
 			}
 		case blogpost.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				bp.UserID = *value
+			} else if value.Valid {
+				bp.UserID = value.String
 			}
 		case blogpost.FieldCategoryID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field category_id", values[i])
-			} else if value != nil {
-				bp.CategoryID = *value
+			} else if value.Valid {
+				bp.CategoryID = value.String
 			}
 		case blogpost.FieldSeriesID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field series_id", values[i])
-			} else if value != nil {
-				bp.SeriesID = *value
+			} else if value.Valid {
+				bp.SeriesID = value.String
 			}
 		case blogpost.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -385,13 +382,13 @@ func (bp *BlogPost) String() string {
 	builder.WriteString("BlogPost(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", bp.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", bp.UserID))
+	builder.WriteString(bp.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("category_id=")
-	builder.WriteString(fmt.Sprintf("%v", bp.CategoryID))
+	builder.WriteString(bp.CategoryID)
 	builder.WriteString(", ")
 	builder.WriteString("series_id=")
-	builder.WriteString(fmt.Sprintf("%v", bp.SeriesID))
+	builder.WriteString(bp.SeriesID)
 	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(bp.Title)

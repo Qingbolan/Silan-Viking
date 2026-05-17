@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.Episode {
+func ID(id string) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.Episode {
+func IDEQ(id string) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.Episode {
+func IDNEQ(id string) predicate.Episode {
 	return predicate.Episode(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.Episode {
+func IDIn(ids ...string) predicate.Episode {
 	return predicate.Episode(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.Episode {
+func IDNotIn(ids ...string) predicate.Episode {
 	return predicate.Episode(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.Episode {
+func IDGT(id string) predicate.Episode {
 	return predicate.Episode(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.Episode {
+func IDGTE(id string) predicate.Episode {
 	return predicate.Episode(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.Episode {
+func IDLT(id string) predicate.Episode {
 	return predicate.Episode(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.Episode {
+func IDLTE(id string) predicate.Episode {
 	return predicate.Episode(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.Episode {
+	return predicate.Episode(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.Episode {
+	return predicate.Episode(sql.FieldContainsFold(FieldID, id))
+}
+
 // SeriesID applies equality check predicate on the "series_id" field. It's identical to SeriesIDEQ.
-func SeriesID(v uuid.UUID) predicate.Episode {
+func SeriesID(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldSeriesID, v))
 }
 
@@ -97,23 +106,68 @@ func UpdatedAt(v time.Time) predicate.Episode {
 }
 
 // SeriesIDEQ applies the EQ predicate on the "series_id" field.
-func SeriesIDEQ(v uuid.UUID) predicate.Episode {
+func SeriesIDEQ(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldSeriesID, v))
 }
 
 // SeriesIDNEQ applies the NEQ predicate on the "series_id" field.
-func SeriesIDNEQ(v uuid.UUID) predicate.Episode {
+func SeriesIDNEQ(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldNEQ(FieldSeriesID, v))
 }
 
 // SeriesIDIn applies the In predicate on the "series_id" field.
-func SeriesIDIn(vs ...uuid.UUID) predicate.Episode {
+func SeriesIDIn(vs ...string) predicate.Episode {
 	return predicate.Episode(sql.FieldIn(FieldSeriesID, vs...))
 }
 
 // SeriesIDNotIn applies the NotIn predicate on the "series_id" field.
-func SeriesIDNotIn(vs ...uuid.UUID) predicate.Episode {
+func SeriesIDNotIn(vs ...string) predicate.Episode {
 	return predicate.Episode(sql.FieldNotIn(FieldSeriesID, vs...))
+}
+
+// SeriesIDGT applies the GT predicate on the "series_id" field.
+func SeriesIDGT(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldGT(FieldSeriesID, v))
+}
+
+// SeriesIDGTE applies the GTE predicate on the "series_id" field.
+func SeriesIDGTE(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldGTE(FieldSeriesID, v))
+}
+
+// SeriesIDLT applies the LT predicate on the "series_id" field.
+func SeriesIDLT(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldLT(FieldSeriesID, v))
+}
+
+// SeriesIDLTE applies the LTE predicate on the "series_id" field.
+func SeriesIDLTE(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldLTE(FieldSeriesID, v))
+}
+
+// SeriesIDContains applies the Contains predicate on the "series_id" field.
+func SeriesIDContains(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldContains(FieldSeriesID, v))
+}
+
+// SeriesIDHasPrefix applies the HasPrefix predicate on the "series_id" field.
+func SeriesIDHasPrefix(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldHasPrefix(FieldSeriesID, v))
+}
+
+// SeriesIDHasSuffix applies the HasSuffix predicate on the "series_id" field.
+func SeriesIDHasSuffix(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldHasSuffix(FieldSeriesID, v))
+}
+
+// SeriesIDEqualFold applies the EqualFold predicate on the "series_id" field.
+func SeriesIDEqualFold(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldEqualFold(FieldSeriesID, v))
+}
+
+// SeriesIDContainsFold applies the ContainsFold predicate on the "series_id" field.
+func SeriesIDContainsFold(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldContainsFold(FieldSeriesID, v))
 }
 
 // SlugEQ applies the EQ predicate on the "slug" field.
@@ -234,6 +288,16 @@ func TitleHasPrefix(v string) predicate.Episode {
 // TitleHasSuffix applies the HasSuffix predicate on the "title" field.
 func TitleHasSuffix(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldHasSuffix(FieldTitle, v))
+}
+
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.Episode {
+	return predicate.Episode(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.Episode {
+	return predicate.Episode(sql.FieldNotNull(FieldTitle))
 }
 
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
@@ -466,6 +530,16 @@ func CreatedAtLTE(v time.Time) predicate.Episode {
 	return predicate.Episode(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.Episode {
+	return predicate.Episode(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.Episode {
+	return predicate.Episode(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldUpdatedAt, v))
@@ -504,6 +578,16 @@ func UpdatedAtLT(v time.Time) predicate.Episode {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.Episode {
 	return predicate.Episode(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.Episode {
+	return predicate.Episode(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.Episode {
+	return predicate.Episode(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasSeries applies the HasEdge predicate on the "series" edge.

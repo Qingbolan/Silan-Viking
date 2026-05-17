@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.IdeaDetailTranslation {
+func ID(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDEQ(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDNEQ(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IDIn(ids ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IDNotIn(ids ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDGT(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDGTE(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDLT(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.IdeaDetailTranslation {
+func IDLTE(id string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // IdeaDetailID applies equality check predicate on the "idea_detail_id" field. It's identical to IdeaDetailIDEQ.
-func IdeaDetailID(v uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailID(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldIdeaDetailID, v))
 }
 
@@ -72,23 +81,68 @@ func CreatedAt(v time.Time) predicate.IdeaDetailTranslation {
 }
 
 // IdeaDetailIDEQ applies the EQ predicate on the "idea_detail_id" field.
-func IdeaDetailIDEQ(v uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDEQ(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldEQ(FieldIdeaDetailID, v))
 }
 
 // IdeaDetailIDNEQ applies the NEQ predicate on the "idea_detail_id" field.
-func IdeaDetailIDNEQ(v uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDNEQ(v string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNEQ(FieldIdeaDetailID, v))
 }
 
 // IdeaDetailIDIn applies the In predicate on the "idea_detail_id" field.
-func IdeaDetailIDIn(vs ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDIn(vs ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldIn(FieldIdeaDetailID, vs...))
 }
 
 // IdeaDetailIDNotIn applies the NotIn predicate on the "idea_detail_id" field.
-func IdeaDetailIDNotIn(vs ...uuid.UUID) predicate.IdeaDetailTranslation {
+func IdeaDetailIDNotIn(vs ...string) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldNotIn(FieldIdeaDetailID, vs...))
+}
+
+// IdeaDetailIDGT applies the GT predicate on the "idea_detail_id" field.
+func IdeaDetailIDGT(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldGT(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDGTE applies the GTE predicate on the "idea_detail_id" field.
+func IdeaDetailIDGTE(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldGTE(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDLT applies the LT predicate on the "idea_detail_id" field.
+func IdeaDetailIDLT(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldLT(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDLTE applies the LTE predicate on the "idea_detail_id" field.
+func IdeaDetailIDLTE(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDContains applies the Contains predicate on the "idea_detail_id" field.
+func IdeaDetailIDContains(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldContains(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDHasPrefix applies the HasPrefix predicate on the "idea_detail_id" field.
+func IdeaDetailIDHasPrefix(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldHasPrefix(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDHasSuffix applies the HasSuffix predicate on the "idea_detail_id" field.
+func IdeaDetailIDHasSuffix(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldHasSuffix(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDEqualFold applies the EqualFold predicate on the "idea_detail_id" field.
+func IdeaDetailIDEqualFold(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldEqualFold(FieldIdeaDetailID, v))
+}
+
+// IdeaDetailIDContainsFold applies the ContainsFold predicate on the "idea_detail_id" field.
+func IdeaDetailIDContainsFold(v string) predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldContainsFold(FieldIdeaDetailID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

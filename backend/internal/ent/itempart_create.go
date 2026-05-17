@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ItemPartCreate is the builder for creating a ItemPart entity.
@@ -36,8 +35,8 @@ func (ipc *ItemPartCreate) SetEntityType(it itempart.EntityType) *ItemPartCreate
 }
 
 // SetEntityID sets the "entity_id" field.
-func (ipc *ItemPartCreate) SetEntityID(u uuid.UUID) *ItemPartCreate {
-	ipc.mutation.SetEntityID(u)
+func (ipc *ItemPartCreate) SetEntityID(s string) *ItemPartCreate {
+	ipc.mutation.SetEntityID(s)
 	return ipc
 }
 
@@ -96,28 +95,28 @@ func (ipc *ItemPartCreate) SetNillableUpdatedAt(t *time.Time) *ItemPartCreate {
 }
 
 // SetID sets the "id" field.
-func (ipc *ItemPartCreate) SetID(u uuid.UUID) *ItemPartCreate {
-	ipc.mutation.SetID(u)
+func (ipc *ItemPartCreate) SetID(s string) *ItemPartCreate {
+	ipc.mutation.SetID(s)
 	return ipc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ipc *ItemPartCreate) SetNillableID(u *uuid.UUID) *ItemPartCreate {
-	if u != nil {
-		ipc.SetID(*u)
+func (ipc *ItemPartCreate) SetNillableID(s *string) *ItemPartCreate {
+	if s != nil {
+		ipc.SetID(*s)
 	}
 	return ipc
 }
 
 // AddTranslationIDs adds the "translations" edge to the ItemPartTranslation entity by IDs.
-func (ipc *ItemPartCreate) AddTranslationIDs(ids ...uuid.UUID) *ItemPartCreate {
+func (ipc *ItemPartCreate) AddTranslationIDs(ids ...string) *ItemPartCreate {
 	ipc.mutation.AddTranslationIDs(ids...)
 	return ipc
 }
 
 // AddTranslations adds the "translations" edges to the ItemPartTranslation entity.
 func (ipc *ItemPartCreate) AddTranslations(i ...*ItemPartTranslation) *ItemPartCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -125,14 +124,14 @@ func (ipc *ItemPartCreate) AddTranslations(i ...*ItemPartTranslation) *ItemPartC
 }
 
 // AddEntryIDs adds the "entries" edge to the PartEntry entity by IDs.
-func (ipc *ItemPartCreate) AddEntryIDs(ids ...uuid.UUID) *ItemPartCreate {
+func (ipc *ItemPartCreate) AddEntryIDs(ids ...string) *ItemPartCreate {
 	ipc.mutation.AddEntryIDs(ids...)
 	return ipc
 }
 
 // AddEntries adds the "entries" edges to the PartEntry entity.
 func (ipc *ItemPartCreate) AddEntries(p ...*PartEntry) *ItemPartCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -238,10 +237,10 @@ func (ipc *ItemPartCreate) sqlSave(ctx context.Context) (*ItemPart, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ItemPart.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ipc.mutation.id = &_node.ID
@@ -252,11 +251,11 @@ func (ipc *ItemPartCreate) sqlSave(ctx context.Context) (*ItemPart, error) {
 func (ipc *ItemPartCreate) createSpec() (*ItemPart, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ItemPart{config: ipc.config}
-		_spec = sqlgraph.NewCreateSpec(itempart.Table, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(itempart.Table, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString))
 	)
 	if id, ok := ipc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ipc.mutation.PartID(); ok {
 		_spec.SetField(itempart.FieldPartID, field.TypeString, value)
@@ -267,7 +266,7 @@ func (ipc *ItemPartCreate) createSpec() (*ItemPart, *sqlgraph.CreateSpec) {
 		_node.EntityType = value
 	}
 	if value, ok := ipc.mutation.EntityID(); ok {
-		_spec.SetField(itempart.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(itempart.FieldEntityID, field.TypeString, value)
 		_node.EntityID = value
 	}
 	if value, ok := ipc.mutation.Role(); ok {
@@ -298,7 +297,7 @@ func (ipc *ItemPartCreate) createSpec() (*ItemPart, *sqlgraph.CreateSpec) {
 			Columns: []string{itempart.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -314,7 +313,7 @@ func (ipc *ItemPartCreate) createSpec() (*ItemPart, *sqlgraph.CreateSpec) {
 			Columns: []string{itempart.EntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogCategoryCreate is the builder for creating a BlogCategory entity.
@@ -106,28 +105,28 @@ func (bcc *BlogCategoryCreate) SetNillableUpdatedAt(t *time.Time) *BlogCategoryC
 }
 
 // SetID sets the "id" field.
-func (bcc *BlogCategoryCreate) SetID(u uuid.UUID) *BlogCategoryCreate {
-	bcc.mutation.SetID(u)
+func (bcc *BlogCategoryCreate) SetID(s string) *BlogCategoryCreate {
+	bcc.mutation.SetID(s)
 	return bcc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (bcc *BlogCategoryCreate) SetNillableID(u *uuid.UUID) *BlogCategoryCreate {
-	if u != nil {
-		bcc.SetID(*u)
+func (bcc *BlogCategoryCreate) SetNillableID(s *string) *BlogCategoryCreate {
+	if s != nil {
+		bcc.SetID(*s)
 	}
 	return bcc
 }
 
 // AddTranslationIDs adds the "translations" edge to the BlogCategoryTranslation entity by IDs.
-func (bcc *BlogCategoryCreate) AddTranslationIDs(ids ...uuid.UUID) *BlogCategoryCreate {
+func (bcc *BlogCategoryCreate) AddTranslationIDs(ids ...string) *BlogCategoryCreate {
 	bcc.mutation.AddTranslationIDs(ids...)
 	return bcc
 }
 
 // AddTranslations adds the "translations" edges to the BlogCategoryTranslation entity.
 func (bcc *BlogCategoryCreate) AddTranslations(b ...*BlogCategoryTranslation) *BlogCategoryCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -135,14 +134,14 @@ func (bcc *BlogCategoryCreate) AddTranslations(b ...*BlogCategoryTranslation) *B
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (bcc *BlogCategoryCreate) AddBlogPostIDs(ids ...uuid.UUID) *BlogCategoryCreate {
+func (bcc *BlogCategoryCreate) AddBlogPostIDs(ids ...string) *BlogCategoryCreate {
 	bcc.mutation.AddBlogPostIDs(ids...)
 	return bcc
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (bcc *BlogCategoryCreate) AddBlogPosts(b ...*BlogPost) *BlogCategoryCreate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -249,10 +248,10 @@ func (bcc *BlogCategoryCreate) sqlSave(ctx context.Context) (*BlogCategory, erro
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected BlogCategory.ID type: %T", _spec.ID.Value)
 		}
 	}
 	bcc.mutation.id = &_node.ID
@@ -263,11 +262,11 @@ func (bcc *BlogCategoryCreate) sqlSave(ctx context.Context) (*BlogCategory, erro
 func (bcc *BlogCategoryCreate) createSpec() (*BlogCategory, *sqlgraph.CreateSpec) {
 	var (
 		_node = &BlogCategory{config: bcc.config}
-		_spec = sqlgraph.NewCreateSpec(blogcategory.Table, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(blogcategory.Table, sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString))
 	)
 	if id, ok := bcc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := bcc.mutation.Name(); ok {
 		_spec.SetField(blogcategory.FieldName, field.TypeString, value)
@@ -305,7 +304,7 @@ func (bcc *BlogCategoryCreate) createSpec() (*BlogCategory, *sqlgraph.CreateSpec
 			Columns: []string{blogcategory.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -321,7 +320,7 @@ func (bcc *BlogCategoryCreate) createSpec() (*BlogCategory, *sqlgraph.CreateSpec
 			Columns: []string{blogcategory.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

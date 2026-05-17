@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // EpisodeSeriesTranslation is the model entity for the EpisodeSeriesTranslation schema.
 type EpisodeSeriesTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// EpisodeSeriesID holds the value of the "episode_series_id" field.
-	EpisodeSeriesID uuid.UUID `json:"episode_series_id,omitempty"`
+	EpisodeSeriesID string `json:"episode_series_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Title holds the value of the "title" field.
@@ -60,12 +59,10 @@ func (*EpisodeSeriesTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case episodeseriestranslation.FieldLanguageCode, episodeseriestranslation.FieldTitle, episodeseriestranslation.FieldDescription:
+		case episodeseriestranslation.FieldID, episodeseriestranslation.FieldEpisodeSeriesID, episodeseriestranslation.FieldLanguageCode, episodeseriestranslation.FieldTitle, episodeseriestranslation.FieldDescription:
 			values[i] = new(sql.NullString)
 		case episodeseriestranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case episodeseriestranslation.FieldID, episodeseriestranslation.FieldEpisodeSeriesID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -82,16 +79,16 @@ func (est *EpisodeSeriesTranslation) assignValues(columns []string, values []any
 	for i := range columns {
 		switch columns[i] {
 		case episodeseriestranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				est.ID = *value
+			} else if value.Valid {
+				est.ID = value.String
 			}
 		case episodeseriestranslation.FieldEpisodeSeriesID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field episode_series_id", values[i])
-			} else if value != nil {
-				est.EpisodeSeriesID = *value
+			} else if value.Valid {
+				est.EpisodeSeriesID = value.String
 			}
 		case episodeseriestranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -160,7 +157,7 @@ func (est *EpisodeSeriesTranslation) String() string {
 	builder.WriteString("EpisodeSeriesTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", est.ID))
 	builder.WriteString("episode_series_id=")
-	builder.WriteString(fmt.Sprintf("%v", est.EpisodeSeriesID))
+	builder.WriteString(est.EpisodeSeriesID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(est.LanguageCode)

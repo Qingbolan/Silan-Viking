@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectLikeUpdate is the builder for updating ProjectLike entities.
@@ -32,15 +31,15 @@ func (plu *ProjectLikeUpdate) Where(ps ...predicate.ProjectLike) *ProjectLikeUpd
 }
 
 // SetProjectID sets the "project_id" field.
-func (plu *ProjectLikeUpdate) SetProjectID(u uuid.UUID) *ProjectLikeUpdate {
-	plu.mutation.SetProjectID(u)
+func (plu *ProjectLikeUpdate) SetProjectID(s string) *ProjectLikeUpdate {
+	plu.mutation.SetProjectID(s)
 	return plu
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (plu *ProjectLikeUpdate) SetNillableProjectID(u *uuid.UUID) *ProjectLikeUpdate {
-	if u != nil {
-		plu.SetProjectID(*u)
+func (plu *ProjectLikeUpdate) SetNillableProjectID(s *string) *ProjectLikeUpdate {
+	if s != nil {
+		plu.SetProjectID(*s)
 	}
 	return plu
 }
@@ -211,7 +210,7 @@ func (plu *ProjectLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := plu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectlike.Table, projectlike.Columns, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectlike.Table, projectlike.Columns, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString))
 	if ps := plu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -248,7 +247,7 @@ func (plu *ProjectLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{projectlike.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -261,7 +260,7 @@ func (plu *ProjectLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{projectlike.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -319,15 +318,15 @@ type ProjectLikeUpdateOne struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (pluo *ProjectLikeUpdateOne) SetProjectID(u uuid.UUID) *ProjectLikeUpdateOne {
-	pluo.mutation.SetProjectID(u)
+func (pluo *ProjectLikeUpdateOne) SetProjectID(s string) *ProjectLikeUpdateOne {
+	pluo.mutation.SetProjectID(s)
 	return pluo
 }
 
 // SetNillableProjectID sets the "project_id" field if the given value is not nil.
-func (pluo *ProjectLikeUpdateOne) SetNillableProjectID(u *uuid.UUID) *ProjectLikeUpdateOne {
-	if u != nil {
-		pluo.SetProjectID(*u)
+func (pluo *ProjectLikeUpdateOne) SetNillableProjectID(s *string) *ProjectLikeUpdateOne {
+	if s != nil {
+		pluo.SetProjectID(*s)
 	}
 	return pluo
 }
@@ -511,7 +510,7 @@ func (pluo *ProjectLikeUpdateOne) sqlSave(ctx context.Context) (_node *ProjectLi
 	if err := pluo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(projectlike.Table, projectlike.Columns, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(projectlike.Table, projectlike.Columns, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString))
 	id, ok := pluo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ProjectLike.id" for update`)}
@@ -565,7 +564,7 @@ func (pluo *ProjectLikeUpdateOne) sqlSave(ctx context.Context) (_node *ProjectLi
 			Columns: []string{projectlike.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -578,7 +577,7 @@ func (pluo *ProjectLikeUpdateOne) sqlSave(ctx context.Context) (_node *ProjectLi
 			Columns: []string{projectlike.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

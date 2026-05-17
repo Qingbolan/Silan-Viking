@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationAuthorUpdate is the builder for updating PublicationAuthor entities.
@@ -31,15 +30,15 @@ func (pau *PublicationAuthorUpdate) Where(ps ...predicate.PublicationAuthor) *Pu
 }
 
 // SetPublicationID sets the "publication_id" field.
-func (pau *PublicationAuthorUpdate) SetPublicationID(u uuid.UUID) *PublicationAuthorUpdate {
-	pau.mutation.SetPublicationID(u)
+func (pau *PublicationAuthorUpdate) SetPublicationID(s string) *PublicationAuthorUpdate {
+	pau.mutation.SetPublicationID(s)
 	return pau
 }
 
 // SetNillablePublicationID sets the "publication_id" field if the given value is not nil.
-func (pau *PublicationAuthorUpdate) SetNillablePublicationID(u *uuid.UUID) *PublicationAuthorUpdate {
-	if u != nil {
-		pau.SetPublicationID(*u)
+func (pau *PublicationAuthorUpdate) SetNillablePublicationID(s *string) *PublicationAuthorUpdate {
+	if s != nil {
+		pau.SetPublicationID(*s)
 	}
 	return pau
 }
@@ -193,7 +192,7 @@ func (pau *PublicationAuthorUpdate) sqlSave(ctx context.Context) (n int, err err
 	if err := pau.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(publicationauthor.Table, publicationauthor.Columns, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(publicationauthor.Table, publicationauthor.Columns, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString))
 	if ps := pau.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -230,7 +229,7 @@ func (pau *PublicationAuthorUpdate) sqlSave(ctx context.Context) (n int, err err
 			Columns: []string{publicationauthor.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -243,7 +242,7 @@ func (pau *PublicationAuthorUpdate) sqlSave(ctx context.Context) (n int, err err
 			Columns: []string{publicationauthor.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -272,15 +271,15 @@ type PublicationAuthorUpdateOne struct {
 }
 
 // SetPublicationID sets the "publication_id" field.
-func (pauo *PublicationAuthorUpdateOne) SetPublicationID(u uuid.UUID) *PublicationAuthorUpdateOne {
-	pauo.mutation.SetPublicationID(u)
+func (pauo *PublicationAuthorUpdateOne) SetPublicationID(s string) *PublicationAuthorUpdateOne {
+	pauo.mutation.SetPublicationID(s)
 	return pauo
 }
 
 // SetNillablePublicationID sets the "publication_id" field if the given value is not nil.
-func (pauo *PublicationAuthorUpdateOne) SetNillablePublicationID(u *uuid.UUID) *PublicationAuthorUpdateOne {
-	if u != nil {
-		pauo.SetPublicationID(*u)
+func (pauo *PublicationAuthorUpdateOne) SetNillablePublicationID(s *string) *PublicationAuthorUpdateOne {
+	if s != nil {
+		pauo.SetPublicationID(*s)
 	}
 	return pauo
 }
@@ -447,7 +446,7 @@ func (pauo *PublicationAuthorUpdateOne) sqlSave(ctx context.Context) (_node *Pub
 	if err := pauo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(publicationauthor.Table, publicationauthor.Columns, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(publicationauthor.Table, publicationauthor.Columns, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString))
 	id, ok := pauo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "PublicationAuthor.id" for update`)}
@@ -501,7 +500,7 @@ func (pauo *PublicationAuthorUpdateOne) sqlSave(ctx context.Context) (_node *Pub
 			Columns: []string{publicationauthor.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -514,7 +513,7 @@ func (pauo *PublicationAuthorUpdateOne) sqlSave(ctx context.Context) (_node *Pub
 			Columns: []string{publicationauthor.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

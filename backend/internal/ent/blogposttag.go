@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // BlogPostTag is the model entity for the BlogPostTag schema.
 type BlogPostTag struct {
 	config `json:"-"`
 	// BlogPostID holds the value of the "blog_post_id" field.
-	BlogPostID uuid.UUID `json:"blog_post_id,omitempty"`
+	BlogPostID string `json:"blog_post_id,omitempty"`
 	// BlogTagID holds the value of the "blog_tag_id" field.
-	BlogTagID uuid.UUID `json:"blog_tag_id,omitempty"`
+	BlogTagID string `json:"blog_tag_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -68,10 +67,10 @@ func (*BlogPostTag) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case blogposttag.FieldBlogPostID, blogposttag.FieldBlogTagID:
+			values[i] = new(sql.NullString)
 		case blogposttag.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case blogposttag.FieldBlogPostID, blogposttag.FieldBlogTagID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -88,16 +87,16 @@ func (bpt *BlogPostTag) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case blogposttag.FieldBlogPostID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field blog_post_id", values[i])
-			} else if value != nil {
-				bpt.BlogPostID = *value
+			} else if value.Valid {
+				bpt.BlogPostID = value.String
 			}
 		case blogposttag.FieldBlogTagID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field blog_tag_id", values[i])
-			} else if value != nil {
-				bpt.BlogTagID = *value
+			} else if value.Valid {
+				bpt.BlogTagID = value.String
 			}
 		case blogposttag.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -151,10 +150,10 @@ func (bpt *BlogPostTag) String() string {
 	var builder strings.Builder
 	builder.WriteString("BlogPostTag(")
 	builder.WriteString("blog_post_id=")
-	builder.WriteString(fmt.Sprintf("%v", bpt.BlogPostID))
+	builder.WriteString(bpt.BlogPostID)
 	builder.WriteString(", ")
 	builder.WriteString("blog_tag_id=")
-	builder.WriteString(fmt.Sprintf("%v", bpt.BlogTagID))
+	builder.WriteString(bpt.BlogTagID)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(bpt.CreatedAt.Format(time.ANSIC))

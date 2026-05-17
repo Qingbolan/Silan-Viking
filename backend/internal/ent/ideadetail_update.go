@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaDetailUpdate is the builder for updating IdeaDetail entities.
@@ -32,15 +31,15 @@ func (idu *IdeaDetailUpdate) Where(ps ...predicate.IdeaDetail) *IdeaDetailUpdate
 }
 
 // SetIdeaID sets the "idea_id" field.
-func (idu *IdeaDetailUpdate) SetIdeaID(u uuid.UUID) *IdeaDetailUpdate {
-	idu.mutation.SetIdeaID(u)
+func (idu *IdeaDetailUpdate) SetIdeaID(s string) *IdeaDetailUpdate {
+	idu.mutation.SetIdeaID(s)
 	return idu
 }
 
 // SetNillableIdeaID sets the "idea_id" field if the given value is not nil.
-func (idu *IdeaDetailUpdate) SetNillableIdeaID(u *uuid.UUID) *IdeaDetailUpdate {
-	if u != nil {
-		idu.SetIdeaID(*u)
+func (idu *IdeaDetailUpdate) SetNillableIdeaID(s *string) *IdeaDetailUpdate {
+	if s != nil {
+		idu.SetIdeaID(*s)
 	}
 	return idu
 }
@@ -159,14 +158,14 @@ func (idu *IdeaDetailUpdate) SetIdea(i *Idea) *IdeaDetailUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the IdeaDetailTranslation entity by IDs.
-func (idu *IdeaDetailUpdate) AddTranslationIDs(ids ...uuid.UUID) *IdeaDetailUpdate {
+func (idu *IdeaDetailUpdate) AddTranslationIDs(ids ...string) *IdeaDetailUpdate {
 	idu.mutation.AddTranslationIDs(ids...)
 	return idu
 }
 
 // AddTranslations adds the "translations" edges to the IdeaDetailTranslation entity.
 func (idu *IdeaDetailUpdate) AddTranslations(i ...*IdeaDetailTranslation) *IdeaDetailUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -191,14 +190,14 @@ func (idu *IdeaDetailUpdate) ClearTranslations() *IdeaDetailUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to IdeaDetailTranslation entities by IDs.
-func (idu *IdeaDetailUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *IdeaDetailUpdate {
+func (idu *IdeaDetailUpdate) RemoveTranslationIDs(ids ...string) *IdeaDetailUpdate {
 	idu.mutation.RemoveTranslationIDs(ids...)
 	return idu
 }
 
 // RemoveTranslations removes "translations" edges to IdeaDetailTranslation entities.
 func (idu *IdeaDetailUpdate) RemoveTranslations(i ...*IdeaDetailTranslation) *IdeaDetailUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -253,7 +252,7 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := idu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideadetail.Table, ideadetail.Columns, sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideadetail.Table, ideadetail.Columns, sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString))
 	if ps := idu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -302,7 +301,7 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{ideadetail.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -315,7 +314,7 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{ideadetail.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -331,7 +330,7 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{ideadetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -344,7 +343,7 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{ideadetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -360,7 +359,7 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{ideadetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -389,15 +388,15 @@ type IdeaDetailUpdateOne struct {
 }
 
 // SetIdeaID sets the "idea_id" field.
-func (iduo *IdeaDetailUpdateOne) SetIdeaID(u uuid.UUID) *IdeaDetailUpdateOne {
-	iduo.mutation.SetIdeaID(u)
+func (iduo *IdeaDetailUpdateOne) SetIdeaID(s string) *IdeaDetailUpdateOne {
+	iduo.mutation.SetIdeaID(s)
 	return iduo
 }
 
 // SetNillableIdeaID sets the "idea_id" field if the given value is not nil.
-func (iduo *IdeaDetailUpdateOne) SetNillableIdeaID(u *uuid.UUID) *IdeaDetailUpdateOne {
-	if u != nil {
-		iduo.SetIdeaID(*u)
+func (iduo *IdeaDetailUpdateOne) SetNillableIdeaID(s *string) *IdeaDetailUpdateOne {
+	if s != nil {
+		iduo.SetIdeaID(*s)
 	}
 	return iduo
 }
@@ -516,14 +515,14 @@ func (iduo *IdeaDetailUpdateOne) SetIdea(i *Idea) *IdeaDetailUpdateOne {
 }
 
 // AddTranslationIDs adds the "translations" edge to the IdeaDetailTranslation entity by IDs.
-func (iduo *IdeaDetailUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *IdeaDetailUpdateOne {
+func (iduo *IdeaDetailUpdateOne) AddTranslationIDs(ids ...string) *IdeaDetailUpdateOne {
 	iduo.mutation.AddTranslationIDs(ids...)
 	return iduo
 }
 
 // AddTranslations adds the "translations" edges to the IdeaDetailTranslation entity.
 func (iduo *IdeaDetailUpdateOne) AddTranslations(i ...*IdeaDetailTranslation) *IdeaDetailUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -548,14 +547,14 @@ func (iduo *IdeaDetailUpdateOne) ClearTranslations() *IdeaDetailUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to IdeaDetailTranslation entities by IDs.
-func (iduo *IdeaDetailUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *IdeaDetailUpdateOne {
+func (iduo *IdeaDetailUpdateOne) RemoveTranslationIDs(ids ...string) *IdeaDetailUpdateOne {
 	iduo.mutation.RemoveTranslationIDs(ids...)
 	return iduo
 }
 
 // RemoveTranslations removes "translations" edges to IdeaDetailTranslation entities.
 func (iduo *IdeaDetailUpdateOne) RemoveTranslations(i ...*IdeaDetailTranslation) *IdeaDetailUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -623,7 +622,7 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 	if err := iduo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideadetail.Table, ideadetail.Columns, sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideadetail.Table, ideadetail.Columns, sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString))
 	id, ok := iduo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "IdeaDetail.id" for update`)}
@@ -689,7 +688,7 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 			Columns: []string{ideadetail.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -702,7 +701,7 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 			Columns: []string{ideadetail.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -718,7 +717,7 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 			Columns: []string{ideadetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -731,7 +730,7 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 			Columns: []string{ideadetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -747,7 +746,7 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 			Columns: []string{ideadetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

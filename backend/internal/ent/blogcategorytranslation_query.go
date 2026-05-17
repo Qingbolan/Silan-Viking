@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogCategoryTranslationQuery is the builder for querying BlogCategoryTranslation entities.
@@ -131,8 +130,8 @@ func (bctq *BlogCategoryTranslationQuery) FirstX(ctx context.Context) *BlogCateg
 
 // FirstID returns the first BlogCategoryTranslation ID from the query.
 // Returns a *NotFoundError when no BlogCategoryTranslation ID was found.
-func (bctq *BlogCategoryTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bctq *BlogCategoryTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bctq.Limit(1).IDs(setContextOp(ctx, bctq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (bctq *BlogCategoryTranslationQuery) FirstID(ctx context.Context) (id uuid.
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (bctq *BlogCategoryTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (bctq *BlogCategoryTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := bctq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (bctq *BlogCategoryTranslationQuery) OnlyX(ctx context.Context) *BlogCatego
 // OnlyID is like Only, but returns the only BlogCategoryTranslation ID in the query.
 // Returns a *NotSingularError when more than one BlogCategoryTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (bctq *BlogCategoryTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (bctq *BlogCategoryTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = bctq.Limit(2).IDs(setContextOp(ctx, bctq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (bctq *BlogCategoryTranslationQuery) OnlyID(ctx context.Context) (id uuid.U
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (bctq *BlogCategoryTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (bctq *BlogCategoryTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := bctq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (bctq *BlogCategoryTranslationQuery) AllX(ctx context.Context) []*BlogCateg
 }
 
 // IDs executes the query and returns a list of BlogCategoryTranslation IDs.
-func (bctq *BlogCategoryTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (bctq *BlogCategoryTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if bctq.ctx.Unique == nil && bctq.path != nil {
 		bctq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (bctq *BlogCategoryTranslationQuery) IDs(ctx context.Context) (ids []uuid.U
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (bctq *BlogCategoryTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (bctq *BlogCategoryTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := bctq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (bctq *BlogCategoryTranslationQuery) WithLanguage(opts ...func(*LanguageQue
 // Example:
 //
 //	var v []struct {
-//		BlogCategoryID uuid.UUID `json:"blog_category_id,omitempty"`
+//		BlogCategoryID string `json:"blog_category_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (bctq *BlogCategoryTranslationQuery) GroupBy(field string, fields ...string
 // Example:
 //
 //	var v []struct {
-//		BlogCategoryID uuid.UUID `json:"blog_category_id,omitempty"`
+//		BlogCategoryID string `json:"blog_category_id,omitempty"`
 //	}
 //
 //	client.BlogCategoryTranslation.Query().
@@ -446,8 +445,8 @@ func (bctq *BlogCategoryTranslationQuery) sqlAll(ctx context.Context, hooks ...q
 }
 
 func (bctq *BlogCategoryTranslationQuery) loadBlogCategory(ctx context.Context, query *BlogCategoryQuery, nodes []*BlogCategoryTranslation, init func(*BlogCategoryTranslation), assign func(*BlogCategoryTranslation, *BlogCategory)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*BlogCategoryTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*BlogCategoryTranslation)
 	for i := range nodes {
 		fk := nodes[i].BlogCategoryID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (bctq *BlogCategoryTranslationQuery) sqlCount(ctx context.Context) (int, er
 }
 
 func (bctq *BlogCategoryTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(blogcategorytranslation.Table, blogcategorytranslation.Columns, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(blogcategorytranslation.Table, blogcategorytranslation.Columns, sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString))
 	_spec.From = bctq.sql
 	if unique := bctq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

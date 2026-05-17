@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EducationDetailTranslationUpdate is the builder for updating EducationDetailTranslation entities.
@@ -31,15 +30,15 @@ func (edtu *EducationDetailTranslationUpdate) Where(ps ...predicate.EducationDet
 }
 
 // SetEducationDetailID sets the "education_detail_id" field.
-func (edtu *EducationDetailTranslationUpdate) SetEducationDetailID(u uuid.UUID) *EducationDetailTranslationUpdate {
-	edtu.mutation.SetEducationDetailID(u)
+func (edtu *EducationDetailTranslationUpdate) SetEducationDetailID(s string) *EducationDetailTranslationUpdate {
+	edtu.mutation.SetEducationDetailID(s)
 	return edtu
 }
 
 // SetNillableEducationDetailID sets the "education_detail_id" field if the given value is not nil.
-func (edtu *EducationDetailTranslationUpdate) SetNillableEducationDetailID(u *uuid.UUID) *EducationDetailTranslationUpdate {
-	if u != nil {
-		edtu.SetEducationDetailID(*u)
+func (edtu *EducationDetailTranslationUpdate) SetNillableEducationDetailID(s *string) *EducationDetailTranslationUpdate {
+	if s != nil {
+		edtu.SetEducationDetailID(*s)
 	}
 	return edtu
 }
@@ -157,7 +156,7 @@ func (edtu *EducationDetailTranslationUpdate) sqlSave(ctx context.Context) (n in
 	if err := edtu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(educationdetailtranslation.Table, educationdetailtranslation.Columns, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(educationdetailtranslation.Table, educationdetailtranslation.Columns, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString))
 	if ps := edtu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -176,7 +175,7 @@ func (edtu *EducationDetailTranslationUpdate) sqlSave(ctx context.Context) (n in
 			Columns: []string{educationdetailtranslation.EducationDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -189,7 +188,7 @@ func (edtu *EducationDetailTranslationUpdate) sqlSave(ctx context.Context) (n in
 			Columns: []string{educationdetailtranslation.EducationDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -247,15 +246,15 @@ type EducationDetailTranslationUpdateOne struct {
 }
 
 // SetEducationDetailID sets the "education_detail_id" field.
-func (edtuo *EducationDetailTranslationUpdateOne) SetEducationDetailID(u uuid.UUID) *EducationDetailTranslationUpdateOne {
-	edtuo.mutation.SetEducationDetailID(u)
+func (edtuo *EducationDetailTranslationUpdateOne) SetEducationDetailID(s string) *EducationDetailTranslationUpdateOne {
+	edtuo.mutation.SetEducationDetailID(s)
 	return edtuo
 }
 
 // SetNillableEducationDetailID sets the "education_detail_id" field if the given value is not nil.
-func (edtuo *EducationDetailTranslationUpdateOne) SetNillableEducationDetailID(u *uuid.UUID) *EducationDetailTranslationUpdateOne {
-	if u != nil {
-		edtuo.SetEducationDetailID(*u)
+func (edtuo *EducationDetailTranslationUpdateOne) SetNillableEducationDetailID(s *string) *EducationDetailTranslationUpdateOne {
+	if s != nil {
+		edtuo.SetEducationDetailID(*s)
 	}
 	return edtuo
 }
@@ -386,7 +385,7 @@ func (edtuo *EducationDetailTranslationUpdateOne) sqlSave(ctx context.Context) (
 	if err := edtuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(educationdetailtranslation.Table, educationdetailtranslation.Columns, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(educationdetailtranslation.Table, educationdetailtranslation.Columns, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString))
 	id, ok := edtuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "EducationDetailTranslation.id" for update`)}
@@ -422,7 +421,7 @@ func (edtuo *EducationDetailTranslationUpdateOne) sqlSave(ctx context.Context) (
 			Columns: []string{educationdetailtranslation.EducationDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -435,7 +434,7 @@ func (edtuo *EducationDetailTranslationUpdateOne) sqlSave(ctx context.Context) (
 			Columns: []string{educationdetailtranslation.EducationDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

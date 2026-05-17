@@ -24,7 +24,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // UserQuery is the builder for querying User entities.
@@ -324,8 +323,8 @@ func (uq *UserQuery) FirstX(ctx context.Context) *User {
 
 // FirstID returns the first User ID from the query.
 // Returns a *NotFoundError when no User ID was found.
-func (uq *UserQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (uq *UserQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = uq.Limit(1).IDs(setContextOp(ctx, uq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -337,7 +336,7 @@ func (uq *UserQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (uq *UserQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (uq *UserQuery) FirstIDX(ctx context.Context) string {
 	id, err := uq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -375,8 +374,8 @@ func (uq *UserQuery) OnlyX(ctx context.Context) *User {
 // OnlyID is like Only, but returns the only User ID in the query.
 // Returns a *NotSingularError when more than one User ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (uq *UserQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (uq *UserQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = uq.Limit(2).IDs(setContextOp(ctx, uq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -392,7 +391,7 @@ func (uq *UserQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (uq *UserQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (uq *UserQuery) OnlyIDX(ctx context.Context) string {
 	id, err := uq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -420,7 +419,7 @@ func (uq *UserQuery) AllX(ctx context.Context) []*User {
 }
 
 // IDs executes the query and returns a list of User IDs.
-func (uq *UserQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (uq *UserQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if uq.ctx.Unique == nil && uq.path != nil {
 		uq.Unique(true)
 	}
@@ -432,7 +431,7 @@ func (uq *UserQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (uq *UserQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (uq *UserQuery) IDsX(ctx context.Context) []string {
 	ids, err := uq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -802,7 +801,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 
 func (uq *UserQuery) loadPersonalInfos(ctx context.Context, query *PersonalInfoQuery, nodes []*User, init func(*User), assign func(*User, *PersonalInfo)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -832,7 +831,7 @@ func (uq *UserQuery) loadPersonalInfos(ctx context.Context, query *PersonalInfoQ
 }
 func (uq *UserQuery) loadEducations(ctx context.Context, query *EducationQuery, nodes []*User, init func(*User), assign func(*User, *Education)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -862,7 +861,7 @@ func (uq *UserQuery) loadEducations(ctx context.Context, query *EducationQuery, 
 }
 func (uq *UserQuery) loadWorkExperiences(ctx context.Context, query *WorkExperienceQuery, nodes []*User, init func(*User), assign func(*User, *WorkExperience)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -892,7 +891,7 @@ func (uq *UserQuery) loadWorkExperiences(ctx context.Context, query *WorkExperie
 }
 func (uq *UserQuery) loadProjects(ctx context.Context, query *ProjectQuery, nodes []*User, init func(*User), assign func(*User, *Project)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -922,7 +921,7 @@ func (uq *UserQuery) loadProjects(ctx context.Context, query *ProjectQuery, node
 }
 func (uq *UserQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery, nodes []*User, init func(*User), assign func(*User, *BlogPost)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -952,7 +951,7 @@ func (uq *UserQuery) loadBlogPosts(ctx context.Context, query *BlogPostQuery, no
 }
 func (uq *UserQuery) loadIdeas(ctx context.Context, query *IdeaQuery, nodes []*User, init func(*User), assign func(*User, *Idea)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -982,7 +981,7 @@ func (uq *UserQuery) loadIdeas(ctx context.Context, query *IdeaQuery, nodes []*U
 }
 func (uq *UserQuery) loadResearchProjects(ctx context.Context, query *ResearchProjectQuery, nodes []*User, init func(*User), assign func(*User, *ResearchProject)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1012,7 +1011,7 @@ func (uq *UserQuery) loadResearchProjects(ctx context.Context, query *ResearchPr
 }
 func (uq *UserQuery) loadPublications(ctx context.Context, query *PublicationQuery, nodes []*User, init func(*User), assign func(*User, *Publication)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1042,7 +1041,7 @@ func (uq *UserQuery) loadPublications(ctx context.Context, query *PublicationQue
 }
 func (uq *UserQuery) loadAwards(ctx context.Context, query *AwardQuery, nodes []*User, init func(*User), assign func(*User, *Award)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1072,7 +1071,7 @@ func (uq *UserQuery) loadAwards(ctx context.Context, query *AwardQuery, nodes []
 }
 func (uq *UserQuery) loadRecentUpdates(ctx context.Context, query *RecentUpdateQuery, nodes []*User, init func(*User), assign func(*User, *RecentUpdate)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
+	nodeids := make(map[string]*User)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -1111,7 +1110,7 @@ func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (uq *UserQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	_spec.From = uq.sql
 	if unique := uq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

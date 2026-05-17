@@ -40,7 +40,7 @@ func (crd *ContentRelationDelete) ExecX(ctx context.Context) int {
 }
 
 func (crd *ContentRelationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(contentrelation.Table, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(contentrelation.Table, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeString))
 	if ps := crd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

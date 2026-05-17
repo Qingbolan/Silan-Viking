@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EducationDetailTranslationQuery is the builder for querying EducationDetailTranslation entities.
@@ -131,8 +130,8 @@ func (edtq *EducationDetailTranslationQuery) FirstX(ctx context.Context) *Educat
 
 // FirstID returns the first EducationDetailTranslation ID from the query.
 // Returns a *NotFoundError when no EducationDetailTranslation ID was found.
-func (edtq *EducationDetailTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (edtq *EducationDetailTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = edtq.Limit(1).IDs(setContextOp(ctx, edtq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (edtq *EducationDetailTranslationQuery) FirstID(ctx context.Context) (id uu
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (edtq *EducationDetailTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (edtq *EducationDetailTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := edtq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (edtq *EducationDetailTranslationQuery) OnlyX(ctx context.Context) *Educati
 // OnlyID is like Only, but returns the only EducationDetailTranslation ID in the query.
 // Returns a *NotSingularError when more than one EducationDetailTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (edtq *EducationDetailTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (edtq *EducationDetailTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = edtq.Limit(2).IDs(setContextOp(ctx, edtq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (edtq *EducationDetailTranslationQuery) OnlyID(ctx context.Context) (id uui
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (edtq *EducationDetailTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (edtq *EducationDetailTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := edtq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (edtq *EducationDetailTranslationQuery) AllX(ctx context.Context) []*Educat
 }
 
 // IDs executes the query and returns a list of EducationDetailTranslation IDs.
-func (edtq *EducationDetailTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (edtq *EducationDetailTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if edtq.ctx.Unique == nil && edtq.path != nil {
 		edtq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (edtq *EducationDetailTranslationQuery) IDs(ctx context.Context) (ids []uui
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (edtq *EducationDetailTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (edtq *EducationDetailTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := edtq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (edtq *EducationDetailTranslationQuery) WithLanguage(opts ...func(*Language
 // Example:
 //
 //	var v []struct {
-//		EducationDetailID uuid.UUID `json:"education_detail_id,omitempty"`
+//		EducationDetailID string `json:"education_detail_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (edtq *EducationDetailTranslationQuery) GroupBy(field string, fields ...str
 // Example:
 //
 //	var v []struct {
-//		EducationDetailID uuid.UUID `json:"education_detail_id,omitempty"`
+//		EducationDetailID string `json:"education_detail_id,omitempty"`
 //	}
 //
 //	client.EducationDetailTranslation.Query().
@@ -446,8 +445,8 @@ func (edtq *EducationDetailTranslationQuery) sqlAll(ctx context.Context, hooks .
 }
 
 func (edtq *EducationDetailTranslationQuery) loadEducationDetail(ctx context.Context, query *EducationDetailQuery, nodes []*EducationDetailTranslation, init func(*EducationDetailTranslation), assign func(*EducationDetailTranslation, *EducationDetail)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*EducationDetailTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*EducationDetailTranslation)
 	for i := range nodes {
 		fk := nodes[i].EducationDetailID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (edtq *EducationDetailTranslationQuery) sqlCount(ctx context.Context) (int,
 }
 
 func (edtq *EducationDetailTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(educationdetailtranslation.Table, educationdetailtranslation.Columns, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(educationdetailtranslation.Table, educationdetailtranslation.Columns, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString))
 	_spec.From = edtq.sql
 	if unique := edtq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

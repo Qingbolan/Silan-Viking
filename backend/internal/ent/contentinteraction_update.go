@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ContentInteractionUpdate is the builder for updating ContentInteraction entities.
@@ -43,15 +42,15 @@ func (ciu *ContentInteractionUpdate) SetNillableEntityType(ct *contentinteractio
 }
 
 // SetEntityID sets the "entity_id" field.
-func (ciu *ContentInteractionUpdate) SetEntityID(u uuid.UUID) *ContentInteractionUpdate {
-	ciu.mutation.SetEntityID(u)
+func (ciu *ContentInteractionUpdate) SetEntityID(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetEntityID(s)
 	return ciu
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (ciu *ContentInteractionUpdate) SetNillableEntityID(u *uuid.UUID) *ContentInteractionUpdate {
-	if u != nil {
-		ciu.SetEntityID(*u)
+func (ciu *ContentInteractionUpdate) SetNillableEntityID(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetEntityID(*s)
 	}
 	return ciu
 }
@@ -321,7 +320,7 @@ func (ciu *ContentInteractionUpdate) sqlSave(ctx context.Context) (n int, err er
 	if err := ciu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(contentinteraction.Table, contentinteraction.Columns, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(contentinteraction.Table, contentinteraction.Columns, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeString))
 	if ps := ciu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -333,7 +332,7 @@ func (ciu *ContentInteractionUpdate) sqlSave(ctx context.Context) (n int, err er
 		_spec.SetField(contentinteraction.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := ciu.mutation.EntityID(); ok {
-		_spec.SetField(contentinteraction.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(contentinteraction.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := ciu.mutation.SectionAnchor(); ok {
 		_spec.SetField(contentinteraction.FieldSectionAnchor, field.TypeString, value)
@@ -427,15 +426,15 @@ func (ciuo *ContentInteractionUpdateOne) SetNillableEntityType(ct *contentintera
 }
 
 // SetEntityID sets the "entity_id" field.
-func (ciuo *ContentInteractionUpdateOne) SetEntityID(u uuid.UUID) *ContentInteractionUpdateOne {
-	ciuo.mutation.SetEntityID(u)
+func (ciuo *ContentInteractionUpdateOne) SetEntityID(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetEntityID(s)
 	return ciuo
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (ciuo *ContentInteractionUpdateOne) SetNillableEntityID(u *uuid.UUID) *ContentInteractionUpdateOne {
-	if u != nil {
-		ciuo.SetEntityID(*u)
+func (ciuo *ContentInteractionUpdateOne) SetNillableEntityID(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetEntityID(*s)
 	}
 	return ciuo
 }
@@ -718,7 +717,7 @@ func (ciuo *ContentInteractionUpdateOne) sqlSave(ctx context.Context) (_node *Co
 	if err := ciuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(contentinteraction.Table, contentinteraction.Columns, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(contentinteraction.Table, contentinteraction.Columns, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeString))
 	id, ok := ciuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ContentInteraction.id" for update`)}
@@ -747,7 +746,7 @@ func (ciuo *ContentInteractionUpdateOne) sqlSave(ctx context.Context) (_node *Co
 		_spec.SetField(contentinteraction.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := ciuo.mutation.EntityID(); ok {
-		_spec.SetField(contentinteraction.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(contentinteraction.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := ciuo.mutation.SectionAnchor(); ok {
 		_spec.SetField(contentinteraction.FieldSectionAnchor, field.TypeString, value)

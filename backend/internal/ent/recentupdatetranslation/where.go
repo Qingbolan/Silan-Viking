@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.RecentUpdateTranslation {
+func ID(id string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.RecentUpdateTranslation {
+func IDEQ(id string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.RecentUpdateTranslation {
+func IDNEQ(id string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.RecentUpdateTranslation {
+func IDIn(ids ...string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.RecentUpdateTranslation {
+func IDNotIn(ids ...string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.RecentUpdateTranslation {
+func IDGT(id string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.RecentUpdateTranslation {
+func IDGTE(id string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.RecentUpdateTranslation {
+func IDLT(id string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.RecentUpdateTranslation {
+func IDLTE(id string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // RecentUpdateID applies equality check predicate on the "recent_update_id" field. It's identical to RecentUpdateIDEQ.
-func RecentUpdateID(v uuid.UUID) predicate.RecentUpdateTranslation {
+func RecentUpdateID(v string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldEQ(FieldRecentUpdateID, v))
 }
 
@@ -82,23 +91,68 @@ func CreatedAt(v time.Time) predicate.RecentUpdateTranslation {
 }
 
 // RecentUpdateIDEQ applies the EQ predicate on the "recent_update_id" field.
-func RecentUpdateIDEQ(v uuid.UUID) predicate.RecentUpdateTranslation {
+func RecentUpdateIDEQ(v string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldEQ(FieldRecentUpdateID, v))
 }
 
 // RecentUpdateIDNEQ applies the NEQ predicate on the "recent_update_id" field.
-func RecentUpdateIDNEQ(v uuid.UUID) predicate.RecentUpdateTranslation {
+func RecentUpdateIDNEQ(v string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldNEQ(FieldRecentUpdateID, v))
 }
 
 // RecentUpdateIDIn applies the In predicate on the "recent_update_id" field.
-func RecentUpdateIDIn(vs ...uuid.UUID) predicate.RecentUpdateTranslation {
+func RecentUpdateIDIn(vs ...string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldIn(FieldRecentUpdateID, vs...))
 }
 
 // RecentUpdateIDNotIn applies the NotIn predicate on the "recent_update_id" field.
-func RecentUpdateIDNotIn(vs ...uuid.UUID) predicate.RecentUpdateTranslation {
+func RecentUpdateIDNotIn(vs ...string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldNotIn(FieldRecentUpdateID, vs...))
+}
+
+// RecentUpdateIDGT applies the GT predicate on the "recent_update_id" field.
+func RecentUpdateIDGT(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldGT(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDGTE applies the GTE predicate on the "recent_update_id" field.
+func RecentUpdateIDGTE(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldGTE(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDLT applies the LT predicate on the "recent_update_id" field.
+func RecentUpdateIDLT(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldLT(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDLTE applies the LTE predicate on the "recent_update_id" field.
+func RecentUpdateIDLTE(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldLTE(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDContains applies the Contains predicate on the "recent_update_id" field.
+func RecentUpdateIDContains(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldContains(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDHasPrefix applies the HasPrefix predicate on the "recent_update_id" field.
+func RecentUpdateIDHasPrefix(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldHasPrefix(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDHasSuffix applies the HasSuffix predicate on the "recent_update_id" field.
+func RecentUpdateIDHasSuffix(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldHasSuffix(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDEqualFold applies the EqualFold predicate on the "recent_update_id" field.
+func RecentUpdateIDEqualFold(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldEqualFold(FieldRecentUpdateID, v))
+}
+
+// RecentUpdateIDContainsFold applies the ContainsFold predicate on the "recent_update_id" field.
+func RecentUpdateIDContainsFold(v string) predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldContainsFold(FieldRecentUpdateID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

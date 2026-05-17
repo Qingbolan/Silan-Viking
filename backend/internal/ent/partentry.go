@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // PartEntry is the model entity for the PartEntry schema.
 type PartEntry struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// ItemPartID holds the value of the "item_part_id" field.
-	ItemPartID uuid.UUID `json:"item_part_id,omitempty"`
+	ItemPartID string `json:"item_part_id,omitempty"`
 	// EntryID holds the value of the "entry_id" field.
 	EntryID string `json:"entry_id,omitempty"`
 	// SortOrder holds the value of the "sort_order" field.
@@ -76,12 +75,10 @@ func (*PartEntry) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case partentry.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case partentry.FieldEntryID:
+		case partentry.FieldID, partentry.FieldItemPartID, partentry.FieldEntryID:
 			values[i] = new(sql.NullString)
 		case partentry.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case partentry.FieldID, partentry.FieldItemPartID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -98,16 +95,16 @@ func (pe *PartEntry) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case partentry.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pe.ID = *value
+			} else if value.Valid {
+				pe.ID = value.String
 			}
 		case partentry.FieldItemPartID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field item_part_id", values[i])
-			} else if value != nil {
-				pe.ItemPartID = *value
+			} else if value.Valid {
+				pe.ItemPartID = value.String
 			}
 		case partentry.FieldEntryID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -182,7 +179,7 @@ func (pe *PartEntry) String() string {
 	builder.WriteString("PartEntry(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pe.ID))
 	builder.WriteString("item_part_id=")
-	builder.WriteString(fmt.Sprintf("%v", pe.ItemPartID))
+	builder.WriteString(pe.ItemPartID)
 	builder.WriteString(", ")
 	builder.WriteString("entry_id=")
 	builder.WriteString(pe.EntryID)

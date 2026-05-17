@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.BlogPostTranslation {
+func ID(id string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.BlogPostTranslation {
+func IDEQ(id string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.BlogPostTranslation {
+func IDNEQ(id string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.BlogPostTranslation {
+func IDIn(ids ...string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.BlogPostTranslation {
+func IDNotIn(ids ...string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.BlogPostTranslation {
+func IDGT(id string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.BlogPostTranslation {
+func IDGTE(id string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.BlogPostTranslation {
+func IDLT(id string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.BlogPostTranslation {
+func IDLTE(id string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // BlogPostID applies equality check predicate on the "blog_post_id" field. It's identical to BlogPostIDEQ.
-func BlogPostID(v uuid.UUID) predicate.BlogPostTranslation {
+func BlogPostID(v string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldEQ(FieldBlogPostID, v))
 }
 
@@ -87,23 +96,68 @@ func CreatedAt(v time.Time) predicate.BlogPostTranslation {
 }
 
 // BlogPostIDEQ applies the EQ predicate on the "blog_post_id" field.
-func BlogPostIDEQ(v uuid.UUID) predicate.BlogPostTranslation {
+func BlogPostIDEQ(v string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldEQ(FieldBlogPostID, v))
 }
 
 // BlogPostIDNEQ applies the NEQ predicate on the "blog_post_id" field.
-func BlogPostIDNEQ(v uuid.UUID) predicate.BlogPostTranslation {
+func BlogPostIDNEQ(v string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldNEQ(FieldBlogPostID, v))
 }
 
 // BlogPostIDIn applies the In predicate on the "blog_post_id" field.
-func BlogPostIDIn(vs ...uuid.UUID) predicate.BlogPostTranslation {
+func BlogPostIDIn(vs ...string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldIn(FieldBlogPostID, vs...))
 }
 
 // BlogPostIDNotIn applies the NotIn predicate on the "blog_post_id" field.
-func BlogPostIDNotIn(vs ...uuid.UUID) predicate.BlogPostTranslation {
+func BlogPostIDNotIn(vs ...string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldNotIn(FieldBlogPostID, vs...))
+}
+
+// BlogPostIDGT applies the GT predicate on the "blog_post_id" field.
+func BlogPostIDGT(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldGT(FieldBlogPostID, v))
+}
+
+// BlogPostIDGTE applies the GTE predicate on the "blog_post_id" field.
+func BlogPostIDGTE(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldGTE(FieldBlogPostID, v))
+}
+
+// BlogPostIDLT applies the LT predicate on the "blog_post_id" field.
+func BlogPostIDLT(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldLT(FieldBlogPostID, v))
+}
+
+// BlogPostIDLTE applies the LTE predicate on the "blog_post_id" field.
+func BlogPostIDLTE(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldLTE(FieldBlogPostID, v))
+}
+
+// BlogPostIDContains applies the Contains predicate on the "blog_post_id" field.
+func BlogPostIDContains(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldContains(FieldBlogPostID, v))
+}
+
+// BlogPostIDHasPrefix applies the HasPrefix predicate on the "blog_post_id" field.
+func BlogPostIDHasPrefix(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldHasPrefix(FieldBlogPostID, v))
+}
+
+// BlogPostIDHasSuffix applies the HasSuffix predicate on the "blog_post_id" field.
+func BlogPostIDHasSuffix(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldHasSuffix(FieldBlogPostID, v))
+}
+
+// BlogPostIDEqualFold applies the EqualFold predicate on the "blog_post_id" field.
+func BlogPostIDEqualFold(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldEqualFold(FieldBlogPostID, v))
+}
+
+// BlogPostIDContainsFold applies the ContainsFold predicate on the "blog_post_id" field.
+func BlogPostIDContainsFold(v string) predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldContainsFold(FieldBlogPostID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

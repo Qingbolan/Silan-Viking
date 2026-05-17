@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // CommentUpdate is the builder for updating Comment entities.
@@ -45,29 +44,29 @@ func (cu *CommentUpdate) SetNillableEntityType(ct *comment.EntityType) *CommentU
 }
 
 // SetEntityID sets the "entity_id" field.
-func (cu *CommentUpdate) SetEntityID(u uuid.UUID) *CommentUpdate {
-	cu.mutation.SetEntityID(u)
+func (cu *CommentUpdate) SetEntityID(s string) *CommentUpdate {
+	cu.mutation.SetEntityID(s)
 	return cu
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (cu *CommentUpdate) SetNillableEntityID(u *uuid.UUID) *CommentUpdate {
-	if u != nil {
-		cu.SetEntityID(*u)
+func (cu *CommentUpdate) SetNillableEntityID(s *string) *CommentUpdate {
+	if s != nil {
+		cu.SetEntityID(*s)
 	}
 	return cu
 }
 
 // SetParentID sets the "parent_id" field.
-func (cu *CommentUpdate) SetParentID(u uuid.UUID) *CommentUpdate {
-	cu.mutation.SetParentID(u)
+func (cu *CommentUpdate) SetParentID(s string) *CommentUpdate {
+	cu.mutation.SetParentID(s)
 	return cu
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (cu *CommentUpdate) SetNillableParentID(u *uuid.UUID) *CommentUpdate {
-	if u != nil {
-		cu.SetParentID(*u)
+func (cu *CommentUpdate) SetNillableParentID(s *string) *CommentUpdate {
+	if s != nil {
+		cu.SetParentID(*s)
 	}
 	return cu
 }
@@ -301,14 +300,14 @@ func (cu *CommentUpdate) SetParent(c *Comment) *CommentUpdate {
 }
 
 // AddReplyIDs adds the "replies" edge to the Comment entity by IDs.
-func (cu *CommentUpdate) AddReplyIDs(ids ...uuid.UUID) *CommentUpdate {
+func (cu *CommentUpdate) AddReplyIDs(ids ...string) *CommentUpdate {
 	cu.mutation.AddReplyIDs(ids...)
 	return cu
 }
 
 // AddReplies adds the "replies" edges to the Comment entity.
 func (cu *CommentUpdate) AddReplies(c ...*Comment) *CommentUpdate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -338,14 +337,14 @@ func (cu *CommentUpdate) ClearReplies() *CommentUpdate {
 }
 
 // RemoveReplyIDs removes the "replies" edge to Comment entities by IDs.
-func (cu *CommentUpdate) RemoveReplyIDs(ids ...uuid.UUID) *CommentUpdate {
+func (cu *CommentUpdate) RemoveReplyIDs(ids ...string) *CommentUpdate {
 	cu.mutation.RemoveReplyIDs(ids...)
 	return cu
 }
 
 // RemoveReplies removes "replies" edges to Comment entities.
 func (cu *CommentUpdate) RemoveReplies(c ...*Comment) *CommentUpdate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -453,7 +452,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := cu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString))
 	if ps := cu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -465,7 +464,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(comment.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := cu.mutation.EntityID(); ok {
-		_spec.SetField(comment.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(comment.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.AuthorName(); ok {
 		_spec.SetField(comment.FieldAuthorName, field.TypeString, value)
@@ -529,7 +528,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -542,7 +541,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -558,7 +557,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -571,7 +570,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -587,7 +586,7 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -659,29 +658,29 @@ func (cuo *CommentUpdateOne) SetNillableEntityType(ct *comment.EntityType) *Comm
 }
 
 // SetEntityID sets the "entity_id" field.
-func (cuo *CommentUpdateOne) SetEntityID(u uuid.UUID) *CommentUpdateOne {
-	cuo.mutation.SetEntityID(u)
+func (cuo *CommentUpdateOne) SetEntityID(s string) *CommentUpdateOne {
+	cuo.mutation.SetEntityID(s)
 	return cuo
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (cuo *CommentUpdateOne) SetNillableEntityID(u *uuid.UUID) *CommentUpdateOne {
-	if u != nil {
-		cuo.SetEntityID(*u)
+func (cuo *CommentUpdateOne) SetNillableEntityID(s *string) *CommentUpdateOne {
+	if s != nil {
+		cuo.SetEntityID(*s)
 	}
 	return cuo
 }
 
 // SetParentID sets the "parent_id" field.
-func (cuo *CommentUpdateOne) SetParentID(u uuid.UUID) *CommentUpdateOne {
-	cuo.mutation.SetParentID(u)
+func (cuo *CommentUpdateOne) SetParentID(s string) *CommentUpdateOne {
+	cuo.mutation.SetParentID(s)
 	return cuo
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (cuo *CommentUpdateOne) SetNillableParentID(u *uuid.UUID) *CommentUpdateOne {
-	if u != nil {
-		cuo.SetParentID(*u)
+func (cuo *CommentUpdateOne) SetNillableParentID(s *string) *CommentUpdateOne {
+	if s != nil {
+		cuo.SetParentID(*s)
 	}
 	return cuo
 }
@@ -915,14 +914,14 @@ func (cuo *CommentUpdateOne) SetParent(c *Comment) *CommentUpdateOne {
 }
 
 // AddReplyIDs adds the "replies" edge to the Comment entity by IDs.
-func (cuo *CommentUpdateOne) AddReplyIDs(ids ...uuid.UUID) *CommentUpdateOne {
+func (cuo *CommentUpdateOne) AddReplyIDs(ids ...string) *CommentUpdateOne {
 	cuo.mutation.AddReplyIDs(ids...)
 	return cuo
 }
 
 // AddReplies adds the "replies" edges to the Comment entity.
 func (cuo *CommentUpdateOne) AddReplies(c ...*Comment) *CommentUpdateOne {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -952,14 +951,14 @@ func (cuo *CommentUpdateOne) ClearReplies() *CommentUpdateOne {
 }
 
 // RemoveReplyIDs removes the "replies" edge to Comment entities by IDs.
-func (cuo *CommentUpdateOne) RemoveReplyIDs(ids ...uuid.UUID) *CommentUpdateOne {
+func (cuo *CommentUpdateOne) RemoveReplyIDs(ids ...string) *CommentUpdateOne {
 	cuo.mutation.RemoveReplyIDs(ids...)
 	return cuo
 }
 
 // RemoveReplies removes "replies" edges to Comment entities.
 func (cuo *CommentUpdateOne) RemoveReplies(c ...*Comment) *CommentUpdateOne {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -1080,7 +1079,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 	if err := cuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(comment.Table, comment.Columns, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString))
 	id, ok := cuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Comment.id" for update`)}
@@ -1109,7 +1108,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 		_spec.SetField(comment.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := cuo.mutation.EntityID(); ok {
-		_spec.SetField(comment.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(comment.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.AuthorName(); ok {
 		_spec.SetField(comment.FieldAuthorName, field.TypeString, value)
@@ -1173,7 +1172,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1186,7 +1185,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1202,7 +1201,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1215,7 +1214,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1231,7 +1230,7 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

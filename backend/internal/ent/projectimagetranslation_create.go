@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectImageTranslationCreate is the builder for creating a ProjectImageTranslation entity.
@@ -24,8 +23,8 @@ type ProjectImageTranslationCreate struct {
 }
 
 // SetProjectImageID sets the "project_image_id" field.
-func (pitc *ProjectImageTranslationCreate) SetProjectImageID(u uuid.UUID) *ProjectImageTranslationCreate {
-	pitc.mutation.SetProjectImageID(u)
+func (pitc *ProjectImageTranslationCreate) SetProjectImageID(s string) *ProjectImageTranslationCreate {
+	pitc.mutation.SetProjectImageID(s)
 	return pitc
 }
 
@@ -78,15 +77,15 @@ func (pitc *ProjectImageTranslationCreate) SetNillableCreatedAt(t *time.Time) *P
 }
 
 // SetID sets the "id" field.
-func (pitc *ProjectImageTranslationCreate) SetID(u uuid.UUID) *ProjectImageTranslationCreate {
-	pitc.mutation.SetID(u)
+func (pitc *ProjectImageTranslationCreate) SetID(s string) *ProjectImageTranslationCreate {
+	pitc.mutation.SetID(s)
 	return pitc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pitc *ProjectImageTranslationCreate) SetNillableID(u *uuid.UUID) *ProjectImageTranslationCreate {
-	if u != nil {
-		pitc.SetID(*u)
+func (pitc *ProjectImageTranslationCreate) SetNillableID(s *string) *ProjectImageTranslationCreate {
+	if s != nil {
+		pitc.SetID(*s)
 	}
 	return pitc
 }
@@ -194,10 +193,10 @@ func (pitc *ProjectImageTranslationCreate) sqlSave(ctx context.Context) (*Projec
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ProjectImageTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pitc.mutation.id = &_node.ID
@@ -208,11 +207,11 @@ func (pitc *ProjectImageTranslationCreate) sqlSave(ctx context.Context) (*Projec
 func (pitc *ProjectImageTranslationCreate) createSpec() (*ProjectImageTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ProjectImageTranslation{config: pitc.config}
-		_spec = sqlgraph.NewCreateSpec(projectimagetranslation.Table, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(projectimagetranslation.Table, sqlgraph.NewFieldSpec(projectimagetranslation.FieldID, field.TypeString))
 	)
 	if id, ok := pitc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pitc.mutation.AltText(); ok {
 		_spec.SetField(projectimagetranslation.FieldAltText, field.TypeString, value)
@@ -234,7 +233,7 @@ func (pitc *ProjectImageTranslationCreate) createSpec() (*ProjectImageTranslatio
 			Columns: []string{projectimagetranslation.ProjectImageColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

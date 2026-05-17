@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // IdeaDetailTranslation is the model entity for the IdeaDetailTranslation schema.
 type IdeaDetailTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// IdeaDetailID holds the value of the "idea_detail_id" field.
-	IdeaDetailID uuid.UUID `json:"idea_detail_id,omitempty"`
+	IdeaDetailID string `json:"idea_detail_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -70,12 +69,10 @@ func (*IdeaDetailTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case ideadetailtranslation.FieldLanguageCode:
+		case ideadetailtranslation.FieldID, ideadetailtranslation.FieldIdeaDetailID, ideadetailtranslation.FieldLanguageCode:
 			values[i] = new(sql.NullString)
 		case ideadetailtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case ideadetailtranslation.FieldID, ideadetailtranslation.FieldIdeaDetailID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -92,16 +89,16 @@ func (idt *IdeaDetailTranslation) assignValues(columns []string, values []any) e
 	for i := range columns {
 		switch columns[i] {
 		case ideadetailtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				idt.ID = *value
+			} else if value.Valid {
+				idt.ID = value.String
 			}
 		case ideadetailtranslation.FieldIdeaDetailID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field idea_detail_id", values[i])
-			} else if value != nil {
-				idt.IdeaDetailID = *value
+			} else if value.Valid {
+				idt.IdeaDetailID = value.String
 			}
 		case ideadetailtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -162,7 +159,7 @@ func (idt *IdeaDetailTranslation) String() string {
 	builder.WriteString("IdeaDetailTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", idt.ID))
 	builder.WriteString("idea_detail_id=")
-	builder.WriteString(fmt.Sprintf("%v", idt.IdeaDetailID))
+	builder.WriteString(idt.IdeaDetailID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(idt.LanguageCode)

@@ -14,7 +14,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PersonalInfoCreate is the builder for creating a PersonalInfo entity.
@@ -25,8 +24,16 @@ type PersonalInfoCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (pic *PersonalInfoCreate) SetUserID(u uuid.UUID) *PersonalInfoCreate {
-	pic.mutation.SetUserID(u)
+func (pic *PersonalInfoCreate) SetUserID(s string) *PersonalInfoCreate {
+	pic.mutation.SetUserID(s)
+	return pic
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (pic *PersonalInfoCreate) SetNillableUserID(s *string) *PersonalInfoCreate {
+	if s != nil {
+		pic.SetUserID(*s)
+	}
 	return pic
 }
 
@@ -36,9 +43,25 @@ func (pic *PersonalInfoCreate) SetFullName(s string) *PersonalInfoCreate {
 	return pic
 }
 
+// SetNillableFullName sets the "full_name" field if the given value is not nil.
+func (pic *PersonalInfoCreate) SetNillableFullName(s *string) *PersonalInfoCreate {
+	if s != nil {
+		pic.SetFullName(*s)
+	}
+	return pic
+}
+
 // SetTitle sets the "title" field.
 func (pic *PersonalInfoCreate) SetTitle(s string) *PersonalInfoCreate {
 	pic.mutation.SetTitle(s)
+	return pic
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (pic *PersonalInfoCreate) SetNillableTitle(s *string) *PersonalInfoCreate {
+	if s != nil {
+		pic.SetTitle(*s)
+	}
 	return pic
 }
 
@@ -169,15 +192,15 @@ func (pic *PersonalInfoCreate) SetNillableUpdatedAt(t *time.Time) *PersonalInfoC
 }
 
 // SetID sets the "id" field.
-func (pic *PersonalInfoCreate) SetID(u uuid.UUID) *PersonalInfoCreate {
-	pic.mutation.SetID(u)
+func (pic *PersonalInfoCreate) SetID(s string) *PersonalInfoCreate {
+	pic.mutation.SetID(s)
 	return pic
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pic *PersonalInfoCreate) SetNillableID(u *uuid.UUID) *PersonalInfoCreate {
-	if u != nil {
-		pic.SetID(*u)
+func (pic *PersonalInfoCreate) SetNillableID(s *string) *PersonalInfoCreate {
+	if s != nil {
+		pic.SetID(*s)
 	}
 	return pic
 }
@@ -188,14 +211,14 @@ func (pic *PersonalInfoCreate) SetUser(u *User) *PersonalInfoCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the PersonalInfoTranslation entity by IDs.
-func (pic *PersonalInfoCreate) AddTranslationIDs(ids ...uuid.UUID) *PersonalInfoCreate {
+func (pic *PersonalInfoCreate) AddTranslationIDs(ids ...string) *PersonalInfoCreate {
 	pic.mutation.AddTranslationIDs(ids...)
 	return pic
 }
 
 // AddTranslations adds the "translations" edges to the PersonalInfoTranslation entity.
 func (pic *PersonalInfoCreate) AddTranslations(p ...*PersonalInfoTranslation) *PersonalInfoCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -203,14 +226,14 @@ func (pic *PersonalInfoCreate) AddTranslations(p ...*PersonalInfoTranslation) *P
 }
 
 // AddSocialLinkIDs adds the "social_links" edge to the SocialLink entity by IDs.
-func (pic *PersonalInfoCreate) AddSocialLinkIDs(ids ...uuid.UUID) *PersonalInfoCreate {
+func (pic *PersonalInfoCreate) AddSocialLinkIDs(ids ...string) *PersonalInfoCreate {
 	pic.mutation.AddSocialLinkIDs(ids...)
 	return pic
 }
 
 // AddSocialLinks adds the "social_links" edges to the SocialLink entity.
 func (pic *PersonalInfoCreate) AddSocialLinks(s ...*SocialLink) *PersonalInfoCreate {
-	ids := make([]uuid.UUID, len(s))
+	ids := make([]string, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
 	}
@@ -272,19 +295,10 @@ func (pic *PersonalInfoCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (pic *PersonalInfoCreate) check() error {
-	if _, ok := pic.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "PersonalInfo.user_id"`)}
-	}
-	if _, ok := pic.mutation.FullName(); !ok {
-		return &ValidationError{Name: "full_name", err: errors.New(`ent: missing required field "PersonalInfo.full_name"`)}
-	}
 	if v, ok := pic.mutation.FullName(); ok {
 		if err := personalinfo.FullNameValidator(v); err != nil {
 			return &ValidationError{Name: "full_name", err: fmt.Errorf(`ent: validator failed for field "PersonalInfo.full_name": %w`, err)}
 		}
-	}
-	if _, ok := pic.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "PersonalInfo.title"`)}
 	}
 	if v, ok := pic.mutation.Title(); ok {
 		if err := personalinfo.TitleValidator(v); err != nil {
@@ -319,15 +333,6 @@ func (pic *PersonalInfoCreate) check() error {
 	if _, ok := pic.mutation.IsPrimary(); !ok {
 		return &ValidationError{Name: "is_primary", err: errors.New(`ent: missing required field "PersonalInfo.is_primary"`)}
 	}
-	if _, ok := pic.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PersonalInfo.created_at"`)}
-	}
-	if _, ok := pic.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "PersonalInfo.updated_at"`)}
-	}
-	if len(pic.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "PersonalInfo.user"`)}
-	}
 	return nil
 }
 
@@ -343,10 +348,10 @@ func (pic *PersonalInfoCreate) sqlSave(ctx context.Context) (*PersonalInfo, erro
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected PersonalInfo.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pic.mutation.id = &_node.ID
@@ -357,11 +362,11 @@ func (pic *PersonalInfoCreate) sqlSave(ctx context.Context) (*PersonalInfo, erro
 func (pic *PersonalInfoCreate) createSpec() (*PersonalInfo, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PersonalInfo{config: pic.config}
-		_spec = sqlgraph.NewCreateSpec(personalinfo.Table, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(personalinfo.Table, sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString))
 	)
 	if id, ok := pic.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pic.mutation.FullName(); ok {
 		_spec.SetField(personalinfo.FieldFullName, field.TypeString, value)
@@ -415,7 +420,7 @@ func (pic *PersonalInfoCreate) createSpec() (*PersonalInfo, *sqlgraph.CreateSpec
 			Columns: []string{personalinfo.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -432,7 +437,7 @@ func (pic *PersonalInfoCreate) createSpec() (*PersonalInfo, *sqlgraph.CreateSpec
 			Columns: []string{personalinfo.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfotranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -448,7 +453,7 @@ func (pic *PersonalInfoCreate) createSpec() (*PersonalInfo, *sqlgraph.CreateSpec
 			Columns: []string{personalinfo.SocialLinksColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(sociallink.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

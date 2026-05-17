@@ -40,7 +40,7 @@ func (cid *ContentInteractionDelete) ExecX(ctx context.Context) int {
 }
 
 func (cid *ContentInteractionDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(contentinteraction.Table, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(contentinteraction.Table, sqlgraph.NewFieldSpec(contentinteraction.FieldID, field.TypeString))
 	if ps := cid.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

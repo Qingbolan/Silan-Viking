@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.WorkExperienceDetail {
+func ID(id string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.WorkExperienceDetail {
+func IDEQ(id string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.WorkExperienceDetail {
+func IDNEQ(id string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.WorkExperienceDetail {
+func IDIn(ids ...string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.WorkExperienceDetail {
+func IDNotIn(ids ...string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.WorkExperienceDetail {
+func IDGT(id string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.WorkExperienceDetail {
+func IDGTE(id string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.WorkExperienceDetail {
+func IDLT(id string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.WorkExperienceDetail {
+func IDLTE(id string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldContainsFold(FieldID, id))
+}
+
 // WorkExperienceID applies equality check predicate on the "work_experience_id" field. It's identical to WorkExperienceIDEQ.
-func WorkExperienceID(v uuid.UUID) predicate.WorkExperienceDetail {
+func WorkExperienceID(v string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldEQ(FieldWorkExperienceID, v))
 }
 
@@ -82,23 +91,68 @@ func UpdatedAt(v time.Time) predicate.WorkExperienceDetail {
 }
 
 // WorkExperienceIDEQ applies the EQ predicate on the "work_experience_id" field.
-func WorkExperienceIDEQ(v uuid.UUID) predicate.WorkExperienceDetail {
+func WorkExperienceIDEQ(v string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldEQ(FieldWorkExperienceID, v))
 }
 
 // WorkExperienceIDNEQ applies the NEQ predicate on the "work_experience_id" field.
-func WorkExperienceIDNEQ(v uuid.UUID) predicate.WorkExperienceDetail {
+func WorkExperienceIDNEQ(v string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldNEQ(FieldWorkExperienceID, v))
 }
 
 // WorkExperienceIDIn applies the In predicate on the "work_experience_id" field.
-func WorkExperienceIDIn(vs ...uuid.UUID) predicate.WorkExperienceDetail {
+func WorkExperienceIDIn(vs ...string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldIn(FieldWorkExperienceID, vs...))
 }
 
 // WorkExperienceIDNotIn applies the NotIn predicate on the "work_experience_id" field.
-func WorkExperienceIDNotIn(vs ...uuid.UUID) predicate.WorkExperienceDetail {
+func WorkExperienceIDNotIn(vs ...string) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldNotIn(FieldWorkExperienceID, vs...))
+}
+
+// WorkExperienceIDGT applies the GT predicate on the "work_experience_id" field.
+func WorkExperienceIDGT(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldGT(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDGTE applies the GTE predicate on the "work_experience_id" field.
+func WorkExperienceIDGTE(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldGTE(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDLT applies the LT predicate on the "work_experience_id" field.
+func WorkExperienceIDLT(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldLT(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDLTE applies the LTE predicate on the "work_experience_id" field.
+func WorkExperienceIDLTE(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldLTE(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDContains applies the Contains predicate on the "work_experience_id" field.
+func WorkExperienceIDContains(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldContains(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDHasPrefix applies the HasPrefix predicate on the "work_experience_id" field.
+func WorkExperienceIDHasPrefix(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldHasPrefix(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDHasSuffix applies the HasSuffix predicate on the "work_experience_id" field.
+func WorkExperienceIDHasSuffix(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldHasSuffix(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDEqualFold applies the EqualFold predicate on the "work_experience_id" field.
+func WorkExperienceIDEqualFold(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldEqualFold(FieldWorkExperienceID, v))
+}
+
+// WorkExperienceIDContainsFold applies the ContainsFold predicate on the "work_experience_id" field.
+func WorkExperienceIDContainsFold(v string) predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldContainsFold(FieldWorkExperienceID, v))
 }
 
 // DetailTextEQ applies the EQ predicate on the "detail_text" field.

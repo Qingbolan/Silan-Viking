@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // BlogPostTagUpdate is the builder for updating BlogPostTag entities.
@@ -31,29 +30,29 @@ func (bptu *BlogPostTagUpdate) Where(ps ...predicate.BlogPostTag) *BlogPostTagUp
 }
 
 // SetBlogPostID sets the "blog_post_id" field.
-func (bptu *BlogPostTagUpdate) SetBlogPostID(u uuid.UUID) *BlogPostTagUpdate {
-	bptu.mutation.SetBlogPostID(u)
+func (bptu *BlogPostTagUpdate) SetBlogPostID(s string) *BlogPostTagUpdate {
+	bptu.mutation.SetBlogPostID(s)
 	return bptu
 }
 
 // SetNillableBlogPostID sets the "blog_post_id" field if the given value is not nil.
-func (bptu *BlogPostTagUpdate) SetNillableBlogPostID(u *uuid.UUID) *BlogPostTagUpdate {
-	if u != nil {
-		bptu.SetBlogPostID(*u)
+func (bptu *BlogPostTagUpdate) SetNillableBlogPostID(s *string) *BlogPostTagUpdate {
+	if s != nil {
+		bptu.SetBlogPostID(*s)
 	}
 	return bptu
 }
 
 // SetBlogTagID sets the "blog_tag_id" field.
-func (bptu *BlogPostTagUpdate) SetBlogTagID(u uuid.UUID) *BlogPostTagUpdate {
-	bptu.mutation.SetBlogTagID(u)
+func (bptu *BlogPostTagUpdate) SetBlogTagID(s string) *BlogPostTagUpdate {
+	bptu.mutation.SetBlogTagID(s)
 	return bptu
 }
 
 // SetNillableBlogTagID sets the "blog_tag_id" field if the given value is not nil.
-func (bptu *BlogPostTagUpdate) SetNillableBlogTagID(u *uuid.UUID) *BlogPostTagUpdate {
-	if u != nil {
-		bptu.SetBlogTagID(*u)
+func (bptu *BlogPostTagUpdate) SetNillableBlogTagID(s *string) *BlogPostTagUpdate {
+	if s != nil {
+		bptu.SetBlogTagID(*s)
 	}
 	return bptu
 }
@@ -127,7 +126,7 @@ func (bptu *BlogPostTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := bptu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogposttag.Table, blogposttag.Columns, sqlgraph.NewFieldSpec(blogposttag.FieldBlogPostID, field.TypeUUID), sqlgraph.NewFieldSpec(blogposttag.FieldBlogTagID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogposttag.Table, blogposttag.Columns, sqlgraph.NewFieldSpec(blogposttag.FieldBlogPostID, field.TypeString), sqlgraph.NewFieldSpec(blogposttag.FieldBlogTagID, field.TypeString))
 	if ps := bptu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -143,7 +142,7 @@ func (bptu *BlogPostTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogposttag.BlogPostColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -156,7 +155,7 @@ func (bptu *BlogPostTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogposttag.BlogPostColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -172,7 +171,7 @@ func (bptu *BlogPostTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogposttag.BlogTagColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -185,7 +184,7 @@ func (bptu *BlogPostTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{blogposttag.BlogTagColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -214,29 +213,29 @@ type BlogPostTagUpdateOne struct {
 }
 
 // SetBlogPostID sets the "blog_post_id" field.
-func (bptuo *BlogPostTagUpdateOne) SetBlogPostID(u uuid.UUID) *BlogPostTagUpdateOne {
-	bptuo.mutation.SetBlogPostID(u)
+func (bptuo *BlogPostTagUpdateOne) SetBlogPostID(s string) *BlogPostTagUpdateOne {
+	bptuo.mutation.SetBlogPostID(s)
 	return bptuo
 }
 
 // SetNillableBlogPostID sets the "blog_post_id" field if the given value is not nil.
-func (bptuo *BlogPostTagUpdateOne) SetNillableBlogPostID(u *uuid.UUID) *BlogPostTagUpdateOne {
-	if u != nil {
-		bptuo.SetBlogPostID(*u)
+func (bptuo *BlogPostTagUpdateOne) SetNillableBlogPostID(s *string) *BlogPostTagUpdateOne {
+	if s != nil {
+		bptuo.SetBlogPostID(*s)
 	}
 	return bptuo
 }
 
 // SetBlogTagID sets the "blog_tag_id" field.
-func (bptuo *BlogPostTagUpdateOne) SetBlogTagID(u uuid.UUID) *BlogPostTagUpdateOne {
-	bptuo.mutation.SetBlogTagID(u)
+func (bptuo *BlogPostTagUpdateOne) SetBlogTagID(s string) *BlogPostTagUpdateOne {
+	bptuo.mutation.SetBlogTagID(s)
 	return bptuo
 }
 
 // SetNillableBlogTagID sets the "blog_tag_id" field if the given value is not nil.
-func (bptuo *BlogPostTagUpdateOne) SetNillableBlogTagID(u *uuid.UUID) *BlogPostTagUpdateOne {
-	if u != nil {
-		bptuo.SetBlogTagID(*u)
+func (bptuo *BlogPostTagUpdateOne) SetNillableBlogTagID(s *string) *BlogPostTagUpdateOne {
+	if s != nil {
+		bptuo.SetBlogTagID(*s)
 	}
 	return bptuo
 }
@@ -323,7 +322,7 @@ func (bptuo *BlogPostTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost
 	if err := bptuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(blogposttag.Table, blogposttag.Columns, sqlgraph.NewFieldSpec(blogposttag.FieldBlogPostID, field.TypeUUID), sqlgraph.NewFieldSpec(blogposttag.FieldBlogTagID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(blogposttag.Table, blogposttag.Columns, sqlgraph.NewFieldSpec(blogposttag.FieldBlogPostID, field.TypeString), sqlgraph.NewFieldSpec(blogposttag.FieldBlogTagID, field.TypeString))
 	if id, ok := bptuo.mutation.BlogPostID(); !ok {
 		return nil, &ValidationError{Name: "blog_post_id", err: errors.New(`ent: missing "BlogPostTag.blog_post_id" for update`)}
 	} else {
@@ -358,7 +357,7 @@ func (bptuo *BlogPostTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost
 			Columns: []string{blogposttag.BlogPostColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -371,7 +370,7 @@ func (bptuo *BlogPostTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost
 			Columns: []string{blogposttag.BlogPostColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -387,7 +386,7 @@ func (bptuo *BlogPostTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost
 			Columns: []string{blogposttag.BlogTagColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -400,7 +399,7 @@ func (bptuo *BlogPostTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost
 			Columns: []string{blogposttag.BlogTagColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

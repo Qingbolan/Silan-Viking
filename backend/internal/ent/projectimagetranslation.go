@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ProjectImageTranslation is the model entity for the ProjectImageTranslation schema.
 type ProjectImageTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// ProjectImageID holds the value of the "project_image_id" field.
-	ProjectImageID uuid.UUID `json:"project_image_id,omitempty"`
+	ProjectImageID string `json:"project_image_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// AltText holds the value of the "alt_text" field.
@@ -74,12 +73,10 @@ func (*ProjectImageTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case projectimagetranslation.FieldLanguageCode, projectimagetranslation.FieldAltText, projectimagetranslation.FieldCaption:
+		case projectimagetranslation.FieldID, projectimagetranslation.FieldProjectImageID, projectimagetranslation.FieldLanguageCode, projectimagetranslation.FieldAltText, projectimagetranslation.FieldCaption:
 			values[i] = new(sql.NullString)
 		case projectimagetranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case projectimagetranslation.FieldID, projectimagetranslation.FieldProjectImageID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -96,16 +93,16 @@ func (pit *ProjectImageTranslation) assignValues(columns []string, values []any)
 	for i := range columns {
 		switch columns[i] {
 		case projectimagetranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pit.ID = *value
+			} else if value.Valid {
+				pit.ID = value.String
 			}
 		case projectimagetranslation.FieldProjectImageID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field project_image_id", values[i])
-			} else if value != nil {
-				pit.ProjectImageID = *value
+			} else if value.Valid {
+				pit.ProjectImageID = value.String
 			}
 		case projectimagetranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -178,7 +175,7 @@ func (pit *ProjectImageTranslation) String() string {
 	builder.WriteString("ProjectImageTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pit.ID))
 	builder.WriteString("project_image_id=")
-	builder.WriteString(fmt.Sprintf("%v", pit.ProjectImageID))
+	builder.WriteString(pit.ProjectImageID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(pit.LanguageCode)

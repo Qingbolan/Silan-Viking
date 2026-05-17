@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EducationDetailTranslationCreate is the builder for creating a EducationDetailTranslation entity.
@@ -24,8 +23,8 @@ type EducationDetailTranslationCreate struct {
 }
 
 // SetEducationDetailID sets the "education_detail_id" field.
-func (edtc *EducationDetailTranslationCreate) SetEducationDetailID(u uuid.UUID) *EducationDetailTranslationCreate {
-	edtc.mutation.SetEducationDetailID(u)
+func (edtc *EducationDetailTranslationCreate) SetEducationDetailID(s string) *EducationDetailTranslationCreate {
+	edtc.mutation.SetEducationDetailID(s)
 	return edtc
 }
 
@@ -56,15 +55,15 @@ func (edtc *EducationDetailTranslationCreate) SetNillableCreatedAt(t *time.Time)
 }
 
 // SetID sets the "id" field.
-func (edtc *EducationDetailTranslationCreate) SetID(u uuid.UUID) *EducationDetailTranslationCreate {
-	edtc.mutation.SetID(u)
+func (edtc *EducationDetailTranslationCreate) SetID(s string) *EducationDetailTranslationCreate {
+	edtc.mutation.SetID(s)
 	return edtc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (edtc *EducationDetailTranslationCreate) SetNillableID(u *uuid.UUID) *EducationDetailTranslationCreate {
-	if u != nil {
-		edtc.SetID(*u)
+func (edtc *EducationDetailTranslationCreate) SetNillableID(s *string) *EducationDetailTranslationCreate {
+	if s != nil {
+		edtc.SetID(*s)
 	}
 	return edtc
 }
@@ -175,10 +174,10 @@ func (edtc *EducationDetailTranslationCreate) sqlSave(ctx context.Context) (*Edu
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected EducationDetailTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	edtc.mutation.id = &_node.ID
@@ -189,11 +188,11 @@ func (edtc *EducationDetailTranslationCreate) sqlSave(ctx context.Context) (*Edu
 func (edtc *EducationDetailTranslationCreate) createSpec() (*EducationDetailTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &EducationDetailTranslation{config: edtc.config}
-		_spec = sqlgraph.NewCreateSpec(educationdetailtranslation.Table, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(educationdetailtranslation.Table, sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString))
 	)
 	if id, ok := edtc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := edtc.mutation.DetailText(); ok {
 		_spec.SetField(educationdetailtranslation.FieldDetailText, field.TypeString, value)
@@ -211,7 +210,7 @@ func (edtc *EducationDetailTranslationCreate) createSpec() (*EducationDetailTran
 			Columns: []string{educationdetailtranslation.EducationDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // EducationDetail is the model entity for the EducationDetail schema.
 type EducationDetail struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// EducationID holds the value of the "education_id" field.
-	EducationID uuid.UUID `json:"education_id,omitempty"`
+	EducationID string `json:"education_id,omitempty"`
 	// DetailText holds the value of the "detail_text" field.
 	DetailText string `json:"detail_text,omitempty"`
 	// SortOrder holds the value of the "sort_order" field.
@@ -73,12 +72,10 @@ func (*EducationDetail) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case educationdetail.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case educationdetail.FieldDetailText:
+		case educationdetail.FieldID, educationdetail.FieldEducationID, educationdetail.FieldDetailText:
 			values[i] = new(sql.NullString)
 		case educationdetail.FieldCreatedAt, educationdetail.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case educationdetail.FieldID, educationdetail.FieldEducationID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -95,16 +92,16 @@ func (ed *EducationDetail) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case educationdetail.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				ed.ID = *value
+			} else if value.Valid {
+				ed.ID = value.String
 			}
 		case educationdetail.FieldEducationID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field education_id", values[i])
-			} else if value != nil {
-				ed.EducationID = *value
+			} else if value.Valid {
+				ed.EducationID = value.String
 			}
 		case educationdetail.FieldDetailText:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -177,7 +174,7 @@ func (ed *EducationDetail) String() string {
 	builder.WriteString("EducationDetail(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ed.ID))
 	builder.WriteString("education_id=")
-	builder.WriteString(fmt.Sprintf("%v", ed.EducationID))
+	builder.WriteString(ed.EducationID)
 	builder.WriteString(", ")
 	builder.WriteString("detail_text=")
 	builder.WriteString(ed.DetailText)

@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // CommentCreate is the builder for creating a Comment entity.
@@ -29,21 +28,21 @@ func (cc *CommentCreate) SetEntityType(ct comment.EntityType) *CommentCreate {
 }
 
 // SetEntityID sets the "entity_id" field.
-func (cc *CommentCreate) SetEntityID(u uuid.UUID) *CommentCreate {
-	cc.mutation.SetEntityID(u)
+func (cc *CommentCreate) SetEntityID(s string) *CommentCreate {
+	cc.mutation.SetEntityID(s)
 	return cc
 }
 
 // SetParentID sets the "parent_id" field.
-func (cc *CommentCreate) SetParentID(u uuid.UUID) *CommentCreate {
-	cc.mutation.SetParentID(u)
+func (cc *CommentCreate) SetParentID(s string) *CommentCreate {
+	cc.mutation.SetParentID(s)
 	return cc
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableParentID(u *uuid.UUID) *CommentCreate {
-	if u != nil {
-		cc.SetParentID(*u)
+func (cc *CommentCreate) SetNillableParentID(s *string) *CommentCreate {
+	if s != nil {
+		cc.SetParentID(*s)
 	}
 	return cc
 }
@@ -221,15 +220,15 @@ func (cc *CommentCreate) SetNillableUpdatedAt(t *time.Time) *CommentCreate {
 }
 
 // SetID sets the "id" field.
-func (cc *CommentCreate) SetID(u uuid.UUID) *CommentCreate {
-	cc.mutation.SetID(u)
+func (cc *CommentCreate) SetID(s string) *CommentCreate {
+	cc.mutation.SetID(s)
 	return cc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (cc *CommentCreate) SetNillableID(u *uuid.UUID) *CommentCreate {
-	if u != nil {
-		cc.SetID(*u)
+func (cc *CommentCreate) SetNillableID(s *string) *CommentCreate {
+	if s != nil {
+		cc.SetID(*s)
 	}
 	return cc
 }
@@ -240,14 +239,14 @@ func (cc *CommentCreate) SetParent(c *Comment) *CommentCreate {
 }
 
 // AddReplyIDs adds the "replies" edge to the Comment entity by IDs.
-func (cc *CommentCreate) AddReplyIDs(ids ...uuid.UUID) *CommentCreate {
+func (cc *CommentCreate) AddReplyIDs(ids ...string) *CommentCreate {
 	cc.mutation.AddReplyIDs(ids...)
 	return cc
 }
 
 // AddReplies adds the "replies" edges to the Comment entity.
 func (cc *CommentCreate) AddReplies(c ...*Comment) *CommentCreate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -417,10 +416,10 @@ func (cc *CommentCreate) sqlSave(ctx context.Context) (*Comment, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Comment.ID type: %T", _spec.ID.Value)
 		}
 	}
 	cc.mutation.id = &_node.ID
@@ -431,18 +430,18 @@ func (cc *CommentCreate) sqlSave(ctx context.Context) (*Comment, error) {
 func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Comment{config: cc.config}
-		_spec = sqlgraph.NewCreateSpec(comment.Table, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(comment.Table, sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString))
 	)
 	if id, ok := cc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := cc.mutation.EntityType(); ok {
 		_spec.SetField(comment.FieldEntityType, field.TypeEnum, value)
 		_node.EntityType = value
 	}
 	if value, ok := cc.mutation.EntityID(); ok {
-		_spec.SetField(comment.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(comment.FieldEntityID, field.TypeString, value)
 		_node.EntityID = value
 	}
 	if value, ok := cc.mutation.AuthorName(); ok {
@@ -505,7 +504,7 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 			Columns: []string{comment.ParentColumn},
 			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -522,7 +521,7 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 			Columns: []string{comment.RepliesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

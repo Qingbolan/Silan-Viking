@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PartEntryCreate is the builder for creating a PartEntry entity.
@@ -24,8 +23,8 @@ type PartEntryCreate struct {
 }
 
 // SetItemPartID sets the "item_part_id" field.
-func (pec *PartEntryCreate) SetItemPartID(u uuid.UUID) *PartEntryCreate {
-	pec.mutation.SetItemPartID(u)
+func (pec *PartEntryCreate) SetItemPartID(s string) *PartEntryCreate {
+	pec.mutation.SetItemPartID(s)
 	return pec
 }
 
@@ -70,15 +69,15 @@ func (pec *PartEntryCreate) SetNillableCreatedAt(t *time.Time) *PartEntryCreate 
 }
 
 // SetID sets the "id" field.
-func (pec *PartEntryCreate) SetID(u uuid.UUID) *PartEntryCreate {
-	pec.mutation.SetID(u)
+func (pec *PartEntryCreate) SetID(s string) *PartEntryCreate {
+	pec.mutation.SetID(s)
 	return pec
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pec *PartEntryCreate) SetNillableID(u *uuid.UUID) *PartEntryCreate {
-	if u != nil {
-		pec.SetID(*u)
+func (pec *PartEntryCreate) SetNillableID(s *string) *PartEntryCreate {
+	if s != nil {
+		pec.SetID(*s)
 	}
 	return pec
 }
@@ -89,14 +88,14 @@ func (pec *PartEntryCreate) SetItemPart(i *ItemPart) *PartEntryCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the PartEntryTranslation entity by IDs.
-func (pec *PartEntryCreate) AddTranslationIDs(ids ...uuid.UUID) *PartEntryCreate {
+func (pec *PartEntryCreate) AddTranslationIDs(ids ...string) *PartEntryCreate {
 	pec.mutation.AddTranslationIDs(ids...)
 	return pec
 }
 
 // AddTranslations adds the "translations" edges to the PartEntryTranslation entity.
 func (pec *PartEntryCreate) AddTranslations(p ...*PartEntryTranslation) *PartEntryCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -187,10 +186,10 @@ func (pec *PartEntryCreate) sqlSave(ctx context.Context) (*PartEntry, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected PartEntry.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pec.mutation.id = &_node.ID
@@ -201,11 +200,11 @@ func (pec *PartEntryCreate) sqlSave(ctx context.Context) (*PartEntry, error) {
 func (pec *PartEntryCreate) createSpec() (*PartEntry, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PartEntry{config: pec.config}
-		_spec = sqlgraph.NewCreateSpec(partentry.Table, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(partentry.Table, sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString))
 	)
 	if id, ok := pec.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pec.mutation.EntryID(); ok {
 		_spec.SetField(partentry.FieldEntryID, field.TypeString, value)
@@ -231,7 +230,7 @@ func (pec *PartEntryCreate) createSpec() (*PartEntry, *sqlgraph.CreateSpec) {
 			Columns: []string{partentry.ItemPartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -248,7 +247,7 @@ func (pec *PartEntryCreate) createSpec() (*PartEntry, *sqlgraph.CreateSpec) {
 			Columns: []string{partentry.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentrytranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.PublicationTranslation {
+func ID(id string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.PublicationTranslation {
+func IDEQ(id string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.PublicationTranslation {
+func IDNEQ(id string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.PublicationTranslation {
+func IDIn(ids ...string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.PublicationTranslation {
+func IDNotIn(ids ...string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.PublicationTranslation {
+func IDGT(id string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.PublicationTranslation {
+func IDGTE(id string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.PublicationTranslation {
+func IDLT(id string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.PublicationTranslation {
+func IDLTE(id string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // PublicationID applies equality check predicate on the "publication_id" field. It's identical to PublicationIDEQ.
-func PublicationID(v uuid.UUID) predicate.PublicationTranslation {
+func PublicationID(v string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldEQ(FieldPublicationID, v))
 }
 
@@ -87,23 +96,68 @@ func CreatedAt(v time.Time) predicate.PublicationTranslation {
 }
 
 // PublicationIDEQ applies the EQ predicate on the "publication_id" field.
-func PublicationIDEQ(v uuid.UUID) predicate.PublicationTranslation {
+func PublicationIDEQ(v string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldEQ(FieldPublicationID, v))
 }
 
 // PublicationIDNEQ applies the NEQ predicate on the "publication_id" field.
-func PublicationIDNEQ(v uuid.UUID) predicate.PublicationTranslation {
+func PublicationIDNEQ(v string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldNEQ(FieldPublicationID, v))
 }
 
 // PublicationIDIn applies the In predicate on the "publication_id" field.
-func PublicationIDIn(vs ...uuid.UUID) predicate.PublicationTranslation {
+func PublicationIDIn(vs ...string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldIn(FieldPublicationID, vs...))
 }
 
 // PublicationIDNotIn applies the NotIn predicate on the "publication_id" field.
-func PublicationIDNotIn(vs ...uuid.UUID) predicate.PublicationTranslation {
+func PublicationIDNotIn(vs ...string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldNotIn(FieldPublicationID, vs...))
+}
+
+// PublicationIDGT applies the GT predicate on the "publication_id" field.
+func PublicationIDGT(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldGT(FieldPublicationID, v))
+}
+
+// PublicationIDGTE applies the GTE predicate on the "publication_id" field.
+func PublicationIDGTE(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldGTE(FieldPublicationID, v))
+}
+
+// PublicationIDLT applies the LT predicate on the "publication_id" field.
+func PublicationIDLT(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldLT(FieldPublicationID, v))
+}
+
+// PublicationIDLTE applies the LTE predicate on the "publication_id" field.
+func PublicationIDLTE(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldLTE(FieldPublicationID, v))
+}
+
+// PublicationIDContains applies the Contains predicate on the "publication_id" field.
+func PublicationIDContains(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldContains(FieldPublicationID, v))
+}
+
+// PublicationIDHasPrefix applies the HasPrefix predicate on the "publication_id" field.
+func PublicationIDHasPrefix(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldHasPrefix(FieldPublicationID, v))
+}
+
+// PublicationIDHasSuffix applies the HasSuffix predicate on the "publication_id" field.
+func PublicationIDHasSuffix(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldHasSuffix(FieldPublicationID, v))
+}
+
+// PublicationIDEqualFold applies the EqualFold predicate on the "publication_id" field.
+func PublicationIDEqualFold(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldEqualFold(FieldPublicationID, v))
+}
+
+// PublicationIDContainsFold applies the ContainsFold predicate on the "publication_id" field.
+func PublicationIDContainsFold(v string) predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldContainsFold(FieldPublicationID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

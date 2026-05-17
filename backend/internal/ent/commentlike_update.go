@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // CommentLikeUpdate is the builder for updating CommentLike entities.
@@ -31,15 +30,15 @@ func (clu *CommentLikeUpdate) Where(ps ...predicate.CommentLike) *CommentLikeUpd
 }
 
 // SetCommentID sets the "comment_id" field.
-func (clu *CommentLikeUpdate) SetCommentID(u uuid.UUID) *CommentLikeUpdate {
-	clu.mutation.SetCommentID(u)
+func (clu *CommentLikeUpdate) SetCommentID(s string) *CommentLikeUpdate {
+	clu.mutation.SetCommentID(s)
 	return clu
 }
 
 // SetNillableCommentID sets the "comment_id" field if the given value is not nil.
-func (clu *CommentLikeUpdate) SetNillableCommentID(u *uuid.UUID) *CommentLikeUpdate {
-	if u != nil {
-		clu.SetCommentID(*u)
+func (clu *CommentLikeUpdate) SetNillableCommentID(s *string) *CommentLikeUpdate {
+	if s != nil {
+		clu.SetCommentID(*s)
 	}
 	return clu
 }
@@ -176,7 +175,7 @@ func (clu *CommentLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := clu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(commentlike.Table, commentlike.Columns, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(commentlike.Table, commentlike.Columns, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeString))
 	if ps := clu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -185,7 +184,7 @@ func (clu *CommentLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := clu.mutation.CommentID(); ok {
-		_spec.SetField(commentlike.FieldCommentID, field.TypeUUID, value)
+		_spec.SetField(commentlike.FieldCommentID, field.TypeString, value)
 	}
 	if value, ok := clu.mutation.Fingerprint(); ok {
 		_spec.SetField(commentlike.FieldFingerprint, field.TypeString, value)
@@ -252,15 +251,15 @@ type CommentLikeUpdateOne struct {
 }
 
 // SetCommentID sets the "comment_id" field.
-func (cluo *CommentLikeUpdateOne) SetCommentID(u uuid.UUID) *CommentLikeUpdateOne {
-	cluo.mutation.SetCommentID(u)
+func (cluo *CommentLikeUpdateOne) SetCommentID(s string) *CommentLikeUpdateOne {
+	cluo.mutation.SetCommentID(s)
 	return cluo
 }
 
 // SetNillableCommentID sets the "comment_id" field if the given value is not nil.
-func (cluo *CommentLikeUpdateOne) SetNillableCommentID(u *uuid.UUID) *CommentLikeUpdateOne {
-	if u != nil {
-		cluo.SetCommentID(*u)
+func (cluo *CommentLikeUpdateOne) SetNillableCommentID(s *string) *CommentLikeUpdateOne {
+	if s != nil {
+		cluo.SetCommentID(*s)
 	}
 	return cluo
 }
@@ -410,7 +409,7 @@ func (cluo *CommentLikeUpdateOne) sqlSave(ctx context.Context) (_node *CommentLi
 	if err := cluo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(commentlike.Table, commentlike.Columns, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(commentlike.Table, commentlike.Columns, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeString))
 	id, ok := cluo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "CommentLike.id" for update`)}
@@ -436,7 +435,7 @@ func (cluo *CommentLikeUpdateOne) sqlSave(ctx context.Context) (_node *CommentLi
 		}
 	}
 	if value, ok := cluo.mutation.CommentID(); ok {
-		_spec.SetField(commentlike.FieldCommentID, field.TypeUUID, value)
+		_spec.SetField(commentlike.FieldCommentID, field.TypeString, value)
 	}
 	if value, ok := cluo.mutation.Fingerprint(); ok {
 		_spec.SetField(commentlike.FieldFingerprint, field.TypeString, value)

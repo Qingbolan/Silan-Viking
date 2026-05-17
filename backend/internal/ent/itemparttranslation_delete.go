@@ -40,7 +40,7 @@ func (iptd *ItemPartTranslationDelete) ExecX(ctx context.Context) int {
 }
 
 func (iptd *ItemPartTranslationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(itemparttranslation.Table, sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(itemparttranslation.Table, sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString))
 	if ps := iptd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

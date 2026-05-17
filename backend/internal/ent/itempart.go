@@ -10,20 +10,19 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ItemPart is the model entity for the ItemPart schema.
 type ItemPart struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// PartID holds the value of the "part_id" field.
 	PartID string `json:"part_id,omitempty"`
 	// EntityType holds the value of the "entity_type" field.
 	EntityType itempart.EntityType `json:"entity_type,omitempty"`
 	// EntityID holds the value of the "entity_id" field.
-	EntityID uuid.UUID `json:"entity_id,omitempty"`
+	EntityID string `json:"entity_id,omitempty"`
 	// Role holds the value of the "role" field.
 	Role string `json:"role,omitempty"`
 	// SortOrder holds the value of the "sort_order" field.
@@ -76,12 +75,10 @@ func (*ItemPart) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case itempart.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case itempart.FieldPartID, itempart.FieldEntityType, itempart.FieldRole, itempart.FieldCanonicalLang:
+		case itempart.FieldID, itempart.FieldPartID, itempart.FieldEntityType, itempart.FieldEntityID, itempart.FieldRole, itempart.FieldCanonicalLang:
 			values[i] = new(sql.NullString)
 		case itempart.FieldCreatedAt, itempart.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case itempart.FieldID, itempart.FieldEntityID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -98,10 +95,10 @@ func (ip *ItemPart) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case itempart.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				ip.ID = *value
+			} else if value.Valid {
+				ip.ID = value.String
 			}
 		case itempart.FieldPartID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -116,10 +113,10 @@ func (ip *ItemPart) assignValues(columns []string, values []any) error {
 				ip.EntityType = itempart.EntityType(value.String)
 			}
 		case itempart.FieldEntityID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entity_id", values[i])
-			} else if value != nil {
-				ip.EntityID = *value
+			} else if value.Valid {
+				ip.EntityID = value.String
 			}
 		case itempart.FieldRole:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -204,7 +201,7 @@ func (ip *ItemPart) String() string {
 	builder.WriteString(fmt.Sprintf("%v", ip.EntityType))
 	builder.WriteString(", ")
 	builder.WriteString("entity_id=")
-	builder.WriteString(fmt.Sprintf("%v", ip.EntityID))
+	builder.WriteString(ip.EntityID)
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(ip.Role)

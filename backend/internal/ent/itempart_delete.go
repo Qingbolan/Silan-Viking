@@ -40,7 +40,7 @@ func (ipd *ItemPartDelete) ExecX(ctx context.Context) int {
 }
 
 func (ipd *ItemPartDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(itempart.Table, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(itempart.Table, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString))
 	if ps := ipd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

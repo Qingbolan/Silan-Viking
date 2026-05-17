@@ -23,7 +23,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // UserUpdate is the builder for updating User entities.
@@ -204,14 +203,14 @@ func (uu *UserUpdate) SetUpdatedAt(t time.Time) *UserUpdate {
 }
 
 // AddPersonalInfoIDs adds the "personal_infos" edge to the PersonalInfo entity by IDs.
-func (uu *UserUpdate) AddPersonalInfoIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddPersonalInfoIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddPersonalInfoIDs(ids...)
 	return uu
 }
 
 // AddPersonalInfos adds the "personal_infos" edges to the PersonalInfo entity.
 func (uu *UserUpdate) AddPersonalInfos(p ...*PersonalInfo) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -219,14 +218,14 @@ func (uu *UserUpdate) AddPersonalInfos(p ...*PersonalInfo) *UserUpdate {
 }
 
 // AddEducationIDs adds the "educations" edge to the Education entity by IDs.
-func (uu *UserUpdate) AddEducationIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddEducationIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddEducationIDs(ids...)
 	return uu
 }
 
 // AddEducations adds the "educations" edges to the Education entity.
 func (uu *UserUpdate) AddEducations(e ...*Education) *UserUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -234,14 +233,14 @@ func (uu *UserUpdate) AddEducations(e ...*Education) *UserUpdate {
 }
 
 // AddWorkExperienceIDs adds the "work_experiences" edge to the WorkExperience entity by IDs.
-func (uu *UserUpdate) AddWorkExperienceIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddWorkExperienceIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddWorkExperienceIDs(ids...)
 	return uu
 }
 
 // AddWorkExperiences adds the "work_experiences" edges to the WorkExperience entity.
 func (uu *UserUpdate) AddWorkExperiences(w ...*WorkExperience) *UserUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -249,14 +248,14 @@ func (uu *UserUpdate) AddWorkExperiences(w ...*WorkExperience) *UserUpdate {
 }
 
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (uu *UserUpdate) AddProjectIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddProjectIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddProjectIDs(ids...)
 	return uu
 }
 
 // AddProjects adds the "projects" edges to the Project entity.
 func (uu *UserUpdate) AddProjects(p ...*Project) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -264,14 +263,14 @@ func (uu *UserUpdate) AddProjects(p ...*Project) *UserUpdate {
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (uu *UserUpdate) AddBlogPostIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddBlogPostIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddBlogPostIDs(ids...)
 	return uu
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (uu *UserUpdate) AddBlogPosts(b ...*BlogPost) *UserUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -279,14 +278,14 @@ func (uu *UserUpdate) AddBlogPosts(b ...*BlogPost) *UserUpdate {
 }
 
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
-func (uu *UserUpdate) AddIdeaIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddIdeaIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddIdeaIDs(ids...)
 	return uu
 }
 
 // AddIdeas adds the "ideas" edges to the Idea entity.
 func (uu *UserUpdate) AddIdeas(i ...*Idea) *UserUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -294,14 +293,14 @@ func (uu *UserUpdate) AddIdeas(i ...*Idea) *UserUpdate {
 }
 
 // AddResearchProjectIDs adds the "research_projects" edge to the ResearchProject entity by IDs.
-func (uu *UserUpdate) AddResearchProjectIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddResearchProjectIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddResearchProjectIDs(ids...)
 	return uu
 }
 
 // AddResearchProjects adds the "research_projects" edges to the ResearchProject entity.
 func (uu *UserUpdate) AddResearchProjects(r ...*ResearchProject) *UserUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -309,14 +308,14 @@ func (uu *UserUpdate) AddResearchProjects(r ...*ResearchProject) *UserUpdate {
 }
 
 // AddPublicationIDs adds the "publications" edge to the Publication entity by IDs.
-func (uu *UserUpdate) AddPublicationIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddPublicationIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddPublicationIDs(ids...)
 	return uu
 }
 
 // AddPublications adds the "publications" edges to the Publication entity.
 func (uu *UserUpdate) AddPublications(p ...*Publication) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -324,14 +323,14 @@ func (uu *UserUpdate) AddPublications(p ...*Publication) *UserUpdate {
 }
 
 // AddAwardIDs adds the "awards" edge to the Award entity by IDs.
-func (uu *UserUpdate) AddAwardIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddAwardIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddAwardIDs(ids...)
 	return uu
 }
 
 // AddAwards adds the "awards" edges to the Award entity.
 func (uu *UserUpdate) AddAwards(a ...*Award) *UserUpdate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -339,14 +338,14 @@ func (uu *UserUpdate) AddAwards(a ...*Award) *UserUpdate {
 }
 
 // AddRecentUpdateIDs adds the "recent_updates" edge to the RecentUpdate entity by IDs.
-func (uu *UserUpdate) AddRecentUpdateIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) AddRecentUpdateIDs(ids ...string) *UserUpdate {
 	uu.mutation.AddRecentUpdateIDs(ids...)
 	return uu
 }
 
 // AddRecentUpdates adds the "recent_updates" edges to the RecentUpdate entity.
 func (uu *UserUpdate) AddRecentUpdates(r ...*RecentUpdate) *UserUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -365,14 +364,14 @@ func (uu *UserUpdate) ClearPersonalInfos() *UserUpdate {
 }
 
 // RemovePersonalInfoIDs removes the "personal_infos" edge to PersonalInfo entities by IDs.
-func (uu *UserUpdate) RemovePersonalInfoIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemovePersonalInfoIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemovePersonalInfoIDs(ids...)
 	return uu
 }
 
 // RemovePersonalInfos removes "personal_infos" edges to PersonalInfo entities.
 func (uu *UserUpdate) RemovePersonalInfos(p ...*PersonalInfo) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -386,14 +385,14 @@ func (uu *UserUpdate) ClearEducations() *UserUpdate {
 }
 
 // RemoveEducationIDs removes the "educations" edge to Education entities by IDs.
-func (uu *UserUpdate) RemoveEducationIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveEducationIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveEducationIDs(ids...)
 	return uu
 }
 
 // RemoveEducations removes "educations" edges to Education entities.
 func (uu *UserUpdate) RemoveEducations(e ...*Education) *UserUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -407,14 +406,14 @@ func (uu *UserUpdate) ClearWorkExperiences() *UserUpdate {
 }
 
 // RemoveWorkExperienceIDs removes the "work_experiences" edge to WorkExperience entities by IDs.
-func (uu *UserUpdate) RemoveWorkExperienceIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveWorkExperienceIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveWorkExperienceIDs(ids...)
 	return uu
 }
 
 // RemoveWorkExperiences removes "work_experiences" edges to WorkExperience entities.
 func (uu *UserUpdate) RemoveWorkExperiences(w ...*WorkExperience) *UserUpdate {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -428,14 +427,14 @@ func (uu *UserUpdate) ClearProjects() *UserUpdate {
 }
 
 // RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
-func (uu *UserUpdate) RemoveProjectIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveProjectIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveProjectIDs(ids...)
 	return uu
 }
 
 // RemoveProjects removes "projects" edges to Project entities.
 func (uu *UserUpdate) RemoveProjects(p ...*Project) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -449,14 +448,14 @@ func (uu *UserUpdate) ClearBlogPosts() *UserUpdate {
 }
 
 // RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (uu *UserUpdate) RemoveBlogPostIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveBlogPostIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveBlogPostIDs(ids...)
 	return uu
 }
 
 // RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
 func (uu *UserUpdate) RemoveBlogPosts(b ...*BlogPost) *UserUpdate {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -470,14 +469,14 @@ func (uu *UserUpdate) ClearIdeas() *UserUpdate {
 }
 
 // RemoveIdeaIDs removes the "ideas" edge to Idea entities by IDs.
-func (uu *UserUpdate) RemoveIdeaIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveIdeaIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveIdeaIDs(ids...)
 	return uu
 }
 
 // RemoveIdeas removes "ideas" edges to Idea entities.
 func (uu *UserUpdate) RemoveIdeas(i ...*Idea) *UserUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -491,14 +490,14 @@ func (uu *UserUpdate) ClearResearchProjects() *UserUpdate {
 }
 
 // RemoveResearchProjectIDs removes the "research_projects" edge to ResearchProject entities by IDs.
-func (uu *UserUpdate) RemoveResearchProjectIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveResearchProjectIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveResearchProjectIDs(ids...)
 	return uu
 }
 
 // RemoveResearchProjects removes "research_projects" edges to ResearchProject entities.
 func (uu *UserUpdate) RemoveResearchProjects(r ...*ResearchProject) *UserUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -512,14 +511,14 @@ func (uu *UserUpdate) ClearPublications() *UserUpdate {
 }
 
 // RemovePublicationIDs removes the "publications" edge to Publication entities by IDs.
-func (uu *UserUpdate) RemovePublicationIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemovePublicationIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemovePublicationIDs(ids...)
 	return uu
 }
 
 // RemovePublications removes "publications" edges to Publication entities.
 func (uu *UserUpdate) RemovePublications(p ...*Publication) *UserUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -533,14 +532,14 @@ func (uu *UserUpdate) ClearAwards() *UserUpdate {
 }
 
 // RemoveAwardIDs removes the "awards" edge to Award entities by IDs.
-func (uu *UserUpdate) RemoveAwardIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveAwardIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveAwardIDs(ids...)
 	return uu
 }
 
 // RemoveAwards removes "awards" edges to Award entities.
 func (uu *UserUpdate) RemoveAwards(a ...*Award) *UserUpdate {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -554,14 +553,14 @@ func (uu *UserUpdate) ClearRecentUpdates() *UserUpdate {
 }
 
 // RemoveRecentUpdateIDs removes the "recent_updates" edge to RecentUpdate entities by IDs.
-func (uu *UserUpdate) RemoveRecentUpdateIDs(ids ...uuid.UUID) *UserUpdate {
+func (uu *UserUpdate) RemoveRecentUpdateIDs(ids ...string) *UserUpdate {
 	uu.mutation.RemoveRecentUpdateIDs(ids...)
 	return uu
 }
 
 // RemoveRecentUpdates removes "recent_updates" edges to RecentUpdate entities.
 func (uu *UserUpdate) RemoveRecentUpdates(r ...*RecentUpdate) *UserUpdate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -643,7 +642,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := uu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	if ps := uu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -701,7 +700,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PersonalInfosColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -714,7 +713,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PersonalInfosColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -730,7 +729,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PersonalInfosColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -746,7 +745,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.EducationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -759,7 +758,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.EducationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -775,7 +774,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.EducationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -791,7 +790,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.WorkExperiencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -804,7 +803,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.WorkExperiencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -820,7 +819,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.WorkExperiencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -836,7 +835,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.ProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -849,7 +848,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.ProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -865,7 +864,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.ProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -881,7 +880,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -894,7 +893,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -910,7 +909,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -926,7 +925,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.IdeasColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -939,7 +938,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.IdeasColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -955,7 +954,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.IdeasColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -971,7 +970,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.ResearchProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -984,7 +983,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.ResearchProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1000,7 +999,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.ResearchProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1016,7 +1015,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PublicationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1029,7 +1028,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PublicationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1045,7 +1044,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.PublicationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1061,7 +1060,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.AwardsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1074,7 +1073,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.AwardsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1090,7 +1089,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.AwardsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1106,7 +1105,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.RecentUpdatesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1119,7 +1118,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.RecentUpdatesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1135,7 +1134,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.RecentUpdatesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1328,14 +1327,14 @@ func (uuo *UserUpdateOne) SetUpdatedAt(t time.Time) *UserUpdateOne {
 }
 
 // AddPersonalInfoIDs adds the "personal_infos" edge to the PersonalInfo entity by IDs.
-func (uuo *UserUpdateOne) AddPersonalInfoIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddPersonalInfoIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddPersonalInfoIDs(ids...)
 	return uuo
 }
 
 // AddPersonalInfos adds the "personal_infos" edges to the PersonalInfo entity.
 func (uuo *UserUpdateOne) AddPersonalInfos(p ...*PersonalInfo) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1343,14 +1342,14 @@ func (uuo *UserUpdateOne) AddPersonalInfos(p ...*PersonalInfo) *UserUpdateOne {
 }
 
 // AddEducationIDs adds the "educations" edge to the Education entity by IDs.
-func (uuo *UserUpdateOne) AddEducationIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddEducationIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddEducationIDs(ids...)
 	return uuo
 }
 
 // AddEducations adds the "educations" edges to the Education entity.
 func (uuo *UserUpdateOne) AddEducations(e ...*Education) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1358,14 +1357,14 @@ func (uuo *UserUpdateOne) AddEducations(e ...*Education) *UserUpdateOne {
 }
 
 // AddWorkExperienceIDs adds the "work_experiences" edge to the WorkExperience entity by IDs.
-func (uuo *UserUpdateOne) AddWorkExperienceIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddWorkExperienceIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddWorkExperienceIDs(ids...)
 	return uuo
 }
 
 // AddWorkExperiences adds the "work_experiences" edges to the WorkExperience entity.
 func (uuo *UserUpdateOne) AddWorkExperiences(w ...*WorkExperience) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -1373,14 +1372,14 @@ func (uuo *UserUpdateOne) AddWorkExperiences(w ...*WorkExperience) *UserUpdateOn
 }
 
 // AddProjectIDs adds the "projects" edge to the Project entity by IDs.
-func (uuo *UserUpdateOne) AddProjectIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddProjectIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddProjectIDs(ids...)
 	return uuo
 }
 
 // AddProjects adds the "projects" edges to the Project entity.
 func (uuo *UserUpdateOne) AddProjects(p ...*Project) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1388,14 +1387,14 @@ func (uuo *UserUpdateOne) AddProjects(p ...*Project) *UserUpdateOne {
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (uuo *UserUpdateOne) AddBlogPostIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddBlogPostIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddBlogPostIDs(ids...)
 	return uuo
 }
 
 // AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
 func (uuo *UserUpdateOne) AddBlogPosts(b ...*BlogPost) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -1403,14 +1402,14 @@ func (uuo *UserUpdateOne) AddBlogPosts(b ...*BlogPost) *UserUpdateOne {
 }
 
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
-func (uuo *UserUpdateOne) AddIdeaIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddIdeaIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddIdeaIDs(ids...)
 	return uuo
 }
 
 // AddIdeas adds the "ideas" edges to the Idea entity.
 func (uuo *UserUpdateOne) AddIdeas(i ...*Idea) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -1418,14 +1417,14 @@ func (uuo *UserUpdateOne) AddIdeas(i ...*Idea) *UserUpdateOne {
 }
 
 // AddResearchProjectIDs adds the "research_projects" edge to the ResearchProject entity by IDs.
-func (uuo *UserUpdateOne) AddResearchProjectIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddResearchProjectIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddResearchProjectIDs(ids...)
 	return uuo
 }
 
 // AddResearchProjects adds the "research_projects" edges to the ResearchProject entity.
 func (uuo *UserUpdateOne) AddResearchProjects(r ...*ResearchProject) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1433,14 +1432,14 @@ func (uuo *UserUpdateOne) AddResearchProjects(r ...*ResearchProject) *UserUpdate
 }
 
 // AddPublicationIDs adds the "publications" edge to the Publication entity by IDs.
-func (uuo *UserUpdateOne) AddPublicationIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddPublicationIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddPublicationIDs(ids...)
 	return uuo
 }
 
 // AddPublications adds the "publications" edges to the Publication entity.
 func (uuo *UserUpdateOne) AddPublications(p ...*Publication) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1448,14 +1447,14 @@ func (uuo *UserUpdateOne) AddPublications(p ...*Publication) *UserUpdateOne {
 }
 
 // AddAwardIDs adds the "awards" edge to the Award entity by IDs.
-func (uuo *UserUpdateOne) AddAwardIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddAwardIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddAwardIDs(ids...)
 	return uuo
 }
 
 // AddAwards adds the "awards" edges to the Award entity.
 func (uuo *UserUpdateOne) AddAwards(a ...*Award) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -1463,14 +1462,14 @@ func (uuo *UserUpdateOne) AddAwards(a ...*Award) *UserUpdateOne {
 }
 
 // AddRecentUpdateIDs adds the "recent_updates" edge to the RecentUpdate entity by IDs.
-func (uuo *UserUpdateOne) AddRecentUpdateIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) AddRecentUpdateIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.AddRecentUpdateIDs(ids...)
 	return uuo
 }
 
 // AddRecentUpdates adds the "recent_updates" edges to the RecentUpdate entity.
 func (uuo *UserUpdateOne) AddRecentUpdates(r ...*RecentUpdate) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1489,14 +1488,14 @@ func (uuo *UserUpdateOne) ClearPersonalInfos() *UserUpdateOne {
 }
 
 // RemovePersonalInfoIDs removes the "personal_infos" edge to PersonalInfo entities by IDs.
-func (uuo *UserUpdateOne) RemovePersonalInfoIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemovePersonalInfoIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemovePersonalInfoIDs(ids...)
 	return uuo
 }
 
 // RemovePersonalInfos removes "personal_infos" edges to PersonalInfo entities.
 func (uuo *UserUpdateOne) RemovePersonalInfos(p ...*PersonalInfo) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1510,14 +1509,14 @@ func (uuo *UserUpdateOne) ClearEducations() *UserUpdateOne {
 }
 
 // RemoveEducationIDs removes the "educations" edge to Education entities by IDs.
-func (uuo *UserUpdateOne) RemoveEducationIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveEducationIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveEducationIDs(ids...)
 	return uuo
 }
 
 // RemoveEducations removes "educations" edges to Education entities.
 func (uuo *UserUpdateOne) RemoveEducations(e ...*Education) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -1531,14 +1530,14 @@ func (uuo *UserUpdateOne) ClearWorkExperiences() *UserUpdateOne {
 }
 
 // RemoveWorkExperienceIDs removes the "work_experiences" edge to WorkExperience entities by IDs.
-func (uuo *UserUpdateOne) RemoveWorkExperienceIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveWorkExperienceIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveWorkExperienceIDs(ids...)
 	return uuo
 }
 
 // RemoveWorkExperiences removes "work_experiences" edges to WorkExperience entities.
 func (uuo *UserUpdateOne) RemoveWorkExperiences(w ...*WorkExperience) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(w))
+	ids := make([]string, len(w))
 	for i := range w {
 		ids[i] = w[i].ID
 	}
@@ -1552,14 +1551,14 @@ func (uuo *UserUpdateOne) ClearProjects() *UserUpdateOne {
 }
 
 // RemoveProjectIDs removes the "projects" edge to Project entities by IDs.
-func (uuo *UserUpdateOne) RemoveProjectIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveProjectIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveProjectIDs(ids...)
 	return uuo
 }
 
 // RemoveProjects removes "projects" edges to Project entities.
 func (uuo *UserUpdateOne) RemoveProjects(p ...*Project) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1573,14 +1572,14 @@ func (uuo *UserUpdateOne) ClearBlogPosts() *UserUpdateOne {
 }
 
 // RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (uuo *UserUpdateOne) RemoveBlogPostIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveBlogPostIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveBlogPostIDs(ids...)
 	return uuo
 }
 
 // RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
 func (uuo *UserUpdateOne) RemoveBlogPosts(b ...*BlogPost) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(b))
+	ids := make([]string, len(b))
 	for i := range b {
 		ids[i] = b[i].ID
 	}
@@ -1594,14 +1593,14 @@ func (uuo *UserUpdateOne) ClearIdeas() *UserUpdateOne {
 }
 
 // RemoveIdeaIDs removes the "ideas" edge to Idea entities by IDs.
-func (uuo *UserUpdateOne) RemoveIdeaIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveIdeaIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveIdeaIDs(ids...)
 	return uuo
 }
 
 // RemoveIdeas removes "ideas" edges to Idea entities.
 func (uuo *UserUpdateOne) RemoveIdeas(i ...*Idea) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -1615,14 +1614,14 @@ func (uuo *UserUpdateOne) ClearResearchProjects() *UserUpdateOne {
 }
 
 // RemoveResearchProjectIDs removes the "research_projects" edge to ResearchProject entities by IDs.
-func (uuo *UserUpdateOne) RemoveResearchProjectIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveResearchProjectIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveResearchProjectIDs(ids...)
 	return uuo
 }
 
 // RemoveResearchProjects removes "research_projects" edges to ResearchProject entities.
 func (uuo *UserUpdateOne) RemoveResearchProjects(r ...*ResearchProject) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1636,14 +1635,14 @@ func (uuo *UserUpdateOne) ClearPublications() *UserUpdateOne {
 }
 
 // RemovePublicationIDs removes the "publications" edge to Publication entities by IDs.
-func (uuo *UserUpdateOne) RemovePublicationIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemovePublicationIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemovePublicationIDs(ids...)
 	return uuo
 }
 
 // RemovePublications removes "publications" edges to Publication entities.
 func (uuo *UserUpdateOne) RemovePublications(p ...*Publication) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -1657,14 +1656,14 @@ func (uuo *UserUpdateOne) ClearAwards() *UserUpdateOne {
 }
 
 // RemoveAwardIDs removes the "awards" edge to Award entities by IDs.
-func (uuo *UserUpdateOne) RemoveAwardIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveAwardIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveAwardIDs(ids...)
 	return uuo
 }
 
 // RemoveAwards removes "awards" edges to Award entities.
 func (uuo *UserUpdateOne) RemoveAwards(a ...*Award) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(a))
+	ids := make([]string, len(a))
 	for i := range a {
 		ids[i] = a[i].ID
 	}
@@ -1678,14 +1677,14 @@ func (uuo *UserUpdateOne) ClearRecentUpdates() *UserUpdateOne {
 }
 
 // RemoveRecentUpdateIDs removes the "recent_updates" edge to RecentUpdate entities by IDs.
-func (uuo *UserUpdateOne) RemoveRecentUpdateIDs(ids ...uuid.UUID) *UserUpdateOne {
+func (uuo *UserUpdateOne) RemoveRecentUpdateIDs(ids ...string) *UserUpdateOne {
 	uuo.mutation.RemoveRecentUpdateIDs(ids...)
 	return uuo
 }
 
 // RemoveRecentUpdates removes "recent_updates" edges to RecentUpdate entities.
 func (uuo *UserUpdateOne) RemoveRecentUpdates(r ...*RecentUpdate) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -1780,7 +1779,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if err := uuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	id, ok := uuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "User.id" for update`)}
@@ -1855,7 +1854,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PersonalInfosColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1868,7 +1867,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PersonalInfosColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1884,7 +1883,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PersonalInfosColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(personalinfo.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1900,7 +1899,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.EducationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1913,7 +1912,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.EducationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1929,7 +1928,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.EducationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1945,7 +1944,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.WorkExperiencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1958,7 +1957,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.WorkExperiencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1974,7 +1973,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.WorkExperiencesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1990,7 +1989,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.ProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2003,7 +2002,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.ProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2019,7 +2018,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.ProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2035,7 +2034,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2048,7 +2047,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2064,7 +2063,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.BlogPostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2080,7 +2079,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.IdeasColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2093,7 +2092,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.IdeasColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2109,7 +2108,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.IdeasColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2125,7 +2124,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.ResearchProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2138,7 +2137,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.ResearchProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2154,7 +2153,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.ResearchProjectsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2170,7 +2169,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PublicationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2183,7 +2182,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PublicationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2199,7 +2198,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.PublicationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2215,7 +2214,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.AwardsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2228,7 +2227,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.AwardsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2244,7 +2243,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.AwardsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(award.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2260,7 +2259,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.RecentUpdatesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -2273,7 +2272,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.RecentUpdatesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -2289,7 +2288,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.RecentUpdatesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

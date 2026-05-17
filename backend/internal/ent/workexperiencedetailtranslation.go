@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // WorkExperienceDetailTranslation is the model entity for the WorkExperienceDetailTranslation schema.
 type WorkExperienceDetailTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// WorkExperienceDetailID holds the value of the "work_experience_detail_id" field.
-	WorkExperienceDetailID uuid.UUID `json:"work_experience_detail_id,omitempty"`
+	WorkExperienceDetailID string `json:"work_experience_detail_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// DetailText holds the value of the "detail_text" field.
@@ -72,12 +71,10 @@ func (*WorkExperienceDetailTranslation) scanValues(columns []string) ([]any, err
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case workexperiencedetailtranslation.FieldLanguageCode, workexperiencedetailtranslation.FieldDetailText:
+		case workexperiencedetailtranslation.FieldID, workexperiencedetailtranslation.FieldWorkExperienceDetailID, workexperiencedetailtranslation.FieldLanguageCode, workexperiencedetailtranslation.FieldDetailText:
 			values[i] = new(sql.NullString)
 		case workexperiencedetailtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case workexperiencedetailtranslation.FieldID, workexperiencedetailtranslation.FieldWorkExperienceDetailID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -94,16 +91,16 @@ func (wedt *WorkExperienceDetailTranslation) assignValues(columns []string, valu
 	for i := range columns {
 		switch columns[i] {
 		case workexperiencedetailtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				wedt.ID = *value
+			} else if value.Valid {
+				wedt.ID = value.String
 			}
 		case workexperiencedetailtranslation.FieldWorkExperienceDetailID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field work_experience_detail_id", values[i])
-			} else if value != nil {
-				wedt.WorkExperienceDetailID = *value
+			} else if value.Valid {
+				wedt.WorkExperienceDetailID = value.String
 			}
 		case workexperiencedetailtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -170,7 +167,7 @@ func (wedt *WorkExperienceDetailTranslation) String() string {
 	builder.WriteString("WorkExperienceDetailTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", wedt.ID))
 	builder.WriteString("work_experience_detail_id=")
-	builder.WriteString(fmt.Sprintf("%v", wedt.WorkExperienceDetailID))
+	builder.WriteString(wedt.WorkExperienceDetailID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(wedt.LanguageCode)

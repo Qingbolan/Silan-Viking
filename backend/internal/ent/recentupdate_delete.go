@@ -40,7 +40,7 @@ func (rud *RecentUpdateDelete) ExecX(ctx context.Context) int {
 }
 
 func (rud *RecentUpdateDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(recentupdate.Table, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(recentupdate.Table, sqlgraph.NewFieldSpec(recentupdate.FieldID, field.TypeString))
 	if ps := rud.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

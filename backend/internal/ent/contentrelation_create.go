@@ -11,7 +11,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ContentRelationCreate is the builder for creating a ContentRelation entity.
@@ -28,8 +27,8 @@ func (crc *ContentRelationCreate) SetFromType(ct contentrelation.FromType) *Cont
 }
 
 // SetFromID sets the "from_id" field.
-func (crc *ContentRelationCreate) SetFromID(u uuid.UUID) *ContentRelationCreate {
-	crc.mutation.SetFromID(u)
+func (crc *ContentRelationCreate) SetFromID(s string) *ContentRelationCreate {
+	crc.mutation.SetFromID(s)
 	return crc
 }
 
@@ -40,8 +39,8 @@ func (crc *ContentRelationCreate) SetToType(ct contentrelation.ToType) *ContentR
 }
 
 // SetToID sets the "to_id" field.
-func (crc *ContentRelationCreate) SetToID(u uuid.UUID) *ContentRelationCreate {
-	crc.mutation.SetToID(u)
+func (crc *ContentRelationCreate) SetToID(s string) *ContentRelationCreate {
+	crc.mutation.SetToID(s)
 	return crc
 }
 
@@ -80,15 +79,15 @@ func (crc *ContentRelationCreate) SetNillableCreatedAt(t *time.Time) *ContentRel
 }
 
 // SetID sets the "id" field.
-func (crc *ContentRelationCreate) SetID(u uuid.UUID) *ContentRelationCreate {
-	crc.mutation.SetID(u)
+func (crc *ContentRelationCreate) SetID(s string) *ContentRelationCreate {
+	crc.mutation.SetID(s)
 	return crc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (crc *ContentRelationCreate) SetNillableID(u *uuid.UUID) *ContentRelationCreate {
-	if u != nil {
-		crc.SetID(*u)
+func (crc *ContentRelationCreate) SetNillableID(s *string) *ContentRelationCreate {
+	if s != nil {
+		crc.SetID(*s)
 	}
 	return crc
 }
@@ -195,10 +194,10 @@ func (crc *ContentRelationCreate) sqlSave(ctx context.Context) (*ContentRelation
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ContentRelation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	crc.mutation.id = &_node.ID
@@ -209,18 +208,18 @@ func (crc *ContentRelationCreate) sqlSave(ctx context.Context) (*ContentRelation
 func (crc *ContentRelationCreate) createSpec() (*ContentRelation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ContentRelation{config: crc.config}
-		_spec = sqlgraph.NewCreateSpec(contentrelation.Table, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(contentrelation.Table, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeString))
 	)
 	if id, ok := crc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := crc.mutation.FromType(); ok {
 		_spec.SetField(contentrelation.FieldFromType, field.TypeEnum, value)
 		_node.FromType = value
 	}
 	if value, ok := crc.mutation.FromID(); ok {
-		_spec.SetField(contentrelation.FieldFromID, field.TypeUUID, value)
+		_spec.SetField(contentrelation.FieldFromID, field.TypeString, value)
 		_node.FromID = value
 	}
 	if value, ok := crc.mutation.ToType(); ok {
@@ -228,7 +227,7 @@ func (crc *ContentRelationCreate) createSpec() (*ContentRelation, *sqlgraph.Crea
 		_node.ToType = value
 	}
 	if value, ok := crc.mutation.ToID(); ok {
-		_spec.SetField(contentrelation.FieldToID, field.TypeUUID, value)
+		_spec.SetField(contentrelation.FieldToID, field.TypeString, value)
 		_node.ToID = value
 	}
 	if value, ok := crc.mutation.RelationType(); ok {

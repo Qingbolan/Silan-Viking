@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // CommentLikeCreate is the builder for creating a CommentLike entity.
@@ -23,8 +22,8 @@ type CommentLikeCreate struct {
 }
 
 // SetCommentID sets the "comment_id" field.
-func (clc *CommentLikeCreate) SetCommentID(u uuid.UUID) *CommentLikeCreate {
-	clc.mutation.SetCommentID(u)
+func (clc *CommentLikeCreate) SetCommentID(s string) *CommentLikeCreate {
+	clc.mutation.SetCommentID(s)
 	return clc
 }
 
@@ -99,15 +98,15 @@ func (clc *CommentLikeCreate) SetNillableUpdatedAt(t *time.Time) *CommentLikeCre
 }
 
 // SetID sets the "id" field.
-func (clc *CommentLikeCreate) SetID(u uuid.UUID) *CommentLikeCreate {
-	clc.mutation.SetID(u)
+func (clc *CommentLikeCreate) SetID(s string) *CommentLikeCreate {
+	clc.mutation.SetID(s)
 	return clc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (clc *CommentLikeCreate) SetNillableID(u *uuid.UUID) *CommentLikeCreate {
-	if u != nil {
-		clc.SetID(*u)
+func (clc *CommentLikeCreate) SetNillableID(s *string) *CommentLikeCreate {
+	if s != nil {
+		clc.SetID(*s)
 	}
 	return clc
 }
@@ -197,10 +196,10 @@ func (clc *CommentLikeCreate) sqlSave(ctx context.Context) (*CommentLike, error)
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected CommentLike.ID type: %T", _spec.ID.Value)
 		}
 	}
 	clc.mutation.id = &_node.ID
@@ -211,14 +210,14 @@ func (clc *CommentLikeCreate) sqlSave(ctx context.Context) (*CommentLike, error)
 func (clc *CommentLikeCreate) createSpec() (*CommentLike, *sqlgraph.CreateSpec) {
 	var (
 		_node = &CommentLike{config: clc.config}
-		_spec = sqlgraph.NewCreateSpec(commentlike.Table, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(commentlike.Table, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeString))
 	)
 	if id, ok := clc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := clc.mutation.CommentID(); ok {
-		_spec.SetField(commentlike.FieldCommentID, field.TypeUUID, value)
+		_spec.SetField(commentlike.FieldCommentID, field.TypeString, value)
 		_node.CommentID = value
 	}
 	if value, ok := clc.mutation.Fingerprint(); ok {

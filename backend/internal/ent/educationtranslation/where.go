@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.EducationTranslation {
+func ID(id string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.EducationTranslation {
+func IDEQ(id string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.EducationTranslation {
+func IDNEQ(id string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.EducationTranslation {
+func IDIn(ids ...string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.EducationTranslation {
+func IDNotIn(ids ...string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.EducationTranslation {
+func IDGT(id string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.EducationTranslation {
+func IDGTE(id string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.EducationTranslation {
+func IDLT(id string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.EducationTranslation {
+func IDLTE(id string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // EducationID applies equality check predicate on the "education_id" field. It's identical to EducationIDEQ.
-func EducationID(v uuid.UUID) predicate.EducationTranslation {
+func EducationID(v string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldEQ(FieldEducationID, v))
 }
 
@@ -92,23 +101,68 @@ func CreatedAt(v time.Time) predicate.EducationTranslation {
 }
 
 // EducationIDEQ applies the EQ predicate on the "education_id" field.
-func EducationIDEQ(v uuid.UUID) predicate.EducationTranslation {
+func EducationIDEQ(v string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldEQ(FieldEducationID, v))
 }
 
 // EducationIDNEQ applies the NEQ predicate on the "education_id" field.
-func EducationIDNEQ(v uuid.UUID) predicate.EducationTranslation {
+func EducationIDNEQ(v string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldNEQ(FieldEducationID, v))
 }
 
 // EducationIDIn applies the In predicate on the "education_id" field.
-func EducationIDIn(vs ...uuid.UUID) predicate.EducationTranslation {
+func EducationIDIn(vs ...string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldIn(FieldEducationID, vs...))
 }
 
 // EducationIDNotIn applies the NotIn predicate on the "education_id" field.
-func EducationIDNotIn(vs ...uuid.UUID) predicate.EducationTranslation {
+func EducationIDNotIn(vs ...string) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldNotIn(FieldEducationID, vs...))
+}
+
+// EducationIDGT applies the GT predicate on the "education_id" field.
+func EducationIDGT(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldGT(FieldEducationID, v))
+}
+
+// EducationIDGTE applies the GTE predicate on the "education_id" field.
+func EducationIDGTE(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldGTE(FieldEducationID, v))
+}
+
+// EducationIDLT applies the LT predicate on the "education_id" field.
+func EducationIDLT(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldLT(FieldEducationID, v))
+}
+
+// EducationIDLTE applies the LTE predicate on the "education_id" field.
+func EducationIDLTE(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldLTE(FieldEducationID, v))
+}
+
+// EducationIDContains applies the Contains predicate on the "education_id" field.
+func EducationIDContains(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldContains(FieldEducationID, v))
+}
+
+// EducationIDHasPrefix applies the HasPrefix predicate on the "education_id" field.
+func EducationIDHasPrefix(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldHasPrefix(FieldEducationID, v))
+}
+
+// EducationIDHasSuffix applies the HasSuffix predicate on the "education_id" field.
+func EducationIDHasSuffix(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldHasSuffix(FieldEducationID, v))
+}
+
+// EducationIDEqualFold applies the EqualFold predicate on the "education_id" field.
+func EducationIDEqualFold(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldEqualFold(FieldEducationID, v))
+}
+
+// EducationIDContainsFold applies the ContainsFold predicate on the "education_id" field.
+func EducationIDContainsFold(v string) predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldContainsFold(FieldEducationID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.

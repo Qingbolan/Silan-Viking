@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectTranslationCreate is the builder for creating a ProjectTranslation entity.
@@ -24,8 +23,8 @@ type ProjectTranslationCreate struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (ptc *ProjectTranslationCreate) SetProjectID(u uuid.UUID) *ProjectTranslationCreate {
-	ptc.mutation.SetProjectID(u)
+func (ptc *ProjectTranslationCreate) SetProjectID(s string) *ProjectTranslationCreate {
+	ptc.mutation.SetProjectID(s)
 	return ptc
 }
 
@@ -84,15 +83,15 @@ func (ptc *ProjectTranslationCreate) SetNillableCreatedAt(t *time.Time) *Project
 }
 
 // SetID sets the "id" field.
-func (ptc *ProjectTranslationCreate) SetID(u uuid.UUID) *ProjectTranslationCreate {
-	ptc.mutation.SetID(u)
+func (ptc *ProjectTranslationCreate) SetID(s string) *ProjectTranslationCreate {
+	ptc.mutation.SetID(s)
 	return ptc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ptc *ProjectTranslationCreate) SetNillableID(u *uuid.UUID) *ProjectTranslationCreate {
-	if u != nil {
-		ptc.SetID(*u)
+func (ptc *ProjectTranslationCreate) SetNillableID(s *string) *ProjectTranslationCreate {
+	if s != nil {
+		ptc.SetID(*s)
 	}
 	return ptc
 }
@@ -208,10 +207,10 @@ func (ptc *ProjectTranslationCreate) sqlSave(ctx context.Context) (*ProjectTrans
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ProjectTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ptc.mutation.id = &_node.ID
@@ -222,11 +221,11 @@ func (ptc *ProjectTranslationCreate) sqlSave(ctx context.Context) (*ProjectTrans
 func (ptc *ProjectTranslationCreate) createSpec() (*ProjectTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ProjectTranslation{config: ptc.config}
-		_spec = sqlgraph.NewCreateSpec(projecttranslation.Table, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(projecttranslation.Table, sqlgraph.NewFieldSpec(projecttranslation.FieldID, field.TypeString))
 	)
 	if id, ok := ptc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ptc.mutation.Title(); ok {
 		_spec.SetField(projecttranslation.FieldTitle, field.TypeString, value)
@@ -252,7 +251,7 @@ func (ptc *ProjectTranslationCreate) createSpec() (*ProjectTranslation, *sqlgrap
 			Columns: []string{projecttranslation.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

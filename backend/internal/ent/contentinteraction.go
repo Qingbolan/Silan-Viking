@@ -10,18 +10,17 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ContentInteraction is the model entity for the ContentInteraction schema.
 type ContentInteraction struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// EntityType holds the value of the "entity_type" field.
 	EntityType contentinteraction.EntityType `json:"entity_type,omitempty"`
 	// EntityID holds the value of the "entity_id" field.
-	EntityID uuid.UUID `json:"entity_id,omitempty"`
+	EntityID string `json:"entity_id,omitempty"`
 	// SectionAnchor holds the value of the "section_anchor" field.
 	SectionAnchor *string `json:"section_anchor,omitempty"`
 	// Kind holds the value of the "kind" field.
@@ -58,12 +57,10 @@ func (*ContentInteraction) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case contentinteraction.FieldSessionDuration:
 			values[i] = new(sql.NullInt64)
-		case contentinteraction.FieldEntityType, contentinteraction.FieldSectionAnchor, contentinteraction.FieldKind, contentinteraction.FieldUserIdentityID, contentinteraction.FieldFingerprint, contentinteraction.FieldIPAddress, contentinteraction.FieldUserAgent, contentinteraction.FieldVisitorKind, contentinteraction.FieldReferrerKind, contentinteraction.FieldCrawlerName:
+		case contentinteraction.FieldID, contentinteraction.FieldEntityType, contentinteraction.FieldEntityID, contentinteraction.FieldSectionAnchor, contentinteraction.FieldKind, contentinteraction.FieldUserIdentityID, contentinteraction.FieldFingerprint, contentinteraction.FieldIPAddress, contentinteraction.FieldUserAgent, contentinteraction.FieldVisitorKind, contentinteraction.FieldReferrerKind, contentinteraction.FieldCrawlerName:
 			values[i] = new(sql.NullString)
 		case contentinteraction.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case contentinteraction.FieldID, contentinteraction.FieldEntityID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -80,10 +77,10 @@ func (ci *ContentInteraction) assignValues(columns []string, values []any) error
 	for i := range columns {
 		switch columns[i] {
 		case contentinteraction.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				ci.ID = *value
+			} else if value.Valid {
+				ci.ID = value.String
 			}
 		case contentinteraction.FieldEntityType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -92,10 +89,10 @@ func (ci *ContentInteraction) assignValues(columns []string, values []any) error
 				ci.EntityType = contentinteraction.EntityType(value.String)
 			}
 		case contentinteraction.FieldEntityID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entity_id", values[i])
-			} else if value != nil {
-				ci.EntityID = *value
+			} else if value.Valid {
+				ci.EntityID = value.String
 			}
 		case contentinteraction.FieldSectionAnchor:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -215,7 +212,7 @@ func (ci *ContentInteraction) String() string {
 	builder.WriteString(fmt.Sprintf("%v", ci.EntityType))
 	builder.WriteString(", ")
 	builder.WriteString("entity_id=")
-	builder.WriteString(fmt.Sprintf("%v", ci.EntityID))
+	builder.WriteString(ci.EntityID)
 	builder.WriteString(", ")
 	if v := ci.SectionAnchor; v != nil {
 		builder.WriteString("section_anchor=")

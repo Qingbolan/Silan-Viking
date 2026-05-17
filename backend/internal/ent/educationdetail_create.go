@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EducationDetailCreate is the builder for creating a EducationDetail entity.
@@ -24,8 +23,8 @@ type EducationDetailCreate struct {
 }
 
 // SetEducationID sets the "education_id" field.
-func (edc *EducationDetailCreate) SetEducationID(u uuid.UUID) *EducationDetailCreate {
-	edc.mutation.SetEducationID(u)
+func (edc *EducationDetailCreate) SetEducationID(s string) *EducationDetailCreate {
+	edc.mutation.SetEducationID(s)
 	return edc
 }
 
@@ -78,15 +77,15 @@ func (edc *EducationDetailCreate) SetNillableUpdatedAt(t *time.Time) *EducationD
 }
 
 // SetID sets the "id" field.
-func (edc *EducationDetailCreate) SetID(u uuid.UUID) *EducationDetailCreate {
-	edc.mutation.SetID(u)
+func (edc *EducationDetailCreate) SetID(s string) *EducationDetailCreate {
+	edc.mutation.SetID(s)
 	return edc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (edc *EducationDetailCreate) SetNillableID(u *uuid.UUID) *EducationDetailCreate {
-	if u != nil {
-		edc.SetID(*u)
+func (edc *EducationDetailCreate) SetNillableID(s *string) *EducationDetailCreate {
+	if s != nil {
+		edc.SetID(*s)
 	}
 	return edc
 }
@@ -97,14 +96,14 @@ func (edc *EducationDetailCreate) SetEducation(e *Education) *EducationDetailCre
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationDetailTranslation entity by IDs.
-func (edc *EducationDetailCreate) AddTranslationIDs(ids ...uuid.UUID) *EducationDetailCreate {
+func (edc *EducationDetailCreate) AddTranslationIDs(ids ...string) *EducationDetailCreate {
 	edc.mutation.AddTranslationIDs(ids...)
 	return edc
 }
 
 // AddTranslations adds the "translations" edges to the EducationDetailTranslation entity.
 func (edc *EducationDetailCreate) AddTranslations(e ...*EducationDetailTranslation) *EducationDetailCreate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -204,10 +203,10 @@ func (edc *EducationDetailCreate) sqlSave(ctx context.Context) (*EducationDetail
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected EducationDetail.ID type: %T", _spec.ID.Value)
 		}
 	}
 	edc.mutation.id = &_node.ID
@@ -218,11 +217,11 @@ func (edc *EducationDetailCreate) sqlSave(ctx context.Context) (*EducationDetail
 func (edc *EducationDetailCreate) createSpec() (*EducationDetail, *sqlgraph.CreateSpec) {
 	var (
 		_node = &EducationDetail{config: edc.config}
-		_spec = sqlgraph.NewCreateSpec(educationdetail.Table, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(educationdetail.Table, sqlgraph.NewFieldSpec(educationdetail.FieldID, field.TypeString))
 	)
 	if id, ok := edc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := edc.mutation.DetailText(); ok {
 		_spec.SetField(educationdetail.FieldDetailText, field.TypeString, value)
@@ -248,7 +247,7 @@ func (edc *EducationDetailCreate) createSpec() (*EducationDetail, *sqlgraph.Crea
 			Columns: []string{educationdetail.EducationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(education.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -265,7 +264,7 @@ func (edc *EducationDetailCreate) createSpec() (*EducationDetail, *sqlgraph.Crea
 			Columns: []string{educationdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(educationdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

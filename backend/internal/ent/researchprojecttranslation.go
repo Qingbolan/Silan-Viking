@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectTranslation is the model entity for the ResearchProjectTranslation schema.
 type ResearchProjectTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// ResearchProjectID holds the value of the "research_project_id" field.
-	ResearchProjectID uuid.UUID `json:"research_project_id,omitempty"`
+	ResearchProjectID string `json:"research_project_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// Title holds the value of the "title" field.
@@ -78,12 +77,10 @@ func (*ResearchProjectTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case researchprojecttranslation.FieldLanguageCode, researchprojecttranslation.FieldTitle, researchprojecttranslation.FieldLocation, researchprojecttranslation.FieldResearchType, researchprojecttranslation.FieldFundingSource:
+		case researchprojecttranslation.FieldID, researchprojecttranslation.FieldResearchProjectID, researchprojecttranslation.FieldLanguageCode, researchprojecttranslation.FieldTitle, researchprojecttranslation.FieldLocation, researchprojecttranslation.FieldResearchType, researchprojecttranslation.FieldFundingSource:
 			values[i] = new(sql.NullString)
 		case researchprojecttranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case researchprojecttranslation.FieldID, researchprojecttranslation.FieldResearchProjectID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -100,16 +97,16 @@ func (rpt *ResearchProjectTranslation) assignValues(columns []string, values []a
 	for i := range columns {
 		switch columns[i] {
 		case researchprojecttranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				rpt.ID = *value
+			} else if value.Valid {
+				rpt.ID = value.String
 			}
 		case researchprojecttranslation.FieldResearchProjectID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field research_project_id", values[i])
-			} else if value != nil {
-				rpt.ResearchProjectID = *value
+			} else if value.Valid {
+				rpt.ResearchProjectID = value.String
 			}
 		case researchprojecttranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -194,7 +191,7 @@ func (rpt *ResearchProjectTranslation) String() string {
 	builder.WriteString("ResearchProjectTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", rpt.ID))
 	builder.WriteString("research_project_id=")
-	builder.WriteString(fmt.Sprintf("%v", rpt.ResearchProjectID))
+	builder.WriteString(rpt.ResearchProjectID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(rpt.LanguageCode)

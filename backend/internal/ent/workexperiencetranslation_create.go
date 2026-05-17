@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // WorkExperienceTranslationCreate is the builder for creating a WorkExperienceTranslation entity.
@@ -24,8 +23,8 @@ type WorkExperienceTranslationCreate struct {
 }
 
 // SetWorkExperienceID sets the "work_experience_id" field.
-func (wetc *WorkExperienceTranslationCreate) SetWorkExperienceID(u uuid.UUID) *WorkExperienceTranslationCreate {
-	wetc.mutation.SetWorkExperienceID(u)
+func (wetc *WorkExperienceTranslationCreate) SetWorkExperienceID(s string) *WorkExperienceTranslationCreate {
+	wetc.mutation.SetWorkExperienceID(s)
 	return wetc
 }
 
@@ -92,15 +91,15 @@ func (wetc *WorkExperienceTranslationCreate) SetNillableCreatedAt(t *time.Time) 
 }
 
 // SetID sets the "id" field.
-func (wetc *WorkExperienceTranslationCreate) SetID(u uuid.UUID) *WorkExperienceTranslationCreate {
-	wetc.mutation.SetID(u)
+func (wetc *WorkExperienceTranslationCreate) SetID(s string) *WorkExperienceTranslationCreate {
+	wetc.mutation.SetID(s)
 	return wetc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (wetc *WorkExperienceTranslationCreate) SetNillableID(u *uuid.UUID) *WorkExperienceTranslationCreate {
-	if u != nil {
-		wetc.SetID(*u)
+func (wetc *WorkExperienceTranslationCreate) SetNillableID(s *string) *WorkExperienceTranslationCreate {
+	if s != nil {
+		wetc.SetID(*s)
 	}
 	return wetc
 }
@@ -218,10 +217,10 @@ func (wetc *WorkExperienceTranslationCreate) sqlSave(ctx context.Context) (*Work
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected WorkExperienceTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	wetc.mutation.id = &_node.ID
@@ -232,11 +231,11 @@ func (wetc *WorkExperienceTranslationCreate) sqlSave(ctx context.Context) (*Work
 func (wetc *WorkExperienceTranslationCreate) createSpec() (*WorkExperienceTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &WorkExperienceTranslation{config: wetc.config}
-		_spec = sqlgraph.NewCreateSpec(workexperiencetranslation.Table, sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(workexperiencetranslation.Table, sqlgraph.NewFieldSpec(workexperiencetranslation.FieldID, field.TypeString))
 	)
 	if id, ok := wetc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := wetc.mutation.Company(); ok {
 		_spec.SetField(workexperiencetranslation.FieldCompany, field.TypeString, value)
@@ -262,7 +261,7 @@ func (wetc *WorkExperienceTranslationCreate) createSpec() (*WorkExperienceTransl
 			Columns: []string{workexperiencetranslation.WorkExperienceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(workexperience.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

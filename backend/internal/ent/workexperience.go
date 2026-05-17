@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // WorkExperience is the model entity for the WorkExperience schema.
 type WorkExperience struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// Company holds the value of the "company" field.
 	Company string `json:"company,omitempty"`
 	// Position holds the value of the "position" field.
@@ -100,12 +99,10 @@ func (*WorkExperience) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case workexperience.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case workexperience.FieldCompany, workexperience.FieldPosition, workexperience.FieldLocation, workexperience.FieldCompanyWebsite, workexperience.FieldCompanyLogoURL:
+		case workexperience.FieldID, workexperience.FieldUserID, workexperience.FieldCompany, workexperience.FieldPosition, workexperience.FieldLocation, workexperience.FieldCompanyWebsite, workexperience.FieldCompanyLogoURL:
 			values[i] = new(sql.NullString)
 		case workexperience.FieldStartDate, workexperience.FieldEndDate, workexperience.FieldCreatedAt, workexperience.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case workexperience.FieldID, workexperience.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -122,16 +119,16 @@ func (we *WorkExperience) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case workexperience.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				we.ID = *value
+			} else if value.Valid {
+				we.ID = value.String
 			}
 		case workexperience.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				we.UserID = *value
+			} else if value.Valid {
+				we.UserID = value.String
 			}
 		case workexperience.FieldCompany:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -251,7 +248,7 @@ func (we *WorkExperience) String() string {
 	builder.WriteString("WorkExperience(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", we.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", we.UserID))
+	builder.WriteString(we.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("company=")
 	builder.WriteString(we.Company)

@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EpisodeUpdate is the builder for updating Episode entities.
@@ -32,15 +31,15 @@ func (eu *EpisodeUpdate) Where(ps ...predicate.Episode) *EpisodeUpdate {
 }
 
 // SetSeriesID sets the "series_id" field.
-func (eu *EpisodeUpdate) SetSeriesID(u uuid.UUID) *EpisodeUpdate {
-	eu.mutation.SetSeriesID(u)
+func (eu *EpisodeUpdate) SetSeriesID(s string) *EpisodeUpdate {
+	eu.mutation.SetSeriesID(s)
 	return eu
 }
 
 // SetNillableSeriesID sets the "series_id" field if the given value is not nil.
-func (eu *EpisodeUpdate) SetNillableSeriesID(u *uuid.UUID) *EpisodeUpdate {
-	if u != nil {
-		eu.SetSeriesID(*u)
+func (eu *EpisodeUpdate) SetNillableSeriesID(s *string) *EpisodeUpdate {
+	if s != nil {
+		eu.SetSeriesID(*s)
 	}
 	return eu
 }
@@ -70,6 +69,12 @@ func (eu *EpisodeUpdate) SetNillableTitle(s *string) *EpisodeUpdate {
 	if s != nil {
 		eu.SetTitle(*s)
 	}
+	return eu
+}
+
+// ClearTitle clears the value of the "title" field.
+func (eu *EpisodeUpdate) ClearTitle() *EpisodeUpdate {
+	eu.mutation.ClearTitle()
 	return eu
 }
 
@@ -175,20 +180,26 @@ func (eu *EpisodeUpdate) SetUpdatedAt(t time.Time) *EpisodeUpdate {
 	return eu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (eu *EpisodeUpdate) ClearUpdatedAt() *EpisodeUpdate {
+	eu.mutation.ClearUpdatedAt()
+	return eu
+}
+
 // SetSeries sets the "series" edge to the EpisodeSeries entity.
 func (eu *EpisodeUpdate) SetSeries(e *EpisodeSeries) *EpisodeUpdate {
 	return eu.SetSeriesID(e.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the EpisodeTranslation entity by IDs.
-func (eu *EpisodeUpdate) AddTranslationIDs(ids ...uuid.UUID) *EpisodeUpdate {
+func (eu *EpisodeUpdate) AddTranslationIDs(ids ...string) *EpisodeUpdate {
 	eu.mutation.AddTranslationIDs(ids...)
 	return eu
 }
 
 // AddTranslations adds the "translations" edges to the EpisodeTranslation entity.
 func (eu *EpisodeUpdate) AddTranslations(e ...*EpisodeTranslation) *EpisodeUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -213,14 +224,14 @@ func (eu *EpisodeUpdate) ClearTranslations() *EpisodeUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to EpisodeTranslation entities by IDs.
-func (eu *EpisodeUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *EpisodeUpdate {
+func (eu *EpisodeUpdate) RemoveTranslationIDs(ids ...string) *EpisodeUpdate {
 	eu.mutation.RemoveTranslationIDs(ids...)
 	return eu
 }
 
 // RemoveTranslations removes "translations" edges to EpisodeTranslation entities.
 func (eu *EpisodeUpdate) RemoveTranslations(e ...*EpisodeTranslation) *EpisodeUpdate {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -257,7 +268,7 @@ func (eu *EpisodeUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (eu *EpisodeUpdate) defaults() {
-	if _, ok := eu.mutation.UpdatedAt(); !ok {
+	if _, ok := eu.mutation.UpdatedAt(); !ok && !eu.mutation.UpdatedAtCleared() {
 		v := episode.UpdateDefaultUpdatedAt()
 		eu.mutation.SetUpdatedAt(v)
 	}
@@ -295,7 +306,7 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := eu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(episode.Table, episode.Columns, sqlgraph.NewFieldSpec(episode.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(episode.Table, episode.Columns, sqlgraph.NewFieldSpec(episode.FieldID, field.TypeString))
 	if ps := eu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -308,6 +319,9 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := eu.mutation.Title(); ok {
 		_spec.SetField(episode.FieldTitle, field.TypeString, value)
+	}
+	if eu.mutation.TitleCleared() {
+		_spec.ClearField(episode.FieldTitle, field.TypeString)
 	}
 	if value, ok := eu.mutation.EpisodeNumber(); ok {
 		_spec.SetField(episode.FieldEpisodeNumber, field.TypeInt, value)
@@ -336,8 +350,14 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if eu.mutation.DurationMinutesCleared() {
 		_spec.ClearField(episode.FieldDurationMinutes, field.TypeInt)
 	}
+	if eu.mutation.CreatedAtCleared() {
+		_spec.ClearField(episode.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := eu.mutation.UpdatedAt(); ok {
 		_spec.SetField(episode.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if eu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(episode.FieldUpdatedAt, field.TypeTime)
 	}
 	if eu.mutation.SeriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -347,7 +367,7 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{episode.SeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -360,7 +380,7 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{episode.SeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -376,7 +396,7 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{episode.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -389,7 +409,7 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{episode.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -405,7 +425,7 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{episode.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -434,15 +454,15 @@ type EpisodeUpdateOne struct {
 }
 
 // SetSeriesID sets the "series_id" field.
-func (euo *EpisodeUpdateOne) SetSeriesID(u uuid.UUID) *EpisodeUpdateOne {
-	euo.mutation.SetSeriesID(u)
+func (euo *EpisodeUpdateOne) SetSeriesID(s string) *EpisodeUpdateOne {
+	euo.mutation.SetSeriesID(s)
 	return euo
 }
 
 // SetNillableSeriesID sets the "series_id" field if the given value is not nil.
-func (euo *EpisodeUpdateOne) SetNillableSeriesID(u *uuid.UUID) *EpisodeUpdateOne {
-	if u != nil {
-		euo.SetSeriesID(*u)
+func (euo *EpisodeUpdateOne) SetNillableSeriesID(s *string) *EpisodeUpdateOne {
+	if s != nil {
+		euo.SetSeriesID(*s)
 	}
 	return euo
 }
@@ -472,6 +492,12 @@ func (euo *EpisodeUpdateOne) SetNillableTitle(s *string) *EpisodeUpdateOne {
 	if s != nil {
 		euo.SetTitle(*s)
 	}
+	return euo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (euo *EpisodeUpdateOne) ClearTitle() *EpisodeUpdateOne {
+	euo.mutation.ClearTitle()
 	return euo
 }
 
@@ -577,20 +603,26 @@ func (euo *EpisodeUpdateOne) SetUpdatedAt(t time.Time) *EpisodeUpdateOne {
 	return euo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (euo *EpisodeUpdateOne) ClearUpdatedAt() *EpisodeUpdateOne {
+	euo.mutation.ClearUpdatedAt()
+	return euo
+}
+
 // SetSeries sets the "series" edge to the EpisodeSeries entity.
 func (euo *EpisodeUpdateOne) SetSeries(e *EpisodeSeries) *EpisodeUpdateOne {
 	return euo.SetSeriesID(e.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the EpisodeTranslation entity by IDs.
-func (euo *EpisodeUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *EpisodeUpdateOne {
+func (euo *EpisodeUpdateOne) AddTranslationIDs(ids ...string) *EpisodeUpdateOne {
 	euo.mutation.AddTranslationIDs(ids...)
 	return euo
 }
 
 // AddTranslations adds the "translations" edges to the EpisodeTranslation entity.
 func (euo *EpisodeUpdateOne) AddTranslations(e ...*EpisodeTranslation) *EpisodeUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -615,14 +647,14 @@ func (euo *EpisodeUpdateOne) ClearTranslations() *EpisodeUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to EpisodeTranslation entities by IDs.
-func (euo *EpisodeUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *EpisodeUpdateOne {
+func (euo *EpisodeUpdateOne) RemoveTranslationIDs(ids ...string) *EpisodeUpdateOne {
 	euo.mutation.RemoveTranslationIDs(ids...)
 	return euo
 }
 
 // RemoveTranslations removes "translations" edges to EpisodeTranslation entities.
 func (euo *EpisodeUpdateOne) RemoveTranslations(e ...*EpisodeTranslation) *EpisodeUpdateOne {
-	ids := make([]uuid.UUID, len(e))
+	ids := make([]string, len(e))
 	for i := range e {
 		ids[i] = e[i].ID
 	}
@@ -672,7 +704,7 @@ func (euo *EpisodeUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (euo *EpisodeUpdateOne) defaults() {
-	if _, ok := euo.mutation.UpdatedAt(); !ok {
+	if _, ok := euo.mutation.UpdatedAt(); !ok && !euo.mutation.UpdatedAtCleared() {
 		v := episode.UpdateDefaultUpdatedAt()
 		euo.mutation.SetUpdatedAt(v)
 	}
@@ -710,7 +742,7 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 	if err := euo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(episode.Table, episode.Columns, sqlgraph.NewFieldSpec(episode.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(episode.Table, episode.Columns, sqlgraph.NewFieldSpec(episode.FieldID, field.TypeString))
 	id, ok := euo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Episode.id" for update`)}
@@ -741,6 +773,9 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 	if value, ok := euo.mutation.Title(); ok {
 		_spec.SetField(episode.FieldTitle, field.TypeString, value)
 	}
+	if euo.mutation.TitleCleared() {
+		_spec.ClearField(episode.FieldTitle, field.TypeString)
+	}
 	if value, ok := euo.mutation.EpisodeNumber(); ok {
 		_spec.SetField(episode.FieldEpisodeNumber, field.TypeInt, value)
 	}
@@ -768,8 +803,14 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 	if euo.mutation.DurationMinutesCleared() {
 		_spec.ClearField(episode.FieldDurationMinutes, field.TypeInt)
 	}
+	if euo.mutation.CreatedAtCleared() {
+		_spec.ClearField(episode.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := euo.mutation.UpdatedAt(); ok {
 		_spec.SetField(episode.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if euo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(episode.FieldUpdatedAt, field.TypeTime)
 	}
 	if euo.mutation.SeriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -779,7 +820,7 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 			Columns: []string{episode.SeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -792,7 +833,7 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 			Columns: []string{episode.SeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -808,7 +849,7 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 			Columns: []string{episode.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -821,7 +862,7 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 			Columns: []string{episode.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -837,7 +878,7 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 			Columns: []string{episode.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

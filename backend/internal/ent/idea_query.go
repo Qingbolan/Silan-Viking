@@ -19,7 +19,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaQuery is the builder for querying Idea entities.
@@ -204,8 +203,8 @@ func (iq *IdeaQuery) FirstX(ctx context.Context) *Idea {
 
 // FirstID returns the first Idea ID from the query.
 // Returns a *NotFoundError when no Idea ID was found.
-func (iq *IdeaQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (iq *IdeaQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = iq.Limit(1).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -217,7 +216,7 @@ func (iq *IdeaQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (iq *IdeaQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (iq *IdeaQuery) FirstIDX(ctx context.Context) string {
 	id, err := iq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -255,8 +254,8 @@ func (iq *IdeaQuery) OnlyX(ctx context.Context) *Idea {
 // OnlyID is like Only, but returns the only Idea ID in the query.
 // Returns a *NotSingularError when more than one Idea ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (iq *IdeaQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (iq *IdeaQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = iq.Limit(2).IDs(setContextOp(ctx, iq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -272,7 +271,7 @@ func (iq *IdeaQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (iq *IdeaQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (iq *IdeaQuery) OnlyIDX(ctx context.Context) string {
 	id, err := iq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -300,7 +299,7 @@ func (iq *IdeaQuery) AllX(ctx context.Context) []*Idea {
 }
 
 // IDs executes the query and returns a list of Idea IDs.
-func (iq *IdeaQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (iq *IdeaQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if iq.ctx.Unique == nil && iq.path != nil {
 		iq.Unique(true)
 	}
@@ -312,7 +311,7 @@ func (iq *IdeaQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (iq *IdeaQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (iq *IdeaQuery) IDsX(ctx context.Context) []string {
 	ids, err := iq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -444,7 +443,7 @@ func (iq *IdeaQuery) WithTags(opts ...func(*IdeaTagQuery)) *IdeaQuery {
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -467,7 +466,7 @@ func (iq *IdeaQuery) GroupBy(field string, fields ...string) *IdeaGroupBy {
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.Idea.Query().
@@ -579,8 +578,8 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 }
 
 func (iq *IdeaQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Idea)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Idea)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -609,7 +608,7 @@ func (iq *IdeaQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Id
 }
 func (iq *IdeaQuery) loadTranslations(ctx context.Context, query *IdeaTranslationQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Idea)
+	nodeids := make(map[string]*Idea)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -639,7 +638,7 @@ func (iq *IdeaQuery) loadTranslations(ctx context.Context, query *IdeaTranslatio
 }
 func (iq *IdeaQuery) loadDetails(ctx context.Context, query *IdeaDetailQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaDetail)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Idea)
+	nodeids := make(map[string]*Idea)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -666,7 +665,7 @@ func (iq *IdeaQuery) loadDetails(ctx context.Context, query *IdeaDetailQuery, no
 }
 func (iq *IdeaQuery) loadComments(ctx context.Context, query *CommentQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *Comment)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Idea)
+	nodeids := make(map[string]*Idea)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -697,8 +696,8 @@ func (iq *IdeaQuery) loadComments(ctx context.Context, query *CommentQuery, node
 }
 func (iq *IdeaQuery) loadTags(ctx context.Context, query *IdeaTagQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaTag)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*Idea)
-	nids := make(map[uuid.UUID]map[*Idea]struct{})
+	byID := make(map[string]*Idea)
+	nids := make(map[string]map[*Idea]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -727,11 +726,11 @@ func (iq *IdeaQuery) loadTags(ctx context.Context, query *IdeaTagQuery, nodes []
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(uuid.UUID)}, values...), nil
+				return append([]any{new(sql.NullString)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
+				outValue := values[0].(*sql.NullString).String
+				inValue := values[1].(*sql.NullString).String
 				if nids[inValue] == nil {
 					nids[inValue] = map[*Idea]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
@@ -767,7 +766,7 @@ func (iq *IdeaQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (iq *IdeaQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(idea.Table, idea.Columns, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString))
 	_spec.From = iq.sql
 	if unique := iq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

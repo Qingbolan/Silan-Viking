@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaTagQuery is the builder for querying IdeaTag entities.
@@ -108,8 +107,8 @@ func (itq *IdeaTagQuery) FirstX(ctx context.Context) *IdeaTag {
 
 // FirstID returns the first IdeaTag ID from the query.
 // Returns a *NotFoundError when no IdeaTag ID was found.
-func (itq *IdeaTagQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (itq *IdeaTagQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = itq.Limit(1).IDs(setContextOp(ctx, itq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -121,7 +120,7 @@ func (itq *IdeaTagQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) 
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (itq *IdeaTagQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (itq *IdeaTagQuery) FirstIDX(ctx context.Context) string {
 	id, err := itq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -159,8 +158,8 @@ func (itq *IdeaTagQuery) OnlyX(ctx context.Context) *IdeaTag {
 // OnlyID is like Only, but returns the only IdeaTag ID in the query.
 // Returns a *NotSingularError when more than one IdeaTag ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (itq *IdeaTagQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (itq *IdeaTagQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = itq.Limit(2).IDs(setContextOp(ctx, itq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -176,7 +175,7 @@ func (itq *IdeaTagQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (itq *IdeaTagQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (itq *IdeaTagQuery) OnlyIDX(ctx context.Context) string {
 	id, err := itq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -204,7 +203,7 @@ func (itq *IdeaTagQuery) AllX(ctx context.Context) []*IdeaTag {
 }
 
 // IDs executes the query and returns a list of IdeaTag IDs.
-func (itq *IdeaTagQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (itq *IdeaTagQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if itq.ctx.Unique == nil && itq.path != nil {
 		itq.Unique(true)
 	}
@@ -216,7 +215,7 @@ func (itq *IdeaTagQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (itq *IdeaTagQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (itq *IdeaTagQuery) IDsX(ctx context.Context) []string {
 	ids, err := itq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -406,8 +405,8 @@ func (itq *IdeaTagQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ide
 
 func (itq *IdeaTagQuery) loadIdeas(ctx context.Context, query *IdeaQuery, nodes []*IdeaTag, init func(*IdeaTag), assign func(*IdeaTag, *Idea)) error {
 	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*IdeaTag)
-	nids := make(map[uuid.UUID]map[*IdeaTag]struct{})
+	byID := make(map[string]*IdeaTag)
+	nids := make(map[string]map[*IdeaTag]struct{})
 	for i, node := range nodes {
 		edgeIDs[i] = node.ID
 		byID[node.ID] = node
@@ -436,11 +435,11 @@ func (itq *IdeaTagQuery) loadIdeas(ctx context.Context, query *IdeaQuery, nodes 
 				if err != nil {
 					return nil, err
 				}
-				return append([]any{new(uuid.UUID)}, values...), nil
+				return append([]any{new(sql.NullString)}, values...), nil
 			}
 			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
+				outValue := values[0].(*sql.NullString).String
+				inValue := values[1].(*sql.NullString).String
 				if nids[inValue] == nil {
 					nids[inValue] = map[*IdeaTag]struct{}{byID[outValue]: {}}
 					return assign(columns[1:], values[1:])
@@ -476,7 +475,7 @@ func (itq *IdeaTagQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (itq *IdeaTagQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(ideatag.Table, ideatag.Columns, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(ideatag.Table, ideatag.Columns, sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString))
 	_spec.From = itq.sql
 	if unique := itq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectDetailCreate is the builder for creating a ProjectDetail entity.
@@ -24,8 +23,8 @@ type ProjectDetailCreate struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (pdc *ProjectDetailCreate) SetProjectID(u uuid.UUID) *ProjectDetailCreate {
-	pdc.mutation.SetProjectID(u)
+func (pdc *ProjectDetailCreate) SetProjectID(s string) *ProjectDetailCreate {
+	pdc.mutation.SetProjectID(s)
 	return pdc
 }
 
@@ -128,15 +127,15 @@ func (pdc *ProjectDetailCreate) SetNillableUpdatedAt(t *time.Time) *ProjectDetai
 }
 
 // SetID sets the "id" field.
-func (pdc *ProjectDetailCreate) SetID(u uuid.UUID) *ProjectDetailCreate {
-	pdc.mutation.SetID(u)
+func (pdc *ProjectDetailCreate) SetID(s string) *ProjectDetailCreate {
+	pdc.mutation.SetID(s)
 	return pdc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (pdc *ProjectDetailCreate) SetNillableID(u *uuid.UUID) *ProjectDetailCreate {
-	if u != nil {
-		pdc.SetID(*u)
+func (pdc *ProjectDetailCreate) SetNillableID(s *string) *ProjectDetailCreate {
+	if s != nil {
+		pdc.SetID(*s)
 	}
 	return pdc
 }
@@ -147,14 +146,14 @@ func (pdc *ProjectDetailCreate) SetProject(p *Project) *ProjectDetailCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the ProjectDetailTranslation entity by IDs.
-func (pdc *ProjectDetailCreate) AddTranslationIDs(ids ...uuid.UUID) *ProjectDetailCreate {
+func (pdc *ProjectDetailCreate) AddTranslationIDs(ids ...string) *ProjectDetailCreate {
 	pdc.mutation.AddTranslationIDs(ids...)
 	return pdc
 }
 
 // AddTranslations adds the "translations" edges to the ProjectDetailTranslation entity.
 func (pdc *ProjectDetailCreate) AddTranslations(p ...*ProjectDetailTranslation) *ProjectDetailCreate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -249,10 +248,10 @@ func (pdc *ProjectDetailCreate) sqlSave(ctx context.Context) (*ProjectDetail, er
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ProjectDetail.ID type: %T", _spec.ID.Value)
 		}
 	}
 	pdc.mutation.id = &_node.ID
@@ -263,11 +262,11 @@ func (pdc *ProjectDetailCreate) sqlSave(ctx context.Context) (*ProjectDetail, er
 func (pdc *ProjectDetailCreate) createSpec() (*ProjectDetail, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ProjectDetail{config: pdc.config}
-		_spec = sqlgraph.NewCreateSpec(projectdetail.Table, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(projectdetail.Table, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString))
 	)
 	if id, ok := pdc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := pdc.mutation.ProjectDetails(); ok {
 		_spec.SetField(projectdetail.FieldProjectDetails, field.TypeString, value)
@@ -305,7 +304,7 @@ func (pdc *ProjectDetailCreate) createSpec() (*ProjectDetail, *sqlgraph.CreateSp
 			Columns: []string{projectdetail.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -322,7 +321,7 @@ func (pdc *ProjectDetailCreate) createSpec() (*ProjectDetail, *sqlgraph.CreateSp
 			Columns: []string{projectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(projectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

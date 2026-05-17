@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // CommentLikeQuery is the builder for querying CommentLike entities.
@@ -107,8 +106,8 @@ func (clq *CommentLikeQuery) FirstX(ctx context.Context) *CommentLike {
 
 // FirstID returns the first CommentLike ID from the query.
 // Returns a *NotFoundError when no CommentLike ID was found.
-func (clq *CommentLikeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (clq *CommentLikeQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = clq.Limit(1).IDs(setContextOp(ctx, clq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -120,7 +119,7 @@ func (clq *CommentLikeQuery) FirstID(ctx context.Context) (id uuid.UUID, err err
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (clq *CommentLikeQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (clq *CommentLikeQuery) FirstIDX(ctx context.Context) string {
 	id, err := clq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -158,8 +157,8 @@ func (clq *CommentLikeQuery) OnlyX(ctx context.Context) *CommentLike {
 // OnlyID is like Only, but returns the only CommentLike ID in the query.
 // Returns a *NotSingularError when more than one CommentLike ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (clq *CommentLikeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (clq *CommentLikeQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = clq.Limit(2).IDs(setContextOp(ctx, clq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -175,7 +174,7 @@ func (clq *CommentLikeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err erro
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (clq *CommentLikeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (clq *CommentLikeQuery) OnlyIDX(ctx context.Context) string {
 	id, err := clq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -203,7 +202,7 @@ func (clq *CommentLikeQuery) AllX(ctx context.Context) []*CommentLike {
 }
 
 // IDs executes the query and returns a list of CommentLike IDs.
-func (clq *CommentLikeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (clq *CommentLikeQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if clq.ctx.Unique == nil && clq.path != nil {
 		clq.Unique(true)
 	}
@@ -215,7 +214,7 @@ func (clq *CommentLikeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err erro
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (clq *CommentLikeQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (clq *CommentLikeQuery) IDsX(ctx context.Context) []string {
 	ids, err := clq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -299,7 +298,7 @@ func (clq *CommentLikeQuery) WithUserIdentity(opts ...func(*UserIdentityQuery)) 
 // Example:
 //
 //	var v []struct {
-//		CommentID uuid.UUID `json:"comment_id,omitempty"`
+//		CommentID string `json:"comment_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -322,7 +321,7 @@ func (clq *CommentLikeQuery) GroupBy(field string, fields ...string) *CommentLik
 // Example:
 //
 //	var v []struct {
-//		CommentID uuid.UUID `json:"comment_id,omitempty"`
+//		CommentID string `json:"comment_id,omitempty"`
 //	}
 //
 //	client.CommentLike.Query().
@@ -442,7 +441,7 @@ func (clq *CommentLikeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (clq *CommentLikeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(commentlike.Table, commentlike.Columns, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(commentlike.Table, commentlike.Columns, sqlgraph.NewFieldSpec(commentlike.FieldID, field.TypeString))
 	_spec.From = clq.sql
 	if unique := clq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

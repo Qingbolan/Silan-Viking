@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ItemPartTranslationCreate is the builder for creating a ItemPartTranslation entity.
@@ -23,8 +22,8 @@ type ItemPartTranslationCreate struct {
 }
 
 // SetItemPartID sets the "item_part_id" field.
-func (iptc *ItemPartTranslationCreate) SetItemPartID(u uuid.UUID) *ItemPartTranslationCreate {
-	iptc.mutation.SetItemPartID(u)
+func (iptc *ItemPartTranslationCreate) SetItemPartID(s string) *ItemPartTranslationCreate {
+	iptc.mutation.SetItemPartID(s)
 	return iptc
 }
 
@@ -55,15 +54,15 @@ func (iptc *ItemPartTranslationCreate) SetNillableCreatedAt(t *time.Time) *ItemP
 }
 
 // SetID sets the "id" field.
-func (iptc *ItemPartTranslationCreate) SetID(u uuid.UUID) *ItemPartTranslationCreate {
-	iptc.mutation.SetID(u)
+func (iptc *ItemPartTranslationCreate) SetID(s string) *ItemPartTranslationCreate {
+	iptc.mutation.SetID(s)
 	return iptc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (iptc *ItemPartTranslationCreate) SetNillableID(u *uuid.UUID) *ItemPartTranslationCreate {
-	if u != nil {
-		iptc.SetID(*u)
+func (iptc *ItemPartTranslationCreate) SetNillableID(s *string) *ItemPartTranslationCreate {
+	if s != nil {
+		iptc.SetID(*s)
 	}
 	return iptc
 }
@@ -150,10 +149,10 @@ func (iptc *ItemPartTranslationCreate) sqlSave(ctx context.Context) (*ItemPartTr
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ItemPartTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	iptc.mutation.id = &_node.ID
@@ -164,11 +163,11 @@ func (iptc *ItemPartTranslationCreate) sqlSave(ctx context.Context) (*ItemPartTr
 func (iptc *ItemPartTranslationCreate) createSpec() (*ItemPartTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ItemPartTranslation{config: iptc.config}
-		_spec = sqlgraph.NewCreateSpec(itemparttranslation.Table, sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(itemparttranslation.Table, sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString))
 	)
 	if id, ok := iptc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := iptc.mutation.LanguageCode(); ok {
 		_spec.SetField(itemparttranslation.FieldLanguageCode, field.TypeString, value)
@@ -190,7 +189,7 @@ func (iptc *ItemPartTranslationCreate) createSpec() (*ItemPartTranslation, *sqlg
 			Columns: []string{itemparttranslation.ItemPartColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ItemPartQuery is the builder for querying ItemPart entities.
@@ -132,8 +131,8 @@ func (ipq *ItemPartQuery) FirstX(ctx context.Context) *ItemPart {
 
 // FirstID returns the first ItemPart ID from the query.
 // Returns a *NotFoundError when no ItemPart ID was found.
-func (ipq *ItemPartQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ipq *ItemPartQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ipq.Limit(1).IDs(setContextOp(ctx, ipq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (ipq *ItemPartQuery) FirstID(ctx context.Context) (id uuid.UUID, err error)
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (ipq *ItemPartQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (ipq *ItemPartQuery) FirstIDX(ctx context.Context) string {
 	id, err := ipq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (ipq *ItemPartQuery) OnlyX(ctx context.Context) *ItemPart {
 // OnlyID is like Only, but returns the only ItemPart ID in the query.
 // Returns a *NotSingularError when more than one ItemPart ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (ipq *ItemPartQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (ipq *ItemPartQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = ipq.Limit(2).IDs(setContextOp(ctx, ipq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (ipq *ItemPartQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (ipq *ItemPartQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (ipq *ItemPartQuery) OnlyIDX(ctx context.Context) string {
 	id, err := ipq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (ipq *ItemPartQuery) AllX(ctx context.Context) []*ItemPart {
 }
 
 // IDs executes the query and returns a list of ItemPart IDs.
-func (ipq *ItemPartQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (ipq *ItemPartQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if ipq.ctx.Unique == nil && ipq.path != nil {
 		ipq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (ipq *ItemPartQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) 
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (ipq *ItemPartQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (ipq *ItemPartQuery) IDsX(ctx context.Context) []string {
 	ids, err := ipq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -450,7 +449,7 @@ func (ipq *ItemPartQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*It
 
 func (ipq *ItemPartQuery) loadTranslations(ctx context.Context, query *ItemPartTranslationQuery, nodes []*ItemPart, init func(*ItemPart), assign func(*ItemPart, *ItemPartTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*ItemPart)
+	nodeids := make(map[string]*ItemPart)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -480,7 +479,7 @@ func (ipq *ItemPartQuery) loadTranslations(ctx context.Context, query *ItemPartT
 }
 func (ipq *ItemPartQuery) loadEntries(ctx context.Context, query *PartEntryQuery, nodes []*ItemPart, init func(*ItemPart), assign func(*ItemPart, *PartEntry)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*ItemPart)
+	nodeids := make(map[string]*ItemPart)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -519,7 +518,7 @@ func (ipq *ItemPartQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (ipq *ItemPartQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(itempart.Table, itempart.Columns, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(itempart.Table, itempart.Columns, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString))
 	_spec.From = ipq.sql
 	if unique := ipq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

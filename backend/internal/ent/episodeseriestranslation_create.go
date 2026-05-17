@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EpisodeSeriesTranslationCreate is the builder for creating a EpisodeSeriesTranslation entity.
@@ -23,8 +22,8 @@ type EpisodeSeriesTranslationCreate struct {
 }
 
 // SetEpisodeSeriesID sets the "episode_series_id" field.
-func (estc *EpisodeSeriesTranslationCreate) SetEpisodeSeriesID(u uuid.UUID) *EpisodeSeriesTranslationCreate {
-	estc.mutation.SetEpisodeSeriesID(u)
+func (estc *EpisodeSeriesTranslationCreate) SetEpisodeSeriesID(s string) *EpisodeSeriesTranslationCreate {
+	estc.mutation.SetEpisodeSeriesID(s)
 	return estc
 }
 
@@ -69,15 +68,15 @@ func (estc *EpisodeSeriesTranslationCreate) SetNillableCreatedAt(t *time.Time) *
 }
 
 // SetID sets the "id" field.
-func (estc *EpisodeSeriesTranslationCreate) SetID(u uuid.UUID) *EpisodeSeriesTranslationCreate {
-	estc.mutation.SetID(u)
+func (estc *EpisodeSeriesTranslationCreate) SetID(s string) *EpisodeSeriesTranslationCreate {
+	estc.mutation.SetID(s)
 	return estc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (estc *EpisodeSeriesTranslationCreate) SetNillableID(u *uuid.UUID) *EpisodeSeriesTranslationCreate {
-	if u != nil {
-		estc.SetID(*u)
+func (estc *EpisodeSeriesTranslationCreate) SetNillableID(s *string) *EpisodeSeriesTranslationCreate {
+	if s != nil {
+		estc.SetID(*s)
 	}
 	return estc
 }
@@ -174,10 +173,10 @@ func (estc *EpisodeSeriesTranslationCreate) sqlSave(ctx context.Context) (*Episo
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected EpisodeSeriesTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	estc.mutation.id = &_node.ID
@@ -188,11 +187,11 @@ func (estc *EpisodeSeriesTranslationCreate) sqlSave(ctx context.Context) (*Episo
 func (estc *EpisodeSeriesTranslationCreate) createSpec() (*EpisodeSeriesTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &EpisodeSeriesTranslation{config: estc.config}
-		_spec = sqlgraph.NewCreateSpec(episodeseriestranslation.Table, sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(episodeseriestranslation.Table, sqlgraph.NewFieldSpec(episodeseriestranslation.FieldID, field.TypeString))
 	)
 	if id, ok := estc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := estc.mutation.LanguageCode(); ok {
 		_spec.SetField(episodeseriestranslation.FieldLanguageCode, field.TypeString, value)
@@ -218,7 +217,7 @@ func (estc *EpisodeSeriesTranslationCreate) createSpec() (*EpisodeSeriesTranslat
 			Columns: []string{episodeseriestranslation.EpisodeSeriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episodeseries.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaDetailTranslationQuery is the builder for querying IdeaDetailTranslation entities.
@@ -131,8 +130,8 @@ func (idtq *IdeaDetailTranslationQuery) FirstX(ctx context.Context) *IdeaDetailT
 
 // FirstID returns the first IdeaDetailTranslation ID from the query.
 // Returns a *NotFoundError when no IdeaDetailTranslation ID was found.
-func (idtq *IdeaDetailTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (idtq *IdeaDetailTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = idtq.Limit(1).IDs(setContextOp(ctx, idtq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (idtq *IdeaDetailTranslationQuery) FirstID(ctx context.Context) (id uuid.UU
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (idtq *IdeaDetailTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (idtq *IdeaDetailTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := idtq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (idtq *IdeaDetailTranslationQuery) OnlyX(ctx context.Context) *IdeaDetailTr
 // OnlyID is like Only, but returns the only IdeaDetailTranslation ID in the query.
 // Returns a *NotSingularError when more than one IdeaDetailTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (idtq *IdeaDetailTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (idtq *IdeaDetailTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = idtq.Limit(2).IDs(setContextOp(ctx, idtq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (idtq *IdeaDetailTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUI
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (idtq *IdeaDetailTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (idtq *IdeaDetailTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := idtq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (idtq *IdeaDetailTranslationQuery) AllX(ctx context.Context) []*IdeaDetailT
 }
 
 // IDs executes the query and returns a list of IdeaDetailTranslation IDs.
-func (idtq *IdeaDetailTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (idtq *IdeaDetailTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if idtq.ctx.Unique == nil && idtq.path != nil {
 		idtq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (idtq *IdeaDetailTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUI
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (idtq *IdeaDetailTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (idtq *IdeaDetailTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := idtq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (idtq *IdeaDetailTranslationQuery) WithLanguage(opts ...func(*LanguageQuery
 // Example:
 //
 //	var v []struct {
-//		IdeaDetailID uuid.UUID `json:"idea_detail_id,omitempty"`
+//		IdeaDetailID string `json:"idea_detail_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (idtq *IdeaDetailTranslationQuery) GroupBy(field string, fields ...string) 
 // Example:
 //
 //	var v []struct {
-//		IdeaDetailID uuid.UUID `json:"idea_detail_id,omitempty"`
+//		IdeaDetailID string `json:"idea_detail_id,omitempty"`
 //	}
 //
 //	client.IdeaDetailTranslation.Query().
@@ -446,8 +445,8 @@ func (idtq *IdeaDetailTranslationQuery) sqlAll(ctx context.Context, hooks ...que
 }
 
 func (idtq *IdeaDetailTranslationQuery) loadIdeaDetail(ctx context.Context, query *IdeaDetailQuery, nodes []*IdeaDetailTranslation, init func(*IdeaDetailTranslation), assign func(*IdeaDetailTranslation, *IdeaDetail)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*IdeaDetailTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*IdeaDetailTranslation)
 	for i := range nodes {
 		fk := nodes[i].IdeaDetailID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (idtq *IdeaDetailTranslationQuery) sqlCount(ctx context.Context) (int, erro
 }
 
 func (idtq *IdeaDetailTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(ideadetailtranslation.Table, ideadetailtranslation.Columns, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(ideadetailtranslation.Table, ideadetailtranslation.Columns, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString))
 	_spec.From = idtq.sql
 	if unique := idtq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

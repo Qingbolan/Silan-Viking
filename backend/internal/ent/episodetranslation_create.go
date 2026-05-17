@@ -12,7 +12,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // EpisodeTranslationCreate is the builder for creating a EpisodeTranslation entity.
@@ -23,8 +22,8 @@ type EpisodeTranslationCreate struct {
 }
 
 // SetEpisodeID sets the "episode_id" field.
-func (etc *EpisodeTranslationCreate) SetEpisodeID(u uuid.UUID) *EpisodeTranslationCreate {
-	etc.mutation.SetEpisodeID(u)
+func (etc *EpisodeTranslationCreate) SetEpisodeID(s string) *EpisodeTranslationCreate {
+	etc.mutation.SetEpisodeID(s)
 	return etc
 }
 
@@ -69,15 +68,15 @@ func (etc *EpisodeTranslationCreate) SetNillableCreatedAt(t *time.Time) *Episode
 }
 
 // SetID sets the "id" field.
-func (etc *EpisodeTranslationCreate) SetID(u uuid.UUID) *EpisodeTranslationCreate {
-	etc.mutation.SetID(u)
+func (etc *EpisodeTranslationCreate) SetID(s string) *EpisodeTranslationCreate {
+	etc.mutation.SetID(s)
 	return etc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (etc *EpisodeTranslationCreate) SetNillableID(u *uuid.UUID) *EpisodeTranslationCreate {
-	if u != nil {
-		etc.SetID(*u)
+func (etc *EpisodeTranslationCreate) SetNillableID(s *string) *EpisodeTranslationCreate {
+	if s != nil {
+		etc.SetID(*s)
 	}
 	return etc
 }
@@ -174,10 +173,10 @@ func (etc *EpisodeTranslationCreate) sqlSave(ctx context.Context) (*EpisodeTrans
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected EpisodeTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	etc.mutation.id = &_node.ID
@@ -188,11 +187,11 @@ func (etc *EpisodeTranslationCreate) sqlSave(ctx context.Context) (*EpisodeTrans
 func (etc *EpisodeTranslationCreate) createSpec() (*EpisodeTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &EpisodeTranslation{config: etc.config}
-		_spec = sqlgraph.NewCreateSpec(episodetranslation.Table, sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(episodetranslation.Table, sqlgraph.NewFieldSpec(episodetranslation.FieldID, field.TypeString))
 	)
 	if id, ok := etc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := etc.mutation.LanguageCode(); ok {
 		_spec.SetField(episodetranslation.FieldLanguageCode, field.TypeString, value)
@@ -218,7 +217,7 @@ func (etc *EpisodeTranslationCreate) createSpec() (*EpisodeTranslation, *sqlgrap
 			Columns: []string{episodetranslation.EpisodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(episode.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(episode.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

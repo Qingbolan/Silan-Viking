@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaTranslationCreate is the builder for creating a IdeaTranslation entity.
@@ -24,8 +23,8 @@ type IdeaTranslationCreate struct {
 }
 
 // SetIdeaID sets the "idea_id" field.
-func (itc *IdeaTranslationCreate) SetIdeaID(u uuid.UUID) *IdeaTranslationCreate {
-	itc.mutation.SetIdeaID(u)
+func (itc *IdeaTranslationCreate) SetIdeaID(s string) *IdeaTranslationCreate {
+	itc.mutation.SetIdeaID(s)
 	return itc
 }
 
@@ -126,15 +125,15 @@ func (itc *IdeaTranslationCreate) SetNillableCreatedAt(t *time.Time) *IdeaTransl
 }
 
 // SetID sets the "id" field.
-func (itc *IdeaTranslationCreate) SetID(u uuid.UUID) *IdeaTranslationCreate {
-	itc.mutation.SetID(u)
+func (itc *IdeaTranslationCreate) SetID(s string) *IdeaTranslationCreate {
+	itc.mutation.SetID(s)
 	return itc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (itc *IdeaTranslationCreate) SetNillableID(u *uuid.UUID) *IdeaTranslationCreate {
-	if u != nil {
-		itc.SetID(*u)
+func (itc *IdeaTranslationCreate) SetNillableID(s *string) *IdeaTranslationCreate {
+	if s != nil {
+		itc.SetID(*s)
 	}
 	return itc
 }
@@ -245,10 +244,10 @@ func (itc *IdeaTranslationCreate) sqlSave(ctx context.Context) (*IdeaTranslation
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected IdeaTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	itc.mutation.id = &_node.ID
@@ -259,11 +258,11 @@ func (itc *IdeaTranslationCreate) sqlSave(ctx context.Context) (*IdeaTranslation
 func (itc *IdeaTranslationCreate) createSpec() (*IdeaTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &IdeaTranslation{config: itc.config}
-		_spec = sqlgraph.NewCreateSpec(ideatranslation.Table, sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(ideatranslation.Table, sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString))
 	)
 	if id, ok := itc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := itc.mutation.Title(); ok {
 		_spec.SetField(ideatranslation.FieldTitle, field.TypeString, value)
@@ -301,7 +300,7 @@ func (itc *IdeaTranslationCreate) createSpec() (*IdeaTranslation, *sqlgraph.Crea
 			Columns: []string{ideatranslation.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

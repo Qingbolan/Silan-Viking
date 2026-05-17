@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // EducationDetailTranslation is the model entity for the EducationDetailTranslation schema.
 type EducationDetailTranslation struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// EducationDetailID holds the value of the "education_detail_id" field.
-	EducationDetailID uuid.UUID `json:"education_detail_id,omitempty"`
+	EducationDetailID string `json:"education_detail_id,omitempty"`
 	// LanguageCode holds the value of the "language_code" field.
 	LanguageCode string `json:"language_code,omitempty"`
 	// DetailText holds the value of the "detail_text" field.
@@ -72,12 +71,10 @@ func (*EducationDetailTranslation) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case educationdetailtranslation.FieldLanguageCode, educationdetailtranslation.FieldDetailText:
+		case educationdetailtranslation.FieldID, educationdetailtranslation.FieldEducationDetailID, educationdetailtranslation.FieldLanguageCode, educationdetailtranslation.FieldDetailText:
 			values[i] = new(sql.NullString)
 		case educationdetailtranslation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case educationdetailtranslation.FieldID, educationdetailtranslation.FieldEducationDetailID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -94,16 +91,16 @@ func (edt *EducationDetailTranslation) assignValues(columns []string, values []a
 	for i := range columns {
 		switch columns[i] {
 		case educationdetailtranslation.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				edt.ID = *value
+			} else if value.Valid {
+				edt.ID = value.String
 			}
 		case educationdetailtranslation.FieldEducationDetailID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field education_detail_id", values[i])
-			} else if value != nil {
-				edt.EducationDetailID = *value
+			} else if value.Valid {
+				edt.EducationDetailID = value.String
 			}
 		case educationdetailtranslation.FieldLanguageCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -170,7 +167,7 @@ func (edt *EducationDetailTranslation) String() string {
 	builder.WriteString("EducationDetailTranslation(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", edt.ID))
 	builder.WriteString("education_detail_id=")
-	builder.WriteString(fmt.Sprintf("%v", edt.EducationDetailID))
+	builder.WriteString(edt.EducationDetailID)
 	builder.WriteString(", ")
 	builder.WriteString("language_code=")
 	builder.WriteString(edt.LanguageCode)

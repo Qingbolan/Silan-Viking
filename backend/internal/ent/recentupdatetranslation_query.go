@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // RecentUpdateTranslationQuery is the builder for querying RecentUpdateTranslation entities.
@@ -131,8 +130,8 @@ func (rutq *RecentUpdateTranslationQuery) FirstX(ctx context.Context) *RecentUpd
 
 // FirstID returns the first RecentUpdateTranslation ID from the query.
 // Returns a *NotFoundError when no RecentUpdateTranslation ID was found.
-func (rutq *RecentUpdateTranslationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (rutq *RecentUpdateTranslationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = rutq.Limit(1).IDs(setContextOp(ctx, rutq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -144,7 +143,7 @@ func (rutq *RecentUpdateTranslationQuery) FirstID(ctx context.Context) (id uuid.
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (rutq *RecentUpdateTranslationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (rutq *RecentUpdateTranslationQuery) FirstIDX(ctx context.Context) string {
 	id, err := rutq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -182,8 +181,8 @@ func (rutq *RecentUpdateTranslationQuery) OnlyX(ctx context.Context) *RecentUpda
 // OnlyID is like Only, but returns the only RecentUpdateTranslation ID in the query.
 // Returns a *NotSingularError when more than one RecentUpdateTranslation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (rutq *RecentUpdateTranslationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (rutq *RecentUpdateTranslationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = rutq.Limit(2).IDs(setContextOp(ctx, rutq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -199,7 +198,7 @@ func (rutq *RecentUpdateTranslationQuery) OnlyID(ctx context.Context) (id uuid.U
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (rutq *RecentUpdateTranslationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (rutq *RecentUpdateTranslationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := rutq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -227,7 +226,7 @@ func (rutq *RecentUpdateTranslationQuery) AllX(ctx context.Context) []*RecentUpd
 }
 
 // IDs executes the query and returns a list of RecentUpdateTranslation IDs.
-func (rutq *RecentUpdateTranslationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (rutq *RecentUpdateTranslationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if rutq.ctx.Unique == nil && rutq.path != nil {
 		rutq.Unique(true)
 	}
@@ -239,7 +238,7 @@ func (rutq *RecentUpdateTranslationQuery) IDs(ctx context.Context) (ids []uuid.U
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (rutq *RecentUpdateTranslationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (rutq *RecentUpdateTranslationQuery) IDsX(ctx context.Context) []string {
 	ids, err := rutq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -335,7 +334,7 @@ func (rutq *RecentUpdateTranslationQuery) WithLanguage(opts ...func(*LanguageQue
 // Example:
 //
 //	var v []struct {
-//		RecentUpdateID uuid.UUID `json:"recent_update_id,omitempty"`
+//		RecentUpdateID string `json:"recent_update_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -358,7 +357,7 @@ func (rutq *RecentUpdateTranslationQuery) GroupBy(field string, fields ...string
 // Example:
 //
 //	var v []struct {
-//		RecentUpdateID uuid.UUID `json:"recent_update_id,omitempty"`
+//		RecentUpdateID string `json:"recent_update_id,omitempty"`
 //	}
 //
 //	client.RecentUpdateTranslation.Query().
@@ -446,8 +445,8 @@ func (rutq *RecentUpdateTranslationQuery) sqlAll(ctx context.Context, hooks ...q
 }
 
 func (rutq *RecentUpdateTranslationQuery) loadRecentUpdate(ctx context.Context, query *RecentUpdateQuery, nodes []*RecentUpdateTranslation, init func(*RecentUpdateTranslation), assign func(*RecentUpdateTranslation, *RecentUpdate)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*RecentUpdateTranslation)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*RecentUpdateTranslation)
 	for i := range nodes {
 		fk := nodes[i].RecentUpdateID
 		if _, ok := nodeids[fk]; !ok {
@@ -514,7 +513,7 @@ func (rutq *RecentUpdateTranslationQuery) sqlCount(ctx context.Context) (int, er
 }
 
 func (rutq *RecentUpdateTranslationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(recentupdatetranslation.Table, recentupdatetranslation.Columns, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(recentupdatetranslation.Table, recentupdatetranslation.Columns, sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString))
 	_spec.From = rutq.sql
 	if unique := rutq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

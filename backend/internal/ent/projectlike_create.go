@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectLikeCreate is the builder for creating a ProjectLike entity.
@@ -24,8 +23,8 @@ type ProjectLikeCreate struct {
 }
 
 // SetProjectID sets the "project_id" field.
-func (plc *ProjectLikeCreate) SetProjectID(u uuid.UUID) *ProjectLikeCreate {
-	plc.mutation.SetProjectID(u)
+func (plc *ProjectLikeCreate) SetProjectID(s string) *ProjectLikeCreate {
+	plc.mutation.SetProjectID(s)
 	return plc
 }
 
@@ -114,15 +113,15 @@ func (plc *ProjectLikeCreate) SetNillableUpdatedAt(t *time.Time) *ProjectLikeCre
 }
 
 // SetID sets the "id" field.
-func (plc *ProjectLikeCreate) SetID(u uuid.UUID) *ProjectLikeCreate {
-	plc.mutation.SetID(u)
+func (plc *ProjectLikeCreate) SetID(s string) *ProjectLikeCreate {
+	plc.mutation.SetID(s)
 	return plc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (plc *ProjectLikeCreate) SetNillableID(u *uuid.UUID) *ProjectLikeCreate {
-	if u != nil {
-		plc.SetID(*u)
+func (plc *ProjectLikeCreate) SetNillableID(s *string) *ProjectLikeCreate {
+	if s != nil {
+		plc.SetID(*s)
 	}
 	return plc
 }
@@ -220,10 +219,10 @@ func (plc *ProjectLikeCreate) sqlSave(ctx context.Context) (*ProjectLike, error)
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ProjectLike.ID type: %T", _spec.ID.Value)
 		}
 	}
 	plc.mutation.id = &_node.ID
@@ -234,11 +233,11 @@ func (plc *ProjectLikeCreate) sqlSave(ctx context.Context) (*ProjectLike, error)
 func (plc *ProjectLikeCreate) createSpec() (*ProjectLike, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ProjectLike{config: plc.config}
-		_spec = sqlgraph.NewCreateSpec(projectlike.Table, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(projectlike.Table, sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString))
 	)
 	if id, ok := plc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := plc.mutation.Fingerprint(); ok {
 		_spec.SetField(projectlike.FieldFingerprint, field.TypeString, value)
@@ -268,7 +267,7 @@ func (plc *ProjectLikeCreate) createSpec() (*ProjectLike, *sqlgraph.CreateSpec) 
 			Columns: []string{projectlike.ProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

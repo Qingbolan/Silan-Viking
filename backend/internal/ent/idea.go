@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // Idea is the model entity for the Idea schema.
 type Idea struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// Slug holds the value of the "slug" field.
@@ -123,12 +122,10 @@ func (*Idea) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case idea.FieldViewCount, idea.FieldLikeCount:
 			values[i] = new(sql.NullInt64)
-		case idea.FieldTitle, idea.FieldSlug, idea.FieldDescription, idea.FieldAbstract, idea.FieldStatus, idea.FieldVisibility, idea.FieldCategory:
+		case idea.FieldID, idea.FieldUserID, idea.FieldTitle, idea.FieldSlug, idea.FieldDescription, idea.FieldAbstract, idea.FieldStatus, idea.FieldVisibility, idea.FieldCategory:
 			values[i] = new(sql.NullString)
 		case idea.FieldCreatedAt, idea.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case idea.FieldID, idea.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -145,16 +142,16 @@ func (i *Idea) assignValues(columns []string, values []any) error {
 	for j := range columns {
 		switch columns[j] {
 		case idea.FieldID:
-			if value, ok := values[j].(*uuid.UUID); !ok {
+			if value, ok := values[j].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[j])
-			} else if value != nil {
-				i.ID = *value
+			} else if value.Valid {
+				i.ID = value.String
 			}
 		case idea.FieldUserID:
-			if value, ok := values[j].(*uuid.UUID); !ok {
+			if value, ok := values[j].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[j])
-			} else if value != nil {
-				i.UserID = *value
+			} else if value.Valid {
+				i.UserID = value.String
 			}
 		case idea.FieldTitle:
 			if value, ok := values[j].(*sql.NullString); !ok {
@@ -284,7 +281,7 @@ func (i *Idea) String() string {
 	builder.WriteString("Idea(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", i.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", i.UserID))
+	builder.WriteString(i.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(i.Title)

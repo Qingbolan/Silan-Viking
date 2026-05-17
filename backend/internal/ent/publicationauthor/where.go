@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.PublicationAuthor {
+func ID(id string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.PublicationAuthor {
+func IDEQ(id string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.PublicationAuthor {
+func IDNEQ(id string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.PublicationAuthor {
+func IDIn(ids ...string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.PublicationAuthor {
+func IDNotIn(ids ...string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.PublicationAuthor {
+func IDGT(id string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.PublicationAuthor {
+func IDGTE(id string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.PublicationAuthor {
+func IDLT(id string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.PublicationAuthor {
+func IDLTE(id string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldContainsFold(FieldID, id))
+}
+
 // PublicationID applies equality check predicate on the "publication_id" field. It's identical to PublicationIDEQ.
-func PublicationID(v uuid.UUID) predicate.PublicationAuthor {
+func PublicationID(v string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldEQ(FieldPublicationID, v))
 }
 
@@ -92,23 +101,68 @@ func UpdatedAt(v time.Time) predicate.PublicationAuthor {
 }
 
 // PublicationIDEQ applies the EQ predicate on the "publication_id" field.
-func PublicationIDEQ(v uuid.UUID) predicate.PublicationAuthor {
+func PublicationIDEQ(v string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldEQ(FieldPublicationID, v))
 }
 
 // PublicationIDNEQ applies the NEQ predicate on the "publication_id" field.
-func PublicationIDNEQ(v uuid.UUID) predicate.PublicationAuthor {
+func PublicationIDNEQ(v string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldNEQ(FieldPublicationID, v))
 }
 
 // PublicationIDIn applies the In predicate on the "publication_id" field.
-func PublicationIDIn(vs ...uuid.UUID) predicate.PublicationAuthor {
+func PublicationIDIn(vs ...string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldIn(FieldPublicationID, vs...))
 }
 
 // PublicationIDNotIn applies the NotIn predicate on the "publication_id" field.
-func PublicationIDNotIn(vs ...uuid.UUID) predicate.PublicationAuthor {
+func PublicationIDNotIn(vs ...string) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldNotIn(FieldPublicationID, vs...))
+}
+
+// PublicationIDGT applies the GT predicate on the "publication_id" field.
+func PublicationIDGT(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldGT(FieldPublicationID, v))
+}
+
+// PublicationIDGTE applies the GTE predicate on the "publication_id" field.
+func PublicationIDGTE(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldGTE(FieldPublicationID, v))
+}
+
+// PublicationIDLT applies the LT predicate on the "publication_id" field.
+func PublicationIDLT(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldLT(FieldPublicationID, v))
+}
+
+// PublicationIDLTE applies the LTE predicate on the "publication_id" field.
+func PublicationIDLTE(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldLTE(FieldPublicationID, v))
+}
+
+// PublicationIDContains applies the Contains predicate on the "publication_id" field.
+func PublicationIDContains(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldContains(FieldPublicationID, v))
+}
+
+// PublicationIDHasPrefix applies the HasPrefix predicate on the "publication_id" field.
+func PublicationIDHasPrefix(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldHasPrefix(FieldPublicationID, v))
+}
+
+// PublicationIDHasSuffix applies the HasSuffix predicate on the "publication_id" field.
+func PublicationIDHasSuffix(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldHasSuffix(FieldPublicationID, v))
+}
+
+// PublicationIDEqualFold applies the EqualFold predicate on the "publication_id" field.
+func PublicationIDEqualFold(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldEqualFold(FieldPublicationID, v))
+}
+
+// PublicationIDContainsFold applies the ContainsFold predicate on the "publication_id" field.
+func PublicationIDContainsFold(v string) predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldContainsFold(FieldPublicationID, v))
 }
 
 // AuthorNameEQ applies the EQ predicate on the "author_name" field.

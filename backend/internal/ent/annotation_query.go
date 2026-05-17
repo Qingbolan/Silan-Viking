@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // AnnotationQuery is the builder for querying Annotation entities.
@@ -83,8 +82,8 @@ func (aq *AnnotationQuery) FirstX(ctx context.Context) *Annotation {
 
 // FirstID returns the first Annotation ID from the query.
 // Returns a *NotFoundError when no Annotation ID was found.
-func (aq *AnnotationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (aq *AnnotationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = aq.Limit(1).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -96,7 +95,7 @@ func (aq *AnnotationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (aq *AnnotationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (aq *AnnotationQuery) FirstIDX(ctx context.Context) string {
 	id, err := aq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -134,8 +133,8 @@ func (aq *AnnotationQuery) OnlyX(ctx context.Context) *Annotation {
 // OnlyID is like Only, but returns the only Annotation ID in the query.
 // Returns a *NotSingularError when more than one Annotation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (aq *AnnotationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (aq *AnnotationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = aq.Limit(2).IDs(setContextOp(ctx, aq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -151,7 +150,7 @@ func (aq *AnnotationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error)
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (aq *AnnotationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (aq *AnnotationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := aq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -179,7 +178,7 @@ func (aq *AnnotationQuery) AllX(ctx context.Context) []*Annotation {
 }
 
 // IDs executes the query and returns a list of Annotation IDs.
-func (aq *AnnotationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (aq *AnnotationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if aq.ctx.Unique == nil && aq.path != nil {
 		aq.Unique(true)
 	}
@@ -191,7 +190,7 @@ func (aq *AnnotationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error)
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (aq *AnnotationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (aq *AnnotationQuery) IDsX(ctx context.Context) []string {
 	ids, err := aq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -366,7 +365,7 @@ func (aq *AnnotationQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (aq *AnnotationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(annotation.Table, annotation.Columns, sqlgraph.NewFieldSpec(annotation.FieldID, field.TypeString))
 	_spec.From = aq.sql
 	if unique := aq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

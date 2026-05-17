@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ProjectImage is the model entity for the ProjectImage schema.
 type ProjectImage struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// ProjectID holds the value of the "project_id" field.
-	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 	// ImageURL holds the value of the "image_url" field.
 	ImageURL string `json:"image_url,omitempty"`
 	// AltText holds the value of the "alt_text" field.
@@ -79,12 +78,10 @@ func (*ProjectImage) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case projectimage.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case projectimage.FieldImageURL, projectimage.FieldAltText, projectimage.FieldCaption, projectimage.FieldImageType:
+		case projectimage.FieldID, projectimage.FieldProjectID, projectimage.FieldImageURL, projectimage.FieldAltText, projectimage.FieldCaption, projectimage.FieldImageType:
 			values[i] = new(sql.NullString)
 		case projectimage.FieldCreatedAt, projectimage.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case projectimage.FieldID, projectimage.FieldProjectID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -101,16 +98,16 @@ func (pi *ProjectImage) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case projectimage.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pi.ID = *value
+			} else if value.Valid {
+				pi.ID = value.String
 			}
 		case projectimage.FieldProjectID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
-			} else if value != nil {
-				pi.ProjectID = *value
+			} else if value.Valid {
+				pi.ProjectID = value.String
 			}
 		case projectimage.FieldImageURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -201,7 +198,7 @@ func (pi *ProjectImage) String() string {
 	builder.WriteString("ProjectImage(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pi.ID))
 	builder.WriteString("project_id=")
-	builder.WriteString(fmt.Sprintf("%v", pi.ProjectID))
+	builder.WriteString(pi.ProjectID)
 	builder.WriteString(", ")
 	builder.WriteString("image_url=")
 	builder.WriteString(pi.ImageURL)

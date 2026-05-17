@@ -10,14 +10,13 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // EpisodeSeries is the model entity for the EpisodeSeries schema.
 type EpisodeSeries struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
 	// Title holds the value of the "title" field.
@@ -70,12 +69,10 @@ func (*EpisodeSeries) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case episodeseries.FieldSlug, episodeseries.FieldTitle, episodeseries.FieldDescription, episodeseries.FieldStatus:
+		case episodeseries.FieldID, episodeseries.FieldSlug, episodeseries.FieldTitle, episodeseries.FieldDescription, episodeseries.FieldStatus:
 			values[i] = new(sql.NullString)
 		case episodeseries.FieldCreatedAt, episodeseries.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case episodeseries.FieldID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -92,10 +89,10 @@ func (es *EpisodeSeries) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case episodeseries.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				es.ID = *value
+			} else if value.Valid {
+				es.ID = value.String
 			}
 		case episodeseries.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {

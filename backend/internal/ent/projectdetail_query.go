@@ -16,7 +16,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectDetailQuery is the builder for querying ProjectDetail entities.
@@ -132,8 +131,8 @@ func (pdq *ProjectDetailQuery) FirstX(ctx context.Context) *ProjectDetail {
 
 // FirstID returns the first ProjectDetail ID from the query.
 // Returns a *NotFoundError when no ProjectDetail ID was found.
-func (pdq *ProjectDetailQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pdq *ProjectDetailQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pdq.Limit(1).IDs(setContextOp(ctx, pdq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -145,7 +144,7 @@ func (pdq *ProjectDetailQuery) FirstID(ctx context.Context) (id uuid.UUID, err e
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pdq *ProjectDetailQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (pdq *ProjectDetailQuery) FirstIDX(ctx context.Context) string {
 	id, err := pdq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -183,8 +182,8 @@ func (pdq *ProjectDetailQuery) OnlyX(ctx context.Context) *ProjectDetail {
 // OnlyID is like Only, but returns the only ProjectDetail ID in the query.
 // Returns a *NotSingularError when more than one ProjectDetail ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pdq *ProjectDetailQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pdq *ProjectDetailQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pdq.Limit(2).IDs(setContextOp(ctx, pdq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -200,7 +199,7 @@ func (pdq *ProjectDetailQuery) OnlyID(ctx context.Context) (id uuid.UUID, err er
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pdq *ProjectDetailQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (pdq *ProjectDetailQuery) OnlyIDX(ctx context.Context) string {
 	id, err := pdq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -228,7 +227,7 @@ func (pdq *ProjectDetailQuery) AllX(ctx context.Context) []*ProjectDetail {
 }
 
 // IDs executes the query and returns a list of ProjectDetail IDs.
-func (pdq *ProjectDetailQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (pdq *ProjectDetailQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if pdq.ctx.Unique == nil && pdq.path != nil {
 		pdq.Unique(true)
 	}
@@ -240,7 +239,7 @@ func (pdq *ProjectDetailQuery) IDs(ctx context.Context) (ids []uuid.UUID, err er
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pdq *ProjectDetailQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (pdq *ProjectDetailQuery) IDsX(ctx context.Context) []string {
 	ids, err := pdq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -336,7 +335,7 @@ func (pdq *ProjectDetailQuery) WithTranslations(opts ...func(*ProjectDetailTrans
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -359,7 +358,7 @@ func (pdq *ProjectDetailQuery) GroupBy(field string, fields ...string) *ProjectD
 // Example:
 //
 //	var v []struct {
-//		ProjectID uuid.UUID `json:"project_id,omitempty"`
+//		ProjectID string `json:"project_id,omitempty"`
 //	}
 //
 //	client.ProjectDetail.Query().
@@ -450,8 +449,8 @@ func (pdq *ProjectDetailQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 }
 
 func (pdq *ProjectDetailQuery) loadProject(ctx context.Context, query *ProjectQuery, nodes []*ProjectDetail, init func(*ProjectDetail), assign func(*ProjectDetail, *Project)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*ProjectDetail)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ProjectDetail)
 	for i := range nodes {
 		fk := nodes[i].ProjectID
 		if _, ok := nodeids[fk]; !ok {
@@ -480,7 +479,7 @@ func (pdq *ProjectDetailQuery) loadProject(ctx context.Context, query *ProjectQu
 }
 func (pdq *ProjectDetailQuery) loadTranslations(ctx context.Context, query *ProjectDetailTranslationQuery, nodes []*ProjectDetail, init func(*ProjectDetail), assign func(*ProjectDetail, *ProjectDetailTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*ProjectDetail)
+	nodeids := make(map[string]*ProjectDetail)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -519,7 +518,7 @@ func (pdq *ProjectDetailQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pdq *ProjectDetailQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(projectdetail.Table, projectdetail.Columns, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(projectdetail.Table, projectdetail.Columns, sqlgraph.NewFieldSpec(projectdetail.FieldID, field.TypeString))
 	_spec.From = pdq.sql
 	if unique := pdq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

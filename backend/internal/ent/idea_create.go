@@ -16,7 +16,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaCreate is the builder for creating a Idea entity.
@@ -27,14 +26,30 @@ type IdeaCreate struct {
 }
 
 // SetUserID sets the "user_id" field.
-func (ic *IdeaCreate) SetUserID(u uuid.UUID) *IdeaCreate {
-	ic.mutation.SetUserID(u)
+func (ic *IdeaCreate) SetUserID(s string) *IdeaCreate {
+	ic.mutation.SetUserID(s)
+	return ic
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (ic *IdeaCreate) SetNillableUserID(s *string) *IdeaCreate {
+	if s != nil {
+		ic.SetUserID(*s)
+	}
 	return ic
 }
 
 // SetTitle sets the "title" field.
 func (ic *IdeaCreate) SetTitle(s string) *IdeaCreate {
 	ic.mutation.SetTitle(s)
+	return ic
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (ic *IdeaCreate) SetNillableTitle(s *string) *IdeaCreate {
+	if s != nil {
+		ic.SetTitle(*s)
+	}
 	return ic
 }
 
@@ -171,15 +186,15 @@ func (ic *IdeaCreate) SetNillableUpdatedAt(t *time.Time) *IdeaCreate {
 }
 
 // SetID sets the "id" field.
-func (ic *IdeaCreate) SetID(u uuid.UUID) *IdeaCreate {
-	ic.mutation.SetID(u)
+func (ic *IdeaCreate) SetID(s string) *IdeaCreate {
+	ic.mutation.SetID(s)
 	return ic
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ic *IdeaCreate) SetNillableID(u *uuid.UUID) *IdeaCreate {
-	if u != nil {
-		ic.SetID(*u)
+func (ic *IdeaCreate) SetNillableID(s *string) *IdeaCreate {
+	if s != nil {
+		ic.SetID(*s)
 	}
 	return ic
 }
@@ -190,14 +205,14 @@ func (ic *IdeaCreate) SetUser(u *User) *IdeaCreate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by IDs.
-func (ic *IdeaCreate) AddTranslationIDs(ids ...uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) AddTranslationIDs(ids ...string) *IdeaCreate {
 	ic.mutation.AddTranslationIDs(ids...)
 	return ic
 }
 
 // AddTranslations adds the "translations" edges to the IdeaTranslation entity.
 func (ic *IdeaCreate) AddTranslations(i ...*IdeaTranslation) *IdeaCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -205,13 +220,13 @@ func (ic *IdeaCreate) AddTranslations(i ...*IdeaTranslation) *IdeaCreate {
 }
 
 // SetDetailsID sets the "details" edge to the IdeaDetail entity by ID.
-func (ic *IdeaCreate) SetDetailsID(id uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) SetDetailsID(id string) *IdeaCreate {
 	ic.mutation.SetDetailsID(id)
 	return ic
 }
 
 // SetNillableDetailsID sets the "details" edge to the IdeaDetail entity by ID if the given value is not nil.
-func (ic *IdeaCreate) SetNillableDetailsID(id *uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) SetNillableDetailsID(id *string) *IdeaCreate {
 	if id != nil {
 		ic = ic.SetDetailsID(*id)
 	}
@@ -224,14 +239,14 @@ func (ic *IdeaCreate) SetDetails(i *IdeaDetail) *IdeaCreate {
 }
 
 // AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (ic *IdeaCreate) AddCommentIDs(ids ...uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) AddCommentIDs(ids ...string) *IdeaCreate {
 	ic.mutation.AddCommentIDs(ids...)
 	return ic
 }
 
 // AddComments adds the "comments" edges to the Comment entity.
 func (ic *IdeaCreate) AddComments(c ...*Comment) *IdeaCreate {
-	ids := make([]uuid.UUID, len(c))
+	ids := make([]string, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
 	}
@@ -239,14 +254,14 @@ func (ic *IdeaCreate) AddComments(c ...*Comment) *IdeaCreate {
 }
 
 // AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
-func (ic *IdeaCreate) AddTagIDs(ids ...uuid.UUID) *IdeaCreate {
+func (ic *IdeaCreate) AddTagIDs(ids ...string) *IdeaCreate {
 	ic.mutation.AddTagIDs(ids...)
 	return ic
 }
 
 // AddTags adds the "tags" edges to the IdeaTag entity.
 func (ic *IdeaCreate) AddTags(i ...*IdeaTag) *IdeaCreate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -324,12 +339,6 @@ func (ic *IdeaCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ic *IdeaCreate) check() error {
-	if _, ok := ic.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "Idea.user_id"`)}
-	}
-	if _, ok := ic.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "Idea.title"`)}
-	}
 	if v, ok := ic.mutation.Title(); ok {
 		if err := idea.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Idea.title": %w`, err)}
@@ -370,15 +379,6 @@ func (ic *IdeaCreate) check() error {
 			return &ValidationError{Name: "category", err: fmt.Errorf(`ent: validator failed for field "Idea.category": %w`, err)}
 		}
 	}
-	if _, ok := ic.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Idea.created_at"`)}
-	}
-	if _, ok := ic.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Idea.updated_at"`)}
-	}
-	if len(ic.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Idea.user"`)}
-	}
 	return nil
 }
 
@@ -394,10 +394,10 @@ func (ic *IdeaCreate) sqlSave(ctx context.Context) (*Idea, error) {
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Idea.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ic.mutation.id = &_node.ID
@@ -408,11 +408,11 @@ func (ic *IdeaCreate) sqlSave(ctx context.Context) (*Idea, error) {
 func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Idea{config: ic.config}
-		_spec = sqlgraph.NewCreateSpec(idea.Table, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(idea.Table, sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString))
 	)
 	if id, ok := ic.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ic.mutation.Title(); ok {
 		_spec.SetField(idea.FieldTitle, field.TypeString, value)
@@ -466,7 +466,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -483,7 +483,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -499,7 +499,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.DetailsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -515,7 +515,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: []string{idea.CommentsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -531,7 +531,7 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Columns: idea.TagsPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

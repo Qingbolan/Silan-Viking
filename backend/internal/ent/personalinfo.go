@@ -11,16 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // PersonalInfo is the model entity for the PersonalInfo schema.
 type PersonalInfo struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// UserID holds the value of the "user_id" field.
-	UserID uuid.UUID `json:"user_id,omitempty"`
+	UserID string `json:"user_id,omitempty"`
 	// FullName holds the value of the "full_name" field.
 	FullName string `json:"full_name,omitempty"`
 	// Title holds the value of the "title" field.
@@ -98,12 +97,10 @@ func (*PersonalInfo) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case personalinfo.FieldIsPrimary:
 			values[i] = new(sql.NullBool)
-		case personalinfo.FieldFullName, personalinfo.FieldTitle, personalinfo.FieldCurrentStatus, personalinfo.FieldPhone, personalinfo.FieldEmail, personalinfo.FieldLocation, personalinfo.FieldWebsite, personalinfo.FieldAvatarURL:
+		case personalinfo.FieldID, personalinfo.FieldUserID, personalinfo.FieldFullName, personalinfo.FieldTitle, personalinfo.FieldCurrentStatus, personalinfo.FieldPhone, personalinfo.FieldEmail, personalinfo.FieldLocation, personalinfo.FieldWebsite, personalinfo.FieldAvatarURL:
 			values[i] = new(sql.NullString)
 		case personalinfo.FieldCreatedAt, personalinfo.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case personalinfo.FieldID, personalinfo.FieldUserID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -120,16 +117,16 @@ func (pi *PersonalInfo) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case personalinfo.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pi.ID = *value
+			} else if value.Valid {
+				pi.ID = value.String
 			}
 		case personalinfo.FieldUserID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field user_id", values[i])
-			} else if value != nil {
-				pi.UserID = *value
+			} else if value.Valid {
+				pi.UserID = value.String
 			}
 		case personalinfo.FieldFullName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -249,7 +246,7 @@ func (pi *PersonalInfo) String() string {
 	builder.WriteString("PersonalInfo(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pi.ID))
 	builder.WriteString("user_id=")
-	builder.WriteString(fmt.Sprintf("%v", pi.UserID))
+	builder.WriteString(pi.UserID)
 	builder.WriteString(", ")
 	builder.WriteString("full_name=")
 	builder.WriteString(pi.FullName)

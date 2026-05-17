@@ -15,7 +15,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ItemPartUpdate is the builder for updating ItemPart entities.
@@ -60,15 +59,15 @@ func (ipu *ItemPartUpdate) SetNillableEntityType(it *itempart.EntityType) *ItemP
 }
 
 // SetEntityID sets the "entity_id" field.
-func (ipu *ItemPartUpdate) SetEntityID(u uuid.UUID) *ItemPartUpdate {
-	ipu.mutation.SetEntityID(u)
+func (ipu *ItemPartUpdate) SetEntityID(s string) *ItemPartUpdate {
+	ipu.mutation.SetEntityID(s)
 	return ipu
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (ipu *ItemPartUpdate) SetNillableEntityID(u *uuid.UUID) *ItemPartUpdate {
-	if u != nil {
-		ipu.SetEntityID(*u)
+func (ipu *ItemPartUpdate) SetNillableEntityID(s *string) *ItemPartUpdate {
+	if s != nil {
+		ipu.SetEntityID(*s)
 	}
 	return ipu
 }
@@ -129,14 +128,14 @@ func (ipu *ItemPartUpdate) SetUpdatedAt(t time.Time) *ItemPartUpdate {
 }
 
 // AddTranslationIDs adds the "translations" edge to the ItemPartTranslation entity by IDs.
-func (ipu *ItemPartUpdate) AddTranslationIDs(ids ...uuid.UUID) *ItemPartUpdate {
+func (ipu *ItemPartUpdate) AddTranslationIDs(ids ...string) *ItemPartUpdate {
 	ipu.mutation.AddTranslationIDs(ids...)
 	return ipu
 }
 
 // AddTranslations adds the "translations" edges to the ItemPartTranslation entity.
 func (ipu *ItemPartUpdate) AddTranslations(i ...*ItemPartTranslation) *ItemPartUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -144,14 +143,14 @@ func (ipu *ItemPartUpdate) AddTranslations(i ...*ItemPartTranslation) *ItemPartU
 }
 
 // AddEntryIDs adds the "entries" edge to the PartEntry entity by IDs.
-func (ipu *ItemPartUpdate) AddEntryIDs(ids ...uuid.UUID) *ItemPartUpdate {
+func (ipu *ItemPartUpdate) AddEntryIDs(ids ...string) *ItemPartUpdate {
 	ipu.mutation.AddEntryIDs(ids...)
 	return ipu
 }
 
 // AddEntries adds the "entries" edges to the PartEntry entity.
 func (ipu *ItemPartUpdate) AddEntries(p ...*PartEntry) *ItemPartUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -170,14 +169,14 @@ func (ipu *ItemPartUpdate) ClearTranslations() *ItemPartUpdate {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ItemPartTranslation entities by IDs.
-func (ipu *ItemPartUpdate) RemoveTranslationIDs(ids ...uuid.UUID) *ItemPartUpdate {
+func (ipu *ItemPartUpdate) RemoveTranslationIDs(ids ...string) *ItemPartUpdate {
 	ipu.mutation.RemoveTranslationIDs(ids...)
 	return ipu
 }
 
 // RemoveTranslations removes "translations" edges to ItemPartTranslation entities.
 func (ipu *ItemPartUpdate) RemoveTranslations(i ...*ItemPartTranslation) *ItemPartUpdate {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -191,14 +190,14 @@ func (ipu *ItemPartUpdate) ClearEntries() *ItemPartUpdate {
 }
 
 // RemoveEntryIDs removes the "entries" edge to PartEntry entities by IDs.
-func (ipu *ItemPartUpdate) RemoveEntryIDs(ids ...uuid.UUID) *ItemPartUpdate {
+func (ipu *ItemPartUpdate) RemoveEntryIDs(ids ...string) *ItemPartUpdate {
 	ipu.mutation.RemoveEntryIDs(ids...)
 	return ipu
 }
 
 // RemoveEntries removes "entries" edges to PartEntry entities.
 func (ipu *ItemPartUpdate) RemoveEntries(p ...*PartEntry) *ItemPartUpdate {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -255,7 +254,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := ipu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(itempart.Table, itempart.Columns, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(itempart.Table, itempart.Columns, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString))
 	if ps := ipu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -270,7 +269,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(itempart.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := ipu.mutation.EntityID(); ok {
-		_spec.SetField(itempart.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(itempart.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := ipu.mutation.Role(); ok {
 		_spec.SetField(itempart.FieldRole, field.TypeString, value)
@@ -295,7 +294,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itempart.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -308,7 +307,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itempart.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -324,7 +323,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itempart.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -340,7 +339,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itempart.EntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -353,7 +352,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itempart.EntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -369,7 +368,7 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{itempart.EntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -426,15 +425,15 @@ func (ipuo *ItemPartUpdateOne) SetNillableEntityType(it *itempart.EntityType) *I
 }
 
 // SetEntityID sets the "entity_id" field.
-func (ipuo *ItemPartUpdateOne) SetEntityID(u uuid.UUID) *ItemPartUpdateOne {
-	ipuo.mutation.SetEntityID(u)
+func (ipuo *ItemPartUpdateOne) SetEntityID(s string) *ItemPartUpdateOne {
+	ipuo.mutation.SetEntityID(s)
 	return ipuo
 }
 
 // SetNillableEntityID sets the "entity_id" field if the given value is not nil.
-func (ipuo *ItemPartUpdateOne) SetNillableEntityID(u *uuid.UUID) *ItemPartUpdateOne {
-	if u != nil {
-		ipuo.SetEntityID(*u)
+func (ipuo *ItemPartUpdateOne) SetNillableEntityID(s *string) *ItemPartUpdateOne {
+	if s != nil {
+		ipuo.SetEntityID(*s)
 	}
 	return ipuo
 }
@@ -495,14 +494,14 @@ func (ipuo *ItemPartUpdateOne) SetUpdatedAt(t time.Time) *ItemPartUpdateOne {
 }
 
 // AddTranslationIDs adds the "translations" edge to the ItemPartTranslation entity by IDs.
-func (ipuo *ItemPartUpdateOne) AddTranslationIDs(ids ...uuid.UUID) *ItemPartUpdateOne {
+func (ipuo *ItemPartUpdateOne) AddTranslationIDs(ids ...string) *ItemPartUpdateOne {
 	ipuo.mutation.AddTranslationIDs(ids...)
 	return ipuo
 }
 
 // AddTranslations adds the "translations" edges to the ItemPartTranslation entity.
 func (ipuo *ItemPartUpdateOne) AddTranslations(i ...*ItemPartTranslation) *ItemPartUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -510,14 +509,14 @@ func (ipuo *ItemPartUpdateOne) AddTranslations(i ...*ItemPartTranslation) *ItemP
 }
 
 // AddEntryIDs adds the "entries" edge to the PartEntry entity by IDs.
-func (ipuo *ItemPartUpdateOne) AddEntryIDs(ids ...uuid.UUID) *ItemPartUpdateOne {
+func (ipuo *ItemPartUpdateOne) AddEntryIDs(ids ...string) *ItemPartUpdateOne {
 	ipuo.mutation.AddEntryIDs(ids...)
 	return ipuo
 }
 
 // AddEntries adds the "entries" edges to the PartEntry entity.
 func (ipuo *ItemPartUpdateOne) AddEntries(p ...*PartEntry) *ItemPartUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -536,14 +535,14 @@ func (ipuo *ItemPartUpdateOne) ClearTranslations() *ItemPartUpdateOne {
 }
 
 // RemoveTranslationIDs removes the "translations" edge to ItemPartTranslation entities by IDs.
-func (ipuo *ItemPartUpdateOne) RemoveTranslationIDs(ids ...uuid.UUID) *ItemPartUpdateOne {
+func (ipuo *ItemPartUpdateOne) RemoveTranslationIDs(ids ...string) *ItemPartUpdateOne {
 	ipuo.mutation.RemoveTranslationIDs(ids...)
 	return ipuo
 }
 
 // RemoveTranslations removes "translations" edges to ItemPartTranslation entities.
 func (ipuo *ItemPartUpdateOne) RemoveTranslations(i ...*ItemPartTranslation) *ItemPartUpdateOne {
-	ids := make([]uuid.UUID, len(i))
+	ids := make([]string, len(i))
 	for j := range i {
 		ids[j] = i[j].ID
 	}
@@ -557,14 +556,14 @@ func (ipuo *ItemPartUpdateOne) ClearEntries() *ItemPartUpdateOne {
 }
 
 // RemoveEntryIDs removes the "entries" edge to PartEntry entities by IDs.
-func (ipuo *ItemPartUpdateOne) RemoveEntryIDs(ids ...uuid.UUID) *ItemPartUpdateOne {
+func (ipuo *ItemPartUpdateOne) RemoveEntryIDs(ids ...string) *ItemPartUpdateOne {
 	ipuo.mutation.RemoveEntryIDs(ids...)
 	return ipuo
 }
 
 // RemoveEntries removes "entries" edges to PartEntry entities.
 func (ipuo *ItemPartUpdateOne) RemoveEntries(p ...*PartEntry) *ItemPartUpdateOne {
-	ids := make([]uuid.UUID, len(p))
+	ids := make([]string, len(p))
 	for i := range p {
 		ids[i] = p[i].ID
 	}
@@ -634,7 +633,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 	if err := ipuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(itempart.Table, itempart.Columns, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(itempart.Table, itempart.Columns, sqlgraph.NewFieldSpec(itempart.FieldID, field.TypeString))
 	id, ok := ipuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "ItemPart.id" for update`)}
@@ -666,7 +665,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 		_spec.SetField(itempart.FieldEntityType, field.TypeEnum, value)
 	}
 	if value, ok := ipuo.mutation.EntityID(); ok {
-		_spec.SetField(itempart.FieldEntityID, field.TypeUUID, value)
+		_spec.SetField(itempart.FieldEntityID, field.TypeString, value)
 	}
 	if value, ok := ipuo.mutation.Role(); ok {
 		_spec.SetField(itempart.FieldRole, field.TypeString, value)
@@ -691,7 +690,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 			Columns: []string{itempart.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -704,7 +703,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 			Columns: []string{itempart.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -720,7 +719,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 			Columns: []string{itempart.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(itemparttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -736,7 +735,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 			Columns: []string{itempart.EntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -749,7 +748,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 			Columns: []string{itempart.EntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -765,7 +764,7 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 			Columns: []string{itempart.EntriesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(partentry.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -40,7 +40,7 @@ func (bpd *BlogPostDelete) ExecX(ctx context.Context) int {
 }
 
 func (bpd *BlogPostDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(blogpost.Table, sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(blogpost.Table, sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString))
 	if ps := bpd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaDetailTranslationCreate is the builder for creating a IdeaDetailTranslation entity.
@@ -24,8 +23,8 @@ type IdeaDetailTranslationCreate struct {
 }
 
 // SetIdeaDetailID sets the "idea_detail_id" field.
-func (idtc *IdeaDetailTranslationCreate) SetIdeaDetailID(u uuid.UUID) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetIdeaDetailID(u)
+func (idtc *IdeaDetailTranslationCreate) SetIdeaDetailID(s string) *IdeaDetailTranslationCreate {
+	idtc.mutation.SetIdeaDetailID(s)
 	return idtc
 }
 
@@ -50,15 +49,15 @@ func (idtc *IdeaDetailTranslationCreate) SetNillableCreatedAt(t *time.Time) *Ide
 }
 
 // SetID sets the "id" field.
-func (idtc *IdeaDetailTranslationCreate) SetID(u uuid.UUID) *IdeaDetailTranslationCreate {
-	idtc.mutation.SetID(u)
+func (idtc *IdeaDetailTranslationCreate) SetID(s string) *IdeaDetailTranslationCreate {
+	idtc.mutation.SetID(s)
 	return idtc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (idtc *IdeaDetailTranslationCreate) SetNillableID(u *uuid.UUID) *IdeaDetailTranslationCreate {
-	if u != nil {
-		idtc.SetID(*u)
+func (idtc *IdeaDetailTranslationCreate) SetNillableID(s *string) *IdeaDetailTranslationCreate {
+	if s != nil {
+		idtc.SetID(*s)
 	}
 	return idtc
 }
@@ -161,10 +160,10 @@ func (idtc *IdeaDetailTranslationCreate) sqlSave(ctx context.Context) (*IdeaDeta
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected IdeaDetailTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	idtc.mutation.id = &_node.ID
@@ -175,11 +174,11 @@ func (idtc *IdeaDetailTranslationCreate) sqlSave(ctx context.Context) (*IdeaDeta
 func (idtc *IdeaDetailTranslationCreate) createSpec() (*IdeaDetailTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &IdeaDetailTranslation{config: idtc.config}
-		_spec = sqlgraph.NewCreateSpec(ideadetailtranslation.Table, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(ideadetailtranslation.Table, sqlgraph.NewFieldSpec(ideadetailtranslation.FieldID, field.TypeString))
 	)
 	if id, ok := idtc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := idtc.mutation.CreatedAt(); ok {
 		_spec.SetField(ideadetailtranslation.FieldCreatedAt, field.TypeTime, value)
@@ -193,7 +192,7 @@ func (idtc *IdeaDetailTranslationCreate) createSpec() (*IdeaDetailTranslation, *
 			Columns: []string{ideadetailtranslation.IdeaDetailColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

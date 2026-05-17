@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // PublicationTranslationCreate is the builder for creating a PublicationTranslation entity.
@@ -24,8 +23,8 @@ type PublicationTranslationCreate struct {
 }
 
 // SetPublicationID sets the "publication_id" field.
-func (ptc *PublicationTranslationCreate) SetPublicationID(u uuid.UUID) *PublicationTranslationCreate {
-	ptc.mutation.SetPublicationID(u)
+func (ptc *PublicationTranslationCreate) SetPublicationID(s string) *PublicationTranslationCreate {
+	ptc.mutation.SetPublicationID(s)
 	return ptc
 }
 
@@ -84,15 +83,15 @@ func (ptc *PublicationTranslationCreate) SetNillableCreatedAt(t *time.Time) *Pub
 }
 
 // SetID sets the "id" field.
-func (ptc *PublicationTranslationCreate) SetID(u uuid.UUID) *PublicationTranslationCreate {
-	ptc.mutation.SetID(u)
+func (ptc *PublicationTranslationCreate) SetID(s string) *PublicationTranslationCreate {
+	ptc.mutation.SetID(s)
 	return ptc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (ptc *PublicationTranslationCreate) SetNillableID(u *uuid.UUID) *PublicationTranslationCreate {
-	if u != nil {
-		ptc.SetID(*u)
+func (ptc *PublicationTranslationCreate) SetNillableID(s *string) *PublicationTranslationCreate {
+	if s != nil {
+		ptc.SetID(*s)
 	}
 	return ptc
 }
@@ -213,10 +212,10 @@ func (ptc *PublicationTranslationCreate) sqlSave(ctx context.Context) (*Publicat
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected PublicationTranslation.ID type: %T", _spec.ID.Value)
 		}
 	}
 	ptc.mutation.id = &_node.ID
@@ -227,11 +226,11 @@ func (ptc *PublicationTranslationCreate) sqlSave(ctx context.Context) (*Publicat
 func (ptc *PublicationTranslationCreate) createSpec() (*PublicationTranslation, *sqlgraph.CreateSpec) {
 	var (
 		_node = &PublicationTranslation{config: ptc.config}
-		_spec = sqlgraph.NewCreateSpec(publicationtranslation.Table, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(publicationtranslation.Table, sqlgraph.NewFieldSpec(publicationtranslation.FieldID, field.TypeString))
 	)
 	if id, ok := ptc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := ptc.mutation.Title(); ok {
 		_spec.SetField(publicationtranslation.FieldTitle, field.TypeString, value)
@@ -257,7 +256,7 @@ func (ptc *PublicationTranslationCreate) createSpec() (*PublicationTranslation, 
 			Columns: []string{publicationtranslation.PublicationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(publication.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

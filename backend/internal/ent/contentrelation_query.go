@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ContentRelationQuery is the builder for querying ContentRelation entities.
@@ -83,8 +82,8 @@ func (crq *ContentRelationQuery) FirstX(ctx context.Context) *ContentRelation {
 
 // FirstID returns the first ContentRelation ID from the query.
 // Returns a *NotFoundError when no ContentRelation ID was found.
-func (crq *ContentRelationQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (crq *ContentRelationQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = crq.Limit(1).IDs(setContextOp(ctx, crq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -96,7 +95,7 @@ func (crq *ContentRelationQuery) FirstID(ctx context.Context) (id uuid.UUID, err
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (crq *ContentRelationQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (crq *ContentRelationQuery) FirstIDX(ctx context.Context) string {
 	id, err := crq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -134,8 +133,8 @@ func (crq *ContentRelationQuery) OnlyX(ctx context.Context) *ContentRelation {
 // OnlyID is like Only, but returns the only ContentRelation ID in the query.
 // Returns a *NotSingularError when more than one ContentRelation ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (crq *ContentRelationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (crq *ContentRelationQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = crq.Limit(2).IDs(setContextOp(ctx, crq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -151,7 +150,7 @@ func (crq *ContentRelationQuery) OnlyID(ctx context.Context) (id uuid.UUID, err 
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (crq *ContentRelationQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (crq *ContentRelationQuery) OnlyIDX(ctx context.Context) string {
 	id, err := crq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -179,7 +178,7 @@ func (crq *ContentRelationQuery) AllX(ctx context.Context) []*ContentRelation {
 }
 
 // IDs executes the query and returns a list of ContentRelation IDs.
-func (crq *ContentRelationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (crq *ContentRelationQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if crq.ctx.Unique == nil && crq.path != nil {
 		crq.Unique(true)
 	}
@@ -191,7 +190,7 @@ func (crq *ContentRelationQuery) IDs(ctx context.Context) (ids []uuid.UUID, err 
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (crq *ContentRelationQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (crq *ContentRelationQuery) IDsX(ctx context.Context) []string {
 	ids, err := crq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -366,7 +365,7 @@ func (crq *ContentRelationQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (crq *ContentRelationQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(contentrelation.Table, contentrelation.Columns, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(contentrelation.Table, contentrelation.Columns, sqlgraph.NewFieldSpec(contentrelation.FieldID, field.TypeString))
 	_spec.From = crq.sql
 	if unique := crq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

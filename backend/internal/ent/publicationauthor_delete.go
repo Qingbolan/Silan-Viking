@@ -40,7 +40,7 @@ func (pad *PublicationAuthorDelete) ExecX(ctx context.Context) int {
 }
 
 func (pad *PublicationAuthorDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(publicationauthor.Table, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(publicationauthor.Table, sqlgraph.NewFieldSpec(publicationauthor.FieldID, field.TypeString))
 	if ps := pad.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

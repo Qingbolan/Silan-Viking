@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // IdeaTranslationUpdate is the builder for updating IdeaTranslation entities.
@@ -31,15 +30,15 @@ func (itu *IdeaTranslationUpdate) Where(ps ...predicate.IdeaTranslation) *IdeaTr
 }
 
 // SetIdeaID sets the "idea_id" field.
-func (itu *IdeaTranslationUpdate) SetIdeaID(u uuid.UUID) *IdeaTranslationUpdate {
-	itu.mutation.SetIdeaID(u)
+func (itu *IdeaTranslationUpdate) SetIdeaID(s string) *IdeaTranslationUpdate {
+	itu.mutation.SetIdeaID(s)
 	return itu
 }
 
 // SetNillableIdeaID sets the "idea_id" field if the given value is not nil.
-func (itu *IdeaTranslationUpdate) SetNillableIdeaID(u *uuid.UUID) *IdeaTranslationUpdate {
-	if u != nil {
-		itu.SetIdeaID(*u)
+func (itu *IdeaTranslationUpdate) SetNillableIdeaID(s *string) *IdeaTranslationUpdate {
+	if s != nil {
+		itu.SetIdeaID(*s)
 	}
 	return itu
 }
@@ -257,7 +256,7 @@ func (itu *IdeaTranslationUpdate) sqlSave(ctx context.Context) (n int, err error
 	if err := itu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideatranslation.Table, ideatranslation.Columns, sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideatranslation.Table, ideatranslation.Columns, sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString))
 	if ps := itu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -306,7 +305,7 @@ func (itu *IdeaTranslationUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{ideatranslation.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -319,7 +318,7 @@ func (itu *IdeaTranslationUpdate) sqlSave(ctx context.Context) (n int, err error
 			Columns: []string{ideatranslation.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -377,15 +376,15 @@ type IdeaTranslationUpdateOne struct {
 }
 
 // SetIdeaID sets the "idea_id" field.
-func (ituo *IdeaTranslationUpdateOne) SetIdeaID(u uuid.UUID) *IdeaTranslationUpdateOne {
-	ituo.mutation.SetIdeaID(u)
+func (ituo *IdeaTranslationUpdateOne) SetIdeaID(s string) *IdeaTranslationUpdateOne {
+	ituo.mutation.SetIdeaID(s)
 	return ituo
 }
 
 // SetNillableIdeaID sets the "idea_id" field if the given value is not nil.
-func (ituo *IdeaTranslationUpdateOne) SetNillableIdeaID(u *uuid.UUID) *IdeaTranslationUpdateOne {
-	if u != nil {
-		ituo.SetIdeaID(*u)
+func (ituo *IdeaTranslationUpdateOne) SetNillableIdeaID(s *string) *IdeaTranslationUpdateOne {
+	if s != nil {
+		ituo.SetIdeaID(*s)
 	}
 	return ituo
 }
@@ -616,7 +615,7 @@ func (ituo *IdeaTranslationUpdateOne) sqlSave(ctx context.Context) (_node *IdeaT
 	if err := ituo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(ideatranslation.Table, ideatranslation.Columns, sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewUpdateSpec(ideatranslation.Table, ideatranslation.Columns, sqlgraph.NewFieldSpec(ideatranslation.FieldID, field.TypeString))
 	id, ok := ituo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "IdeaTranslation.id" for update`)}
@@ -682,7 +681,7 @@ func (ituo *IdeaTranslationUpdateOne) sqlSave(ctx context.Context) (_node *IdeaT
 			Columns: []string{ideatranslation.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -695,7 +694,7 @@ func (ituo *IdeaTranslationUpdateOne) sqlSave(ctx context.Context) (_node *IdeaT
 			Columns: []string{ideatranslation.IdeaColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(idea.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -12,16 +12,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/google/uuid"
 )
 
 // ProjectView is the model entity for the ProjectView schema.
 type ProjectView struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID uuid.UUID `json:"id,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Project ID that was viewed
-	ProjectID uuid.UUID `json:"project_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 	// ID of the authenticated user who viewed
 	UserIdentityID string `json:"user_identity_id,omitempty"`
 	// Browser fingerprint for anonymous views
@@ -84,12 +83,10 @@ func (*ProjectView) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case projectview.FieldSessionDuration:
 			values[i] = new(sql.NullInt64)
-		case projectview.FieldUserIdentityID, projectview.FieldFingerprint, projectview.FieldIPAddress, projectview.FieldUserAgent, projectview.FieldReferrer:
+		case projectview.FieldID, projectview.FieldProjectID, projectview.FieldUserIdentityID, projectview.FieldFingerprint, projectview.FieldIPAddress, projectview.FieldUserAgent, projectview.FieldReferrer:
 			values[i] = new(sql.NullString)
 		case projectview.FieldCreatedAt, projectview.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case projectview.FieldID, projectview.FieldProjectID:
-			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -106,16 +103,16 @@ func (pv *ProjectView) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case projectview.FieldID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
-			} else if value != nil {
-				pv.ID = *value
+			} else if value.Valid {
+				pv.ID = value.String
 			}
 		case projectview.FieldProjectID:
-			if value, ok := values[i].(*uuid.UUID); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field project_id", values[i])
-			} else if value != nil {
-				pv.ProjectID = *value
+			} else if value.Valid {
+				pv.ProjectID = value.String
 			}
 		case projectview.FieldUserIdentityID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -212,7 +209,7 @@ func (pv *ProjectView) String() string {
 	builder.WriteString("ProjectView(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pv.ID))
 	builder.WriteString("project_id=")
-	builder.WriteString(fmt.Sprintf("%v", pv.ProjectID))
+	builder.WriteString(pv.ProjectID)
 	builder.WriteString(", ")
 	builder.WriteString("user_identity_id=")
 	builder.WriteString(pv.UserIdentityID)

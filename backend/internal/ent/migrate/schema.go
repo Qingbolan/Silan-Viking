@@ -11,9 +11,9 @@ import (
 var (
 	// AnnotationColumns holds the columns for the "annotation" table.
 	AnnotationColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
-		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "entity_id", Type: field.TypeString},
 		{Name: "part_role", Type: field.TypeString, Nullable: true},
 		{Name: "anchor", Type: field.TypeString, Nullable: true},
 		{Name: "body", Type: field.TypeString, Size: 2147483647},
@@ -37,7 +37,7 @@ var (
 	}
 	// AwardsColumns holds the columns for the "awards" table.
 	AwardsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "awarding_organization", Type: field.TypeString, Size: 200},
 		{Name: "award_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "date"}},
@@ -48,7 +48,7 @@ var (
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeString},
 	}
 	// AwardsTable holds the schema information for the "awards" table.
 	AwardsTable = &schema.Table{
@@ -66,13 +66,13 @@ var (
 	}
 	// AwardTranslationsColumns holds the columns for the "award_translations" table.
 	AwardTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "awarding_organization", Type: field.TypeString, Size: 200},
 		{Name: "award_type", Type: field.TypeString, Nullable: true, Size: 50},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "award_id", Type: field.TypeUUID},
+		{Name: "award_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// AwardTranslationsTable holds the schema information for the "award_translations" table.
@@ -97,7 +97,7 @@ var (
 	}
 	// BlogCategoriesColumns holds the columns for the "blog_categories" table.
 	BlogCategoriesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Size: 100},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 100},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -114,11 +114,11 @@ var (
 	}
 	// BlogCategoryTranslationsColumns holds the columns for the "blog_category_translations" table.
 	BlogCategoryTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Size: 100},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "blog_category_id", Type: field.TypeUUID},
+		{Name: "blog_category_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// BlogCategoryTranslationsTable holds the schema information for the "blog_category_translations" table.
@@ -143,11 +143,11 @@ var (
 	}
 	// BlogPostsColumns holds the columns for the "blog_posts" table.
 	BlogPostsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "title", Type: field.TypeString, Size: 500},
+		{Name: "id", Type: field.TypeString},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
 		{Name: "excerpt", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "content", Type: field.TypeString, Size: 2147483647},
+		{Name: "content", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "content_type", Type: field.TypeEnum, Enums: []string{"article", "podcast", "vlog", "tutorial"}, Default: "article"},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "published", "archived"}, Default: "draft"},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
@@ -159,11 +159,11 @@ var (
 		{Name: "comment_count", Type: field.TypeInt, Default: 0},
 		{Name: "published_at", Type: field.TypeTime, Nullable: true},
 		{Name: "series_order", Type: field.TypeInt, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "category_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "series_id", Type: field.TypeUUID, Nullable: true},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "category_id", Type: field.TypeString, Nullable: true},
+		{Name: "series_id", Type: field.TypeString, Nullable: true},
+		{Name: "user_id", Type: field.TypeString, Nullable: true},
 	}
 	// BlogPostsTable holds the schema information for the "blog_posts" table.
 	BlogPostsTable = &schema.Table{
@@ -187,15 +187,15 @@ var (
 				Symbol:     "blog_posts_users_blog_posts",
 				Columns:    []*schema.Column{BlogPostsColumns[20]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
 	// BlogPostTagsColumns holds the columns for the "blog_post_tags" table.
 	BlogPostTagsColumns = []*schema.Column{
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "blog_post_id", Type: field.TypeUUID},
-		{Name: "blog_tag_id", Type: field.TypeUUID},
+		{Name: "blog_post_id", Type: field.TypeString},
+		{Name: "blog_tag_id", Type: field.TypeString},
 	}
 	// BlogPostTagsTable holds the schema information for the "blog_post_tags" table.
 	BlogPostTagsTable = &schema.Table{
@@ -219,12 +219,12 @@ var (
 	}
 	// BlogPostTranslationsColumns holds the columns for the "blog_post_translations" table.
 	BlogPostTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 500},
 		{Name: "excerpt", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "blog_post_id", Type: field.TypeUUID},
+		{Name: "blog_post_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// BlogPostTranslationsTable holds the schema information for the "blog_post_translations" table.
@@ -249,7 +249,7 @@ var (
 	}
 	// BlogSeriesColumns holds the columns for the "blog_series" table.
 	BlogSeriesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -267,11 +267,11 @@ var (
 	}
 	// BlogSeriesTranslationsColumns holds the columns for the "blog_series_translations" table.
 	BlogSeriesTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "blog_series_id", Type: field.TypeUUID},
+		{Name: "blog_series_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// BlogSeriesTranslationsTable holds the schema information for the "blog_series_translations" table.
@@ -296,7 +296,7 @@ var (
 	}
 	// BlogTagsColumns holds the columns for the "blog_tags" table.
 	BlogTagsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Size: 50},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 50},
 		{Name: "usage_count", Type: field.TypeInt, Default: 0},
@@ -310,9 +310,9 @@ var (
 	}
 	// CommentsColumns holds the columns for the "comments" table.
 	CommentsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
-		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "entity_id", Type: field.TypeString},
 		{Name: "author_name", Type: field.TypeString, Size: 100},
 		{Name: "author_email", Type: field.TypeString, Size: 255},
 		{Name: "author_website", Type: field.TypeString, Nullable: true, Size: 500},
@@ -326,10 +326,10 @@ var (
 		{Name: "likes_count", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "blog_post_comments", Type: field.TypeUUID, Nullable: true},
-		{Name: "parent_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "blog_post_comments", Type: field.TypeString, Nullable: true},
+		{Name: "parent_id", Type: field.TypeString, Nullable: true},
 		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
-		{Name: "idea_comments", Type: field.TypeUUID, Nullable: true},
+		{Name: "idea_comments", Type: field.TypeString, Nullable: true},
 	}
 	// CommentsTable holds the schema information for the "comments" table.
 	CommentsTable = &schema.Table{
@@ -377,8 +377,8 @@ var (
 	}
 	// CommentLikesColumns holds the columns for the "comment_likes" table.
 	CommentLikesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "comment_id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
+		{Name: "comment_id", Type: field.TypeString},
 		{Name: "fingerprint", Type: field.TypeString, Nullable: true},
 		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
 		{Name: "created_at", Type: field.TypeTime},
@@ -423,9 +423,9 @@ var (
 	}
 	// ContentInteractionColumns holds the columns for the "content_interaction" table.
 	ContentInteractionColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
-		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "entity_id", Type: field.TypeString},
 		{Name: "section_anchor", Type: field.TypeString, Nullable: true},
 		{Name: "kind", Type: field.TypeEnum, Enums: []string{"view", "like"}},
 		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
@@ -474,11 +474,11 @@ var (
 	}
 	// ContentRelationColumns holds the columns for the "content_relation" table.
 	ContentRelationColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "from_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
-		{Name: "from_id", Type: field.TypeUUID},
+		{Name: "from_id", Type: field.TypeString},
 		{Name: "to_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
-		{Name: "to_id", Type: field.TypeUUID},
+		{Name: "to_id", Type: field.TypeString},
 		{Name: "relation_type", Type: field.TypeEnum, Enums: []string{"evolved_into", "documents", "references", "supersedes", "part_of"}},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
@@ -508,7 +508,7 @@ var (
 	}
 	// EducationColumns holds the columns for the "education" table.
 	EducationColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "institution", Type: field.TypeString, Size: 200},
 		{Name: "degree", Type: field.TypeString, Size: 200},
 		{Name: "field_of_study", Type: field.TypeString, Nullable: true, Size: 200},
@@ -522,7 +522,7 @@ var (
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeString},
 	}
 	// EducationTable holds the schema information for the "education" table.
 	EducationTable = &schema.Table{
@@ -540,12 +540,12 @@ var (
 	}
 	// EducationDetailsColumns holds the columns for the "education_details" table.
 	EducationDetailsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "detail_text", Type: field.TypeString, Size: 2147483647},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "education_id", Type: field.TypeUUID},
+		{Name: "education_id", Type: field.TypeString},
 	}
 	// EducationDetailsTable holds the schema information for the "education_details" table.
 	EducationDetailsTable = &schema.Table{
@@ -563,10 +563,10 @@ var (
 	}
 	// EducationDetailTranslationsColumns holds the columns for the "education_detail_translations" table.
 	EducationDetailTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "detail_text", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "education_detail_id", Type: field.TypeUUID},
+		{Name: "education_detail_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// EducationDetailTranslationsTable holds the schema information for the "education_detail_translations" table.
@@ -591,13 +591,13 @@ var (
 	}
 	// EducationTranslationsColumns holds the columns for the "education_translations" table.
 	EducationTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "institution", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "degree", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "field_of_study", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "location", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "education_id", Type: field.TypeUUID},
+		{Name: "education_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// EducationTranslationsTable holds the schema information for the "education_translations" table.
@@ -622,17 +622,17 @@ var (
 	}
 	// EpisodesColumns holds the columns for the "episodes" table.
 	EpisodesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
-		{Name: "title", Type: field.TypeString, Size: 500},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "episode_number", Type: field.TypeInt},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "published", "archived"}, Default: "draft"},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
 		{Name: "published_at", Type: field.TypeTime, Nullable: true},
 		{Name: "duration_minutes", Type: field.TypeInt, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "series_id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "series_id", Type: field.TypeString},
 	}
 	// EpisodesTable holds the schema information for the "episodes" table.
 	EpisodesTable = &schema.Table{
@@ -662,13 +662,13 @@ var (
 	}
 	// EpisodeSeriesColumns holds the columns for the "episode_series" table.
 	EpisodeSeriesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
-		{Name: "title", Type: field.TypeString, Size: 300},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 300},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"ongoing", "completed", "archived"}, Default: "ongoing"},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 	}
 	// EpisodeSeriesTable holds the schema information for the "episode_series" table.
 	EpisodeSeriesTable = &schema.Table{
@@ -678,12 +678,12 @@ var (
 	}
 	// EpisodeSeriesTranslationsColumns holds the columns for the "episode_series_translations" table.
 	EpisodeSeriesTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "episode_series_id", Type: field.TypeUUID},
+		{Name: "episode_series_id", Type: field.TypeString},
 	}
 	// EpisodeSeriesTranslationsTable holds the schema information for the "episode_series_translations" table.
 	EpisodeSeriesTranslationsTable = &schema.Table{
@@ -708,12 +708,12 @@ var (
 	}
 	// EpisodeTranslationsColumns holds the columns for the "episode_translations" table.
 	EpisodeTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 		{Name: "title", Type: field.TypeString, Size: 500},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "episode_id", Type: field.TypeUUID},
+		{Name: "episode_id", Type: field.TypeString},
 	}
 	// EpisodeTranslationsTable holds the schema information for the "episode_translations" table.
 	EpisodeTranslationsTable = &schema.Table{
@@ -738,8 +738,8 @@ var (
 	}
 	// IdeasColumns holds the columns for the "ideas" table.
 	IdeasColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "title", Type: field.TypeString, Size: 300},
+		{Name: "id", Type: field.TypeString},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 300},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "abstract", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -748,9 +748,9 @@ var (
 		{Name: "view_count", Type: field.TypeInt, Default: 0},
 		{Name: "like_count", Type: field.TypeInt, Default: 0},
 		{Name: "category", Type: field.TypeString, Nullable: true, Size: 100, Default: ""},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeString, Nullable: true},
 	}
 	// IdeasTable holds the schema information for the "ideas" table.
 	IdeasTable = &schema.Table{
@@ -762,13 +762,13 @@ var (
 				Symbol:     "ideas_users_ideas",
 				Columns:    []*schema.Column{IdeasColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
 	// IdeaDetailsColumns holds the columns for the "idea_details" table.
 	IdeaDetailsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "estimated_duration_months", Type: field.TypeInt, Nullable: true},
 		{Name: "required_resources", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "collaboration_needed", Type: field.TypeBool, Default: false},
@@ -776,7 +776,7 @@ var (
 		{Name: "estimated_budget", Type: field.TypeFloat64, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "idea_id", Type: field.TypeUUID, Unique: true},
+		{Name: "idea_id", Type: field.TypeString, Unique: true},
 	}
 	// IdeaDetailsTable holds the schema information for the "idea_details" table.
 	IdeaDetailsTable = &schema.Table{
@@ -794,9 +794,9 @@ var (
 	}
 	// IdeaDetailTranslationsColumns holds the columns for the "idea_detail_translations" table.
 	IdeaDetailTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "idea_detail_id", Type: field.TypeUUID},
+		{Name: "idea_detail_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// IdeaDetailTranslationsTable holds the schema information for the "idea_detail_translations" table.
@@ -821,7 +821,7 @@ var (
 	}
 	// IdeaTagsColumns holds the columns for the "idea_tags" table.
 	IdeaTagsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Size: 100},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
 		{Name: "created_at", Type: field.TypeTime},
@@ -835,7 +835,7 @@ var (
 	}
 	// IdeaTranslationsColumns holds the columns for the "idea_translations" table.
 	IdeaTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "abstract", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "motivation", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -843,7 +843,7 @@ var (
 		{Name: "expected_outcome", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "required_resources", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "idea_id", Type: field.TypeUUID},
+		{Name: "idea_id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
 	}
 	// IdeaTranslationsTable holds the schema information for the "idea_translations" table.
@@ -868,10 +868,10 @@ var (
 	}
 	// ItemPartColumns holds the columns for the "item_part" table.
 	ItemPartColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "part_id", Type: field.TypeString},
 		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
-		{Name: "entity_id", Type: field.TypeUUID},
+		{Name: "entity_id", Type: field.TypeString},
 		{Name: "role", Type: field.TypeString},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "canonical_lang", Type: field.TypeString},
@@ -903,11 +903,11 @@ var (
 	}
 	// ItemPartTranslationColumns holds the columns for the "item_part_translation" table.
 	ItemPartTranslationColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString},
 		{Name: "body", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "item_part_id", Type: field.TypeUUID},
+		{Name: "item_part_id", Type: field.TypeString},
 	}
 	// ItemPartTranslationTable holds the schema information for the "item_part_translation" table.
 	ItemPartTranslationTable = &schema.Table{
@@ -946,12 +946,12 @@ var (
 	}
 	// PartEntryColumns holds the columns for the "part_entry" table.
 	PartEntryColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "entry_id", Type: field.TypeString},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "shared_payload", Type: field.TypeJSON},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "item_part_id", Type: field.TypeUUID},
+		{Name: "item_part_id", Type: field.TypeString},
 	}
 	// PartEntryTable holds the schema information for the "part_entry" table.
 	PartEntryTable = &schema.Table{
@@ -981,11 +981,11 @@ var (
 	}
 	// PartEntryTranslationColumns holds the columns for the "part_entry_translation" table.
 	PartEntryTranslationColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "language_code", Type: field.TypeString},
 		{Name: "localized_payload", Type: field.TypeJSON},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "part_entry_id", Type: field.TypeUUID},
+		{Name: "part_entry_id", Type: field.TypeString},
 	}
 	// PartEntryTranslationTable holds the schema information for the "part_entry_translation" table.
 	PartEntryTranslationTable = &schema.Table{
@@ -1010,9 +1010,9 @@ var (
 	}
 	// PersonalInfoColumns holds the columns for the "personal_info" table.
 	PersonalInfoColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "full_name", Type: field.TypeString, Size: 200},
-		{Name: "title", Type: field.TypeString, Size: 200},
+		{Name: "id", Type: field.TypeString},
+		{Name: "full_name", Type: field.TypeString, Nullable: true, Size: 200},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "current_status", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "phone", Type: field.TypeString, Nullable: true, Size: 20},
 		{Name: "email", Type: field.TypeString, Nullable: true, Size: 255},
@@ -1020,9 +1020,9 @@ var (
 		{Name: "website", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "avatar_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "is_primary", Type: field.TypeBool, Default: false},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeString, Nullable: true},
 	}
 	// PersonalInfoTable holds the schema information for the "personal_info" table.
 	PersonalInfoTable = &schema.Table{
@@ -1034,20 +1034,20 @@ var (
 				Symbol:     "personal_info_users_personal_infos",
 				Columns:    []*schema.Column{PersonalInfoColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
 	// PersonalInfoTranslationsColumns holds the columns for the "personal_info_translations" table.
 	PersonalInfoTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "full_name", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "title", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "current_status", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "location", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "personal_info_id", Type: field.TypeUUID},
+		{Name: "personal_info_id", Type: field.TypeString},
 	}
 	// PersonalInfoTranslationsTable holds the schema information for the "personal_info_translations" table.
 	PersonalInfoTranslationsTable = &schema.Table{
@@ -1071,8 +1071,8 @@ var (
 	}
 	// ProjectsColumns holds the columns for the "projects" table.
 	ProjectsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "title", Type: field.TypeString, Size: 300},
+		{Name: "id", Type: field.TypeString},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 300},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "project_type", Type: field.TypeString, Size: 50, Default: "Web Application"},
@@ -1084,13 +1084,13 @@ var (
 		{Name: "documentation_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "thumbnail_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "is_featured", Type: field.TypeBool, Default: false},
-		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "public"},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
 		{Name: "view_count", Type: field.TypeInt, Default: 0},
 		{Name: "like_count", Type: field.TypeInt, Default: 0},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeString, Nullable: true},
 	}
 	// ProjectsTable holds the schema information for the "projects" table.
 	ProjectsTable = &schema.Table{
@@ -1102,13 +1102,13 @@ var (
 				Symbol:     "projects_users_projects",
 				Columns:    []*schema.Column{ProjectsColumns[19]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
 	// ProjectDetailsColumns holds the columns for the "project_details" table.
 	ProjectDetailsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "project_details", Type: field.TypeString, Nullable: true},
 		{Name: "dependencies", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "license", Type: field.TypeString, Nullable: true, Size: 50},
@@ -1116,7 +1116,7 @@ var (
 		{Name: "version", Type: field.TypeString, Nullable: true, Size: 20},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeUUID, Unique: true},
+		{Name: "project_id", Type: field.TypeString, Unique: true},
 	}
 	// ProjectDetailsTable holds the schema information for the "project_details" table.
 	ProjectDetailsTable = &schema.Table{
@@ -1134,10 +1134,10 @@ var (
 	}
 	// ProjectDetailTranslationsColumns holds the columns for the "project_detail_translations" table.
 	ProjectDetailTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "project_detail_id", Type: field.TypeUUID},
+		{Name: "project_detail_id", Type: field.TypeString},
 	}
 	// ProjectDetailTranslationsTable holds the schema information for the "project_detail_translations" table.
 	ProjectDetailTranslationsTable = &schema.Table{
@@ -1161,7 +1161,7 @@ var (
 	}
 	// ProjectImagesColumns holds the columns for the "project_images" table.
 	ProjectImagesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "image_url", Type: field.TypeString, Size: 500},
 		{Name: "alt_text", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "caption", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -1169,7 +1169,7 @@ var (
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeString},
 	}
 	// ProjectImagesTable holds the schema information for the "project_images" table.
 	ProjectImagesTable = &schema.Table{
@@ -1187,12 +1187,12 @@ var (
 	}
 	// ProjectImageTranslationsColumns holds the columns for the "project_image_translations" table.
 	ProjectImageTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "alt_text", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "caption", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "project_image_id", Type: field.TypeUUID},
+		{Name: "project_image_id", Type: field.TypeString},
 	}
 	// ProjectImageTranslationsTable holds the schema information for the "project_image_translations" table.
 	ProjectImageTranslationsTable = &schema.Table{
@@ -1216,13 +1216,13 @@ var (
 	}
 	// ProjectLikesColumns holds the columns for the "project_likes" table.
 	ProjectLikesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "fingerprint", Type: field.TypeString, Nullable: true},
 		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
 		{Name: "user_agent", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeString},
 		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
 	}
 	// ProjectLikesTable holds the schema information for the "project_likes" table.
@@ -1274,12 +1274,12 @@ var (
 	}
 	// ProjectTechnologiesColumns holds the columns for the "project_technologies" table.
 	ProjectTechnologiesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "technology_name", Type: field.TypeString, Size: 100},
 		{Name: "technology_type", Type: field.TypeString, Nullable: true, Size: 50},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeString},
 	}
 	// ProjectTechnologiesTable holds the schema information for the "project_technologies" table.
 	ProjectTechnologiesTable = &schema.Table{
@@ -1297,13 +1297,13 @@ var (
 	}
 	// ProjectTranslationsColumns holds the columns for the "project_translations" table.
 	ProjectTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "project_type", Type: field.TypeString, Nullable: true, Size: 50},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "project_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeString},
 	}
 	// ProjectTranslationsTable holds the schema information for the "project_translations" table.
 	ProjectTranslationsTable = &schema.Table{
@@ -1327,7 +1327,7 @@ var (
 	}
 	// ProjectViewsColumns holds the columns for the "project_views" table.
 	ProjectViewsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "fingerprint", Type: field.TypeString, Nullable: true},
 		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
 		{Name: "user_agent", Type: field.TypeString, Nullable: true},
@@ -1335,7 +1335,7 @@ var (
 		{Name: "session_duration", Type: field.TypeInt, Nullable: true, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeUUID},
+		{Name: "project_id", Type: field.TypeString},
 		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
 	}
 	// ProjectViewsTable holds the schema information for the "project_views" table.
@@ -1392,7 +1392,7 @@ var (
 	}
 	// PublicationsColumns holds the columns for the "publications" table.
 	PublicationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 500},
 		{Name: "publication_type", Type: field.TypeString, Size: 50},
 		{Name: "journal_name", Type: field.TypeString, Nullable: true, Size: 200},
@@ -1410,7 +1410,7 @@ var (
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeString},
 	}
 	// PublicationsTable holds the schema information for the "publications" table.
 	PublicationsTable = &schema.Table{
@@ -1428,14 +1428,14 @@ var (
 	}
 	// PublicationAuthorsColumns holds the columns for the "publication_authors" table.
 	PublicationAuthorsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "author_name", Type: field.TypeString, Size: 200},
 		{Name: "author_order", Type: field.TypeInt},
 		{Name: "is_corresponding", Type: field.TypeBool, Default: false},
 		{Name: "affiliation", Type: field.TypeString, Nullable: true, Size: 300},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "publication_id", Type: field.TypeUUID},
+		{Name: "publication_id", Type: field.TypeString},
 	}
 	// PublicationAuthorsTable holds the schema information for the "publication_authors" table.
 	PublicationAuthorsTable = &schema.Table{
@@ -1453,13 +1453,13 @@ var (
 	}
 	// PublicationTranslationsColumns holds the columns for the "publication_translations" table.
 	PublicationTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 500},
 		{Name: "journal_name", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "conference_name", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "publication_id", Type: field.TypeUUID},
+		{Name: "publication_id", Type: field.TypeString},
 	}
 	// PublicationTranslationsTable holds the schema information for the "publication_translations" table.
 	PublicationTranslationsTable = &schema.Table{
@@ -1483,13 +1483,13 @@ var (
 	}
 	// RecentUpdatesColumns holds the columns for the "recent_updates" table.
 	RecentUpdatesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"work", "education", "research", "publication", "project"}, Default: "project"},
 		{Name: "update_type", Type: field.TypeEnum, Enums: []string{"milestone", "achievement", "progress", "release", "announcement", "insight", "learning", "reflection"}, Default: "progress"},
 		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
-		{Name: "title", Type: field.TypeString, Size: 200},
-		{Name: "description", Type: field.TypeString, Size: 2147483647},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 200},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
 		{Name: "tags", Type: field.TypeJSON, Nullable: true},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "ongoing", "completed"}, Default: "active"},
@@ -1506,9 +1506,9 @@ var (
 		{Name: "external_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "social_links", Type: field.TypeJSON, Nullable: true},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeString, Nullable: true},
 	}
 	// RecentUpdatesTable holds the schema information for the "recent_updates" table.
 	RecentUpdatesTable = &schema.Table{
@@ -1520,7 +1520,7 @@ var (
 				Symbol:     "recent_updates_users_recent_updates",
 				Columns:    []*schema.Column{RecentUpdatesColumns[25]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1538,12 +1538,12 @@ var (
 	}
 	// RecentUpdateTranslationsColumns holds the columns for the "recent_update_translations" table.
 	RecentUpdateTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 200},
 		{Name: "description", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "recent_update_id", Type: field.TypeUUID},
+		{Name: "recent_update_id", Type: field.TypeString},
 	}
 	// RecentUpdateTranslationsTable holds the schema information for the "recent_update_translations" table.
 	RecentUpdateTranslationsTable = &schema.Table{
@@ -1598,8 +1598,8 @@ var (
 	}
 	// ResearchProjectsColumns holds the columns for the "research_projects" table.
 	ResearchProjectsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "title", Type: field.TypeString, Size: 300},
+		{Name: "id", Type: field.TypeString},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 300},
 		{Name: "start_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "date"}},
 		{Name: "end_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "date"}},
 		{Name: "is_ongoing", Type: field.TypeBool, Default: false},
@@ -1608,9 +1608,9 @@ var (
 		{Name: "funding_source", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "funding_amount", Type: field.TypeFloat64, Nullable: true},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeString, Nullable: true},
 	}
 	// ResearchProjectsTable holds the schema information for the "research_projects" table.
 	ResearchProjectsTable = &schema.Table{
@@ -1622,18 +1622,18 @@ var (
 				Symbol:     "research_projects_users_research_projects",
 				Columns:    []*schema.Column{ResearchProjectsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.SetNull,
 			},
 		},
 	}
 	// ResearchProjectDetailsColumns holds the columns for the "research_project_details" table.
 	ResearchProjectDetailsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "detail_text", Type: field.TypeString, Size: 2147483647},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "research_project_id", Type: field.TypeUUID},
+		{Name: "research_project_id", Type: field.TypeString},
 	}
 	// ResearchProjectDetailsTable holds the schema information for the "research_project_details" table.
 	ResearchProjectDetailsTable = &schema.Table{
@@ -1651,11 +1651,11 @@ var (
 	}
 	// ResearchProjectDetailTranslationsColumns holds the columns for the "research_project_detail_translations" table.
 	ResearchProjectDetailTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "detail_text", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "research_project_detail_id", Type: field.TypeUUID},
+		{Name: "research_project_detail_id", Type: field.TypeString},
 	}
 	// ResearchProjectDetailTranslationsTable holds the schema information for the "research_project_detail_translations" table.
 	ResearchProjectDetailTranslationsTable = &schema.Table{
@@ -1679,14 +1679,14 @@ var (
 	}
 	// ResearchProjectTranslationsColumns holds the columns for the "research_project_translations" table.
 	ResearchProjectTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "title", Type: field.TypeString, Size: 300},
 		{Name: "location", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "research_type", Type: field.TypeString, Nullable: true, Size: 50},
 		{Name: "funding_source", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "research_project_id", Type: field.TypeUUID},
+		{Name: "research_project_id", Type: field.TypeString},
 	}
 	// ResearchProjectTranslationsTable holds the schema information for the "research_project_translations" table.
 	ResearchProjectTranslationsTable = &schema.Table{
@@ -1710,14 +1710,14 @@ var (
 	}
 	// SocialLinksColumns holds the columns for the "social_links" table.
 	SocialLinksColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "platform", Type: field.TypeString, Size: 50},
 		{Name: "url", Type: field.TypeString, Size: 500},
 		{Name: "display_name", Type: field.TypeString, Nullable: true, Size: 100},
 		{Name: "is_active", Type: field.TypeBool, Default: true},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "personal_info_id", Type: field.TypeUUID},
+		{Name: "personal_info_id", Type: field.TypeString},
 	}
 	// SocialLinksTable holds the schema information for the "social_links" table.
 	SocialLinksTable = &schema.Table{
@@ -1735,7 +1735,7 @@ var (
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "username", Type: field.TypeString, Unique: true, Size: 50},
 		{Name: "email", Type: field.TypeString, Unique: true, Size: 255},
 		{Name: "password_hash", Type: field.TypeString, Size: 255},
@@ -1787,7 +1787,7 @@ var (
 	}
 	// WorkExperienceColumns holds the columns for the "work_experience" table.
 	WorkExperienceColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "company", Type: field.TypeString, Size: 200},
 		{Name: "position", Type: field.TypeString, Size: 200},
 		{Name: "start_date", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "date"}},
@@ -1799,7 +1799,7 @@ var (
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "user_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeString},
 	}
 	// WorkExperienceTable holds the schema information for the "work_experience" table.
 	WorkExperienceTable = &schema.Table{
@@ -1817,12 +1817,12 @@ var (
 	}
 	// WorkExperienceDetailsColumns holds the columns for the "work_experience_details" table.
 	WorkExperienceDetailsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "detail_text", Type: field.TypeString, Size: 2147483647},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "work_experience_id", Type: field.TypeUUID},
+		{Name: "work_experience_id", Type: field.TypeString},
 	}
 	// WorkExperienceDetailsTable holds the schema information for the "work_experience_details" table.
 	WorkExperienceDetailsTable = &schema.Table{
@@ -1840,11 +1840,11 @@ var (
 	}
 	// WorkExperienceDetailTranslationsColumns holds the columns for the "work_experience_detail_translations" table.
 	WorkExperienceDetailTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "detail_text", Type: field.TypeString, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "work_experience_detail_id", Type: field.TypeUUID},
+		{Name: "work_experience_detail_id", Type: field.TypeString},
 	}
 	// WorkExperienceDetailTranslationsTable holds the schema information for the "work_experience_detail_translations" table.
 	WorkExperienceDetailTranslationsTable = &schema.Table{
@@ -1868,13 +1868,13 @@ var (
 	}
 	// WorkExperienceTranslationsColumns holds the columns for the "work_experience_translations" table.
 	WorkExperienceTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
+		{Name: "id", Type: field.TypeString},
 		{Name: "company", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "position", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "location", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "work_experience_id", Type: field.TypeUUID},
+		{Name: "work_experience_id", Type: field.TypeString},
 	}
 	// WorkExperienceTranslationsTable holds the schema information for the "work_experience_translations" table.
 	WorkExperienceTranslationsTable = &schema.Table{
@@ -1898,8 +1898,8 @@ var (
 	}
 	// IdeaTagsJoinColumns holds the columns for the "idea_tags_join" table.
 	IdeaTagsJoinColumns = []*schema.Column{
-		{Name: "idea_id", Type: field.TypeUUID},
-		{Name: "idea_tag_id", Type: field.TypeUUID},
+		{Name: "idea_id", Type: field.TypeString},
+		{Name: "idea_tag_id", Type: field.TypeString},
 	}
 	// IdeaTagsJoinTable holds the schema information for the "idea_tags_join" table.
 	IdeaTagsJoinTable = &schema.Table{

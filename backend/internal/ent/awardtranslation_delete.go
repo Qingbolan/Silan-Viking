@@ -40,7 +40,7 @@ func (atd *AwardTranslationDelete) ExecX(ctx context.Context) int {
 }
 
 func (atd *AwardTranslationDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(awardtranslation.Table, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewDeleteSpec(awardtranslation.Table, sqlgraph.NewFieldSpec(awardtranslation.FieldID, field.TypeString))
 	if ps := atd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {

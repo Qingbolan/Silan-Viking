@@ -21,7 +21,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ProjectQuery is the builder for querying Project entities.
@@ -252,8 +251,8 @@ func (pq *ProjectQuery) FirstX(ctx context.Context) *Project {
 
 // FirstID returns the first Project ID from the query.
 // Returns a *NotFoundError when no Project ID was found.
-func (pq *ProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pq *ProjectQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pq.Limit(1).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
@@ -265,7 +264,7 @@ func (pq *ProjectQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (pq *ProjectQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (pq *ProjectQuery) FirstIDX(ctx context.Context) string {
 	id, err := pq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -303,8 +302,8 @@ func (pq *ProjectQuery) OnlyX(ctx context.Context) *Project {
 // OnlyID is like Only, but returns the only Project ID in the query.
 // Returns a *NotSingularError when more than one Project ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (pq *ProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
-	var ids []uuid.UUID
+func (pq *ProjectQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = pq.Limit(2).IDs(setContextOp(ctx, pq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
 	}
@@ -320,7 +319,7 @@ func (pq *ProjectQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (pq *ProjectQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (pq *ProjectQuery) OnlyIDX(ctx context.Context) string {
 	id, err := pq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -348,7 +347,7 @@ func (pq *ProjectQuery) AllX(ctx context.Context) []*Project {
 }
 
 // IDs executes the query and returns a list of Project IDs.
-func (pq *ProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+func (pq *ProjectQuery) IDs(ctx context.Context) (ids []string, err error) {
 	if pq.ctx.Unique == nil && pq.path != nil {
 		pq.Unique(true)
 	}
@@ -360,7 +359,7 @@ func (pq *ProjectQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (pq *ProjectQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (pq *ProjectQuery) IDsX(ctx context.Context) []string {
 	ids, err := pq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -516,7 +515,7 @@ func (pq *ProjectQuery) WithViews(opts ...func(*ProjectViewQuery)) *ProjectQuery
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
@@ -539,7 +538,7 @@ func (pq *ProjectQuery) GroupBy(field string, fields ...string) *ProjectGroupBy 
 // Example:
 //
 //	var v []struct {
-//		UserID uuid.UUID `json:"user_id,omitempty"`
+//		UserID string `json:"user_id,omitempty"`
 //	}
 //
 //	client.Project.Query().
@@ -667,8 +666,8 @@ func (pq *ProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Proj
 }
 
 func (pq *ProjectQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Project, init func(*Project), assign func(*Project, *User)) error {
-	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Project)
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Project)
 	for i := range nodes {
 		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
@@ -697,7 +696,7 @@ func (pq *ProjectQuery) loadUser(ctx context.Context, query *UserQuery, nodes []
 }
 func (pq *ProjectQuery) loadTranslations(ctx context.Context, query *ProjectTranslationQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -727,7 +726,7 @@ func (pq *ProjectQuery) loadTranslations(ctx context.Context, query *ProjectTran
 }
 func (pq *ProjectQuery) loadTechnologies(ctx context.Context, query *ProjectTechnologyQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectTechnology)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -757,7 +756,7 @@ func (pq *ProjectQuery) loadTechnologies(ctx context.Context, query *ProjectTech
 }
 func (pq *ProjectQuery) loadDetails(ctx context.Context, query *ProjectDetailQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectDetail)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -784,7 +783,7 @@ func (pq *ProjectQuery) loadDetails(ctx context.Context, query *ProjectDetailQue
 }
 func (pq *ProjectQuery) loadImages(ctx context.Context, query *ProjectImageQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectImage)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -814,7 +813,7 @@ func (pq *ProjectQuery) loadImages(ctx context.Context, query *ProjectImageQuery
 }
 func (pq *ProjectQuery) loadLikes(ctx context.Context, query *ProjectLikeQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectLike)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -844,7 +843,7 @@ func (pq *ProjectQuery) loadLikes(ctx context.Context, query *ProjectLikeQuery, 
 }
 func (pq *ProjectQuery) loadViews(ctx context.Context, query *ProjectViewQuery, nodes []*Project, init func(*Project), assign func(*Project, *ProjectView)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*Project)
+	nodeids := make(map[string]*Project)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -883,7 +882,7 @@ func (pq *ProjectQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pq *ProjectQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(project.Table, project.Columns, sqlgraph.NewFieldSpec(project.FieldID, field.TypeUUID))
+	_spec := sqlgraph.NewQuerySpec(project.Table, project.Columns, sqlgraph.NewFieldSpec(project.FieldID, field.TypeString))
 	_spec.From = pq.sql
 	if unique := pq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique

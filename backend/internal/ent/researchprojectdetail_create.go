@@ -13,7 +13,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/google/uuid"
 )
 
 // ResearchProjectDetailCreate is the builder for creating a ResearchProjectDetail entity.
@@ -24,8 +23,8 @@ type ResearchProjectDetailCreate struct {
 }
 
 // SetResearchProjectID sets the "research_project_id" field.
-func (rpdc *ResearchProjectDetailCreate) SetResearchProjectID(u uuid.UUID) *ResearchProjectDetailCreate {
-	rpdc.mutation.SetResearchProjectID(u)
+func (rpdc *ResearchProjectDetailCreate) SetResearchProjectID(s string) *ResearchProjectDetailCreate {
+	rpdc.mutation.SetResearchProjectID(s)
 	return rpdc
 }
 
@@ -78,15 +77,15 @@ func (rpdc *ResearchProjectDetailCreate) SetNillableUpdatedAt(t *time.Time) *Res
 }
 
 // SetID sets the "id" field.
-func (rpdc *ResearchProjectDetailCreate) SetID(u uuid.UUID) *ResearchProjectDetailCreate {
-	rpdc.mutation.SetID(u)
+func (rpdc *ResearchProjectDetailCreate) SetID(s string) *ResearchProjectDetailCreate {
+	rpdc.mutation.SetID(s)
 	return rpdc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (rpdc *ResearchProjectDetailCreate) SetNillableID(u *uuid.UUID) *ResearchProjectDetailCreate {
-	if u != nil {
-		rpdc.SetID(*u)
+func (rpdc *ResearchProjectDetailCreate) SetNillableID(s *string) *ResearchProjectDetailCreate {
+	if s != nil {
+		rpdc.SetID(*s)
 	}
 	return rpdc
 }
@@ -97,14 +96,14 @@ func (rpdc *ResearchProjectDetailCreate) SetResearchProject(r *ResearchProject) 
 }
 
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectDetailTranslation entity by IDs.
-func (rpdc *ResearchProjectDetailCreate) AddTranslationIDs(ids ...uuid.UUID) *ResearchProjectDetailCreate {
+func (rpdc *ResearchProjectDetailCreate) AddTranslationIDs(ids ...string) *ResearchProjectDetailCreate {
 	rpdc.mutation.AddTranslationIDs(ids...)
 	return rpdc
 }
 
 // AddTranslations adds the "translations" edges to the ResearchProjectDetailTranslation entity.
 func (rpdc *ResearchProjectDetailCreate) AddTranslations(r ...*ResearchProjectDetailTranslation) *ResearchProjectDetailCreate {
-	ids := make([]uuid.UUID, len(r))
+	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
@@ -204,10 +203,10 @@ func (rpdc *ResearchProjectDetailCreate) sqlSave(ctx context.Context) (*Research
 		return nil, err
 	}
 	if _spec.ID.Value != nil {
-		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
-			_node.ID = *id
-		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
-			return nil, err
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected ResearchProjectDetail.ID type: %T", _spec.ID.Value)
 		}
 	}
 	rpdc.mutation.id = &_node.ID
@@ -218,11 +217,11 @@ func (rpdc *ResearchProjectDetailCreate) sqlSave(ctx context.Context) (*Research
 func (rpdc *ResearchProjectDetailCreate) createSpec() (*ResearchProjectDetail, *sqlgraph.CreateSpec) {
 	var (
 		_node = &ResearchProjectDetail{config: rpdc.config}
-		_spec = sqlgraph.NewCreateSpec(researchprojectdetail.Table, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeUUID))
+		_spec = sqlgraph.NewCreateSpec(researchprojectdetail.Table, sqlgraph.NewFieldSpec(researchprojectdetail.FieldID, field.TypeString))
 	)
 	if id, ok := rpdc.mutation.ID(); ok {
 		_node.ID = id
-		_spec.ID.Value = &id
+		_spec.ID.Value = id
 	}
 	if value, ok := rpdc.mutation.DetailText(); ok {
 		_spec.SetField(researchprojectdetail.FieldDetailText, field.TypeString, value)
@@ -248,7 +247,7 @@ func (rpdc *ResearchProjectDetailCreate) createSpec() (*ResearchProjectDetail, *
 			Columns: []string{researchprojectdetail.ResearchProjectColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchproject.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -265,7 +264,7 @@ func (rpdc *ResearchProjectDetailCreate) createSpec() (*ResearchProjectDetail, *
 			Columns: []string{researchprojectdetail.TranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(researchprojectdetailtranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

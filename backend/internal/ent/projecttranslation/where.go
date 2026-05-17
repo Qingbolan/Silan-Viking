@@ -8,56 +8,65 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/google/uuid"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id uuid.UUID) predicate.ProjectTranslation {
+func ID(id string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id uuid.UUID) predicate.ProjectTranslation {
+func IDEQ(id string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id uuid.UUID) predicate.ProjectTranslation {
+func IDNEQ(id string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...uuid.UUID) predicate.ProjectTranslation {
+func IDIn(ids ...string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...uuid.UUID) predicate.ProjectTranslation {
+func IDNotIn(ids ...string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id uuid.UUID) predicate.ProjectTranslation {
+func IDGT(id string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id uuid.UUID) predicate.ProjectTranslation {
+func IDGTE(id string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id uuid.UUID) predicate.ProjectTranslation {
+func IDLT(id string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id uuid.UUID) predicate.ProjectTranslation {
+func IDLTE(id string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldLTE(FieldID, id))
 }
 
+// IDEqualFold applies the EqualFold predicate on the ID field.
+func IDEqualFold(id string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldEqualFold(FieldID, id))
+}
+
+// IDContainsFold applies the ContainsFold predicate on the ID field.
+func IDContainsFold(id string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldContainsFold(FieldID, id))
+}
+
 // ProjectID applies equality check predicate on the "project_id" field. It's identical to ProjectIDEQ.
-func ProjectID(v uuid.UUID) predicate.ProjectTranslation {
+func ProjectID(v string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldEQ(FieldProjectID, v))
 }
 
@@ -87,23 +96,68 @@ func CreatedAt(v time.Time) predicate.ProjectTranslation {
 }
 
 // ProjectIDEQ applies the EQ predicate on the "project_id" field.
-func ProjectIDEQ(v uuid.UUID) predicate.ProjectTranslation {
+func ProjectIDEQ(v string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldEQ(FieldProjectID, v))
 }
 
 // ProjectIDNEQ applies the NEQ predicate on the "project_id" field.
-func ProjectIDNEQ(v uuid.UUID) predicate.ProjectTranslation {
+func ProjectIDNEQ(v string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldNEQ(FieldProjectID, v))
 }
 
 // ProjectIDIn applies the In predicate on the "project_id" field.
-func ProjectIDIn(vs ...uuid.UUID) predicate.ProjectTranslation {
+func ProjectIDIn(vs ...string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldIn(FieldProjectID, vs...))
 }
 
 // ProjectIDNotIn applies the NotIn predicate on the "project_id" field.
-func ProjectIDNotIn(vs ...uuid.UUID) predicate.ProjectTranslation {
+func ProjectIDNotIn(vs ...string) predicate.ProjectTranslation {
 	return predicate.ProjectTranslation(sql.FieldNotIn(FieldProjectID, vs...))
+}
+
+// ProjectIDGT applies the GT predicate on the "project_id" field.
+func ProjectIDGT(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldGT(FieldProjectID, v))
+}
+
+// ProjectIDGTE applies the GTE predicate on the "project_id" field.
+func ProjectIDGTE(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldGTE(FieldProjectID, v))
+}
+
+// ProjectIDLT applies the LT predicate on the "project_id" field.
+func ProjectIDLT(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldLT(FieldProjectID, v))
+}
+
+// ProjectIDLTE applies the LTE predicate on the "project_id" field.
+func ProjectIDLTE(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldLTE(FieldProjectID, v))
+}
+
+// ProjectIDContains applies the Contains predicate on the "project_id" field.
+func ProjectIDContains(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldContains(FieldProjectID, v))
+}
+
+// ProjectIDHasPrefix applies the HasPrefix predicate on the "project_id" field.
+func ProjectIDHasPrefix(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldHasPrefix(FieldProjectID, v))
+}
+
+// ProjectIDHasSuffix applies the HasSuffix predicate on the "project_id" field.
+func ProjectIDHasSuffix(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldHasSuffix(FieldProjectID, v))
+}
+
+// ProjectIDEqualFold applies the EqualFold predicate on the "project_id" field.
+func ProjectIDEqualFold(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldEqualFold(FieldProjectID, v))
+}
+
+// ProjectIDContainsFold applies the ContainsFold predicate on the "project_id" field.
+func ProjectIDContainsFold(v string) predicate.ProjectTranslation {
+	return predicate.ProjectTranslation(sql.FieldContainsFold(FieldProjectID, v))
 }
 
 // LanguageCodeEQ applies the EQ predicate on the "language_code" field.
