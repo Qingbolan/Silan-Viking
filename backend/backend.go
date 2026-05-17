@@ -97,18 +97,6 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
 
-	// Lightweight liveness probe — used by the Docker healthcheck. It does no
-	// DB work so it stays green while the derived tables are being promoted.
-	server.AddRoute(rest.Route{
-		Method: http.MethodGet,
-		Path:   "/api/v1/health",
-		Handler: func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"status":"ok"}`))
-		},
-	})
-
 	// Add global OPTIONS handler for CORS
 	server.AddRoute(rest.Route{
 		Method: http.MethodOptions,

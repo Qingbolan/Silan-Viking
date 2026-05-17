@@ -9,6 +9,7 @@ import (
 	auth "silan-backend/internal/handler/auth"
 	blog "silan-backend/internal/handler/blog"
 	episodes "silan-backend/internal/handler/episodes"
+	health "silan-backend/internal/handler/health"
 	ideas "silan-backend/internal/handler/ideas"
 	plans "silan-backend/internal/handler/plans"
 	projects "silan-backend/internal/handler/projects"
@@ -142,6 +143,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/v1/episodes"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				// Liveness probe — returns ok without touching the database
+				Method:  http.MethodGet,
+				Path:    "/health",
+				Handler: health.HealthHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/v1"),
 	)
 
 	server.AddRoutes(

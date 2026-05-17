@@ -1182,3 +1182,25 @@ service backend-api {
 	get /bots (BotVisitsRequest) returns (BotVisitsResponse)
 }
 
+// ========== HEALTH GROUP ==========
+// Liveness probe for the Docker healthcheck and load balancers. It does no
+// database work, so it stays green while `promote` rebuilds the derived
+// tables. No middleware: the probe must not be logged by Analytics nor
+// gated by CORS.
+type (
+	// HealthResponse is the liveness-probe body.
+	HealthResponse {
+		Status string `json:"status"`
+	}
+)
+
+@server (
+	group:  health
+	prefix: /api/v1
+)
+service backend-api {
+	@doc "Liveness probe — returns ok without touching the database"
+	@handler Health
+	get /health returns (HealthResponse)
+}
+

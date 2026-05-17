@@ -398,6 +398,10 @@ type GraphRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
+type HealthResponse struct {
+	Status string `json:"status"`
+}
+
 type IdeaCategoriesRequest struct {
 	Language string `form:"lang,default=en"`
 }
