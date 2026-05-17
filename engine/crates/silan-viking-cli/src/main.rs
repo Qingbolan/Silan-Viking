@@ -1410,6 +1410,9 @@ struct DeployConfig {
     ssh_key_path: PathBuf,
     /// Remote directory — only required for a remote `host`.
     remote_dir: String,
+    /// SSH port. Optional in `[deploy]`, defaults to 22 — a hardened
+    /// server often moves sshd off the standard port.
+    ssh_port: u16,
 }
 
 /// Read and validate `[deploy]` from the project config. A missing section or
@@ -1482,6 +1485,18 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
         (ssh_key_path, field("remote_dir")?)
     };
 
+    // ssh_port — optional, defaults to 22. Accepts a TOML integer or a
+    // string (so `ssh_port = 2222` and `ssh_port = "2222"` both work).
+    let ssh_port: u16 = match deploy.get("ssh_port") {
+        None => 22,
+        Some(v) => v
+            .as_integer()
+            .map(|i| i.to_string())
+            .or_else(|| v.as_str().map(str::to_owned))
+            .and_then(|s| s.parse().ok())
+            .ok_or("[deploy].ssh_port must be a port number (1-65535)")?,
+    };
+
     Ok(DeployConfig {
         host,
         user: if is_local {
@@ -1491,6 +1506,7 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
         },
         ssh_key_path,
         remote_dir,
+        ssh_port,
     })
 }
 
@@ -1622,17 +1638,40 @@ fn site_deploy(
         promote_db(&live_snapshot, db_path, &content_commit)?;
         docker_cp_to(compose, &staging, "backend", &live_snapshot, "/data/portfolio.db")?;
 
-        println!("[6/6] up — restart backend with the promoted db");
-        docker_compose(&staging, compose, &["restart", "backend"])?;
+        // Restart the backend so it reopens the promoted db, and the proxy
+        // with it: step 5's `up -d` recreates the backend container on a new
+        // image, giving it a fresh network IP. nginx resolves the `backend`
+        // upstream once at worker start and caches that IP, so a proxy left
+        // running points at the now-dead old container and serves 502 until
+        // it is restarted. Restarting both keeps the proxy's upstream fresh.
+        println!("[6/6] up — restart backend with the promoted db, refresh proxy");
+        docker_compose(&staging, compose, &["restart", "backend", "proxy"])?;
         println!("deployed locally — http://localhost:8080");
         return Ok(());
     }
 
-    // ---- remote target: ship images + snapshot + silan binary over SSH ----
+    // ---- remote target: ship pre-built images + snapshot over SSH ----
     let key = cfg.ssh_key_path.to_string_lossy().into_owned();
+    // ssh takes `-p <port>`, scp takes `-P <port>` — different flags for
+    // the same thing. Pre-format both as strings the closures can pass.
+    let ssh_port = cfg.ssh_port.to_string();
     let ssh = |remote_cmd: &str| -> Result<(), String> {
         let status = Command::new("ssh")
-            .args(["-i", &key, &target, remote_cmd])
+            .args([
+                "-i",
+                &key,
+                "-p",
+                &ssh_port,
+                // First deploy to a fresh server: its host key is not
+                // yet known. `accept-new` records it on first contact
+                // and verifies strictly thereafter — unlike `no`, which
+                // would silently accept a changed (possibly spoofed)
+                // key on every connection.
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+                &target,
+                remote_cmd,
+            ])
             .status()
             .map_err(|e| format!("ssh: {e}"))?;
         if !status.success() {
@@ -1640,15 +1679,44 @@ fn site_deploy(
         }
         Ok(())
     };
-    let scp = |local: &Path, remote_rel: &str| -> Result<(), String> {
+    // scp a local file up to `<remote_dir>/<remote_rel>`. The
+    // `accept-new` host-key policy matches the `ssh` closure above.
+    let scp_up = |local: &Path, remote_rel: &str| -> Result<(), String> {
         let status = Command::new("scp")
-            .args(["-i", &key])
+            .args([
+                "-i",
+                &key,
+                "-P",
+                &ssh_port,
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+            ])
             .arg(local)
             .arg(format!("{target}:{}/{remote_rel}", cfg.remote_dir))
             .status()
             .map_err(|e| format!("scp: {e}"))?;
         if !status.success() {
-            return Err(format!("scp failed: {}", local.display()));
+            return Err(format!("scp up failed: {}", local.display()));
+        }
+        Ok(())
+    };
+    // scp a file down from `<remote_dir>/<remote_rel>` to a local path.
+    let scp_down = |remote_rel: &str, local: &Path| -> Result<(), String> {
+        let status = Command::new("scp")
+            .args([
+                "-i",
+                &key,
+                "-P",
+                &ssh_port,
+                "-o",
+                "StrictHostKeyChecking=accept-new",
+            ])
+            .arg(format!("{target}:{}/{remote_rel}", cfg.remote_dir))
+            .arg(local)
+            .status()
+            .map_err(|e| format!("scp: {e}"))?;
+        if !status.success() {
+            return Err(format!("scp down failed: {remote_rel}"));
         }
         Ok(())
     };
@@ -1666,35 +1734,51 @@ fn site_deploy(
     if !save.success() {
         return Err("docker save failed".into());
     }
-    scp(&images_tar, "images.tar")?;
-    scp(db_path, "snapshot.db")?;
+    scp_up(&images_tar, "images.tar")?;
+    scp_up(db_path, "snapshot.db")?;
     // The compose file is shipped flat (no `deploy/` prefix); on the
     // server it sits beside the loaded images, and its `build.context`
     // is never used there — the images are pre-built.
-    scp(&staging.join(compose), "docker-compose.yml")?;
-    // Ship the silan binary so promote can run server-side.
-    let self_bin = env::current_exe().map_err(|e| e.to_string())?;
-    scp(&self_bin, "silan-viking")?;
+    scp_up(&staging.join(compose), "docker-compose.yml")?;
+    // proxy.conf must travel with the compose file: the `proxy` service
+    // bind-mounts `./proxy.conf` into the nginx container, and that path
+    // resolves next to the (flat-shipped) compose file. Without it,
+    // Docker creates `/srv/silan/proxy.conf` as a directory and the
+    // mount onto a file path fails.
+    scp_up(&staging.join("deploy/proxy.conf"), "proxy.conf")?;
+    // The silan-viking binary is deliberately NOT shipped: it is built
+    // for the operator's OS/arch and may not run on the target. promote
+    // is a pure SQLite operation — it runs here, on the operator's
+    // machine, against a db copied down from the server.
     ssh(&format!("cd {} && docker load -i images.tar", cfg.remote_dir))?;
 
     println!("[5/6] promote");
-    // Server-side: bring stack up, pull the live db out of the volume,
-    // promote derived tables, push it back. Runtime tables survive.
+    // Bring the stack up so the named volume + live db exist, then pull
+    // the live db down, promote it HERE (operator-side — no remote
+    // binary), and push the promoted db back. Runtime tables survive.
     ssh(&format!(
-        "cd {dir} && chmod +x silan-viking && \
-         docker compose -f docker-compose.yml up -d && \
+        "cd {dir} && docker compose -f docker-compose.yml up -d && \
          (docker compose -f docker-compose.yml cp backend:/data/portfolio.db live.db \
             || cp snapshot.db live.db) && \
-         cp -f live.db portfolio.db.prev && \
-         ./silan-viking site promote live.db snapshot.db {commit} && \
-         docker compose -f docker-compose.yml cp live.db backend:/data/portfolio.db",
+         cp -f live.db portfolio.db.prev",
         dir = cfg.remote_dir,
-        commit = content_commit,
+    ))?;
+    let live_snapshot = project_root.join("_deploy/live-portfolio.db");
+    scp_down("live.db", &live_snapshot)?;
+    promote_db(&live_snapshot, db_path, &content_commit)?;
+    scp_up(&live_snapshot, "live.db")?;
+    ssh(&format!(
+        "cd {dir} && docker compose -f docker-compose.yml cp live.db backend:/data/portfolio.db",
+        dir = cfg.remote_dir,
     ))?;
 
+    // Restart the proxy alongside the backend — `up -d` above may have
+    // recreated the backend container on a fresh IP, and nginx caches the
+    // `backend` upstream IP at worker start, so a stale proxy serves 502
+    // (same rationale as the local path's step 6).
     println!("[6/6] up");
     ssh(&format!(
-        "cd {} && docker compose -f docker-compose.yml restart backend",
+        "cd {} && docker compose -f docker-compose.yml restart backend proxy",
         cfg.remote_dir
     ))?;
 
@@ -1827,7 +1911,16 @@ fn site_rollback(content_root: &Path) -> Result<(), String> {
         dir = cfg.remote_dir,
     );
     let status = Command::new("ssh")
-        .args(["-i", &key, &target, &remote])
+        .args([
+            "-i",
+            &key,
+            "-p",
+            &cfg.ssh_port.to_string(),
+            "-o",
+            "StrictHostKeyChecking=accept-new",
+            &target,
+            &remote,
+        ])
         .status()
         .map_err(|e| format!("ssh: {e}"))?;
     if !status.success() {
@@ -1848,6 +1941,10 @@ fn site_status(content_root: &Path) -> Result<(), String> {
         .args([
             "-i",
             &key,
+            "-p",
+            &cfg.ssh_port.to_string(),
+            "-o",
+            "StrictHostKeyChecking=accept-new",
             &target,
             &format!("cd {} && docker compose ps", cfg.remote_dir),
         ])
