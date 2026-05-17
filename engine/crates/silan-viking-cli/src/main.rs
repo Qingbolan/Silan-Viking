@@ -16,6 +16,17 @@ use std::process::Command;
 /// schema the engine can actually parse (it needs the fenced ```yaml``` block).
 const SCHEMA_TEMPLATE: &str = include_str!("../assets/SCHEMA.md");
 
+// Deploy artifacts, packed by `build.rs` into `OUT_DIR` and embedded
+// here. `silan site deploy` unpacks these into a staging directory and
+// builds the Docker images from them — so the user's machine needs
+// only Docker, no source checkout, no Node, no Go (docs/silan-viking/16).
+/// Front-end source (`frontend/`, minus `node_modules`/`dist`), gzip tar.
+const FRONTEND_TARBALL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/frontend.tar.gz"));
+/// Go backend source (`backend/`, minus compiled binaries), gzip tar.
+const BACKEND_TARBALL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/backend.tar.gz"));
+/// Docker deploy assets (`deploy/`: compose, Dockerfiles, nginx), gzip tar.
+const DEPLOY_TARBALL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/deploy.tar.gz"));
+
 fn main() {
     if let Err(err) = run(env::args().skip(1).collect()) {
         eprintln!("error: {err}");
@@ -451,11 +462,12 @@ fn default_config(content_dir: &str) -> String {
          enable_deploy = false\n\
          \n\
          # [deploy] — uncomment and fill in for `silan site deploy`.\n\
+         # The Docker compose file and images are embedded in the silan\n\
+         # binary; the target machine needs only Docker.\n\
          # host         = \"example.com\"\n\
          # user         = \"deploy\"\n\
          # ssh_key_path = \"~/.ssh/silan_deploy_ed25519\"  # path only, never the key\n\
-         # remote_dir   = \"/srv/silan-viking\"\n\
-         # compose_file = \"deploy/docker-compose.yml\"\n"
+         # remote_dir   = \"/srv/silan-viking\"\n"
     )
 }
 
@@ -1387,6 +1399,10 @@ fn site_publish(content_root: &Path, uri: &str) -> Result<(), String> {
 }
 
 /// The `[deploy]` section of `silan-viking.toml` (`06` §6.2.2).
+//
+// There is deliberately no `compose_file` field: the Docker compose
+// file and Dockerfiles are embedded in the `silan-viking` binary and
+// staged at deploy time (`docs/silan-viking/16`), not user-supplied.
 struct DeployConfig {
     host: String,
     user: String,
@@ -1394,7 +1410,6 @@ struct DeployConfig {
     ssh_key_path: PathBuf,
     /// Remote directory — only required for a remote `host`.
     remote_dir: String,
-    compose_file: String,
 }
 
 /// Read and validate `[deploy]` from the project config. A missing section or
@@ -1467,16 +1482,6 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
         (ssh_key_path, field("remote_dir")?)
     };
 
-    // compose_file defaults to the repo's standard location.
-    let compose_file = {
-        let cf = opt("compose_file");
-        if cf.is_empty() {
-            "deploy/docker-compose.yml".to_owned()
-        } else {
-            cf
-        }
-    };
-
     Ok(DeployConfig {
         host,
         user: if is_local {
@@ -1486,13 +1491,57 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
         },
         ssh_key_path,
         remote_dir,
-        compose_file,
     })
+}
+
+/// Unpack one embedded gzip tarball into `staging`. The tarball's paths
+/// are repo-relative (`frontend/...`, `backend/...`, `deploy/...`), so
+/// after this the staging dir mirrors the repo layout the Docker build
+/// expects (`docs/silan-viking/16`).
+fn unpack_embedded(staging: &Path, name: &str, tarball: &[u8]) -> Result<(), String> {
+    let tar_path = staging.join(name);
+    fs::write(&tar_path, tarball).map_err(|e| format!("write {name}: {e}"))?;
+    let status = Command::new("tar")
+        .arg("-xzf")
+        .arg(&tar_path)
+        .arg("-C")
+        .arg(staging)
+        .status()
+        .map_err(|e| format!("tar -x {name}: {e}"))?;
+    if !status.success() {
+        return Err(format!("failed to unpack embedded {name}"));
+    }
+    let _ = fs::remove_file(&tar_path);
+    Ok(())
+}
+
+/// Materialise the deploy build context from the artifacts embedded in
+/// this binary. Returns the staging directory — laid out as a minimal
+/// repo (`frontend/`, `backend/`, `deploy/`) the Docker multi-stage
+/// builds consume. The user's machine never needs a source checkout.
+fn stage_deploy_artifacts(project_root: &Path) -> Result<PathBuf, String> {
+    let staging = project_root.join("_deploy/staging");
+    // Always start clean: a stale tree from a half-finished deploy would
+    // poison the Docker build context.
+    if staging.exists() {
+        fs::remove_dir_all(&staging).map_err(|e| format!("clear staging: {e}"))?;
+    }
+    fs::create_dir_all(&staging).map_err(|e| format!("create staging: {e}"))?;
+
+    unpack_embedded(&staging, "frontend.tar.gz", FRONTEND_TARBALL)?;
+    unpack_embedded(&staging, "backend.tar.gz", BACKEND_TARBALL)?;
+    unpack_embedded(&staging, "deploy.tar.gz", DEPLOY_TARBALL)?;
+    Ok(staging)
 }
 
 /// `silan site deploy` — the `06` §6.5 six-step pipeline: sync → build →
 /// package → ship → promote → up. Dry-run is the default; only `--confirm`
 /// touches the server.
+///
+/// The Docker build context is materialised from artifacts embedded in
+/// this binary (`stage_deploy_artifacts`), not from a source checkout —
+/// so the only thing the operator's machine needs is Docker
+/// (`docs/silan-viking/16`).
 fn site_deploy(
     content_root: &Path,
     db_path: &Path,
@@ -1505,7 +1554,10 @@ fn site_deploy(
     // here, no SSH. This is what the e2e Docker experiment exercises.
     let is_local = matches!(cfg.host.as_str(), "localhost" | "127.0.0.1" | "local");
     let target = format!("{}@{}", cfg.user, cfg.host);
-    let compose = &cfg.compose_file;
+    // The compose file lives inside the staged `deploy/` directory. Its
+    // own `build.context: ..` then resolves to the staging root, which
+    // holds `frontend/` and `backend/`.
+    let compose = "deploy/docker-compose.yml";
 
     if !confirm {
         println!("site deploy — dry run (pass --confirm to execute)");
@@ -1515,11 +1567,11 @@ fn site_deploy(
             println!("  target  {target}:{}", cfg.remote_dir);
         }
         println!("  1 sync     content/ -> {}", db_path.display());
-        println!("  2 build    Vite bundle + SEO artifacts -> {}", out_dir.display());
-        println!("  3 package  docker compose build (backend/web images)");
+        println!("  2 build    stage embedded sources + SEO artifacts -> {}", out_dir.display());
+        println!("  3 package  docker compose build (backend/web images, multi-stage)");
         println!("  4 ship     {}", if is_local { "load images locally" } else { "docker save | ssh docker load" });
         println!("  5 promote  replace derived tables on the live db (runtime tables preserved)");
-        println!("  6 up       docker compose -f {compose} up -d");
+        println!("  6 up       docker compose up -d");
         return Ok(());
     }
 
@@ -1529,26 +1581,29 @@ fn site_deploy(
     ws.sync(db_path).map_err(|e| e.to_string())?;
     let content_commit = git_head_commit(content_root).unwrap_or_else(|| "unknown".into());
 
-    // 2 — build: front-end Vite bundle + SEO crawler artifacts. The SEO
-    // artifacts land in `deploy/seo/` so the web image bakes them in.
+    // 2 — build: materialise the Docker build context from the embedded
+    // artifacts, then render SEO crawler artifacts into `deploy/seo/` so
+    // the web image bakes them in. The front-end itself is NOT built
+    // here — the web Dockerfile's `node` stage does that, in a container
+    // isolated from the operator's host (`docs/silan-viking/16`).
     println!("[2/6] build");
+    let staging = stage_deploy_artifacts(project_root)?;
     let base_url = if is_local {
         "http://localhost:8080".to_owned()
     } else {
         format!("https://{}", cfg.host)
     };
-    run_vite_build(project_root)?;
     let projector = silan_viking_site::SiteProjector::new(&base_url);
-    let seo_dir = project_root.join("deploy/seo");
+    let seo_dir = staging.join("deploy/seo");
     projector
         .build(content_root, &seo_dir)
         .map_err(|e| e.to_string())?;
     // Mirror the SEO artifacts into `--out` too, for `site preview` parity.
     let _ = projector.build(content_root, out_dir);
 
-    // 3 — package: build the docker images from the compose file.
+    // 3 — package: build the docker images from the staged compose file.
     println!("[3/6] package");
-    docker_compose(project_root, compose, &["build"])?;
+    docker_compose(&staging, compose, &["build"])?;
 
     // 4/5/6 differ between a local and a remote target.
     if is_local {
@@ -1557,18 +1612,18 @@ fn site_deploy(
 
         // 6 — up first, so the named volume + live db exist for promote.
         println!("[5/6] promote — bring stack up, then replace derived tables");
-        docker_compose(project_root, compose, &["up", "-d"])?;
+        docker_compose(&staging, compose, &["up", "-d"])?;
         // The live db lives in the `portfolio-db` named volume, mounted at
         // /data in the backend container. Copy it out, promote, copy it back.
         let live_snapshot = project_root.join("_deploy/live-portfolio.db");
-        docker_cp_from(compose, project_root, "backend", "/data/portfolio.db", &live_snapshot)
+        docker_cp_from(compose, &staging, "backend", "/data/portfolio.db", &live_snapshot)
             // First deploy: no live db yet — start from the fresh snapshot.
             .or_else(|_| fs::copy(db_path, &live_snapshot).map(|_| ()).map_err(|e| e.to_string()))?;
         promote_db(&live_snapshot, db_path, &content_commit)?;
-        docker_cp_to(compose, project_root, "backend", &live_snapshot, "/data/portfolio.db")?;
+        docker_cp_to(compose, &staging, "backend", &live_snapshot, "/data/portfolio.db")?;
 
         println!("[6/6] up — restart backend with the promoted db");
-        docker_compose(project_root, compose, &["restart", "backend"])?;
+        docker_compose(&staging, compose, &["restart", "backend"])?;
         println!("deployed locally — http://localhost:8080");
         return Ok(());
     }
@@ -1613,7 +1668,10 @@ fn site_deploy(
     }
     scp(&images_tar, "images.tar")?;
     scp(db_path, "snapshot.db")?;
-    scp(&project_root.join(compose), "docker-compose.yml")?;
+    // The compose file is shipped flat (no `deploy/` prefix); on the
+    // server it sits beside the loaded images, and its `build.context`
+    // is never used there — the images are pre-built.
+    scp(&staging.join(compose), "docker-compose.yml")?;
     // Ship the silan binary so promote can run server-side.
     let self_bin = env::current_exe().map_err(|e| e.to_string())?;
     scp(&self_bin, "silan-viking")?;
@@ -1644,38 +1702,6 @@ fn site_deploy(
     Ok(())
 }
 
-/// Run `npm run build` for the front-end. The Vite bundle lands in
-/// `frontend/dist/`, which the `web` Docker image copies in.
-fn run_vite_build(project_root: &Path) -> Result<(), String> {
-    let frontend = project_root.join("frontend");
-    if !frontend.join("package.json").exists() {
-        return Err(format!(
-            "front-end not found at {} — cannot build the web bundle",
-            frontend.display()
-        ));
-    }
-    // `npm ci` if dependencies are not installed yet.
-    if !frontend.join("node_modules").exists() {
-        let ci = Command::new("npm")
-            .arg("ci")
-            .current_dir(&frontend)
-            .status()
-            .map_err(|e| format!("npm ci: {e}"))?;
-        if !ci.success() {
-            return Err("npm ci failed".into());
-        }
-    }
-    let build = Command::new("npm")
-        .args(["run", "build"])
-        .current_dir(&frontend)
-        .status()
-        .map_err(|e| format!("npm run build: {e}"))?;
-    if !build.success() {
-        return Err("front-end build failed (npm run build)".into());
-    }
-    Ok(())
-}
-
 /// Run `docker compose -f <file> <args...>` from the project root.
 fn docker_compose(project_root: &Path, compose_file: &str, args: &[&str]) -> Result<(), String> {
     let status = Command::new("docker")
@@ -1690,20 +1716,35 @@ fn docker_compose(project_root: &Path, compose_file: &str, args: &[&str]) -> Res
     Ok(())
 }
 
+/// Resolve `local` to an absolute path. `docker compose cp` interprets a
+/// relative local path against its own working directory (here the
+/// staging dir), which is *not* where the snapshot lives — so the path
+/// must be absolutised before it crosses the process boundary.
+fn absolutise(local: &Path) -> Result<PathBuf, String> {
+    if local.is_absolute() {
+        return Ok(local.to_path_buf());
+    }
+    let cwd = env::current_dir().map_err(|e| e.to_string())?;
+    Ok(cwd.join(local))
+}
+
 /// `docker compose cp <service>:<remote> <local>` — copy a file out of a
-/// running container.
+/// running container. `compose_dir` is where `docker compose` runs (it
+/// resolves `compose_file` and the project from there); `local` is
+/// absolutised so it does not depend on that directory.
 fn docker_cp_from(
     compose_file: &str,
-    project_root: &Path,
+    compose_dir: &Path,
     service: &str,
     remote: &str,
     local: &Path,
 ) -> Result<(), String> {
+    let local = absolutise(local)?;
     let status = Command::new("docker")
         .args(["compose", "-f", compose_file, "cp"])
         .arg(format!("{service}:{remote}"))
-        .arg(local)
-        .current_dir(project_root)
+        .arg(&local)
+        .current_dir(compose_dir)
         .status()
         .map_err(|e| format!("docker compose cp: {e}"))?;
     if !status.success() {
@@ -1713,19 +1754,21 @@ fn docker_cp_from(
 }
 
 /// `docker compose cp <local> <service>:<remote>` — copy a file into a
-/// running container.
+/// running container. See [`docker_cp_from`] for the `compose_dir` /
+/// `local` path-resolution contract.
 fn docker_cp_to(
     compose_file: &str,
-    project_root: &Path,
+    compose_dir: &Path,
     service: &str,
     local: &Path,
     remote: &str,
 ) -> Result<(), String> {
+    let local = absolutise(local)?;
     let status = Command::new("docker")
         .args(["compose", "-f", compose_file, "cp"])
-        .arg(local)
+        .arg(&local)
         .arg(format!("{service}:{remote}"))
-        .current_dir(project_root)
+        .current_dir(compose_dir)
         .status()
         .map_err(|e| format!("docker compose cp: {e}"))?;
     if !status.success() {
@@ -1775,12 +1818,13 @@ fn site_rollback(content_root: &Path) -> Result<(), String> {
     let cfg = deploy_config(content_root)?;
     let target = format!("{}@{}", cfg.user, cfg.host);
     let key = cfg.ssh_key_path.to_string_lossy().into_owned();
+    // The compose file is shipped flat to the remote dir by `site
+    // deploy` (always named `docker-compose.yml`).
     let remote = format!(
         "cd {dir} && test -f portfolio.db.prev && \
          mv -f portfolio.db.prev portfolio.db && \
-         docker compose -f {compose} up -d",
+         docker compose -f docker-compose.yml up -d",
         dir = cfg.remote_dir,
-        compose = cfg.compose_file
     );
     let status = Command::new("ssh")
         .args(["-i", &key, &target, &remote])
