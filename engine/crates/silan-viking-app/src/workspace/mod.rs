@@ -11,7 +11,7 @@
 
 mod scan;
 
-pub use scan::{ScanError, ScanReport};
+pub use scan::{ScanError, ScanReport, ScannedSeries};
 
 use crate::parser::ParserRegistry;
 use crate::proposal::accept::{accept as run_accept, AcceptReport};

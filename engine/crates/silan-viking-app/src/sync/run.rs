@@ -145,7 +145,39 @@ fn build_batch(
         batch.push(mapper.map(&parsed)?);
     }
 
+    // One `episode_series` row per scanned series. This is a batch-level
+    // concern, not a per-Item mapper one: the series is a parent shared by
+    // many episode Items, so emitting it from the episode mapper would
+    // duplicate the row once per episode and the sink (plain INSERT, no
+    // upsert) would write a duplicate primary key. Every `episodes.series_id`
+    // foreign key points at one of these rows — without them `promote` fails
+    // the `episodes_episode_series_episodes` FK at COMMIT.
+    if !scan.series().is_empty() {
+        batch.push(episode_series_rows(scan));
+    }
+
     Ok(batch)
+}
+
+/// Build the `episode_series` rows from the scan's container series.
+///
+/// `id` is the series slug — the value `episodes.series_id` references — so
+/// the FK resolves. `title` / `description` / `status` come from the
+/// `series.toml` the scan read; `status` defaults to `ongoing` upstream so it
+/// is always a valid non-NULL value for the column's NOT NULL constraint.
+fn episode_series_rows(scan: &ScanReport) -> RowSet {
+    let mut set = RowSet::new();
+    for series in scan.series() {
+        set.push(
+            Row::new("episode_series")
+                .with("id", SqlValue::Text(series.slug.clone()))
+                .with("slug", SqlValue::Text(series.slug.clone()))
+                .with("title", SqlValue::Text(series.title.clone()))
+                .with("description", SqlValue::Text(series.description.clone()))
+                .with("status", SqlValue::Text(series.status.clone())),
+        );
+    }
+    set
 }
 
 /// Columns excluded from the content digest: these hold engine-minted

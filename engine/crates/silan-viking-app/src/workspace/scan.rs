@@ -49,18 +49,51 @@ pub enum ScanError {
         #[source]
         source: ContentError,
     },
+
+    /// An episode series' `series.toml` was not valid TOML.
+    #[error("malformed `series.toml` for episode series `{slug}`: {detail}")]
+    MalformedSeries { slug: String, detail: String },
 }
 
-/// The result of a scan: the Items found, in deterministic order.
+/// A container series discovered on disk — the `series.toml` of one
+/// `content/resources/episode/<series>/` directory (`10` §10.4.4).
+///
+/// The scan surfaces this so the sync can write the `episode_series` parent
+/// row that every `episodes.series_id` foreign key points at. Without it, the
+/// `episodes` rows reference a series that does not exist and `promote` fails
+/// the `episodes_episode_series_episodes` FK at COMMIT.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScannedSeries {
+    /// The series slug — the `episode_series.id` value `episodes.series_id`
+    /// references. Taken from the directory name (the structural identity),
+    /// not the `series.toml` `slug` field, so the FK target is always the
+    /// same string the episode scan derives.
+    pub slug: String,
+    /// The series title, from `series.toml` (`""` if the file omits it).
+    pub title: String,
+    /// The series description, from `series.toml` (`""` if absent).
+    pub description: String,
+    /// The series status, from `series.toml` (defaults to `"ongoing"`).
+    pub status: String,
+}
+
+/// The result of a scan: the Items found, plus the episode container series,
+/// in deterministic order.
 #[derive(Debug, Default)]
 pub struct ScanReport {
     items: Vec<Item>,
+    series: Vec<ScannedSeries>,
 }
 
 impl ScanReport {
     /// The scanned Items.
     pub fn items(&self) -> &[Item] {
         &self.items
+    }
+
+    /// The episode container series found, one per `series.toml`.
+    pub fn series(&self) -> &[ScannedSeries] {
+        &self.series
     }
 
     /// The number of Items found.
@@ -78,6 +111,7 @@ impl ScanReport {
 pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
     let resources = content_root.join("resources");
     let mut items = Vec::new();
+    let mut series = Vec::new();
 
     // `ContentKind::ALL` gives a deterministic type order.
     for kind in ContentKind::ALL {
@@ -87,7 +121,7 @@ pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
         }
         match kind {
             // `episode` items live one level deeper, under a series directory.
-            ContentKind::Episode => scan_episode_type(&type_dir, &mut items)?,
+            ContentKind::Episode => scan_episode_type(&type_dir, &mut items, &mut series)?,
             // `resume` is a single Item: `content/resources/resume/` IS the
             // Item directory — its `parts/` are directly inside it, there is
             // no `{item}` subdirectory level (`10` §10.4.5).
@@ -99,7 +133,7 @@ pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
         }
     }
 
-    Ok(ScanReport { items })
+    Ok(ScanReport { items, series })
 }
 
 /// Scan a flat content type (`blog` / `ideas` / `projects` / `update` /
@@ -118,14 +152,67 @@ fn scan_flat_type(
 
 /// Scan the `episode` type: each subdirectory is a *series*, and each
 /// subdirectory of a series is one episode Item.
-fn scan_episode_type(type_dir: &Path, out: &mut Vec<Item>) -> Result<(), ScanError> {
+///
+/// The series directory's `series.toml` (`10` §10.4.4) is read into a
+/// [`ScannedSeries`] — the sync needs it to write the `episode_series` parent
+/// row that every `episodes.series_id` foreign key references.
+fn scan_episode_type(
+    type_dir: &Path,
+    out: &mut Vec<Item>,
+    series_out: &mut Vec<ScannedSeries>,
+) -> Result<(), ScanError> {
     for series_dir in sorted_subdirs(type_dir)? {
+        series_out.push(read_series(&series_dir)?);
+        // `sorted_subdirs` returns directories only, so the series' own
+        // `series.toml` file is naturally excluded — each remaining entry is
+        // one episode Item directory.
         for episode_dir in sorted_subdirs(&series_dir)? {
             let slug_name = dir_name(&episode_dir);
             out.push(build_item(ContentKind::Episode, &slug_name, &episode_dir)?);
         }
     }
     Ok(())
+}
+
+/// Read a series directory's `series.toml` into a [`ScannedSeries`].
+///
+/// The series `slug` is always the directory name — the structural identity
+/// the episode scan also derives `series_id` from — so the FK target matches
+/// regardless of what the `series.toml` `slug` field says. A missing
+/// `series.toml`, or a missing field within it, is tolerated: `title` /
+/// `description` fall back to empty and `status` to `"ongoing"`, so an author
+/// who only made the directory still gets a valid `episode_series` row.
+fn read_series(series_dir: &Path) -> Result<ScannedSeries, ScanError> {
+    let slug = dir_name(series_dir);
+    let toml_path = series_dir.join("series.toml");
+    let doc: toml::Value = if toml_path.is_file() {
+        read_file(&toml_path)?
+            .parse()
+            .map_err(|e: toml::de::Error| ScanError::MalformedSeries {
+                slug: slug.clone(),
+                detail: e.to_string(),
+            })?
+    } else {
+        toml::Value::Table(Default::default())
+    };
+    let field = |key: &str| {
+        doc.get(key)
+            .and_then(toml::Value::as_str)
+            .unwrap_or_default()
+            .to_owned()
+    };
+    let status = doc
+        .get("status")
+        .and_then(toml::Value::as_str)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("ongoing")
+        .to_owned();
+    Ok(ScannedSeries {
+        slug,
+        title: field("title"),
+        description: field("description"),
+        status,
+    })
 }
 
 /// Build one `Item` from its directory: read every Part under `parts/`.
@@ -342,4 +429,63 @@ fn scan_timestamp(path: &Path) -> OffsetDateTime {
         .and_then(|m| m.modified())
         .map(OffsetDateTime::from)
         .unwrap_or(OffsetDateTime::UNIX_EPOCH)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A fresh temp directory unique to this test process.
+    fn tmp_dir(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("silan-scan-{}-{tag}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        dir
+    }
+
+    #[test]
+    fn read_series_takes_fields_from_series_toml() {
+        let dir = tmp_dir("with-toml").join("building-easynet");
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        std::fs::write(
+            dir.join("series.toml"),
+            "title = \"Building EasyNet\"\ndescription = \"A journal.\"\nstatus = \"completed\"\n",
+        )
+        .expect("write series.toml");
+
+        let series = read_series(&dir).expect("read series");
+        // `slug` is the directory name — the FK target — not a toml field.
+        assert_eq!(series.slug, "building-easynet");
+        assert_eq!(series.title, "Building EasyNet");
+        assert_eq!(series.description, "A journal.");
+        assert_eq!(series.status, "completed");
+        let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
+    }
+
+    #[test]
+    fn read_series_tolerates_a_missing_series_toml() {
+        // An author who only made the directory still gets a valid
+        // `episode_series` row: empty text fields, `status` defaulting to
+        // `ongoing` so the column's NOT NULL constraint is satisfied.
+        let dir = tmp_dir("no-toml").join("orphan-series");
+        std::fs::create_dir_all(&dir).expect("mkdir");
+
+        let series = read_series(&dir).expect("read series");
+        assert_eq!(series.slug, "orphan-series");
+        assert_eq!(series.title, "");
+        assert_eq!(series.description, "");
+        assert_eq!(series.status, "ongoing");
+        let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
+    }
+
+    #[test]
+    fn read_series_rejects_malformed_toml() {
+        let dir = tmp_dir("bad-toml").join("broken-series");
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        std::fs::write(dir.join("series.toml"), "title = \n").expect("write");
+
+        let err = read_series(&dir).expect_err("malformed toml is an error");
+        assert!(matches!(err, ScanError::MalformedSeries { .. }));
+        let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
+    }
 }
