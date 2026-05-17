@@ -86,8 +86,27 @@ pub fn coerce(map: &serde_yaml::Mapping, spec: &FieldSpec) -> Option<FieldValue>
     }
     let decl = spec.type_decl.as_str();
 
-    // List types.
+    // List types. A `list<{...}>` declaration is a list of records (each
+    // element a YAML mapping, e.g. `social_links`); any other `list<...>`
+    // is a list of scalars coerced to strings.
     if decl.starts_with("list<") || decl.starts_with("list ") {
+        if decl.contains('{') {
+            let records = raw
+                .as_sequence()?
+                .iter()
+                .filter_map(|v| {
+                    let map = v.as_mapping()?;
+                    let mut record = std::collections::BTreeMap::new();
+                    for (k, val) in map {
+                        if let (Some(key), Some(text)) = (k.as_str(), yaml_scalar(val)) {
+                            record.insert(key.to_owned(), text);
+                        }
+                    }
+                    (!record.is_empty()).then_some(record)
+                })
+                .collect();
+            return Some(FieldValue::Records(records));
+        }
         let items = raw
             .as_sequence()?
             .iter()
@@ -109,6 +128,17 @@ pub fn coerce(map: &serde_yaml::Mapping, spec: &FieldSpec) -> Option<FieldValue>
         // string / text / slug / date / datetime / enum(...) — all stored as
         // text; their stricter checks belong to `validate`.
         _ => raw.as_str().map(|s| FieldValue::Text(s.to_owned())),
+    }
+}
+
+/// Render a YAML scalar (string / int / float / bool) as a string. Used for
+/// the values inside a `list<{...}>` record. Returns `None` for non-scalars.
+fn yaml_scalar(value: &serde_yaml::Value) -> Option<String> {
+    match value {
+        serde_yaml::Value::String(s) => Some(s.clone()),
+        serde_yaml::Value::Bool(b) => Some(b.to_string()),
+        serde_yaml::Value::Number(n) => Some(n.to_string()),
+        _ => None,
     }
 }
 

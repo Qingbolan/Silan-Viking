@@ -89,6 +89,7 @@ fn propose_writes_the_part_path_on_a_branch() {
         &root,
         "silan://resources/blog/hello-world/body",
         "# Revised body\n\nProposed via MCP.\n",
+        "en",
     )
     .expect("propose succeeds");
 
@@ -99,6 +100,27 @@ fn propose_writes_the_part_path_on_a_branch() {
     let part = "resources/blog/hello-world/parts/body/en.md";
     let body = git(&root, &["show", &format!("{}:{part}", created.branch)]);
     assert!(body.contains("Proposed via MCP."));
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn propose_lang_targets_the_language_variant() {
+    // An agent proposing a `zh` variant — e.g. a Chinese resume summary —
+    // must land at `<role>/zh.md`, not the default `en.md`.
+    let root = fresh_repo("propose-lang");
+
+    let created = silan_viking_mcp::propose(
+        &root,
+        "silan://resources/blog/hello-world/body",
+        "# 修订正文\n\n经 MCP 提案。\n",
+        "zh",
+    )
+    .expect("propose succeeds");
+
+    let part = "resources/blog/hello-world/parts/body/zh.md";
+    let body = git(&root, &["show", &format!("{}:{part}", created.branch)]);
+    assert!(body.contains("经 MCP 提案。"));
 
     let _ = std::fs::remove_dir_all(&root);
 }

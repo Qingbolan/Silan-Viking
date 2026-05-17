@@ -216,6 +216,7 @@ pub fn table_columns(table: &str) -> Option<Vec<String>> {
         content_interaction,
         comments,
         request_logs,
+        social_links,
     );
     None
 }

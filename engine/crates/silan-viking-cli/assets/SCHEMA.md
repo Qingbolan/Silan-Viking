@@ -246,6 +246,7 @@ types:
           - { name: doi,              type: string,         required: false, translatable: false }
           - { name: url,              type: string,         required: false, translatable: false }
           - { name: pdf_url,          type: string,         required: false, translatable: false }
+          - { name: image_url,        type: string,         required: false, translatable: false }
           - { name: citation_count,   type: int,            required: false, translatable: false }
           - { name: is_peer_reviewed, type: bool,           required: false, translatable: false }
           - { name: sort_order,       type: int,            required: false, translatable: false }
@@ -273,6 +274,7 @@ types:
           - { name: is_ongoing,     type: bool,         required: false, translatable: false }
           - { name: location,       type: string,       required: false, translatable: true }
           - { name: research_type,  type: string,       required: false, translatable: true }
+          - { name: image_url,      type: string,       required: false, translatable: false }
           - { name: funding_source, type: string,       required: false, translatable: true }
           - { name: funding_amount, type: float,        required: false, translatable: false }
           - { name: details,        type: "list<text>", required: false, translatable: true }

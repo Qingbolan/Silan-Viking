@@ -318,5 +318,7 @@ fn sql_value(value: &FieldValue) -> SqlValue {
         FieldValue::Float(f) => SqlValue::Float(*f),
         FieldValue::Bool(b) => SqlValue::Bool(*b),
         FieldValue::List(items) => SqlValue::Text(items.join(", ")),
+        // Record lists fan out to side tables, never a scalar column.
+        FieldValue::Records(_) => SqlValue::Null,
     }
 }

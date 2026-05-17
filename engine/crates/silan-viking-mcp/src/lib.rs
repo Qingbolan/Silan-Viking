@@ -176,7 +176,8 @@ pub fn tool_specs() -> Vec<ToolSpec> {
         ToolSpec {
             name: "propose",
             tier: Proposal,
-            description: "draft a content proposal",
+            description: "draft a content proposal (args: uri, draft, lang?=en) — \
+                          targets an Item or Part; lang picks the language variant",
         },
         ToolSpec {
             name: "summarize_updates",
@@ -339,20 +340,30 @@ pub struct ProposalCreated {
     pub branch: String,
 }
 
-/// `propose(uri, draft)` — write an agent draft onto a fresh `proposal/<id>`
-/// Git branch and register it (`03` §3.1). The draft is written to the Item
-/// or Part path the URI anchors to; `accept` (CLI, human-only) merges it.
+/// `propose(uri, draft, lang)` — write an agent draft onto a fresh
+/// `proposal/<id>` Git branch and register it (`03` §3.1). The draft is
+/// written to the Item or Part path the URI anchors to; `accept` (CLI,
+/// human-only) merges it.
+///
+/// `lang` is the language variant the draft targets (`en`, `zh`, …),
+/// defaulting to `en`. It lets an agent propose a non-English variant —
+/// e.g. a Chinese `summary/zh.md` bio — without a separate tool.
 ///
 /// The proposal branch lifecycle is owned by the engine
 /// (`Workspace::create_proposal`); this function supplies only the id, the
 /// touched URI, and a closure writing the one draft file.
-pub fn propose(content_root: &Path, uri: &str, draft: &str) -> Result<ProposalCreated, McpError> {
+pub fn propose(
+    content_root: &Path,
+    uri: &str,
+    draft: &str,
+    lang: &str,
+) -> Result<ProposalCreated, McpError> {
     let target = ProposalTarget::parse(uri).map_err(|e| McpError::Proposal(e.to_string()))?;
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
 
     let id =
         ProposalId::new(Ulid::new().to_string()).map_err(|e| McpError::Proposal(e.to_string()))?;
-    let rel = draft_rel_path(&target);
+    let rel = draft_rel_path(&target, lang);
 
     ws.create_proposal(
         &id,
@@ -406,15 +417,16 @@ fn write_draft_file(path: &Path, body: &str) -> Result<(), silan_viking_app::Pro
 }
 
 /// The repo-relative file path a proposal draft is written to. An Item target
-/// writes its primary `body` Part; a Part target writes that Part's `en.md`.
-fn draft_rel_path(target: &ProposalTarget) -> String {
+/// writes its primary `body` Part; a Part target writes that Part's prose
+/// file. `lang` selects the language variant (`<lang>.md`).
+fn draft_rel_path(target: &ProposalTarget, lang: &str) -> String {
     match target {
         ProposalTarget::Item(uri) => {
-            // silan://resources/<kind>/<slug> -> resources/<kind>/<slug>/parts/body/en.md
-            format!("{}/parts/body/en.md", uri_to_rel(uri))
+            // silan://resources/<kind>/<slug> -> resources/<kind>/<slug>/parts/body/<lang>.md
+            format!("{}/parts/body/{lang}.md", uri_to_rel(uri))
         }
         ProposalTarget::Part { item, role } => {
-            format!("{}/parts/{role}/en.md", uri_to_rel(item))
+            format!("{}/parts/{role}/{lang}.md", uri_to_rel(item))
         }
     }
 }
@@ -612,7 +624,7 @@ pub fn summarize_updates(content_root: &Path, summary: &str) -> Result<ProposalC
          status: active\nvisibility: private\ndate: {}\n---\n\n{summary}\n",
         today_utc()
     );
-    propose(content_root, &uri, &draft)
+    propose(content_root, &uri, &draft, "en")
 }
 
 /// Today's date `YYYY-MM-DD` (UTC).
@@ -843,7 +855,9 @@ pub fn call(
         "propose" => {
             let uri = str_arg("uri")?;
             let draft = str_arg("draft")?;
-            let created = propose(content_root, &uri, &draft)?;
+            // `lang` is optional — defaults to the canonical `en` variant.
+            let lang = opt_str("lang").unwrap_or_else(|| "en".to_owned());
+            let created = propose(content_root, &uri, &draft, &lang)?;
             Ok(json!({ "proposal_id": created.id, "branch": created.branch }))
         }
         "summarize_updates" => {

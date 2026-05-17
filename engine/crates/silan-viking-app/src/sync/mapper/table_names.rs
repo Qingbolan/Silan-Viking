@@ -69,6 +69,10 @@ pub const TAG_TABLE: &str = "tag";
 /// the content kind. Mirrors `content_relation` / `content_interaction`.
 pub const CONTENT_TAG_TABLE: &str = "content_tag";
 
+/// The social-links table — one row per resume `social_links` entry, each
+/// owned by the `personal_info` row via `personal_info_id`.
+pub const SOCIAL_LINKS_TABLE: &str = "social_links";
+
 #[cfg(test)]
 mod tests {
     use super::*;
