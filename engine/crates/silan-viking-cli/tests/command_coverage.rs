@@ -216,9 +216,20 @@ fn everything_synced_passes_validation() {
 #[test]
 fn init_makes_content_a_git_repo() {
     // `06` §6.2: `silan init` must `git init` + commit, so the proposal plane
-    // has a repo to branch from.
+    // has a repo to branch from, with the default identity configured so the
+    // proposal merge commit has an author.
     let c = fresh_project();
     assert!(c.join(".git").is_dir(), "init must create a git repo");
+    let git_config = |key: &str| -> String {
+        let out = Command::new("git")
+            .args(["config", "--local", key])
+            .current_dir(&c)
+            .output()
+            .expect("git config");
+        String::from_utf8_lossy(&out.stdout).trim().to_owned()
+    };
+    assert_eq!(git_config("user.name"), "Silan.Hu");
+    assert_eq!(git_config("user.email"), "silan.hu@u.nus.edu");
     let _ = std::fs::remove_dir_all(c.parent().expect("root"));
 }
 

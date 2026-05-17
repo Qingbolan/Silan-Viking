@@ -377,13 +377,18 @@ fn init_content(content_root: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Run `git init` over `content/` and make the first commit, unless the
-/// directory is already a Git repo. A missing `git` binary exits with code 2
-/// (`06` §6.8: environment error), distinct from a code-1 user error.
+/// The default Git author for the `content/` repo (`06` §6.2). Persisted into
+/// the repo's own `git config` at `init`, so every later commit — the
+/// proposal merge commit (`03` §3.1 accept), `ctx_write`, `reflect` — carries
+/// it without each call passing `-c`.
+const DEFAULT_GIT_NAME: &str = "Silan.Hu";
+const DEFAULT_GIT_EMAIL: &str = "silan.hu@u.nus.edu";
+
+/// Run `git init` over `content/`, set the default identity, and make the
+/// first commit — unless the directory is already a Git repo. A missing `git`
+/// binary exits with code 2 (`06` §6.8: environment error), distinct from a
+/// code-1 user error.
 fn git_init_content(content_root: &Path) -> Result<(), String> {
-    if content_root.join(".git").is_dir() {
-        return Ok(()); // already a repo (e.g. `init --here` on a clone)
-    }
     let git = |args: &[&str]| -> Result<(), String> {
         let status = match Command::new("git")
             .args(args)
@@ -402,23 +407,49 @@ fn git_init_content(content_root: &Path) -> Result<(), String> {
         }
         Ok(())
     };
+
+    // An already-initialized repo (e.g. `init --here` on a clone): don't
+    // re-init or re-commit, but still ensure the default identity is set so
+    // the proposal merge commit has an author.
+    if content_root.join(".git").is_dir() {
+        git_ensure_identity(content_root);
+        return Ok(());
+    }
+
     // `-b main`: the proposal plane (`03` §3.1) advances the `main` branch
     // ref, so the repo must be born on `main`, not the git default.
     git(&["init", "--quiet", "-b", "main"])?;
+    // Persist the default identity into the repo config so every commit the
+    // engine makes later (proposal merge, ctx_write, reflect) is attributed.
+    git(&["config", "user.name", DEFAULT_GIT_NAME])?;
+    git(&["config", "user.email", DEFAULT_GIT_EMAIL])?;
     git(&["add", "-A"])?;
-    // `-c` keeps the commit working even without a configured git identity.
-    git(&[
-        "-c",
-        "user.name=silan",
-        "-c",
-        "user.email=silan@localhost",
-        "commit",
-        "--quiet",
-        "-m",
-        "chore: silan init",
-    ])?;
-    println!("  git     initialized content/ repo + first commit");
+    git(&["commit", "--quiet", "-m", "chore: silan init"])?;
+    println!("  git     initialized content/ repo ({DEFAULT_GIT_NAME} <{DEFAULT_GIT_EMAIL}>)");
     Ok(())
+}
+
+/// Set the default Git identity on an existing `content/` repo, but only for
+/// keys that are not already configured — never override an identity the
+/// owner set themselves.
+fn git_ensure_identity(content_root: &Path) {
+    for (key, default) in [
+        ("user.name", DEFAULT_GIT_NAME),
+        ("user.email", DEFAULT_GIT_EMAIL),
+    ] {
+        let configured = Command::new("git")
+            .args(["config", "--local", key])
+            .current_dir(content_root)
+            .output()
+            .map(|o| o.status.success() && !o.stdout.is_empty())
+            .unwrap_or(false);
+        if !configured {
+            let _ = Command::new("git")
+                .args(["config", key, default])
+                .current_dir(content_root)
+                .status();
+        }
+    }
 }
 
 fn doctor(content_root: &Path) -> Result<(), String> {

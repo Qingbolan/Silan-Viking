@@ -1,23 +1,49 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, User, ArrowRight, Play, Video, Grid, BookOpen, Tag as TagIcon, ListVideo, Clock } from 'lucide-react';
+import { Calendar, User, ArrowRight, Play, Video, List, Grid, BookOpen, Tag as TagIcon } from 'lucide-react';
 import { Card, Input, Alert, Spin, Empty } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useTheme } from '../components/ThemeContext';
 import { useLanguage } from '../components/LanguageContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { BlogData } from '../components/BlogStack/types/blog';
-import { fetchBlogPosts, fetchEpisodeSeriesList } from '../api';
-import type { EpisodeSeriesData } from '../types/episode';
+import { fetchBlogPosts } from '../api';
+import { useVirtualGrid } from '../hooks/useVirtualGrid';
 
+const { Search } = Input;
+
+// Responsive column count, mirroring the old antd Col breakpoints
+// (xs:1 / sm:2 / lg:3).
+const useResponsiveColumns = (): number => {
+  const [columns, setColumns] = useState(() => {
+    if (typeof window === 'undefined') return 3;
+    const w = window.innerWidth;
+    return w >= 1024 ? 3 : w >= 640 ? 2 : 1;
+  });
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      setColumns(w >= 1024 ? 3 : w >= 640 ? 2 : 1);
+    };
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return columns;
+};
 
 interface BlogCardProps {
   post: BlogData;
+  index: number;
+  featured?: boolean;
   onClick?: (post: BlogData) => void;
 }
 
 const BlogCard: React.FC<BlogCardProps> = ({
   post,
+  index,
+  featured = false,
   onClick
 }) => {
   const { language } = useLanguage();
@@ -39,13 +65,51 @@ const BlogCard: React.FC<BlogCardProps> = ({
     }
   }, [handleClick]);
 
+  // Smart layout calculation for vlog and series
   const isVlog = post.type === 'vlog';
+  const isSeries = post.type === 'episode';
+
+  // Enhanced layout calculation for better visual hierarchy
+  const shouldUseWideLayout = useMemo(() => {
+    if (featured) return true;
+
+    // Series: Same layout frequency as articles for consistency
+    if (isSeries) {
+      const contentLength = (post.summary || '').length + (post.summaryZh || '').length;
+      const isFeaturedPosition = index % 8 === 4; // Same as articles
+      
+      return contentLength > 250 && isFeaturedPosition;
+    }
+
+    // Vlogs: Smart adaptive width based on content and position
+    if (isVlog) {
+      const contentLength = (post.summary || '').length + (post.summaryZh || '').length;
+      const hasVideoElements = Boolean(post.vlogCover) || Boolean(post.videoDuration);
+      const isBalancedPosition = index % 5 === 1 || index % 7 === 2; // More varied positions
+      
+      // Use wide layout for:
+      // 1. Vlogs with rich content (cover + decent description)
+      // 2. Strategic positions for visual balance
+      // 3. Longer content that benefits from more space
+      return hasVideoElements && (contentLength > 120 || isBalancedPosition);
+    }
+
+    // Regular articles: Occasional wide layout for featured content
+    const contentLength = (post.summary || '').length + (post.summaryZh || '').length;
+    const isFeaturedPosition = index % 8 === 4; // Every 8th position starting from 5th
+    
+    return contentLength > 250 && isFeaturedPosition;
+  }, [post, index, featured, isVlog, isSeries]);
+
+  const isWideLayout = shouldUseWideLayout;
 
   // Get the appropriate icon based on type
   const getTypeIcon = () => {
     switch (post.type) {
       case 'vlog':
         return <Video size={16} className="text-red-500" />;
+      case 'series':
+        return <List size={16} className="text-theme-accent" />;
       case 'tutorial':
         return <BookOpen size={16} className="text-green-500" />;
       case 'podcast':
@@ -60,6 +124,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
     switch (post.type) {
       case 'vlog':
         return language === 'en' ? 'Video Blog' : '视频博客';
+      case 'series':
+        return language === 'en' ? 'Series' : '系列';
       case 'tutorial':
         return language === 'en' ? 'Tutorial' : '教程';
       case 'podcast':
@@ -82,14 +148,19 @@ const BlogCard: React.FC<BlogCardProps> = ({
     }, 0);
     const paperNum = String(Math.abs(titleHash) % 10000).padStart(4, '0');
 
-    const prefix = post.type === 'vlog' ? 'vlog' : 'blog';
+    const prefix = post.type === 'vlog' ? 'vlog' :
+      post.type === 'episode' ? 'episode' : 'blog';
 
     return `${prefix}.${year}${month}${day}.${paperNum}`;
   };
 
   const cardCover = (
-    <div className="relative overflow-hidden transition-all duration-300 h-48">
-        {/* Use vlog cover for vlogs or the generated article cover. */}
+    <div className={`relative overflow-hidden transition-all duration-300 ${
+      isWideLayout 
+        ? 'h-64 md:h-72'
+        : 'h-48'
+      }`}>
+        {/* Use vlog cover for vlogs, series image for series, or default cover */}
         {isVlog && post.vlogCover && !imageLoadError ? (
           <div className="relative w-full h-full">
             <img
@@ -100,28 +171,43 @@ const BlogCard: React.FC<BlogCardProps> = ({
             />
             {/* arXiv-style paper number overlay for vlogs */}
             <div className="absolute bottom-2 left-2">
-              <div className="text-xs font-mono text-white bg-black/50 px-2 py-1 rounded backdrop-blur-sm">
+              <div className={`${isWideLayout ? 'text-xs' : 'text-xs'} font-mono text-white bg-black/50 px-2 py-1 rounded backdrop-blur-sm`}>
                 {generatePaperNumber()}
               </div>
             </div>
             {/* Enhanced play button overlay for vlogs */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm transition-all duration-300 group-hover:scale-110">
-                <Play size={24} className="text-white ml-1" />
+              <div className={`${isWideLayout ? 'w-20 h-20' : 'w-16 h-16'} rounded-full bg-black/70 flex items-center justify-center backdrop-blur-sm transition-all duration-300 group-hover:scale-110`}>
+                <Play size={isWideLayout ? 28 : 24} className="text-white ml-1" />
+              </div>
+            </div>
+          </div>
+        ) : (isSeries && post.seriesImage && !imageLoadError) ? (
+          <div className="relative w-full h-full">
+            <img
+              src={post.seriesImage}
+              alt={language === 'zh' && post.seriesTitleZh ? post.seriesTitleZh : post.seriesTitle || post.title}
+              className="w-full h-full object-cover"
+              onError={() => setImageLoadError(true)}
+            />
+            {/* arXiv-style paper number overlay for series */}
+            <div className="absolute top-2 left-2">
+              <div className={`${isWideLayout ? 'text-xs' : 'text-xs'} font-mono text-white bg-black/50 px-2 py-1 rounded backdrop-blur-sm`}>
+                {generatePaperNumber()}
               </div>
             </div>
           </div>
         ) : (
           <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-project">
             {/* arXiv-style paper number - centered display */}
-            <div className="text-2xl font-bold opacity-20 text-theme-primary font-mono">
+            <div className={`${isWideLayout ? 'text-4xl' : 'text-2xl'} font-bold opacity-20 text-theme-primary font-mono`}>
               {generatePaperNumber()}
             </div>
             {/* Enhanced play button for vlogs without cover */}
             {isVlog && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-black/20 flex items-center justify-center backdrop-blur-sm transition-all duration-300 group-hover:bg-black/30">
-                  <Play size={24} className="text-theme-primary opacity-30" />
+                <div className={`${isWideLayout ? 'w-20 h-20' : 'w-16 h-16'} rounded-full bg-black/20 flex items-center justify-center backdrop-blur-sm transition-all duration-300 group-hover:bg-black/30`}>
+                  <Play size={isWideLayout ? 28 : 24} className="text-theme-primary opacity-30" />
                 </div>
               </div>
             )}
@@ -138,7 +224,9 @@ const BlogCard: React.FC<BlogCardProps> = ({
 
         {/* Enhanced duration/reading time overlay */}
         <div className="absolute top-4 right-4">
-          <div className="px-3 py-1 rounded-full font-medium backdrop-blur-sm bg-black/50 text-white text-xs">
+          <div className={`px-3 py-1 rounded-full font-medium backdrop-blur-sm bg-black/50 text-white ${
+            isWideLayout ? 'text-sm' : 'text-xs'
+          }`}>
             {isVlog && post.videoDuration ? (
               <div className="flex items-center gap-1">
                 <Play size={12} />
@@ -149,72 +237,154 @@ const BlogCard: React.FC<BlogCardProps> = ({
             )}
           </div>
         </div>
+
+        {/* Series episode indicator */}
+        {isSeries && post.episodeNumber && post.totalEpisodes && (
+          <div className="absolute bottom-4 left-4">
+            <div className="px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-theme-primary/80 text-white">
+              {language === 'en' ? `Episode ${post.episodeNumber}/${post.totalEpisodes}` : `第${post.episodeNumber}集/共${post.totalEpisodes}集`}
+            </div>
+          </div>
+        )}
     </div>
   );
 
   const cardContent = (
     <div>
         {/* Enhanced meta info */}
-        <div className="flex items-center flex-wrap gap-3 mb-4 text-sm">
+        <div className={`flex items-center flex-wrap gap-3 mb-4 ${
+          isWideLayout ? 'text-base' : 'text-sm'
+        }`}>
           <div className="flex items-center space-x-1 text-theme-tertiary">
-            <Calendar size={14} />
+            <Calendar size={isWideLayout ? 16 : 14} />
             <span>{new Date(post.publishDate).toLocaleDateString()}</span>
           </div>
           <div className="flex items-center space-x-1 text-theme-tertiary">
-            <User size={14} />
+            <User size={isWideLayout ? 16 : 14} />
             <span>{post.author}</span>
           </div>
           {/* Additional vlog-specific meta info */}
           {isVlog && post.videoDuration && (
             <div className="flex items-center space-x-1 text-red-500">
-              <Video size={14} />
+              <Video size={isWideLayout ? 16 : 14} />
               <span>{post.videoDuration}</span>
+            </div>
+          )}
+          {/* Series progress indicator */}
+          {isSeries && post.episodeNumber && post.totalEpisodes && (
+            <div className="flex items-center space-x-1 text-theme-accent">
+              <List size={isWideLayout ? 16 : 14} />
+              <span>
+                {language === 'en' 
+                  ? `Ep. ${post.episodeNumber}/${post.totalEpisodes}`
+                  : `第${post.episodeNumber}/${post.totalEpisodes}集`
+                }
+              </span>
             </div>
           )}
         </div>
 
+        {/* Series Title and Info (enhanced for wide layout) */}
+        {isSeries && post.seriesTitle && (
+          <div className={`mb-3 ${isWideLayout ? 'mb-4' : 'mb-2'}`}>
+            <div className="flex items-center gap-2 text-theme-accent font-medium">
+              <List size={isWideLayout ? 16 : 14} />
+              <span className={`${isWideLayout ? 'text-base' : 'text-sm'}`}>
+                {language === 'zh' && post.seriesTitleZh ? post.seriesTitleZh : post.seriesTitle}
+              </span>
+              {post.episodeNumber && post.totalEpisodes && (
+                <span className={`ml-2 px-2 py-1 rounded-full bg-theme-primary-light text-theme-accent font-medium ${
+                  isWideLayout ? 'text-xs' : 'text-xs'
+                }`}>
+                  {post.episodeNumber}/{post.totalEpisodes}
+                </span>
+              )}
+            </div>
+            {post.seriesDescription && (
+              <p className={`text-theme-tertiary mt-2 leading-relaxed ${
+                isWideLayout ? 'text-sm' : 'text-xs'
+              }`}>
+                {language === 'zh' && post.seriesDescriptionZh ? post.seriesDescriptionZh : post.seriesDescription}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Title with enhanced styling */}
-        <h2 className="font-bold mb-3 group-hover:text-theme-primary transition-colors duration-300 text-theme-primary leading-tight text-xl">
+        <h2 className={`font-bold mb-3 group-hover:text-theme-primary transition-colors duration-300 text-theme-primary leading-tight ${
+          isWideLayout 
+            ? 'text-2xl md:text-3xl'
+            : 'text-xl'
+        }`}>
           {language === 'zh' && post.titleZh ? post.titleZh : post.title}
         </h2>
 
         {/* Excerpt with improved readability */}
-        <p className="leading-relaxed mb-4 text-theme-secondary text-sm">
+        <p className={`leading-relaxed mb-4 text-theme-secondary ${
+          isWideLayout 
+            ? 'text-base'
+            : 'text-sm'
+        }`}>
           {language === 'zh' && post.summaryZh ? post.summaryZh : post.summary}
         </p>
 
         {/* Post tags */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {post.tags.slice(0, 4).map((tag, tagIndex) => (
+        <div className={`flex flex-wrap gap-2 mb-4 ${isWideLayout ? 'gap-3' : 'gap-2'}`}>
+          {post.tags.slice(0, isWideLayout ? 6 : 4).map((tag, tagIndex) => (
             <span
               key={tagIndex}
-              className="px-3 py-1 rounded-full font-medium border text-xs border-theme-card-border text-theme-secondary hover:text-theme-primary transition-colors duration-200"
+              className={`px-3 py-1 rounded-full font-medium border ${
+                isWideLayout ? 'text-sm' : 'text-xs'
+              } border-theme-card-border text-theme-secondary hover:text-theme-primary transition-colors duration-200`}
               title={tag}
             >
               {tag}
             </span>
           ))}
-          {post.tags.length > 4 && (
-            <span className="px-3 py-1 rounded-full font-medium text-theme-tertiary text-xs">
-              +{post.tags.length - 4}
+          {post.tags.length > (isWideLayout ? 6 : 4) && (
+            <span className={`px-3 py-1 rounded-full font-medium text-theme-tertiary ${
+              isWideLayout ? 'text-sm' : 'text-xs'
+            }`}>
+              +{post.tags.length - (isWideLayout ? 6 : 4)}
             </span>
           )}
         </div>
 
         {/* Enhanced call-to-action with better visual hierarchy */}
         <motion.div
-          className="flex items-center justify-between mt-4"
+          className={`flex items-center justify-between ${isWideLayout ? 'mt-6' : 'mt-4'}`}
           whileHover={{ x: 5 }}
         >
-          <div className="flex items-center space-x-2 font-medium text-theme-accent text-sm">
+          <div className={`flex items-center space-x-2 font-medium text-theme-accent ${
+            isWideLayout ? 'text-base' : 'text-sm'
+          }`}>
             <span>
               {isVlog
                 ? (language === 'en' ? 'Watch video' : '观看视频')
-                : (language === 'en' ? 'Read more' : '阅读更多')
+                : isSeries
+                  ? (language === 'en' ? 'Continue series' : '继续系列')
+                  : (language === 'en' ? 'Read more' : '阅读更多')
               }
             </span>
             {getTypeIcon()}
           </div>
+          {/* Additional visual indicator for wide layout */}
+          {isWideLayout && (
+            <div className="flex items-center space-x-2 text-theme-tertiary text-xs">
+              {isVlog && (
+                <span className="flex items-center gap-1">
+                  <Video size={12} />
+                  {language === 'en' ? 'Video content' : '视频内容'}
+                </span>
+              )}
+              {isSeries && (
+                <span className="flex items-center gap-1">
+                  <BookOpen size={12} />
+                  {language === 'en' ? 'Series' : '系列'}
+                </span>
+              )}
+            </div>
+          )}
         </motion.div>
     </div>
   );
@@ -223,8 +393,8 @@ const BlogCard: React.FC<BlogCardProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="mb-3 break-inside-avoid"
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className={isWideLayout ? 'md:col-span-2' : ''}
     >
       <Card
         hoverable
@@ -235,9 +405,10 @@ const BlogCard: React.FC<BlogCardProps> = ({
         tabIndex={0}
         role="button"
         aria-label={`Read article: ${post.title}`}
-        style={{
+        style={{ 
           borderRadius: '16px',
           overflow: 'hidden',
+          height: '100%'
         }}
         styles={{ body: { background: 'var(--color-cardBackground)' } }}
       >
@@ -270,73 +441,6 @@ const TagFilter: React.FC<TagFilterProps> = ({ tag, active, onClick }) => {
   );
 };
 
-interface SeriesCardProps {
-  series: EpisodeSeriesData;
-}
-
-const SeriesCard: React.FC<SeriesCardProps> = ({ series }) => {
-  const { language } = useLanguage();
-  const latestEpisode = series.episodes[0];
-
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="rounded-2xl border border-theme-card-border bg-theme-card-background p-6"
-    >
-      <div className="mb-4 flex items-start gap-4">
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-theme-primary-light text-theme-accent">
-          <ListVideo size={22} />
-        </div>
-        <div className="min-w-0">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-theme-tertiary">
-            {language === 'en' ? 'Series' : '系列'}
-          </div>
-          <h2 className="text-xl font-semibold leading-tight text-theme-primary">{series.title}</h2>
-          {series.description && (
-            <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-theme-secondary">
-              {series.description}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 text-sm text-theme-tertiary">
-        <span className="flex items-center gap-1">
-          <ListVideo size={14} />
-          {series.episodes.length} {language === 'en' ? 'episodes' : '集'}
-        </span>
-        {latestEpisode?.publish_date && (
-          <span className="flex items-center gap-1">
-            <Calendar size={14} />
-            {latestEpisode.publish_date}
-          </span>
-        )}
-        {latestEpisode?.duration_minutes ? (
-          <span className="flex items-center gap-1">
-            <Clock size={14} />
-            {latestEpisode.duration_minutes}m
-          </span>
-        ) : null}
-      </div>
-
-      {series.episodes.length > 0 && (
-        <div className="mt-5 space-y-3">
-          {series.episodes.slice(0, 3).map((episode) => (
-            <div key={episode.id} className="border-t border-theme-border pt-3">
-              <div className="text-xs text-theme-tertiary">
-                {language === 'en' ? 'Episode' : '第'} {episode.episode_number}
-              </div>
-              <div className="mt-1 font-medium text-theme-primary">{episode.title}</div>
-            </div>
-          ))}
-        </div>
-      )}
-    </motion.article>
-  );
-};
-
 const BlogStack: React.FC = () => {
   const { colors } = useTheme();
   const { language } = useLanguage();
@@ -344,7 +448,6 @@ const BlogStack: React.FC = () => {
   const location = useLocation();
 
   const [posts, setPosts] = useState<BlogData[]>([]);
-  const [series, setSeries] = useState<EpisodeSeriesData[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogData[]>([]);
   const [selectedTag, setSelectedTag] = useState<string>(() => (language === 'en' ? 'All' : '全部'));
   const [selectedType, setSelectedType] = useState<string>(() => (language === 'en' ? 'All' : '全部'));
@@ -375,7 +478,7 @@ const BlogStack: React.FC = () => {
       const typeMap: Record<string, string> = {
         'article': language === 'en' ? 'Articles' : '文章',
         'vlog': language === 'en' ? 'Videos' : '视频',
-        'series': language === 'en' ? 'Series' : '系列',
+        'episode': language === 'en' ? 'Series' : '系列'
       };
       const displayType = typeMap[typeParam] || allLabel;
       setSelectedType(displayType);
@@ -400,14 +503,11 @@ const BlogStack: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const [fetchedPosts, fetchedSeries] = await Promise.all([
-          fetchBlogPosts({}, language as 'en' | 'zh'),
-          fetchEpisodeSeriesList(language as 'en' | 'zh').catch(() => []),
-        ]);
+        // Fetch blog posts from API with language support
+        const fetchedPosts = await fetchBlogPosts({}, language as 'en' | 'zh');
 
         if (isMounted) {
           setPosts(fetchedPosts);
-          setSeries(fetchedSeries);
           setFilteredPosts(fetchedPosts);
           setLoading(false);
         }
@@ -438,15 +538,12 @@ const BlogStack: React.FC = () => {
       const typeMap: Record<string, string> = {
         'Articles': 'article',
         'Videos': 'vlog',
-        'Series': 'series',
+        'Series': 'episode',
         '文章': 'article',
         '视频': 'vlog',
-        '系列': 'series',
+        '系列': 'episode'
       };
       const targetType = typeMap[selectedType] || selectedType;
-      if (targetType === 'series') {
-        return [];
-      }
       filtered = filtered.filter(post => (post.type || 'article') === targetType);
     }
 
@@ -474,45 +571,48 @@ const BlogStack: React.FC = () => {
     return [language === 'en' ? 'All' : '全部', ...allTags];
   }, [posts, language]);
 
-  // Content type chips — only show a type that actually has content.
+  // Get content types
   const contentTypes = useMemo(() => {
-    const en = language === 'en';
-    const all = en ? 'All' : '全部';
-    const hasArticles = posts.some(p => (p.type || 'article') === 'article');
-    const hasVideos = posts.some(p => p.type === 'vlog');
-    const hasSeries = series.length > 0;
-    const out = [all];
-    if (hasArticles) out.push(en ? 'Articles' : '文章');
-    if (hasVideos) out.push(en ? 'Videos' : '视频');
-    if (hasSeries) out.push(en ? 'Series' : '系列');
-    return out;
-  }, [posts, series, language]);
-
-  // Reset the type filter if the selected type no longer has content.
-  useEffect(() => {
-    if (!contentTypes.includes(selectedType)) {
-      setSelectedType(language === 'en' ? 'All' : '全部');
-    }
-  }, [contentTypes, selectedType, language]);
+    const types = language === 'en'
+      ? ['All', 'Articles', 'Videos', 'Series']
+      : ['全部', '文章', '视频', '系列'];
+    return types;
+  }, [language]);
 
   const handlePostClick = useCallback((post: BlogData) => {
     // Navigate to blog detail page
     navigate(`/blog/${post.id}`);
   }, [navigate]);
 
-  const selectedTypeKey = useMemo(() => {
-    const typeMap: Record<string, string> = {
-      'All': 'all',
-      '全部': 'all',
-      'Articles': 'article',
-      '文章': 'article',
-      'Videos': 'vlog',
-      '视频': 'vlog',
-      'Series': 'series',
-      '系列': 'series',
-    };
-    return typeMap[selectedType] || 'all';
-  }, [selectedType]);
+  // ── Virtualized grid (pretext-measured) ──────────────────────────
+  const columns = useResponsiveColumns();
+
+  // Items fed to the virtual grid: id + the two text blocks whose
+  // wrapped height pretext computes to predict each card's size.
+  const gridItems = useMemo(
+    () =>
+      filteredPosts.map((post) => ({
+        id: post.id,
+        title: (language === 'zh' && post.titleZh ? post.titleZh : post.title) || '',
+        excerpt:
+          (language === 'zh' && post.summaryZh ? post.summaryZh : post.summary) || '',
+        post,
+      })),
+    [filteredPosts, language],
+  );
+
+  const { containerRef, totalHeight, virtualRows } = useVirtualGrid(gridItems, {
+    columns,
+    // Cover image + tags row + CTA + paddings/margins (everything that
+    // is not the measured title/excerpt text).
+    chromeHeight: 348,
+    gap: 12,
+    titleFont: '700 20px Inter',
+    titleLineHeight: 28,
+    excerptFont: '400 14px Inter',
+    excerptLineHeight: 20,
+  });
+
 
   if (loading) {
     return (
@@ -573,14 +673,13 @@ const BlogStack: React.FC = () => {
         >
           {/* Search Bar */}
           <div className="max-w-md mx-auto">
-            <Input
+            <Search
               placeholder={language === 'en' ? 'Search articles...' : '搜索文章...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               size="large"
-              allowClear
               style={{ borderRadius: '12px' }}
-              prefix={<SearchOutlined className="text-theme-tertiary" />}
+              prefix={<SearchOutlined />}
               aria-label={language === 'en' ? 'Search articles' : '搜索文章'}
             />
           </div>
@@ -626,87 +725,76 @@ const BlogStack: React.FC = () => {
           </div>
         </motion.div>
 
-        {selectedTypeKey === 'series' ? (
+        {/* Blog Posts Grid — virtualized, pretext-measured row heights */}
+        <AnimatePresence mode="wait">
           <motion.div
-            key="series"
+            key={`${selectedTag}-${selectedType}-${searchTerm}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            {series.length > 0 ? (
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {series.map((item) => (
-                  <SeriesCard key={item.id} series={item} />
+            {/* Scroll viewport. Only rows near the viewport are mounted;
+                pretext pre-computes each card's height so the scrollbar
+                and offsets are exact, with no layout-shift guesswork. */}
+            <div
+              ref={containerRef}
+              className="relative overflow-y-auto"
+              style={{ height: 'min(78vh, 900px)' }}
+            >
+              {/* Spacer giving the scrollbar its true total length. */}
+              <div style={{ height: totalHeight, position: 'relative' }}>
+                {virtualRows.map((row) => (
+                  <div
+                    key={row.index}
+                    className="absolute left-0 right-0 grid"
+                    style={{
+                      top: row.offset,
+                      height: row.height,
+                      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+                      gap: 12,
+                    }}
+                  >
+                    {row.items.map((item) => (
+                      <BlogCard
+                        key={item.id}
+                        post={item.post}
+                        index={row.index * columns}
+                        featured={false}
+                        onClick={handlePostClick}
+                      />
+                    ))}
+                  </div>
                 ))}
               </div>
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <span>
-                    <h3 className="text-xl font-semibold mb-2">
-                      {language === 'en' ? 'No series found' : '暂无系列'}
-                    </h3>
-                    <p>
-                      {language === 'en'
-                        ? 'Series will appear here when episodic content is published.'
-                        : '分集内容发布后会显示在这里。'}
-                    </p>
-                  </span>
-                }
-              />
-            )}
+            </div>
           </motion.div>
-        ) : (
-          <>
-            {/* Blog Posts — CSS columns masonry. The browser lays each
-                card out by its real content height; `break-inside-avoid`
-                on the card keeps it whole. No height prediction. */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${selectedTag}-${selectedType}-${searchTerm}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="[column-gap:12px] columns-1 sm:columns-2 xl:columns-3"
-              >
-                {filteredPosts.map((post) => (
-                  <BlogCard
-                    key={post.id}
-                    post={post}
-                    onClick={handlePostClick}
-                  />
-                ))}
-              </motion.div>
-            </AnimatePresence>
+        </AnimatePresence>
 
-            {/* Empty State */}
-            {filteredPosts.length === 0 && !loading && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <span>
-                      <h3 className="text-xl font-semibold mb-2">
-                        {language === 'en' ? 'No articles found' : '未找到文章'}
-                      </h3>
-                      <p>
-                        {language === 'en'
-                          ? 'Try adjusting your search terms or filters.'
-                          : '尝试调整您的搜索词或筛选器。'
-                        }
-                      </p>
-                    </span>
-                  }
-                />
-              </motion.div>
-            )}
-          </>
+        {/* Empty State */}
+        {filteredPosts.length === 0 && !loading && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <span>
+                  <h3 className="text-xl font-semibold mb-2">
+                    {language === 'en' ? 'No articles found' : '未找到文章'}
+                  </h3>
+                  <p>
+                    {language === 'en'
+                      ? 'Try adjusting your search terms or filters.'
+                      : '尝试调整您的搜索词或筛选器。'
+                    }
+                  </p>
+                </span>
+              }
+            />
+          </motion.div>
         )}
       </div>
     </motion.div>
