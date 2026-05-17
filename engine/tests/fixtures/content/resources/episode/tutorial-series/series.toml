@@ -1,0 +1,5 @@
+# Container series metadata (per 10 §10.4.4).
+title       = "Tutorial Series"
+slug        = "tutorial-series"
+description = "A walkthrough series."
+status      = "ongoing"

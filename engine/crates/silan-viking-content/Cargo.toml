@@ -1,0 +1,19 @@
+# L2 content — the domain-data layer. Depends only on base; it does not parse,
+# does no IO, does no validation, and does not know about the database.
+[package]
+name = "silan-viking-content"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+silan-viking-base = { workspace = true }
+thiserror         = { workspace = true }
+
+[dev-dependencies]
+# `time` is used only by unit tests to build fixed timestamps; the library
+# code itself takes `OffsetDateTime` values from callers and never constructs
+# them, so `time` is not a runtime dependency of this crate.
+time = { workspace = true }

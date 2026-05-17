@@ -1,0 +1,24 @@
+# L4 cli —— 命令行 adapter。binary 名 silan-viking,以 silan 之名进 PATH。
+[package]
+name = "silan-viking-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "silan-viking"
+path = "src/main.rs"
+
+[dependencies]
+silan-viking-app  = { workspace = true }
+silan-viking-mcp  = { workspace = true }
+silan-viking-site = { workspace = true }
+rusqlite          = { workspace = true }
+time              = { workspace = true }
+toml              = { workspace = true }
+
+[dev-dependencies]
+# The CLI integration tests parse the binary's JSON output.
+serde_json        = { workspace = true }

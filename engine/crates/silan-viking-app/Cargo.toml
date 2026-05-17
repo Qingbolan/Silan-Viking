@@ -1,0 +1,23 @@
+# L3 app —— 行为层。Workspace 聚合根 + Parser/Mapper/Sink/Embedder。
+# 依赖 base + content + entities;不依赖任何 L4 adapter。
+[package]
+name = "silan-viking-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+silan-viking-base     = { workspace = true }
+silan-viking-content  = { workspace = true }
+silan-viking-entities = { workspace = true }
+thiserror             = { workspace = true }
+time                  = { workspace = true }
+toml                  = { workspace = true }
+serde                 = { workspace = true }
+serde_json            = { workspace = true }
+serde_yaml            = { workspace = true }
+rusqlite              = { workspace = true }
+tracing               = { workspace = true }
+ureq                  = { workspace = true }

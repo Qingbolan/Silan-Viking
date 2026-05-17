@@ -1,0 +1,14 @@
+# L4 site —— 网站投影 + 爬虫产物 + deploy promote(里程碑 M9)。
+[package]
+name = "silan-viking-site"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+silan-viking-app = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+rusqlite = { workspace = true }
