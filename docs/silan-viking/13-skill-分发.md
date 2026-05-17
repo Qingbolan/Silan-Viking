@@ -223,7 +223,7 @@ agent 先被 skill 正文接住,再由正文把「像在做什么」翻译成「
   | 说出一个半成形的念头 | capture(note, type) —— 起一个提案，不直接落库 |
   | 想把某个想法想深、写成文 | recall 先看有没有相关旧 Item；再 propose |
   | 想推进某个 project / idea | propose 锚到对应 Part（progress 等）|
-  | 问「这篇有多少人看」 | stats / visitors / crawler_breakdown / source_breakdown（远程查询）|
+  | 问「这篇有多少人看」 | stats / visitors / crawler_breakdown / source_breakdown（读 sync 过的本地缓存）|
   | 让你记住关于他/项目的事 | ctx_write 到 silan://agent/ —— 直接写，不走提案 |
   | 会话结束 | reflect(session) —— 沉淀进 agent/sessions/ 与 agent/owner/ |
 
@@ -292,16 +292,22 @@ skill 生成逻辑放在 **`silan-viking-cli` crate**,不新建 crate ——
 L4 adapter(对比 `silan-viking-mcp` 是一个真的 server 进程)。
 
 ```
-silan-viking-cli/src/groups/skill.rs   # silan skill emit/status/rm 三个子命令
-                                       # 读 silan-viking.toml + SCHEMA.md,
-                                       # 渲染 SKILL.md + reference/ 到 ~/.claude/skills/
+silan-viking-cli/src/skill.rs   # silan skill emit/status/rm 三个子命令
+                                # 读 silan-viking.toml + SCHEMA.md,
+                                # 渲染 SKILL.md + reference/ 到 ~/.claude/skills/
 ```
 
 - `SKILL.md` 的 frontmatter description 用**固定模板字符串**(§13.4 的写法
   纪律已定死),只有正文里的 type 清单 / MCP 坐标是变量插值。
 - `silan skill status` 的「一致性比对」:对 `SKILL.md` 与「当前 `silan-viking.toml`
-  + `SCHEMA.md` 重新渲染的结果」做 `ContentHash`(复用 `silan-viking-base`
-  的 `ContentHash`,`01` §1.1)比对 —— 不一致提示 `silan skill emit` 重生成。
+  + `SCHEMA.md` 重新渲染的结果」做逐字节比对 —— 不一致提示 `silan skill
+  emit` 重生成。除此之外它输出 §13.3 规则 4 的诊断字段:`binary_found`、
+  `mcp_available`、`transport_resolved`、`schema_hash_match`、
+  `skill_hash_match`、`status`(`not_installed`/`up_to_date`/`stale`)。
+- `silan skill emit` 在 `[mcp].transport = "tcp"` 时额外写
+  `reference/mcp-tools.local.md`(`127.0.0.1:<port>` 本机 hint)并把它加进
+  skill 包的 `.gitignore` —— 同步包里只留 stdio 约定的 `mcp-tools.md`。
+  stdio(默认)不生成 local 文件。
 
 > 这一章不动 L1–L3,不动 `silan-viking-mcp`。它纯粹是 `silan-viking-cli`
 > 多一个工具命令组 —— 与 `01` §1.1「加一个新对外接口才加 L4 crate」自洽:

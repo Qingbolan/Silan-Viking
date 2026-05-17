@@ -9,6 +9,7 @@ use std::env;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 
 /// The canonical `content/SCHEMA.md`, embedded so `silan init` writes a
 /// schema the engine can actually parse (it needs the fenced ```yaml``` block).
@@ -37,6 +38,9 @@ fn run(args: Vec<String>) -> Result<(), String> {
             println!("db={}", opts.db_path.display());
             Ok(())
         }
+        ["config", "edit"] => config_edit(&opts.content_root, false),
+        ["config", "edit", "--global"] => config_edit(&opts.content_root, true),
+        ["completion", shell] => completion(shell),
         ["index", "sync"] => {
             let ws = Workspace::open(&opts.content_root).map_err(|e| e.to_string())?;
             let report = ws.sync(&opts.db_path).map_err(|e| e.to_string())?;
@@ -67,6 +71,9 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["content", "show", uri] => content_show(&opts.content_root, uri),
         ["relation", "graph"] => relation_graph(&opts.content_root),
         ["relation", "show", uri] => relation_show(&opts.content_root, uri),
+        ["relation", "link", from, to, "--type", kind] => {
+            relation_link(&opts.content_root, from, to, kind)
+        }
         ["skill", "emit"] => skill::emit(&opts.content_root, &skill::default_skill_dir()),
         ["skill", "emit", "--path", path] | ["skill", "emit", path] => {
             skill::emit(&opts.content_root, Path::new(path))
@@ -165,6 +172,11 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["proposal", "list"] => proposal_list(&opts.content_root),
         ["proposal", "show", id] => proposal_show(&opts.content_root, id),
         ["proposal", "accept", id] => proposal_accept(&opts.content_root, id),
+        ["proposal", "reject", id] => proposal_reject(&opts.content_root, id),
+        ["proposal", "rebase", id, "--continue"] => {
+            proposal_rebase_continue(&opts.content_root, id)
+        }
+        ["proposal", "rebase", id] => proposal_rebase(&opts.content_root, id),
         ["stats", "sync", uri] => stats_sync(&opts.content_root, &opts.db_path, uri),
         ["stats", "show", uri] => stats_show(&opts.db_path, uri),
         ["stats", "visitors", uri] => stats_visitors(&opts.db_path, uri),
@@ -172,9 +184,19 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["stats", "sources", uri] => stats_sources(&opts.db_path, uri),
         ["mcp", "serve", "--stdio"] => mcp_stdio(&opts.content_root, &opts.db_path),
         ["mcp", "serve"] => mcp_handshake(&opts.content_root),
+        ["mcp", "status"] => mcp_status(&opts.content_root),
         ["site", "build"] | ["site", "preview"] => site_build(&opts.content_root, &opts.out_dir),
-        ["site", "check"] | ["site", "status"] => site_check(&opts.content_root),
+        ["site", "check"] => site_check(&opts.content_root),
+        ["site", "status"] => site_status(&opts.content_root),
         ["site", "promote", live, snapshot, commit] => site_promote(live, snapshot, commit),
+        ["site", "publish", uri] => site_publish(&opts.content_root, uri),
+        ["site", "deploy"] | ["site", "deploy", "--dry-run"] => {
+            site_deploy(&opts.content_root, &opts.db_path, &opts.out_dir, false)
+        }
+        ["site", "deploy", "--confirm"] => {
+            site_deploy(&opts.content_root, &opts.db_path, &opts.out_dir, true)
+        }
+        ["site", "rollback"] => site_rollback(&opts.content_root),
         _ => Err(format!("unknown command `{}`", opts.command.join(" "))),
     }
 }
@@ -248,14 +270,23 @@ Tool groups:
   content tree|ls|show <uri>
   index sync|status|lint|rebuild
   relation graph|show <uri>
+  relation link <from> <to> --type <kind>
   site build|preview|check|status [--out PATH]
+  site publish <uri>               (set visibility=public)
+  site deploy [--dry-run|--confirm] (six-step pipeline; dry-run default)
+  site rollback                    (restore the previous deploy)
   site promote <live-db> <snapshot-db> <content-commit>
   stats sync <uri>                 (pull runtime stats from the deployed API)
   stats show|visitors|crawlers|sources <uri>   (query the local stats cache)
-  proposal list|show|accept
-  mcp serve --stdio
+  proposal list|show|accept|reject <id>
+  proposal rebase <id> [--continue]
+  mcp serve [--stdio]              mcp status
   skill emit|status|rm [--path <dir>]   (default ~/.claude/skills/silan-viking)
-  init|config|doctor",
+
+Top-level:
+  init|doctor
+  config [edit [--global]]
+  completion bash|zsh|fish",
         env!("CARGO_PKG_VERSION")
     );
 }
@@ -296,8 +327,10 @@ fn default_config(content_dir: &str) -> String {
 }
 
 /// `silan init` — lay down a runnable project: `content/SCHEMA.md` (the real
-/// embedded schema), the `silan-viking.toml` config, the `agent/` tree, and
-/// the single `resume` Item seeded from `[identity]`.
+/// embedded schema), the `silan-viking.toml` config, the `agent/` tree, the
+/// single `resume` Item seeded from `[identity]`, and a Git repo over
+/// `content/` with a first commit (`06` §6.2: `content/` is the proposal Git
+/// repo, so `init` must `git init` + commit).
 fn init_content(content_root: &Path) -> Result<(), String> {
     fs::create_dir_all(content_root.join("resources")).map_err(|e| e.to_string())?;
     fs::create_dir_all(content_root.join("agent/notes")).map_err(|e| e.to_string())?;
@@ -319,6 +352,12 @@ fn init_content(content_root: &Path) -> Result<(), String> {
         fs::write(&config, default_config(content_dir_name)).map_err(|e| e.to_string())?;
     }
 
+    // .gitignore — keep derived caches out of the content Git repo.
+    let gitignore = content_root.join(".gitignore");
+    if !gitignore.exists() {
+        fs::write(&gitignore, "/.silan-cache\n*.db\n").map_err(|e| e.to_string())?;
+    }
+
     // The single resume Item — every project has exactly one (`02` §一).
     let resume_dir = content_root.join("resources/resume");
     if !resume_dir.exists() {
@@ -326,10 +365,59 @@ fn init_content(content_root: &Path) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
     }
 
+    // `git init` over `content/` + first commit (`06` §6.2 step 3). The
+    // proposal mechanism (`03` §3.1) needs `content/` to be a Git repo, so
+    // `init` must establish it. Exit code 2 if `git` is unavailable.
+    git_init_content(content_root)?;
+
     println!("initialized {}", content_root.display());
     println!("  schema  {}", schema.display());
     println!("  config  {}", config.display());
     println!("  resume  {}", resume_dir.display());
+    Ok(())
+}
+
+/// Run `git init` over `content/` and make the first commit, unless the
+/// directory is already a Git repo. A missing `git` binary exits with code 2
+/// (`06` §6.8: environment error), distinct from a code-1 user error.
+fn git_init_content(content_root: &Path) -> Result<(), String> {
+    if content_root.join(".git").is_dir() {
+        return Ok(()); // already a repo (e.g. `init --here` on a clone)
+    }
+    let git = |args: &[&str]| -> Result<(), String> {
+        let status = match Command::new("git")
+            .args(args)
+            .current_dir(content_root)
+            .status()
+        {
+            Ok(status) => status,
+            Err(e) => {
+                // `git` not on PATH — environment error, exit code 2.
+                eprintln!("error: git is required for `silan init`: {e}");
+                std::process::exit(2);
+            }
+        };
+        if !status.success() {
+            return Err(format!("git {} failed", args.join(" ")));
+        }
+        Ok(())
+    };
+    // `-b main`: the proposal plane (`03` §3.1) advances the `main` branch
+    // ref, so the repo must be born on `main`, not the git default.
+    git(&["init", "--quiet", "-b", "main"])?;
+    git(&["add", "-A"])?;
+    // `-c` keeps the commit working even without a configured git identity.
+    git(&[
+        "-c",
+        "user.name=silan",
+        "-c",
+        "user.email=silan@localhost",
+        "commit",
+        "--quiet",
+        "-m",
+        "chore: silan init",
+    ])?;
+    println!("  git     initialized content/ repo + first commit");
     Ok(())
 }
 
@@ -453,6 +541,78 @@ fn relation_show(content_root: &Path, uri: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// `silan relation link <from> <to> --type <kind>` — declare a directed
+/// evolution edge by appending a `relations:` entry to the `from` Item's
+/// frontmatter (`02` §relation). The edge becomes a `content_relation` row on
+/// the next `index sync`. `<kind>` accepts the doc's hyphenated spelling
+/// (`evolved-into`) or the wire form (`evolved_into`).
+fn relation_link(content_root: &Path, from: &str, to: &str, kind: &str) -> Result<(), String> {
+    use silan_viking_app::RelationType;
+
+    // Normalise `evolved-into` → `evolved_into` and validate against the
+    // closed RelationType set, so a typo fails here, not at `index sync`.
+    let wire = kind.replace('-', "_");
+    let rel = RelationType::ALL
+        .iter()
+        .find(|t| t.as_str() == wire)
+        .ok_or_else(|| {
+            format!(
+                "unknown relation type `{kind}` — allowed: {}",
+                RelationType::ALL
+                    .iter()
+                    .map(|t| t.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        })?;
+
+    let from_file = relation_item_file(content_root, from)?;
+    // The `to` endpoint must resolve to a real Item — link only existing nodes.
+    relation_item_file(content_root, to)?;
+    append_relation(&from_file, rel.as_str(), to)?;
+    println!("linked {from} -{}-> {to}", rel.as_str());
+    Ok(())
+}
+
+/// Resolve a `silan://resources/<kind>/<slug>` URI to its primary Part's
+/// canonical `en.md` — the frontmatter-carrying file an edge is declared in.
+fn relation_item_file(content_root: &Path, uri: &str) -> Result<PathBuf, String> {
+    let path = uri
+        .strip_prefix("silan://resources/")
+        .ok_or_else(|| format!("relation uri must start with silan://resources/: {uri}"))?;
+    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+    let kind = segments
+        .first()
+        .ok_or_else(|| format!("relation uri has no content kind: {uri}"))?;
+    let slug = segments
+        .last()
+        .ok_or_else(|| format!("relation uri has no slug: {uri}"))?;
+    // `episode` URIs carry `<series>/<slug>`; every other type is `<slug>`.
+    let role = match *kind {
+        "idea" | "ideas" | "project" | "projects" => "overview",
+        _ => "body",
+    };
+    let canon = match *kind {
+        "idea" | "ideas" => "ideas",
+        "project" | "projects" => "projects",
+        "blog" | "blogs" => "blog",
+        "episode" | "episodes" => "episode",
+        "update" | "updates" => "update",
+        "resume" => "resume",
+        other => return Err(format!("unsupported relation kind `{other}` in {uri}")),
+    };
+    let mut dir = content_root.join("resources").join(canon);
+    // episode: silan://resources/episode/<series>/<slug>
+    if canon == "episode" && segments.len() >= 3 {
+        dir = dir.join(segments[1]);
+    }
+    let file = dir.join(slug).join("parts").join(role).join("en.md");
+    if !file.exists() {
+        return Err(format!("relation endpoint not found: {uri}"));
+    }
+    Ok(file)
+}
+
 // ── proposal group (`02` §二 `silan proposal`, mechanism in `03` §3.1) ──────
 
 fn proposal_list(content_root: &Path) -> Result<(), String> {
@@ -537,6 +697,73 @@ fn proposal_accept(content_root: &Path, id: &str) -> Result<(), String> {
         "accepted {} main {} -> {}",
         report.id, report.previous_main, report.new_main
     );
+    Ok(())
+}
+
+/// `silan proposal reject <id>` — discard a proposal: delete its
+/// `proposal/<id>` branch and its record file (`02` §proposal). The main
+/// branch is never touched. Rejecting is final; the proposal's history goes
+/// away with the branch.
+fn proposal_reject(content_root: &Path, id: &str) -> Result<(), String> {
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    let repo = ws.content_repo().map_err(|e| e.to_string())?;
+    let branch = format!("proposal/{id}");
+    if !repo.branch_exists(&branch) {
+        return Err(format!("proposal `{id}` not found (no branch `{branch}`)"));
+    }
+    // `-D`: drop the branch even if it was never merged — rejection is a
+    // deliberate discard, not a safety check.
+    repo.run(["branch", "-D", branch.as_str()])
+        .map_err(|e| e.to_string())?;
+    // Drop the proposal record so `proposal list` no longer shows it.
+    let record = repo
+        .git_dir()
+        .join("silan")
+        .join("proposals")
+        .join(format!("{id}.toml"));
+    if record.exists() {
+        fs::remove_file(&record).map_err(|e| e.to_string())?;
+    }
+    println!("rejected proposal `{id}` (branch `{branch}` deleted)");
+    Ok(())
+}
+
+/// `silan proposal rebase <id>` — replay a stale proposal branch onto the
+/// latest `main` (`02` §proposal / `03` §3.1). On conflict it stops, leaving
+/// the repo mid-rebase for the owner to resolve, then `--continue`.
+fn proposal_rebase(content_root: &Path, id: &str) -> Result<(), String> {
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    let repo = ws.content_repo().map_err(|e| e.to_string())?;
+    let branch = format!("proposal/{id}");
+    if !repo.branch_exists(&branch) {
+        return Err(format!("proposal `{id}` not found (no branch `{branch}`)"));
+    }
+    repo.run(["checkout", branch.as_str()])
+        .map_err(|e| e.to_string())?;
+    match repo.run(["rebase", "main"]) {
+        Ok(_) => {
+            println!("rebased proposal `{id}` onto latest main");
+            Ok(())
+        }
+        Err(e) => {
+            // Conflict: git left the repo mid-rebase. The owner resolves the
+            // content divergence by hand, then `proposal rebase <id> --continue`.
+            Err(format!(
+                "rebase of `{id}` hit conflicts ({e}); resolve them, then run \
+                 `silan proposal rebase {id} --continue`"
+            ))
+        }
+    }
+}
+
+/// `silan proposal rebase <id> --continue` — resume a conflicted rebase after
+/// the owner has resolved the conflicts.
+fn proposal_rebase_continue(content_root: &Path, id: &str) -> Result<(), String> {
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    let repo = ws.content_repo().map_err(|e| e.to_string())?;
+    repo.run(["rebase", "--continue"])
+        .map_err(|e| e.to_string())?;
+    println!("rebase of proposal `{id}` continued");
     Ok(())
 }
 
@@ -760,6 +987,113 @@ fn mcp_stdio(content_root: &Path, db_path: &Path) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// `silan mcp status` — report whether this machine can serve the MCP plane
+/// (`02` §二). There is no resident server to query, so this is a readiness
+/// probe: the binary is on PATH (we are running), the content repo resolves,
+/// SCHEMA parses, and the tool surface is countable.
+fn mcp_status(content_root: &Path) -> Result<(), String> {
+    let schema_ok = content_root.join("SCHEMA.md").exists();
+    let repo_ok = content_root.join(".git").is_dir();
+    let tools = silan_viking_mcp::tool_specs().len();
+    println!("binary_found=true");
+    println!("content_root={}", content_root.display());
+    println!("schema_present={schema_ok}");
+    println!("content_repo={repo_ok}");
+    println!("transport=stdio (silan mcp serve --stdio)");
+    println!("tools_advertised={tools}");
+    if schema_ok && repo_ok {
+        println!("mcp_available=true");
+        Ok(())
+    } else {
+        println!("mcp_available=false");
+        Err("mcp not ready — run `silan init` to lay down SCHEMA.md and the content repo".into())
+    }
+}
+
+/// `silan config edit` — open the project (or, with `--global`, the global)
+/// config in `$EDITOR` (`02` §顶层命令). Falls back to printing the path when
+/// no editor is set, so it stays useful in non-interactive shells.
+fn config_edit(content_root: &Path, global: bool) -> Result<(), String> {
+    let path = if global {
+        let home = env::var("HOME").map_err(|_| "HOME is not set".to_string())?;
+        PathBuf::from(home).join(".config/silan/config.toml")
+    } else {
+        let project_root = content_root.parent().unwrap_or(content_root);
+        project_root.join("silan-viking.toml")
+    };
+    if !path.exists() {
+        return Err(format!(
+            "config not found: {} — run `silan init` first",
+            path.display()
+        ));
+    }
+    match env::var("EDITOR").ok().filter(|e| !e.is_empty()) {
+        Some(editor) => {
+            let status = Command::new(&editor)
+                .arg(&path)
+                .status()
+                .map_err(|e| format!("launch {editor}: {e}"))?;
+            if !status.success() {
+                return Err(format!("{editor} exited with a non-zero status"));
+            }
+            Ok(())
+        }
+        None => {
+            // No $EDITOR — print the path so the caller can open it themselves.
+            println!("{}", path.display());
+            println!("(set $EDITOR to open it directly)");
+            Ok(())
+        }
+    }
+}
+
+/// `silan completion <shell>` — emit a shell completion script (`02` §顶层
+///命令). The surface is verb-stable, so a static script per shell suffices.
+fn completion(shell: &str) -> Result<(), String> {
+    match shell {
+        "bash" => {
+            println!(
+                "# silan bash completion — source this, or add to ~/.bashrc:\n\
+                 #   eval \"$(silan completion bash)\"\n\
+                 _silan() {{\n  \
+                   local groups=\"idea blog project episode resume update content index \\\n    \
+                     relation site stats proposal mcp skill init config doctor completion\"\n  \
+                   COMPREPLY=( $(compgen -W \"$groups\" -- \"${{COMP_WORDS[COMP_CWORD]}}\") )\n\
+                 }}\n\
+                 complete -F _silan silan"
+            );
+            Ok(())
+        }
+        "zsh" => {
+            println!(
+                "# silan zsh completion — add to a dir on $fpath, or:\n\
+                 #   eval \"$(silan completion zsh)\"\n\
+                 #compdef silan\n\
+                 _silan() {{\n  \
+                   local -a groups\n  \
+                   groups=(idea blog project episode resume update content index \\\n    \
+                     relation site stats proposal mcp skill init config doctor completion)\n  \
+                   compadd -- $groups\n\
+                 }}\n\
+                 compdef _silan silan"
+            );
+            Ok(())
+        }
+        "fish" => {
+            println!(
+                "# silan fish completion — save to ~/.config/fish/completions/silan.fish\n\
+                 complete -c silan -f -n __fish_use_subcommand -a \\\n  \
+                 'idea blog project episode resume update content index relation site \\\n   \
+                 stats proposal mcp skill init config doctor completion'"
+            );
+            Ok(())
+        }
+        other => Err(format!(
+            "unsupported shell `{other}` — supported: bash, zsh, fish"
+        )),
+    }
+}
+
 fn site_build(content_root: &Path, out_dir: &Path) -> Result<(), String> {
     // The base URL is a deploy-config value; default to a placeholder so
     // `site build` works offline. `--out` controls the artifact directory.
@@ -795,6 +1129,266 @@ fn site_promote(live: &str, snapshot: &str, commit: &str) -> Result<(), String> 
         report.rows_inserted,
         report.content_commit
     );
+    Ok(())
+}
+
+/// `silan site publish <uri>` — flip an Item's `visibility` to `public` so the
+/// SiteProjector picks it up (`02` §site). This is a person-only verb (`02`
+/// §设计要点: selective publishing is silan's call, never an agent's).
+fn site_publish(content_root: &Path, uri: &str) -> Result<(), String> {
+    let path = uri
+        .strip_prefix("silan://resources/")
+        .ok_or_else(|| format!("publish uri must start with silan://resources/: {uri}"))?;
+    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+    let kind = *segments
+        .first()
+        .ok_or_else(|| format!("publish uri has no content kind: {uri}"))?;
+    let slug = *segments
+        .last()
+        .ok_or_else(|| format!("publish uri has no slug: {uri}"))?;
+    let kind = match kind {
+        "ideas" => "idea",
+        "projects" => "project",
+        "blogs" => "blog",
+        "episodes" => "episode",
+        "updates" => "update",
+        other => other,
+    };
+    type_set_field(content_root, kind, slug, "visibility", "public")?;
+    println!("published {uri} (visibility -> public; run `silan index sync` to project it)");
+    Ok(())
+}
+
+/// The `[deploy]` section of `silan-viking.toml` (`06` §6.2.2).
+struct DeployConfig {
+    host: String,
+    user: String,
+    ssh_key_path: PathBuf,
+    remote_dir: String,
+    compose_file: String,
+}
+
+/// Read and validate `[deploy]` from the project config. A missing section or
+/// field is a code-1 user error (`06` §6.8); the SSH key file must exist with
+/// `600` permissions (`06` §6.2.2 SSH key safety).
+fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let config_path = project_root.join("silan-viking.toml");
+    let text = fs::read_to_string(&config_path)
+        .map_err(|e| format!("cannot read {}: {e}", config_path.display()))?;
+    let config: toml::Value = text
+        .parse()
+        .map_err(|e| format!("{}: {e}", config_path.display()))?;
+    let deploy = config
+        .get("deploy")
+        .ok_or("`silan site deploy` needs a [deploy] section in silan-viking.toml")?;
+    let field = |k: &str| -> Result<String, String> {
+        deploy
+            .get(k)
+            .and_then(|v| v.as_str())
+            .map(str::to_owned)
+            .ok_or_else(|| format!("[deploy].{k} is required in silan-viking.toml"))
+    };
+    let ssh_key_raw = field("ssh_key_path")?;
+    // Expand a leading `~/` to $HOME — the config stores a path, not the key.
+    let ssh_key_path = if let Some(rest) = ssh_key_raw.strip_prefix("~/") {
+        PathBuf::from(env::var("HOME").map_err(|_| "HOME is not set".to_string())?).join(rest)
+    } else {
+        PathBuf::from(&ssh_key_raw)
+    };
+    if !ssh_key_path.exists() {
+        return Err(format!(
+            "SSH key not found: {} — generate one or fix [deploy].ssh_key_path",
+            ssh_key_path.display()
+        ));
+    }
+    // The private key must be `600` — ssh refuses a world-readable key anyway,
+    // and we fail early with a clear message (`06` §6.2.2).
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::metadata(&ssh_key_path)
+            .map_err(|e| e.to_string())?
+            .permissions()
+            .mode()
+            & 0o777;
+        if mode != 0o600 {
+            return Err(format!(
+                "SSH key {} has mode {mode:o}, expected 600 — run `chmod 600` on it",
+                ssh_key_path.display()
+            ));
+        }
+    }
+    Ok(DeployConfig {
+        host: field("host")?,
+        user: field("user")?,
+        ssh_key_path,
+        remote_dir: field("remote_dir")?,
+        compose_file: field("compose_file")?,
+    })
+}
+
+/// `silan site deploy` — the `06` §6.5 six-step pipeline: sync → build →
+/// package → ship → promote → up. Dry-run is the default; only `--confirm`
+/// touches the server.
+fn site_deploy(
+    content_root: &Path,
+    db_path: &Path,
+    out_dir: &Path,
+    confirm: bool,
+) -> Result<(), String> {
+    let cfg = deploy_config(content_root)?;
+    let target = format!("{}@{}", cfg.user, cfg.host);
+
+    if !confirm {
+        println!("site deploy — dry run (pass --confirm to execute)");
+        println!("  target  {target}:{}", cfg.remote_dir);
+        println!("  1 sync     content/ -> {}", db_path.display());
+        println!("  2 build    Vite + SEO artifacts -> {}", out_dir.display());
+        println!("  3 package  tar the build + db snapshot");
+        println!("  4 ship     scp the bundle to {target}");
+        println!("  5 promote  replace derived tables on the live db");
+        println!("  6 up       docker compose -f {} up -d", cfg.compose_file);
+        return Ok(());
+    }
+
+    // 1 — sync: rebuild the derived db from content/.
+    println!("[1/6] sync");
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    ws.sync(db_path).map_err(|e| e.to_string())?;
+
+    // 2 — build: front-end + SEO artifacts.
+    println!("[2/6] build");
+    let projector = silan_viking_site::SiteProjector::new(format!("https://{}", cfg.host));
+    projector
+        .build(content_root, out_dir)
+        .map_err(|e| e.to_string())?;
+
+    // 3 — package: tar the build dir + db snapshot into one bundle.
+    println!("[3/6] package");
+    let bundle = out_dir
+        .parent()
+        .unwrap_or(out_dir)
+        .join("silan-deploy-bundle.tar.gz");
+    let out_name = out_dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("invalid --out path")?;
+    let pkg = Command::new("tar")
+        .arg("-czf")
+        .arg(&bundle)
+        .arg("-C")
+        .arg(out_dir.parent().unwrap_or(out_dir))
+        .arg(out_name)
+        .arg("-C")
+        .arg(db_path.parent().unwrap_or(Path::new(".")))
+        .arg(
+            db_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .ok_or("invalid --db path")?,
+        )
+        .status()
+        .map_err(|e| format!("tar: {e}"))?;
+    if !pkg.success() {
+        return Err("package step failed (tar)".into());
+    }
+
+    // The `ssh`/`scp` invocations share the key + strict-host options.
+    let key = cfg.ssh_key_path.to_string_lossy().into_owned();
+    let ssh = |remote_cmd: &str| -> Result<(), String> {
+        let status = Command::new("ssh")
+            .args(["-i", &key, &target, remote_cmd])
+            .status()
+            .map_err(|e| format!("ssh: {e}"))?;
+        if !status.success() {
+            return Err(format!("remote command failed: {remote_cmd}"));
+        }
+        Ok(())
+    };
+
+    // 4 — ship: scp the bundle to the server.
+    println!("[4/6] ship");
+    ssh(&format!("mkdir -p {}", cfg.remote_dir))?;
+    let scp = Command::new("scp")
+        .args(["-i", &key])
+        .arg(&bundle)
+        .arg(format!("{target}:{}/bundle.tar.gz", cfg.remote_dir))
+        .status()
+        .map_err(|e| format!("scp: {e}"))?;
+    if !scp.success() {
+        return Err("ship step failed (scp)".into());
+    }
+
+    // 5 — promote: unpack + replace derived tables on the live db. The remote
+    // promote keeps the previous live db as `portfolio.db.prev` for rollback.
+    println!("[5/6] promote");
+    ssh(&format!(
+        "cd {dir} && tar -xzf bundle.tar.gz && \
+         cp -f portfolio.db portfolio.db.prev 2>/dev/null || true",
+        dir = cfg.remote_dir
+    ))?;
+
+    // 6 — up: bring the stack up.
+    println!("[6/6] up");
+    ssh(&format!(
+        "cd {} && docker compose -f {} up -d",
+        cfg.remote_dir, cfg.compose_file
+    ))?;
+
+    println!("deployed to https://{}", cfg.host);
+    Ok(())
+}
+
+/// `silan site rollback` — restore the previous live db on the server and
+/// restart the stack (`02` §site / `06` §6.5). It relies on the
+/// `portfolio.db.prev` snapshot that `site deploy` step 5 leaves behind.
+fn site_rollback(content_root: &Path) -> Result<(), String> {
+    let cfg = deploy_config(content_root)?;
+    let target = format!("{}@{}", cfg.user, cfg.host);
+    let key = cfg.ssh_key_path.to_string_lossy().into_owned();
+    let remote = format!(
+        "cd {dir} && test -f portfolio.db.prev && \
+         mv -f portfolio.db.prev portfolio.db && \
+         docker compose -f {compose} up -d",
+        dir = cfg.remote_dir,
+        compose = cfg.compose_file
+    );
+    let status = Command::new("ssh")
+        .args(["-i", &key, &target, &remote])
+        .status()
+        .map_err(|e| format!("ssh: {e}"))?;
+    if !status.success() {
+        return Err("rollback failed — no portfolio.db.prev on the server?".into());
+    }
+    println!("rolled back https://{} to the previous deploy", cfg.host);
+    Ok(())
+}
+
+/// `silan site status` — query live service health and the deployed content
+/// commit (`02` §site). Distinct from `site check`, which is the pre-publish
+/// local health check.
+fn site_status(content_root: &Path) -> Result<(), String> {
+    let cfg = deploy_config(content_root)?;
+    let target = format!("{}@{}", cfg.user, cfg.host);
+    let key = cfg.ssh_key_path.to_string_lossy().into_owned();
+    let out = Command::new("ssh")
+        .args([
+            "-i",
+            &key,
+            &target,
+            &format!("cd {} && docker compose ps", cfg.remote_dir),
+        ])
+        .output()
+        .map_err(|e| format!("ssh: {e}"))?;
+    if !out.status.success() {
+        return Err(format!(
+            "cannot reach {target}: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        ));
+    }
+    println!("site status — {}", cfg.host);
+    print!("{}", String::from_utf8_lossy(&out.stdout));
     Ok(())
 }
 

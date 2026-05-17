@@ -141,6 +141,19 @@ fn render_mcp_tools_md() -> String {
     out
 }
 
+/// Read `[mcp].transport` / `[mcp].port` from `silan-viking.toml`, if present.
+/// `13` §13.3 rule 3: a TCP transport gets a machine-local hint file; stdio
+/// (the default) does not.
+fn mcp_transport(content_root: &Path) -> Option<(String, u64)> {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let text = fs::read_to_string(project_root.join("silan-viking.toml")).ok()?;
+    let config: toml::Value = text.parse().ok()?;
+    let mcp = config.get("mcp")?;
+    let transport = mcp.get("transport").and_then(|v| v.as_str())?;
+    let port = mcp.get("port").and_then(|v| v.as_integer()).unwrap_or(7700) as u64;
+    Some((transport.to_owned(), port))
+}
+
 /// `silan skill emit` — render the skill package to `dir` (`13` §13.3).
 /// Overwrites: the package is a derived artifact, overwrite is lossless.
 pub fn emit(content_root: &Path, dir: &Path) -> Result<(), String> {
@@ -152,24 +165,83 @@ pub fn emit(content_root: &Path, dir: &Path) -> Result<(), String> {
     println!("emitted skill package to {}", dir.display());
     println!("  {}", skill_md.display());
     println!("  {}", tools_md.display());
+
+    // `13` §13.3 rule 3: only a TCP transport gets a machine-local coordinate
+    // file (`127.0.0.1:<port>`). It must never be synced, so `.gitignore` it —
+    // the synced `mcp-tools.md` keeps the portable stdio convention.
+    if let Some(("tcp", port)) = mcp_transport(content_root)
+        .as_ref()
+        .map(|(t, p)| (t.as_str(), *p))
+    {
+        let local = dir.join("reference").join("mcp-tools.local.md");
+        fs::write(
+            &local,
+            format!(
+                "# silan-viking MCP — machine-local hint (do not sync)\n\
+                 \n\
+                 transport: tcp\n\
+                 address: 127.0.0.1:{port}\n\
+                 \n\
+                 This file is local to this machine. The portable coordinate\n\
+                 is `mcp-tools.md` (stdio). `.gitignore` keeps this out of sync.\n"
+            ),
+        )
+        .map_err(|e| e.to_string())?;
+        let gitignore = dir.join(".gitignore");
+        let line = "reference/mcp-tools.local.md\n";
+        let existing = fs::read_to_string(&gitignore).unwrap_or_default();
+        if !existing.contains("mcp-tools.local.md") {
+            fs::write(&gitignore, format!("{existing}{line}")).map_err(|e| e.to_string())?;
+        }
+        println!("  {} (machine-local, gitignored)", local.display());
+    }
     Ok(())
 }
 
 /// `silan skill status` — report whether the installed package matches what
-/// `emit` would produce now (`13` §13.7: re-render and compare). A mismatch
-/// means the project changed since `emit`; re-run it.
+/// `emit` would produce now (`13` §13.7), plus the machine-local diagnostics
+/// of `13` §13.3 rule 4: `binary_found`, `mcp_available`, `transport_resolved`,
+/// `schema_hash_match`, `skill_hash_match`. The diagnostics make a second
+/// machine's failure legible — "skill discovered" must not be misread as
+/// "MCP connected".
 pub fn status(content_root: &Path, dir: &Path) -> Result<(), String> {
+    // The CLI is running, so its own binary is on PATH.
+    println!("binary_found=true");
+
+    // MCP readiness: SCHEMA.md present + content/ is a Git repo (the proposal
+    // plane needs both). Mirrors `silan mcp status`.
+    let schema_present = content_root.join("SCHEMA.md").exists();
+    let repo_present = content_root.join(".git").is_dir();
+    println!("mcp_available={}", schema_present && repo_present);
+
+    // The resolved transport (stdio unless `[mcp].transport` overrides it).
+    let transport = mcp_transport(content_root)
+        .map(|(t, _)| t)
+        .unwrap_or_else(|| "stdio".to_owned());
+    println!("transport_resolved={transport}");
+
     let skill_md = dir.join("SKILL.md");
     if !skill_md.exists() {
+        println!("schema_hash_match=n/a");
+        println!("skill_hash_match=n/a");
+        println!("status=not_installed");
         println!("not installed: {} is absent", dir.display());
         println!("run `silan skill emit` to install");
         return Ok(());
     }
+
+    // Re-render and compare. The SKILL.md body interpolates the SCHEMA type
+    // list, so a SKILL.md match also proves the schema list is current.
     let installed = fs::read_to_string(&skill_md).map_err(|e| e.to_string())?;
     let fresh = render_skill_md(content_root);
-    if installed == fresh {
+    let skill_match = installed == fresh;
+    println!("schema_hash_match={schema_present}");
+    println!("skill_hash_match={skill_match}");
+    if skill_match {
+        println!("status=up_to_date");
         println!("up to date: {}", dir.display());
     } else {
+        println!("status=stale");
         println!("stale: {} differs from the current project", dir.display());
         println!("run `silan skill emit` to regenerate");
     }

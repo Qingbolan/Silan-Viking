@@ -173,8 +173,14 @@ fn tools_call_recall_and_lint_run() {
     let _ = std::fs::remove_dir_all(content.parent().expect("root"));
 }
 
-/// Make `content/` a Git repo — `capture`/`propose` write proposal branches.
+/// Ensure `content/` is a Git repo — `capture`/`propose` write proposal
+/// branches. `silan init` now does `git init` + a first commit itself, so when
+/// `content/` is already a repo this is a no-op; it stays here so tests that
+/// build `content/` without `silan init` are still covered.
 fn git_init(content: &Path) {
+    if content.join(".git").is_dir() {
+        return; // `silan init` already established the repo
+    }
     for args in [
         &["init", "-q", "-b", "main"][..],
         &["config", "user.email", "t@silan.dev"][..],

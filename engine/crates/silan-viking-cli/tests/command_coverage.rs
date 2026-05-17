@@ -212,3 +212,104 @@ fn everything_synced_passes_validation() {
     assert!(sync.contains("items=6"), "all 6 Items must sync: {sync}");
     let _ = std::fs::remove_dir_all(c.parent().expect("root"));
 }
+
+#[test]
+fn init_makes_content_a_git_repo() {
+    // `06` §6.2: `silan init` must `git init` + commit, so the proposal plane
+    // has a repo to branch from.
+    let c = fresh_project();
+    assert!(c.join(".git").is_dir(), "init must create a git repo");
+    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+}
+
+#[test]
+fn relation_link_declares_an_edge() {
+    // `02` §relation: `relation link` writes a relations entry on the `from`
+    // Item; an unknown type and a missing endpoint both fail.
+    let c = fresh_project();
+    ok(&c, &["idea", "new", "src-idea"]);
+    ok(&c, &["project", "new", "dst-proj"]);
+    ok(
+        &c,
+        &[
+            "relation",
+            "link",
+            "silan://resources/ideas/src-idea",
+            "silan://resources/projects/dst-proj",
+            "--type",
+            "evolved-into",
+        ],
+    );
+    let idea = std::fs::read_to_string(c.join("resources/ideas/src-idea/parts/overview/en.md"))
+        .expect("read");
+    assert!(idea.contains("relations:"), "link must add a relation");
+    assert!(idea.contains("dst-proj"), "link must name the target");
+    err(
+        &c,
+        &[
+            "relation",
+            "link",
+            "silan://resources/ideas/src-idea",
+            "silan://resources/projects/dst-proj",
+            "--type",
+            "not-a-type",
+        ],
+    );
+    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+}
+
+#[test]
+fn site_publish_sets_visibility_public() {
+    // `02` §site: `site publish` flips an Item's visibility to public.
+    let c = fresh_project();
+    ok(&c, &["blog", "new", "a-post"]);
+    ok(&c, &["site", "publish", "silan://resources/blog/a-post"]);
+    let md =
+        std::fs::read_to_string(c.join("resources/blog/a-post/parts/body/en.md")).expect("read");
+    assert!(
+        md.contains("visibility: public"),
+        "publish must set visibility=public"
+    );
+    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+}
+
+#[test]
+fn site_deploy_dry_run_needs_deploy_config() {
+    // `06` §6.5: `site deploy` (dry-run default) reads [deploy]; the default
+    // config ships it commented out, so a fresh project fails clearly.
+    let c = fresh_project();
+    let (success, out) = cli(&c, &["site", "deploy"]);
+    assert!(!success, "deploy without [deploy] must fail: {out}");
+    assert!(out.contains("[deploy]"), "error must name [deploy]: {out}");
+    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+}
+
+#[test]
+fn proposal_reject_needs_an_existing_proposal() {
+    // `02` §proposal: rejecting an unknown id fails; the verb exists.
+    let c = fresh_project();
+    err(&c, &["proposal", "reject", "01HXNOSUCH"]);
+    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+}
+
+#[test]
+fn mcp_status_reports_readiness() {
+    // `02` §二: `mcp status` is a readiness probe.
+    let c = fresh_project();
+    let out = ok(&c, &["mcp", "status"]);
+    assert!(out.contains("binary_found=true"));
+    assert!(out.contains("mcp_available=true"));
+    assert!(out.contains("tools_advertised="));
+    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+}
+
+#[test]
+fn completion_emits_a_script_per_shell() {
+    // `02` §顶层命令: `completion <shell>` for bash/zsh/fish; bad shell fails.
+    let c = fresh_project();
+    assert!(ok(&c, &["completion", "bash"]).contains("complete"));
+    assert!(ok(&c, &["completion", "zsh"]).contains("compdef"));
+    assert!(ok(&c, &["completion", "fish"]).contains("complete -c silan"));
+    err(&c, &["completion", "powershell"]);
+    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+}
