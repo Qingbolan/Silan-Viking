@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/svc"
@@ -62,9 +63,11 @@ func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.Blog
 		category = post.Edges.Category.Name
 	}
 
-	var tags []string
-	for _, tag := range post.Edges.Tags {
-		tags = append(tags, tag.Name)
+	// Tags come from the cross-type `content_tag` table — the engine no
+	// longer populates the legacy ent `Tags` edge.
+	tags, err := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "blog", post.ID)
+	if err != nil {
+		l.Errorf("content_tag lookup for blog %s: %v", post.ID, err)
 	}
 
 	var author string
@@ -132,6 +135,7 @@ func (l *GetBlogPostLogic) GetBlogPost(req *types.BlogRequest) (resp *types.Blog
 		Likes:               int64(post.LikeCount),
 		Views:               int64(post.ViewCount),
 		Summary:             excerpt,
+		FeaturedImageURL:    post.FeaturedImageURL,
 		Type:                contentType,
 		SeriesID:            seriesID,
 		SeriesSlug:          seriesSlug,

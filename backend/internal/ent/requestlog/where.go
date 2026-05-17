@@ -94,6 +94,16 @@ func Lang(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldLang, v))
 }
 
+// IsBot applies equality check predicate on the "is_bot" field. It's identical to IsBotEQ.
+func IsBot(v bool) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldIsBot, v))
+}
+
+// BotName applies equality check predicate on the "bot_name" field. It's identical to BotNameEQ.
+func BotName(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldBotName, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldCreatedAt, v))
@@ -647,6 +657,91 @@ func LangEqualFold(v string) predicate.RequestLog {
 // LangContainsFold applies the ContainsFold predicate on the "lang" field.
 func LangContainsFold(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldContainsFold(FieldLang, v))
+}
+
+// IsBotEQ applies the EQ predicate on the "is_bot" field.
+func IsBotEQ(v bool) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldIsBot, v))
+}
+
+// IsBotNEQ applies the NEQ predicate on the "is_bot" field.
+func IsBotNEQ(v bool) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldIsBot, v))
+}
+
+// BotNameEQ applies the EQ predicate on the "bot_name" field.
+func BotNameEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldBotName, v))
+}
+
+// BotNameNEQ applies the NEQ predicate on the "bot_name" field.
+func BotNameNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldBotName, v))
+}
+
+// BotNameIn applies the In predicate on the "bot_name" field.
+func BotNameIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldBotName, vs...))
+}
+
+// BotNameNotIn applies the NotIn predicate on the "bot_name" field.
+func BotNameNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldBotName, vs...))
+}
+
+// BotNameGT applies the GT predicate on the "bot_name" field.
+func BotNameGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldBotName, v))
+}
+
+// BotNameGTE applies the GTE predicate on the "bot_name" field.
+func BotNameGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldBotName, v))
+}
+
+// BotNameLT applies the LT predicate on the "bot_name" field.
+func BotNameLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldBotName, v))
+}
+
+// BotNameLTE applies the LTE predicate on the "bot_name" field.
+func BotNameLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldBotName, v))
+}
+
+// BotNameContains applies the Contains predicate on the "bot_name" field.
+func BotNameContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldBotName, v))
+}
+
+// BotNameHasPrefix applies the HasPrefix predicate on the "bot_name" field.
+func BotNameHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldBotName, v))
+}
+
+// BotNameHasSuffix applies the HasSuffix predicate on the "bot_name" field.
+func BotNameHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldBotName, v))
+}
+
+// BotNameIsNil applies the IsNil predicate on the "bot_name" field.
+func BotNameIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldBotName))
+}
+
+// BotNameNotNil applies the NotNil predicate on the "bot_name" field.
+func BotNameNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldBotName))
+}
+
+// BotNameEqualFold applies the EqualFold predicate on the "bot_name" field.
+func BotNameEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldBotName, v))
+}
+
+// BotNameContainsFold applies the ContainsFold predicate on the "bot_name" field.
+func BotNameContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldBotName, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

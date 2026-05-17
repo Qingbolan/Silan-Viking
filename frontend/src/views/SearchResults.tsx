@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Search, FileText, Lightbulb, Briefcase, Loader2 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import { useTheme } from '../components/ThemeContext';
+import { Seo } from '../components/Seo';
 import { globalSearch, type GlobalSearchResponse } from '../api/search/searchApi';
 
 const SearchResults: React.FC = () => {
@@ -46,6 +47,12 @@ const SearchResults: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-24 pb-12 px-4" style={{ backgroundColor: colors.background }}>
+      <Seo
+        title={language === 'en' ? 'Search' : '搜索'}
+        path="/search"
+        noindex
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">

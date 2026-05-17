@@ -1,0 +1,29 @@
+# silan-viking.toml — project config (per docs/silan-viking/06 §6.2.2).
+# Required sections: [project], [database]. [deploy] is needed only
+# for `silan site deploy`; [identity]/[mcp] may be omitted.
+
+[project]
+name        = "silan-personal-website"
+content_dir = "content"
+
+[identity]
+# Seeds content/resources/resume/parts/summary/en.md on `init`;
+# after that, edit that file — it is the truth source, this is not.
+full_name = "Silan Hu"
+title     = "AI Researcher & Full Stack Developer"
+email     = "Silan.Hu@u.nus.edu"
+location  = "Singapore / Beijing, China"
+
+[database]
+path = "_deploy/api/portfolio.db"
+
+[mcp]
+port          = 7700
+enable_deploy = false
+
+# [deploy] — uncomment and fill in for `silan site deploy`.
+# host         = "silan.tech"
+# user         = "deploy"
+# ssh_key_path = "~/.ssh/silan_deploy_ed25519"  # path only, never the key
+# remote_dir   = "/srv/silan-viking"
+# compose_file = "deploy/docker-compose.yml"

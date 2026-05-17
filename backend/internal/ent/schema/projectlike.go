@@ -56,13 +56,15 @@ func (ProjectLike) Fields() []ent.Field {
 }
 
 // Edges of the ProjectLike.
+//
+// `project_id` is a plain field, not an edge — a soft reference to a
+// `projects` row. `project_likes` is a runtime table; `projects` is
+// engine-derived and replaced wholesale by promote on every content sync.
+// A DB-level FK would dangle the moment promote rebuilds `projects` and
+// abort the promote transaction. See `ProjectView.Edges` for the full
+// rationale.
 func (ProjectLike) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("project", Project.Type).
-			Ref("likes").
-			Field("project_id").
-			Required().
-			Unique(),
 		edge.To("user_identity", UserIdentity.Type).
 			Field("user_identity_id").
 			Unique(),

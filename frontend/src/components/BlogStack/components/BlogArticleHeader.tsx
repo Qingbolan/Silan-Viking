@@ -49,7 +49,7 @@ export const BlogArticleHeader: React.FC<BlogArticleHeaderProps> = ({ blog }) =>
       </div>
       
       <div className="flex flex-wrap justify-start gap-4">
-        {blog.tags.map((tag, index) => (
+        {(blog.tags || []).map((tag, index) => (
           <span key={index} className="px-4 py-2 text-sm font-light" style={{ 
             color: colors.textSecondary,
             borderBottom: `1px solid ${colors.cardBorder}`

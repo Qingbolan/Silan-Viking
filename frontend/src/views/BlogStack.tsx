@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { List, BookOpen, FileText, Film, Layers } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Seo } from '../components/Seo';
 import { BlogData } from '../components/BlogStack/types/blog';
 import { fetchBlogPosts } from '../api';
 import {
@@ -230,6 +231,16 @@ const BlogStack: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <Seo
+        title={language === 'en' ? 'Blog' : '博客'}
+        description={
+          language === 'en'
+            ? 'Articles and writing by Silan Hu on AI, machine learning and software engineering.'
+            : '胡思蓝关于人工智能、机器学习与软件工程的文章与写作。'
+        }
+        path="/blog"
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-7xl mx-auto px-4">
         {/* Header — title + search + content-type + topic filters. */}
         <motion.div

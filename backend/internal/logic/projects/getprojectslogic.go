@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projecttechnology"
@@ -97,7 +98,7 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 
 	result := make([]types.Project, 0, end-offset)
 	for _, proj := range filtered[offset:end] {
-		result = append(result, mapBasicProject(proj, req.Language))
+		result = append(result, l.mapBasicProject(proj, req.Language))
 	}
 
 	totalPages := int(math.Ceil(float64(total) / float64(req.Size)))
@@ -123,10 +124,14 @@ func splitCSV(value string) []string {
 	return result
 }
 
-func mapBasicProject(proj *ent.Project, lang string) types.Project {
-	technologies := make([]string, 0, len(proj.Edges.Technologies))
-	for _, tech := range proj.Edges.Technologies {
-		technologies = append(technologies, tech.TechnologyName)
+func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types.Project {
+	// `Tags` is the project's content tags, read from the cross-type
+	// `content_tag` table — the same source blog / idea / episode use. (The
+	// `tech_stack` technologies are a separate concept; the engine does not
+	// currently emit them, so `project_technologies` stays empty.)
+	tags, tagErr := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "project", proj.ID)
+	if tagErr != nil {
+		l.Errorf("content_tag lookup for project %s: %v", proj.ID, tagErr)
 	}
 
 	// Resolve language-variant fields from project_translations: the content
@@ -147,7 +152,7 @@ func mapBasicProject(proj *ent.Project, lang string) types.Project {
 		ID:          proj.ID,
 		Name:        name,
 		Description: description,
-		Tags:        technologies,
+		Tags:        tags,
 		Year:        year,
 		AnnualPlan:  fmt.Sprintf("Annual Plan %d", year),
 	}

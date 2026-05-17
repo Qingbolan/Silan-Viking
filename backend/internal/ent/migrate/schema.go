@@ -1217,12 +1217,12 @@ var (
 	// ProjectLikesColumns holds the columns for the "project_likes" table.
 	ProjectLikesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
+		{Name: "project_id", Type: field.TypeString},
 		{Name: "fingerprint", Type: field.TypeString, Nullable: true},
 		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
 		{Name: "user_agent", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeString},
 		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
 	}
 	// ProjectLikesTable holds the schema information for the "project_likes" table.
@@ -1231,12 +1231,6 @@ var (
 		Columns:    ProjectLikesColumns,
 		PrimaryKey: []*schema.Column{ProjectLikesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "project_likes_projects_likes",
-				Columns:    []*schema.Column{ProjectLikesColumns[6]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
 			{
 				Symbol:     "project_likes_user_identities_user_identity",
 				Columns:    []*schema.Column{ProjectLikesColumns[7]},
@@ -1248,17 +1242,17 @@ var (
 			{
 				Name:    "projectlike_project_id_user_identity_id",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectLikesColumns[6], ProjectLikesColumns[7]},
+				Columns: []*schema.Column{ProjectLikesColumns[1], ProjectLikesColumns[7]},
 			},
 			{
 				Name:    "projectlike_project_id_fingerprint",
 				Unique:  true,
-				Columns: []*schema.Column{ProjectLikesColumns[6], ProjectLikesColumns[1]},
+				Columns: []*schema.Column{ProjectLikesColumns[1], ProjectLikesColumns[2]},
 			},
 			{
 				Name:    "projectlike_project_id",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectLikesColumns[6]},
+				Columns: []*schema.Column{ProjectLikesColumns[1]},
 			},
 			{
 				Name:    "projectlike_user_identity_id",
@@ -1268,7 +1262,7 @@ var (
 			{
 				Name:    "projectlike_ip_address",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectLikesColumns[2]},
+				Columns: []*schema.Column{ProjectLikesColumns[3]},
 			},
 		},
 	}
@@ -1328,6 +1322,7 @@ var (
 	// ProjectViewsColumns holds the columns for the "project_views" table.
 	ProjectViewsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
+		{Name: "project_id", Type: field.TypeString},
 		{Name: "fingerprint", Type: field.TypeString, Nullable: true},
 		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
 		{Name: "user_agent", Type: field.TypeString, Nullable: true},
@@ -1335,7 +1330,6 @@ var (
 		{Name: "session_duration", Type: field.TypeInt, Nullable: true, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "project_id", Type: field.TypeString},
 		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
 	}
 	// ProjectViewsTable holds the schema information for the "project_views" table.
@@ -1344,12 +1338,6 @@ var (
 		Columns:    ProjectViewsColumns,
 		PrimaryKey: []*schema.Column{ProjectViewsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "project_views_projects_views",
-				Columns:    []*schema.Column{ProjectViewsColumns[8]},
-				RefColumns: []*schema.Column{ProjectsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
 			{
 				Symbol:     "project_views_user_identities_user_identity",
 				Columns:    []*schema.Column{ProjectViewsColumns[9]},
@@ -1361,7 +1349,7 @@ var (
 			{
 				Name:    "projectview_project_id",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectViewsColumns[8]},
+				Columns: []*schema.Column{ProjectViewsColumns[1]},
 			},
 			{
 				Name:    "projectview_user_identity_id",
@@ -1371,22 +1359,22 @@ var (
 			{
 				Name:    "projectview_fingerprint",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectViewsColumns[1]},
+				Columns: []*schema.Column{ProjectViewsColumns[2]},
 			},
 			{
 				Name:    "projectview_ip_address",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectViewsColumns[2]},
+				Columns: []*schema.Column{ProjectViewsColumns[3]},
 			},
 			{
 				Name:    "projectview_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectViewsColumns[6]},
+				Columns: []*schema.Column{ProjectViewsColumns[7]},
 			},
 			{
 				Name:    "projectview_project_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{ProjectViewsColumns[8], ProjectViewsColumns[6]},
+				Columns: []*schema.Column{ProjectViewsColumns[1], ProjectViewsColumns[7]},
 			},
 		},
 	}
@@ -1405,6 +1393,7 @@ var (
 		{Name: "isbn", Type: field.TypeString, Nullable: true, Size: 20},
 		{Name: "url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "pdf_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "image_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "citation_count", Type: field.TypeInt, Default: 0},
 		{Name: "is_peer_reviewed", Type: field.TypeBool, Default: false},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
@@ -1420,7 +1409,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "publications_users_publications",
-				Columns:    []*schema.Column{PublicationsColumns[18]},
+				Columns:    []*schema.Column{PublicationsColumns[19]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1576,6 +1565,8 @@ var (
 		{Name: "user_agent", Type: field.TypeString, Nullable: true, Size: 1024},
 		{Name: "ip", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "lang", Type: field.TypeString, Nullable: true, Size: 8},
+		{Name: "is_bot", Type: field.TypeBool, Default: false},
+		{Name: "bot_name", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "created_at", Type: field.TypeTime},
 	}
 	// RequestLogsTable holds the schema information for the "request_logs" table.
@@ -1587,12 +1578,17 @@ var (
 			{
 				Name:    "requestlog_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{RequestLogsColumns[9]},
+				Columns: []*schema.Column{RequestLogsColumns[11]},
 			},
 			{
 				Name:    "requestlog_path",
 				Unique:  false,
 				Columns: []*schema.Column{RequestLogsColumns[2]},
+			},
+			{
+				Name:    "requestlog_is_bot",
+				Unique:  false,
+				Columns: []*schema.Column{RequestLogsColumns[9]},
 			},
 		},
 	}
@@ -1605,6 +1601,7 @@ var (
 		{Name: "is_ongoing", Type: field.TypeBool, Default: false},
 		{Name: "location", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "research_type", Type: field.TypeString, Nullable: true, Size: 50},
+		{Name: "image_url", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "funding_source", Type: field.TypeString, Nullable: true, Size: 200},
 		{Name: "funding_amount", Type: field.TypeFloat64, Nullable: true},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
@@ -1620,7 +1617,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "research_projects_users_research_projects",
-				Columns:    []*schema.Column{ResearchProjectsColumns[12]},
+				Columns:    []*schema.Column{ResearchProjectsColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -2156,8 +2153,7 @@ func init() {
 	ProjectImageTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "project_image_translations",
 	}
-	ProjectLikesTable.ForeignKeys[0].RefTable = ProjectsTable
-	ProjectLikesTable.ForeignKeys[1].RefTable = UserIdentitiesTable
+	ProjectLikesTable.ForeignKeys[0].RefTable = UserIdentitiesTable
 	ProjectLikesTable.Annotation = &entsql.Annotation{
 		Table: "project_likes",
 	}
@@ -2170,8 +2166,7 @@ func init() {
 	ProjectTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "project_translations",
 	}
-	ProjectViewsTable.ForeignKeys[0].RefTable = ProjectsTable
-	ProjectViewsTable.ForeignKeys[1].RefTable = UserIdentitiesTable
+	ProjectViewsTable.ForeignKeys[0].RefTable = UserIdentitiesTable
 	ProjectViewsTable.Annotation = &entsql.Annotation{
 		Table: "project_views",
 	}

@@ -1290,52 +1290,6 @@ func HasImagesWith(preds ...predicate.ProjectImage) predicate.Project {
 	})
 }
 
-// HasLikes applies the HasEdge predicate on the "likes" edge.
-func HasLikes() predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, LikesTable, LikesColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasLikesWith applies the HasEdge predicate on the "likes" edge with a given conditions (other predicates).
-func HasLikesWith(preds ...predicate.ProjectLike) predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := newLikesStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasViews applies the HasEdge predicate on the "views" edge.
-func HasViews() predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ViewsTable, ViewsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasViewsWith applies the HasEdge predicate on the "views" edge with a given conditions (other predicates).
-func HasViewsWith(preds ...predicate.ProjectView) predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := newViewsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Project) predicate.Project {
 	return predicate.Project(sql.AndPredicates(predicates...))

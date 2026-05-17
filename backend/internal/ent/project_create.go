@@ -9,10 +9,8 @@ import (
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projectimage"
-	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
-	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/ent/user"
 	"time"
 
@@ -368,36 +366,6 @@ func (pc *ProjectCreate) AddImages(p ...*ProjectImage) *ProjectCreate {
 	return pc.AddImageIDs(ids...)
 }
 
-// AddLikeIDs adds the "likes" edge to the ProjectLike entity by IDs.
-func (pc *ProjectCreate) AddLikeIDs(ids ...string) *ProjectCreate {
-	pc.mutation.AddLikeIDs(ids...)
-	return pc
-}
-
-// AddLikes adds the "likes" edges to the ProjectLike entity.
-func (pc *ProjectCreate) AddLikes(p ...*ProjectLike) *ProjectCreate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pc.AddLikeIDs(ids...)
-}
-
-// AddViewIDs adds the "views" edge to the ProjectView entity by IDs.
-func (pc *ProjectCreate) AddViewIDs(ids ...string) *ProjectCreate {
-	pc.mutation.AddViewIDs(ids...)
-	return pc
-}
-
-// AddViews adds the "views" edges to the ProjectView entity.
-func (pc *ProjectCreate) AddViews(p ...*ProjectView) *ProjectCreate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pc.AddViewIDs(ids...)
-}
-
 // Mutation returns the ProjectMutation object of the builder.
 func (pc *ProjectCreate) Mutation() *ProjectMutation {
 	return pc.mutation
@@ -727,38 +695,6 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pc.mutation.LikesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.LikesTable,
-			Columns: []string{project.LikesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pc.mutation.ViewsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.ViewsTable,
-			Columns: []string{project.ViewsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

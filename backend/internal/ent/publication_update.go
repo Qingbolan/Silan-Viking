@@ -273,6 +273,26 @@ func (pu *PublicationUpdate) ClearPdfURL() *PublicationUpdate {
 	return pu
 }
 
+// SetImageURL sets the "image_url" field.
+func (pu *PublicationUpdate) SetImageURL(s string) *PublicationUpdate {
+	pu.mutation.SetImageURL(s)
+	return pu
+}
+
+// SetNillableImageURL sets the "image_url" field if the given value is not nil.
+func (pu *PublicationUpdate) SetNillableImageURL(s *string) *PublicationUpdate {
+	if s != nil {
+		pu.SetImageURL(*s)
+	}
+	return pu
+}
+
+// ClearImageURL clears the value of the "image_url" field.
+func (pu *PublicationUpdate) ClearImageURL() *PublicationUpdate {
+	pu.mutation.ClearImageURL()
+	return pu
+}
+
 // SetCitationCount sets the "citation_count" field.
 func (pu *PublicationUpdate) SetCitationCount(i int) *PublicationUpdate {
 	pu.mutation.ResetCitationCount()
@@ -516,6 +536,11 @@ func (pu *PublicationUpdate) check() error {
 			return &ValidationError{Name: "pdf_url", err: fmt.Errorf(`ent: validator failed for field "Publication.pdf_url": %w`, err)}
 		}
 	}
+	if v, ok := pu.mutation.ImageURL(); ok {
+		if err := publication.ImageURLValidator(v); err != nil {
+			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "Publication.image_url": %w`, err)}
+		}
+	}
 	if pu.mutation.UserCleared() && len(pu.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Publication.user"`)
 	}
@@ -599,6 +624,12 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.PdfURLCleared() {
 		_spec.ClearField(publication.FieldPdfURL, field.TypeString)
+	}
+	if value, ok := pu.mutation.ImageURL(); ok {
+		_spec.SetField(publication.FieldImageURL, field.TypeString, value)
+	}
+	if pu.mutation.ImageURLCleared() {
+		_spec.ClearField(publication.FieldImageURL, field.TypeString)
 	}
 	if value, ok := pu.mutation.CitationCount(); ok {
 		_spec.SetField(publication.FieldCitationCount, field.TypeInt, value)
@@ -999,6 +1030,26 @@ func (puo *PublicationUpdateOne) ClearPdfURL() *PublicationUpdateOne {
 	return puo
 }
 
+// SetImageURL sets the "image_url" field.
+func (puo *PublicationUpdateOne) SetImageURL(s string) *PublicationUpdateOne {
+	puo.mutation.SetImageURL(s)
+	return puo
+}
+
+// SetNillableImageURL sets the "image_url" field if the given value is not nil.
+func (puo *PublicationUpdateOne) SetNillableImageURL(s *string) *PublicationUpdateOne {
+	if s != nil {
+		puo.SetImageURL(*s)
+	}
+	return puo
+}
+
+// ClearImageURL clears the value of the "image_url" field.
+func (puo *PublicationUpdateOne) ClearImageURL() *PublicationUpdateOne {
+	puo.mutation.ClearImageURL()
+	return puo
+}
+
 // SetCitationCount sets the "citation_count" field.
 func (puo *PublicationUpdateOne) SetCitationCount(i int) *PublicationUpdateOne {
 	puo.mutation.ResetCitationCount()
@@ -1255,6 +1306,11 @@ func (puo *PublicationUpdateOne) check() error {
 			return &ValidationError{Name: "pdf_url", err: fmt.Errorf(`ent: validator failed for field "Publication.pdf_url": %w`, err)}
 		}
 	}
+	if v, ok := puo.mutation.ImageURL(); ok {
+		if err := publication.ImageURLValidator(v); err != nil {
+			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "Publication.image_url": %w`, err)}
+		}
+	}
 	if puo.mutation.UserCleared() && len(puo.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Publication.user"`)
 	}
@@ -1355,6 +1411,12 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 	}
 	if puo.mutation.PdfURLCleared() {
 		_spec.ClearField(publication.FieldPdfURL, field.TypeString)
+	}
+	if value, ok := puo.mutation.ImageURL(); ok {
+		_spec.SetField(publication.FieldImageURL, field.TypeString, value)
+	}
+	if puo.mutation.ImageURLCleared() {
+		_spec.ClearField(publication.FieldImageURL, field.TypeString)
 	}
 	if value, ok := puo.mutation.CitationCount(); ok {
 		_spec.SetField(publication.FieldCitationCount, field.TypeInt, value)

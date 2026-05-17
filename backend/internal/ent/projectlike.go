@@ -4,7 +4,6 @@ package ent
 
 import (
 	"fmt"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/ent/useridentity"
 	"strings"
@@ -41,24 +40,11 @@ type ProjectLike struct {
 
 // ProjectLikeEdges holds the relations/edges for other nodes in the graph.
 type ProjectLikeEdges struct {
-	// Project holds the value of the project edge.
-	Project *Project `json:"project,omitempty"`
 	// UserIdentity holds the value of the user_identity edge.
 	UserIdentity *UserIdentity `json:"user_identity,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
-}
-
-// ProjectOrErr returns the Project value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ProjectLikeEdges) ProjectOrErr() (*Project, error) {
-	if e.Project != nil {
-		return e.Project, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: project.Label}
-	}
-	return nil, &NotLoadedError{edge: "project"}
+	loadedTypes [1]bool
 }
 
 // UserIdentityOrErr returns the UserIdentity value or an error if the edge
@@ -66,7 +52,7 @@ func (e ProjectLikeEdges) ProjectOrErr() (*Project, error) {
 func (e ProjectLikeEdges) UserIdentityOrErr() (*UserIdentity, error) {
 	if e.UserIdentity != nil {
 		return e.UserIdentity, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: useridentity.Label}
 	}
 	return nil, &NotLoadedError{edge: "user_identity"}
@@ -155,11 +141,6 @@ func (pl *ProjectLike) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (pl *ProjectLike) Value(name string) (ent.Value, error) {
 	return pl.selectValues.Get(name)
-}
-
-// QueryProject queries the "project" edge of the ProjectLike entity.
-func (pl *ProjectLike) QueryProject() *ProjectQuery {
-	return NewProjectLikeClient(pl.config).QueryProject(pl)
 }
 
 // QueryUserIdentity queries the "user_identity" edge of the ProjectLike entity.

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../components/ThemeContext';
 import { useLanguage } from '../components/LanguageContext';
+import { Seo } from '../components/Seo';
 import { IdeaData } from '../types';
 import { AnnualPlan, Project } from '../types/api';
 import { BlogData } from '../components/BlogStack/types/blog';
@@ -214,7 +215,7 @@ const ProjectsCard: React.FC<ProjectsCardProps> = ({ plan, projects, index }) =>
                 {project.description}
               </p>
               <div className="flex flex-wrap gap-1">
-                {project.tags.map((tag: string, tagIdx: number) => (
+                {(project.tags || []).map((tag: string, tagIdx: number) => (
                   <span
                     key={tagIdx}
                     className="px-2 py-1 text-xs rounded-full bg-theme-primary/10 text-theme-primary"
@@ -603,6 +604,16 @@ const PlansPage: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <Seo
+        title={language === 'en' ? 'Plans' : '计划'}
+        description={
+          language === 'en'
+            ? 'Annual plans and strategic objectives of Silan Hu.'
+            : '胡思蓝的年度计划与战略目标。'
+        }
+        path="/plans"
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <motion.div

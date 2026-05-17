@@ -20,9 +20,10 @@ use std::collections::BTreeMap;
 ///
 /// `entry_fields` is the SCHEMA contract for this Part. A missing required
 /// field or a malformed document is a [`ParseError::MalformedEntries`].
-/// Each entry's stable `entry_id` is read from the `entry_id` key; if absent,
-/// a placeholder is left empty so a higher layer (`silan` CLI / offline
-/// re-layout) can fill it — the parser never silently mints one.
+/// Each entry's stable `entry_id` is read from the `entry_id` key; if
+/// absent, a deterministic `e:<role>:<index>` id is derived (see
+/// `build_entry`) so an author who hand-writes entries without ids
+/// still gets a unique, stable anchor per entry.
 pub fn parse_entry_list(
     item_slug: &str,
     role: &str,
@@ -64,11 +65,19 @@ fn build_entry(
     table: &toml::value::Table,
     entry_fields: &[EntryFieldSpec],
 ) -> Result<PartEntry, ParseError> {
+    // `entry_id` is the entry's stable anchor. If the author wrote one,
+    // use it verbatim. If not, derive a deterministic `e:<role>:<index>`
+    // id — deterministic so the same entry keeps the same id across
+    // re-syncs and across language files (the stability `entry_id`
+    // exists for), and never empty so multiple entries cannot collide
+    // on a blank `part_entry_id` in `part_entry_translation`. This
+    // mirrors how `key_value_list` already derives `kv:<category>`.
     let entry_id = table
         .get("entry_id")
         .and_then(toml::Value::as_str)
-        .unwrap_or("")
-        .to_owned();
+        .filter(|s| !s.is_empty())
+        .map(str::to_owned)
+        .unwrap_or_else(|| format!("e:{role}:{index}"));
 
     let mut shared = BTreeMap::new();
     let mut localized = BTreeMap::new();
@@ -221,6 +230,39 @@ institution = "MIT"
         let body = "[[entry]]\nentry_id = \"e_1\"\n";
         let specs = [field("institution", true, true)];
         assert!(parse_entry_list("resume", "education", body, &specs).is_err());
+    }
+
+    #[test]
+    fn entries_without_entry_id_get_a_deterministic_unique_id() {
+        // An author hand-writing entries omits `entry_id`. Each entry
+        // must still get a unique, stable anchor — otherwise multiple
+        // entries collide on a blank `part_entry_id` in
+        // `part_entry_translation` and `promote` fails its UNIQUE
+        // constraint.
+        let body = r#"
+[[entry]]
+institution = "NUS"
+
+[[entry]]
+institution = "MIT"
+"#;
+        let specs = [field("institution", true, true)];
+        let entries =
+            parse_entry_list("resume", "education", body, &specs).expect("valid entry list");
+        assert_eq!(entries[0].entry_id(), "e:education:0");
+        assert_eq!(entries[1].entry_id(), "e:education:1");
+        assert_ne!(entries[0].entry_id(), entries[1].entry_id());
+    }
+
+    #[test]
+    fn an_empty_entry_id_string_is_treated_as_absent() {
+        // A blank `entry_id = ""` must not be taken verbatim — it would
+        // reintroduce the collision. It falls back to the derived id.
+        let body = "[[entry]]\nentry_id = \"\"\ninstitution = \"NUS\"\n";
+        let specs = [field("institution", true, true)];
+        let entries =
+            parse_entry_list("resume", "education", body, &specs).expect("valid entry list");
+        assert_eq!(entries[0].entry_id(), "e:education:0");
     }
 
     #[test]

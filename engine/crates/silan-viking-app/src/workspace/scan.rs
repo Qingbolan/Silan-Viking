@@ -49,18 +49,79 @@ pub enum ScanError {
         #[source]
         source: ContentError,
     },
+
+    /// An episode series' `series.toml` was not valid TOML.
+    #[error("malformed `series.toml` for episode series `{slug}`: {detail}")]
+    MalformedSeries { slug: String, detail: String },
 }
 
-/// The result of a scan: the Items found, in deterministic order.
+/// A container series discovered on disk — the `series.toml` of one
+/// `content/resources/episode/<series>/` directory (`10` §10.4.4).
+///
+/// The scan surfaces this so the sync can write the `episode_series` parent
+/// row that every `episodes.series_id` foreign key points at. Without it, the
+/// `episodes` rows reference a series that does not exist and `promote` fails
+/// the `episodes_episode_series_episodes` FK at COMMIT.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScannedSeries {
+    /// The series slug — the `episode_series.id` value `episodes.series_id`
+    /// references. Taken from the directory name (the structural identity),
+    /// not the `series.toml` `slug` field, so the FK target is always the
+    /// same string the episode scan derives.
+    pub slug: String,
+    /// The series title, from `series.toml` (`""` if the file omits it).
+    pub title: String,
+    /// The series description, from `series.toml` (`""` if absent).
+    pub description: String,
+    /// The series status, from `series.toml` (defaults to `"ongoing"`).
+    pub status: String,
+}
+
+/// A binary resource file discovered inside an Item's `assets/` directory.
+///
+/// Content authors reference these by a `silan://resources/<type>/<slug>/
+/// assets/<file>` URI in a frontmatter field or a prose `![](…)`; `sync`
+/// rewrites that URI to the `/api/v1/media/…` path the Go backend serves, and
+/// `deploy` copies the file itself into the backend's media volume. The scan
+/// only records the file's location and digest — it never reads the bytes
+/// into memory (an image can be large; deploy streams it file-to-file).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScannedAsset {
+    /// The path *relative to* `content/resources/`, e.g.
+    /// `blog/my-post/assets/figure.png`. This is both the tail of the
+    /// `silan://` URI and the path under the backend's media root, so the
+    /// reference and the file always agree.
+    pub rel_path: String,
+    /// The absolute on-disk path — what `deploy` copies from.
+    pub abs_path: PathBuf,
+    /// The file's content digest — lets an incremental deploy skip an
+    /// unchanged asset.
+    pub hash: ContentHash,
+}
+
+/// The result of a scan: the Items found, the episode container series, and
+/// the binary resource files, in deterministic order.
 #[derive(Debug, Default)]
 pub struct ScanReport {
     items: Vec<Item>,
+    series: Vec<ScannedSeries>,
+    assets: Vec<ScannedAsset>,
 }
 
 impl ScanReport {
     /// The scanned Items.
     pub fn items(&self) -> &[Item] {
         &self.items
+    }
+
+    /// The episode container series found, one per `series.toml`.
+    pub fn series(&self) -> &[ScannedSeries] {
+        &self.series
+    }
+
+    /// The binary resource files found under every Item's `assets/`.
+    pub fn assets(&self) -> &[ScannedAsset] {
+        &self.assets
     }
 
     /// The number of Items found.
@@ -74,10 +135,17 @@ impl ScanReport {
     }
 }
 
+/// File extensions the scan treats as binary resources (lower-cased, no dot).
+/// A deliberately closed list — an unrecognised extension under `assets/` is
+/// ignored rather than shipped, so a stray file cannot bloat the deploy.
+const ASSET_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico"];
+
 /// Scan `content_root/resources/` and build every `Item`.
 pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
     let resources = content_root.join("resources");
     let mut items = Vec::new();
+    let mut series = Vec::new();
+    let mut assets = Vec::new();
 
     // `ContentKind::ALL` gives a deterministic type order.
     for kind in ContentKind::ALL {
@@ -87,19 +155,28 @@ pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
         }
         match kind {
             // `episode` items live one level deeper, under a series directory.
-            ContentKind::Episode => scan_episode_type(&type_dir, &mut items)?,
+            ContentKind::Episode => {
+                scan_episode_type(&type_dir, &resources, &mut items, &mut series, &mut assets)?
+            }
             // `resume` is a single Item: `content/resources/resume/` IS the
             // Item directory — its `parts/` are directly inside it, there is
             // no `{item}` subdirectory level (`10` §10.4.5).
             ContentKind::Resume => {
                 items.push(build_item(ContentKind::Resume, "resume", &type_dir)?);
+                collect_assets(&type_dir, &resources, &mut assets)?;
             }
             // Every other type has one subdirectory per Item.
-            _ => scan_flat_type(kind, &type_dir, &mut items)?,
+            _ => scan_flat_type(kind, &type_dir, &resources, &mut items, &mut assets)?,
         }
     }
 
-    Ok(ScanReport { items })
+    // Deterministic order so an incremental deploy's diff is stable.
+    assets.sort_by(|a, b| a.rel_path.cmp(&b.rel_path));
+    Ok(ScanReport {
+        items,
+        series,
+        assets,
+    })
 }
 
 /// Scan a flat content type (`blog` / `ideas` / `projects` / `update` /
@@ -107,25 +184,142 @@ pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
 fn scan_flat_type(
     kind: ContentKind,
     type_dir: &Path,
+    resources_root: &Path,
     out: &mut Vec<Item>,
+    assets_out: &mut Vec<ScannedAsset>,
 ) -> Result<(), ScanError> {
     for item_dir in sorted_subdirs(type_dir)? {
         let slug_name = dir_name(&item_dir);
         out.push(build_item(kind, &slug_name, &item_dir)?);
+        collect_assets(&item_dir, resources_root, assets_out)?;
     }
     Ok(())
 }
 
 /// Scan the `episode` type: each subdirectory is a *series*, and each
 /// subdirectory of a series is one episode Item.
-fn scan_episode_type(type_dir: &Path, out: &mut Vec<Item>) -> Result<(), ScanError> {
+///
+/// The series directory's `series.toml` (`10` §10.4.4) is read into a
+/// [`ScannedSeries`] — the sync needs it to write the `episode_series` parent
+/// row that every `episodes.series_id` foreign key references.
+fn scan_episode_type(
+    type_dir: &Path,
+    resources_root: &Path,
+    out: &mut Vec<Item>,
+    series_out: &mut Vec<ScannedSeries>,
+    assets_out: &mut Vec<ScannedAsset>,
+) -> Result<(), ScanError> {
     for series_dir in sorted_subdirs(type_dir)? {
+        series_out.push(read_series(&series_dir)?);
+        // `sorted_subdirs` returns directories only, so the series' own
+        // `series.toml` file is naturally excluded — each remaining entry is
+        // one episode Item directory.
         for episode_dir in sorted_subdirs(&series_dir)? {
             let slug_name = dir_name(&episode_dir);
             out.push(build_item(ContentKind::Episode, &slug_name, &episode_dir)?);
+            collect_assets(&episode_dir, resources_root, assets_out)?;
         }
     }
     Ok(())
+}
+
+/// Collect the binary resources under an Item directory's `assets/` folder.
+///
+/// `item_dir` is one Item's directory (e.g. `…/resources/blog/my-post`);
+/// `resources_root` is `content/resources` — the prefix stripped to form the
+/// `rel_path` an asset is addressed by. An Item with no `assets/` folder
+/// contributes nothing. The walk recurses, so `assets/diagrams/a.svg` is
+/// found, but only [`ASSET_EXTENSIONS`] files are recorded.
+fn collect_assets(
+    item_dir: &Path,
+    resources_root: &Path,
+    out: &mut Vec<ScannedAsset>,
+) -> Result<(), ScanError> {
+    let assets_dir = item_dir.join("assets");
+    if !assets_dir.is_dir() {
+        return Ok(());
+    }
+    collect_assets_recursive(&assets_dir, resources_root, out)
+}
+
+/// Recurse a directory, recording every [`ASSET_EXTENSIONS`] file in `out`.
+fn collect_assets_recursive(
+    dir: &Path,
+    resources_root: &Path,
+    out: &mut Vec<ScannedAsset>,
+) -> Result<(), ScanError> {
+    for entry in read_dir_entries(dir)? {
+        if entry.is_dir() {
+            collect_assets_recursive(&entry, resources_root, out)?;
+            continue;
+        }
+        let is_asset = entry
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| ASSET_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+            .unwrap_or(false);
+        if !is_asset {
+            continue; // a non-image file under `assets/` — not shipped
+        }
+        // The `rel_path` is the file's path below `content/resources/`. A
+        // file outside that root (impossible for a real scan, but defended)
+        // is skipped rather than recorded with a misleading path.
+        let Ok(rel) = entry.strip_prefix(resources_root) else {
+            continue;
+        };
+        let rel_path = rel.to_string_lossy().replace('\\', "/");
+        let bytes = std::fs::read(&entry).map_err(|e| ScanError::Io {
+            path: entry.display().to_string(),
+            detail: e.to_string(),
+        })?;
+        out.push(ScannedAsset {
+            rel_path,
+            abs_path: entry.clone(),
+            hash: ContentHash::of(&bytes),
+        });
+    }
+    Ok(())
+}
+
+/// Read a series directory's `series.toml` into a [`ScannedSeries`].
+///
+/// The series `slug` is always the directory name — the structural identity
+/// the episode scan also derives `series_id` from — so the FK target matches
+/// regardless of what the `series.toml` `slug` field says. A missing
+/// `series.toml`, or a missing field within it, is tolerated: `title` /
+/// `description` fall back to empty and `status` to `"ongoing"`, so an author
+/// who only made the directory still gets a valid `episode_series` row.
+fn read_series(series_dir: &Path) -> Result<ScannedSeries, ScanError> {
+    let slug = dir_name(series_dir);
+    let toml_path = series_dir.join("series.toml");
+    let doc: toml::Value = if toml_path.is_file() {
+        read_file(&toml_path)?
+            .parse()
+            .map_err(|e: toml::de::Error| ScanError::MalformedSeries {
+                slug: slug.clone(),
+                detail: e.to_string(),
+            })?
+    } else {
+        toml::Value::Table(Default::default())
+    };
+    let field = |key: &str| {
+        doc.get(key)
+            .and_then(toml::Value::as_str)
+            .unwrap_or_default()
+            .to_owned()
+    };
+    let status = doc
+        .get("status")
+        .and_then(toml::Value::as_str)
+        .filter(|s| !s.is_empty())
+        .unwrap_or("ongoing")
+        .to_owned();
+    Ok(ScannedSeries {
+        slug,
+        title: field("title"),
+        description: field("description"),
+        status,
+    })
 }
 
 /// Build one `Item` from its directory: read every Part under `parts/`.
@@ -342,4 +536,97 @@ fn scan_timestamp(path: &Path) -> OffsetDateTime {
         .and_then(|m| m.modified())
         .map(OffsetDateTime::from)
         .unwrap_or(OffsetDateTime::UNIX_EPOCH)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A fresh temp directory unique to this test process.
+    fn tmp_dir(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("silan-scan-{}-{tag}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        dir
+    }
+
+    #[test]
+    fn read_series_takes_fields_from_series_toml() {
+        let dir = tmp_dir("with-toml").join("building-easynet");
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        std::fs::write(
+            dir.join("series.toml"),
+            "title = \"Building EasyNet\"\ndescription = \"A journal.\"\nstatus = \"completed\"\n",
+        )
+        .expect("write series.toml");
+
+        let series = read_series(&dir).expect("read series");
+        // `slug` is the directory name — the FK target — not a toml field.
+        assert_eq!(series.slug, "building-easynet");
+        assert_eq!(series.title, "Building EasyNet");
+        assert_eq!(series.description, "A journal.");
+        assert_eq!(series.status, "completed");
+        let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
+    }
+
+    #[test]
+    fn read_series_tolerates_a_missing_series_toml() {
+        // An author who only made the directory still gets a valid
+        // `episode_series` row: empty text fields, `status` defaulting to
+        // `ongoing` so the column's NOT NULL constraint is satisfied.
+        let dir = tmp_dir("no-toml").join("orphan-series");
+        std::fs::create_dir_all(&dir).expect("mkdir");
+
+        let series = read_series(&dir).expect("read series");
+        assert_eq!(series.slug, "orphan-series");
+        assert_eq!(series.title, "");
+        assert_eq!(series.description, "");
+        assert_eq!(series.status, "ongoing");
+        let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
+    }
+
+    #[test]
+    fn read_series_rejects_malformed_toml() {
+        let dir = tmp_dir("bad-toml").join("broken-series");
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        std::fs::write(dir.join("series.toml"), "title = \n").expect("write");
+
+        let err = read_series(&dir).expect_err("malformed toml is an error");
+        assert!(matches!(err, ScanError::MalformedSeries { .. }));
+        let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
+    }
+
+    #[test]
+    fn collect_assets_finds_images_recursively_and_skips_non_images() {
+        // Layout: resources/blog/my-post/assets/{cover.png, diagrams/flow.svg,
+        // notes.txt}. Only the two images are recorded; `notes.txt` is not.
+        let root = tmp_dir("assets");
+        let assets = root.join("blog/my-post/assets");
+        std::fs::create_dir_all(assets.join("diagrams")).expect("mkdir");
+        std::fs::write(assets.join("cover.png"), b"\x89PNG fake").expect("write png");
+        std::fs::write(assets.join("diagrams/flow.svg"), b"<svg/>").expect("write svg");
+        std::fs::write(assets.join("notes.txt"), b"not an image").expect("write txt");
+
+        let mut out = Vec::new();
+        collect_assets(&root.join("blog/my-post"), &root, &mut out).expect("collect");
+        out.sort_by(|a, b| a.rel_path.cmp(&b.rel_path));
+
+        let paths: Vec<&str> = out.iter().map(|a| a.rel_path.as_str()).collect();
+        assert_eq!(
+            paths,
+            ["blog/my-post/assets/cover.png", "blog/my-post/assets/diagrams/flow.svg"],
+            "only the two images, addressed by their path below resources/"
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn collect_assets_tolerates_an_item_with_no_assets_dir() {
+        let root = tmp_dir("no-assets");
+        std::fs::create_dir_all(root.join("blog/bare-post")).expect("mkdir");
+        let mut out = Vec::new();
+        collect_assets(&root.join("blog/bare-post"), &root, &mut out).expect("collect");
+        assert!(out.is_empty());
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }

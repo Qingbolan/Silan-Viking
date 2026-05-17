@@ -284,24 +284,34 @@ type (
 		ID         string `json:"id"`
 	}
 	BlogData {
-		ID             string        `json:"id"`
-		Title          string        `json:"title"`
-		TitleZh        string        `json:"title_zh,omitempty"`
-		Slug           string        `json:"slug,omitempty"`
-		Author         string        `json:"author"`
-		PublishDate    string        `json:"publish_date"`
-		ReadTime       string        `json:"read_time"`
-		Category       string        `json:"category"`
-		Tags           []string      `json:"tags"`
-		Content        []BlogContent `json:"content"`
-		Likes          int64         `json:"likes"`
-		Views          int64         `json:"views"`
-		Summary        string        `json:"summary"`
-		SummaryZh      string        `json:"summary_zh,omitempty"`
-		Type           string        `json:"type,omitempty"`
-		VideoURL       string        `json:"video_url,omitempty"`
-		VideoDuration  string        `json:"video_duration,omitempty"`
-		VideoThumbnail string        `json:"video_thumbnail,omitempty"`
+		ID                  string        `json:"id"`
+		Title               string        `json:"title"`
+		TitleZh             string        `json:"title_zh,omitempty"`
+		Slug                string        `json:"slug,omitempty"`
+		Author              string        `json:"author"`
+		PublishDate         string        `json:"publish_date"`
+		ReadTime            string        `json:"read_time"`
+		Category            string        `json:"category"`
+		Tags                []string      `json:"tags"`
+		Content             []BlogContent `json:"content"`
+		Likes               int64         `json:"likes"`
+		Views               int64         `json:"views"`
+		Summary             string        `json:"summary"`
+		SummaryZh           string        `json:"summary_zh,omitempty"`
+		FeaturedImageURL    string        `json:"featured_image_url,omitempty"`
+		Type                string        `json:"type,omitempty"`
+		VideoURL            string        `json:"video_url,omitempty"`
+		VideoDuration       string        `json:"video_duration,omitempty"`
+		VideoThumbnail      string        `json:"video_thumbnail,omitempty"`
+		SeriesID            string        `json:"series_id,omitempty"`
+		SeriesSlug          string        `json:"series_slug,omitempty"`
+		SeriesTitle         string        `json:"series_title,omitempty"`
+		SeriesTitleZh       string        `json:"series_title_zh,omitempty"`
+		SeriesDescription   string        `json:"series_description,omitempty"`
+		SeriesDescriptionZh string        `json:"series_description_zh,omitempty"`
+		EpisodeNumber       int           `json:"episode_number,omitempty"`
+		TotalEpisodes       int           `json:"total_episodes,omitempty"`
+		SeriesImage         string        `json:"series_image,omitempty"`
 	}
 	BlogCategory {
 		ID          string `json:"id"`
@@ -800,6 +810,18 @@ type (
 		Provider  string `json:"provider"`
 		Verified  bool   `json:"verified"`
 	}
+	// VerifyEmailRequest carries the company email the Job Opportunity form
+	// asks to validate before submission.
+	VerifyEmailRequest {
+		Email string `json:"email"`
+	}
+	// VerifyEmailResponse reports whether the address is a plausible company
+	// email — well-formed and not a free-mail provider.
+	VerifyEmailResponse {
+		Email  string `json:"email"`
+		Valid  bool   `json:"valid"`
+		Reason string `json:"reason,optional"`
+	}
 )
 
 // ========== RESUME PAGE GROUP ==========
@@ -1068,5 +1090,161 @@ service backend-api {
 	@doc "Verify Google ID token and upsert identity"
 	@handler GoogleVerify
 	post /google/verify (GoogleVerifyRequest) returns (GoogleVerifyResponse)
+
+	@doc "Validate a company email — well-formed and not a free-mail provider"
+	@handler VerifyEmail
+	post /verify-email (VerifyEmailRequest) returns (VerifyEmailResponse)
+}
+
+// ========== STATS GROUP ==========
+// Runtime interaction statistics + the crawler access log.
+type (
+	// StatsRequest identifies the content whose statistics are queried.
+	StatsRequest {
+		EntityType string `form:"entity_type"`
+		EntityID   string `form:"entity_id"`
+		Section    string `form:"section,optional"`
+	}
+	// StatsResponse is the aggregate view/like/comment count of one item.
+	StatsResponse {
+		EntityType string `json:"entity_type"`
+		EntityID   string `json:"entity_id"`
+		Views      int    `json:"views"`
+		Likes      int    `json:"likes"`
+		Comments   int    `json:"comments"`
+	}
+	// VisitorRow is one de-identified visitor of a content item.
+	VisitorRow {
+		Fingerprint  string `json:"fingerprint"`
+		IPMasked     string `json:"ip_masked"`
+		VisitorKind  string `json:"visitor_kind"`
+		ReferrerKind string `json:"referrer_kind"`
+		LastSeenAt   string `json:"last_seen_at"`
+	}
+	// VisitorsResponse lists the visitors of a content item.
+	VisitorsResponse {
+		EntityType string       `json:"entity_type"`
+		EntityID   string       `json:"entity_id"`
+		Visitors   []VisitorRow `json:"visitors"`
+	}
+	// CrawlerRow aggregates one visitor kind / crawler.
+	CrawlerRow {
+		VisitorKind string `json:"visitor_kind"`
+		Count       int    `json:"count"`
+	}
+	// CrawlerBreakdownResponse aggregates visitors by kind.
+	CrawlerBreakdownResponse {
+		Items []CrawlerRow `json:"items"`
+	}
+	// SourceRow aggregates one referrer source.
+	SourceRow {
+		Source string `json:"source"`
+		Count  int    `json:"count"`
+	}
+	// SourceBreakdownResponse aggregates visits by referrer source.
+	SourceBreakdownResponse {
+		Items []SourceRow `json:"items"`
+	}
+	// BotVisitsRequest filters the crawler access log.
+	BotVisitsRequest {
+		Bot   string `form:"bot,optional"`
+		Limit int    `form:"limit,optional"`
+	}
+	// BotVisit is one crawler request from the access log.
+	BotVisit {
+		BotName   string `json:"bot_name"`
+		Path      string `json:"path"`
+		Status    int    `json:"status"`
+		UserAgent string `json:"user_agent"`
+		IP        string `json:"ip"`
+		VisitedAt string `json:"visited_at"`
+	}
+	// BotSummary is the per-crawler request count.
+	BotSummary {
+		BotName string `json:"bot_name"`
+		Count   int    `json:"count"`
+	}
+	// BotVisitsResponse is the crawler access-log view.
+	BotVisitsResponse {
+		Total   int          `json:"total"`
+		Summary []BotSummary `json:"summary"`
+		Recent  []BotVisit   `json:"recent"`
+	}
+)
+
+@server (
+	group:      stats
+	prefix:     /api/v1/stats
+	middleware: Cors,Analytics
+)
+service backend-api {
+	@doc "Aggregate view/like/comment counts of one item"
+	@handler Stats
+	get / (StatsRequest) returns (StatsResponse)
+
+	@doc "De-identified visitor list of one item"
+	@handler Visitors
+	get /visitors (StatsRequest) returns (VisitorsResponse)
+
+	@doc "Visitor-kind (human / search / AI crawler) breakdown"
+	@handler CrawlerBreakdown
+	get /crawlers (StatsRequest) returns (CrawlerBreakdownResponse)
+
+	@doc "Referrer-source breakdown"
+	@handler SourceBreakdown
+	get /sources (StatsRequest) returns (SourceBreakdownResponse)
+
+	@doc "Crawler access log — which bot crawled which page, and when"
+	@handler BotVisits
+	get /bots (BotVisitsRequest) returns (BotVisitsResponse)
+}
+
+// ========== HEALTH GROUP ==========
+// Liveness probe for the Docker healthcheck and load balancers. It does no
+// database work, so it stays green while `promote` rebuilds the derived
+// tables. No middleware: the probe must not be logged by Analytics nor
+// gated by CORS.
+type (
+	// HealthResponse is the liveness-probe body.
+	HealthResponse {
+		Status string `json:"status"`
+	}
+)
+
+@server (
+	group:  health
+	prefix: /api/v1
+)
+service backend-api {
+	@doc "Liveness probe — returns ok without touching the database"
+	@handler Health
+	get /health returns (HealthResponse)
+}
+
+// Media — serves the binary resource files (`assets/` images) that content
+// `silan://` references were rewritten to point at. The file path is carried
+// as the `f` query parameter, not a path segment, because a resource path is
+// variable-depth and go-zero's router has no catch-all segment. The handler
+// streams the file from the backend's media volume; it goes through the
+// Analytics middleware like every other route, so each image fetch lands in
+// `request_logs` — media access is tracked traffic, not opaque static files.
+type (
+	// MediaRequest locates one resource file under the media root. `F` is the
+	// path relative to `content/resources/`, e.g.
+	// `blog/my-post/assets/figure.png`.
+	MediaRequest {
+		F string `form:"f"`
+	}
+)
+
+@server (
+	group:      media
+	prefix:     /api/v1
+	middleware: Cors,Analytics
+)
+service backend-api {
+	@doc "Stream a binary resource file from the media volume"
+	@handler GetMedia
+	get /media (MediaRequest)
 }
 

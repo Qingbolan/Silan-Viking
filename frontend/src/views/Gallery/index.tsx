@@ -18,6 +18,7 @@ import {
   ToastProvider,
 } from '../../components/ds';
 import { useSetPageTitle, usePageSections } from '../../layout/PageTitleContext';
+import { Seo } from '../../components/Seo';
 import {
   radiusTokens,
   elevationTokens,
@@ -105,6 +106,7 @@ const Gallery: React.FC = () => {
 
   return (
     <ToastProvider>
+      <Seo title="Design Gallery" path="/gallery" noindex />
       <Container width="wide" className="py-6">
         <PageHeader
           eyebrow="Design System"

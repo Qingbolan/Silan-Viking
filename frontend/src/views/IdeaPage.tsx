@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, FlaskConical, Microscope, CheckCircle2, Layers } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
+import { Seo } from '../components/Seo';
 import { IdeaData } from '../types';
 import { fetchIdeas } from '../api';
 import { getIdeaCategories, getIdeaStatuses } from '../api/ideas/ideaApi';
@@ -170,6 +171,16 @@ const IdeaPage: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
+      <Seo
+        title={language === 'en' ? 'Ideas' : '想法'}
+        description={
+          language === 'en'
+            ? 'Research ideas and notes by Silan Hu — hypotheses, experiments and explorations.'
+            : '胡思蓝的研究想法与笔记 —— 假设、实验与探索。'
+        }
+        path="/ideas"
+        lang={language as 'en' | 'zh'}
+      />
       <div className="max-w-7xl mx-auto px-4">
         {/* Header — title + search + status Segmented + category chips. */}
         <motion.div

@@ -371,11 +371,16 @@ export const fetchProjectsWithPlans = async (
       titleZh,
       description: projectAny.description ?? project.description,
       descriptionZh,
+      // No fake-URL fallback: when the project has no cover, leave `image`
+      // undefined so `ProjectCard` renders its built-in branded placeholder
+      // instead of a broken-image icon from a non-existent endpoint.
       image:
         projectAny.image ??
         projectAny.coverImage ??
         projectAny.cover_image ??
-        '/api/placeholder/400/250',
+        projectAny.thumbnail_url ??
+        projectAny.thumbnailUrl ??
+        undefined,
       tags,
       github,
       demo,

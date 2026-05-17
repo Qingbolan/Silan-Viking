@@ -42,6 +42,10 @@ export interface ResearchItem {
   start_date?: string;
   end_date?: string;
   details: string[];
+  /** Optional cover image — drives the research project card cover. */
+  image?: string;
+  /** Topic / field tags. */
+  tags?: string[];
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -89,6 +93,11 @@ export interface ResumeData {
   contacts: Contact[];
   socialLinks: SocialLink[];
   sections: {
+    /** About-me prose — the résumé's summary part. */
+    about?: {
+      title: string;
+      content: string;
+    };
     education: {
       title: string;
       content: {
@@ -116,15 +125,47 @@ export interface ResumeData {
     research?: {
       title: string;
       content: {
+        id: string;
         title: string;
         location: string;
         date: string;
         details: string[];
+        /** Optional cover image for the research project card. */
+        image?: string;
+        /** Topic / field tags. */
+        tags?: string[];
       }[];
     };
     publications?: {
       title: string;
-      content: string[];
+      content: {
+        id: string;
+        title: string;
+        /** Comma-joined author list. */
+        authors?: string;
+        /** Journal or conference name — the venue. */
+        venue?: string;
+        /** Publication year / date string. */
+        year?: string;
+        /** One-line abstract / summary. */
+        abstract?: string;
+        /** Award badge text (e.g. "Distinguished Paper Award"). */
+        award?: string;
+        /** Topic / field tags. */
+        tags?: string[];
+        /** Citation count, if known. */
+        citations?: number;
+        /** DOI / external paper link. */
+        url?: string;
+        /** Direct PDF link. */
+        pdfUrl?: string;
+        /** Code repository link. */
+        githubUrl?: string;
+        /** Related blog post link. */
+        blogUrl?: string;
+        /** Optional cover / figure image. */
+        image?: string;
+      }[];
     };
     awards?: {
       title: string;
@@ -179,6 +220,19 @@ export interface Publication {
   published_at?: string;
   doi?: string;
   url?: string;
+  pdf_url?: string;
+  /** Code repository link. */
+  github_url?: string;
+  /** Related blog post link. */
+  blog_url?: string;
+  /** One-line abstract / summary. */
+  abstract?: string;
+  /** Award badge text. */
+  award?: string;
+  /** Topic / field tags. */
+  tags?: string[];
+  /** Optional cover / figure image. */
+  image?: string;
   citation_count: number;
   created_at: string;
   updated_at: string;
@@ -240,7 +294,9 @@ export interface ProjectWithPlan {
   titleZh?: string;
   description: string;
   descriptionZh?: string;
-  image: string;
+  /** Cover image URL. Absent when the project has no cover — the card then
+   *  renders its built-in branded placeholder. */
+  image?: string;
   tags: string[];
   github?: string;
   demo?: string;

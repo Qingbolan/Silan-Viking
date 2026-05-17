@@ -37,7 +37,7 @@ pub use proposal::{
 pub use query::{EmbedderMode, QueryDocument, QueryError, QueryHit, QueryIndex};
 pub use schema::{Schema, SchemaError};
 pub use stats::{CountRow, ItemStats, StatsCache, StatsError, StatsSync, VisitorRow};
-pub use workspace::{LintIssue, ScanError, Workspace};
+pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
 
 // Re-export the content-layer types that appear across the app's public API.
 pub use silan_viking_base::{Identified, SilanUri};

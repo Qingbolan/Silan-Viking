@@ -6,9 +6,9 @@ import (
 	"math"
 	"strings"
 
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/idea"
-	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -53,14 +53,18 @@ func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *type
 		query = query.Where(idea.CategoryEqualFold(req.Category))
 	}
 
+	// Tag filter — resolved through the cross-type `content_tag` table, not
+	// the legacy ent `Tags` edge (which `index sync` no longer populates).
+	// An idea must carry every requested tag (AND semantics, as before).
 	if req.Tags != "" {
-		for _, tag := range strings.Split(req.Tags, ",") {
-			tag = strings.TrimSpace(tag)
-			if tag == "" {
-				continue
-			}
-			query = query.Where(idea.HasTagsWith(ideatag.NameEqualFold(tag)))
+		wanted := strings.Split(req.Tags, ",")
+		ids, tagErr := contenttag.EntityIDsMatchingTags(l.ctx, l.svcCtx.RawDB, "idea", wanted)
+		if tagErr != nil {
+			return nil, tagErr
 		}
+		// `ids` is non-nil here (req.Tags was non-empty) — an empty slice
+		// means no idea matched, so the search correctly yields nothing.
+		query = query.Where(idea.IDIn(ids...))
 	}
 
 	// Get total count
@@ -116,14 +120,11 @@ func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *type
 			}
 		}
 
-		// Tags from M2M edge (IdeaTag)
-		tags := []string{}
-		if len(ideaEntity.Edges.Tags) > 0 {
-			for _, t := range ideaEntity.Edges.Tags {
-				if t.Name != "" {
-					tags = append(tags, t.Name)
-				}
-			}
+		// Tags come from the cross-type `content_tag` table — the engine no
+		// longer populates the legacy ent `Tags` edge.
+		tags, tagErr := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "idea", ideaEntity.ID)
+		if tagErr != nil {
+			l.Errorf("content_tag lookup for idea %s: %v", ideaEntity.ID, tagErr)
 		}
 		category := ideaEntity.Category
 

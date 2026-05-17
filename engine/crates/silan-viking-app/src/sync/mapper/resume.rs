@@ -15,6 +15,7 @@
 //! **not** get per-Part ent tables — they all land in the generic
 //! `part_entry` family (ruling #2).
 
+use super::media_uri;
 use super::table_names;
 use super::Mapper;
 use crate::parser::{EntryValue, FieldValue, Parsed};
@@ -46,6 +47,7 @@ impl Mapper for ResumeMapper {
 
         rows.push(personal_info_row(&item_id, parsed));
         push_personal_info_translations(&item_id, parsed, &mut rows);
+        push_social_links_rows(&item_id, parsed, &mut rows);
         push_item_part_rows(&item_id, parsed, &mut rows);
         push_summary_rows(&item_id, parsed, &mut rows);
         push_entry_rows(&item_id, parsed, &mut rows);
@@ -62,7 +64,10 @@ impl Mapper for ResumeMapper {
 ///   between `10` and the Go ent schema, deferred to M0.5a (where resume's
 ///   `visibility` placement is decided — `personal_info` column vs the
 ///   resume Item's manifest). Skipped here so sync stays drift-free.
-const SKIP_PERSONAL_FIELDS: &[&str] = &["kind", "visibility"];
+/// - `social_links`: a `list<{...}>` field — it fans out into the
+///   `social_links` side table via [`push_social_links_rows`], it is not a
+///   `personal_info` column.
+const SKIP_PERSONAL_FIELDS: &[&str] = &["kind", "visibility", "social_links"];
 
 /// The `personal_info` main row — the language-neutral personal fields.
 fn personal_info_row(item_id: &str, parsed: &Parsed) -> Row {
@@ -94,6 +99,37 @@ fn push_personal_info_translations(item_id: &str, parsed: &Parsed, rows: &mut Ro
             if let Some(value) = variant.get(name) {
                 row = row.with(name.to_owned(), field_sql(value));
             }
+        }
+        rows.push(row);
+    }
+}
+
+/// One `social_links` row per entry of the resume's `social_links` field.
+///
+/// `social_links` is a `list<{platform,url,display_name}>` frontmatter field
+/// — language-neutral, so it is read from `parsed.main()`. Each record fans
+/// out into the `social_links` side table, owned by the `personal_info` row
+/// via `personal_info_id`. `id` is derived from (Item, index) so a re-sync
+/// rebuilds the same rows deterministically; `created_at` is left to the
+/// DB default.
+fn push_social_links_rows(item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+    let Some(records) = parsed.main().get("social_links").and_then(FieldValue::as_records) else {
+        return;
+    };
+    for (index, record) in records.iter().enumerate() {
+        // platform + url are the meaningful columns; skip a record missing
+        // either, rather than writing a half-empty row.
+        let (Some(platform), Some(url)) = (record.get("platform"), record.get("url")) else {
+            continue;
+        };
+        let mut row = Row::new(table_names::SOCIAL_LINKS_TABLE)
+            .with("id", SqlValue::Text(format!("{item_id}_social_{index}")))
+            .with("personal_info_id", SqlValue::Text(item_id.to_owned()))
+            .with("platform", SqlValue::Text(platform.clone()))
+            .with("url", SqlValue::Text(url.clone()))
+            .with("sort_order", SqlValue::Int(index as i64));
+        if let Some(display) = record.get("display_name") {
+            row = row.with("display_name", SqlValue::Text(display.clone()));
         }
         rows.push(row);
     }
@@ -223,14 +259,22 @@ fn field_sql(value: &FieldValue) -> SqlValue {
         FieldValue::Float(f) => SqlValue::Float(*f),
         FieldValue::Bool(b) => SqlValue::Bool(*b),
         FieldValue::List(items) => SqlValue::Text(items.join(", ")),
+        // A record list fans out to a side table — it is never a scalar
+        // main-table column, so it carries no SqlValue here.
+        FieldValue::Records(_) => SqlValue::Null,
     }
 }
 
 /// Convert an [`EntryValue`] into a `serde_json::Value` — one field of a
 /// `part_entry` payload object.
+///
+/// A `Text` field is passed through [`media_uri::rewrite_reference`] so an
+/// entry field holding a `silan://resources/…` reference (`education`'s
+/// `institution_logo_url`, `publications`' `image_url`, …) is stored as the
+/// servable `/api/v1/media/…` path; non-reference strings are unchanged.
 fn entry_json(value: &EntryValue) -> serde_json::Value {
     match value {
-        EntryValue::Text(s) => serde_json::Value::String(s.clone()),
+        EntryValue::Text(s) => serde_json::Value::String(media_uri::rewrite_reference(s)),
         EntryValue::Int(i) => serde_json::Value::from(*i),
         EntryValue::Float(f) => serde_json::Value::from(*f),
         EntryValue::Bool(b) => serde_json::Value::Bool(*b),

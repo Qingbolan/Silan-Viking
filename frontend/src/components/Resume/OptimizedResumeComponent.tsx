@@ -173,7 +173,7 @@ export const OptimizedResumeComponent: React.FC<OptimizedResumeProps> = ({ langu
             <p className="text-gray-600">{update.description}</p>
             <p className="text-sm text-gray-500">{update.date}</p>
             <div className="flex flex-wrap gap-2 mt-2">
-              {update.tags.map((tag, tagIndex) => (
+              {(update.tags || []).map((tag, tagIndex) => (
                 <span key={tagIndex} className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded">
                   {tag}
                 </span>

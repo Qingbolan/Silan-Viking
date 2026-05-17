@@ -32,6 +32,8 @@ type ResearchProject struct {
 	Location string `json:"location,omitempty"`
 	// ResearchType holds the value of the "research_type" field.
 	ResearchType string `json:"research_type,omitempty"`
+	// ImageURL holds the value of the "image_url" field.
+	ImageURL string `json:"image_url,omitempty"`
 	// FundingSource holds the value of the "funding_source" field.
 	FundingSource string `json:"funding_source,omitempty"`
 	// FundingAmount holds the value of the "funding_amount" field.
@@ -101,7 +103,7 @@ func (*ResearchProject) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case researchproject.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case researchproject.FieldID, researchproject.FieldUserID, researchproject.FieldTitle, researchproject.FieldLocation, researchproject.FieldResearchType, researchproject.FieldFundingSource:
+		case researchproject.FieldID, researchproject.FieldUserID, researchproject.FieldTitle, researchproject.FieldLocation, researchproject.FieldResearchType, researchproject.FieldImageURL, researchproject.FieldFundingSource:
 			values[i] = new(sql.NullString)
 		case researchproject.FieldStartDate, researchproject.FieldEndDate, researchproject.FieldCreatedAt, researchproject.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -167,6 +169,12 @@ func (rp *ResearchProject) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field research_type", values[i])
 			} else if value.Valid {
 				rp.ResearchType = value.String
+			}
+		case researchproject.FieldImageURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field image_url", values[i])
+			} else if value.Valid {
+				rp.ImageURL = value.String
 			}
 		case researchproject.FieldFundingSource:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -269,6 +277,9 @@ func (rp *ResearchProject) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("research_type=")
 	builder.WriteString(rp.ResearchType)
+	builder.WriteString(", ")
+	builder.WriteString("image_url=")
+	builder.WriteString(rp.ImageURL)
 	builder.WriteString(", ")
 	builder.WriteString("funding_source=")
 	builder.WriteString(rp.FundingSource)

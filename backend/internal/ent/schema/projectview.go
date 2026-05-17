@@ -63,13 +63,16 @@ func (ProjectView) Fields() []ent.Field {
 }
 
 // Edges of the ProjectView.
+//
+// `project_id` is intentionally NOT an edge — it is a plain field, a soft
+// reference to a `projects` row. `project_views` is a runtime analytics
+// table; `projects` is an engine-derived table that `deploy`'s promote
+// replaces wholesale (with fresh ids) on every content sync. A database FK
+// from the runtime table to the derived table would dangle the moment
+// promote rebuilds `projects`, failing the promote transaction. The
+// reference is kept as data, validated by the handler, not by SQLite.
 func (ProjectView) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("project", Project.Type).
-			Ref("views").
-			Field("project_id").
-			Required().
-			Unique(),
 		edge.To("user_identity", UserIdentity.Type).
 			Field("user_identity_id").
 			Unique(),

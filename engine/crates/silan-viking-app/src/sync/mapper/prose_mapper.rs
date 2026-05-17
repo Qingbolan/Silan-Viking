@@ -12,6 +12,7 @@
 //! All five prose types (idea / blog / project / episode / update) share
 //! this engine; resume has its own mapper.
 
+use super::media_uri;
 use super::table_names;
 use crate::parser::{FieldValue, Parsed};
 use crate::sync::error::MapError;
@@ -44,22 +45,41 @@ impl ProseMapper {
     }
 }
 
-/// Frontmatter fields that must **not** become a main-table column.
+/// Frontmatter fields that must **not** become a content main-table column.
 /// - `tags` fans out to its own table (`SCHEMA.md` rule 1a), routed by
 ///   [`push_tag_rows`].
 /// - `kind` is the type discriminator: each type has its own main table, so
 ///   the Entity carries no `kind` column — it would be schema drift.
-/// - `priority` (idea) / `tech_stack` (project): these appear in legacy
-///   Python-parser frontmatter but the new `10`/`11` schema deliberately
-///   does **not** carry them as columns — they are dropped on purpose, not
-///   pending. (`tech_stack`-style data, if ever needed, would go through a
-///   join table, not a main-table column.)
+/// - `tech_stack` appears in legacy Python-parser frontmatter but the new
+///   `10`/`11` schema does not carry it as a main-table column.
+/// - The `idea_details` / `project_details` side-table fields — `priority`,
+///   `collaboration_needed`, `funding_required`, `estimated_duration_months`,
+///   `estimated_budget` (idea) and `license`, `version` (project). `SCHEMA.md`
+///   declares these with a `column: "<details_table>.<col>"` — they belong to
+///   a *separate* `*_details` table, NOT the content main table. `ProseMapper`
+///   does not yet emit those side tables, so these fields are skipped here
+///   rather than written to a non-existent `ideas.*` / `projects.*` column
+///   (which the sink's schema gate rejects, aborting the whole sync). Emitting
+///   `idea_details` / `project_details` rows is a pending mapper feature.
 ///
 /// Note: `visibility` is **not** skipped — `blog_posts`/`ideas`/`projects`/
 /// `episodes` all carry a `visibility` column (`11` §11.7), so it is real
 /// content the main row must write. (`resume` is the exception — handled in
 /// `resume.rs`, whose `personal_info` table has no `visibility`.)
-const SKIP_MAIN_FIELDS: &[&str] = &["tags", "kind", "priority", "tech_stack"];
+const SKIP_MAIN_FIELDS: &[&str] = &[
+    "tags",
+    "kind",
+    "tech_stack",
+    // idea_details.* — side-table fields, not `ideas` columns
+    "priority",
+    "collaboration_needed",
+    "funding_required",
+    "estimated_duration_months",
+    "estimated_budget",
+    // project_details.* — side-table fields, not `projects` columns
+    "license",
+    "version",
+];
 
 /// Build the content main-table row from the language-neutral fields.
 ///
@@ -183,12 +203,15 @@ fn push_part_rows(parsed: &Parsed, rows: &mut RowSet) {
                 .unwrap_or_else(|| role.to_owned());
             // `id` derived from (parent `item_part`, language) — the row's
             // natural key — same rationale as the translation rows above.
+            // The body's `silan://` resource references (Markdown images and
+            // links) are rewritten to the `/api/v1/media/…` paths the backend
+            // serves, so the stored prose needs no resolution at read time.
             rows.push(
                 Row::new(table_names::ITEM_PART_TRANSLATION_TABLE)
                     .with("id", SqlValue::Text(format!("{item_part_id}_{lang}")))
                     .with("item_part_id", SqlValue::Text(item_part_id))
                     .with("language_code", SqlValue::Text(lang.to_string()))
-                    .with("body", SqlValue::Text(body.to_owned())),
+                    .with("body", SqlValue::Text(media_uri::rewrite_prose(body))),
             );
         }
     }
@@ -311,12 +334,19 @@ fn tag_slug(label: &str) -> String {
 /// a `List` that reaches here is a non-join list field and is joined with
 /// `, ` (join-table lists — `tags` — are routed away by [`JOIN_TABLE_FIELDS`]
 /// before `sql_value` is ever called on them).
+///
+/// A `Text` value is passed through [`media_uri::rewrite_reference`]: a field
+/// holding a `silan://resources/…` resource reference (`featured_image_url`,
+/// `thumbnail_url`, …) is rewritten to its `/api/v1/media/…` path, and every
+/// other string is returned verbatim (the rewrite is a prefix-gated no-op).
 fn sql_value(value: &FieldValue) -> SqlValue {
     match value {
-        FieldValue::Text(s) => SqlValue::Text(s.clone()),
+        FieldValue::Text(s) => SqlValue::Text(media_uri::rewrite_reference(s)),
         FieldValue::Int(i) => SqlValue::Int(*i),
         FieldValue::Float(f) => SqlValue::Float(*f),
         FieldValue::Bool(b) => SqlValue::Bool(*b),
         FieldValue::List(items) => SqlValue::Text(items.join(", ")),
+        // Record lists fan out to side tables, never a scalar column.
+        FieldValue::Records(_) => SqlValue::Null,
     }
 }

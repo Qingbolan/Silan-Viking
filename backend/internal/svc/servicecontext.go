@@ -3,6 +3,7 @@ package svc
 import (
 	"database/sql"
 	"log"
+	"strings"
 
 	"silan-backend/internal/config"
 	"silan-backend/internal/ent"
@@ -35,7 +36,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		log.Fatalf("failed opening raw DB connection: %v", err)
 	}
 
-	// Create request_logs table if not exists (per driver)
+	// request_logs — a runtime access-log table written by the analytics
+	// middleware via the ent client. The table itself mirrors the ent
+	// RequestLog schema; it is created here (a small bootstrap DDL, like
+	// the other runtime tables) rather than via ent migrate, since a full
+	// ent migrate would also touch the engine-owned content tables.
 	var ddl string
 	switch c.Database.Driver {
 	case "sqlite3":
@@ -49,6 +54,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent TEXT,
 			ip TEXT,
 			lang TEXT,
+			is_bot BOOLEAN DEFAULT 0,
+			bot_name TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`
 	case "mysql":
@@ -62,6 +69,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent VARCHAR(1024),
 			ip VARCHAR(64),
 			lang VARCHAR(8),
+			is_bot TINYINT(1) DEFAULT 0,
+			bot_name VARCHAR(64),
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		) ENGINE=InnoDB`
 	case "postgres", "postgresql":
@@ -75,6 +84,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent TEXT,
 			ip TEXT,
 			lang TEXT,
+			is_bot BOOLEAN DEFAULT FALSE,
+			bot_name TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`
 	default:
@@ -84,6 +95,20 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		if _, err := rawDB.Exec(ddl); err != nil {
 			log.Printf("warning: failed creating request_logs table: %v", err)
 		}
+		// Idempotently add the bot columns to a pre-existing table — a
+		// failed ALTER (column already present) is expected and ignored.
+		boolType := "BOOLEAN DEFAULT 0"
+		if c.Database.Driver == "postgres" || c.Database.Driver == "postgresql" {
+			boolType = "BOOLEAN DEFAULT FALSE"
+		} else if c.Database.Driver == "mysql" {
+			boolType = "TINYINT(1) DEFAULT 0"
+		}
+		nameType := "TEXT"
+		if c.Database.Driver == "mysql" {
+			nameType = "VARCHAR(64)"
+		}
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN is_bot " + boolType)
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN bot_name " + nameType)
 	}
 
 	// Create user_identities table for OAuth identities (to store avatar, etc.)
@@ -140,11 +165,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	createAnalyticsTables(rawDB, c.Database.Driver)
 	createContentRelationTable(rawDB, c.Database.Driver)
 	migrateLegacyBlogSeries(rawDB, c.Database.Driver)
+	dropContentForeignKeys(rawDB, c.Database.Driver)
 
 	return &ServiceContext{
 		Config:    c,
 		Cors:      middleware.NewCorsMiddleware().Handle,
-		Analytics: middleware.NewAnalyticsMiddleware(rawDB, c.Database.Driver).Handle,
+		Analytics: middleware.NewAnalyticsMiddleware(client).Handle,
 		DB:        client,
 		RawDB:     rawDB,
 	}
@@ -213,6 +239,92 @@ func migrateLegacyBlogSeries(db *sql.DB, driver string) {
 	for _, statement := range statements {
 		if _, err := db.Exec(statement); err != nil {
 			log.Printf("warning: failed migrating legacy blog series: %v", err)
+		}
+	}
+}
+
+// dropContentForeignKeys rebuilds the runtime analytics tables that an older
+// ent schema gave a database-level foreign key onto an engine-derived content
+// table (`project_views`/`project_likes` → `projects`).
+//
+// Such a FK is a modelling error: `deploy`'s promote replaces the derived
+// `projects` table wholesale — with fresh ids — on every content sync, so any
+// FK from a *runtime* table into it dangles at the next promote and aborts the
+// promote transaction. The current ent schema no longer declares these edges;
+// this migration brings an already-migrated database in line by recreating
+// the tables without the `projects` FK. SQLite cannot `DROP CONSTRAINT`, so a
+// table that still has it is rebuilt: rename, recreate FK-free, copy, drop.
+//
+// Only SQLite is handled — it is the deploy driver, and the rebuild idiom is
+// SQLite-specific. The migration is idempotent: a table already FK-free (the
+// `sqlite_master` SQL no longer mentions `REFERENCES \`projects\“) is skipped.
+func dropContentForeignKeys(db *sql.DB, driver string) {
+	if driver != "sqlite3" {
+		return
+	}
+
+	// table -> the FK-free CREATE statement, matching the current ent schema.
+	rebuilds := map[string]string{
+		"project_views": `CREATE TABLE project_views (
+			id text NOT NULL PRIMARY KEY,
+			project_id text NOT NULL,
+			user_identity_id text NULL,
+			fingerprint text NULL,
+			ip_address text NULL,
+			user_agent text NULL,
+			referrer text NULL,
+			session_duration integer NULL DEFAULT (0),
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			CONSTRAINT project_views_user_identities_user_identity
+				FOREIGN KEY (user_identity_id) REFERENCES user_identities (id) ON DELETE SET NULL
+		)`,
+		"project_likes": `CREATE TABLE project_likes (
+			id text NOT NULL PRIMARY KEY,
+			project_id text NOT NULL,
+			user_identity_id text NULL,
+			fingerprint text NULL,
+			ip_address text NULL,
+			user_agent text NULL,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			CONSTRAINT project_likes_user_identities_user_identity
+				FOREIGN KEY (user_identity_id) REFERENCES user_identities (id) ON DELETE SET NULL
+		)`,
+	}
+
+	for table, createSQL := range rebuilds {
+		var existing string
+		err := db.QueryRow(
+			"SELECT sql FROM sqlite_master WHERE type='table' AND name=?", table,
+		).Scan(&existing)
+		if err != nil {
+			continue // table absent — createAnalyticsTables makes it FK-free
+		}
+		if !strings.Contains(existing, "REFERENCES `projects`") &&
+			!strings.Contains(existing, "REFERENCES projects") {
+			continue // already FK-free — nothing to do
+		}
+		// Rebuild without the `projects` FK. `foreign_keys` is toggled off for
+		// the swap so the rename does not trip other tables' checks.
+		stmts := []string{
+			"PRAGMA foreign_keys=OFF",
+			"ALTER TABLE " + table + " RENAME TO " + table + "_old_fk",
+			createSQL,
+			"INSERT INTO " + table + " SELECT * FROM " + table + "_old_fk",
+			"DROP TABLE " + table + "_old_fk",
+			"PRAGMA foreign_keys=ON",
+		}
+		failed := false
+		for _, s := range stmts {
+			if _, err := db.Exec(s); err != nil {
+				log.Printf("warning: dropping content FK from %s failed at %q: %v", table, s, err)
+				failed = true
+				break
+			}
+		}
+		if !failed {
+			log.Printf("migrated %s: dropped the projects foreign key", table)
 		}
 	}
 }

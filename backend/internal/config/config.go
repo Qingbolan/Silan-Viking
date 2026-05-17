@@ -10,6 +10,23 @@ type Config struct {
 	rest.RestConf
 	Database DatabaseConfig `json:"database"`
 	Auth     AuthConfig     `json:"auth"`
+	Media    MediaConfig    `json:"media"`
+}
+
+// MediaConfig locates the binary resource files the media endpoint serves.
+type MediaConfig struct {
+	// Root is the directory the `assets/` content resources are deployed
+	// into. Optional in the config file; defaults to `/data/media` (the
+	// path the Docker deploy mounts the media volume at) when left blank.
+	Root string `json:"root,env=MEDIA_ROOT,optional"`
+}
+
+// MediaRoot returns the configured media directory, or the deploy default.
+func (c *Config) MediaRoot() string {
+	if c.Media.Root != "" {
+		return c.Media.Root
+	}
+	return "/data/media"
 }
 
 type DatabaseConfig struct {

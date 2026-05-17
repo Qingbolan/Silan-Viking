@@ -9,7 +9,9 @@ import (
 	auth "silan-backend/internal/handler/auth"
 	blog "silan-backend/internal/handler/blog"
 	episodes "silan-backend/internal/handler/episodes"
+	health "silan-backend/internal/handler/health"
 	ideas "silan-backend/internal/handler/ideas"
+	media "silan-backend/internal/handler/media"
 	plans "silan-backend/internal/handler/plans"
 	projects "silan-backend/internal/handler/projects"
 	resume "silan-backend/internal/handler/resume"
@@ -30,6 +32,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/google/verify",
 					Handler: auth.GoogleVerifyHandler(serverCtx),
+				},
+				{
+					// Validate a company email — well-formed and not a free-mail provider
+					Method:  http.MethodPost,
+					Path:    "/verify-email",
+					Handler: auth.VerifyEmailHandler(serverCtx),
 				},
 			}...,
 		),
@@ -145,6 +153,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	)
 
 	server.AddRoutes(
+		[]rest.Route{
+			{
+				// Liveness probe — returns ok without touching the database
+				Method:  http.MethodGet,
+				Path:    "/health",
+				Handler: health.HealthHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/v1"),
+	)
+
+	server.AddRoutes(
 		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
 			[]rest.Route{
@@ -205,6 +225,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/v1/ideas"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Route{
+				{
+					// Stream a binary resource file from the media volume
+					Method:  http.MethodGet,
+					Path:    "/media",
+					Handler: media.GetMediaHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/v1"),
 	)
 
 	server.AddRoutes(
@@ -377,6 +412,45 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
 			[]rest.Route{
 				{
+					// Aggregate view/like/comment counts of one item
+					Method:  http.MethodGet,
+					Path:    "/",
+					Handler: stats.StatsHandler(serverCtx),
+				},
+				{
+					// Crawler access log — which bot crawled which page, and when
+					Method:  http.MethodGet,
+					Path:    "/bots",
+					Handler: stats.BotVisitsHandler(serverCtx),
+				},
+				{
+					// Visitor-kind (human / search / AI crawler) breakdown
+					Method:  http.MethodGet,
+					Path:    "/crawlers",
+					Handler: stats.CrawlerBreakdownHandler(serverCtx),
+				},
+				{
+					// Referrer-source breakdown
+					Method:  http.MethodGet,
+					Path:    "/sources",
+					Handler: stats.SourceBreakdownHandler(serverCtx),
+				},
+				{
+					// De-identified visitor list of one item
+					Method:  http.MethodGet,
+					Path:    "/visitors",
+					Handler: stats.VisitorsHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/v1/stats"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Route{
+				{
 					// Get recent updates list
 					Method:  http.MethodGet,
 					Path:    "/",
@@ -391,40 +465,5 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/v1/updates"),
-	)
-
-	// Runtime interaction statistics (docs/silan-viking/03 §3.2 #15).
-	// Added by hand: stats is a silan-viking addition, not in the goctl .api.
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
-			[]rest.Route{
-				{
-					// Aggregate view/like/comment counts of one item
-					Method:  http.MethodGet,
-					Path:    "/",
-					Handler: stats.StatsHandler(serverCtx),
-				},
-				{
-					// De-identified visitor list of one item
-					Method:  http.MethodGet,
-					Path:    "/visitors",
-					Handler: stats.VisitorsHandler(serverCtx),
-				},
-				{
-					// Visitor-kind (human / search / AI crawler) breakdown
-					Method:  http.MethodGet,
-					Path:    "/crawlers",
-					Handler: stats.CrawlerBreakdownHandler(serverCtx),
-				},
-				{
-					// Referrer-source breakdown
-					Method:  http.MethodGet,
-					Path:    "/sources",
-					Handler: stats.SourceBreakdownHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithPrefix("/api/v1/stats"),
 	)
 }

@@ -10,10 +10,8 @@ import (
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projectimage"
-	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
-	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/ent/user"
 	"time"
 
@@ -429,36 +427,6 @@ func (pu *ProjectUpdate) AddImages(p ...*ProjectImage) *ProjectUpdate {
 	return pu.AddImageIDs(ids...)
 }
 
-// AddLikeIDs adds the "likes" edge to the ProjectLike entity by IDs.
-func (pu *ProjectUpdate) AddLikeIDs(ids ...string) *ProjectUpdate {
-	pu.mutation.AddLikeIDs(ids...)
-	return pu
-}
-
-// AddLikes adds the "likes" edges to the ProjectLike entity.
-func (pu *ProjectUpdate) AddLikes(p ...*ProjectLike) *ProjectUpdate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.AddLikeIDs(ids...)
-}
-
-// AddViewIDs adds the "views" edge to the ProjectView entity by IDs.
-func (pu *ProjectUpdate) AddViewIDs(ids ...string) *ProjectUpdate {
-	pu.mutation.AddViewIDs(ids...)
-	return pu
-}
-
-// AddViews adds the "views" edges to the ProjectView entity.
-func (pu *ProjectUpdate) AddViews(p ...*ProjectView) *ProjectUpdate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.AddViewIDs(ids...)
-}
-
 // Mutation returns the ProjectMutation object of the builder.
 func (pu *ProjectUpdate) Mutation() *ProjectMutation {
 	return pu.mutation
@@ -537,48 +505,6 @@ func (pu *ProjectUpdate) RemoveImages(p ...*ProjectImage) *ProjectUpdate {
 		ids[i] = p[i].ID
 	}
 	return pu.RemoveImageIDs(ids...)
-}
-
-// ClearLikes clears all "likes" edges to the ProjectLike entity.
-func (pu *ProjectUpdate) ClearLikes() *ProjectUpdate {
-	pu.mutation.ClearLikes()
-	return pu
-}
-
-// RemoveLikeIDs removes the "likes" edge to ProjectLike entities by IDs.
-func (pu *ProjectUpdate) RemoveLikeIDs(ids ...string) *ProjectUpdate {
-	pu.mutation.RemoveLikeIDs(ids...)
-	return pu
-}
-
-// RemoveLikes removes "likes" edges to ProjectLike entities.
-func (pu *ProjectUpdate) RemoveLikes(p ...*ProjectLike) *ProjectUpdate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.RemoveLikeIDs(ids...)
-}
-
-// ClearViews clears all "views" edges to the ProjectView entity.
-func (pu *ProjectUpdate) ClearViews() *ProjectUpdate {
-	pu.mutation.ClearViews()
-	return pu
-}
-
-// RemoveViewIDs removes the "views" edge to ProjectView entities by IDs.
-func (pu *ProjectUpdate) RemoveViewIDs(ids ...string) *ProjectUpdate {
-	pu.mutation.RemoveViewIDs(ids...)
-	return pu
-}
-
-// RemoveViews removes "views" edges to ProjectView entities.
-func (pu *ProjectUpdate) RemoveViews(p ...*ProjectView) *ProjectUpdate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pu.RemoveViewIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -955,96 +881,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.LikesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.LikesTable,
-			Columns: []string{project.LikesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedLikesIDs(); len(nodes) > 0 && !pu.mutation.LikesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.LikesTable,
-			Columns: []string{project.LikesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.LikesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.LikesTable,
-			Columns: []string{project.LikesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if pu.mutation.ViewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.ViewsTable,
-			Columns: []string{project.ViewsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.RemovedViewsIDs(); len(nodes) > 0 && !pu.mutation.ViewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.ViewsTable,
-			Columns: []string{project.ViewsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.ViewsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.ViewsTable,
-			Columns: []string{project.ViewsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1466,36 +1302,6 @@ func (puo *ProjectUpdateOne) AddImages(p ...*ProjectImage) *ProjectUpdateOne {
 	return puo.AddImageIDs(ids...)
 }
 
-// AddLikeIDs adds the "likes" edge to the ProjectLike entity by IDs.
-func (puo *ProjectUpdateOne) AddLikeIDs(ids ...string) *ProjectUpdateOne {
-	puo.mutation.AddLikeIDs(ids...)
-	return puo
-}
-
-// AddLikes adds the "likes" edges to the ProjectLike entity.
-func (puo *ProjectUpdateOne) AddLikes(p ...*ProjectLike) *ProjectUpdateOne {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.AddLikeIDs(ids...)
-}
-
-// AddViewIDs adds the "views" edge to the ProjectView entity by IDs.
-func (puo *ProjectUpdateOne) AddViewIDs(ids ...string) *ProjectUpdateOne {
-	puo.mutation.AddViewIDs(ids...)
-	return puo
-}
-
-// AddViews adds the "views" edges to the ProjectView entity.
-func (puo *ProjectUpdateOne) AddViews(p ...*ProjectView) *ProjectUpdateOne {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.AddViewIDs(ids...)
-}
-
 // Mutation returns the ProjectMutation object of the builder.
 func (puo *ProjectUpdateOne) Mutation() *ProjectMutation {
 	return puo.mutation
@@ -1574,48 +1380,6 @@ func (puo *ProjectUpdateOne) RemoveImages(p ...*ProjectImage) *ProjectUpdateOne 
 		ids[i] = p[i].ID
 	}
 	return puo.RemoveImageIDs(ids...)
-}
-
-// ClearLikes clears all "likes" edges to the ProjectLike entity.
-func (puo *ProjectUpdateOne) ClearLikes() *ProjectUpdateOne {
-	puo.mutation.ClearLikes()
-	return puo
-}
-
-// RemoveLikeIDs removes the "likes" edge to ProjectLike entities by IDs.
-func (puo *ProjectUpdateOne) RemoveLikeIDs(ids ...string) *ProjectUpdateOne {
-	puo.mutation.RemoveLikeIDs(ids...)
-	return puo
-}
-
-// RemoveLikes removes "likes" edges to ProjectLike entities.
-func (puo *ProjectUpdateOne) RemoveLikes(p ...*ProjectLike) *ProjectUpdateOne {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.RemoveLikeIDs(ids...)
-}
-
-// ClearViews clears all "views" edges to the ProjectView entity.
-func (puo *ProjectUpdateOne) ClearViews() *ProjectUpdateOne {
-	puo.mutation.ClearViews()
-	return puo
-}
-
-// RemoveViewIDs removes the "views" edge to ProjectView entities by IDs.
-func (puo *ProjectUpdateOne) RemoveViewIDs(ids ...string) *ProjectUpdateOne {
-	puo.mutation.RemoveViewIDs(ids...)
-	return puo
-}
-
-// RemoveViews removes "views" edges to ProjectView entities.
-func (puo *ProjectUpdateOne) RemoveViews(p ...*ProjectView) *ProjectUpdateOne {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return puo.RemoveViewIDs(ids...)
 }
 
 // Where appends a list predicates to the ProjectUpdate builder.
@@ -2022,96 +1786,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(projectimage.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.LikesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.LikesTable,
-			Columns: []string{project.LikesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedLikesIDs(); len(nodes) > 0 && !puo.mutation.LikesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.LikesTable,
-			Columns: []string{project.LikesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.LikesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.LikesTable,
-			Columns: []string{project.LikesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectlike.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if puo.mutation.ViewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.ViewsTable,
-			Columns: []string{project.ViewsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.RemovedViewsIDs(); len(nodes) > 0 && !puo.mutation.ViewsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.ViewsTable,
-			Columns: []string{project.ViewsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.ViewsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   project.ViewsTable,
-			Columns: []string{project.ViewsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(projectview.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

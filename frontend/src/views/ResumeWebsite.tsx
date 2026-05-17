@@ -1,24 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
-  AlertCircle,
   Award as AwardIcon,
   BookOpen,
   Briefcase,
   GraduationCap,
-  FlaskConical,
+  FolderGit2,
   Sparkles,
+  UserRound,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../components/LanguageContext';
 import { useTheme } from '../components/ThemeContext';
-import { LoadingSpinner } from '../components/ui';
+import { BrandLoading } from '../components/ds/BrandLoading';
+import { ErrorState } from '../components/ds/ErrorState';
+import Markdown from '../components/ui/Markdown';
+import { Seo, SITE_URL } from '../components/Seo';
 import { fetchResumeData } from '../api/home/resumeApi';
 import {
   AwardsList,
   ProjectSection,
   PublicationsList,
   RecentSection,
+  ResearchGrid,
   SectionCard,
   SkillsCloud,
   Timeline,
@@ -41,6 +45,10 @@ interface ResumeViewData {
     url: string;
   }>;
   sections: {
+    about?: {
+      title: string;
+      content: string;
+    };
     education: {
       title: string;
       content: Array<{
@@ -68,15 +76,33 @@ interface ResumeViewData {
     research: {
       title: string;
       content: Array<{
-  title: string;
-  location: string;
+        id: string;
+        title: string;
+        location: string;
         date: string;
         details: string[];
+        image?: string;
+        tags?: string[];
       }>;
     };
     publications: {
       title: string;
-      content: string[];
+      content: Array<{
+        id: string;
+        title: string;
+        authors?: string;
+        venue?: string;
+        year?: string;
+        abstract?: string;
+        award?: string;
+        tags?: string[];
+        citations?: number;
+        url?: string;
+        pdfUrl?: string;
+        githubUrl?: string;
+        blogUrl?: string;
+        image?: string;
+      }>;
     };
     awards: {
       title: string;
@@ -113,8 +139,12 @@ const ResumeWebsite: React.FC = () => {
       { id: 'hero-section', title: resumeData.name, level: 1 },
     ];
     
-    // Order: academics-first — education / research / publications lead,
-    // work experience follows, awards & skills close.
+    // Order: about → recent, then academics-first — education /
+    // publications / projects lead, work experience follows, awards & skills close.
+    if (resumeData.sections?.about) {
+      sections.push({ id: 'about-section', title: resumeData.sections.about.title, level: 2 });
+    }
+
     if (resumeData.sections?.recent) {
       sections.push({ id: 'recent-section', title: resumeData.sections.recent.title, level: 2 });
     }
@@ -123,12 +153,12 @@ const ResumeWebsite: React.FC = () => {
       sections.push({ id: 'education-section', title: resumeData.sections.education.title, level: 2 });
     }
 
-    if (resumeData.sections?.research) {
-      sections.push({ id: 'research-section', title: resumeData.sections.research.title, level: 2 });
-    }
-
     if (resumeData.sections?.publications) {
       sections.push({ id: 'publications-section', title: resumeData.sections.publications.title, level: 2 });
+    }
+
+    if (resumeData.sections?.research) {
+      sections.push({ id: 'research-section', title: resumeData.sections.research.title, level: 2 });
     }
 
     if (resumeData.sections?.experience) {
@@ -191,34 +221,20 @@ const ResumeWebsite: React.FC = () => {
   // Removed unused handleDownloadResume function
 
   if (loading || !resumeData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center ">
-        <LoadingSpinner 
-          size="xl" 
-          text={t('resume.loading_profile')} 
-          variant="ring"
-          color="primary"
-        />
-      </div>
-    );
+    // The home page boot — the design-system branded splash.
+    return <BrandLoading message={t('resume.loading_profile')} />;
   }
 
   if (error) {
+    // A failed resume load — the design-system full-page error, with a
+    // retry that re-runs the fetch.
     return (
-      <div className="min-h-screen flex items-center justify-center ">
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          role="alert"
-        >
-          <AlertCircle size={48} className="mx-auto mb-4 text-theme-error" />
-          <h2 className="text-xl font-semibold mb-2 text-theme-primary">
-            {t('resume.error_loading')}
-          </h2>
-          <p className="text-theme-secondary">{error}</p>
-        </motion.div>
-      </div>
+      <ErrorState
+        variant="page"
+        title={t('resume.error_loading')}
+        description={error}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 
@@ -231,9 +247,28 @@ const ResumeWebsite: React.FC = () => {
       animate={reduceMotion ? undefined : { opacity: 1 }}
       transition={reduceMotion ? undefined : { duration: 0.5 }}
     >
+      <Seo
+        description={
+          resumeData.sections?.about?.content
+            ? resumeData.sections.about.content.replace(/\s+/g, ' ').slice(0, 200)
+            : `${resumeData.name} — ${resumeData.title}`
+        }
+        path="/"
+        type="profile"
+        lang={language as 'en' | 'zh'}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Person',
+          name: resumeData.name,
+          jobTitle: resumeData.title,
+          url: SITE_URL,
+          sameAs: resumeData.socialLinks?.map((l) => l.url).filter(Boolean) || [],
+        }}
+      />
+
       {/* Project Section */}
       <div id="hero-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
-        <ProjectSection 
+        <ProjectSection
           name={resumeData.name || ''}
           title={resumeData.title || ''}
           current={resumeData.current || ''}
@@ -244,6 +279,23 @@ const ResumeWebsite: React.FC = () => {
 
       {/* Content Sections */}
       <div className="mx-auto max-w-6xl px-1 pb-12 xs:pb-16 sm:pb-20 space-y-6 xs:space-y-8 sm:space-y-12">
+        {/* About Me Section — the résumé summary prose, leads the content. */}
+        {resumeData.sections?.about && resumeData.sections.about.content && (
+          <div id="about-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
+            <SectionCard
+              title={resumeData.sections.about.title}
+              kicker="Intro"
+              index="00"
+              icon={<UserRound size={18} aria-hidden focusable={false} />}
+              delay={0.05}
+            >
+              <Markdown className="text-ds-base leading-[1.7] text-ds-fg-muted">
+                {resumeData.sections.about.content}
+              </Markdown>
+            </SectionCard>
+          </div>
+        )}
+
         {/* Recent Section - At the top for prominence */}
         {resumeData.sections?.recent && resumeData.sections.recent.content && (
           <div id="recent-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
@@ -281,40 +333,35 @@ const ResumeWebsite: React.FC = () => {
           </div>
         )}
 
-        {/* Research Section */}
-        {resumeData.sections?.research && resumeData.sections.research.content && (
-          <div id="research-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
-            <SectionCard
-              title={resumeData.sections.research.title}
-              kicker="Inquiry"
-              index="02"
-              icon={<FlaskConical size={18} aria-hidden focusable={false} />}
-              delay={0.3}
-            >
-              <Timeline
-                items={resumeData.sections.research.content.map(research => ({
-                  title: research.title,
-                  subtitle: research.location,
-                  date: research.date,
-                  details: research.details,
-                }))}
-                variant="accent"
-              />
-            </SectionCard>
-          </div>
-        )}
-
-        {/* Publications Section */}
+        {/* Publications Section — papers lead the academic output. */}
         {resumeData.sections?.publications && resumeData.sections.publications.content && (
           <div id="publications-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
             <SectionCard
               title={resumeData.sections.publications.title}
               kicker="Library"
-              index="03"
+              index="02"
               icon={<BookOpen size={18} aria-hidden focusable={false} />}
+              delay={0.3}
+            >
+              <PublicationsList
+                publications={resumeData.sections.publications.content}
+                highlightAuthor={resumeData.name}
+              />
+            </SectionCard>
+          </div>
+        )}
+
+        {/* Projects Section — research projects shown as a card grid. */}
+        {resumeData.sections?.research && resumeData.sections.research.content && (
+          <div id="research-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
+            <SectionCard
+              title={resumeData.sections.research.title}
+              kicker="Work"
+              index="03"
+              icon={<FolderGit2 size={18} aria-hidden focusable={false} />}
               delay={0.4}
             >
-              <PublicationsList publications={resumeData.sections.publications.content} />
+              <ResearchGrid items={resumeData.sections.research.content} />
             </SectionCard>
           </div>
         )}

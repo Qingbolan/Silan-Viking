@@ -15,6 +15,7 @@ import { readingTracker } from '../../utils/readingBehavior';
 import { calculateReadingTime } from '../../utils/readingTime';
 import { useLanguage } from '../LanguageContext';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
+import { Seo, blogPostingJsonLd } from '../Seo';
 
 const BlogDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -85,9 +86,34 @@ const BlogDetail: React.FC = () => {
     navigate('/blog');
   };
 
+  // Per-article SEO — title, excerpt, cover image and BlogPosting JSON-LD.
+  const seoTitle = language === 'zh' && blog.titleZh ? blog.titleZh : blog.title;
+  const seoDescription =
+    (language === 'zh' && blog.summaryZh ? blog.summaryZh : blog.summary) || '';
+  const seo = (
+    <Seo
+      title={seoTitle}
+      description={seoDescription}
+      path={`/blog/${blog.id}`}
+      image={blog.vlogCover}
+      type="article"
+      lang={language as 'en' | 'zh'}
+      jsonLd={blogPostingJsonLd({
+        title: seoTitle,
+        description: seoDescription,
+        path: `/blog/${blog.id}`,
+        image: blog.vlogCover,
+        datePublished: blog.publishDate,
+        author: blog.author,
+      })}
+    />
+  );
+
   if (blog.seriesId) {
     return (
-      <SeriesDetailLayout
+      <>
+        {seo}
+        <SeriesDetailLayout
         post={blog}
         onBack={handleBack}
         userAnnotations={userAnnotations}
@@ -105,11 +131,14 @@ const BlogDetail: React.FC = () => {
         onHighlightAnnotation={highlightAnnotation}
         onCancelAnnotation={cancelAnnotation}
       />
+      </>
     );
   }
 
   return (
-    <ArticleDetailLayout
+    <>
+      {seo}
+      <ArticleDetailLayout
       post={blog}
       onBack={handleBack}
       userAnnotations={userAnnotations}
@@ -126,8 +155,9 @@ const BlogDetail: React.FC = () => {
       onRemoveUserAnnotation={removeUserAnnotation}
       onHighlightAnnotation={highlightAnnotation}
       onCancelAnnotation={cancelAnnotation}
-    />
+      />
+    </>
   );
 };
 
-export default BlogDetail; 
+export default BlogDetail;

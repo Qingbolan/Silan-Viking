@@ -27,7 +27,10 @@ RUN go build -o /out/silan-backend ./backend.go \
 
 # ---- runtime stage ----
 FROM debian:bookworm-slim AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+# ca-certificates for outbound TLS; curl for the compose healthcheck —
+# the slim image ships neither wget nor curl, so the probe tool must be
+# installed explicitly.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 

@@ -165,6 +165,26 @@ func (rpu *ResearchProjectUpdate) ClearResearchType() *ResearchProjectUpdate {
 	return rpu
 }
 
+// SetImageURL sets the "image_url" field.
+func (rpu *ResearchProjectUpdate) SetImageURL(s string) *ResearchProjectUpdate {
+	rpu.mutation.SetImageURL(s)
+	return rpu
+}
+
+// SetNillableImageURL sets the "image_url" field if the given value is not nil.
+func (rpu *ResearchProjectUpdate) SetNillableImageURL(s *string) *ResearchProjectUpdate {
+	if s != nil {
+		rpu.SetImageURL(*s)
+	}
+	return rpu
+}
+
+// ClearImageURL clears the value of the "image_url" field.
+func (rpu *ResearchProjectUpdate) ClearImageURL() *ResearchProjectUpdate {
+	rpu.mutation.ClearImageURL()
+	return rpu
+}
+
 // SetFundingSource sets the "funding_source" field.
 func (rpu *ResearchProjectUpdate) SetFundingSource(s string) *ResearchProjectUpdate {
 	rpu.mutation.SetFundingSource(s)
@@ -386,6 +406,11 @@ func (rpu *ResearchProjectUpdate) check() error {
 			return &ValidationError{Name: "research_type", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.research_type": %w`, err)}
 		}
 	}
+	if v, ok := rpu.mutation.ImageURL(); ok {
+		if err := researchproject.ImageURLValidator(v); err != nil {
+			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.image_url": %w`, err)}
+		}
+	}
 	if v, ok := rpu.mutation.FundingSource(); ok {
 		if err := researchproject.FundingSourceValidator(v); err != nil {
 			return &ValidationError{Name: "funding_source", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.funding_source": %w`, err)}
@@ -438,6 +463,12 @@ func (rpu *ResearchProjectUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if rpu.mutation.ResearchTypeCleared() {
 		_spec.ClearField(researchproject.FieldResearchType, field.TypeString)
+	}
+	if value, ok := rpu.mutation.ImageURL(); ok {
+		_spec.SetField(researchproject.FieldImageURL, field.TypeString, value)
+	}
+	if rpu.mutation.ImageURLCleared() {
+		_spec.ClearField(researchproject.FieldImageURL, field.TypeString)
 	}
 	if value, ok := rpu.mutation.FundingSource(); ok {
 		_spec.SetField(researchproject.FieldFundingSource, field.TypeString, value)
@@ -742,6 +773,26 @@ func (rpuo *ResearchProjectUpdateOne) ClearResearchType() *ResearchProjectUpdate
 	return rpuo
 }
 
+// SetImageURL sets the "image_url" field.
+func (rpuo *ResearchProjectUpdateOne) SetImageURL(s string) *ResearchProjectUpdateOne {
+	rpuo.mutation.SetImageURL(s)
+	return rpuo
+}
+
+// SetNillableImageURL sets the "image_url" field if the given value is not nil.
+func (rpuo *ResearchProjectUpdateOne) SetNillableImageURL(s *string) *ResearchProjectUpdateOne {
+	if s != nil {
+		rpuo.SetImageURL(*s)
+	}
+	return rpuo
+}
+
+// ClearImageURL clears the value of the "image_url" field.
+func (rpuo *ResearchProjectUpdateOne) ClearImageURL() *ResearchProjectUpdateOne {
+	rpuo.mutation.ClearImageURL()
+	return rpuo
+}
+
 // SetFundingSource sets the "funding_source" field.
 func (rpuo *ResearchProjectUpdateOne) SetFundingSource(s string) *ResearchProjectUpdateOne {
 	rpuo.mutation.SetFundingSource(s)
@@ -976,6 +1027,11 @@ func (rpuo *ResearchProjectUpdateOne) check() error {
 			return &ValidationError{Name: "research_type", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.research_type": %w`, err)}
 		}
 	}
+	if v, ok := rpuo.mutation.ImageURL(); ok {
+		if err := researchproject.ImageURLValidator(v); err != nil {
+			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.image_url": %w`, err)}
+		}
+	}
 	if v, ok := rpuo.mutation.FundingSource(); ok {
 		if err := researchproject.FundingSourceValidator(v); err != nil {
 			return &ValidationError{Name: "funding_source", err: fmt.Errorf(`ent: validator failed for field "ResearchProject.funding_source": %w`, err)}
@@ -1045,6 +1101,12 @@ func (rpuo *ResearchProjectUpdateOne) sqlSave(ctx context.Context) (_node *Resea
 	}
 	if rpuo.mutation.ResearchTypeCleared() {
 		_spec.ClearField(researchproject.FieldResearchType, field.TypeString)
+	}
+	if value, ok := rpuo.mutation.ImageURL(); ok {
+		_spec.SetField(researchproject.FieldImageURL, field.TypeString, value)
+	}
+	if rpuo.mutation.ImageURLCleared() {
+		_spec.ClearField(researchproject.FieldImageURL, field.TypeString)
 	}
 	if value, ok := rpuo.mutation.FundingSource(); ok {
 		_spec.SetField(researchproject.FieldFundingSource, field.TypeString, value)

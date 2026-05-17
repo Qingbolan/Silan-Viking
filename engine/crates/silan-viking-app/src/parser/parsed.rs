@@ -28,6 +28,10 @@ pub enum FieldValue {
     Bool(bool),
     /// A list of strings (`tags`, `tech_stack`).
     List(Vec<String>),
+    /// A list of records — a `list<{...}>` field such as `social_links`,
+    /// where each element is an object of string-valued keys. These fan out
+    /// into a side table (e.g. `social_links`), not a main-table column.
+    Records(Vec<BTreeMap<String, String>>),
 }
 
 impl FieldValue {
@@ -43,6 +47,14 @@ impl FieldValue {
     pub fn as_list(&self) -> Option<&[String]> {
         match self {
             FieldValue::List(items) => Some(items),
+            _ => None,
+        }
+    }
+
+    /// The value as a list of records, if it is one.
+    pub fn as_records(&self) -> Option<&[BTreeMap<String, String>]> {
+        match self {
+            FieldValue::Records(records) => Some(records),
             _ => None,
         }
     }

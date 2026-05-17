@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { ConfigProvider } from 'antd';
 import './i18n/index'; // Initialize i18n
 import MainLayout from './layout/MainLayout';
@@ -83,22 +84,24 @@ const LocalizedRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <AntdThemeBridge>
-        <LanguageProvider>
-          <Router>
-            <PageTitleProvider>
-              <MainLayout>
-                {/* Catches render crashes in any route → branded page error. */}
-                <ErrorBoundary>
-                  <LocalizedRoutes />
-                </ErrorBoundary>
-              </MainLayout>
-            </PageTitleProvider>
-          </Router>
-        </LanguageProvider>
-      </AntdThemeBridge>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider>
+        <AntdThemeBridge>
+          <LanguageProvider>
+            <Router>
+              <PageTitleProvider>
+                <MainLayout>
+                  {/* Catches render crashes in any route → branded page error. */}
+                  <ErrorBoundary>
+                    <LocalizedRoutes />
+                  </ErrorBoundary>
+                </MainLayout>
+              </PageTitleProvider>
+            </Router>
+          </LanguageProvider>
+        </AntdThemeBridge>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 };
 

@@ -43,7 +43,19 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# compiled backend helper binaries
+# compiled backend helper binaries — Go build artifacts, never committed.
+# The deploy pipeline builds these inside the backend Docker image; a copy
+# in the worktree is a developer convenience only.
 /backend/migrate
+/backend/backend
 /backend/silan-backend
 /backend/silan-backend-mac
+# A `go build` with no -o once dropped a binary named `backend` into the
+# ent package directory. Guard against it being re-tracked.
+/backend/internal/ent/backend
+
+# Claude Code local runtime state — machine-local, never committed.
+/.claude/
+
+# Database snapshots taken before migrations — local backups only.
+*.db.before-*.bak

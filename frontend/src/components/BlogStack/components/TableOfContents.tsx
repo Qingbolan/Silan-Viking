@@ -1,122 +1,76 @@
+// BlogStack TableOfContents — the in-article outline sidebar.
+//
+// This is a thin adapter onto the design-system `ds/TableOfContents`: it
+// keeps the BlogStack `sections: Section[]` prop (so `ArticleDetailLayout` /
+// `SeriesDetailLayout` call it unchanged) and adds the scroll container a
+// long outline needs, then delegates the actual rendering — depth ramp,
+// active rail, scroll-spy — to the DS component.
+//
+// It replaces the old antd `Anchor` implementation, whose flat indent and
+// truncated rows did not convey heading depth.
 import React from 'react';
-import { Anchor } from 'antd';
-import type { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
+import {
+  TableOfContents as DsTableOfContents,
+  type TocItem,
+} from '../../ds/TableOfContents';
 import { Section } from '../types/blog';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeHighlight from 'rehype-highlight';
+
 interface TableOfContentsProps {
   sections: Section[];
   className?: string;
 }
 
+/** Strip residual inline-markdown markers from a heading title.
+ *  `useTOC` already removes the leading `#`s; a title may still carry
+ *  `**bold**` / `` `code` `` / `_em_` markers that must not render literally
+ *  in a plain-text outline row. */
+const plainTitle = (title: string): string =>
+  title
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/~~([^~]+)~~/g, '$1')
+    .trim();
+
 export const TableOfContents: React.FC<TableOfContentsProps> = ({
   sections,
-  className = ''
+  className = '',
 }) => {
-  // Convert sections to Ant Design Anchor items format with proper hierarchy
-  const anchorItems: AnchorLinkItemProps[] = React.useMemo(() => {
-    if (sections.length === 0) return [];
-    
-    // Use flat structure but with visual hierarchy via CSS
-    return sections.map(section => ({
-      key: section.id,
-      href: `#${section.id}`,
-      title: (
-        <span 
-          className={`simple-toc-item level-${section.level}`}
-          title={section.title}
-        >
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
-            // Force inline rendering to avoid block elements inside Anchor title
-            components={{
-              // Prevent nested anchors inside Anchor item title
-              a: ({ children }) => (
-                <span className="underline decoration-dotted underline-offset-2">
-                  {children}
-                </span>
-              ),
-              p: ({ ...props }) => (
-                <span {...props} />
-              ),
-              strong: ({ ...props }) => (
-                <strong {...props} />
-              ),
-              em: ({ ...props }) => (
-                <em {...props} />
-              ),
-              del: ({ ...props }) => (
-                <del {...props} />
-              ),
-              code: ({ className, children, ...props }) => (
-                <code
-                  {...props}
-                  className={`px-1 py-0.5 rounded bg-theme-surface-secondary text-theme-primary ${className || ''}`.trim()}
-                  style={{ fontSize: '0.9em' }}
-                >
-                  {children}
-                </code>
-              ),
-              // Defensive: collapse possible lists/blocks to inline spans
-              ul: ({ children, ...props }) => <span {...props}>{children}</span>,
-              ol: ({ children, ...props }) => <span {...props}>{children}</span>,
-              li: ({ children, ...props }) => <span {...props}>{children}</span>,
-              blockquote: ({ children, ...props }) => <span {...props}>{children}</span>,
-              table: ({ children, ...props }) => <span {...props}>{children}</span>,
-              thead: ({ children, ...props }) => <span {...props}>{children}</span>,
-              tbody: ({ children, ...props }) => <span {...props}>{children}</span>,
-              tr: ({ children, ...props }) => <span {...props}>{children}</span>,
-              th: ({ children, ...props }) => <span {...props}>{children}</span>,
-              td: ({ children, ...props }) => <span {...props}>{children}</span>,
-              hr: () => null,
-              br: () => <span> / </span>,
-              h1: ({ node, children, ...props }) => <strong {...props}>{children}</strong>,
-              h2: ({ node, children, ...props }) => <strong {...props}>{children}</strong>,
-              h3: ({ node, children, ...props }) => <strong {...props}>{children}</strong>,
-              h4: ({ node, children, ...props }) => <strong {...props}>{children}</strong>,
-              h5: ({ node, children, ...props }) => <strong {...props}>{children}</strong>,
-              h6: ({ node, children, ...props }) => <strong {...props}>{children}</strong>,
-            }}
-          >
-            {section.title}
-          </ReactMarkdown>
-        </span>
-      ),
-    }));
-  }, [sections]);
+  // `Section` ({ id, title, level }) is structurally `TocItem`; only the
+  // title needs its inline markdown flattened.
+  const items = React.useMemo<TocItem[]>(
+    () =>
+      sections.map((s) => ({
+        id: s.id,
+        title: plainTitle(s.title),
+        level: s.level,
+      })),
+    [sections],
+  );
 
-  if (sections.length === 0) {
-    return null;
-  }
+  if (items.length === 0) return null;
 
+  // The scroll container the DS component does not provide: a long article
+  // outline must scroll within the sidebar, not push the page.
   return (
     <div
       className={`simple-toc ${className}`}
-      style={{
-        position: 'relative',
-        maxHeight: 'calc(100vh - 120px)', // 增加更多缓冲空间给顶部按钮和间距
-        overflow: 'hidden' // 外层隐藏溢出
-      }}
+      style={{ position: 'relative', maxHeight: 'calc(100vh - 120px)' }}
     >
-      {/* TOC Content */}
-      <div style={{
-        maxHeight: 'calc(100vh - 160px)', // 与外层一致
-        overflow: 'auto', // 内层可滚动
-        paddingRight: '4px', // 为滚动条留出更多空间
-      }}>
-        <Anchor
-          items={anchorItems}
-          offsetTop={120}
-          targetOffset={120}
-          showInkInFixed={true}
-          affix={false}
-          bounds={10}
-          className="simple-toc-anchor"
-        />
+      <div
+        style={{
+          maxHeight: 'calc(100vh - 160px)',
+          overflow: 'auto',
+          paddingRight: '4px',
+        }}
+      >
+        {/* `spy`: the DS component runs its own IntersectionObserver over the
+            heading elements — the scroll-tracking the old antd Anchor did.
+            `hideHeader`: the layout's collapse toggle already labels this
+            section "Outline" — the DS component must not draw a second one. */}
+        <DsTableOfContents items={items} spy hideHeader />
       </div>
     </div>
   );

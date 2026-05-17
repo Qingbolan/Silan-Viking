@@ -53,6 +53,9 @@ func (ResearchProject) Fields() []ent.Field {
 		field.String("research_type").
 			Optional().
 			MaxLen(50),
+		field.String("image_url").
+			Optional().
+			MaxLen(500),
 		field.String("funding_source").
 			Optional().
 			MaxLen(200),

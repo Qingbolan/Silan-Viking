@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/ent/useridentity"
 	"time"
@@ -154,11 +153,6 @@ func (pvc *ProjectViewCreate) SetNillableID(s *string) *ProjectViewCreate {
 	return pvc
 }
 
-// SetProject sets the "project" edge to the Project entity.
-func (pvc *ProjectViewCreate) SetProject(p *Project) *ProjectViewCreate {
-	return pvc.SetProjectID(p.ID)
-}
-
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (pvc *ProjectViewCreate) SetUserIdentity(u *UserIdentity) *ProjectViewCreate {
 	return pvc.SetUserIdentityID(u.ID)
@@ -233,9 +227,6 @@ func (pvc *ProjectViewCreate) check() error {
 	if _, ok := pvc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectView.updated_at"`)}
 	}
-	if len(pvc.mutation.ProjectIDs()) == 0 {
-		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectView.project"`)}
-	}
 	return nil
 }
 
@@ -271,6 +262,10 @@ func (pvc *ProjectViewCreate) createSpec() (*ProjectView, *sqlgraph.CreateSpec) 
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := pvc.mutation.ProjectID(); ok {
+		_spec.SetField(projectview.FieldProjectID, field.TypeString, value)
+		_node.ProjectID = value
+	}
 	if value, ok := pvc.mutation.Fingerprint(); ok {
 		_spec.SetField(projectview.FieldFingerprint, field.TypeString, value)
 		_node.Fingerprint = value
@@ -298,23 +293,6 @@ func (pvc *ProjectViewCreate) createSpec() (*ProjectView, *sqlgraph.CreateSpec) 
 	if value, ok := pvc.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectview.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := pvc.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectview.ProjectTable,
-			Columns: []string{projectview.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.ProjectID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pvc.mutation.UserIdentityIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

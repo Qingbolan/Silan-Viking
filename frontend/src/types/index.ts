@@ -17,7 +17,9 @@ export interface ProjectData {
   titleZh?: string;
   description: string;
   descriptionZh?: string;
-  image: string;
+  /** Cover image URL. Absent when the project has no cover — the card then
+   *  renders its built-in branded placeholder. */
+  image?: string;
   tags: string[];
   link?: string;
   github?: string;

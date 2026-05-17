@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/ent/useridentity"
 	"time"
@@ -177,11 +176,6 @@ func (pvu *ProjectViewUpdate) SetUpdatedAt(t time.Time) *ProjectViewUpdate {
 	return pvu
 }
 
-// SetProject sets the "project" edge to the Project entity.
-func (pvu *ProjectViewUpdate) SetProject(p *Project) *ProjectViewUpdate {
-	return pvu.SetProjectID(p.ID)
-}
-
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (pvu *ProjectViewUpdate) SetUserIdentity(u *UserIdentity) *ProjectViewUpdate {
 	return pvu.SetUserIdentityID(u.ID)
@@ -190,12 +184,6 @@ func (pvu *ProjectViewUpdate) SetUserIdentity(u *UserIdentity) *ProjectViewUpdat
 // Mutation returns the ProjectViewMutation object of the builder.
 func (pvu *ProjectViewUpdate) Mutation() *ProjectViewMutation {
 	return pvu.mutation
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (pvu *ProjectViewUpdate) ClearProject() *ProjectViewUpdate {
-	pvu.mutation.ClearProject()
-	return pvu
 }
 
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
@@ -247,9 +235,6 @@ func (pvu *ProjectViewUpdate) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "ProjectView.ip_address": %w`, err)}
 		}
 	}
-	if pvu.mutation.ProjectCleared() && len(pvu.mutation.ProjectIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ProjectView.project"`)
-	}
 	return nil
 }
 
@@ -264,6 +249,9 @@ func (pvu *ProjectViewUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pvu.mutation.ProjectID(); ok {
+		_spec.SetField(projectview.FieldProjectID, field.TypeString, value)
 	}
 	if value, ok := pvu.mutation.Fingerprint(); ok {
 		_spec.SetField(projectview.FieldFingerprint, field.TypeString, value)
@@ -300,35 +288,6 @@ func (pvu *ProjectViewUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := pvu.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectview.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if pvu.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectview.ProjectTable,
-			Columns: []string{projectview.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pvu.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectview.ProjectTable,
-			Columns: []string{projectview.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if pvu.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -526,11 +485,6 @@ func (pvuo *ProjectViewUpdateOne) SetUpdatedAt(t time.Time) *ProjectViewUpdateOn
 	return pvuo
 }
 
-// SetProject sets the "project" edge to the Project entity.
-func (pvuo *ProjectViewUpdateOne) SetProject(p *Project) *ProjectViewUpdateOne {
-	return pvuo.SetProjectID(p.ID)
-}
-
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (pvuo *ProjectViewUpdateOne) SetUserIdentity(u *UserIdentity) *ProjectViewUpdateOne {
 	return pvuo.SetUserIdentityID(u.ID)
@@ -539,12 +493,6 @@ func (pvuo *ProjectViewUpdateOne) SetUserIdentity(u *UserIdentity) *ProjectViewU
 // Mutation returns the ProjectViewMutation object of the builder.
 func (pvuo *ProjectViewUpdateOne) Mutation() *ProjectViewMutation {
 	return pvuo.mutation
-}
-
-// ClearProject clears the "project" edge to the Project entity.
-func (pvuo *ProjectViewUpdateOne) ClearProject() *ProjectViewUpdateOne {
-	pvuo.mutation.ClearProject()
-	return pvuo
 }
 
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
@@ -609,9 +557,6 @@ func (pvuo *ProjectViewUpdateOne) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "ProjectView.ip_address": %w`, err)}
 		}
 	}
-	if pvuo.mutation.ProjectCleared() && len(pvuo.mutation.ProjectIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "ProjectView.project"`)
-	}
 	return nil
 }
 
@@ -643,6 +588,9 @@ func (pvuo *ProjectViewUpdateOne) sqlSave(ctx context.Context) (_node *ProjectVi
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pvuo.mutation.ProjectID(); ok {
+		_spec.SetField(projectview.FieldProjectID, field.TypeString, value)
 	}
 	if value, ok := pvuo.mutation.Fingerprint(); ok {
 		_spec.SetField(projectview.FieldFingerprint, field.TypeString, value)
@@ -679,35 +627,6 @@ func (pvuo *ProjectViewUpdateOne) sqlSave(ctx context.Context) (_node *ProjectVi
 	}
 	if value, ok := pvuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectview.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if pvuo.mutation.ProjectCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectview.ProjectTable,
-			Columns: []string{projectview.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pvuo.mutation.ProjectIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   projectview.ProjectTable,
-			Columns: []string{projectview.ProjectColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(project.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if pvuo.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -75,13 +75,9 @@ type ProjectEdges struct {
 	Details *ProjectDetail `json:"details,omitempty"`
 	// Images holds the value of the images edge.
 	Images []*ProjectImage `json:"images,omitempty"`
-	// Likes holds the value of the likes edge.
-	Likes []*ProjectLike `json:"likes,omitempty"`
-	// Views holds the value of the views edge.
-	Views []*ProjectView `json:"views,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [5]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -131,24 +127,6 @@ func (e ProjectEdges) ImagesOrErr() ([]*ProjectImage, error) {
 		return e.Images, nil
 	}
 	return nil, &NotLoadedError{edge: "images"}
-}
-
-// LikesOrErr returns the Likes value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProjectEdges) LikesOrErr() ([]*ProjectLike, error) {
-	if e.loadedTypes[5] {
-		return e.Likes, nil
-	}
-	return nil, &NotLoadedError{edge: "likes"}
-}
-
-// ViewsOrErr returns the Views value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProjectEdges) ViewsOrErr() ([]*ProjectView, error) {
-	if e.loadedTypes[6] {
-		return e.Views, nil
-	}
-	return nil, &NotLoadedError{edge: "views"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -335,16 +313,6 @@ func (pr *Project) QueryDetails() *ProjectDetailQuery {
 // QueryImages queries the "images" edge of the Project entity.
 func (pr *Project) QueryImages() *ProjectImageQuery {
 	return NewProjectClient(pr.config).QueryImages(pr)
-}
-
-// QueryLikes queries the "likes" edge of the Project entity.
-func (pr *Project) QueryLikes() *ProjectLikeQuery {
-	return NewProjectClient(pr.config).QueryLikes(pr)
-}
-
-// QueryViews queries the "views" edge of the Project entity.
-func (pr *Project) QueryViews() *ProjectViewQuery {
-	return NewProjectClient(pr.config).QueryViews(pr)
 }
 
 // Update returns a builder for updating this Project.

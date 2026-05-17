@@ -132,6 +132,34 @@ func (rlc *RequestLogCreate) SetNillableLang(s *string) *RequestLogCreate {
 	return rlc
 }
 
+// SetIsBot sets the "is_bot" field.
+func (rlc *RequestLogCreate) SetIsBot(b bool) *RequestLogCreate {
+	rlc.mutation.SetIsBot(b)
+	return rlc
+}
+
+// SetNillableIsBot sets the "is_bot" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableIsBot(b *bool) *RequestLogCreate {
+	if b != nil {
+		rlc.SetIsBot(*b)
+	}
+	return rlc
+}
+
+// SetBotName sets the "bot_name" field.
+func (rlc *RequestLogCreate) SetBotName(s string) *RequestLogCreate {
+	rlc.mutation.SetBotName(s)
+	return rlc
+}
+
+// SetNillableBotName sets the "bot_name" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableBotName(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetBotName(*s)
+	}
+	return rlc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (rlc *RequestLogCreate) SetCreatedAt(t time.Time) *RequestLogCreate {
 	rlc.mutation.SetCreatedAt(t)
@@ -187,6 +215,10 @@ func (rlc *RequestLogCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (rlc *RequestLogCreate) defaults() {
+	if _, ok := rlc.mutation.IsBot(); !ok {
+		v := requestlog.DefaultIsBot
+		rlc.mutation.SetIsBot(v)
+	}
 	if _, ok := rlc.mutation.CreatedAt(); !ok {
 		v := requestlog.DefaultCreatedAt()
 		rlc.mutation.SetCreatedAt(v)
@@ -223,6 +255,14 @@ func (rlc *RequestLogCreate) check() error {
 	if v, ok := rlc.mutation.Lang(); ok {
 		if err := requestlog.LangValidator(v); err != nil {
 			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "RequestLog.lang": %w`, err)}
+		}
+	}
+	if _, ok := rlc.mutation.IsBot(); !ok {
+		return &ValidationError{Name: "is_bot", err: errors.New(`ent: missing required field "RequestLog.is_bot"`)}
+	}
+	if v, ok := rlc.mutation.BotName(); ok {
+		if err := requestlog.BotNameValidator(v); err != nil {
+			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
 		}
 	}
 	if _, ok := rlc.mutation.CreatedAt(); !ok {
@@ -291,6 +331,14 @@ func (rlc *RequestLogCreate) createSpec() (*RequestLog, *sqlgraph.CreateSpec) {
 	if value, ok := rlc.mutation.Lang(); ok {
 		_spec.SetField(requestlog.FieldLang, field.TypeString, value)
 		_node.Lang = value
+	}
+	if value, ok := rlc.mutation.IsBot(); ok {
+		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)
+		_node.IsBot = value
+	}
+	if value, ok := rlc.mutation.BotName(); ok {
+		_spec.SetField(requestlog.FieldBotName, field.TypeString, value)
+		_node.BotName = value
 	}
 	if value, ok := rlc.mutation.CreatedAt(); ok {
 		_spec.SetField(requestlog.FieldCreatedAt, field.TypeTime, value)

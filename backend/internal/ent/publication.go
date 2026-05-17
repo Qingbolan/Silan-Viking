@@ -44,6 +44,8 @@ type Publication struct {
 	URL string `json:"url,omitempty"`
 	// PdfURL holds the value of the "pdf_url" field.
 	PdfURL string `json:"pdf_url,omitempty"`
+	// ImageURL holds the value of the "image_url" field.
+	ImageURL string `json:"image_url,omitempty"`
 	// CitationCount holds the value of the "citation_count" field.
 	CitationCount int `json:"citation_count,omitempty"`
 	// IsPeerReviewed holds the value of the "is_peer_reviewed" field.
@@ -111,7 +113,7 @@ func (*Publication) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case publication.FieldCitationCount, publication.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case publication.FieldID, publication.FieldUserID, publication.FieldTitle, publication.FieldPublicationType, publication.FieldJournalName, publication.FieldConferenceName, publication.FieldVolume, publication.FieldIssue, publication.FieldPages, publication.FieldDoi, publication.FieldIsbn, publication.FieldURL, publication.FieldPdfURL:
+		case publication.FieldID, publication.FieldUserID, publication.FieldTitle, publication.FieldPublicationType, publication.FieldJournalName, publication.FieldConferenceName, publication.FieldVolume, publication.FieldIssue, publication.FieldPages, publication.FieldDoi, publication.FieldIsbn, publication.FieldURL, publication.FieldPdfURL, publication.FieldImageURL:
 			values[i] = new(sql.NullString)
 		case publication.FieldPublicationDate, publication.FieldCreatedAt, publication.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -213,6 +215,12 @@ func (pu *Publication) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field pdf_url", values[i])
 			} else if value.Valid {
 				pu.PdfURL = value.String
+			}
+		case publication.FieldImageURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field image_url", values[i])
+			} else if value.Valid {
+				pu.ImageURL = value.String
 			}
 		case publication.FieldCitationCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -333,6 +341,9 @@ func (pu *Publication) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("pdf_url=")
 	builder.WriteString(pu.PdfURL)
+	builder.WriteString(", ")
+	builder.WriteString("image_url=")
+	builder.WriteString(pu.ImageURL)
 	builder.WriteString(", ")
 	builder.WriteString("citation_count=")
 	builder.WriteString(fmt.Sprintf("%v", pu.CitationCount))

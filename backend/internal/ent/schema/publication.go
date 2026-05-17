@@ -69,6 +69,9 @@ func (Publication) Fields() []ent.Field {
 		field.String("pdf_url").
 			Optional().
 			MaxLen(500),
+		field.String("image_url").
+			Optional().
+			MaxLen(500),
 		field.Int("citation_count").
 			Default(0),
 		field.Bool("is_peer_reviewed").
