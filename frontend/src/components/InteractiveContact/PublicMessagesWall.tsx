@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Avatar, Tag, Empty, Button } from 'antd';
 import { MessageSquare, Building2, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 import { ContactMessage } from '../../types/contact';
 import { useLanguage } from '../LanguageContext';
 import { listIdeaComments, IdeaCommentData } from '../../api/ideas/ideaApi';
 import { getClientFingerprint } from '../../utils/fingerprint';
+import {
+  Card,
+  CardContent,
+  EmptyState,
+  Badge,
+  Button,
+  Avatar,
+} from '../../components/ds';
 
 const PublicMessagesWall: React.FC = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -78,10 +85,10 @@ const PublicMessagesWall: React.FC = () => {
     <div className="space-y-6">
       {/* Messages Title */}
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-gradient-primary">
-          <MessageSquare size={20} className="text-white" />
+        <div className="flex size-9 items-center justify-center rounded-ds-md bg-ds-primary">
+          <MessageSquare size={18} className="text-white" />
         </div>
-        <h3 className="text-lg font-semibold text-theme-primary">
+        <h3 className="text-ds-lg font-semibold text-ds-fg">
           {language === 'en' ? 'Public Messages' : '公开留言'}
         </h3>
       </div>
@@ -104,15 +111,13 @@ const PublicMessagesWall: React.FC = () => {
 
       {/* Messages Grid */}
       {displayMessages.length === 0 ? (
-        <Card className="card-interactive border-0" style={{ borderRadius: '12px' }}>
-          <Empty
-            image={<MessageSquare size={48} className="mx-auto text-theme-tertiary" />}
-            description={
-              <span className="text-theme-secondary text-sm">
-                {language === 'en' ? 'No public messages yet' : '还没有公开留言'}
-              </span>
-            }
-          />
+        <Card>
+          <CardContent>
+            <EmptyState
+              icon={<MessageSquare />}
+              title={language === 'en' ? 'No public messages yet' : '还没有公开留言'}
+            />
+          </CardContent>
         </Card>
       ) : (
         <div className="masonry-grid"
@@ -135,39 +140,26 @@ const PublicMessagesWall: React.FC = () => {
               {displayMessages
                 .filter((_, index) => index % 3 === columnIndex)
                 .map((msg) => (
-            <Card
-              key={msg.id}
-              className="card-interactive masonry-card border-0"
-              style={{
-                borderRadius: '12px',
-                marginBottom: '1rem',
-                width: '100%',
-              }}
-              styles={{ body: { padding: '16px' } }}
-            >
-              <div className="flex items-start gap-3">
+            <Card key={msg.id} className="masonry-card mb-4 w-full">
+              <CardContent className="flex items-start gap-3">
                 {/* Author Avatar */}
-                <Avatar
-                  size={40}
-                  src={msg.author_avatar}
-                  className="flex-shrink-0"
-                >
-                  {msg.author_name.charAt(0).toUpperCase()}
-                </Avatar>
+                <div className="shrink-0">
+                  <Avatar size="md" src={msg.author_avatar} name={msg.author_name} />
+                </div>
 
                 {/* Message Content */}
                 <div className="flex-1 min-w-0">
                   {/* Header with name and type */}
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-theme-primary text-sm truncate">
+                    <span className="font-medium text-ds-fg text-sm truncate">
                       {msg.author_name}
                     </span>
                     {msg.type === 'job' && (
-                      <Tag className="rounded-full px-2 py-0 text-xs bg-theme-warning text-white border-0">
+                      <Badge tone="warning" appearance="soft" size="sm">
                         Job
-                      </Tag>
+                      </Badge>
                     )}
-                    <span className="text-xs text-theme-tertiary ml-auto">
+                    <span className="text-xs text-ds-fg-subtle ml-auto">
                       {new Date(msg.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -177,29 +169,29 @@ const PublicMessagesWall: React.FC = () => {
                     <>
                       {/* Recruiter info */}
                       {msg.recruiter_title && (
-                        <div className="text-xs text-theme-tertiary mb-2">
+                        <div className="text-xs text-ds-fg-subtle mb-2">
                           {msg.recruiter_title}
                         </div>
                       )}
 
                       {/* Position Title */}
                       {msg.position && (
-                        <div className="text-sm font-semibold text-theme-primary mb-2 flex items-center gap-2">
-                          <Briefcase size={14} className="text-theme-accent" />
+                        <div className="text-sm font-semibold text-ds-fg mb-2 flex items-center gap-2">
+                          <Briefcase size={14} className="text-ds-primary" />
                           {msg.position}
                         </div>
                       )}
 
                       {/* Company info */}
                       {msg.company && msg.consentCompanyLogo && (
-                        <div className="text-xs text-theme-secondary flex items-center gap-1.5 mb-2">
-                          <Building2 size={12} className="text-theme-accent" />
+                        <div className="text-xs text-ds-fg-muted flex items-center gap-1.5 mb-2">
+                          <Building2 size={12} className="text-ds-primary" />
                           <span className="font-medium">{msg.company}</span>
                         </div>
                       )}
 
                       {/* Job Description */}
-                      <div className="text-xs text-theme-secondary mb-1">
+                      <div className="text-xs text-ds-fg-muted mb-1">
                         <span className="font-medium">{language === 'en' ? 'Description: ' : '职位描述：'}</span>
                         {msg.message}
                       </div>
@@ -208,26 +200,26 @@ const PublicMessagesWall: React.FC = () => {
 
                   {/* General message subject (for non-job messages) */}
                   {msg.type === 'general' && msg.subject && (
-                    <div className="text-sm text-theme-primary font-medium mb-1">
+                    <div className="text-sm text-ds-fg font-medium mb-1">
                       {msg.subject}
                     </div>
                   )}
 
                   {/* Message content for general messages */}
                   {msg.type === 'general' && (
-                    <div className="text-xs text-theme-secondary">
+                    <div className="text-xs text-ds-fg-muted">
                       {msg.message}
                     </div>
                   )}
 
                   {msg.replies && msg.replies.length > 0 && (
-                    <div className="flex items-center gap-1 text-theme-tertiary text-xs mt-2">
+                    <div className="flex items-center gap-1 text-ds-fg-subtle text-xs mt-2">
                       <MessageSquare size={12} />
                       <span>{msg.replies.length} {language === 'en' ? 'replies' : '回复'}</span>
                     </div>
                   )}
                 </div>
-              </div>
+            </CardContent>
             </Card>
                 ))}
             </div>
@@ -237,13 +229,11 @@ const PublicMessagesWall: React.FC = () => {
 
       {/* Show More/Less */}
       {messages.length > 6 && (
-        <div className="text-center">
+        <div className="flex justify-center">
           <Button
-            type="default"
-            size="large"
+            variant="outline"
             onClick={() => setShowAll(!showAll)}
-            icon={showAll ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            className="rounded-full px-8"
+            leadingIcon={showAll ? <ChevronUp /> : <ChevronDown />}
           >
             {showAll
               ? (language === 'en' ? 'Show Less' : '收起')

@@ -113,30 +113,32 @@ const ResumeWebsite: React.FC = () => {
       { id: 'hero-section', title: resumeData.name, level: 1 },
     ];
     
+    // Order: academics-first — education / research / publications lead,
+    // work experience follows, awards & skills close.
     if (resumeData.sections?.recent) {
       sections.push({ id: 'recent-section', title: resumeData.sections.recent.title, level: 2 });
     }
-    
-    if (resumeData.sections?.experience) {
-      sections.push({ id: 'experience-section', title: resumeData.sections.experience.title, level: 2 });
-    }
-    
+
     if (resumeData.sections?.education) {
       sections.push({ id: 'education-section', title: resumeData.sections.education.title, level: 2 });
     }
-    
+
     if (resumeData.sections?.research) {
       sections.push({ id: 'research-section', title: resumeData.sections.research.title, level: 2 });
     }
-    
+
     if (resumeData.sections?.publications) {
       sections.push({ id: 'publications-section', title: resumeData.sections.publications.title, level: 2 });
     }
-    
+
+    if (resumeData.sections?.experience) {
+      sections.push({ id: 'experience-section', title: resumeData.sections.experience.title, level: 2 });
+    }
+
     if (resumeData.sections?.awards) {
       sections.push({ id: 'awards-section', title: resumeData.sections.awards.title, level: 2 });
     }
-    
+
     if (resumeData.sections?.skills) {
       sections.push({ id: 'skills-section', title: resumeData.sections.skills.title, level: 2 });
     }
@@ -253,41 +255,15 @@ const ResumeWebsite: React.FC = () => {
           </div>
         )}
 
-        {/* Experience Section */}
-        {resumeData.sections?.experience && resumeData.sections.experience.content && (
-          <div id="experience-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
-            <SectionCard
-              title={resumeData.sections.experience.title}
-              kicker="Career"
-              index="01"
-              icon={<Briefcase size={18} aria-hidden focusable={false} />}
-              delay={0.2}
-            >
-              <Timeline
-                items={resumeData.sections.experience.content.map(exp => ({
-                  title: exp.role,
-                  subtitle: exp.company,
-                  date: exp.date,
-                  details: exp.details,
-                  logo: exp.logo,
-                  website: exp.website,
-                  location: exp.location,
-                }))}
-                variant="primary"
-              />
-            </SectionCard>
-          </div>
-        )}
-
-        {/* Education Section */}
+        {/* Education Section — academics lead. */}
         {resumeData.sections?.education && resumeData.sections.education.content && (
           <div id="education-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
             <SectionCard
               title={resumeData.sections.education.title}
               kicker="Academia"
-              index="02"
+              index="01"
               icon={<GraduationCap size={18} aria-hidden focusable={false} />}
-              delay={0.3}
+              delay={0.2}
             >
               <Timeline
                 items={resumeData.sections.education.content.map(edu => ({
@@ -311,9 +287,9 @@ const ResumeWebsite: React.FC = () => {
             <SectionCard
               title={resumeData.sections.research.title}
               kicker="Inquiry"
-              index="03"
+              index="02"
               icon={<FlaskConical size={18} aria-hidden focusable={false} />}
-              delay={0.4}
+              delay={0.3}
             >
               <Timeline
                 items={resumeData.sections.research.content.map(research => ({
@@ -334,11 +310,37 @@ const ResumeWebsite: React.FC = () => {
             <SectionCard
               title={resumeData.sections.publications.title}
               kicker="Library"
-              index="04"
+              index="03"
               icon={<BookOpen size={18} aria-hidden focusable={false} />}
-              delay={0.5}
+              delay={0.4}
             >
               <PublicationsList publications={resumeData.sections.publications.content} />
+            </SectionCard>
+          </div>
+        )}
+
+        {/* Experience Section — work history follows the academics. */}
+        {resumeData.sections?.experience && resumeData.sections.experience.content && (
+          <div id="experience-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
+            <SectionCard
+              title={resumeData.sections.experience.title}
+              kicker="Career"
+              index="04"
+              icon={<Briefcase size={18} aria-hidden focusable={false} />}
+              delay={0.5}
+            >
+              <Timeline
+                items={resumeData.sections.experience.content.map(exp => ({
+                  title: exp.role,
+                  subtitle: exp.company,
+                  date: exp.date,
+                  details: exp.details,
+                  logo: exp.logo,
+                  website: exp.website,
+                  location: exp.location,
+                }))}
+                variant="primary"
+              />
             </SectionCard>
           </div>
         )}

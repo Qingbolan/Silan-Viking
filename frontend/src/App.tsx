@@ -14,9 +14,11 @@ import BlogStack from './views/BlogStack';
 import BlogDetail from './components/BlogStack/BlogDetail';
 import PlansPage from './views/PlansPage';
 import SearchResults from './views/SearchResults';
+import Gallery from './views/Gallery';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
-import { LanguageProvider } from './components/LanguageContext';
+import { LanguageProvider, useLanguage } from './components/LanguageContext';
 import { PageTitleProvider } from './layout/PageTitleContext';
+import { ErrorBoundary, NotFoundError } from './components/ds';
 
 // antd v5 derives its colour palette with tinycolor, which does NOT
 // understand `oklch()`. Passing an oklch string makes antd silently fall
@@ -54,31 +56,47 @@ const AntdThemeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) 
   );
 };
 
+const LocalizedRoutes: React.FC = () => {
+  const { language } = useLanguage();
+
+  return (
+    <Routes key={language}>
+      <Route path="/" element={<ResumeWebsite />} />
+      <Route path="/recent-updates" element={<RecentUpdates />} />
+      <Route path="/contact" element={<InteractiveContactPage />} />
+      <Route path="/projects" element={<ProjectGallery />} />
+      <Route path="/projects/:id" element={<ProjectDetail />} />
+      <Route path="/plans" element={<PlansPage />} />
+      <Route path="/ideas" element={<IdeaPage />} />
+      <Route path="/ideas/:id" element={<IdeaDetail />} />
+      <Route path="/blog" element={<BlogStack />} />
+      <Route path="/blog/:id" element={<BlogDetail />} />
+      <Route path="/search" element={<SearchResults />} />
+      {/* Design-system gallery — /design is an alias of /gallery. */}
+      <Route path="/gallery" element={<Gallery />} />
+      <Route path="/design" element={<Gallery />} />
+      {/* Catch-all — branded 404 instead of a blank screen. */}
+      <Route path="*" element={<NotFoundError />} />
+    </Routes>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AntdThemeBridge>
-      <LanguageProvider>
-        <Router>
-          <PageTitleProvider>
-            <MainLayout>
-              <Routes>
-                <Route path="/" element={<ResumeWebsite />} />
-                <Route path="/recent-updates" element={<RecentUpdates />} />
-                <Route path="/contact" element={<InteractiveContactPage />} />
-                <Route path="/projects" element={<ProjectGallery />} />
-                <Route path="/projects/:id" element={<ProjectDetail />} />
-                <Route path="/plans" element={<PlansPage />} />
-                <Route path="/ideas" element={<IdeaPage />} />
-                <Route path="/ideas/:id" element={<IdeaDetail />} />
-                <Route path="/blog" element={<BlogStack />} />
-                <Route path="/blog/:id" element={<BlogDetail />} />
-                <Route path="/search" element={<SearchResults />} />
-              </Routes>
-            </MainLayout>
-          </PageTitleProvider>
-        </Router>
-      </LanguageProvider>
+        <LanguageProvider>
+          <Router>
+            <PageTitleProvider>
+              <MainLayout>
+                {/* Catches render crashes in any route → branded page error. */}
+                <ErrorBoundary>
+                  <LocalizedRoutes />
+                </ErrorBoundary>
+              </MainLayout>
+            </PageTitleProvider>
+          </Router>
+        </LanguageProvider>
       </AntdThemeBridge>
     </ThemeProvider>
   );

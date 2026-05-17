@@ -50,11 +50,37 @@ const entryPayload = (entry: ResumeEntryResponse) => ({
   ...(entry.localized_payload || {}),
 });
 
-const formatDateRange = (payload: any) => {
+const formatDateRange = (payload: any, language: Language = 'en') => {
   if (payload.date) return String(payload.date);
   const start = payload.start_date || payload.startDate || payload.start || '';
-  const end = payload.is_current || payload.current ? 'Present' : payload.end_date || payload.endDate || payload.end || '';
+  const end = payload.is_current || payload.current
+    ? (language === 'zh' ? '至今' : 'Present')
+    : payload.end_date || payload.endDate || payload.end || '';
   return [start, end].filter(Boolean).join(' - ');
+};
+
+const sectionTitle = (key: string, language: Language) => {
+  if (language !== 'zh') {
+    return {
+      education: 'Education',
+      experience: 'Work Experience',
+      research: 'Research Experience',
+      publications: 'Publications',
+      awards: 'Awards',
+      skills: 'Skills',
+      recent: 'Recent Updates',
+    }[key] || key;
+  }
+
+  return {
+    education: '教育经历',
+    experience: '工作经历',
+    research: '研究经历',
+    publications: '论文发表',
+    awards: '荣誉奖项',
+    skills: '技能',
+    recent: '最新动态',
+  }[key] || key;
 };
 
 const bodyLines = (part?: ResumePartResponse, language: Language = 'en') => {
@@ -200,11 +226,11 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
     })) || [],
     sections: {
       education: {
-        title: 'Education',
+        title: sectionTitle('education', language),
         content: education.map((edu) => ({
           school: edu.institution,
           degree: edu.degree,
-          date: formatDateRange(edu),
+          date: formatDateRange(edu, language),
           details: edu.details || [],
           logo: edu.institution_logo_url,
           website: edu.institution_website,
@@ -212,11 +238,11 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
         })),
       },
       experience: {
-        title: 'Work Experience',
+        title: sectionTitle('experience', language),
         content: experience.map((exp) => ({
           company: exp.company,
           role: exp.position,
-          date: formatDateRange(exp),
+          date: formatDateRange(exp, language),
           details: exp.details || [],
           logo: exp.company_logo_url,
           website: exp.company_website,
@@ -224,28 +250,28 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
         })),
       },
       research: {
-        title: 'Research Experience',
+        title: sectionTitle('research', language),
         content: research.map((item) => ({
           title: item.title,
           location: item.location || item.institution || '',
-          date: formatDateRange(item),
+          date: formatDateRange(item, language),
           details: item.details || [],
         })),
       },
       publications: {
-        title: 'Publications',
+        title: sectionTitle('publications', language),
         content: publications.map((item) => item.title),
       },
       awards: {
-        title: 'Awards',
+        title: sectionTitle('awards', language),
         content: awards.map((item) => item.description || item.title),
       },
       skills: {
-        title: 'Skills',
+        title: sectionTitle('skills', language),
         content: Array.from(new Set(skills.map(String).filter(Boolean))),
       },
       recent: {
-        title: 'Recent Updates',
+        title: sectionTitle('recent', language),
         content: updates.map((update) => ({
           id: update.id,
           title: update.title,

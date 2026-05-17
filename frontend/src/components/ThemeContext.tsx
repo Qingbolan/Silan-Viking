@@ -1,11 +1,16 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
-// Modern minimal academic color scheme — aligned to EasyNet's gallery
-// design language (OKLCH tokens, "Paper white" + "Graphite" presets).
-// Neutrals are chroma 0 so the surface stays true grey; a restrained
-// academic ink-blue accent is reserved for links, the current item,
-// and key actions. No gradients in the UI; separation is by surface
-// layer + spacing, not borders.
+// Modern academic color scheme — Fluent skeleton, academic restraint.
+// OKLCH tokens, "Paper white" + "Graphite" presets. Neutrals are chroma 0
+// so surfaces stay true grey; a restrained ink-blue accent is reserved for
+// links, the current item, and key actions. No AI-gradient look.
+//
+// Unlike the old scheme, surfaces are now LIGHTLY ELEVATED (not flat
+// transparent): the design system expresses depth through stacked surface
+// layers (surface-1..3) + hairline borders + faint honest shadows. The
+// extra `ds*` tokens below are consumed by the new design-system components
+// (Button/Card/Badge/...) and the /gallery page; the legacy fields are kept
+// unchanged so existing components keep working until they are migrated.
 const colorSchemes = {
   light: {
     // Primary — academic ink blue, used sparingly for emphasis
@@ -42,8 +47,7 @@ const colorSchemes = {
     gradientSecondary: 'oklch(0.44 0 0)',
     gradientAccent: 'oklch(0.50 0.13 264)',
 
-    // Surfaces — fully transparent: no container backgrounds, no borders.
-    // Separation is by spacing and typography alone.
+    // Legacy surface fields — kept transparent for un-migrated components.
     cardBackground: 'transparent',
     cardBorder: 'transparent',
     surface: 'transparent',
@@ -56,11 +60,42 @@ const colorSchemes = {
     activeBackground: 'oklch(0.93 0 0)',
     focusRing: 'oklch(0.50 0.13 264)',
 
-    // Shadows — disabled globally; separation is by surface + spacing.
+    // Legacy shadow fields — still off for un-migrated components.
     shadowSm: 'none',
     shadowMd: 'none',
     shadowLg: 'none',
     shadowXl: 'none',
+
+    // --- Design-system tokens (--ds-color-*) -------------------------------
+    // NUS brand palette: NUS Orange #EF7C00 (primary) + NUS Blue #003D7C
+    // (accent). Surfaces stay true-neutral; the brand colours are used
+    // sparingly — macOS-style restraint, not a wash of colour.
+    dsCanvas: 'oklch(0.985 0 0)',          // page background
+    dsSurface1: 'oklch(1.00 0 0)',         // resting card / panel
+    dsSurface2: 'oklch(0.975 0 0)',        // nested / inset surface
+    dsSurface3: 'oklch(0.95 0 0)',         // deepest inset (code, wells)
+    dsBorder: 'oklch(0.915 0 0)',          // hairline separator
+    dsBorderStrong: 'oklch(0.84 0 0)',     // emphasized hairline
+    dsOverlay: 'oklch(0.20 0 0 / 0.28)',   // modal scrim
+    dsRing: 'oklch(0.70 0.176 52 / 0.40)', // focus ring (NUS orange)
+
+    // Primary — NUS Orange #EF7C00
+    dsPrimary: 'oklch(0.702 0.176 52)',
+    dsPrimaryHover: 'oklch(0.652 0.178 50)',
+    dsPrimaryActive: 'oklch(0.602 0.175 48)',
+    dsPrimaryFg: 'oklch(1.00 0 0)',        // text on primary fill
+    dsPrimarySoft: 'oklch(0.955 0.035 60)',
+
+    // Accent — NUS Blue #003D7C
+    dsAccent: 'oklch(0.362 0.118 256)',
+    dsAccentHover: 'oklch(0.322 0.120 256)',
+    dsAccentFg: 'oklch(1.00 0 0)',
+    dsAccentSoft: 'oklch(0.95 0.03 256)',
+
+    // Status soft washes
+    dsSuccessSoft: 'oklch(0.95 0.04 150)',
+    dsWarningSoft: 'oklch(0.95 0.05 75)',
+    dsErrorSoft: 'oklch(0.95 0.04 25)',
   },
   dark: {
     // Primary — lighter ink blue for contrast on graphite
@@ -98,7 +133,7 @@ const colorSchemes = {
     gradientSecondary: 'oklch(0.66 0 0)',
     gradientAccent: 'oklch(0.72 0.12 264)',
 
-    // Surfaces — fully transparent: no container backgrounds, no borders.
+    // Legacy surface fields — kept transparent for un-migrated components.
     cardBackground: 'transparent',
     cardBorder: 'transparent',
     surface: 'transparent',
@@ -111,11 +146,41 @@ const colorSchemes = {
     activeBackground: 'oklch(0.26 0.012 260)',
     focusRing: 'oklch(0.72 0.12 264)',
 
-    // Shadows — disabled globally; separation is by surface + spacing.
+    // Legacy shadow fields — still off for un-migrated components.
     shadowSm: 'none',
     shadowMd: 'none',
     shadowLg: 'none',
     shadowXl: 'none',
+
+    // --- Design-system tokens (--ds-color-*) -------------------------------
+    // NUS brand palette on graphite: orange lifts slightly for contrast,
+    // blue lightens so it stays legible on the dark canvas.
+    dsCanvas: 'oklch(0.165 0.006 264)',
+    dsSurface1: 'oklch(0.205 0.007 264)',
+    dsSurface2: 'oklch(0.245 0.008 264)',
+    dsSurface3: 'oklch(0.285 0.009 264)',
+    dsBorder: 'oklch(0.305 0.008 264)',
+    dsBorderStrong: 'oklch(0.40 0.010 264)',
+    dsOverlay: 'oklch(0.05 0 0 / 0.62)',
+    dsRing: 'oklch(0.74 0.165 56 / 0.45)',
+
+    // Primary — NUS Orange, lifted for dark contrast
+    dsPrimary: 'oklch(0.745 0.165 56)',
+    dsPrimaryHover: 'oklch(0.795 0.150 58)',
+    dsPrimaryActive: 'oklch(0.695 0.170 54)',
+    dsPrimaryFg: 'oklch(0.16 0.02 56)',
+    dsPrimarySoft: 'oklch(0.30 0.055 56)',
+
+    // Accent — NUS Blue, lightened
+    dsAccent: 'oklch(0.68 0.115 256)',
+    dsAccentHover: 'oklch(0.74 0.110 256)',
+    dsAccentFg: 'oklch(0.16 0.02 256)',
+    dsAccentSoft: 'oklch(0.29 0.055 256)',
+
+    // Status soft washes
+    dsSuccessSoft: 'oklch(0.27 0.05 150)',
+    dsWarningSoft: 'oklch(0.29 0.06 75)',
+    dsErrorSoft: 'oklch(0.28 0.06 25)',
   }
 };
 
@@ -153,6 +218,27 @@ interface ColorScheme {
   shadowMd: string;
   shadowLg: string;
   shadowXl: string;
+  // Design-system tokens (NUS brand palette)
+  dsCanvas: string;
+  dsSurface1: string;
+  dsSurface2: string;
+  dsSurface3: string;
+  dsBorder: string;
+  dsBorderStrong: string;
+  dsOverlay: string;
+  dsRing: string;
+  dsPrimary: string;
+  dsPrimaryHover: string;
+  dsPrimaryActive: string;
+  dsPrimaryFg: string;
+  dsPrimarySoft: string;
+  dsAccent: string;
+  dsAccentHover: string;
+  dsAccentFg: string;
+  dsAccentSoft: string;
+  dsSuccessSoft: string;
+  dsWarningSoft: string;
+  dsErrorSoft: string;
 }
 
 interface ThemeContextType {
@@ -191,10 +277,20 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       document.documentElement.classList.remove('dark');
     }
     
-    // Apply CSS custom properties for dynamic theming
+    // Apply CSS custom properties for dynamic theming.
+    // Legacy fields → `--color-*`; design-system fields (ds*) → `--ds-color-*`
+    // in kebab-case (e.g. dsSurface1 → --ds-color-surface-1), matching the
+    // tokens consumed by design-system.css and the new UI components.
     const root = document.documentElement;
+    const toKebab = (s: string) =>
+      s.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase();
     Object.entries(colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value);
+      if (key.startsWith('ds')) {
+        // dsSurface1 → surface-1 ; dsPrimaryFg → primary-fg
+        const dsName = toKebab(key.slice(2));
+        root.style.setProperty(`--ds-color-${dsName}`, value);
+      }
     });
 
     // Apply shadow CSS custom properties

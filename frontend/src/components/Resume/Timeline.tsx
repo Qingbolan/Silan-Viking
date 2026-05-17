@@ -45,14 +45,14 @@ const Timeline: React.FC<TimelineProps> = ({ items }) => {
               )}
 
               <div className="min-w-0 flex-1">
-                {/* Date pill */}
-                <div className="mb-1.5 inline-flex items-center gap-1.5 px-0 py-0 font-mono text-[0.7rem] font-medium uppercase tracking-[0.18em] text-theme-tertiary">
-                  {item.date}
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <h4 className="min-w-0 text-lg font-bold leading-tight tracking-[-0.01em] text-theme-primary">
+                    {item.title}
+                  </h4>
+                  <span className="shrink-0 font-mono text-[0.7rem] font-medium uppercase tracking-[0.18em] text-theme-tertiary">
+                    {item.date}
+                  </span>
                 </div>
-
-                <h4 className="text-lg font-bold leading-tight tracking-[-0.01em] text-theme-primary">
-                  {item.title}
-                </h4>
 
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                   {item.website ? (

@@ -64,6 +64,39 @@ export default {
           error: 'var(--color-error)',
         },
         
+        // Design-system colors — Fluent skeleton, academic restraint.
+        // Driven by --ds-color-* (written per-theme by ThemeContext).
+        // Use these in new design-system components and the /gallery page.
+        ds: {
+          canvas: 'var(--ds-color-canvas)',
+          'surface-1': 'var(--ds-color-surface-1)',
+          'surface-2': 'var(--ds-color-surface-2)',
+          'surface-3': 'var(--ds-color-surface-3)',
+          border: 'var(--ds-color-border)',
+          'border-strong': 'var(--ds-color-border-strong)',
+          overlay: 'var(--ds-color-overlay)',
+          ring: 'var(--ds-color-ring)',
+          // Brand — NUS Orange (primary) + NUS Blue (accent)
+          primary: 'var(--ds-color-primary)',
+          'primary-hover': 'var(--ds-color-primary-hover)',
+          'primary-active': 'var(--ds-color-primary-active)',
+          'primary-fg': 'var(--ds-color-primary-fg)',
+          'primary-soft': 'var(--ds-color-primary-soft)',
+          accent: 'var(--ds-color-accent)',
+          'accent-hover': 'var(--ds-color-accent-hover)',
+          'accent-fg': 'var(--ds-color-accent-fg)',
+          'accent-soft': 'var(--ds-color-accent-soft)',
+          fg: 'var(--color-textPrimary)',
+          'fg-muted': 'var(--color-textSecondary)',
+          'fg-subtle': 'var(--color-textTertiary)',
+          success: 'var(--color-success)',
+          'success-soft': 'var(--ds-color-success-soft)',
+          warning: 'var(--color-warning)',
+          'warning-soft': 'var(--ds-color-warning-soft)',
+          error: 'var(--color-error)',
+          'error-soft': 'var(--ds-color-error-soft)',
+        },
+
         // Static color palette - Professional and Clean
         primary: {
           50: '#eff6ff',
@@ -214,7 +247,8 @@ export default {
         'mobile-4xl': ['2rem', { lineHeight: '2.5rem' }],      // 32px
       },
 
-      // Shadows disabled globally — separation is by surface + spacing.
+      // Legacy shadows stay off (un-migrated components rely on this).
+      // The design system uses the `ds-*` elevation tokens below instead.
       boxShadow: {
         'soft': 'none',
         'medium': 'none',
@@ -228,6 +262,12 @@ export default {
         '2xl': 'none',
         'inner': 'none',
         'none': 'none',
+        // Design-system elevation — faint, honest shadows.
+        'ds-1': 'var(--ds-elevation-1)',
+        'ds-2': 'var(--ds-elevation-2)',
+        'ds-3': 'var(--ds-elevation-3)',
+        'ds-4': 'var(--ds-elevation-4)',
+        'ds-focus': '0 0 0 3px var(--ds-color-ring)',
       },
 
       // Tightened border radius — editorial/academic feel, not bubbly
@@ -236,6 +276,29 @@ export default {
         'xl': '0.5rem',    // 8px
         '2xl': '0.5rem',   // 8px — collapsed, no oversized rounding
         '3xl': '0.625rem', // 10px
+        // Design-system radius scale
+        'ds-xs': 'var(--ds-radius-xs)',
+        'ds-sm': 'var(--ds-radius-sm)',
+        'ds-md': 'var(--ds-radius-md)',
+        'ds-lg': 'var(--ds-radius-lg)',
+        'ds-xl': 'var(--ds-radius-xl)',
+        'ds-2xl': 'var(--ds-radius-2xl)',
+      },
+
+      // Design-system motion — durations + Fluent easing curves.
+      transitionDuration: {
+        'ds-instant': '67ms',
+        'ds-fast': '120ms',
+        'ds-normal': '180ms',
+        'ds-slow': '260ms',
+        'ds-slower': '400ms',
+      },
+      transitionTimingFunction: {
+        'ds-standard': 'cubic-bezier(0.2, 0, 0, 1)',
+        'ds-emphasized': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'ds-decelerate': 'cubic-bezier(0, 0, 0.2, 1)',
+        'ds-out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'ds-out-back': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
 
       // Professional backdrop blur

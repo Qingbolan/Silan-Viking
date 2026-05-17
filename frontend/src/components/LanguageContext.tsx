@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import i18n from '../i18n/index';
 import type { Language } from '../types/api';
 
@@ -31,6 +31,13 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
     void i18n.changeLanguage(lang);
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+    if (i18n.language !== language) {
+      void i18n.changeLanguage(language);
+    }
+  }, [language]);
 
   const t = useCallback((key: string): string => {
     return i18n.t(key);

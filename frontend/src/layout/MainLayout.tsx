@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
 import TopNavigation, { NavBefore, NavAfter, NavAvatar } from './TopNavigation';
 import { useTheme } from '../components/ThemeContext';
+import { NoiseBackground } from '../components/ds';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -18,8 +19,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [scrollProgress, setScrollProgress] = useState(0);
 
   // Layered graphite (dark) / paper (light): the desk is the deepest
-  // layer, the content window sits a step above it.
-  const deskBg = isDarkMode ? 'oklch(0.115 0.008 264)' : 'oklch(0.93 0 0)';
+  // layer, the content window sits a step above it. The desk base stays
+  // near-neutral; the NoiseBackground paints the NUS orange + blue glows
+  // on top of it, one in each corner.
+  const deskBg = isDarkMode ? 'oklch(0.125 0.006 264)' : 'oklch(0.935 0.004 264)';
   const windowBg = isDarkMode ? 'oklch(0.165 0.010 264)' : 'oklch(1 0 0)';
   // Chrome capsules sit on the desk, lifted one more step + a faint shadow.
   const capsuleBg = isDarkMode ? 'oklch(0.21 0.012 264)' : 'oklch(1 0 0)';
@@ -60,11 +63,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div
-      className="flex h-screen w-screen flex-col overflow-hidden"
+      className="relative flex h-screen w-screen flex-col overflow-hidden"
       style={{ backgroundColor: deskBg }}
     >
+      {/* Desk material — NUS orange (top-left) + NUS blue (bottom-right)
+          glows over a Gaussian-noise grain, behind the chrome and content
+          (z-0; the chrome and content window are lifted to z-10 below). */}
+      <NoiseBackground glow="nus-duo" intensity={isDarkMode ? 0.08 : 0.06} />
+
       {/* ── Chrome bar ── */}
-      <header className="flex flex-shrink-0 items-center gap-2.5 px-3 py-1.5 sm:px-4">
+      <header className="relative z-10 flex flex-shrink-0 items-center gap-2.5 px-3 py-1.5 sm:px-4">
         {/* Personal avatar — leads to the contact page */}
         <NavAvatar />
 
@@ -97,17 +105,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* ── Content window: the "browser tab" ── */}
       <motion.main
         id="browser-window"
-        className="relative mx-2 mb-2 flex-1 overflow-y-auto rounded-xl sm:mx-3 sm:mb-3"
+        className="relative z-10 mx-1.5 mb-1.5 flex-1 overflow-y-auto rounded-xl sm:mx-2 sm:mb-2"
         style={{ backgroundColor: windowBg }}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
       >
-        {/* Reading progress line */}
+        {/* Reading progress line — NUS-orange brand colour. */}
         <div className="sticky left-0 top-0 z-50 h-0.5 w-full">
           <div
             className="h-full transition-all duration-200 ease-out"
-            style={{ width: `${scrollProgress}%`, backgroundColor: colors.primary }}
+            style={{ width: `${scrollProgress}%`, backgroundColor: 'var(--ds-color-primary)' }}
           />
         </div>
 

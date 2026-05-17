@@ -28,6 +28,23 @@ interface UpdateBlogLikesResponse {
 
 // API functions
 
+const mapBlogData = (post: any, content?: BlogData['content']): BlogData => ({
+  ...post,
+  tags: post.tags || [],
+  ...(content ? { content } : {}),
+  seriesId: post.series_id,
+  seriesSlug: post.series_slug,
+  seriesTitle: post.series_title,
+  seriesTitleZh: post.series_title_zh,
+  seriesDescription: post.series_description,
+  seriesDescriptionZh: post.series_description_zh,
+  episodeNumber: post.episode_number,
+  totalEpisodes: post.total_episodes,
+  seriesImage: post.series_image,
+  publishDate: post.publish_date,
+  readTime: post.read_time
+}) as BlogData;
+
 /**
  * Get blog posts list with pagination and filtering
  */
@@ -41,12 +58,7 @@ export const fetchBlogPosts = async (
   });
   
   // Ensure consistent data structure and map fields
-  const posts = (response.posts || []).map((post: any) => ({
-    ...post,
-    tags: post.tags || [],
-    publishDate: post.publish_date,
-    readTime: post.read_time
-  })) as BlogData[];
+  const posts = (response.posts || []).map((post: any) => mapBlogData(post));
   
   return posts;
 };
@@ -84,13 +96,7 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
       }, {} as Record<string, number>));
       
       // Map backend response to frontend structure
-      return {
-        ...response,
-        tags: response.tags || [],
-        content: processedContent, // Use processed content instead of raw
-        publishDate: response.publish_date,
-        readTime: response.read_time
-      } as BlogData;
+      return mapBlogData(response, processedContent);
     }
   } catch (error) {
     console.log(`Failed to fetch by ${isUUID ? 'ID' : 'slug'}, will try getting all posts to find the correct slug`);
@@ -113,13 +119,7 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
         // Process the content with markdown parser
         const processedContent = response.content ? processRawContent(response.content) : [];        
         // Map backend response to frontend structure
-        return {
-          ...response,
-          tags: response.tags || [],
-          content: processedContent, // Use processed content instead of raw
-          publishDate: response.publish_date,
-          readTime: response.read_time
-        } as BlogData;
+        return mapBlogData(response, processedContent);
       }
     }
   } catch (error) {
@@ -142,12 +142,7 @@ export const searchBlogPosts = async (
   });
   
   // Ensure consistent data structure and map fields
-  const posts = (response.posts || []).map((post: any) => ({
-    ...post,
-    tags: post.tags || [],
-    publishDate: post.publish_date,
-    readTime: post.read_time
-  })) as BlogData[];
+  const posts = (response.posts || []).map((post: any) => mapBlogData(post));
   
   return posts;
 };

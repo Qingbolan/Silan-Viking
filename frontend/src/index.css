@@ -82,9 +82,12 @@ body {
   font-size: 16px; /* Modern standard font size */
 }
 
-/* Remove all default borders and outlines */
-input, textarea, button, select, a, div, span, p, h1, h2, h3, h4, h5, h6,
-img, svg, canvas, video, audio, iframe, table, tr, td, th, ul, ol, li {
+/* Remove all default borders and outlines for LEGACY (non-design-system)
+   elements. Design-system components opt out via `[data-ds]` so their
+   Tailwind border utilities work — `:not([data-ds]):not([data-ds] *)`
+   excludes both a ds root and anything inside a ds subtree. */
+:is(input, textarea, button, select, a, div, span, p, h1, h2, h3, h4, h5, h6,
+img, svg, canvas, video, audio, iframe, table, tr, td, th, ul, ol, li):not([data-ds]):not([data-ds] *) {
   border: none !important;
   outline: none !important;
 }
@@ -841,7 +844,11 @@ img {
 }
 
 /* Modern Typography Scale */
-h1, h2, h3, h4, h5, h6 {
+/* Legacy heading typography — applies to NON-design-system headings only.
+   These rules are unlayered, so they would otherwise beat Tailwind's
+   layered `text-*` utilities regardless of specificity; `:not([data-ds] *)`
+   keeps design-system components in control of their own heading sizes. */
+:is(h1, h2, h3, h4, h5, h6):not([data-ds] *) {
   font-family: var(--font-display);
   font-weight: 700;
   line-height: 1.2;
@@ -849,43 +856,43 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }
 
-h1 {
+h1:not([data-ds] *) {
   font-size: 3rem;    /* 48px */
   font-weight: 700;
   line-height: 1.1;
 }
 
-h2 {
+h2:not([data-ds] *) {
   font-size: 2.25rem; /* 36px */
   font-weight: 700;
   line-height: 1.2;
 }
 
-h3 {
+h3:not([data-ds] *) {
   font-size: 1.875rem; /* 30px */
   font-weight: 600;
   line-height: 1.25;
 }
 
-h4 {
+h4:not([data-ds] *) {
   font-size: 1.5rem;  /* 24px */
   font-weight: 600;
   line-height: 1.3;
 }
 
-h5 {
+h5:not([data-ds] *) {
   font-size: 1.25rem; /* 20px */
   font-weight: 600;
   line-height: 1.4;
 }
 
-h6 {
+h6:not([data-ds] *) {
   font-size: 1.125rem; /* 18px */
   font-weight: 600;
   line-height: 1.4;
 }
 
-p {
+p:not([data-ds] *) {
   font-size: 1rem;    /* 16px */
   line-height: 1.6;
   font-weight: 400;

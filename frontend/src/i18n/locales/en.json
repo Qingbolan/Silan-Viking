@@ -89,7 +89,7 @@
     "PROJECT": "Project",
     "status": {
       "ACTIVE": "Active",
-      "ONGOING": "Ongoing", 
+      "ONGOING": "Ongoing",
       "COMPLETED": "Completed"
     },
     "priority": {
@@ -223,6 +223,11 @@
     "likes": "likes",
     "downloads": "downloads",
     "updated": "Updated",
+    "build": {
+      "passing": "Build passing",
+      "failing": "Build failing",
+      "unknown": "Build unknown"
+    },
     "viewProjectOnGitHub": "View {{title}} source code on GitHub",
     "viewLiveDemo": "View {{title}} live demo",
     "filterByTechnique": "Filter by Technique:",
@@ -315,5 +320,33 @@
     "confirmDelete": "Are you sure you want to delete this comment?",
     "deleted": "Comment deleted successfully",
     "deleteFailed": "Failed to delete comment"
+  },
+  "ds": {
+    "loading": {
+      "title": "Loading",
+      "hints": [
+        "Fetching the latest content…",
+        "Almost there…",
+        "Thanks for your patience…"
+      ]
+    },
+    "error": {
+      "sorry": "Sorry",
+      "title": "Something went wrong",
+      "description": "We hit an unexpected error. Try again, or head back home.",
+      "crashTitle": "Something broke",
+      "crashDescription": "A part of the app crashed unexpectedly. You can retry or head home.",
+      "notFoundTitle": "Page not found",
+      "notFoundDescription": "The page you’re looking for doesn’t exist or has moved.",
+      "networkTitle": "Couldn’t reach the server",
+      "networkDescription": "Check your connection and try again. If this keeps happening, the API may be temporarily unavailable.",
+      "retry": "Try again",
+      "home": "Home",
+      "goBack": "Go back",
+      "copy": "Copy",
+      "copied": "Copied",
+      "showMore": "Show more",
+      "showLess": "Show less"
+    }
   }
-} 
+}

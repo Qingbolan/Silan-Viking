@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Lightbulb,
   Calendar,
   Clock,
   ExternalLink,
@@ -13,11 +12,9 @@ import {
   FileText,
   Share2,
   Heart,
-  MessageSquare,
   BarChart3,
-  Beaker
+  Beaker,
 } from 'lucide-react';
-import { Tabs, Space } from 'antd';
 import { useTheme } from '../ThemeContext';
 import { useLanguage } from '../LanguageContext';
 import CommunityFeedback from './CommunityFeedback';
@@ -25,6 +22,14 @@ import Markdown from '../ui/Markdown';
 import { IdeaData } from '../../types';
 import { fetchIdeaById } from '../../api/ideas/ideaApi';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
+import {
+  Container,
+  Section,
+  Badge,
+  Button,
+  Tabs as DsTabs,
+  BrandLoading,
+} from '../../components/ds';
 
 
 const IdeaDetail: React.FC = () => {
@@ -72,16 +77,6 @@ const IdeaDetail: React.FC = () => {
     loadIdea();
   }, [id, language]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'published': return { color: '#059669', backgroundColor: '#DCFCE7' };
-      case 'validating': return { color: '#0284C7', backgroundColor: '#DBEAFE' };
-      case 'experimenting': return { color: '#7C3AED', backgroundColor: '#EDE9FE' };
-      case 'hypothesis': return { color: '#D97706', backgroundColor: '#FEF3C7' };
-      default: return { color: colors.textSecondary, backgroundColor: colors.surface };
-    }
-  };
-
   const getExperimentIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle size={16} style={{ color: '#059669' }} />;
@@ -117,11 +112,11 @@ const IdeaDetail: React.FC = () => {
   };
 
   const allTabs = [
-    { id: 'abstract', label: language === 'en' ? 'Abstract' : '摘要', icon: <Lightbulb size={18} /> },
-    { id: 'progress', label: language === 'en' ? 'Latest Progress' : '最新进展', icon: <Beaker size={18} /> },
-    { id: 'results', label: language === 'en' ? 'Results' : '结果', icon: <BarChart3 size={18} /> },
-    { id: 'references', label: language === 'en' ? 'References' : '参考文献', icon: <BookOpen size={18} /> },
-    { id: 'discussion', label: language === 'en' ? 'Discussion' : '讨论', icon: <MessageSquare size={18} /> }
+    { id: 'abstract', label: language === 'en' ? 'Abstract' : '摘要', icon: <FileText size={16} /> },
+    { id: 'progress', label: language === 'en' ? 'Latest Progress' : '最新进展', icon: <BarChart3 size={16} /> },
+    { id: 'results', label: language === 'en' ? 'Results' : '结果', icon: <CheckCircle size={16} /> },
+    { id: 'references', label: language === 'en' ? 'References' : '参考文献', icon: <BookOpen size={16} /> },
+    { id: 'discussion', label: language === 'en' ? 'Discussion' : '讨论', icon: <Beaker size={16} /> },
   ];
 
   // Filter tabs to only show those with content (only when idea is loaded)
@@ -136,12 +131,10 @@ const IdeaDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background }}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-          <Lightbulb size={48} className="mx-auto mb-4 animate-pulse" style={{ color: colors.accent }} />
-          <p style={{ color: colors.textSecondary }}>{language === 'en' ? 'Loading research details...' : '加载研究详情...'}</p>
-        </motion.div>
-      </div>
+      <BrandLoading
+        inline
+        message={language === 'en' ? 'Loading research details…' : '加载研究详情…'}
+      />
     );
   }
 
@@ -401,100 +394,108 @@ const IdeaDetail: React.FC = () => {
     }
   };
 
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 rounded-xl" style={getStatusColor(idea.status)}>
-                  <Lightbulb size={24} />
-                </div>
-                <div>
-                  <h1 className="text-2xl lg:text-3xl font-bold text-theme-primary mb-2">{idea.title}</h1>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-theme-secondary">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      {language === 'en' ? 'Created: ' : '创建于: '}{formatDate(idea.createdAt)}
-                    </span>
-                    {idea.lastUpdated && (
-                      <span className="flex items-center gap-1">
-                        <Clock size={14} />
-                        {language === 'en' ? 'Updated: ' : '更新于: '}{formatDate(idea.lastUpdated)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+  // The research stage, shown as the page-header eyebrow (no icon).
+  const statusLabel: Record<string, string> = {
+    draft: language === 'en' ? 'Draft' : '草稿',
+    hypothesis: language === 'en' ? 'Hypothesis' : '假设',
+    experimenting: language === 'en' ? 'Experimenting' : '实验中',
+    validating: language === 'en' ? 'Validating' : '验证中',
+    published: language === 'en' ? 'Published' : '已发表',
+    concluded: language === 'en' ? 'Concluded' : '已结题',
+  };
 
-              {idea.tags && idea.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {idea.tags.map((tag, index) => (
-                    <span key={index} className="px-3 py-1 bg-theme-surface text-theme-primary rounded-lg text-sm font-medium">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <Container width="content">
+        <Section spacing="md">
+          {/* --- Header — status eyebrow + title, then a single meta row
+                 with the dates on the left and the actions on the right. -- */}
+          <div className="space-y-1.5">
+            <div className="text-ds-xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
+              {statusLabel[idea.status] ?? idea.status}
+            </div>
+            <h1 className="text-ds-3xl font-semibold tracking-[-0.02em] text-ds-fg">
+              {idea.title}
+            </h1>
+          </div>
+
+          {/* Sticky meta bar — dates ↔ actions, pinned to the top of the
+              viewport as the content scrolls beneath it. */}
+          <div className="sticky top-0 z-20 mt-3 -mx-4 flex flex-col gap-3 border-b border-ds-border bg-ds-surface-1/85 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-ds-sm text-ds-fg-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="size-3.5" />
+                {language === 'en' ? 'Created' : '创建于'} {formatDate(idea.createdAt)}
+              </span>
+              {idea.lastUpdated && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="size-3.5" />
+                  {language === 'en' ? 'Updated' : '更新于'} {formatDate(idea.lastUpdated)}
+                </span>
               )}
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                variant={liked ? 'subtle' : 'outline'}
+                size="sm"
                 onClick={() => setLiked(!liked)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  liked ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-theme-surface text-theme-secondary hover:bg-theme-hover'
-                }`}
+                leadingIcon={<Heart fill={liked ? 'currentColor' : 'none'} />}
               >
-                <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
                 {language === 'en' ? 'Like' : '喜欢'}
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-theme-surface text-theme-secondary hover:bg-theme-hover rounded-lg transition-colors">
-                <Share2 size={16} />
+              </Button>
+              <Button variant="outline" size="sm" leadingIcon={<Share2 />}>
                 {language === 'en' ? 'Share' : '分享'}
-              </button>
+              </Button>
               {idea.demoUrl && (
-                <a href={`/projects/${idea.id}/demo`} 
-                   className="flex items-center gap-2 px-4 py-2 bg-theme-primary text-white hover:opacity-90 rounded-lg transition-opacity">
-                  <ExternalLink size={16} />
-                  {language === 'en' ? 'Project Demo' : '项目演示'}
+                <a href={`/projects/${idea.id}/demo`}>
+                  <Button size="sm" leadingIcon={<ExternalLink />}>
+                    {language === 'en' ? 'Project Demo' : '项目演示'}
+                  </Button>
                 </a>
               )}
             </div>
           </div>
-        </motion.div>
 
-        <div className="mb-8">
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            items={tabs.map((tab) => ({
-              key: tab.id,
-              label: (
-                <Space>
-                  {tab.icon}
-                  {tab.label}
-                </Space>
-              ),
-              children: (
-                <motion.div
-                  key={tab.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {renderContent(tab.id)}
-                </motion.div>
-              )
-            }))}
-            size="large"
-            tabBarStyle={{
-              borderBottom: '1px solid var(--color-card-border)',
-              marginBottom: '24px'
-            }}
-          />
-        </div>
-      </div>
+          {/* Tag chips. */}
+          {idea.tags && idea.tags.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {idea.tags.map((tag, index) => (
+                <Badge key={index} tone="neutral" appearance="soft" size="md">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* --- Tabs — abstract / progress / … / discussion.
+              Two-column docs layout: left-rail vertical nav + content. -- */}
+          <div className="mt-8 flex w-full flex-col gap-6 md:flex-row md:gap-8">
+            <nav className="shrink-0 md:w-56">
+              <div className="md:sticky md:top-16">
+                <DsTabs
+                  appearance="vertical"
+                  value={activeTab}
+                  onChange={setActiveTab}
+                  items={tabs.map((tab) => ({
+                    value: tab.id,
+                    label: tab.label,
+                    icon: tab.icon,
+                  }))}
+                />
+              </div>
+            </nav>
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="min-w-0 flex-1"
+            >
+              {renderContent(activeTab)}
+            </motion.div>
+          </div>
+        </Section>
+      </Container>
     </motion.div>
   );
 };

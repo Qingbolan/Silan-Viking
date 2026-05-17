@@ -8,6 +8,7 @@ import { useAnnotations } from './hooks/useAnnotations';
 // Import all components
 import { BlogLoadingState } from './components/BlogLoadingState';
 import ArticleDetailLayout from './ArticleDetailLayout';
+import SeriesDetailLayout from './SeriesDetailLayout';
 
 // Import reading behavior utilities
 import { readingTracker } from '../../utils/readingBehavior';
@@ -83,6 +84,29 @@ const BlogDetail: React.FC = () => {
   const handleBack = () => {
     navigate('/blog');
   };
+
+  if (blog.seriesId) {
+    return (
+      <SeriesDetailLayout
+        post={blog}
+        onBack={handleBack}
+        userAnnotations={userAnnotations}
+        annotations={annotations}
+        showAnnotationForm={showAnnotationForm}
+        newAnnotationText={newAnnotationText}
+        selectedText={selectedText}
+        highlightedAnnotation={highlightedAnnotation}
+        onTextSelection={handleTextSelection}
+        onToggleAnnotation={toggleAnnotation}
+        onSetShowAnnotationForm={setShowAnnotationForm}
+        onSetNewAnnotationText={setNewAnnotationText}
+        onAddUserAnnotation={(contentId: string) => addUserAnnotation(contentId)}
+        onRemoveUserAnnotation={removeUserAnnotation}
+        onHighlightAnnotation={highlightAnnotation}
+        onCancelAnnotation={cancelAnnotation}
+      />
+    );
+  }
 
   return (
     <ArticleDetailLayout
