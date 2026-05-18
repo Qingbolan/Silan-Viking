@@ -77,7 +77,6 @@ func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *type
 	offset := (req.Page - 1) * req.Size
 	ideas, err := query.
 		WithDetails().
-		WithTags().
 		WithTranslations().
 		Order(ent.Desc(idea.FieldUpdatedAt)).
 		Limit(req.Size).

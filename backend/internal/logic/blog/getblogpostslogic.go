@@ -42,7 +42,6 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		WithSeries(func(q *ent.BlogSeriesQuery) {
 			q.WithTranslations()
 		}).
-		WithTags().
 		WithTranslations()
 
 	// Apply filters
@@ -68,6 +67,18 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		))
 	}
 
+	// Tag filter — resolved through the cross-type `content_tag` table.
+	// `EntityIDsMatchingTags` returns the blog ids carrying the tag; an
+	// empty (non-nil) result means nothing matches, so `IDIn` correctly
+	// narrows the query to zero rows rather than skipping the filter.
+	if req.Tag != "" {
+		ids, tagErr := contenttag.EntityIDsMatchingTags(l.ctx, l.svcCtx.RawDB, "blog", []string{req.Tag})
+		if tagErr != nil {
+			return nil, tagErr
+		}
+		query = query.Where(blogpost.IDIn(ids...))
+	}
+
 	nonEpisodePosts, err := query.
 		Where(blogpost.SeriesIDIsNil()).
 		Order(ent.Desc(blogpost.FieldPublishedAt)).
@@ -85,7 +96,6 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 				WithSeries(func(q *ent.BlogSeriesQuery) {
 					q.WithTranslations()
 				}).
-				WithTags().
 				WithTranslations().
 				Where(
 					blogpost.StatusEQ(blogpost.StatusPublished),

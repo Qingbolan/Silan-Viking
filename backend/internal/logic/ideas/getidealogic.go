@@ -35,7 +35,6 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	ideaEntity, err := l.svcCtx.DB.Idea.Query().
 		Where(idea.ID(ideaID)).
 		WithUser().
-		WithTags().
 		WithDetails().
 		WithTranslations().
 		First(l.ctx)

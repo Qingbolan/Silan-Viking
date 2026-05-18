@@ -3,7 +3,7 @@ package ideas
 import (
 	"context"
 
-	"silan-backend/internal/ent/ideatag"
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -25,18 +25,18 @@ func NewGetIdeaTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetId
 	}
 }
 
+// GetIdeaTags lists the tag labels used by ideas, from the cross-type
+// `content_tag` table — the legacy `idea_tags` ent table is no longer
+// populated by `index sync`.
 func (l *GetIdeaTagsLogic) GetIdeaTags(req *types.IdeaTagsRequest) (resp []string, err error) {
-	// Query distinct tag names ordered by name from idea_tags
-	tags, err := l.svcCtx.DB.IdeaTag.Query().
-		Order(ideatag.ByName()).
-		All(l.ctx)
+	tags, err := contenttag.ListTags(l.ctx, l.svcCtx.RawDB, "idea")
 	if err != nil {
 		return nil, err
 	}
 	names := make([]string, 0, len(tags))
 	for _, t := range tags {
-		if t.Name != "" {
-			names = append(names, t.Name)
+		if t.Label != "" {
+			names = append(names, t.Label)
 		}
 	}
 	return names, nil

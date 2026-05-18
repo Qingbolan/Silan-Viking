@@ -3,8 +3,7 @@ package blog
 import (
 	"context"
 
-	"silan-backend/internal/ent"
-	"silan-backend/internal/ent/blogtag"
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -26,24 +25,22 @@ func NewGetBlogTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBl
 	}
 }
 
+// GetBlogTags lists the tags used by blog posts, from the cross-type
+// `content_tag` table — the legacy `blog_tags` ent table is no longer
+// populated by `index sync`, so its usage counts would all be zero.
 func (l *GetBlogTagsLogic) GetBlogTags(req *types.BlogTagsRequest) (resp []types.BlogTag, err error) {
-	tags, err := l.svcCtx.DB.BlogTag.Query().
-		WithBlogPosts().
-		Order(ent.Asc(blogtag.FieldName)).
-		All(l.ctx)
+	tags, err := contenttag.ListTags(l.ctx, l.svcCtx.RawDB, "blog")
 	if err != nil {
 		return nil, err
 	}
-
-	var result []types.BlogTag
-	for _, tag := range tags {
+	result := make([]types.BlogTag, 0, len(tags))
+	for _, t := range tags {
 		result = append(result, types.BlogTag{
-			ID:         tag.ID,
-			Name:       tag.Name,
-			Slug:       tag.Slug,
-			UsageCount: len(tag.Edges.BlogPosts),
+			ID:         t.ID,
+			Name:       t.Label,
+			Slug:       t.Slug,
+			UsageCount: t.UsageCount,
 		})
 	}
-
 	return result, nil
 }

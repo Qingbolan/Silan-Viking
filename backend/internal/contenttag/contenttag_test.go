@@ -37,6 +37,37 @@ func seedDB(t *testing.T) *sql.DB {
 	return db
 }
 
+func TestListTags(t *testing.T) {
+	db := seedDB(t)
+	defer db.Close()
+
+	// seedDB: blog post-a -> easynet, research ; blog post-b -> easynet.
+	// So for entity_type "blog": easynet used twice, research once.
+	tags, err := ListTags(context.Background(), db, "blog")
+	if err != nil {
+		t.Fatalf("ListTags: %v", err)
+	}
+	if len(tags) != 2 {
+		t.Fatalf("ListTags(blog) = %d tags, want 2", len(tags))
+	}
+	// Ordered by label: "EasyNet" before "Research".
+	if tags[0].Label != "EasyNet" || tags[0].UsageCount != 2 {
+		t.Errorf("tags[0] = %+v, want EasyNet usage=2", tags[0])
+	}
+	if tags[1].Label != "Research" || tags[1].UsageCount != 1 {
+		t.Errorf("tags[1] = %+v, want Research usage=1", tags[1])
+	}
+
+	// A type with no tagged Items yields an empty, non-nil slice.
+	empty, err := ListTags(context.Background(), db, "project")
+	if err != nil {
+		t.Fatalf("ListTags(project): %v", err)
+	}
+	if empty == nil || len(empty) != 0 {
+		t.Errorf("ListTags(project) = %v, want non-nil empty", empty)
+	}
+}
+
 func TestLookupReturnsLabelsSorted(t *testing.T) {
 	db := seedDB(t)
 	defer db.Close()

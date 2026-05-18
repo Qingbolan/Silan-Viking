@@ -210,17 +210,18 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
                     {item.description}
                   </Markdown>
 
-                  {/* Footer — tags + status badge. */}
+                  {/* Footer — tags + status badge. `tags` may be absent in
+                      an API response, so guard before slicing. */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap gap-1">
-                      {item.tags.slice(0, 2).map((tag) => (
+                      {(item.tags || []).slice(0, 2).map((tag) => (
                         <Badge key={tag} tone="neutral" appearance="soft" size="sm">
                           {tag}
                         </Badge>
                       ))}
-                      {item.tags.length > 2 && (
+                      {(item.tags || []).length > 2 && (
                         <Badge tone="primary" appearance="soft" size="sm">
-                          +{item.tags.length - 2}
+                          +{(item.tags || []).length - 2}
                         </Badge>
                       )}
                     </div>

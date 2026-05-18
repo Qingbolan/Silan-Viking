@@ -42,7 +42,6 @@ func (l *GetBlogPostByIdLogic) GetBlogPostById(req *types.BlogByIdRequest) (resp
 		WithSeries(func(q *ent.BlogSeriesQuery) {
 			q.WithTranslations()
 		}).
-		WithTags().
 		WithTranslations().
 		First(l.ctx)
 	if err != nil {
