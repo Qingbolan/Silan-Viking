@@ -59,3 +59,7 @@ yarn-error.log*
 
 # Database snapshots taken before migrations — local backups only.
 *.db.before-*.bak
+
+# silan-viking site build output — a derived artifact of `site build`,
+# rebuilt from content/ on demand, never committed.
+/_site/

@@ -201,13 +201,32 @@ fn run(args: Vec<String>) -> Result<(), String> {
             println!("items={}", scan.len());
             Ok(())
         }
-        ["index", "lint"] | ["index", "rebuild"] => {
+        ["index", "lint"] => {
             let ws = Workspace::open(&opts.content_root).map_err(|e| e.to_string())?;
             let index = ws.query_index().map_err(|e| e.to_string())?;
             println!(
                 "ok documents={} embedder={:?}",
                 index.documents().len(),
                 index.mode()
+            );
+            Ok(())
+        }
+        ["index", "rebuild"] => {
+            // `rebuild` discards the derived database and syncs from scratch.
+            // Unlike `sync` — which writes into whatever db already exists —
+            // it deletes the file first, so a db left over from an older
+            // schema (a different tool, or a pre-migration build) cannot
+            // collide with the current Entity layer. The `content/` truth
+            // source is never touched; only the rebuildable cache is.
+            if opts.db_path.exists() {
+                std::fs::remove_file(&opts.db_path)
+                    .map_err(|e| format!("could not remove old database: {e}"))?;
+            }
+            let ws = Workspace::open(&opts.content_root).map_err(|e| e.to_string())?;
+            let report = ws.sync(&opts.db_path).map_err(|e| e.to_string())?;
+            println!(
+                "rebuilt items={} rows={} wrote={} hash={}",
+                report.items_scanned, report.rows_written, report.wrote, report.content_hash
             );
             Ok(())
         }

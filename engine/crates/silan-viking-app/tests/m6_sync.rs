@@ -101,6 +101,7 @@ fn incremental_sync_of_unchanged_content_does_not_rewrite() {
     let first = run_sync(
         ws.parsers(),
         ws.mappers(),
+        ws.schema(),
         &ws.scan().expect("scan"),
         &mut sink,
     )
@@ -111,6 +112,7 @@ fn incremental_sync_of_unchanged_content_does_not_rewrite() {
     let second = run_incremental_sync(
         ws.parsers(),
         ws.mappers(),
+        ws.schema(),
         &ws.scan().expect("scan"),
         &mut sink,
     )

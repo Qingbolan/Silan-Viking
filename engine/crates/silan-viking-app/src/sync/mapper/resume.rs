@@ -35,7 +35,11 @@ impl Mapper for ResumeMapper {
         ContentKind::Resume
     }
 
-    fn map(&self, parsed: &Parsed) -> Result<RowSet, MapError> {
+    fn map(
+        &self,
+        parsed: &Parsed,
+        _type_spec: &crate::schema::TypeSpec,
+    ) -> Result<RowSet, MapError> {
         if parsed.kind() != ContentKind::Resume {
             return Err(MapError::KindMismatch {
                 expected: ContentKind::Resume,

@@ -6,6 +6,8 @@
 //! The flow (`03` §3.1 "accept 流程"):
 //! 1. Acquire `proposal-accept.lock` + `agent-write.lock` (`08` §8.5).
 //! 2. Record the main OID — this is the `expected_old` for step 6.
+//! 2.5. Refuse if the main `content/` working tree is dirty — step 6.5
+//!    `reset --hard`s it, so an uncommitted edit would be lost.
 //! 3. `git worktree add` a throwaway worktree at that OID.
 //! 4. In the worktree: `git merge proposal/<id>`. A conflict aborts the
 //!    accept; the main branch was never touched.
@@ -13,6 +15,8 @@
 //!    parsers' `validate`. Any `Fatal` issue aborts; main untouched.
 //! 6. `git update-ref refs/heads/main <merge_oid> <expected_old>` — the
 //!    compare-and-set. If main advanced meanwhile, this fails and main stays.
+//! 6.5. `git reset --hard <merge_oid>` the main working tree, so the
+//!    accepted files are actually on disk for `index sync` to scan.
 //! 7. The worktree is removed unconditionally — success, conflict, or
 //!    validation failure all clean it up.
 
@@ -120,6 +124,20 @@ pub fn accept(
     // (2) The expected-old OID for the step-6 compare-and-set.
     let expected_old = repo.rev_parse(&format!("refs/heads/{main_branch}"))?;
 
+    // (2.5) The main working tree must be clean before accepting. Step 6.5
+    //     `reset --hard`s it onto the merge commit; an uncommitted edit there
+    //     would be lost. Fail here — before `main` is touched — so a dirty
+    //     tree leaves the proposal and `main` exactly as they were.
+    let working_tree_dirty = repo
+        .run(["status", "--porcelain"])
+        .map(|out| !out.stdout.trim().is_empty())
+        .unwrap_or(true);
+    if working_tree_dirty {
+        return Err(ProposalError::WorkingTreeDirty {
+            id: id.as_str().to_owned(),
+        });
+    }
+
     // (3) Throwaway worktree at main HEAD. `_worktree` removes it on every
     //     exit path below.
     let worktree_path = git_dir
@@ -179,6 +197,21 @@ pub fn accept(
         }
         return Err(ProposalError::Git(e));
     }
+
+    // (6.5) Sync the main working tree to the advanced `main`.
+    //
+    // Step 6 moved the `main` *ref* only — the merge happened in a throwaway
+    // worktree, so the real `content/` working directory still holds the
+    // pre-accept files. Left there, the working tree and `HEAD` disagree:
+    // every file the proposal added shows up as a staged deletion, and
+    // `index sync` (which scans the working directory, not the commit) never
+    // sees the accepted content. The whole point of `accept` is to land the
+    // proposal into the truth source — so the working tree must follow.
+    //
+    // The pre-accept dirtiness check (step 2.5) guarantees the working tree
+    // had no uncommitted edits, so `reset --hard` only fast-forwards the
+    // files to the merge commit and discards nothing.
+    repo.run(["reset", "--hard", &merge_oid])?;
 
     // Record the accepted state. The worktree drops (removed) right after.
     record.set_state(ProposalState::Accepted);

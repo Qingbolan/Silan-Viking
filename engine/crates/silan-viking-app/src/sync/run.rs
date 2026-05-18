@@ -18,6 +18,7 @@ use super::mapper::MapperRegistry;
 use super::rows::{Row, RowSet, RowSetBatch, SqlValue};
 use super::sink::{Sink, SqliteSink};
 use crate::parser::{IssuePolicy, ParserRegistry};
+use crate::schema::Schema;
 use crate::workspace::ScanReport;
 use silan_viking_base::ContentHash;
 
@@ -47,10 +48,11 @@ pub struct SyncReport {
 pub fn run_sync(
     parsers: &ParserRegistry,
     mappers: &MapperRegistry,
+    schema: &Schema,
     scan: &ScanReport,
     sink: &mut SqliteSink,
 ) -> Result<SyncReport, SyncError> {
-    let batch = build_batch(parsers, mappers, scan)?;
+    let batch = build_batch(parsers, mappers, schema, scan)?;
     let content_hash = batch_digest(&batch);
 
     let mut full = batch;
@@ -75,10 +77,11 @@ pub fn run_sync(
 pub fn run_incremental_sync(
     parsers: &ParserRegistry,
     mappers: &MapperRegistry,
+    schema: &Schema,
     scan: &ScanReport,
     sink: &mut SqliteSink,
 ) -> Result<SyncReport, SyncError> {
-    let batch = build_batch(parsers, mappers, scan)?;
+    let batch = build_batch(parsers, mappers, schema, scan)?;
     let content_hash = batch_digest(&batch);
 
     if sink.last_sync_hash()?.as_deref() == Some(content_hash.as_str()) {
@@ -111,6 +114,7 @@ pub fn run_incremental_sync(
 fn build_batch(
     parsers: &ParserRegistry,
     mappers: &MapperRegistry,
+    schema: &Schema,
     scan: &ScanReport,
 ) -> Result<RowSetBatch, SyncError> {
     let mut batch = RowSetBatch::new();
@@ -142,7 +146,13 @@ fn build_batch(
 
         let mapper = mappers.mapper_for(&parsed)?;
         debug_assert_eq!(mapper.content_type(), parsed.kind());
-        batch.push(mapper.map(&parsed)?);
+        // The mapper routes fields by the type's SCHEMA spec. Every one of
+        // the 6 `ContentKind`s has a `TypeSpec` (the schema parser enforces
+        // this at load), so a missing spec is an engine invariant violation.
+        let type_spec = schema
+            .type_spec(parsed.kind())
+            .expect("every ContentKind has a TypeSpec");
+        batch.push(mapper.map(&parsed, type_spec)?);
     }
 
     // One `episode_series` row per scanned series. This is a batch-level

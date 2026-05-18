@@ -176,8 +176,13 @@ pub fn tool_specs() -> Vec<ToolSpec> {
         ToolSpec {
             name: "propose",
             tier: Proposal,
-            description: "draft a content proposal (args: uri, draft, lang?=en) — \
-                          targets an Item or Part; lang picks the language variant",
+            description: "draft a content proposal (args: uri, draft, lang?=en, \
+                          parts?) — targets an Item or Part. A URI whose Item \
+                          does not exist yet is created (no CLI `new` needed); \
+                          an existing one is modified. `parts` is a \
+                          {role: content} object of additional Parts of the \
+                          same Item — use it so a new multi-Part Item is ONE \
+                          proposal. lang picks the language variant",
         },
         ToolSpec {
             name: "summarize_updates",
@@ -340,37 +345,109 @@ pub struct ProposalCreated {
     pub branch: String,
 }
 
-/// `propose(uri, draft, lang)` — write an agent draft onto a fresh
-/// `proposal/<id>` Git branch and register it (`03` §3.1). The draft is
-/// written to the Item or Part path the URI anchors to; `accept` (CLI,
-/// human-only) merges it.
+/// One Part of a `propose` call: the Part `role`, and its draft `content`.
+pub struct PartDraft {
+    /// The Part role — must be a role the target type's SCHEMA declares.
+    pub role: String,
+    /// The draft body: markdown for a `prose` Part, TOML for a structured one.
+    pub content: String,
+}
+
+/// `propose(uri, draft, lang, extra_parts)` — write an agent draft onto a
+/// fresh `proposal/<id>` Git branch and register it (`03` §3.1). `accept`
+/// (CLI, human-only) merges it.
 ///
-/// `lang` is the language variant the draft targets (`en`, `zh`, …),
-/// defaulting to `en`. It lets an agent propose a non-English variant —
-/// e.g. a Chinese `summary/zh.md` bio — without a separate tool.
+/// `uri` may anchor an Item or a Part. A URI whose Item does not exist yet
+/// *creates* it; an existing Item is modified.
+///
+/// `draft` writes the URI's anchored Part — the Part itself for a Part URI,
+/// or the type's primary Part for an Item URI.
+///
+/// `extra_parts` carries **additional Parts of the same Item**, so a new
+/// multi-Part Item (a project's overview + goals + progress) lands as **one
+/// proposal** rather than one branch per Part — the latter cannot be accepted
+/// in isolation, since post-merge validation sees an Item missing its other
+/// required Parts. `extra_parts` is only valid with an Item URI.
+///
+/// `lang` is the language variant every draft targets (`en`, `zh`, …).
 ///
 /// The proposal branch lifecycle is owned by the engine
-/// (`Workspace::create_proposal`); this function supplies only the id, the
-/// touched URI, and a closure writing the one draft file.
+/// (`Workspace::create_proposal`); this function supplies the id, the touched
+/// URIs, and a closure writing each draft file plus any missing `meta.toml`.
 pub fn propose(
     content_root: &Path,
     uri: &str,
     draft: &str,
     lang: &str,
+    extra_parts: &[PartDraft],
 ) -> Result<ProposalCreated, McpError> {
     let target = ProposalTarget::parse(uri).map_err(|e| McpError::Proposal(e.to_string()))?;
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
 
+    // `extra_parts` name sibling Parts of the same Item, so the anchor must be
+    // an Item URI — a Part URI already names its one Part.
+    let item_uri = match (&target, extra_parts.is_empty()) {
+        (ProposalTarget::Item(_), _) => uri.to_owned(),
+        (ProposalTarget::Part { .. }, true) => uri.to_owned(),
+        (ProposalTarget::Part { .. }, false) => {
+            return Err(McpError::Proposal(
+                "extra_parts is only valid with an Item URI, not a Part URI".to_owned(),
+            ));
+        }
+    };
+
+    // Resolve every draft's path *against the SCHEMA* up front — a Part role
+    // the type does not declare is rejected here, before any branch or file
+    // exists, so a mis-named Part fails cleanly instead of producing a
+    // silently mis-anchored proposal.
+    let mut writes: Vec<(DraftLocation, String, String)> = Vec::new();
+    let primary = resolve_draft_location(&ws, &target, lang)?;
+    let primary_meta = render_part_meta(&primary.role, primary.shape, lang);
+    writes.push((primary, draft.to_owned(), primary_meta));
+    for part in extra_parts {
+        let part_uri = format!("{item_uri}/{}", part.role);
+        let part_target =
+            ProposalTarget::parse(&part_uri).map_err(|e| McpError::Proposal(e.to_string()))?;
+        let loc = resolve_draft_location(&ws, &part_target, lang)?;
+        let meta = render_part_meta(&loc.role, loc.shape, lang);
+        writes.push((loc, part.content.clone(), meta));
+    }
+
+    // An `episode` Item lives under a *series* directory whose `series.toml`
+    // is the parent the scanner reads (`episode_series` row). A new episode
+    // in a not-yet-existing series needs that file too — like a new Part
+    // needs its `meta.toml` — or the scanner cannot place the episode.
+    let series = episode_series_file(&target);
+
     let id =
         ProposalId::new(Ulid::new().to_string()).map_err(|e| McpError::Proposal(e.to_string()))?;
-    let rel = draft_rel_path(&target, lang);
 
     ws.create_proposal(
         &id,
         ProposalKind::Modify,
-        vec![uri.to_owned()],
+        vec![item_uri.clone()],
         &format!("propose {}", id.as_str()),
-        |root| write_draft_file(&root.join(&rel), draft),
+        |root| {
+            for (loc, content, meta) in &writes {
+                write_draft_file(&root.join(&loc.draft_file), content)?;
+                // A Part is only valid with a `meta.toml`; `index sync` skips
+                // a directory that lacks one. Write it whenever the Part is
+                // new, so the proposal produces a complete, syncable Part. An
+                // existing Part keeps its `meta.toml` (and `part_id`) intact.
+                let meta_path = root.join(&loc.part_dir).join("meta.toml");
+                if !meta_path.exists() {
+                    write_draft_file(&meta_path, meta)?;
+                }
+            }
+            // Write the container series' `series.toml` if the series is new.
+            if let Some((rel, content)) = &series {
+                let series_path = root.join(rel);
+                if !series_path.exists() {
+                    write_draft_file(&series_path, content)?;
+                }
+            }
+            Ok(())
+        },
     )
     .map_err(|e| McpError::Proposal(e.to_string()))?;
 
@@ -416,19 +493,169 @@ fn write_draft_file(path: &Path, body: &str) -> Result<(), silan_viking_app::Pro
     fs::write(path, body).map_err(|e| silan_viking_app::ProposalError::Io(e.to_string()))
 }
 
-/// The repo-relative file path a proposal draft is written to. An Item target
-/// writes its primary `body` Part; a Part target writes that Part's prose
-/// file. `lang` selects the language variant (`<lang>.md`).
-fn draft_rel_path(target: &ProposalTarget, lang: &str) -> String {
-    match target {
-        ProposalTarget::Item(uri) => {
-            // silan://resources/<kind>/<slug> -> resources/<kind>/<slug>/parts/body/<lang>.md
-            format!("{}/parts/body/{lang}.md", uri_to_rel(uri))
-        }
-        ProposalTarget::Part { item, role } => {
-            format!("{}/parts/{role}/{lang}.md", uri_to_rel(item))
-        }
+/// Where a proposal draft is written, resolved against the SCHEMA.
+struct DraftLocation {
+    /// Repo-relative path of the Part's `parts/<role>/` directory.
+    part_dir: String,
+    /// Repo-relative path of the draft language file (`<lang>.<ext>`).
+    draft_file: String,
+    /// The Part's role — `type` field of `meta.toml`.
+    role: String,
+    /// The Part's shape — `shape` field of `meta.toml`, and what decides
+    /// the draft file's extension.
+    shape: silan_viking_app::PartShape,
+}
+
+/// Resolve where a proposal draft is written, **validating the target Part
+/// role against the SCHEMA**.
+///
+/// An Item target (`silan://resources/<kind>/<slug>`) has no explicit Part, so
+/// the type's primary Part is used — the lowest-`order` Part the SCHEMA
+/// declares (`body` for blog, `summary` for resume, `overview` for
+/// idea/project). A Part target (`.../<slug>/<role>`) must name a Part the
+/// type actually declares; an unknown role is rejected with the list of
+/// valid roles, instead of silently creating an off-schema `parts/<role>/`
+/// directory that later breaks `index sync`.
+///
+/// The file extension follows the resolved Part's `shape`: `prose` Parts are
+/// `<lang>.md`, `entry_list` / `key_value_list` Parts are `<lang>.toml`. A
+/// structured Part drafted as `.md` would be ignored by `index sync`, so the
+/// extension is taken from the SCHEMA, never assumed.
+fn resolve_draft_location(
+    ws: &Workspace,
+    target: &ProposalTarget,
+    lang: &str,
+) -> Result<DraftLocation, McpError> {
+    let (item_uri, kind, role) = match target {
+        ProposalTarget::Item(uri) => (uri, item_kind(uri)?, None),
+        ProposalTarget::Part { item, role } => (item, item_kind(item)?, Some(role.as_str())),
+    };
+
+    let type_spec = ws.schema().type_spec(kind).ok_or_else(|| {
+        McpError::Proposal(format!("schema has no type spec for `{}`", kind))
+    })?;
+
+    let part_spec = match role {
+        // Part target: the named role must be declared by the type.
+        Some(role) => type_spec.part(role).ok_or_else(|| {
+            let valid: Vec<&str> = type_spec.parts.iter().map(|p| p.role.as_str()).collect();
+            McpError::Proposal(format!(
+                "`{}` has no Part `{}` — valid Parts: {}",
+                kind,
+                role,
+                valid.join(", ")
+            ))
+        })?,
+        // Item target: fall back to the type's primary (lowest-order) Part.
+        None => type_spec
+            .parts
+            .iter()
+            .min_by_key(|p| p.order)
+            .ok_or_else(|| {
+                McpError::Proposal(format!("type `{}` declares no Parts", kind))
+            })?,
+    };
+
+    let part_dir = format!(
+        "{}/parts/{}",
+        item_dir_rel(item_uri, kind),
+        part_spec.role
+    );
+    let draft_file = format!("{part_dir}/{lang}.{}", part_spec.shape.file_extension());
+    Ok(DraftLocation {
+        part_dir,
+        draft_file,
+        role: part_spec.role.clone(),
+        shape: part_spec.shape,
+    })
+}
+
+/// Render a Part's `meta.toml` — the manifest that makes a directory a valid
+/// Part (`01` §1.3.1). A Part without it is skipped by `index sync`, so
+/// `propose` writes one whenever it creates a new Part.
+fn render_part_meta(role: &str, shape: silan_viking_app::PartShape, lang: &str) -> String {
+    format!(
+        "# Part identity for the `{role}` part (per 01 §1.3.1 / §1.4).\n\
+         part_id        = \"p_{}\"\n\
+         type           = \"{role}\"\n\
+         shape          = \"{}\"\n\
+         canonical_lang = \"{lang}\"\n",
+        Ulid::new(),
+        shape.schema_name(),
+    )
+}
+
+/// The repo-relative directory of an Item — where its `parts/` live.
+///
+/// For most types this is `resources/<kind>/<slug>/`. `resume` is a single
+/// Item, so `content/resources/resume/` IS the Item directory: it has no
+/// `<slug>` level (matching `Workspace::scan`, which treats `resume` the same
+/// way). Its URI still carries a synthetic `resume` slug segment, so without
+/// this fold a draft would be written one directory too deep, at
+/// `resources/resume/resume/parts/...`, and the scanner would never see it.
+fn item_dir_rel(item_uri: &silan_viking_app::SilanUri, kind: ContentKind) -> String {
+    if kind == ContentKind::Resume {
+        return format!("resources/{}", kind.dir_name());
     }
+    uri_to_rel(item_uri)
+}
+
+/// For an `episode` Item target, the `(rel_path, content)` of the container
+/// series' `series.toml`. `None` for any non-episode target.
+///
+/// An episode lives at `resources/episode/<series>/<episode>/`; the series
+/// directory's `series.toml` is the parent the scanner reads. A proposal that
+/// creates an episode in a brand-new series must carry that file, or the
+/// scanner has no series to attach the episode to. `propose` writes it only
+/// when absent, so an existing series keeps its own `series.toml`.
+fn episode_series_file(target: &ProposalTarget) -> Option<(String, String)> {
+    let item_uri = match target {
+        ProposalTarget::Item(uri) => uri,
+        ProposalTarget::Part { item, .. } => item,
+    };
+    let segments = item_uri.segments();
+    // An episode Item URI is `episode/<series>/<episode>`.
+    if segments.first().map(String::as_str) != Some("episode") {
+        return None;
+    }
+    let series_slug = segments.get(1)?;
+    let rel = format!("resources/episode/{series_slug}/series.toml");
+    let title = slug_to_title(series_slug);
+    let content = format!(
+        "# Container series metadata (per 10 §10.4.4).\n\
+         title       = \"{title}\"\n\
+         slug        = \"{series_slug}\"\n\
+         description = \"\"\n\
+         status      = \"ongoing\"\n",
+    );
+    Some((rel, content))
+}
+
+/// Turn a slug into a human title — `using-silan-viking` -> `Using Silan
+/// Viking`. A plain default the owner edits; the slug stays the identity.
+fn slug_to_title(slug: &str) -> String {
+    slug.split('-')
+        .filter(|w| !w.is_empty())
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// The `ContentKind` of an Item URI — its first path segment is the type's
+/// directory name (`ideas` / `blog` / `projects` / …).
+fn item_kind(uri: &silan_viking_app::SilanUri) -> Result<ContentKind, McpError> {
+    let dir = uri
+        .segments()
+        .first()
+        .ok_or_else(|| McpError::Proposal("proposal target has no type segment".to_owned()))?;
+    ContentKind::from_dir_name(dir)
+        .map_err(|e| McpError::Proposal(format!("unknown content type `{dir}`: {e}")))
 }
 
 /// `silan://resources/a/b` -> `resources/a/b`.
@@ -624,7 +851,7 @@ pub fn summarize_updates(content_root: &Path, summary: &str) -> Result<ProposalC
          status: active\nvisibility: private\ndate: {}\n---\n\n{summary}\n",
         today_utc()
     );
-    propose(content_root, &uri, &draft, "en")
+    propose(content_root, &uri, &draft, "en", &[])
 }
 
 /// Today's date `YYYY-MM-DD` (UTC).
@@ -857,7 +1084,33 @@ pub fn call(
             let draft = str_arg("draft")?;
             // `lang` is optional — defaults to the canonical `en` variant.
             let lang = opt_str("lang").unwrap_or_else(|| "en".to_owned());
-            let created = propose(content_root, &uri, &draft, &lang)?;
+            // `parts` is optional — a `{role: content}` object carrying extra
+            // Parts of the same Item, so a multi-Part new Item is one
+            // proposal. Each value must be a string draft.
+            let extra_parts: Vec<PartDraft> = match args.get("parts") {
+                None | Some(serde_json::Value::Null) => Vec::new(),
+                Some(serde_json::Value::Object(map)) => {
+                    let mut parts = Vec::with_capacity(map.len());
+                    for (role, value) in map {
+                        let content = value.as_str().ok_or_else(|| {
+                            McpError::Proposal(format!(
+                                "parts.{role} must be a string draft"
+                            ))
+                        })?;
+                        parts.push(PartDraft {
+                            role: role.clone(),
+                            content: content.to_owned(),
+                        });
+                    }
+                    parts
+                }
+                Some(_) => {
+                    return Err(McpError::Proposal(
+                        "parts must be a {role: content} object".to_owned(),
+                    ));
+                }
+            };
+            let created = propose(content_root, &uri, &draft, &lang, &extra_parts)?;
             Ok(json!({ "proposal_id": created.id, "branch": created.branch }))
         }
         "summarize_updates" => {

@@ -64,7 +64,7 @@ types:
       - { name: title,                      type: string,                               required: true,  default: null,    source: "py,ent", column: "ideas.title" }
       - { name: kind,                       type: "enum(idea)",                         required: true,  default: idea,    source: new,      column: null }
       - { name: status,                     type: "enum(draft,hypothesis,experimenting,validating,published,concluded)", required: true, default: draft, source: "py,ent", column: "ideas.status" }
-      - { name: visibility,                 type: "enum(private,unlisted,public)",      required: true,  default: private, source: new,      column: "ideas.is_public" }
+      - { name: visibility,                 type: "enum(private,unlisted,public)",      required: true,  default: private, source: new,      column: "ideas.visibility" }
       - { name: priority,                   type: "enum(high,medium,low)",              required: false, default: medium,  source: py,       column: "idea_details.priority" }
       - { name: category,                   type: string,                               required: false, default: null,    source: "py,ent", column: "ideas.category" }
       - { name: tags,                       type: "list<string>",                       required: false, default: [],      source: "py,ent", column: "content_tag" }
@@ -110,7 +110,7 @@ types:
       - { name: title,              type: string,                                     required: true,  default: null,            source: "py,ent", column: "projects.title" }
       - { name: kind,               type: "enum(project)",                            required: true,  default: project,         source: new,      column: null }
       - { name: status,             type: "enum(active,completed,paused,cancelled)",  required: true,  default: active,          source: "py,ent", column: "projects.status" }
-      - { name: visibility,         type: "enum(private,unlisted,public)",            required: true,  default: private,         source: new,      column: "projects.is_public" }
+      - { name: visibility,         type: "enum(private,unlisted,public)",            required: true,  default: private,         source: new,      column: "projects.visibility" }
       - { name: description,        type: text,                                       required: false, default: null,            source: "py,ent", column: "projects.description" }
       - { name: project_type,       type: string,                                     required: false, default: "Web Application", source: "py,ent", column: "projects.project_type" }
       - { name: start_date,         type: date,                                       required: false, default: null,            source: "py,ent", column: "projects.start_date" }
@@ -350,3 +350,23 @@ errors:
 6. **`status` and `visibility` are never merged** — `status` is the lifecycle,
    `visibility` is the visibility; only `visibility=public` lets the
    `SiteProjector` project an Item.
+
+## Frontmatter `relations` entry format
+
+An Item links to other Items through a `relations` list in the frontmatter of
+its primary Part. Each entry is a mapping with exactly two fields:
+
+- `type` — one of the relation types above
+  (`evolved_into` / `evolved_from` / `documents` / `references` /
+  `supersedes` / `part_of`).
+- `to` — the target Item's `silan://` URI.
+
+```yaml
+relations:
+  - { type: documents, to: silan://resources/ideas/silan-viking }
+  - { type: references, to: silan://resources/blog/some-post }
+```
+
+The field is `to`, not `target` / `dest` / `uri`. An entry missing either
+field is a `Fatal` parse error. The relations list lands in the cross-type
+`content_relation` table (placement rule 1a).

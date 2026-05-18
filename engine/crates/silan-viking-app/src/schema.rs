@@ -35,6 +35,11 @@ pub enum SchemaError {
     #[error("SCHEMA.md is missing the required `{section}` section")]
     MissingSection { section: &'static str },
 
+    /// A required key of a `types.<name>` block was missing (e.g. its
+    /// `main_table`).
+    #[error("SCHEMA.md type block `{0}` is incomplete")]
+    MalformedType(String),
+
     /// A type declared in SCHEMA.md was not one of the 6 known content types.
     #[error("SCHEMA.md declares unknown content type `{name}`")]
     UnknownType { name: String },
@@ -48,6 +53,34 @@ pub enum SchemaError {
     },
 }
 
+/// Where a frontmatter field's value is written in the database — the parsed,
+/// classified form of a field's SCHEMA `column:` attribute.
+///
+/// `column:` has three shapes in `SCHEMA.md`, plus absent. Classifying them
+/// here, against the type's `main_table`, makes the SCHEMA the single source
+/// of truth for routing — so `ProseMapper` never re-hardcodes a column name.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FieldColumn {
+    /// `column:` absent (or `null`) — the field is not written to any table.
+    /// Type discriminators (`kind`) are the typical case.
+    None,
+    /// `column: "<main_table>.<col>"` — a column of the type's own main table.
+    /// Holds the bare column name (`category_id`, not `blog_posts.category_id`).
+    Main(String),
+    /// `column: "<other_table>.<col>"` — a column of a *side* table
+    /// (`idea_details`, `project_details`), not the main table.
+    Side {
+        /// The side table name.
+        table: String,
+        /// The bare column name within it.
+        column: String,
+    },
+    /// `column: "<table>"` — a bare table name, no dot: the field is a list
+    /// that fans out into its own table (`content_tag`, `content_relation`,
+    /// `project_technologies`).
+    FanOut(String),
+}
+
 /// The spec of one frontmatter field of a content type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FieldSpec {
@@ -57,6 +90,8 @@ pub struct FieldSpec {
     pub type_decl: String,
     /// Whether the field is required.
     pub required: bool,
+    /// Where the field's value lands in the database (parsed from `column:`).
+    pub column: FieldColumn,
 }
 
 impl FieldSpec {
@@ -104,6 +139,10 @@ pub struct PartSpec {
 pub struct TypeSpec {
     /// Which content type this is.
     pub kind: ContentKind,
+    /// The type's main database table (`main_table:` in `SCHEMA.md`) — e.g.
+    /// `blog_posts` for `blog`. A field whose `column:` table equals this is
+    /// a main-table column; any other table is a side table.
+    pub main_table: String,
     /// The frontmatter field specs.
     pub fields: Vec<FieldSpec>,
     /// The Part specs, in declaration order.
@@ -258,10 +297,22 @@ fn parse_type_spec(
     name: &str,
     node: &serde_yaml::Value,
 ) -> Result<TypeSpec, SchemaError> {
+    // `main_table` is needed to classify each field's `column:` — a column on
+    // this table is `Main`, a column on any other table is `Side`.
+    let main_table = node
+        .get("main_table")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| SchemaError::MalformedType(format!("{name} (missing main_table)")))?
+        .to_owned();
+
     let fields = node
         .get("fields")
         .and_then(|v| v.as_sequence())
-        .map(|seq| seq.iter().filter_map(parse_field_spec).collect())
+        .map(|seq| {
+            seq.iter()
+                .filter_map(|n| parse_field_spec(n, &main_table))
+                .collect()
+        })
         .unwrap_or_default();
 
     let mut parts = Vec::new();
@@ -273,6 +324,7 @@ fn parse_type_spec(
 
     Ok(TypeSpec {
         kind,
+        main_table,
         fields,
         parts,
     })
@@ -281,7 +333,7 @@ fn parse_type_spec(
 /// Parse one frontmatter field spec node. Returns `None` for a malformed
 /// entry rather than failing the whole load — a field without a name is
 /// simply skipped (it cannot be referenced anyway).
-fn parse_field_spec(node: &serde_yaml::Value) -> Option<FieldSpec> {
+fn parse_field_spec(node: &serde_yaml::Value, main_table: &str) -> Option<FieldSpec> {
     let name = node.get("name")?.as_str()?.to_owned();
     let type_decl = node
         .get("type")
@@ -292,11 +344,34 @@ fn parse_field_spec(node: &serde_yaml::Value) -> Option<FieldSpec> {
         .get("required")
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
+    let column = parse_field_column(node.get("column"), main_table);
     Some(FieldSpec {
         name,
         type_decl,
         required,
+        column,
     })
+}
+
+/// Classify a field's `column:` attribute into a [`FieldColumn`].
+///
+/// - absent / `null`            -> `None`
+/// - `"<table>"` (no dot)       -> `FanOut`
+/// - `"<main_table>.<col>"`     -> `Main`
+/// - `"<other_table>.<col>"`    -> `Side`
+fn parse_field_column(node: Option<&serde_yaml::Value>, main_table: &str) -> FieldColumn {
+    let raw = match node.and_then(|v| v.as_str()) {
+        Some(s) => s,
+        None => return FieldColumn::None,
+    };
+    match raw.split_once('.') {
+        None => FieldColumn::FanOut(raw.to_owned()),
+        Some((table, column)) if table == main_table => FieldColumn::Main(column.to_owned()),
+        Some((table, column)) => FieldColumn::Side {
+            table: table.to_owned(),
+            column: column.to_owned(),
+        },
+    }
 }
 
 /// Parse one Part spec node.

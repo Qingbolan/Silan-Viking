@@ -45,6 +45,17 @@ impl PartShape {
     pub fn is_prose(self) -> bool {
         matches!(self, PartShape::Prose)
     }
+
+    /// The shape's name as it appears in `SCHEMA.md` and `meta.toml` — the
+    /// inverse of the schema parser's `parse_shape`. A single source of truth
+    /// for the string, so a `meta.toml` written by the engine round-trips.
+    pub fn schema_name(self) -> &'static str {
+        match self {
+            PartShape::Prose => "prose",
+            PartShape::EntryList => "entry_list",
+            PartShape::KeyValueList => "key_value_list",
+        }
+    }
 }
 
 /// The semantic role of a Part — its `meta.toml` `type` and the SCHEMA
