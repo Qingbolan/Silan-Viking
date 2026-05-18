@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
-	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/user"
 	"time"
@@ -438,21 +437,6 @@ func (bpu *BlogPostUpdate) AddTranslations(b ...*BlogPostTranslation) *BlogPostU
 	return bpu.AddTranslationIDs(ids...)
 }
 
-// AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (bpu *BlogPostUpdate) AddCommentIDs(ids ...string) *BlogPostUpdate {
-	bpu.mutation.AddCommentIDs(ids...)
-	return bpu
-}
-
-// AddComments adds the "comments" edges to the Comment entity.
-func (bpu *BlogPostUpdate) AddComments(c ...*Comment) *BlogPostUpdate {
-	ids := make([]string, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return bpu.AddCommentIDs(ids...)
-}
-
 // Mutation returns the BlogPostMutation object of the builder.
 func (bpu *BlogPostUpdate) Mutation() *BlogPostMutation {
 	return bpu.mutation
@@ -516,27 +500,6 @@ func (bpu *BlogPostUpdate) RemoveTranslations(b ...*BlogPostTranslation) *BlogPo
 		ids[i] = b[i].ID
 	}
 	return bpu.RemoveTranslationIDs(ids...)
-}
-
-// ClearComments clears all "comments" edges to the Comment entity.
-func (bpu *BlogPostUpdate) ClearComments() *BlogPostUpdate {
-	bpu.mutation.ClearComments()
-	return bpu
-}
-
-// RemoveCommentIDs removes the "comments" edge to Comment entities by IDs.
-func (bpu *BlogPostUpdate) RemoveCommentIDs(ids ...string) *BlogPostUpdate {
-	bpu.mutation.RemoveCommentIDs(ids...)
-	return bpu
-}
-
-// RemoveComments removes "comments" edges to Comment entities.
-func (bpu *BlogPostUpdate) RemoveComments(c ...*Comment) *BlogPostUpdate {
-	ids := make([]string, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return bpu.RemoveCommentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -894,51 +857,6 @@ func (bpu *BlogPostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if bpu.mutation.CommentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogpost.CommentsTable,
-			Columns: []string{blogpost.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpu.mutation.RemovedCommentsIDs(); len(nodes) > 0 && !bpu.mutation.CommentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogpost.CommentsTable,
-			Columns: []string{blogpost.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpu.mutation.CommentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogpost.CommentsTable,
-			Columns: []string{blogpost.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1370,21 +1288,6 @@ func (bpuo *BlogPostUpdateOne) AddTranslations(b ...*BlogPostTranslation) *BlogP
 	return bpuo.AddTranslationIDs(ids...)
 }
 
-// AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (bpuo *BlogPostUpdateOne) AddCommentIDs(ids ...string) *BlogPostUpdateOne {
-	bpuo.mutation.AddCommentIDs(ids...)
-	return bpuo
-}
-
-// AddComments adds the "comments" edges to the Comment entity.
-func (bpuo *BlogPostUpdateOne) AddComments(c ...*Comment) *BlogPostUpdateOne {
-	ids := make([]string, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return bpuo.AddCommentIDs(ids...)
-}
-
 // Mutation returns the BlogPostMutation object of the builder.
 func (bpuo *BlogPostUpdateOne) Mutation() *BlogPostMutation {
 	return bpuo.mutation
@@ -1448,27 +1351,6 @@ func (bpuo *BlogPostUpdateOne) RemoveTranslations(b ...*BlogPostTranslation) *Bl
 		ids[i] = b[i].ID
 	}
 	return bpuo.RemoveTranslationIDs(ids...)
-}
-
-// ClearComments clears all "comments" edges to the Comment entity.
-func (bpuo *BlogPostUpdateOne) ClearComments() *BlogPostUpdateOne {
-	bpuo.mutation.ClearComments()
-	return bpuo
-}
-
-// RemoveCommentIDs removes the "comments" edge to Comment entities by IDs.
-func (bpuo *BlogPostUpdateOne) RemoveCommentIDs(ids ...string) *BlogPostUpdateOne {
-	bpuo.mutation.RemoveCommentIDs(ids...)
-	return bpuo
-}
-
-// RemoveComments removes "comments" edges to Comment entities.
-func (bpuo *BlogPostUpdateOne) RemoveComments(c ...*Comment) *BlogPostUpdateOne {
-	ids := make([]string, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return bpuo.RemoveCommentIDs(ids...)
 }
 
 // Where appends a list predicates to the BlogPostUpdate builder.
@@ -1856,51 +1738,6 @@ func (bpuo *BlogPostUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost, er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if bpuo.mutation.CommentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogpost.CommentsTable,
-			Columns: []string{blogpost.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpuo.mutation.RemovedCommentsIDs(); len(nodes) > 0 && !bpuo.mutation.CommentsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogpost.CommentsTable,
-			Columns: []string{blogpost.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpuo.mutation.CommentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogpost.CommentsTable,
-			Columns: []string{blogpost.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

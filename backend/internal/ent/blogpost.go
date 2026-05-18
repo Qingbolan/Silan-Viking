@@ -78,13 +78,11 @@ type BlogPostEdges struct {
 	Tags []*BlogTag `json:"tags,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*BlogPostTranslation `json:"translations,omitempty"`
-	// Comments holds the value of the comments edge.
-	Comments []*Comment `json:"comments,omitempty"`
 	// BlogPostTags holds the value of the blog_post_tags edge.
 	BlogPostTags []*BlogPostTag `json:"blog_post_tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [7]bool
+	loadedTypes [6]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -138,19 +136,10 @@ func (e BlogPostEdges) TranslationsOrErr() ([]*BlogPostTranslation, error) {
 	return nil, &NotLoadedError{edge: "translations"}
 }
 
-// CommentsOrErr returns the Comments value or an error if the edge
-// was not loaded in eager-loading.
-func (e BlogPostEdges) CommentsOrErr() ([]*Comment, error) {
-	if e.loadedTypes[5] {
-		return e.Comments, nil
-	}
-	return nil, &NotLoadedError{edge: "comments"}
-}
-
 // BlogPostTagsOrErr returns the BlogPostTags value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) BlogPostTagsOrErr() ([]*BlogPostTag, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[5] {
 		return e.BlogPostTags, nil
 	}
 	return nil, &NotLoadedError{edge: "blog_post_tags"}
@@ -346,11 +335,6 @@ func (bp *BlogPost) QueryTags() *BlogTagQuery {
 // QueryTranslations queries the "translations" edge of the BlogPost entity.
 func (bp *BlogPost) QueryTranslations() *BlogPostTranslationQuery {
 	return NewBlogPostClient(bp.config).QueryTranslations(bp)
-}
-
-// QueryComments queries the "comments" edge of the BlogPost entity.
-func (bp *BlogPost) QueryComments() *CommentQuery {
-	return NewBlogPostClient(bp.config).QueryComments(bp)
 }
 
 // QueryBlogPostTags queries the "blog_post_tags" edge of the BlogPost entity.

@@ -258,42 +258,94 @@ func migrateLegacyBlogSeries(db *sql.DB, driver string) {
 // Only SQLite is handled — it is the deploy driver, and the rebuild idiom is
 // SQLite-specific. The migration is idempotent: a table already FK-free (the
 // `sqlite_master` SQL no longer mentions `REFERENCES \`projects\“) is skipped.
+// contentFKRebuild describes how to rebuild one runtime table free of its
+// content foreign key.
+type contentFKRebuild struct {
+	// createSQL is the FK-free CREATE TABLE, matching the current ent schema.
+	createSQL string
+	// columns is the explicit shared column list copied from the old table.
+	// It must list only columns the *new* table has — so a dropped
+	// edge-backed FK column (e.g. `blog_post_comments`) is left behind.
+	columns string
+}
+
 func dropContentForeignKeys(db *sql.DB, driver string) {
 	if driver != "sqlite3" {
 		return
 	}
 
-	// table -> the FK-free CREATE statement, matching the current ent schema.
-	rebuilds := map[string]string{
-		"project_views": `CREATE TABLE project_views (
-			id text NOT NULL PRIMARY KEY,
-			project_id text NOT NULL,
-			user_identity_id text NULL,
-			fingerprint text NULL,
-			ip_address text NULL,
-			user_agent text NULL,
-			referrer text NULL,
-			session_duration integer NULL DEFAULT (0),
-			created_at datetime NOT NULL,
-			updated_at datetime NOT NULL,
-			CONSTRAINT project_views_user_identities_user_identity
-				FOREIGN KEY (user_identity_id) REFERENCES user_identities (id) ON DELETE SET NULL
-		)`,
-		"project_likes": `CREATE TABLE project_likes (
-			id text NOT NULL PRIMARY KEY,
-			project_id text NOT NULL,
-			user_identity_id text NULL,
-			fingerprint text NULL,
-			ip_address text NULL,
-			user_agent text NULL,
-			created_at datetime NOT NULL,
-			updated_at datetime NOT NULL,
-			CONSTRAINT project_likes_user_identities_user_identity
-				FOREIGN KEY (user_identity_id) REFERENCES user_identities (id) ON DELETE SET NULL
-		)`,
+	rebuilds := map[string]contentFKRebuild{
+		"project_views": {
+			createSQL: `CREATE TABLE project_views (
+				id text NOT NULL PRIMARY KEY,
+				project_id text NOT NULL,
+				user_identity_id text NULL,
+				fingerprint text NULL,
+				ip_address text NULL,
+				user_agent text NULL,
+				referrer text NULL,
+				session_duration integer NULL DEFAULT (0),
+				created_at datetime NOT NULL,
+				updated_at datetime NOT NULL,
+				CONSTRAINT project_views_user_identities_user_identity
+					FOREIGN KEY (user_identity_id) REFERENCES user_identities (id) ON DELETE SET NULL
+			)`,
+			columns: "id, project_id, user_identity_id, fingerprint, ip_address, " +
+				"user_agent, referrer, session_duration, created_at, updated_at",
+		},
+		"project_likes": {
+			createSQL: `CREATE TABLE project_likes (
+				id text NOT NULL PRIMARY KEY,
+				project_id text NOT NULL,
+				user_identity_id text NULL,
+				fingerprint text NULL,
+				ip_address text NULL,
+				user_agent text NULL,
+				created_at datetime NOT NULL,
+				updated_at datetime NOT NULL,
+				CONSTRAINT project_likes_user_identities_user_identity
+					FOREIGN KEY (user_identity_id) REFERENCES user_identities (id) ON DELETE SET NULL
+			)`,
+			columns: "id, project_id, user_identity_id, fingerprint, ip_address, " +
+				"user_agent, created_at, updated_at",
+		},
+		// `comments` carried ent-edge FK columns `blog_post_comments` /
+		// `idea_comments` -> `blog_posts` / `ideas`. The edges are gone; the
+		// rebuilt table drops both columns and both FKs. The `parent` and
+		// `user_identity` FKs stay — both targets are runtime tables.
+		"comments": {
+			createSQL: `CREATE TABLE comments (
+				id text NOT NULL PRIMARY KEY,
+				entity_type text NOT NULL,
+				entity_id text NOT NULL,
+				author_name text NOT NULL,
+				author_email text NOT NULL,
+				author_website text NULL,
+				content text NOT NULL,
+				type text NOT NULL DEFAULT ('general'),
+				reference_id text NULL,
+				attachment_id text NULL,
+				is_approved bool NOT NULL DEFAULT (false),
+				ip_address text NULL,
+				user_agent text NULL,
+				likes_count integer NOT NULL DEFAULT (0),
+				created_at datetime NOT NULL,
+				updated_at datetime NOT NULL,
+				parent_id text NULL,
+				user_identity_id text NULL,
+				CONSTRAINT comments_comments_parent
+					FOREIGN KEY (parent_id) REFERENCES comments (id) ON DELETE SET NULL,
+				CONSTRAINT comments_user_identities_user_identity
+					FOREIGN KEY (user_identity_id) REFERENCES user_identities (id) ON DELETE SET NULL
+			)`,
+			columns: "id, entity_type, entity_id, author_name, author_email, " +
+				"author_website, content, type, reference_id, attachment_id, " +
+				"is_approved, ip_address, user_agent, likes_count, created_at, " +
+				"updated_at, parent_id, user_identity_id",
+		},
 	}
 
-	for table, createSQL := range rebuilds {
+	for table, r := range rebuilds {
 		var existing string
 		err := db.QueryRow(
 			"SELECT sql FROM sqlite_master WHERE type='table' AND name=?", table,
@@ -301,17 +353,27 @@ func dropContentForeignKeys(db *sql.DB, driver string) {
 		if err != nil {
 			continue // table absent — createAnalyticsTables makes it FK-free
 		}
-		if !strings.Contains(existing, "REFERENCES `projects`") &&
-			!strings.Contains(existing, "REFERENCES projects") {
+		// A content FK is one referencing an engine-derived content table.
+		hasContentFK := false
+		for _, ref := range []string{"projects", "blog_posts", "ideas"} {
+			if strings.Contains(existing, "REFERENCES `"+ref+"`") ||
+				strings.Contains(existing, "REFERENCES "+ref+" ") {
+				hasContentFK = true
+				break
+			}
+		}
+		if !hasContentFK {
 			continue // already FK-free — nothing to do
 		}
-		// Rebuild without the `projects` FK. `foreign_keys` is toggled off for
-		// the swap so the rename does not trip other tables' checks.
+		// Rebuild without the content FK. `foreign_keys` is OFF for the swap
+		// so the rename does not trip other tables' checks; the copy uses an
+		// explicit column list so a dropped FK column is simply not carried.
 		stmts := []string{
 			"PRAGMA foreign_keys=OFF",
 			"ALTER TABLE " + table + " RENAME TO " + table + "_old_fk",
-			createSQL,
-			"INSERT INTO " + table + " SELECT * FROM " + table + "_old_fk",
+			r.createSQL,
+			"INSERT INTO " + table + " (" + r.columns + ") SELECT " + r.columns +
+				" FROM " + table + "_old_fk",
 			"DROP TABLE " + table + "_old_fk",
 			"PRAGMA foreign_keys=ON",
 		}
@@ -324,7 +386,7 @@ func dropContentForeignKeys(db *sql.DB, driver string) {
 			}
 		}
 		if !failed {
-			log.Printf("migrated %s: dropped the projects foreign key", table)
+			log.Printf("migrated %s: dropped its content foreign key", table)
 		}
 	}
 }

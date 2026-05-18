@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideatag"
@@ -236,21 +235,6 @@ func (ic *IdeaCreate) SetNillableDetailsID(id *string) *IdeaCreate {
 // SetDetails sets the "details" edge to the IdeaDetail entity.
 func (ic *IdeaCreate) SetDetails(i *IdeaDetail) *IdeaCreate {
 	return ic.SetDetailsID(i.ID)
-}
-
-// AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (ic *IdeaCreate) AddCommentIDs(ids ...string) *IdeaCreate {
-	ic.mutation.AddCommentIDs(ids...)
-	return ic
-}
-
-// AddComments adds the "comments" edges to the Comment entity.
-func (ic *IdeaCreate) AddComments(c ...*Comment) *IdeaCreate {
-	ids := make([]string, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return ic.AddCommentIDs(ids...)
 }
 
 // AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
@@ -500,22 +484,6 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := ic.mutation.CommentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   idea.CommentsTable,
-			Columns: []string{idea.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

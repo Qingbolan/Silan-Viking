@@ -7,7 +7,6 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
-	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideatag"
@@ -31,7 +30,6 @@ type IdeaQuery struct {
 	withUser         *UserQuery
 	withTranslations *IdeaTranslationQuery
 	withDetails      *IdeaDetailQuery
-	withComments     *CommentQuery
 	withTags         *IdeaTagQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -128,28 +126,6 @@ func (iq *IdeaQuery) QueryDetails() *IdeaDetailQuery {
 			sqlgraph.From(idea.Table, idea.FieldID, selector),
 			sqlgraph.To(ideadetail.Table, ideadetail.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, idea.DetailsTable, idea.DetailsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryComments chains the current query on the "comments" edge.
-func (iq *IdeaQuery) QueryComments() *CommentQuery {
-	query := (&CommentClient{config: iq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := iq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(idea.Table, idea.FieldID, selector),
-			sqlgraph.To(comment.Table, comment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, idea.CommentsTable, idea.CommentsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
 		return fromU, nil
@@ -374,7 +350,6 @@ func (iq *IdeaQuery) Clone() *IdeaQuery {
 		withUser:         iq.withUser.Clone(),
 		withTranslations: iq.withTranslations.Clone(),
 		withDetails:      iq.withDetails.Clone(),
-		withComments:     iq.withComments.Clone(),
 		withTags:         iq.withTags.Clone(),
 		// clone intermediate query.
 		sql:  iq.sql.Clone(),
@@ -412,17 +387,6 @@ func (iq *IdeaQuery) WithDetails(opts ...func(*IdeaDetailQuery)) *IdeaQuery {
 		opt(query)
 	}
 	iq.withDetails = query
-	return iq
-}
-
-// WithComments tells the query-builder to eager-load the nodes that are connected to
-// the "comments" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *IdeaQuery) WithComments(opts ...func(*CommentQuery)) *IdeaQuery {
-	query := (&CommentClient{config: iq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	iq.withComments = query
 	return iq
 }
 
@@ -515,11 +479,10 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	var (
 		nodes       = []*Idea{}
 		_spec       = iq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [4]bool{
 			iq.withUser != nil,
 			iq.withTranslations != nil,
 			iq.withDetails != nil,
-			iq.withComments != nil,
 			iq.withTags != nil,
 		}
 	)
@@ -557,13 +520,6 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	if query := iq.withDetails; query != nil {
 		if err := iq.loadDetails(ctx, query, nodes, nil,
 			func(n *Idea, e *IdeaDetail) { n.Edges.Details = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := iq.withComments; query != nil {
-		if err := iq.loadComments(ctx, query, nodes,
-			func(n *Idea) { n.Edges.Comments = []*Comment{} },
-			func(n *Idea, e *Comment) { n.Edges.Comments = append(n.Edges.Comments, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -658,37 +614,6 @@ func (iq *IdeaQuery) loadDetails(ctx context.Context, query *IdeaDetailQuery, no
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "idea_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (iq *IdeaQuery) loadComments(ctx context.Context, query *CommentQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *Comment)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Idea)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.Comment(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(idea.CommentsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.idea_comments
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "idea_comments" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "idea_comments" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

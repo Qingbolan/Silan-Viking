@@ -54,10 +54,8 @@ type Comment struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CommentQuery when eager-loading is set.
-	Edges              CommentEdges `json:"edges"`
-	blog_post_comments *string
-	idea_comments      *string
-	selectValues       sql.SelectValues
+	Edges        CommentEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // CommentEdges holds the relations/edges for other nodes in the graph.
@@ -117,10 +115,6 @@ func (*Comment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case comment.FieldCreatedAt, comment.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case comment.ForeignKeys[0]: // blog_post_comments
-			values[i] = new(sql.NullString)
-		case comment.ForeignKeys[1]: // idea_comments
-			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -243,20 +237,6 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				c.UpdatedAt = value.Time
-			}
-		case comment.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field blog_post_comments", values[i])
-			} else if value.Valid {
-				c.blog_post_comments = new(string)
-				*c.blog_post_comments = value.String
-			}
-		case comment.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field idea_comments", values[i])
-			} else if value.Valid {
-				c.idea_comments = new(string)
-				*c.idea_comments = value.String
 			}
 		default:
 			c.selectValues.Set(columns[i], values[i])

@@ -326,10 +326,8 @@ var (
 		{Name: "likes_count", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "blog_post_comments", Type: field.TypeString, Nullable: true},
 		{Name: "parent_id", Type: field.TypeString, Nullable: true},
 		{Name: "user_identity_id", Type: field.TypeString, Nullable: true},
-		{Name: "idea_comments", Type: field.TypeString, Nullable: true},
 	}
 	// CommentsTable holds the schema information for the "comments" table.
 	CommentsTable = &schema.Table{
@@ -338,27 +336,15 @@ var (
 		PrimaryKey: []*schema.Column{CommentsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "comments_blog_posts_comments",
-				Columns:    []*schema.Column{CommentsColumns[16]},
-				RefColumns: []*schema.Column{BlogPostsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "comments_comments_parent",
-				Columns:    []*schema.Column{CommentsColumns[17]},
+				Columns:    []*schema.Column{CommentsColumns[16]},
 				RefColumns: []*schema.Column{CommentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "comments_user_identities_user_identity",
-				Columns:    []*schema.Column{CommentsColumns[18]},
+				Columns:    []*schema.Column{CommentsColumns[17]},
 				RefColumns: []*schema.Column{UserIdentitiesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "comments_ideas_comments",
-				Columns:    []*schema.Column{CommentsColumns[19]},
-				RefColumns: []*schema.Column{IdeasColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -371,7 +357,7 @@ var (
 			{
 				Name:    "comment_parent_id",
 				Unique:  false,
-				Columns: []*schema.Column{CommentsColumns[17]},
+				Columns: []*schema.Column{CommentsColumns[16]},
 			},
 		},
 	}
@@ -2033,10 +2019,8 @@ func init() {
 	BlogTagsTable.Annotation = &entsql.Annotation{
 		Table: "blog_tags",
 	}
-	CommentsTable.ForeignKeys[0].RefTable = BlogPostsTable
-	CommentsTable.ForeignKeys[1].RefTable = CommentsTable
-	CommentsTable.ForeignKeys[2].RefTable = UserIdentitiesTable
-	CommentsTable.ForeignKeys[3].RefTable = IdeasTable
+	CommentsTable.ForeignKeys[0].RefTable = CommentsTable
+	CommentsTable.ForeignKeys[1].RefTable = UserIdentitiesTable
 	CommentsTable.Annotation = &entsql.Annotation{
 		Table: "comments",
 	}

@@ -4593,9 +4593,6 @@ type BlogPostMutation struct {
 	translations            map[string]struct{}
 	removedtranslations     map[string]struct{}
 	clearedtranslations     bool
-	comments                map[string]struct{}
-	removedcomments         map[string]struct{}
-	clearedcomments         bool
 	done                    bool
 	oldValue                func(context.Context) (*BlogPost, error)
 	predicates              []predicate.BlogPost
@@ -5872,60 +5869,6 @@ func (m *BlogPostMutation) ResetTranslations() {
 	m.removedtranslations = nil
 }
 
-// AddCommentIDs adds the "comments" edge to the Comment entity by ids.
-func (m *BlogPostMutation) AddCommentIDs(ids ...string) {
-	if m.comments == nil {
-		m.comments = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.comments[ids[i]] = struct{}{}
-	}
-}
-
-// ClearComments clears the "comments" edge to the Comment entity.
-func (m *BlogPostMutation) ClearComments() {
-	m.clearedcomments = true
-}
-
-// CommentsCleared reports if the "comments" edge to the Comment entity was cleared.
-func (m *BlogPostMutation) CommentsCleared() bool {
-	return m.clearedcomments
-}
-
-// RemoveCommentIDs removes the "comments" edge to the Comment entity by IDs.
-func (m *BlogPostMutation) RemoveCommentIDs(ids ...string) {
-	if m.removedcomments == nil {
-		m.removedcomments = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.comments, ids[i])
-		m.removedcomments[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedComments returns the removed IDs of the "comments" edge to the Comment entity.
-func (m *BlogPostMutation) RemovedCommentsIDs() (ids []string) {
-	for id := range m.removedcomments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// CommentsIDs returns the "comments" edge IDs in the mutation.
-func (m *BlogPostMutation) CommentsIDs() (ids []string) {
-	for id := range m.comments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetComments resets all changes to the "comments" edge.
-func (m *BlogPostMutation) ResetComments() {
-	m.comments = nil
-	m.clearedcomments = false
-	m.removedcomments = nil
-}
-
 // Where appends a list predicates to the BlogPostMutation builder.
 func (m *BlogPostMutation) Where(ps ...predicate.BlogPost) {
 	m.predicates = append(m.predicates, ps...)
@@ -6520,7 +6463,7 @@ func (m *BlogPostMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BlogPostMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.user != nil {
 		edges = append(edges, blogpost.EdgeUser)
 	}
@@ -6535,9 +6478,6 @@ func (m *BlogPostMutation) AddedEdges() []string {
 	}
 	if m.translations != nil {
 		edges = append(edges, blogpost.EdgeTranslations)
-	}
-	if m.comments != nil {
-		edges = append(edges, blogpost.EdgeComments)
 	}
 	return edges
 }
@@ -6570,27 +6510,18 @@ func (m *BlogPostMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case blogpost.EdgeComments:
-		ids := make([]ent.Value, 0, len(m.comments))
-		for id := range m.comments {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BlogPostMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.removedtags != nil {
 		edges = append(edges, blogpost.EdgeTags)
 	}
 	if m.removedtranslations != nil {
 		edges = append(edges, blogpost.EdgeTranslations)
-	}
-	if m.removedcomments != nil {
-		edges = append(edges, blogpost.EdgeComments)
 	}
 	return edges
 }
@@ -6611,19 +6542,13 @@ func (m *BlogPostMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case blogpost.EdgeComments:
-		ids := make([]ent.Value, 0, len(m.removedcomments))
-		for id := range m.removedcomments {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BlogPostMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 5)
 	if m.cleareduser {
 		edges = append(edges, blogpost.EdgeUser)
 	}
@@ -6638,9 +6563,6 @@ func (m *BlogPostMutation) ClearedEdges() []string {
 	}
 	if m.clearedtranslations {
 		edges = append(edges, blogpost.EdgeTranslations)
-	}
-	if m.clearedcomments {
-		edges = append(edges, blogpost.EdgeComments)
 	}
 	return edges
 }
@@ -6659,8 +6581,6 @@ func (m *BlogPostMutation) EdgeCleared(name string) bool {
 		return m.clearedtags
 	case blogpost.EdgeTranslations:
 		return m.clearedtranslations
-	case blogpost.EdgeComments:
-		return m.clearedcomments
 	}
 	return false
 }
@@ -6700,9 +6620,6 @@ func (m *BlogPostMutation) ResetEdge(name string) error {
 		return nil
 	case blogpost.EdgeTranslations:
 		m.ResetTranslations()
-		return nil
-	case blogpost.EdgeComments:
-		m.ResetComments()
 		return nil
 	}
 	return fmt.Errorf("unknown BlogPost edge %s", name)
@@ -21172,9 +21089,6 @@ type IdeaMutation struct {
 	clearedtranslations bool
 	details             *string
 	cleareddetails      bool
-	comments            map[string]struct{}
-	removedcomments     map[string]struct{}
-	clearedcomments     bool
 	tags                map[string]struct{}
 	removedtags         map[string]struct{}
 	clearedtags         bool
@@ -21970,60 +21884,6 @@ func (m *IdeaMutation) ResetDetails() {
 	m.cleareddetails = false
 }
 
-// AddCommentIDs adds the "comments" edge to the Comment entity by ids.
-func (m *IdeaMutation) AddCommentIDs(ids ...string) {
-	if m.comments == nil {
-		m.comments = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.comments[ids[i]] = struct{}{}
-	}
-}
-
-// ClearComments clears the "comments" edge to the Comment entity.
-func (m *IdeaMutation) ClearComments() {
-	m.clearedcomments = true
-}
-
-// CommentsCleared reports if the "comments" edge to the Comment entity was cleared.
-func (m *IdeaMutation) CommentsCleared() bool {
-	return m.clearedcomments
-}
-
-// RemoveCommentIDs removes the "comments" edge to the Comment entity by IDs.
-func (m *IdeaMutation) RemoveCommentIDs(ids ...string) {
-	if m.removedcomments == nil {
-		m.removedcomments = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.comments, ids[i])
-		m.removedcomments[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedComments returns the removed IDs of the "comments" edge to the Comment entity.
-func (m *IdeaMutation) RemovedCommentsIDs() (ids []string) {
-	for id := range m.removedcomments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// CommentsIDs returns the "comments" edge IDs in the mutation.
-func (m *IdeaMutation) CommentsIDs() (ids []string) {
-	for id := range m.comments {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetComments resets all changes to the "comments" edge.
-func (m *IdeaMutation) ResetComments() {
-	m.comments = nil
-	m.clearedcomments = false
-	m.removedcomments = nil
-}
-
 // AddTagIDs adds the "tags" edge to the IdeaTag entity by ids.
 func (m *IdeaMutation) AddTagIDs(ids ...string) {
 	if m.tags == nil {
@@ -22470,7 +22330,7 @@ func (m *IdeaMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *IdeaMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 4)
 	if m.user != nil {
 		edges = append(edges, idea.EdgeUser)
 	}
@@ -22479,9 +22339,6 @@ func (m *IdeaMutation) AddedEdges() []string {
 	}
 	if m.details != nil {
 		edges = append(edges, idea.EdgeDetails)
-	}
-	if m.comments != nil {
-		edges = append(edges, idea.EdgeComments)
 	}
 	if m.tags != nil {
 		edges = append(edges, idea.EdgeTags)
@@ -22507,12 +22364,6 @@ func (m *IdeaMutation) AddedIDs(name string) []ent.Value {
 		if id := m.details; id != nil {
 			return []ent.Value{*id}
 		}
-	case idea.EdgeComments:
-		ids := make([]ent.Value, 0, len(m.comments))
-		for id := range m.comments {
-			ids = append(ids, id)
-		}
-		return ids
 	case idea.EdgeTags:
 		ids := make([]ent.Value, 0, len(m.tags))
 		for id := range m.tags {
@@ -22525,12 +22376,9 @@ func (m *IdeaMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *IdeaMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 4)
 	if m.removedtranslations != nil {
 		edges = append(edges, idea.EdgeTranslations)
-	}
-	if m.removedcomments != nil {
-		edges = append(edges, idea.EdgeComments)
 	}
 	if m.removedtags != nil {
 		edges = append(edges, idea.EdgeTags)
@@ -22548,12 +22396,6 @@ func (m *IdeaMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case idea.EdgeComments:
-		ids := make([]ent.Value, 0, len(m.removedcomments))
-		for id := range m.removedcomments {
-			ids = append(ids, id)
-		}
-		return ids
 	case idea.EdgeTags:
 		ids := make([]ent.Value, 0, len(m.removedtags))
 		for id := range m.removedtags {
@@ -22566,7 +22408,7 @@ func (m *IdeaMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *IdeaMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 4)
 	if m.cleareduser {
 		edges = append(edges, idea.EdgeUser)
 	}
@@ -22575,9 +22417,6 @@ func (m *IdeaMutation) ClearedEdges() []string {
 	}
 	if m.cleareddetails {
 		edges = append(edges, idea.EdgeDetails)
-	}
-	if m.clearedcomments {
-		edges = append(edges, idea.EdgeComments)
 	}
 	if m.clearedtags {
 		edges = append(edges, idea.EdgeTags)
@@ -22595,8 +22434,6 @@ func (m *IdeaMutation) EdgeCleared(name string) bool {
 		return m.clearedtranslations
 	case idea.EdgeDetails:
 		return m.cleareddetails
-	case idea.EdgeComments:
-		return m.clearedcomments
 	case idea.EdgeTags:
 		return m.clearedtags
 	}
@@ -22629,9 +22466,6 @@ func (m *IdeaMutation) ResetEdge(name string) error {
 		return nil
 	case idea.EdgeDetails:
 		m.ResetDetails()
-		return nil
-	case idea.EdgeComments:
-		m.ResetComments()
 		return nil
 	case idea.EdgeTags:
 		m.ResetTags()

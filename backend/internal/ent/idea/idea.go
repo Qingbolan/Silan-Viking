@@ -45,8 +45,6 @@ const (
 	EdgeTranslations = "translations"
 	// EdgeDetails holds the string denoting the details edge name in mutations.
 	EdgeDetails = "details"
-	// EdgeComments holds the string denoting the comments edge name in mutations.
-	EdgeComments = "comments"
 	// EdgeTags holds the string denoting the tags edge name in mutations.
 	EdgeTags = "tags"
 	// Table holds the table name of the idea in the database.
@@ -72,13 +70,6 @@ const (
 	DetailsInverseTable = "idea_details"
 	// DetailsColumn is the table column denoting the details relation/edge.
 	DetailsColumn = "idea_id"
-	// CommentsTable is the table that holds the comments relation/edge.
-	CommentsTable = "comments"
-	// CommentsInverseTable is the table name for the Comment entity.
-	// It exists in this package in order to avoid circular dependency with the "comment" package.
-	CommentsInverseTable = "comments"
-	// CommentsColumn is the table column denoting the comments relation/edge.
-	CommentsColumn = "idea_comments"
 	// TagsTable is the table that holds the tags relation/edge. The primary key declared below.
 	TagsTable = "idea_tags_join"
 	// TagsInverseTable is the table name for the IdeaTag entity.
@@ -295,20 +286,6 @@ func ByDetailsField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByCommentsCount orders the results by comments count.
-func ByCommentsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newCommentsStep(), opts...)
-	}
-}
-
-// ByComments orders the results by comments terms.
-func ByComments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newCommentsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByTagsCount orders the results by tags count.
 func ByTagsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -341,13 +318,6 @@ func newDetailsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DetailsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, DetailsTable, DetailsColumn),
-	)
-}
-func newCommentsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(CommentsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, CommentsTable, CommentsColumn),
 	)
 }
 func newTagsStep() *sqlgraph.Step {
