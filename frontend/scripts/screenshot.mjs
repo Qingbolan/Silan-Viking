@@ -8,7 +8,8 @@
 // Usage:
 //   node scripts/screenshot.mjs <url> [out.png] [options]
 //
-//   <url>       page to capture, e.g. http://localhost:8080/contact
+//   <url>       page to capture, e.g. http://localhost:3000/contact
+//               (the Vite dev server runs on port 3000 — see vite.config.ts)
 //   [out.png]   output path (default: ./screenshot.png)
 //
 //   --width=<n>      viewport width  (default 1440)
@@ -18,9 +19,9 @@
 //   --selector=<css> wait for this element before shooting (e.g. "main")
 //
 // Examples:
-//   node scripts/screenshot.mjs http://localhost:8080
-//   node scripts/screenshot.mjs http://localhost:8080/contact contact.png --full-page
-//   node scripts/screenshot.mjs http://localhost:8080/resume resume.png --selector=#root
+//   node scripts/screenshot.mjs http://localhost:3000
+//   node scripts/screenshot.mjs http://localhost:3000/contact contact.png --full-page
+//   node scripts/screenshot.mjs http://localhost:3000/resume resume.png --selector=#root
 //
 // Exit code 0 on success, 1 on failure (with a reason on stderr).
 
