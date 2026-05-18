@@ -163,6 +163,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
     let command = opts.command.iter().map(String::as_str).collect::<Vec<_>>();
     match command.as_slice() {
         ["init"] => init_content(&opts.content_root),
+        ["guide"] => guide(&opts.content_root, false),
         ["doctor"] => doctor(&opts.content_root),
         // uninstall [--purge] [--dry-run|--yes] — order-insensitive flags.
         ["uninstall", flags @ ..]
@@ -544,6 +545,7 @@ fn print_help(content_root: &Path) {
 
     println!("  {}", h("[Maintenance]"));
     row("init", "Lay down a runnable silan-viking project");
+    row("guide", "Show the next recommended step for this project");
     row("doctor", "Health check — content, index, embedder");
     row("config", "Show resolved paths, or edit silan-viking.toml");
     row("completion", "Emit a shell completion script (bash/zsh/fish)");
@@ -709,6 +711,11 @@ fn init_content(content_root: &Path) -> Result<(), String> {
         "  resume  {}",
         content_root.join("resources/resume").display()
     );
+
+    // Hand the user the next step — `init` should never end on a flat list
+    // of paths. `guide` reads the just-created project and prints the arc.
+    println!();
+    guide(content_root, true)?;
     Ok(())
 }
 
@@ -898,6 +905,100 @@ fn uninstall(content_root: &Path, purge: bool, dry_run: bool, assume_yes: bool) 
     if !purge {
         println!("the silan-viking binary itself is not self-deleting — remove it by hand.");
     }
+    Ok(())
+}
+
+/// The lifecycle stage of a silan-viking project, used by `guide` and `init`
+/// to tell the user what to do next.
+enum ProjectStage {
+    /// No `silan-viking.toml` + `SCHEMA.md` — not a project yet.
+    NotInitialised,
+    /// Initialised, but the derived DB is missing or empty — `index sync`
+    /// has not run (or ran against no content).
+    NotSynced,
+    /// Initialised and the derived DB is built — ready to preview / deploy.
+    Synced,
+}
+
+/// Classify the project at `content_root`. Mirrors the banner's state logic
+/// (`banner::write_project_status`) so `guide`, `init`, and the banner agree
+/// on what stage a directory is in.
+fn project_stage(content_root: &Path) -> ProjectStage {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let initialised = project_root.join("silan-viking.toml").exists()
+        && content_root.join("SCHEMA.md").exists();
+    if !initialised {
+        return ProjectStage::NotInitialised;
+    }
+    // Initialised — is the derived DB built and non-empty?
+    let synced = resolve_db_path(content_root)
+        .and_then(|db| fs::metadata(db).ok())
+        .is_some_and(|meta| meta.len() > 0);
+    if synced {
+        ProjectStage::Synced
+    } else {
+        ProjectStage::NotSynced
+    }
+}
+
+/// `guide` — print the next recommended step(s) for wherever the project is
+/// in its lifecycle. The terminal-state answer to "I just installed this,
+/// now what?": instead of making the user read the full command surface,
+/// `guide` looks at the directory and hands them the exact next command.
+///
+/// `from_init` tags the call as the tail of `init`, which only changes the
+/// opening line ("Next steps" vs "You are here") — the step list is the same.
+fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
+    let stage = project_stage(content_root);
+    let project_root = content_root.parent().unwrap_or(content_root);
+
+    // Numbered steps: (command, what-it-does). The first is the immediate
+    // next action; the rest preview the path ahead so the user sees the arc.
+    let (header, steps): (&str, Vec<(&str, &str)>) = match stage {
+        ProjectStage::NotInitialised => (
+            "No silan-viking project here yet. To start:",
+            vec![
+                ("silan-viking init", "scaffold a project in this directory"),
+                ("silan-viking guide", "re-run this to see what is next"),
+            ],
+        ),
+        ProjectStage::NotSynced => (
+            if from_init {
+                "Project created. Next steps:"
+            } else {
+                "Project is initialised but not yet synced. Next steps:"
+            },
+            vec![
+                ("silan-viking index sync", "build the derived database from content/"),
+                ("silan-viking site preview", "build the site and preview it locally"),
+                ("silan-viking blog new <slug>", "write your first post (or idea/project)"),
+            ],
+        ),
+        ProjectStage::Synced => (
+            "Project is initialised and synced. From here you can:",
+            vec![
+                ("silan-viking site preview", "rebuild and preview the site locally"),
+                ("silan-viking blog new <slug>", "add content, then re-run index sync"),
+                ("silan-viking site deploy --confirm", "deploy to the host in silan-viking.toml"),
+                ("silan-viking doctor", "health-check content, index, and embedder"),
+            ],
+        ),
+    };
+
+    println!("{header}");
+    for (i, (cmd, what)) in steps.iter().enumerate() {
+        println!("  {}. {cmd}", i + 1);
+        println!("       {what}");
+    }
+    // A project initialised in a subdirectory needs a `cd` first; say so once.
+    if !matches!(stage, ProjectStage::NotInitialised) {
+        if let Ok(cwd) = env::current_dir() {
+            if cwd != project_root {
+                println!("\n(run these from {})", project_root.display());
+            }
+        }
+    }
+    println!("\nrun 'silan-viking --help' for the full command list.");
     Ok(())
 }
 
