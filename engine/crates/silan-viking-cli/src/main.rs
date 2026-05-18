@@ -1774,28 +1774,40 @@ fn site_deploy(
         // 6 — up first, so the named volume + live db exist for promote.
         println!("[5/6] promote — bring stack up, then replace derived tables");
         docker_compose(&staging, compose, &["up", "-d"])?;
-        // The live db lives in the `portfolio-db` named volume, mounted at
-        // /data in the backend container. Copy it out, promote, copy it back.
+        // Mirror the media tree while the backend is still up — the media
+        // sync uses `docker compose exec`, which needs a running container.
+        if let Some(ref dir) = media_root {
+            sync_media_into_volume(compose, &staging, "backend", dir)?;
+            println!("  synced {} media file(s) into /data/media", assets.len());
+        }
+        // The live db lives in the `portfolio-db` named volume. The backend
+        // keeps it in SQLite WAL mode, so the durable state is split across
+        // `portfolio.db` + `portfolio.db-wal`. Copying only the `.db` while
+        // the backend holds an uncheckpointed WAL yields a torn snapshot —
+        // and copying a fresh `.db` back next to a stale `-wal` makes SQLite
+        // replay mismatched frames and corrupt the database. So: stop the
+        // backend (its last connection close checkpoints and releases the
+        // WAL), copy / promote / copy-back against a quiescent file, then
+        // delete the now-stale `-wal`/`-shm` before the backend reopens.
+        docker_compose(&staging, compose, &["stop", "backend"])?;
         let live_snapshot = project_root.join("_deploy/live-portfolio.db");
         docker_cp_from(compose, &staging, "backend", "/data/portfolio.db", &live_snapshot)
             // First deploy: no live db yet — start from the fresh snapshot.
             .or_else(|_| fs::copy(db_path, &live_snapshot).map(|_| ()).map_err(|e| e.to_string()))?;
         promote_db(&live_snapshot, db_path, &content_commit)?;
         docker_cp_to(compose, &staging, "backend", &live_snapshot, "/data/portfolio.db")?;
-        // Mirror the staged media tree into the backend's media volume.
-        if let Some(ref dir) = media_root {
-            sync_media_into_volume(compose, &staging, "backend", dir)?;
-            println!("  synced {} media file(s) into /data/media", assets.len());
-        }
+        // Drop the stale WAL companions left from before the stop — the
+        // promoted `.db` is a complete, self-contained file; a leftover
+        // `-wal`/`-shm` keyed to the old db generation would corrupt it.
+        clear_wal_companions(compose, &staging, "backend")?;
 
-        // Restart the backend so it reopens the promoted db, and the proxy
-        // with it: step 5's `up -d` recreates the backend container on a new
-        // image, giving it a fresh network IP. nginx resolves the `backend`
-        // upstream once at worker start and caches that IP, so a proxy left
-        // running points at the now-dead old container and serves 502 until
-        // it is restarted. Restarting both keeps the proxy's upstream fresh.
-        println!("[6/6] up — restart backend with the promoted db, refresh proxy");
-        docker_compose(&staging, compose, &["restart", "backend", "proxy"])?;
+        // Bring the backend back up — it reopens the promoted db cleanly —
+        // and refresh the proxy: step 5's `up -d` recreates the backend
+        // container on a new image / IP, and nginx caches the `backend`
+        // upstream IP at worker start, so a proxy left running serves 502.
+        println!("[6/6] up — start backend with the promoted db, refresh proxy");
+        docker_compose(&staging, compose, &["up", "-d"])?;
+        docker_compose(&staging, compose, &["restart", "proxy"])?;
         println!("deployed locally — http://localhost:8080");
         return Ok(());
     }
@@ -1903,29 +1915,17 @@ fn site_deploy(
     ssh(&format!("cd {} && docker load -i images.tar", cfg.remote_dir))?;
 
     println!("[5/6] promote");
-    // Bring the stack up so the named volume + live db exist, then pull
-    // the live db down, promote it HERE (operator-side — no remote
-    // binary), and push the promoted db back. Runtime tables survive.
+    // Bring the stack up so the named volume + live db exist.
     ssh(&format!(
-        "cd {dir} && docker compose -f docker-compose.yml up -d && \
-         (docker compose -f docker-compose.yml cp backend:/data/portfolio.db live.db \
-            || cp snapshot.db live.db) && \
-         cp -f live.db portfolio.db.prev",
-        dir = cfg.remote_dir,
-    ))?;
-    let live_snapshot = project_root.join("_deploy/live-portfolio.db");
-    scp_down("live.db", &live_snapshot)?;
-    promote_db(&live_snapshot, db_path, &content_commit)?;
-    scp_up(&live_snapshot, "live.db")?;
-    ssh(&format!(
-        "cd {dir} && docker compose -f docker-compose.yml cp live.db backend:/data/portfolio.db",
+        "cd {dir} && docker compose -f docker-compose.yml up -d",
         dir = cfg.remote_dir,
     ))?;
 
-    // Ship the media tree: tar it (scp has no recursive flag here), send the
-    // tarball, unpack it on the server, then mirror it into the backend's
-    // media volume — clearing `/data/media` first so a deleted asset also
-    // disappears server-side (same mirror semantics as the local path).
+    // Ship the media tree first, while the backend is up — the mirror step
+    // uses `docker compose exec`, which needs a running container. tar it
+    // (scp has no recursive flag here), send the tarball, unpack it on the
+    // server, then mirror it into the volume — clearing `/data/media` first
+    // so a deleted asset also disappears server-side.
     if let Some(ref dir) = media_root {
         let media_tar = project_root.join("_deploy/media.tar");
         let tar = Command::new("tar")
@@ -1950,13 +1950,40 @@ fn site_deploy(
         println!("  synced {} media file(s) into /data/media", assets.len());
     }
 
-    // Restart the proxy alongside the backend — `up -d` above may have
-    // recreated the backend container on a fresh IP, and nginx caches the
-    // `backend` upstream IP at worker start, so a stale proxy serves 502
-    // (same rationale as the local path's step 6).
+    // Now stop the backend before touching the db: the backend keeps it in
+    // SQLite WAL mode, so copying the bare `portfolio.db` while the backend
+    // holds an uncheckpointed WAL yields a torn snapshot, and copying a
+    // fresh `.db` back next to a stale `-wal` corrupts the database on the
+    // next open. Stopping the backend checkpoints and releases the WAL.
+    // Then: pull the live db down, promote it HERE (operator-side — no
+    // remote binary), push the promoted db back, and delete the now-stale
+    // `-wal`/`-shm` before the backend reopens. Runtime tables survive.
+    ssh(&format!(
+        "cd {dir} && docker compose -f docker-compose.yml stop backend && \
+         (docker compose -f docker-compose.yml cp backend:/data/portfolio.db live.db \
+            || cp snapshot.db live.db) && \
+         cp -f live.db portfolio.db.prev",
+        dir = cfg.remote_dir,
+    ))?;
+    let live_snapshot = project_root.join("_deploy/live-portfolio.db");
+    scp_down("live.db", &live_snapshot)?;
+    promote_db(&live_snapshot, db_path, &content_commit)?;
+    scp_up(&live_snapshot, "live.db")?;
+    ssh(&format!(
+        "cd {dir} && docker compose -f docker-compose.yml cp live.db backend:/data/portfolio.db && \
+         docker compose -f docker-compose.yml run --rm --no-deps --entrypoint sh backend \
+             -c 'rm -f /data/portfolio.db-wal /data/portfolio.db-shm'",
+        dir = cfg.remote_dir,
+    ))?;
+
+    // Start the backend back up — it was stopped for the db copy — so it
+    // reopens the promoted db cleanly, and restart the proxy: `up -d` may
+    // recreate the backend on a fresh IP, and nginx caches the `backend`
+    // upstream IP at worker start, so a stale proxy serves 502.
     println!("[6/6] up");
     ssh(&format!(
-        "cd {} && docker compose -f docker-compose.yml restart backend proxy",
+        "cd {} && docker compose -f docker-compose.yml up -d && \
+         docker compose -f docker-compose.yml restart proxy",
         cfg.remote_dir
     ))?;
 
@@ -2035,6 +2062,33 @@ fn docker_cp_to(
         .map_err(|e| format!("docker compose cp: {e}"))?;
     if !status.success() {
         return Err(format!("docker compose cp to {service}:{remote} failed"));
+    }
+    Ok(())
+}
+
+/// Delete the SQLite WAL companion files (`portfolio.db-wal` /
+/// `portfolio.db-shm`) from the backend's data volume.
+///
+/// Called after the promoted `portfolio.db` has been copied back in, while
+/// the backend container is stopped. The promoted `.db` is a complete,
+/// self-contained file; a `-wal`/`-shm` left over from before the stop is
+/// keyed to the *previous* database generation, and SQLite would replay its
+/// stale frames onto the new file on reopen — corrupting it. The backend is
+/// stopped, so a throwaway `run` is used to reach the volume.
+fn clear_wal_companions(
+    compose_file: &str,
+    compose_dir: &Path,
+    service: &str,
+) -> Result<(), String> {
+    let status = Command::new("docker")
+        .args(["compose", "-f", compose_file, "run", "--rm", "--no-deps"])
+        .args(["--entrypoint", "sh", service])
+        .args(["-c", "rm -f /data/portfolio.db-wal /data/portfolio.db-shm"])
+        .current_dir(compose_dir)
+        .status()
+        .map_err(|e| format!("docker compose run (clear wal): {e}"))?;
+    if !status.success() {
+        return Err("clearing the stale WAL companion files failed".to_owned());
     }
     Ok(())
 }
