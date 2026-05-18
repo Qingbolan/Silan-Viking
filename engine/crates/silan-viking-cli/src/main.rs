@@ -224,7 +224,29 @@ fn run(args: Vec<String>) -> Result<(), String> {
             site_deploy(&opts.content_root, &opts.db_path, &opts.out_dir, true)
         }
         ["site", "rollback"] => site_rollback(&opts.content_root),
-        _ => Err(format!("unknown command `{}`", opts.command.join(" "))),
+        // The first token names a known multi-verb command, but the rest
+        // didn't match any arm — a bare or mistyped subcommand. List that
+        // command's verbs rather than leaving the user with a blank error.
+        [head, ..] if command_usage(head).is_some() => {
+            let usage = command_usage(head).expect("guarded by match arm");
+            let mut msg = if command.len() == 1 {
+                format!("`{head}` needs a subcommand. Usage:")
+            } else {
+                format!(
+                    "unknown `{head}` subcommand `{}`. Usage:",
+                    command[1..].join(" "),
+                )
+            };
+            for line in usage {
+                msg.push_str("\n    silan-viking ");
+                msg.push_str(line);
+            }
+            Err(msg)
+        }
+        _ => Err(format!(
+            "unknown command `{}` · run 'silan-viking --help' for the command list",
+            opts.command.join(" "),
+        )),
     }
 }
 
@@ -433,6 +455,46 @@ fn print_help(content_root: &Path) {
             env!("CARGO_PKG_VERSION"),
         )),
     );
+}
+
+/// The verb-usage lines for a top-level command, or `None` if `command` is
+/// not a known multi-verb command. Used to turn a bare or mistyped
+/// subcommand (`stats`, `index foo`) into a helpful usage hint instead of a
+/// blank `unknown command`. The strings mirror the per-group detail block
+/// in `print_help` — keep the two in sync.
+fn command_usage(command: &str) -> Option<&'static [&'static str]> {
+    Some(match command {
+        "idea" | "blog" | "project" | "update" => &[
+            "<kind> new|list|show|edit|archive|rm <slug>",
+            "<kind> add-part <slug> <role> · add-lang <slug> <lang>",
+            "idea status <slug> <state> · idea promote <slug> --to blog|project",
+            "blog publish|unpublish <slug> · project progress <slug>",
+            "update status <slug> <state> · update set-type <slug> <update-type>",
+        ],
+        "episode" => &[
+            "episode series new|list|show|reorder|archive|rm <series>",
+            "episode new|show|edit|add-lang|publish|unpublish|archive|rm <series> <slug>",
+        ],
+        "resume" => &["resume show|list · resume add-part|add-lang|edit <role> [lang]"],
+        "index" => &["index sync|status|lint|rebuild"],
+        "content" => &["content tree|ls|show <uri>"],
+        "relation" => &[
+            "relation graph · relation show <uri>",
+            "relation link <from> <to> --type <kind>",
+        ],
+        "proposal" => &["proposal list|show|accept|reject <id> · proposal rebase <id> [--continue]"],
+        "skill" => &["skill emit|status|rm [--path PATH]"],
+        "config" => &["config · config edit [--global]"],
+        "completion" => &["completion bash|zsh|fish"],
+        "site" => &[
+            "site build|preview|check|status [--out PATH]",
+            "site publish <uri> · site deploy [--dry-run|--confirm]",
+            "site rollback · site promote <live-db> <snapshot-db> <content-commit>",
+        ],
+        "stats" => &["stats sync <uri> · stats show|visitors|crawlers|sources <uri>"],
+        "mcp" => &["mcp serve [--stdio] · mcp status"],
+        _ => return None,
+    })
 }
 
 /// The default `silan-viking.toml` project config (`06` §6.2.2).
