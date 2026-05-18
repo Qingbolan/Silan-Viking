@@ -19,7 +19,11 @@ impl Mapper for IdeaMapper {
         ContentKind::Idea
     }
 
-    fn map(&self, parsed: &Parsed) -> Result<RowSet, MapError> {
-        ProseMapper::map(ContentKind::Idea, parsed)
+    fn map(
+        &self,
+        parsed: &Parsed,
+        type_spec: &crate::schema::TypeSpec,
+    ) -> Result<RowSet, MapError> {
+        ProseMapper::map(ContentKind::Idea, parsed, type_spec)
     }
 }

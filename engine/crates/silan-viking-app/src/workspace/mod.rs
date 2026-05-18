@@ -116,7 +116,13 @@ impl Workspace {
     /// `sync`, but writing into a caller-provided [`SqliteSink`] — used by
     /// tests that open an in-memory database.
     pub fn sync_into(&self, sink: &mut SqliteSink) -> Result<SyncReport, SyncError> {
-        crate::sync::run_sync(&self.parsers, &self.mappers, &self.scan()?, sink)
+        crate::sync::run_sync(
+            &self.parsers,
+            &self.mappers,
+            &self.schema,
+            &self.scan()?,
+            sink,
+        )
     }
 
     /// Borrow the parser registry — exposed for the M5 main-chain scenario

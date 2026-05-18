@@ -98,11 +98,30 @@ impl SqliteSink {
     pub fn connection(&self) -> &Connection {
         &self.conn
     }
+
+    /// Mutably borrow the connection — for tests that need to seed schema
+    /// (e.g. pre-create a foreign-keyed table) before a `write_batch`.
+    #[cfg(test)]
+    pub fn connection_mut(&mut self) -> &mut Connection {
+        &mut self.conn
+    }
 }
 
 impl Sink for SqliteSink {
     fn write_batch(&mut self, batch: &RowSetBatch) -> Result<(), SyncError> {
         let tx = self.conn.transaction()?;
+
+        // A sync rewrites whole tables: Phase 1 `DELETE`s each table and
+        // Phase 2 re-`INSERT`s its rows. When the target db's tables carry
+        // foreign keys, the *intermediate* state inside the transaction
+        // necessarily violates them (a child row inserted before its parent,
+        // or a parent deleted before its children) — order alone cannot fix
+        // it because tables are processed in `BTreeMap` key order. Deferring
+        // foreign-key enforcement to `COMMIT` lets the batch land in any
+        // order; integrity is still checked once, against the final, fully
+        // rewritten database. The pragma resets per transaction, so it is set
+        // here rather than in `configure`.
+        tx.pragma_update(None, "defer_foreign_keys", true)?;
 
         // Phase 0: schema gate. For any table that is a generated
         // `silan-viking-entities` Entity, the columns a `Mapper` wrote must
@@ -274,6 +293,55 @@ mod tests {
             })
             .expect("row present");
         assert_eq!(slug, "hello");
+    }
+
+    #[test]
+    fn write_batch_rewrites_foreign_keyed_tables() {
+        // Regression for P8: when the target db's tables carry foreign keys,
+        // a sync's DELETE-then-INSERT cycle hits an intermediate state that
+        // violates them — tables are processed in BTreeMap key order, so the
+        // child table (`a_child`) is rewritten before its parent (`b_parent`).
+        // `defer_foreign_keys` must let the batch commit anyway, with FK
+        // integrity checked once at COMMIT against the final database.
+        let mut sink = SqliteSink::open_in_memory().expect("in-memory db");
+
+        // Seed a parent/child pair with a real FK, and turn FK enforcement
+        // ON — SQLite defaults it off, and a production `portfolio.db` may
+        // have it enabled. `write_batch`'s `CREATE TABLE IF NOT EXISTS` then
+        // reuses these definitions.
+        sink.connection_mut()
+            .execute_batch(
+                "PRAGMA foreign_keys = ON;
+                 CREATE TABLE b_parent (id TEXT PRIMARY KEY);
+                 CREATE TABLE a_child (id TEXT PRIMARY KEY, \
+                     parent_id TEXT REFERENCES b_parent(id));",
+            )
+            .expect("seed FK schema");
+
+        // One batch, child row and parent row. BTreeMap orders `a_child`
+        // before `b_parent`, so the child is inserted first.
+        let mut set = RowSet::new();
+        set.push(
+            Row::new("a_child")
+                .with("id", SqlValue::Text("c1".to_owned()))
+                .with("parent_id", SqlValue::Text("p1".to_owned())),
+        );
+        set.push(Row::new("b_parent").with("id", SqlValue::Text("p1".to_owned())));
+        let mut batch = RowSetBatch::new();
+        batch.push(set);
+
+        sink.write_batch(&batch)
+            .expect("a foreign-keyed batch must commit with deferred FK checks");
+
+        let linked: String = sink
+            .connection()
+            .query_row(
+                "SELECT parent_id FROM a_child WHERE id = 'c1'",
+                [],
+                |r| r.get(0),
+            )
+            .expect("child row present");
+        assert_eq!(linked, "p1");
     }
 
     #[test]

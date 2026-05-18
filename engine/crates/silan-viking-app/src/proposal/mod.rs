@@ -68,8 +68,18 @@ pub enum ProposalTarget {
 }
 
 impl ProposalTarget {
-    /// Parse the two supported target shapes:
-    /// `silan://resources/<kind>/<slug>` or `.../<slug>/<part>`.
+    /// Parse a proposal target URI.
+    ///
+    /// An Item URI's segment count is type-dependent, because `episode` is a
+    /// *container* type — its Items live one level deeper, under a series:
+    ///
+    /// | type     | Item URI                                  | Part URI                 |
+    /// |----------|-------------------------------------------|--------------------------|
+    /// | flat     | `…/<kind>/<slug>` (2 seg)                  | `…/<slug>/<role>` (3)    |
+    /// | episode  | `…/episode/<series>/<episode>` (3 seg)     | `…/<episode>/<role>` (4) |
+    ///
+    /// So the parser branches on the first segment: a 3-segment URI is an
+    /// *episode Item* if it starts with `episode`, otherwise a flat-type Part.
     pub fn parse(raw: &str) -> Result<Self, ProposalError> {
         let uri =
             SilanUri::from_str(raw).map_err(|e| ProposalError::InvalidTarget(e.to_string()))?;
@@ -78,18 +88,28 @@ impl ProposalTarget {
                 "proposal target must be under silan://resources".to_owned(),
             ));
         }
-        match uri.segments().len() {
-            2 => Ok(ProposalTarget::Item(uri)),
-            3 => {
-                let mut item_segments = uri.segments().to_vec();
+        let segments = uri.segments();
+        let is_episode = segments.first().map(String::as_str) == Some("episode");
+
+        // The segment count at which the URI is a whole Item: episode Items
+        // carry an extra `<series>` segment.
+        let item_len = if is_episode { 3 } else { 2 };
+
+        match segments.len() {
+            n if n == item_len => Ok(ProposalTarget::Item(uri)),
+            n if n == item_len + 1 => {
+                // The last segment is the Part role; the rest is the Item.
+                let mut item_segments = segments.to_vec();
                 let role = item_segments.pop().unwrap_or_default();
                 let item = SilanUri::new(uri.namespace(), item_segments)
                     .map_err(|e| ProposalError::InvalidTarget(e.to_string()))?;
                 Ok(ProposalTarget::Part { item, role })
             }
-            _ => Err(ProposalError::InvalidTarget(
-                "target must identify an item or a part".to_owned(),
-            )),
+            _ => Err(ProposalError::InvalidTarget(format!(
+                "target must identify an item ({item_len} segments) or a part \
+                 ({} segments)",
+                item_len + 1
+            ))),
         }
     }
 }
@@ -177,6 +197,19 @@ pub enum ProposalError {
         expected: String,
         /// The OID main is actually at now.
         actual: String,
+    },
+    /// The `content/` working tree had uncommitted changes when `accept` ran.
+    /// `accept` ends by `reset --hard`ing the working tree onto the merge
+    /// commit, which would discard those edits — so it refuses up front,
+    /// leaving the proposal and `main` untouched. Commit or discard the
+    /// working-tree changes, then re-run `accept`.
+    #[error(
+        "`content/` has uncommitted changes — commit or discard them before \
+         accepting `{id}`"
+    )]
+    WorkingTreeDirty {
+        /// The proposal being accepted.
+        id: String,
     },
 }
 

@@ -102,10 +102,7 @@ fn accept_advances_main_to_validated_merge() {
     assert_eq!(report.new_main, main_after);
     assert_ne!(main_before, main_after, "main must advance on accept");
 
-    // The accepted change is on the main branch. `accept` advances the ref
-    // via `update-ref`; it does not check the change out into the main
-    // checkout's working tree (that is the caller's choice), so verify it
-    // through `git show` against the branch tip.
+    // The accepted change is on the main branch.
     let body = git(
         &root,
         &["show", "main:resources/blog/hello-world/parts/body/en.md"],
@@ -113,6 +110,64 @@ fn accept_advances_main_to_validated_merge() {
     assert!(
         body.contains("An extra paragraph from the proposal."),
         "the accepted body must be on the main branch"
+    );
+
+    // Regression for P14: `accept` must also sync the working tree, so the
+    // accepted content is actually on disk for `index sync` to scan. After a
+    // clean accept the working tree equals HEAD and the file holds the edit.
+    let status = git(&root, &["status", "--porcelain"]);
+    assert!(
+        status.is_empty(),
+        "accept must leave a clean working tree, got: {status}"
+    );
+    let on_disk = std::fs::read_to_string(
+        root.join("resources/blog/hello-world/parts/body/en.md"),
+    )
+    .expect("the accepted Part file must exist in the working tree");
+    assert!(
+        on_disk.contains("An extra paragraph from the proposal."),
+        "the working-tree file must hold the accepted edit"
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn accept_refuses_a_dirty_working_tree() {
+    // Regression for P14: `accept` ends by `reset --hard`-ing the working
+    // tree onto the merge commit. If the tree has uncommitted edits, that
+    // would silently discard them — so `accept` must refuse up front and
+    // leave `main` untouched.
+    let root = fresh_content_repo("dirty");
+    let ws = Workspace::open(&root).expect("workspace opens");
+
+    let id = ProposalId::new("01HDIRTYTREE").expect("valid id");
+    ws.register_proposal(&id, ProposalKind::Modify, vec![])
+        .expect("register");
+    make_proposal_branch(
+        &root,
+        "01HDIRTYTREE",
+        "resources/blog/hello-world/parts/body/en.md",
+        "A proposal edit.",
+    );
+
+    // Dirty the working tree with an uncommitted edit to a different file.
+    let dirtied = root.join("SCHEMA.md");
+    let original = std::fs::read_to_string(&dirtied).expect("read SCHEMA.md");
+    std::fs::write(&dirtied, format!("{original}\n<!-- uncommitted -->\n"))
+        .expect("dirty the tree");
+
+    let main_before = git(&root, &["rev-parse", "refs/heads/main"]);
+    let result = ws.accept_proposal(&id);
+    let main_after = git(&root, &["rev-parse", "refs/heads/main"]);
+
+    assert!(result.is_err(), "accept must refuse a dirty working tree");
+    assert_eq!(main_before, main_after, "main must not move when refused");
+    // The uncommitted edit survives untouched.
+    let preserved = std::fs::read_to_string(&dirtied).expect("read SCHEMA.md");
+    assert!(
+        preserved.contains("<!-- uncommitted -->"),
+        "the uncommitted edit must be preserved"
     );
 
     let _ = std::fs::remove_dir_all(&root);

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "silan-viking": {
+      "type": "stdio",
+      "command": "silan-viking",
+      "args": [
+        "mcp",
+        "serve",
+        "--stdio"
+      ],
+      "env": {}
+    }
+  }
+}

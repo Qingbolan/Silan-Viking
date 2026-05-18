@@ -199,6 +199,7 @@ mod tests {
             name: name.to_owned(),
             type_decl: type_decl.to_owned(),
             required: false,
+            column: crate::schema::FieldColumn::None,
         }
     }
 }

@@ -19,7 +19,11 @@ impl Mapper for BlogMapper {
         ContentKind::Blog
     }
 
-    fn map(&self, parsed: &Parsed) -> Result<RowSet, MapError> {
-        ProseMapper::map(ContentKind::Blog, parsed)
+    fn map(
+        &self,
+        parsed: &Parsed,
+        type_spec: &crate::schema::TypeSpec,
+    ) -> Result<RowSet, MapError> {
+        ProseMapper::map(ContentKind::Blog, parsed, type_spec)
     }
 }

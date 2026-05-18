@@ -19,7 +19,11 @@ impl Mapper for ProjectMapper {
         ContentKind::Project
     }
 
-    fn map(&self, parsed: &Parsed) -> Result<RowSet, MapError> {
-        ProseMapper::map(ContentKind::Project, parsed)
+    fn map(
+        &self,
+        parsed: &Parsed,
+        type_spec: &crate::schema::TypeSpec,
+    ) -> Result<RowSet, MapError> {
+        ProseMapper::map(ContentKind::Project, parsed, type_spec)
     }
 }

@@ -15,6 +15,7 @@
 use super::media_uri;
 use super::table_names;
 use crate::parser::{FieldValue, Parsed};
+use crate::schema::{FieldColumn, TypeSpec};
 use crate::sync::error::MapError;
 use crate::sync::rows::{Row, RowSet, SqlValue};
 use silan_viking_content::ContentKind;
@@ -23,8 +24,13 @@ use silan_viking_content::ContentKind;
 pub struct ProseMapper;
 
 impl ProseMapper {
-    /// Map a prose-type `Parsed` into its full `RowSet`.
-    pub fn map(expected: ContentKind, parsed: &Parsed) -> Result<RowSet, MapError> {
+    /// Map a prose-type `Parsed` into its full `RowSet`, routing every
+    /// frontmatter field to its table/column per `type_spec` (the SCHEMA).
+    pub fn map(
+        expected: ContentKind,
+        parsed: &Parsed,
+        type_spec: &TypeSpec,
+    ) -> Result<RowSet, MapError> {
         if parsed.kind() != expected {
             return Err(MapError::KindMismatch {
                 expected,
@@ -34,7 +40,7 @@ impl ProseMapper {
         let mut rows = RowSet::new();
         let item_id = parsed.item_id().as_str().to_owned();
 
-        rows.push(main_row(expected, &item_id, parsed));
+        rows.push(main_row(expected, &item_id, parsed, type_spec));
         push_translation_rows(expected, &item_id, parsed, &mut rows);
         push_item_part_rows(expected, &item_id, parsed, &mut rows);
         push_part_rows(parsed, &mut rows);
@@ -45,69 +51,38 @@ impl ProseMapper {
     }
 }
 
-/// Frontmatter fields that must **not** become a content main-table column.
-/// - `tags` fans out to its own table (`SCHEMA.md` rule 1a), routed by
-///   [`push_tag_rows`].
-/// - `kind` is the type discriminator: each type has its own main table, so
-///   the Entity carries no `kind` column — it would be schema drift.
-/// - `tech_stack` appears in legacy Python-parser frontmatter but the new
-///   `10`/`11` schema does not carry it as a main-table column.
-/// - The `idea_details` / `project_details` side-table fields — `priority`,
-///   `collaboration_needed`, `funding_required`, `estimated_duration_months`,
-///   `estimated_budget` (idea) and `license`, `version` (project). `SCHEMA.md`
-///   declares these with a `column: "<details_table>.<col>"` — they belong to
-///   a *separate* `*_details` table, NOT the content main table. `ProseMapper`
-///   does not yet emit those side tables, so these fields are skipped here
-///   rather than written to a non-existent `ideas.*` / `projects.*` column
-///   (which the sink's schema gate rejects, aborting the whole sync). Emitting
-///   `idea_details` / `project_details` rows is a pending mapper feature.
-///
-/// Note: `visibility` is **not** skipped — `blog_posts`/`ideas`/`projects`/
-/// `episodes` all carry a `visibility` column (`11` §11.7), so it is real
-/// content the main row must write. (`resume` is the exception — handled in
-/// `resume.rs`, whose `personal_info` table has no `visibility`.)
-const SKIP_MAIN_FIELDS: &[&str] = &[
-    "tags",
-    "kind",
-    "tech_stack",
-    // idea_details.* — side-table fields, not `ideas` columns
-    "priority",
-    "collaboration_needed",
-    "funding_required",
-    "estimated_duration_months",
-    "estimated_budget",
-    // project_details.* — side-table fields, not `projects` columns
-    "license",
-    "version",
-];
-
 /// Build the content main-table row from the language-neutral fields.
 ///
-/// No `kind` column: each content type has its own main table (`blog_posts`,
-/// `ideas`, …), so the type is the table — the Entity carries no `kind`.
-fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed) -> Row {
+/// Every field is routed by its SCHEMA `FieldColumn`, so the SCHEMA — not a
+/// hardcoded table in this file — decides what lands where:
+///
+/// - `FieldColumn::Main(col)` — written to the main table under `col` (which
+///   is why `category` → `category_id` and `series` → `series_id` work
+///   without a special case);
+/// - `FieldColumn::Side`     — belongs to a `*_details` side table, not the
+///   main row; skipped here (side-table emission is a separate mapper step);
+/// - `FieldColumn::FanOut`   — a list field with its own table (`content_tag`,
+///   `content_relation`); routed by `push_tag_rows` / `push_relation_rows`;
+/// - `FieldColumn::None`     — type discriminators (`kind`); not a column.
+///
+/// A field with no SCHEMA spec at all is skipped — an unknown frontmatter key
+/// must never become a column the Entity layer does not declare (which the
+/// sink's schema gate would reject, aborting the sync).
+fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed, type_spec: &TypeSpec) -> Row {
     let mut row =
         Row::new(table_names::main_table(kind)).with("id", SqlValue::Text(item_id.to_owned()));
     for name in parsed.main().field_names() {
-        // `tags` fans out to its own table; `kind` is not a column.
-        if SKIP_MAIN_FIELDS.contains(&name) {
-            continue;
-        }
+        let Some(field_spec) = type_spec.field(name) else {
+            continue; // a frontmatter key the SCHEMA does not declare
+        };
+        let FieldColumn::Main(column) = &field_spec.column else {
+            continue; // Side / FanOut / None — not a main-table column
+        };
         if let Some(value) = parsed.main().get(name) {
-            row = row.with(main_column_name(kind, name), sql_value(value));
+            row = row.with(column.clone(), sql_value(value));
         }
     }
     row
-}
-
-/// Map a frontmatter field name to the main table's column name. They match
-/// for almost every field; the exception is `episode`, whose `series`
-/// frontmatter field is the Entity's `series_id` foreign-key column.
-fn main_column_name(kind: ContentKind, field: &str) -> String {
-    match (kind, field) {
-        (ContentKind::Episode, "series") => "series_id".to_owned(),
-        _ => field.to_owned(),
-    }
 }
 
 /// Build one translation row per language, carrying that language's

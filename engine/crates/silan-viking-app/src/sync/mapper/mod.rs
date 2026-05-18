@@ -23,22 +23,27 @@ mod update;
 pub use registry::MapperRegistry;
 
 use crate::parser::Parsed;
+use crate::schema::TypeSpec;
 use crate::sync::error::MapError;
 use crate::sync::rows::RowSet;
 use silan_viking_content::ContentKind;
 
 /// A content-type mapping strategy.
 ///
-/// `map` is a pure function: a `Parsed` in, a `RowSet` out, no IO. All
-/// implementations keep their per-table helper logic in private `fn`s; the
-/// trait surface is just `content_type` and `map`.
+/// `map` is a pure function: a `Parsed` and the type's `TypeSpec` in, a
+/// `RowSet` out, no IO. The `TypeSpec` is what makes the SCHEMA the single
+/// source of truth for column routing — a mapper reads each field's
+/// `FieldColumn` instead of hardcoding table/column names. All implementations
+/// keep their per-table helper logic in private `fn`s; the trait surface is
+/// just `content_type` and `map`.
 pub trait Mapper {
     /// The content type this mapper handles.
     fn content_type(&self) -> ContentKind;
 
-    /// Map a parsed Item into its full set of database rows.
+    /// Map a parsed Item into its full set of database rows, routing fields
+    /// to tables/columns per `type_spec`.
     ///
     /// Returns [`MapError::KindMismatch`] if `parsed.kind()` does not match
     /// [`content_type`](Self::content_type).
-    fn map(&self, parsed: &Parsed) -> Result<RowSet, MapError>;
+    fn map(&self, parsed: &Parsed, type_spec: &TypeSpec) -> Result<RowSet, MapError>;
 }
