@@ -1699,22 +1699,6 @@ func (c *BlogPostClient) QueryTranslations(bp *BlogPost) *BlogPostTranslationQue
 	return query
 }
 
-// QueryComments queries the comments edge of a BlogPost.
-func (c *BlogPostClient) QueryComments(bp *BlogPost) *CommentQuery {
-	query := (&CommentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
-			sqlgraph.To(comment.Table, comment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, blogpost.CommentsTable, blogpost.CommentsColumn),
-		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryBlogPostTags queries the blog_post_tags edge of a BlogPost.
 func (c *BlogPostClient) QueryBlogPostTags(bp *BlogPost) *BlogPostTagQuery {
 	query := (&BlogPostTagClient{config: c.config}).Query()
@@ -4581,22 +4565,6 @@ func (c *IdeaClient) QueryDetails(i *Idea) *IdeaDetailQuery {
 			sqlgraph.From(idea.Table, idea.FieldID, id),
 			sqlgraph.To(ideadetail.Table, ideadetail.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, idea.DetailsTable, idea.DetailsColumn),
-		)
-		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryComments queries the comments edge of a Idea.
-func (c *IdeaClient) QueryComments(i *Idea) *CommentQuery {
-	query := (&CommentClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := i.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(idea.Table, idea.FieldID, id),
-			sqlgraph.To(comment.Table, comment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, idea.CommentsTable, idea.CommentsColumn),
 		)
 		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
 		return fromV, nil

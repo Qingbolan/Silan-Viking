@@ -40,7 +40,7 @@ func (l *GetProjectsByPlanLogic) GetProjectsByPlan(req *types.ProjectsByPlanRequ
 	resp = make([]types.Project, 0)
 	for _, proj := range projects {
 		if projectYear(proj) == year {
-			resp = append(resp, mapProject(proj))
+			resp = append(resp, mapProject(l.ctx, l.svcCtx.RawDB, proj, req.Language))
 		}
 	}
 

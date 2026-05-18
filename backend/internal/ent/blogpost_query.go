@@ -13,7 +13,6 @@ import (
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
-	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/user"
 
@@ -35,7 +34,6 @@ type BlogPostQuery struct {
 	withSeries       *BlogSeriesQuery
 	withTags         *BlogTagQuery
 	withTranslations *BlogPostTranslationQuery
-	withComments     *CommentQuery
 	withBlogPostTags *BlogPostTagQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -176,28 +174,6 @@ func (bpq *BlogPostQuery) QueryTranslations() *BlogPostTranslationQuery {
 			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
 			sqlgraph.To(blogposttranslation.Table, blogposttranslation.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, blogpost.TranslationsTable, blogpost.TranslationsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryComments chains the current query on the "comments" edge.
-func (bpq *BlogPostQuery) QueryComments() *CommentQuery {
-	query := (&CommentClient{config: bpq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := bpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
-			sqlgraph.To(comment.Table, comment.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, blogpost.CommentsTable, blogpost.CommentsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
 		return fromU, nil
@@ -424,7 +400,6 @@ func (bpq *BlogPostQuery) Clone() *BlogPostQuery {
 		withSeries:       bpq.withSeries.Clone(),
 		withTags:         bpq.withTags.Clone(),
 		withTranslations: bpq.withTranslations.Clone(),
-		withComments:     bpq.withComments.Clone(),
 		withBlogPostTags: bpq.withBlogPostTags.Clone(),
 		// clone intermediate query.
 		sql:  bpq.sql.Clone(),
@@ -484,17 +459,6 @@ func (bpq *BlogPostQuery) WithTranslations(opts ...func(*BlogPostTranslationQuer
 		opt(query)
 	}
 	bpq.withTranslations = query
-	return bpq
-}
-
-// WithComments tells the query-builder to eager-load the nodes that are connected to
-// the "comments" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BlogPostQuery) WithComments(opts ...func(*CommentQuery)) *BlogPostQuery {
-	query := (&CommentClient{config: bpq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	bpq.withComments = query
 	return bpq
 }
 
@@ -587,13 +551,12 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	var (
 		nodes       = []*BlogPost{}
 		_spec       = bpq.querySpec()
-		loadedTypes = [7]bool{
+		loadedTypes = [6]bool{
 			bpq.withUser != nil,
 			bpq.withCategory != nil,
 			bpq.withSeries != nil,
 			bpq.withTags != nil,
 			bpq.withTranslations != nil,
-			bpq.withComments != nil,
 			bpq.withBlogPostTags != nil,
 		}
 	)
@@ -644,13 +607,6 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 		if err := bpq.loadTranslations(ctx, query, nodes,
 			func(n *BlogPost) { n.Edges.Translations = []*BlogPostTranslation{} },
 			func(n *BlogPost, e *BlogPostTranslation) { n.Edges.Translations = append(n.Edges.Translations, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := bpq.withComments; query != nil {
-		if err := bpq.loadComments(ctx, query, nodes,
-			func(n *BlogPost) { n.Edges.Comments = []*Comment{} },
-			func(n *BlogPost, e *Comment) { n.Edges.Comments = append(n.Edges.Comments, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -837,37 +793,6 @@ func (bpq *BlogPostQuery) loadTranslations(ctx context.Context, query *BlogPostT
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "blog_post_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (bpq *BlogPostQuery) loadComments(ctx context.Context, query *CommentQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *Comment)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*BlogPost)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.Comment(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(blogpost.CommentsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.blog_post_comments
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "blog_post_comments" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "blog_post_comments" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

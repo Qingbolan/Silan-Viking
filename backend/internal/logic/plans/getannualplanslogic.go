@@ -31,5 +31,5 @@ func (l *GetAnnualPlansLogic) GetAnnualPlans(req *types.AnnualPlanListRequest) (
 		return nil, err
 	}
 
-	return buildAnnualPlans(projects), nil
+	return buildAnnualPlans(projects, req.Language), nil
 }

@@ -34,7 +34,121 @@ fn main() {
     }
 }
 
+/// Verb-usage lines for a known multi-verb command. Keyed by the
+/// top-level command name; the slices are the same `<command> ...`
+/// usage strings the `print_help` "verbs" sections render. Returns
+/// `None` for unknown commands so callers can fall back to the banner.
+///
+/// Maintenance contract: this mirrors the dispatch table in `run` and
+/// the verb listings in `print_help` — there is no auto-sync.
+fn command_usage(command: &str) -> Option<&'static [&'static str]> {
+    Some(match command {
+        "idea" => &[
+            "idea new|list|show|edit|archive|rm <slug>",
+            "idea add-part <slug> <role> · idea add-lang <slug> <lang>",
+            "idea status <slug> <state> · idea promote <slug> --to blog|project",
+            "idea list [--status <status>|--tag <tag>]",
+        ],
+        "blog" => &[
+            "blog new|list|show|edit|archive|rm <slug>",
+            "blog add-part <slug> <role> · blog add-lang <slug> <lang>",
+            "blog publish|unpublish <slug>",
+            "blog list [--status <status>|--tag <tag>]",
+        ],
+        "project" => &[
+            "project new|list|show|edit|archive|rm <slug>",
+            "project add-part <slug> <role> · project add-lang <slug> <lang>",
+            "project progress <slug>",
+            "project list [--status <status>|--tag <tag>]",
+        ],
+        "update" => &[
+            "update new|list|show|edit|archive|rm <slug>",
+            "update add-part <slug> <role> · update add-lang <slug> <lang>",
+            "update status <slug> <state> · update set-type <slug> <update-type>",
+            "update list [--status <status>|--tag <tag>]",
+        ],
+        "episode" => &[
+            "episode series new|list|show|reorder|archive|rm <series>",
+            "episode new <series> <slug>",
+            "episode show|edit|publish|unpublish|archive|rm <series> <slug>",
+            "episode add-lang <series> <slug> <lang>",
+        ],
+        "resume" => &[
+            "resume show|list",
+            "resume add-part <role> · resume add-lang <role> <lang>",
+            "resume edit <role> [lang]",
+        ],
+        "index" => &["index sync|status|lint|rebuild"],
+        "content" => &["content tree|ls|show <uri>"],
+        "relation" => &[
+            "relation graph",
+            "relation show <uri>",
+            "relation link <from> <to> --type <kind>",
+        ],
+        "proposal" => &[
+            "proposal list|show|accept|reject <id>",
+            "proposal rebase <id> [--continue]",
+        ],
+        "site" => &[
+            "site build|preview|check|status [--out PATH]",
+            "site publish <uri> · site deploy [--dry-run|--confirm]",
+            "site rollback · site promote <live-db> <snapshot-db> <content-commit>",
+        ],
+        "stats" => &[
+            "stats sync <uri>",
+            "stats show|visitors|crawlers|sources <uri>",
+        ],
+        "mcp" => &["mcp serve [--stdio] · mcp status"],
+        "uninstall" => &["uninstall [--purge] [--dry-run|--yes]"],
+        "skill" => &[
+            "skill emit|status [--path PATH]",
+            "skill rm [--path PATH]",
+        ],
+        "config" => &["config · config edit [--global]"],
+        "completion" => &["completion bash|zsh|fish"],
+        _ => return None,
+    })
+}
+
+/// The first positional (non-flag) token in `args`, skipping the
+/// global `--content`/`--db`/`--out` flags and their values — the same
+/// flags `CliOptions::parse` consumes. Returns `None` when every token
+/// is a flag (or its value). Used to find the command name *before*
+/// `CliOptions::parse` strips the flags.
+fn first_positional(args: &[String]) -> Option<&str> {
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--content" | "--db" | "--out" => i += 2,
+            other => return Some(other),
+        }
+    }
+    None
+}
+
 fn run(args: Vec<String>) -> Result<(), String> {
+    // Command-specific help: `silan-viking <command> --help`. The
+    // top-level banner promises "run 'silan-viking <command> --help'
+    // for command-specific help", but the broad `--help` check below
+    // would catch that `--help` and fall through to the full banner —
+    // breaking the promise. So when the first positional token is a
+    // known multi-verb command AND a help flag follows, print just
+    // that command's verb usage. Must run *before* the top-level check.
+    if let Some(command) = first_positional(&args) {
+        let asks_help = args
+            .iter()
+            .any(|a| matches!(a.as_str(), "-h" | "--help" | "help"));
+        if asks_help {
+            if let Some(usage) = command_usage(command) {
+                println!("silan-viking {command} — verbs:");
+                for line in usage {
+                    println!("    silan-viking {line}");
+                }
+                return Ok(());
+            }
+        }
+    }
+
     // Top-level help is shown for no args, or whenever `-h`/`--help`/`help`
     // appears anywhere before a subcommand. We still parse `--content` so
     // the banner's status block reflects the project the user is pointing
@@ -49,7 +163,21 @@ fn run(args: Vec<String>) -> Result<(), String> {
     let command = opts.command.iter().map(String::as_str).collect::<Vec<_>>();
     match command.as_slice() {
         ["init"] => init_content(&opts.content_root),
+        ["guide"] => guide(&opts.content_root, false),
         ["doctor"] => doctor(&opts.content_root),
+        // uninstall [--purge] [--dry-run|--yes] — order-insensitive flags.
+        ["uninstall", flags @ ..]
+            if flags
+                .iter()
+                .all(|f| matches!(*f, "--purge" | "--dry-run" | "--yes")) =>
+        {
+            uninstall(
+                &opts.content_root,
+                flags.contains(&"--purge"),
+                flags.contains(&"--dry-run"),
+                flags.contains(&"--yes"),
+            )
+        }
         ["config"] => {
             println!("content_root={}", opts.content_root.display());
             println!("db={}", opts.db_path.display());
@@ -224,7 +352,29 @@ fn run(args: Vec<String>) -> Result<(), String> {
             site_deploy(&opts.content_root, &opts.db_path, &opts.out_dir, true)
         }
         ["site", "rollback"] => site_rollback(&opts.content_root),
-        _ => Err(format!("unknown command `{}`", opts.command.join(" "))),
+        // The first token names a known multi-verb command, but the rest
+        // didn't match any arm — a bare or mistyped subcommand. List that
+        // command's verbs rather than leaving the user with a blank error.
+        [head, ..] if command_usage(head).is_some() => {
+            let usage = command_usage(head).expect("guarded by match arm");
+            let mut msg = if command.len() == 1 {
+                format!("`{head}` needs a subcommand. Usage:")
+            } else {
+                format!(
+                    "unknown `{head}` subcommand `{}`. Usage:",
+                    command[1..].join(" "),
+                )
+            };
+            for line in usage {
+                msg.push_str("\n    silan-viking ");
+                msg.push_str(line);
+            }
+            Err(msg)
+        }
+        _ => Err(format!(
+            "unknown command `{}` · run 'silan-viking --help' for the command list",
+            opts.command.join(" "),
+        )),
     }
 }
 
@@ -395,9 +545,11 @@ fn print_help(content_root: &Path) {
 
     println!("  {}", h("[Maintenance]"));
     row("init", "Lay down a runnable silan-viking project");
+    row("guide", "Show the next recommended step for this project");
     row("doctor", "Health check — content, index, embedder");
     row("config", "Show resolved paths, or edit silan-viking.toml");
     row("completion", "Emit a shell completion script (bash/zsh/fish)");
+    row("uninstall", "Remove the skill + derived files (--purge: content too)");
     println!();
 
     // Per-group detail, for the verbs the one-line summary can't carry.
@@ -424,6 +576,11 @@ fn print_help(content_root: &Path) {
     println!("  {}", d("site publish <uri> · site deploy [--dry-run|--confirm]"));
     println!("  {}", d("site rollback · site promote <live-db> <snapshot-db> <content-commit>"));
     println!("  {}", d("stats sync <uri> · stats show|visitors|crawlers|sources <uri>"));
+    println!();
+
+    println!("{}", h("Maintenance verbs:"));
+    println!("  {}", d("config edit [--global] · completion bash|zsh|fish"));
+    println!("  {}", d("uninstall [--purge] [--dry-run|--yes]"));
     println!();
 
     println!(
@@ -554,6 +711,11 @@ fn init_content(content_root: &Path) -> Result<(), String> {
         "  resume  {}",
         content_root.join("resources/resume").display()
     );
+
+    // Hand the user the next step — `init` should never end on a flat list
+    // of paths. `guide` reads the just-created project and prints the arc.
+    println!();
+    guide(content_root, true)?;
     Ok(())
 }
 
@@ -643,6 +805,200 @@ fn doctor(content_root: &Path) -> Result<(), String> {
         index.documents().len(),
         index.mode()
     );
+    Ok(())
+}
+
+/// `uninstall [--purge] [--dry-run|--yes]` — remove what silan-viking put on
+/// this machine.
+///
+/// Two scopes, because `content/` is the user's hand-written source of truth
+/// and `index sync`/`deploy` cannot regenerate it:
+///   - default: the installed skill (`~/.claude/skills/silan-viking`) and the
+///     *derived* `_deploy/` artifacts (index db, deploy staging, tarballs) —
+///     everything reproducible from `content/`.
+///   - `--purge`: also `content/` and `silan-viking.toml`, i.e. the project
+///     itself. Irreversible loss of authored content.
+///
+/// The operation is "loud": it prints the exact path list it will delete and
+/// waits for a typed `y` (or the purge confirm word) before touching disk.
+/// `--dry-run` lists and stops; `--yes` skips the prompt for scripts. This
+/// mirrors `site deploy`'s dry-run-by-intent / `--confirm` discipline.
+fn uninstall(content_root: &Path, purge: bool, dry_run: bool, assume_yes: bool) -> Result<(), String> {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let skill_dir = skill::default_skill_dir();
+    let deploy_dir = project_root.join("_deploy");
+
+    // Build the delete list — only paths that actually exist, so the printed
+    // plan is the truth and an absent path is not reported as a deletion.
+    let mut targets: Vec<(PathBuf, &str)> = Vec::new();
+    if skill_dir.exists() {
+        targets.push((skill_dir.clone(), "installed Claude skill"));
+    }
+    if deploy_dir.exists() {
+        targets.push((deploy_dir.clone(), "derived index + deploy artifacts"));
+    }
+    if purge {
+        // content/ and the project config — the irreplaceable half.
+        if content_root.exists() {
+            targets.push((content_root.to_path_buf(), "content/ — YOUR AUTHORED CONTENT"));
+        }
+        let config = project_root.join("silan-viking.toml");
+        if config.exists() {
+            targets.push((config, "project config"));
+        }
+    }
+
+    if targets.is_empty() {
+        println!("nothing to uninstall — no silan-viking artifacts found");
+        return Ok(());
+    }
+
+    // Print the plan. This is the same list whether or not we go on to delete.
+    println!(
+        "silan-viking uninstall{} — the following will be deleted:",
+        if purge { " --purge" } else { "" },
+    );
+    for (path, what) in &targets {
+        println!("  {}  ({what})", path.display());
+    }
+    if !purge {
+        println!(
+            "\ncontent/ and silan-viking.toml are kept. Pass --purge to delete those too.",
+        );
+    }
+
+    if dry_run {
+        println!("\n--dry-run: nothing deleted.");
+        return Ok(());
+    }
+
+    // The confirmation gate. --purge demands the word `purge` (not a bare `y`)
+    // so a reflexive yes cannot wipe authored content; the plain scope takes
+    // `y`. --yes skips the prompt entirely, for non-interactive callers.
+    if !assume_yes {
+        let (prompt, expected) = if purge {
+            ("\nThis DELETES your content/ — type `purge` to confirm: ", "purge")
+        } else {
+            ("\nProceed? [y/N]: ", "y")
+        };
+        print!("{prompt}");
+        // `flush` lives on `io::Write`; call it fully-qualified rather than
+        // pulling a bare `Write` into this large module's namespace.
+        io::Write::flush(&mut io::stdout()).map_err(|e| e.to_string())?;
+        let mut answer = String::new();
+        io::stdin()
+            .read_line(&mut answer)
+            .map_err(|e| e.to_string())?;
+        if answer.trim() != expected {
+            println!("aborted — nothing deleted.");
+            return Ok(());
+        }
+    }
+
+    for (path, _) in &targets {
+        fs::remove_dir_all(path)
+            .or_else(|_| fs::remove_file(path))
+            .map_err(|e| format!("removing {}: {e}", path.display()))?;
+        println!("removed {}", path.display());
+    }
+    println!("uninstall complete.");
+    if !purge {
+        println!("the silan-viking binary itself is not self-deleting — remove it by hand.");
+    }
+    Ok(())
+}
+
+/// The lifecycle stage of a silan-viking project, used by `guide` and `init`
+/// to tell the user what to do next.
+enum ProjectStage {
+    /// No `silan-viking.toml` + `SCHEMA.md` — not a project yet.
+    NotInitialised,
+    /// Initialised, but the derived DB is missing or empty — `index sync`
+    /// has not run (or ran against no content).
+    NotSynced,
+    /// Initialised and the derived DB is built — ready to preview / deploy.
+    Synced,
+}
+
+/// Classify the project at `content_root`. Mirrors the banner's state logic
+/// (`banner::write_project_status`) so `guide`, `init`, and the banner agree
+/// on what stage a directory is in.
+fn project_stage(content_root: &Path) -> ProjectStage {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let initialised = project_root.join("silan-viking.toml").exists()
+        && content_root.join("SCHEMA.md").exists();
+    if !initialised {
+        return ProjectStage::NotInitialised;
+    }
+    // Initialised — is the derived DB built and non-empty?
+    let synced = resolve_db_path(content_root)
+        .and_then(|db| fs::metadata(db).ok())
+        .is_some_and(|meta| meta.len() > 0);
+    if synced {
+        ProjectStage::Synced
+    } else {
+        ProjectStage::NotSynced
+    }
+}
+
+/// `guide` — print the next recommended step(s) for wherever the project is
+/// in its lifecycle. The terminal-state answer to "I just installed this,
+/// now what?": instead of making the user read the full command surface,
+/// `guide` looks at the directory and hands them the exact next command.
+///
+/// `from_init` tags the call as the tail of `init`, which only changes the
+/// opening line ("Next steps" vs "You are here") — the step list is the same.
+fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
+    let stage = project_stage(content_root);
+    let project_root = content_root.parent().unwrap_or(content_root);
+
+    // Numbered steps: (command, what-it-does). The first is the immediate
+    // next action; the rest preview the path ahead so the user sees the arc.
+    let (header, steps): (&str, Vec<(&str, &str)>) = match stage {
+        ProjectStage::NotInitialised => (
+            "No silan-viking project here yet. To start:",
+            vec![
+                ("silan-viking init", "scaffold a project in this directory"),
+                ("silan-viking guide", "re-run this to see what is next"),
+            ],
+        ),
+        ProjectStage::NotSynced => (
+            if from_init {
+                "Project created. Next steps:"
+            } else {
+                "Project is initialised but not yet synced. Next steps:"
+            },
+            vec![
+                ("silan-viking index sync", "build the derived database from content/"),
+                ("silan-viking site preview", "build the site and preview it locally"),
+                ("silan-viking blog new <slug>", "write your first post (or idea/project)"),
+            ],
+        ),
+        ProjectStage::Synced => (
+            "Project is initialised and synced. From here you can:",
+            vec![
+                ("silan-viking site preview", "rebuild and preview the site locally"),
+                ("silan-viking blog new <slug>", "add content, then re-run index sync"),
+                ("silan-viking site deploy --confirm", "deploy to the host in silan-viking.toml"),
+                ("silan-viking doctor", "health-check content, index, and embedder"),
+            ],
+        ),
+    };
+
+    println!("{header}");
+    for (i, (cmd, what)) in steps.iter().enumerate() {
+        println!("  {}. {cmd}", i + 1);
+        println!("       {what}");
+    }
+    // A project initialised in a subdirectory needs a `cd` first; say so once.
+    if !matches!(stage, ProjectStage::NotInitialised) {
+        if let Ok(cwd) = env::current_dir() {
+            if cwd != project_root {
+                println!("\n(run these from {})", project_root.display());
+            }
+        }
+    }
+    println!("\nrun 'silan-viking --help' for the full command list.");
     Ok(())
 }
 
@@ -1639,28 +1995,40 @@ fn site_deploy(
         // 6 — up first, so the named volume + live db exist for promote.
         println!("[5/6] promote — bring stack up, then replace derived tables");
         docker_compose(&staging, compose, &["up", "-d"])?;
-        // The live db lives in the `portfolio-db` named volume, mounted at
-        // /data in the backend container. Copy it out, promote, copy it back.
+        // Mirror the media tree while the backend is still up — the media
+        // sync uses `docker compose exec`, which needs a running container.
+        if let Some(ref dir) = media_root {
+            sync_media_into_volume(compose, &staging, "backend", dir)?;
+            println!("  synced {} media file(s) into /data/media", assets.len());
+        }
+        // The live db lives in the `portfolio-db` named volume. The backend
+        // keeps it in SQLite WAL mode, so the durable state is split across
+        // `portfolio.db` + `portfolio.db-wal`. Copying only the `.db` while
+        // the backend holds an uncheckpointed WAL yields a torn snapshot —
+        // and copying a fresh `.db` back next to a stale `-wal` makes SQLite
+        // replay mismatched frames and corrupt the database. So: stop the
+        // backend (its last connection close checkpoints and releases the
+        // WAL), copy / promote / copy-back against a quiescent file, then
+        // delete the now-stale `-wal`/`-shm` before the backend reopens.
+        docker_compose(&staging, compose, &["stop", "backend"])?;
         let live_snapshot = project_root.join("_deploy/live-portfolio.db");
         docker_cp_from(compose, &staging, "backend", "/data/portfolio.db", &live_snapshot)
             // First deploy: no live db yet — start from the fresh snapshot.
             .or_else(|_| fs::copy(db_path, &live_snapshot).map(|_| ()).map_err(|e| e.to_string()))?;
         promote_db(&live_snapshot, db_path, &content_commit)?;
         docker_cp_to(compose, &staging, "backend", &live_snapshot, "/data/portfolio.db")?;
-        // Mirror the staged media tree into the backend's media volume.
-        if let Some(ref dir) = media_root {
-            sync_media_into_volume(compose, &staging, "backend", dir)?;
-            println!("  synced {} media file(s) into /data/media", assets.len());
-        }
+        // Drop the stale WAL companions left from before the stop — the
+        // promoted `.db` is a complete, self-contained file; a leftover
+        // `-wal`/`-shm` keyed to the old db generation would corrupt it.
+        clear_wal_companions(compose, &staging, "backend")?;
 
-        // Restart the backend so it reopens the promoted db, and the proxy
-        // with it: step 5's `up -d` recreates the backend container on a new
-        // image, giving it a fresh network IP. nginx resolves the `backend`
-        // upstream once at worker start and caches that IP, so a proxy left
-        // running points at the now-dead old container and serves 502 until
-        // it is restarted. Restarting both keeps the proxy's upstream fresh.
-        println!("[6/6] up — restart backend with the promoted db, refresh proxy");
-        docker_compose(&staging, compose, &["restart", "backend", "proxy"])?;
+        // Bring the backend back up — it reopens the promoted db cleanly —
+        // and refresh the proxy: step 5's `up -d` recreates the backend
+        // container on a new image / IP, and nginx caches the `backend`
+        // upstream IP at worker start, so a proxy left running serves 502.
+        println!("[6/6] up — start backend with the promoted db, refresh proxy");
+        docker_compose(&staging, compose, &["up", "-d"])?;
+        docker_compose(&staging, compose, &["restart", "proxy"])?;
         println!("deployed locally — http://localhost:8080");
         return Ok(());
     }
@@ -1768,29 +2136,17 @@ fn site_deploy(
     ssh(&format!("cd {} && docker load -i images.tar", cfg.remote_dir))?;
 
     println!("[5/6] promote");
-    // Bring the stack up so the named volume + live db exist, then pull
-    // the live db down, promote it HERE (operator-side — no remote
-    // binary), and push the promoted db back. Runtime tables survive.
+    // Bring the stack up so the named volume + live db exist.
     ssh(&format!(
-        "cd {dir} && docker compose -f docker-compose.yml up -d && \
-         (docker compose -f docker-compose.yml cp backend:/data/portfolio.db live.db \
-            || cp snapshot.db live.db) && \
-         cp -f live.db portfolio.db.prev",
-        dir = cfg.remote_dir,
-    ))?;
-    let live_snapshot = project_root.join("_deploy/live-portfolio.db");
-    scp_down("live.db", &live_snapshot)?;
-    promote_db(&live_snapshot, db_path, &content_commit)?;
-    scp_up(&live_snapshot, "live.db")?;
-    ssh(&format!(
-        "cd {dir} && docker compose -f docker-compose.yml cp live.db backend:/data/portfolio.db",
+        "cd {dir} && docker compose -f docker-compose.yml up -d",
         dir = cfg.remote_dir,
     ))?;
 
-    // Ship the media tree: tar it (scp has no recursive flag here), send the
-    // tarball, unpack it on the server, then mirror it into the backend's
-    // media volume — clearing `/data/media` first so a deleted asset also
-    // disappears server-side (same mirror semantics as the local path).
+    // Ship the media tree first, while the backend is up — the mirror step
+    // uses `docker compose exec`, which needs a running container. tar it
+    // (scp has no recursive flag here), send the tarball, unpack it on the
+    // server, then mirror it into the volume — clearing `/data/media` first
+    // so a deleted asset also disappears server-side.
     if let Some(ref dir) = media_root {
         let media_tar = project_root.join("_deploy/media.tar");
         let tar = Command::new("tar")
@@ -1815,13 +2171,40 @@ fn site_deploy(
         println!("  synced {} media file(s) into /data/media", assets.len());
     }
 
-    // Restart the proxy alongside the backend — `up -d` above may have
-    // recreated the backend container on a fresh IP, and nginx caches the
-    // `backend` upstream IP at worker start, so a stale proxy serves 502
-    // (same rationale as the local path's step 6).
+    // Now stop the backend before touching the db: the backend keeps it in
+    // SQLite WAL mode, so copying the bare `portfolio.db` while the backend
+    // holds an uncheckpointed WAL yields a torn snapshot, and copying a
+    // fresh `.db` back next to a stale `-wal` corrupts the database on the
+    // next open. Stopping the backend checkpoints and releases the WAL.
+    // Then: pull the live db down, promote it HERE (operator-side — no
+    // remote binary), push the promoted db back, and delete the now-stale
+    // `-wal`/`-shm` before the backend reopens. Runtime tables survive.
+    ssh(&format!(
+        "cd {dir} && docker compose -f docker-compose.yml stop backend && \
+         (docker compose -f docker-compose.yml cp backend:/data/portfolio.db live.db \
+            || cp snapshot.db live.db) && \
+         cp -f live.db portfolio.db.prev",
+        dir = cfg.remote_dir,
+    ))?;
+    let live_snapshot = project_root.join("_deploy/live-portfolio.db");
+    scp_down("live.db", &live_snapshot)?;
+    promote_db(&live_snapshot, db_path, &content_commit)?;
+    scp_up(&live_snapshot, "live.db")?;
+    ssh(&format!(
+        "cd {dir} && docker compose -f docker-compose.yml cp live.db backend:/data/portfolio.db && \
+         docker compose -f docker-compose.yml run --rm --no-deps --entrypoint sh backend \
+             -c 'rm -f /data/portfolio.db-wal /data/portfolio.db-shm'",
+        dir = cfg.remote_dir,
+    ))?;
+
+    // Start the backend back up — it was stopped for the db copy — so it
+    // reopens the promoted db cleanly, and restart the proxy: `up -d` may
+    // recreate the backend on a fresh IP, and nginx caches the `backend`
+    // upstream IP at worker start, so a stale proxy serves 502.
     println!("[6/6] up");
     ssh(&format!(
-        "cd {} && docker compose -f docker-compose.yml restart backend proxy",
+        "cd {} && docker compose -f docker-compose.yml up -d && \
+         docker compose -f docker-compose.yml restart proxy",
         cfg.remote_dir
     ))?;
 
@@ -1900,6 +2283,33 @@ fn docker_cp_to(
         .map_err(|e| format!("docker compose cp: {e}"))?;
     if !status.success() {
         return Err(format!("docker compose cp to {service}:{remote} failed"));
+    }
+    Ok(())
+}
+
+/// Delete the SQLite WAL companion files (`portfolio.db-wal` /
+/// `portfolio.db-shm`) from the backend's data volume.
+///
+/// Called after the promoted `portfolio.db` has been copied back in, while
+/// the backend container is stopped. The promoted `.db` is a complete,
+/// self-contained file; a `-wal`/`-shm` left over from before the stop is
+/// keyed to the *previous* database generation, and SQLite would replay its
+/// stale frames onto the new file on reopen — corrupting it. The backend is
+/// stopped, so a throwaway `run` is used to reach the volume.
+fn clear_wal_companions(
+    compose_file: &str,
+    compose_dir: &Path,
+    service: &str,
+) -> Result<(), String> {
+    let status = Command::new("docker")
+        .args(["compose", "-f", compose_file, "run", "--rm", "--no-deps"])
+        .args(["--entrypoint", "sh", service])
+        .args(["-c", "rm -f /data/portfolio.db-wal /data/portfolio.db-shm"])
+        .current_dir(compose_dir)
+        .status()
+        .map_err(|e| format!("docker compose run (clear wal): {e}"))?;
+    if !status.success() {
+        return Err("clearing the stale WAL companion files failed".to_owned());
     }
     Ok(())
 }

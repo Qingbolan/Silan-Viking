@@ -32,7 +32,7 @@ func (l *GetCurrentAnnualPlanLogic) GetCurrentAnnualPlan(req *types.AnnualPlanLi
 		return nil, err
 	}
 
-	plans := buildAnnualPlans(projects)
+	plans := buildAnnualPlans(projects, req.Language)
 	if len(plans) == 0 {
 		return nil, nil
 	}

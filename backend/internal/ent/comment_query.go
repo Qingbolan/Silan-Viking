@@ -27,7 +27,6 @@ type CommentQuery struct {
 	withParent       *CommentQuery
 	withReplies      *CommentQuery
 	withUserIdentity *UserIdentityQuery
-	withFKs          bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -441,7 +440,6 @@ func (cq *CommentQuery) prepareQuery(ctx context.Context) error {
 func (cq *CommentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comment, error) {
 	var (
 		nodes       = []*Comment{}
-		withFKs     = cq.withFKs
 		_spec       = cq.querySpec()
 		loadedTypes = [3]bool{
 			cq.withParent != nil,
@@ -449,9 +447,6 @@ func (cq *CommentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comm
 			cq.withUserIdentity != nil,
 		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, comment.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Comment).scanValues(nil, columns)
 	}
@@ -531,7 +526,6 @@ func (cq *CommentQuery) loadReplies(ctx context.Context, query *CommentQuery, no
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(comment.FieldParentID)
 	}

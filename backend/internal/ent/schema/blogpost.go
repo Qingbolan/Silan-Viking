@@ -109,6 +109,12 @@ func (BlogPost) Edges() []ent.Edge {
 		edge.To("tags", BlogTag.Type).
 			Through("blog_post_tags", BlogPostTag.Type),
 		edge.To("translations", BlogPostTranslation.Type),
-		edge.To("comments", Comment.Type),
+		// No `comments` edge: `comments` is a runtime table that soft-
+		// references content by plain `entity_type` / `entity_id` fields. An
+		// ent edge here would put a DB-level FK on `comments` pointing at
+		// `blog_posts` — and promote rebuilds `blog_posts` with fresh ids
+		// every content sync, dangling the FK and aborting the promote
+		// transaction once any real comment exists. The comment handlers
+		// query by `entity_type` + `entity_id` directly.
 	}
 }

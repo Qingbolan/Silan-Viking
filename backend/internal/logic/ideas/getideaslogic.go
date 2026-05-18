@@ -70,7 +70,6 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 	// Apply pagination
 	offset := (req.Page - 1) * req.Size
 	ideas, err := query.
-		WithTags().
 		WithDetails().
 		WithTranslations().
 		Order(ent.Desc(idea.FieldUpdatedAt)).

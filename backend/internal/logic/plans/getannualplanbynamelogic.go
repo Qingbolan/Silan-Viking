@@ -37,7 +37,7 @@ func (l *GetAnnualPlanByNameLogic) GetAnnualPlanByName(req *types.AnnualPlanRequ
 		return nil, err
 	}
 
-	for _, plan := range buildAnnualPlans(projects) {
+	for _, plan := range buildAnnualPlans(projects, req.Language) {
 		if plan.Year == year {
 			return &plan, nil
 		}

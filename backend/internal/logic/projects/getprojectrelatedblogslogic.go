@@ -90,7 +90,6 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
 		WithCategory().
-		WithTags().
 		All(l.ctx)
 	if err != nil {
 		return nil, err

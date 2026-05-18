@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
-	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/user"
 	"time"
 
@@ -357,21 +356,6 @@ func (bpc *BlogPostCreate) AddTranslations(b ...*BlogPostTranslation) *BlogPostC
 	return bpc.AddTranslationIDs(ids...)
 }
 
-// AddCommentIDs adds the "comments" edge to the Comment entity by IDs.
-func (bpc *BlogPostCreate) AddCommentIDs(ids ...string) *BlogPostCreate {
-	bpc.mutation.AddCommentIDs(ids...)
-	return bpc
-}
-
-// AddComments adds the "comments" edges to the Comment entity.
-func (bpc *BlogPostCreate) AddComments(c ...*Comment) *BlogPostCreate {
-	ids := make([]string, len(c))
-	for i := range c {
-		ids[i] = c[i].ID
-	}
-	return bpc.AddCommentIDs(ids...)
-}
-
 // Mutation returns the BlogPostMutation object of the builder.
 func (bpc *BlogPostCreate) Mutation() *BlogPostMutation {
 	return bpc.mutation
@@ -688,22 +672,6 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := bpc.mutation.CommentsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogpost.CommentsTable,
-			Columns: []string{blogpost.CommentsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -57,13 +57,11 @@ type IdeaEdges struct {
 	Translations []*IdeaTranslation `json:"translations,omitempty"`
 	// Details holds the value of the details edge.
 	Details *IdeaDetail `json:"details,omitempty"`
-	// Comments holds the value of the comments edge.
-	Comments []*Comment `json:"comments,omitempty"`
 	// Tags holds the value of the tags edge.
 	Tags []*IdeaTag `json:"tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [4]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -97,19 +95,10 @@ func (e IdeaEdges) DetailsOrErr() (*IdeaDetail, error) {
 	return nil, &NotLoadedError{edge: "details"}
 }
 
-// CommentsOrErr returns the Comments value or an error if the edge
-// was not loaded in eager-loading.
-func (e IdeaEdges) CommentsOrErr() ([]*Comment, error) {
-	if e.loadedTypes[3] {
-		return e.Comments, nil
-	}
-	return nil, &NotLoadedError{edge: "comments"}
-}
-
 // TagsOrErr returns the Tags value or an error if the edge
 // was not loaded in eager-loading.
 func (e IdeaEdges) TagsOrErr() ([]*IdeaTag, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[3] {
 		return e.Tags, nil
 	}
 	return nil, &NotLoadedError{edge: "tags"}
@@ -245,11 +234,6 @@ func (i *Idea) QueryTranslations() *IdeaTranslationQuery {
 // QueryDetails queries the "details" edge of the Idea entity.
 func (i *Idea) QueryDetails() *IdeaDetailQuery {
 	return NewIdeaClient(i.config).QueryDetails(i)
-}
-
-// QueryComments queries the "comments" edge of the Idea entity.
-func (i *Idea) QueryComments() *CommentQuery {
-	return NewIdeaClient(i.config).QueryComments(i)
 }
 
 // QueryTags queries the "tags" edge of the Idea entity.

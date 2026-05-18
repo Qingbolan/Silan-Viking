@@ -81,7 +81,10 @@ func (Idea) Edges() []ent.Edge {
 			Unique(),
 		// blog_posts edge dropped (M0.5a §11.7): idea->blog edges moved to
 		// content_relation.
-		edge.To("comments", Comment.Type),
+		// No `comments` edge: `comments` is a runtime table soft-referencing
+		// content by `entity_type` / `entity_id` fields. An ent edge would
+		// put a DB-level FK on `comments` -> `ideas`, which promote dangles
+		// when it rebuilds `ideas` (see BlogPost.Edges for the rationale).
 		// Many-to-many: idea <-> tags
 		edge.To("tags", IdeaTag.Type).
 			StorageKey(edge.Table("idea_tags_join")),

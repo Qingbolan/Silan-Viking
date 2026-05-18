@@ -65,8 +65,6 @@ const (
 	EdgeTags = "tags"
 	// EdgeTranslations holds the string denoting the translations edge name in mutations.
 	EdgeTranslations = "translations"
-	// EdgeComments holds the string denoting the comments edge name in mutations.
-	EdgeComments = "comments"
 	// EdgeBlogPostTags holds the string denoting the blog_post_tags edge name in mutations.
 	EdgeBlogPostTags = "blog_post_tags"
 	// Table holds the table name of the blogpost in the database.
@@ -104,13 +102,6 @@ const (
 	TranslationsInverseTable = "blog_post_translations"
 	// TranslationsColumn is the table column denoting the translations relation/edge.
 	TranslationsColumn = "blog_post_id"
-	// CommentsTable is the table that holds the comments relation/edge.
-	CommentsTable = "comments"
-	// CommentsInverseTable is the table name for the Comment entity.
-	// It exists in this package in order to avoid circular dependency with the "comment" package.
-	CommentsInverseTable = "comments"
-	// CommentsColumn is the table column denoting the comments relation/edge.
-	CommentsColumn = "blog_post_comments"
 	// BlogPostTagsTable is the table that holds the blog_post_tags relation/edge.
 	BlogPostTagsTable = "blog_post_tags"
 	// BlogPostTagsInverseTable is the table name for the BlogPostTag entity.
@@ -425,20 +416,6 @@ func ByTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByCommentsCount orders the results by comments count.
-func ByCommentsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newCommentsStep(), opts...)
-	}
-}
-
-// ByComments orders the results by comments terms.
-func ByComments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newCommentsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByBlogPostTagsCount orders the results by blog_post_tags count.
 func ByBlogPostTagsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -485,13 +462,6 @@ func newTranslationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TranslationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, TranslationsTable, TranslationsColumn),
-	)
-}
-func newCommentsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(CommentsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, CommentsTable, CommentsColumn),
 	)
 }
 func newBlogPostTagsStep() *sqlgraph.Step {
