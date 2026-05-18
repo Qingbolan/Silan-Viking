@@ -34,7 +34,120 @@ fn main() {
     }
 }
 
+/// Verb-usage lines for a known multi-verb command. Keyed by the
+/// top-level command name; the slices are the same `<command> ...`
+/// usage strings the `print_help` "verbs" sections render. Returns
+/// `None` for unknown commands so callers can fall back to the banner.
+///
+/// Maintenance contract: this mirrors the dispatch table in `run` and
+/// the verb listings in `print_help` — there is no auto-sync.
+fn command_usage(command: &str) -> Option<&'static [&'static str]> {
+    Some(match command {
+        "idea" => &[
+            "idea new|list|show|edit|archive|rm <slug>",
+            "idea add-part <slug> <role> · idea add-lang <slug> <lang>",
+            "idea status <slug> <state> · idea promote <slug> --to blog|project",
+            "idea list [--status <status>|--tag <tag>]",
+        ],
+        "blog" => &[
+            "blog new|list|show|edit|archive|rm <slug>",
+            "blog add-part <slug> <role> · blog add-lang <slug> <lang>",
+            "blog publish|unpublish <slug>",
+            "blog list [--status <status>|--tag <tag>]",
+        ],
+        "project" => &[
+            "project new|list|show|edit|archive|rm <slug>",
+            "project add-part <slug> <role> · project add-lang <slug> <lang>",
+            "project progress <slug>",
+            "project list [--status <status>|--tag <tag>]",
+        ],
+        "update" => &[
+            "update new|list|show|edit|archive|rm <slug>",
+            "update add-part <slug> <role> · update add-lang <slug> <lang>",
+            "update status <slug> <state> · update set-type <slug> <update-type>",
+            "update list [--status <status>|--tag <tag>]",
+        ],
+        "episode" => &[
+            "episode series new|list|show|reorder|archive|rm <series>",
+            "episode new <series> <slug>",
+            "episode show|edit|publish|unpublish|archive|rm <series> <slug>",
+            "episode add-lang <series> <slug> <lang>",
+        ],
+        "resume" => &[
+            "resume show|list",
+            "resume add-part <role> · resume add-lang <role> <lang>",
+            "resume edit <role> [lang]",
+        ],
+        "index" => &["index sync|status|lint|rebuild"],
+        "content" => &["content tree|ls|show <uri>"],
+        "relation" => &[
+            "relation graph",
+            "relation show <uri>",
+            "relation link <from> <to> --type <kind>",
+        ],
+        "proposal" => &[
+            "proposal list|show|accept|reject <id>",
+            "proposal rebase <id> [--continue]",
+        ],
+        "site" => &[
+            "site build|preview|check|status [--out PATH]",
+            "site publish <uri> · site deploy [--dry-run|--confirm]",
+            "site rollback · site promote <live-db> <snapshot-db> <content-commit>",
+        ],
+        "stats" => &[
+            "stats sync <uri>",
+            "stats show|visitors|crawlers|sources <uri>",
+        ],
+        "mcp" => &["mcp serve [--stdio] · mcp status"],
+        "skill" => &[
+            "skill emit|status [--path PATH]",
+            "skill rm [--path PATH]",
+        ],
+        "config" => &["config · config edit [--global]"],
+        "completion" => &["completion bash|zsh|fish"],
+        _ => return None,
+    })
+}
+
+/// The first positional (non-flag) token in `args`, skipping the
+/// global `--content`/`--db`/`--out` flags and their values — the same
+/// flags `CliOptions::parse` consumes. Returns `None` when every token
+/// is a flag (or its value). Used to find the command name *before*
+/// `CliOptions::parse` strips the flags.
+fn first_positional(args: &[String]) -> Option<&str> {
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--content" | "--db" | "--out" => i += 2,
+            other => return Some(other),
+        }
+    }
+    None
+}
+
 fn run(args: Vec<String>) -> Result<(), String> {
+    // Command-specific help: `silan-viking <command> --help`. The
+    // top-level banner promises "run 'silan-viking <command> --help'
+    // for command-specific help", but the broad `--help` check below
+    // would catch that `--help` and fall through to the full banner —
+    // breaking the promise. So when the first positional token is a
+    // known multi-verb command AND a help flag follows, print just
+    // that command's verb usage. Must run *before* the top-level check.
+    if let Some(command) = first_positional(&args) {
+        let asks_help = args
+            .iter()
+            .any(|a| matches!(a.as_str(), "-h" | "--help" | "help"));
+        if asks_help {
+            if let Some(usage) = command_usage(command) {
+                println!("silan-viking {command} — verbs:");
+                for line in usage {
+                    println!("    silan-viking {line}");
+                }
+                return Ok(());
+            }
+        }
+    }
+
     // Top-level help is shown for no args, or whenever `-h`/`--help`/`help`
     // appears anywhere before a subcommand. We still parse `--content` so
     // the banner's status block reflects the project the user is pointing
@@ -455,46 +568,6 @@ fn print_help(content_root: &Path) {
             env!("CARGO_PKG_VERSION"),
         )),
     );
-}
-
-/// The verb-usage lines for a top-level command, or `None` if `command` is
-/// not a known multi-verb command. Used to turn a bare or mistyped
-/// subcommand (`stats`, `index foo`) into a helpful usage hint instead of a
-/// blank `unknown command`. The strings mirror the per-group detail block
-/// in `print_help` — keep the two in sync.
-fn command_usage(command: &str) -> Option<&'static [&'static str]> {
-    Some(match command {
-        "idea" | "blog" | "project" | "update" => &[
-            "<kind> new|list|show|edit|archive|rm <slug>",
-            "<kind> add-part <slug> <role> · add-lang <slug> <lang>",
-            "idea status <slug> <state> · idea promote <slug> --to blog|project",
-            "blog publish|unpublish <slug> · project progress <slug>",
-            "update status <slug> <state> · update set-type <slug> <update-type>",
-        ],
-        "episode" => &[
-            "episode series new|list|show|reorder|archive|rm <series>",
-            "episode new|show|edit|add-lang|publish|unpublish|archive|rm <series> <slug>",
-        ],
-        "resume" => &["resume show|list · resume add-part|add-lang|edit <role> [lang]"],
-        "index" => &["index sync|status|lint|rebuild"],
-        "content" => &["content tree|ls|show <uri>"],
-        "relation" => &[
-            "relation graph · relation show <uri>",
-            "relation link <from> <to> --type <kind>",
-        ],
-        "proposal" => &["proposal list|show|accept|reject <id> · proposal rebase <id> [--continue]"],
-        "skill" => &["skill emit|status|rm [--path PATH]"],
-        "config" => &["config · config edit [--global]"],
-        "completion" => &["completion bash|zsh|fish"],
-        "site" => &[
-            "site build|preview|check|status [--out PATH]",
-            "site publish <uri> · site deploy [--dry-run|--confirm]",
-            "site rollback · site promote <live-db> <snapshot-db> <content-commit>",
-        ],
-        "stats" => &["stats sync <uri> · stats show|visitors|crawlers|sources <uri>"],
-        "mcp" => &["mcp serve [--stdio] · mcp status"],
-        _ => return None,
-    })
 }
 
 /// The default `silan-viking.toml` project config (`06` §6.2.2).
