@@ -264,7 +264,14 @@ silan init                初始化项目于 ~/.silan-viking/(--path 改址);见
 silan config edit         编辑项目配置;--global 编辑 ~/.config/silan/config.toml
 silan doctor              跨层健康检查
 silan completion <shell>  shell 补全
+silan uninstall           移除 skill + 派生文件;--purge 连 content/ 与配置一并删
 ```
+
+> `uninstall` 默认只删可再生的部分 —— 已装的 skill(`~/.claude/skills/
+> silan-viking`)和 `_deploy/` 派生产物 —— **保留 `content/`**(用户亲手写
+> 的、不可再生的真相源)。`--purge` 才连 `content/` 与 `silan-viking.toml`
+> 一并删。操作前先列出待删路径清单并等待确认:`--dry-run` 只列不删,`--yes`
+> 跳过确认(脚本用),`--purge` 的确认须键入 `purge` 而非裸 `y`。
 
 ---
 
@@ -272,8 +279,8 @@ silan completion <shell>  shell 补全
 
 - **命令组总览**:6 个 type 专属组(`idea`/`blog`/`project`/`episode`/
   `resume`/`update`)+ 7 个工具组(`content`/`index`/`relation`/`site`/
-  `stats`/`proposal`/`mcp`)+ 4 个顶层命令(`init`/`config`/`doctor`/
-  `completion`)。(6 type 见 10 §10.4 裁决 #3。)
+  `stats`/`proposal`/`mcp`)+ 5 个顶层命令(`init`/`config`/`doctor`/
+  `completion`/`uninstall`)。(6 type 见 10 §10.4 裁决 #3。)
 - **为什么 type 专属组,不用泛型 `content --type`**:idea/update 有生命
   周期(`status`)、blog/episode 有发布(`publish`)、project 有进展维护
   (`progress`)、resume 有多 Part 维度的 `edit <part>` —— 这些**类型专属

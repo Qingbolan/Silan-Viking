@@ -99,6 +99,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "stats show|visitors|crawlers|sources <uri>",
         ],
         "mcp" => &["mcp serve [--stdio] · mcp status"],
+        "uninstall" => &["uninstall [--purge] [--dry-run|--yes]"],
         "skill" => &[
             "skill emit|status [--path PATH]",
             "skill rm [--path PATH]",
@@ -163,6 +164,19 @@ fn run(args: Vec<String>) -> Result<(), String> {
     match command.as_slice() {
         ["init"] => init_content(&opts.content_root),
         ["doctor"] => doctor(&opts.content_root),
+        // uninstall [--purge] [--dry-run|--yes] — order-insensitive flags.
+        ["uninstall", flags @ ..]
+            if flags
+                .iter()
+                .all(|f| matches!(*f, "--purge" | "--dry-run" | "--yes")) =>
+        {
+            uninstall(
+                &opts.content_root,
+                flags.contains(&"--purge"),
+                flags.contains(&"--dry-run"),
+                flags.contains(&"--yes"),
+            )
+        }
         ["config"] => {
             println!("content_root={}", opts.content_root.display());
             println!("db={}", opts.db_path.display());
@@ -533,6 +547,7 @@ fn print_help(content_root: &Path) {
     row("doctor", "Health check — content, index, embedder");
     row("config", "Show resolved paths, or edit silan-viking.toml");
     row("completion", "Emit a shell completion script (bash/zsh/fish)");
+    row("uninstall", "Remove the skill + derived files (--purge: content too)");
     println!();
 
     // Per-group detail, for the verbs the one-line summary can't carry.
@@ -559,6 +574,11 @@ fn print_help(content_root: &Path) {
     println!("  {}", d("site publish <uri> · site deploy [--dry-run|--confirm]"));
     println!("  {}", d("site rollback · site promote <live-db> <snapshot-db> <content-commit>"));
     println!("  {}", d("stats sync <uri> · stats show|visitors|crawlers|sources <uri>"));
+    println!();
+
+    println!("{}", h("Maintenance verbs:"));
+    println!("  {}", d("config edit [--global] · completion bash|zsh|fish"));
+    println!("  {}", d("uninstall [--purge] [--dry-run|--yes]"));
     println!();
 
     println!(
@@ -778,6 +798,106 @@ fn doctor(content_root: &Path) -> Result<(), String> {
         index.documents().len(),
         index.mode()
     );
+    Ok(())
+}
+
+/// `uninstall [--purge] [--dry-run|--yes]` — remove what silan-viking put on
+/// this machine.
+///
+/// Two scopes, because `content/` is the user's hand-written source of truth
+/// and `index sync`/`deploy` cannot regenerate it:
+///   - default: the installed skill (`~/.claude/skills/silan-viking`) and the
+///     *derived* `_deploy/` artifacts (index db, deploy staging, tarballs) —
+///     everything reproducible from `content/`.
+///   - `--purge`: also `content/` and `silan-viking.toml`, i.e. the project
+///     itself. Irreversible loss of authored content.
+///
+/// The operation is "loud": it prints the exact path list it will delete and
+/// waits for a typed `y` (or the purge confirm word) before touching disk.
+/// `--dry-run` lists and stops; `--yes` skips the prompt for scripts. This
+/// mirrors `site deploy`'s dry-run-by-intent / `--confirm` discipline.
+fn uninstall(content_root: &Path, purge: bool, dry_run: bool, assume_yes: bool) -> Result<(), String> {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let skill_dir = skill::default_skill_dir();
+    let deploy_dir = project_root.join("_deploy");
+
+    // Build the delete list — only paths that actually exist, so the printed
+    // plan is the truth and an absent path is not reported as a deletion.
+    let mut targets: Vec<(PathBuf, &str)> = Vec::new();
+    if skill_dir.exists() {
+        targets.push((skill_dir.clone(), "installed Claude skill"));
+    }
+    if deploy_dir.exists() {
+        targets.push((deploy_dir.clone(), "derived index + deploy artifacts"));
+    }
+    if purge {
+        // content/ and the project config — the irreplaceable half.
+        if content_root.exists() {
+            targets.push((content_root.to_path_buf(), "content/ — YOUR AUTHORED CONTENT"));
+        }
+        let config = project_root.join("silan-viking.toml");
+        if config.exists() {
+            targets.push((config, "project config"));
+        }
+    }
+
+    if targets.is_empty() {
+        println!("nothing to uninstall — no silan-viking artifacts found");
+        return Ok(());
+    }
+
+    // Print the plan. This is the same list whether or not we go on to delete.
+    println!(
+        "silan-viking uninstall{} — the following will be deleted:",
+        if purge { " --purge" } else { "" },
+    );
+    for (path, what) in &targets {
+        println!("  {}  ({what})", path.display());
+    }
+    if !purge {
+        println!(
+            "\ncontent/ and silan-viking.toml are kept. Pass --purge to delete those too.",
+        );
+    }
+
+    if dry_run {
+        println!("\n--dry-run: nothing deleted.");
+        return Ok(());
+    }
+
+    // The confirmation gate. --purge demands the word `purge` (not a bare `y`)
+    // so a reflexive yes cannot wipe authored content; the plain scope takes
+    // `y`. --yes skips the prompt entirely, for non-interactive callers.
+    if !assume_yes {
+        let (prompt, expected) = if purge {
+            ("\nThis DELETES your content/ — type `purge` to confirm: ", "purge")
+        } else {
+            ("\nProceed? [y/N]: ", "y")
+        };
+        print!("{prompt}");
+        // `flush` lives on `io::Write`; call it fully-qualified rather than
+        // pulling a bare `Write` into this large module's namespace.
+        io::Write::flush(&mut io::stdout()).map_err(|e| e.to_string())?;
+        let mut answer = String::new();
+        io::stdin()
+            .read_line(&mut answer)
+            .map_err(|e| e.to_string())?;
+        if answer.trim() != expected {
+            println!("aborted — nothing deleted.");
+            return Ok(());
+        }
+    }
+
+    for (path, _) in &targets {
+        fs::remove_dir_all(path)
+            .or_else(|_| fs::remove_file(path))
+            .map_err(|e| format!("removing {}: {e}", path.display()))?;
+        println!("removed {}", path.display());
+    }
+    println!("uninstall complete.");
+    if !purge {
+        println!("the silan-viking binary itself is not self-deleting — remove it by hand.");
+    }
     Ok(())
 }
 
