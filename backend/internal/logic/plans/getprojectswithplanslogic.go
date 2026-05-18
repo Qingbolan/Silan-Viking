@@ -33,7 +33,7 @@ func (l *GetProjectsWithPlansLogic) GetProjectsWithPlans(req *types.ProjectsWith
 
 	resp = make([]types.Project, 0, len(projects))
 	for _, proj := range projects {
-		resp = append(resp, mapProject(proj))
+		resp = append(resp, mapProject(l.ctx, l.svcCtx.RawDB, proj, req.Language))
 	}
 
 	return resp, nil
