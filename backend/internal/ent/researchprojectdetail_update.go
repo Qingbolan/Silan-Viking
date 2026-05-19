@@ -85,6 +85,12 @@ func (rpdu *ResearchProjectDetailUpdate) SetUpdatedAt(t time.Time) *ResearchProj
 	return rpdu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (rpdu *ResearchProjectDetailUpdate) ClearUpdatedAt() *ResearchProjectDetailUpdate {
+	rpdu.mutation.ClearUpdatedAt()
+	return rpdu
+}
+
 // SetResearchProject sets the "research_project" edge to the ResearchProject entity.
 func (rpdu *ResearchProjectDetailUpdate) SetResearchProject(r *ResearchProject) *ResearchProjectDetailUpdate {
 	return rpdu.SetResearchProjectID(r.ID)
@@ -167,7 +173,7 @@ func (rpdu *ResearchProjectDetailUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (rpdu *ResearchProjectDetailUpdate) defaults() {
-	if _, ok := rpdu.mutation.UpdatedAt(); !ok {
+	if _, ok := rpdu.mutation.UpdatedAt(); !ok && !rpdu.mutation.UpdatedAtCleared() {
 		v := researchprojectdetail.UpdateDefaultUpdatedAt()
 		rpdu.mutation.SetUpdatedAt(v)
 	}
@@ -207,8 +213,14 @@ func (rpdu *ResearchProjectDetailUpdate) sqlSave(ctx context.Context) (n int, er
 	if value, ok := rpdu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(researchprojectdetail.FieldSortOrder, field.TypeInt, value)
 	}
+	if rpdu.mutation.CreatedAtCleared() {
+		_spec.ClearField(researchprojectdetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := rpdu.mutation.UpdatedAt(); ok {
 		_spec.SetField(researchprojectdetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if rpdu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(researchprojectdetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if rpdu.mutation.ResearchProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -359,6 +371,12 @@ func (rpduo *ResearchProjectDetailUpdateOne) SetUpdatedAt(t time.Time) *Research
 	return rpduo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (rpduo *ResearchProjectDetailUpdateOne) ClearUpdatedAt() *ResearchProjectDetailUpdateOne {
+	rpduo.mutation.ClearUpdatedAt()
+	return rpduo
+}
+
 // SetResearchProject sets the "research_project" edge to the ResearchProject entity.
 func (rpduo *ResearchProjectDetailUpdateOne) SetResearchProject(r *ResearchProject) *ResearchProjectDetailUpdateOne {
 	return rpduo.SetResearchProjectID(r.ID)
@@ -454,7 +472,7 @@ func (rpduo *ResearchProjectDetailUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (rpduo *ResearchProjectDetailUpdateOne) defaults() {
-	if _, ok := rpduo.mutation.UpdatedAt(); !ok {
+	if _, ok := rpduo.mutation.UpdatedAt(); !ok && !rpduo.mutation.UpdatedAtCleared() {
 		v := researchprojectdetail.UpdateDefaultUpdatedAt()
 		rpduo.mutation.SetUpdatedAt(v)
 	}
@@ -511,8 +529,14 @@ func (rpduo *ResearchProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node
 	if value, ok := rpduo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(researchprojectdetail.FieldSortOrder, field.TypeInt, value)
 	}
+	if rpduo.mutation.CreatedAtCleared() {
+		_spec.ClearField(researchprojectdetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := rpduo.mutation.UpdatedAt(); ok {
 		_spec.SetField(researchprojectdetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if rpduo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(researchprojectdetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if rpduo.mutation.ResearchProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

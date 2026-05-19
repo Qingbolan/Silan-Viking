@@ -31,8 +31,11 @@ func fetchPublicProjects(ctx context.Context, client *ent.Client) ([]*ent.Projec
 }
 
 func projectYear(proj *ent.Project) int {
-	if !proj.StartDate.IsZero() {
-		return proj.StartDate.Year()
+	// `start_date` is a plain `YYYY-MM-DD` string; fall back to created-at.
+	if len(proj.StartDate) >= 4 {
+		if y, err := strconv.Atoi(proj.StartDate[:4]); err == nil {
+			return y
+		}
 	}
 	return proj.CreatedAt.Year()
 }

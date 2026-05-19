@@ -19,8 +19,6 @@ import (
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttag"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseries"
-	"silan-backend/internal/ent/blogseriestranslation"
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
@@ -100,10 +98,6 @@ type Client struct {
 	BlogPostTag *BlogPostTagClient
 	// BlogPostTranslation is the client for interacting with the BlogPostTranslation builders.
 	BlogPostTranslation *BlogPostTranslationClient
-	// BlogSeries is the client for interacting with the BlogSeries builders.
-	BlogSeries *BlogSeriesClient
-	// BlogSeriesTranslation is the client for interacting with the BlogSeriesTranslation builders.
-	BlogSeriesTranslation *BlogSeriesTranslationClient
 	// BlogTag is the client for interacting with the BlogTag builders.
 	BlogTag *BlogTagClient
 	// Comment is the client for interacting with the Comment builders.
@@ -225,8 +219,6 @@ func (c *Client) init() {
 	c.BlogPost = NewBlogPostClient(c.config)
 	c.BlogPostTag = NewBlogPostTagClient(c.config)
 	c.BlogPostTranslation = NewBlogPostTranslationClient(c.config)
-	c.BlogSeries = NewBlogSeriesClient(c.config)
-	c.BlogSeriesTranslation = NewBlogSeriesTranslationClient(c.config)
 	c.BlogTag = NewBlogTagClient(c.config)
 	c.Comment = NewCommentClient(c.config)
 	c.CommentLike = NewCommentLikeClient(c.config)
@@ -378,8 +370,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BlogPost:                         NewBlogPostClient(cfg),
 		BlogPostTag:                      NewBlogPostTagClient(cfg),
 		BlogPostTranslation:              NewBlogPostTranslationClient(cfg),
-		BlogSeries:                       NewBlogSeriesClient(cfg),
-		BlogSeriesTranslation:            NewBlogSeriesTranslationClient(cfg),
 		BlogTag:                          NewBlogTagClient(cfg),
 		Comment:                          NewCommentClient(cfg),
 		CommentLike:                      NewCommentLikeClient(cfg),
@@ -458,8 +448,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BlogPost:                         NewBlogPostClient(cfg),
 		BlogPostTag:                      NewBlogPostTagClient(cfg),
 		BlogPostTranslation:              NewBlogPostTranslationClient(cfg),
-		BlogSeries:                       NewBlogSeriesClient(cfg),
-		BlogSeriesTranslation:            NewBlogSeriesTranslationClient(cfg),
 		BlogTag:                          NewBlogTagClient(cfg),
 		Comment:                          NewCommentClient(cfg),
 		CommentLike:                      NewCommentLikeClient(cfg),
@@ -542,12 +530,11 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Award, c.AwardTranslation, c.BlogCategory,
 		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTag, c.BlogPostTranslation,
-		c.BlogSeries, c.BlogSeriesTranslation, c.BlogTag, c.Comment, c.CommentLike,
-		c.ContentInteraction, c.ContentRelation, c.Education, c.EducationDetail,
-		c.EducationDetailTranslation, c.EducationTranslation, c.Episode,
-		c.EpisodeSeries, c.EpisodeSeriesTranslation, c.EpisodeTranslation, c.Idea,
-		c.IdeaDetail, c.IdeaDetailTranslation, c.IdeaTag, c.IdeaTranslation,
-		c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
+		c.BlogTag, c.Comment, c.CommentLike, c.ContentInteraction, c.ContentRelation,
+		c.Education, c.EducationDetail, c.EducationDetailTranslation,
+		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
+		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation, c.IdeaTag,
+		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
 		c.PartEntryTranslation, c.PersonalInfo, c.PersonalInfoTranslation, c.Project,
 		c.ProjectDetail, c.ProjectDetailTranslation, c.ProjectImage,
 		c.ProjectImageTranslation, c.ProjectLike, c.ProjectTechnology,
@@ -568,12 +555,11 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Award, c.AwardTranslation, c.BlogCategory,
 		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTag, c.BlogPostTranslation,
-		c.BlogSeries, c.BlogSeriesTranslation, c.BlogTag, c.Comment, c.CommentLike,
-		c.ContentInteraction, c.ContentRelation, c.Education, c.EducationDetail,
-		c.EducationDetailTranslation, c.EducationTranslation, c.Episode,
-		c.EpisodeSeries, c.EpisodeSeriesTranslation, c.EpisodeTranslation, c.Idea,
-		c.IdeaDetail, c.IdeaDetailTranslation, c.IdeaTag, c.IdeaTranslation,
-		c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
+		c.BlogTag, c.Comment, c.CommentLike, c.ContentInteraction, c.ContentRelation,
+		c.Education, c.EducationDetail, c.EducationDetailTranslation,
+		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
+		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation, c.IdeaTag,
+		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
 		c.PartEntryTranslation, c.PersonalInfo, c.PersonalInfoTranslation, c.Project,
 		c.ProjectDetail, c.ProjectDetailTranslation, c.ProjectImage,
 		c.ProjectImageTranslation, c.ProjectLike, c.ProjectTechnology,
@@ -607,10 +593,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BlogPostTag.mutate(ctx, m)
 	case *BlogPostTranslationMutation:
 		return c.BlogPostTranslation.mutate(ctx, m)
-	case *BlogSeriesMutation:
-		return c.BlogSeries.mutate(ctx, m)
-	case *BlogSeriesTranslationMutation:
-		return c.BlogSeriesTranslation.mutate(ctx, m)
 	case *BlogTagMutation:
 		return c.BlogTag.mutate(ctx, m)
 	case *CommentMutation:
@@ -957,22 +939,6 @@ func (c *AwardClient) GetX(ctx context.Context, id string) *Award {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryUser queries the user edge of a Award.
-func (c *AwardClient) QueryUser(a *Award) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := a.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(award.Table, award.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, award.UserTable, award.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a Award.
@@ -1619,22 +1585,6 @@ func (c *BlogPostClient) GetX(ctx context.Context, id string) *BlogPost {
 	return obj
 }
 
-// QueryUser queries the user edge of a BlogPost.
-func (c *BlogPostClient) QueryUser(bp *BlogPost) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.UserTable, blogpost.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryCategory queries the category edge of a BlogPost.
 func (c *BlogPostClient) QueryCategory(bp *BlogPost) *BlogCategoryQuery {
 	query := (&BlogCategoryClient{config: c.config}).Query()
@@ -1644,22 +1594,6 @@ func (c *BlogPostClient) QueryCategory(bp *BlogPost) *BlogCategoryQuery {
 			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
 			sqlgraph.To(blogcategory.Table, blogcategory.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.CategoryTable, blogpost.CategoryColumn),
-		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QuerySeries queries the series edge of a BlogPost.
-func (c *BlogPostClient) QuerySeries(bp *BlogPost) *BlogSeriesQuery {
-	query := (&BlogSeriesClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
-			sqlgraph.To(blogseries.Table, blogseries.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.SeriesTable, blogpost.SeriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
 		return fromV, nil
@@ -2018,336 +1952,6 @@ func (c *BlogPostTranslationClient) mutate(ctx context.Context, m *BlogPostTrans
 		return (&BlogPostTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BlogPostTranslation mutation op: %q", m.Op())
-	}
-}
-
-// BlogSeriesClient is a client for the BlogSeries schema.
-type BlogSeriesClient struct {
-	config
-}
-
-// NewBlogSeriesClient returns a client for the BlogSeries from the given config.
-func NewBlogSeriesClient(c config) *BlogSeriesClient {
-	return &BlogSeriesClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `blogseries.Hooks(f(g(h())))`.
-func (c *BlogSeriesClient) Use(hooks ...Hook) {
-	c.hooks.BlogSeries = append(c.hooks.BlogSeries, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `blogseries.Intercept(f(g(h())))`.
-func (c *BlogSeriesClient) Intercept(interceptors ...Interceptor) {
-	c.inters.BlogSeries = append(c.inters.BlogSeries, interceptors...)
-}
-
-// Create returns a builder for creating a BlogSeries entity.
-func (c *BlogSeriesClient) Create() *BlogSeriesCreate {
-	mutation := newBlogSeriesMutation(c.config, OpCreate)
-	return &BlogSeriesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of BlogSeries entities.
-func (c *BlogSeriesClient) CreateBulk(builders ...*BlogSeriesCreate) *BlogSeriesCreateBulk {
-	return &BlogSeriesCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *BlogSeriesClient) MapCreateBulk(slice any, setFunc func(*BlogSeriesCreate, int)) *BlogSeriesCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &BlogSeriesCreateBulk{err: fmt.Errorf("calling to BlogSeriesClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*BlogSeriesCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &BlogSeriesCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for BlogSeries.
-func (c *BlogSeriesClient) Update() *BlogSeriesUpdate {
-	mutation := newBlogSeriesMutation(c.config, OpUpdate)
-	return &BlogSeriesUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *BlogSeriesClient) UpdateOne(bs *BlogSeries) *BlogSeriesUpdateOne {
-	mutation := newBlogSeriesMutation(c.config, OpUpdateOne, withBlogSeries(bs))
-	return &BlogSeriesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *BlogSeriesClient) UpdateOneID(id string) *BlogSeriesUpdateOne {
-	mutation := newBlogSeriesMutation(c.config, OpUpdateOne, withBlogSeriesID(id))
-	return &BlogSeriesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for BlogSeries.
-func (c *BlogSeriesClient) Delete() *BlogSeriesDelete {
-	mutation := newBlogSeriesMutation(c.config, OpDelete)
-	return &BlogSeriesDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *BlogSeriesClient) DeleteOne(bs *BlogSeries) *BlogSeriesDeleteOne {
-	return c.DeleteOneID(bs.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *BlogSeriesClient) DeleteOneID(id string) *BlogSeriesDeleteOne {
-	builder := c.Delete().Where(blogseries.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &BlogSeriesDeleteOne{builder}
-}
-
-// Query returns a query builder for BlogSeries.
-func (c *BlogSeriesClient) Query() *BlogSeriesQuery {
-	return &BlogSeriesQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeBlogSeries},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a BlogSeries entity by its id.
-func (c *BlogSeriesClient) Get(ctx context.Context, id string) (*BlogSeries, error) {
-	return c.Query().Where(blogseries.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *BlogSeriesClient) GetX(ctx context.Context, id string) *BlogSeries {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryBlogPosts queries the blog_posts edge of a BlogSeries.
-func (c *BlogSeriesClient) QueryBlogPosts(bs *BlogSeries) *BlogPostQuery {
-	query := (&BlogPostClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bs.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogseries.Table, blogseries.FieldID, id),
-			sqlgraph.To(blogpost.Table, blogpost.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, blogseries.BlogPostsTable, blogseries.BlogPostsColumn),
-		)
-		fromV = sqlgraph.Neighbors(bs.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryTranslations queries the translations edge of a BlogSeries.
-func (c *BlogSeriesClient) QueryTranslations(bs *BlogSeries) *BlogSeriesTranslationQuery {
-	query := (&BlogSeriesTranslationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bs.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogseries.Table, blogseries.FieldID, id),
-			sqlgraph.To(blogseriestranslation.Table, blogseriestranslation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, blogseries.TranslationsTable, blogseries.TranslationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(bs.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *BlogSeriesClient) Hooks() []Hook {
-	return c.hooks.BlogSeries
-}
-
-// Interceptors returns the client interceptors.
-func (c *BlogSeriesClient) Interceptors() []Interceptor {
-	return c.inters.BlogSeries
-}
-
-func (c *BlogSeriesClient) mutate(ctx context.Context, m *BlogSeriesMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&BlogSeriesCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&BlogSeriesUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&BlogSeriesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&BlogSeriesDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown BlogSeries mutation op: %q", m.Op())
-	}
-}
-
-// BlogSeriesTranslationClient is a client for the BlogSeriesTranslation schema.
-type BlogSeriesTranslationClient struct {
-	config
-}
-
-// NewBlogSeriesTranslationClient returns a client for the BlogSeriesTranslation from the given config.
-func NewBlogSeriesTranslationClient(c config) *BlogSeriesTranslationClient {
-	return &BlogSeriesTranslationClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `blogseriestranslation.Hooks(f(g(h())))`.
-func (c *BlogSeriesTranslationClient) Use(hooks ...Hook) {
-	c.hooks.BlogSeriesTranslation = append(c.hooks.BlogSeriesTranslation, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `blogseriestranslation.Intercept(f(g(h())))`.
-func (c *BlogSeriesTranslationClient) Intercept(interceptors ...Interceptor) {
-	c.inters.BlogSeriesTranslation = append(c.inters.BlogSeriesTranslation, interceptors...)
-}
-
-// Create returns a builder for creating a BlogSeriesTranslation entity.
-func (c *BlogSeriesTranslationClient) Create() *BlogSeriesTranslationCreate {
-	mutation := newBlogSeriesTranslationMutation(c.config, OpCreate)
-	return &BlogSeriesTranslationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of BlogSeriesTranslation entities.
-func (c *BlogSeriesTranslationClient) CreateBulk(builders ...*BlogSeriesTranslationCreate) *BlogSeriesTranslationCreateBulk {
-	return &BlogSeriesTranslationCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *BlogSeriesTranslationClient) MapCreateBulk(slice any, setFunc func(*BlogSeriesTranslationCreate, int)) *BlogSeriesTranslationCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &BlogSeriesTranslationCreateBulk{err: fmt.Errorf("calling to BlogSeriesTranslationClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*BlogSeriesTranslationCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &BlogSeriesTranslationCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for BlogSeriesTranslation.
-func (c *BlogSeriesTranslationClient) Update() *BlogSeriesTranslationUpdate {
-	mutation := newBlogSeriesTranslationMutation(c.config, OpUpdate)
-	return &BlogSeriesTranslationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *BlogSeriesTranslationClient) UpdateOne(bst *BlogSeriesTranslation) *BlogSeriesTranslationUpdateOne {
-	mutation := newBlogSeriesTranslationMutation(c.config, OpUpdateOne, withBlogSeriesTranslation(bst))
-	return &BlogSeriesTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *BlogSeriesTranslationClient) UpdateOneID(id string) *BlogSeriesTranslationUpdateOne {
-	mutation := newBlogSeriesTranslationMutation(c.config, OpUpdateOne, withBlogSeriesTranslationID(id))
-	return &BlogSeriesTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for BlogSeriesTranslation.
-func (c *BlogSeriesTranslationClient) Delete() *BlogSeriesTranslationDelete {
-	mutation := newBlogSeriesTranslationMutation(c.config, OpDelete)
-	return &BlogSeriesTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *BlogSeriesTranslationClient) DeleteOne(bst *BlogSeriesTranslation) *BlogSeriesTranslationDeleteOne {
-	return c.DeleteOneID(bst.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *BlogSeriesTranslationClient) DeleteOneID(id string) *BlogSeriesTranslationDeleteOne {
-	builder := c.Delete().Where(blogseriestranslation.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &BlogSeriesTranslationDeleteOne{builder}
-}
-
-// Query returns a query builder for BlogSeriesTranslation.
-func (c *BlogSeriesTranslationClient) Query() *BlogSeriesTranslationQuery {
-	return &BlogSeriesTranslationQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeBlogSeriesTranslation},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a BlogSeriesTranslation entity by its id.
-func (c *BlogSeriesTranslationClient) Get(ctx context.Context, id string) (*BlogSeriesTranslation, error) {
-	return c.Query().Where(blogseriestranslation.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *BlogSeriesTranslationClient) GetX(ctx context.Context, id string) *BlogSeriesTranslation {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryBlogSeries queries the blog_series edge of a BlogSeriesTranslation.
-func (c *BlogSeriesTranslationClient) QueryBlogSeries(bst *BlogSeriesTranslation) *BlogSeriesQuery {
-	query := (&BlogSeriesClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bst.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogseriestranslation.Table, blogseriestranslation.FieldID, id),
-			sqlgraph.To(blogseries.Table, blogseries.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogseriestranslation.BlogSeriesTable, blogseriestranslation.BlogSeriesColumn),
-		)
-		fromV = sqlgraph.Neighbors(bst.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryLanguage queries the language edge of a BlogSeriesTranslation.
-func (c *BlogSeriesTranslationClient) QueryLanguage(bst *BlogSeriesTranslation) *LanguageQuery {
-	query := (&LanguageClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bst.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogseriestranslation.Table, blogseriestranslation.FieldID, id),
-			sqlgraph.To(language.Table, language.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogseriestranslation.LanguageTable, blogseriestranslation.LanguageColumn),
-		)
-		fromV = sqlgraph.Neighbors(bst.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *BlogSeriesTranslationClient) Hooks() []Hook {
-	return c.hooks.BlogSeriesTranslation
-}
-
-// Interceptors returns the client interceptors.
-func (c *BlogSeriesTranslationClient) Interceptors() []Interceptor {
-	return c.inters.BlogSeriesTranslation
-}
-
-func (c *BlogSeriesTranslationClient) mutate(ctx context.Context, m *BlogSeriesTranslationMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&BlogSeriesTranslationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&BlogSeriesTranslationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&BlogSeriesTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&BlogSeriesTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown BlogSeriesTranslation mutation op: %q", m.Op())
 	}
 }
 
@@ -3218,22 +2822,6 @@ func (c *EducationClient) GetX(ctx context.Context, id string) *Education {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryUser queries the user edge of a Education.
-func (c *EducationClient) QueryUser(e *Education) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := e.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(education.Table, education.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, education.UserTable, education.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a Education.
@@ -4522,22 +4110,6 @@ func (c *IdeaClient) GetX(ctx context.Context, id string) *Idea {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryUser queries the user edge of a Idea.
-func (c *IdeaClient) QueryUser(i *Idea) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := i.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(idea.Table, idea.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, idea.UserTable, idea.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a Idea.
@@ -5839,22 +5411,6 @@ func (c *LanguageClient) QueryBlogPostTranslations(l *Language) *BlogPostTransla
 	return query
 }
 
-// QueryBlogSeriesTranslations queries the blog_series_translations edge of a Language.
-func (c *LanguageClient) QueryBlogSeriesTranslations(l *Language) *BlogSeriesTranslationQuery {
-	query := (&BlogSeriesTranslationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := l.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(language.Table, language.FieldID, id),
-			sqlgraph.To(blogseriestranslation.Table, blogseriestranslation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, language.BlogSeriesTranslationsTable, language.BlogSeriesTranslationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryIdeaTranslations queries the idea_translations edge of a Language.
 func (c *LanguageClient) QueryIdeaTranslations(l *Language) *IdeaTranslationQuery {
 	query := (&IdeaTranslationClient{config: c.config}).Query()
@@ -6414,22 +5970,6 @@ func (c *PersonalInfoClient) GetX(ctx context.Context, id string) *PersonalInfo 
 	return obj
 }
 
-// QueryUser queries the user edge of a PersonalInfo.
-func (c *PersonalInfoClient) QueryUser(pi *PersonalInfo) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pi.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(personalinfo.Table, personalinfo.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, personalinfo.UserTable, personalinfo.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(pi.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryTranslations queries the translations edge of a PersonalInfo.
 func (c *PersonalInfoClient) QueryTranslations(pi *PersonalInfo) *PersonalInfoTranslationQuery {
 	query := (&PersonalInfoTranslationClient{config: c.config}).Query()
@@ -6758,22 +6298,6 @@ func (c *ProjectClient) GetX(ctx context.Context, id string) *Project {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryUser queries the user edge of a Project.
-func (c *ProjectClient) QueryUser(pr *Project) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(project.Table, project.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, project.UserTable, project.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a Project.
@@ -8245,22 +7769,6 @@ func (c *PublicationClient) GetX(ctx context.Context, id string) *Publication {
 	return obj
 }
 
-// QueryUser queries the user edge of a Publication.
-func (c *PublicationClient) QueryUser(pu *Publication) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pu.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(publication.Table, publication.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, publication.UserTable, publication.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(pu.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryTranslations queries the translations edge of a Publication.
 func (c *PublicationClient) QueryTranslations(pu *Publication) *PublicationTranslationQuery {
 	query := (&PublicationTranslationClient{config: c.config}).Query()
@@ -8740,22 +8248,6 @@ func (c *RecentUpdateClient) GetX(ctx context.Context, id string) *RecentUpdate 
 	return obj
 }
 
-// QueryUser queries the user edge of a RecentUpdate.
-func (c *RecentUpdateClient) QueryUser(ru *RecentUpdate) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ru.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(recentupdate.Table, recentupdate.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, recentupdate.UserTable, recentupdate.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(ru.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryTranslations queries the translations edge of a RecentUpdate.
 func (c *RecentUpdateClient) QueryTranslations(ru *RecentUpdate) *RecentUpdateTranslationQuery {
 	query := (&RecentUpdateTranslationClient{config: c.config}).Query()
@@ -9201,22 +8693,6 @@ func (c *ResearchProjectClient) GetX(ctx context.Context, id string) *ResearchPr
 		panic(err)
 	}
 	return obj
-}
-
-// QueryUser queries the user edge of a ResearchProject.
-func (c *ResearchProjectClient) QueryUser(rp *ResearchProject) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := rp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(researchproject.Table, researchproject.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, researchproject.UserTable, researchproject.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(rp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a ResearchProject.
@@ -10028,166 +9504,6 @@ func (c *UserClient) GetX(ctx context.Context, id string) *User {
 	return obj
 }
 
-// QueryPersonalInfos queries the personal_infos edge of a User.
-func (c *UserClient) QueryPersonalInfos(u *User) *PersonalInfoQuery {
-	query := (&PersonalInfoClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(personalinfo.Table, personalinfo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.PersonalInfosTable, user.PersonalInfosColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryEducations queries the educations edge of a User.
-func (c *UserClient) QueryEducations(u *User) *EducationQuery {
-	query := (&EducationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(education.Table, education.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.EducationsTable, user.EducationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryWorkExperiences queries the work_experiences edge of a User.
-func (c *UserClient) QueryWorkExperiences(u *User) *WorkExperienceQuery {
-	query := (&WorkExperienceClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(workexperience.Table, workexperience.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.WorkExperiencesTable, user.WorkExperiencesColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryProjects queries the projects edge of a User.
-func (c *UserClient) QueryProjects(u *User) *ProjectQuery {
-	query := (&ProjectClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(project.Table, project.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.ProjectsTable, user.ProjectsColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryBlogPosts queries the blog_posts edge of a User.
-func (c *UserClient) QueryBlogPosts(u *User) *BlogPostQuery {
-	query := (&BlogPostClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(blogpost.Table, blogpost.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.BlogPostsTable, user.BlogPostsColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryIdeas queries the ideas edge of a User.
-func (c *UserClient) QueryIdeas(u *User) *IdeaQuery {
-	query := (&IdeaClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(idea.Table, idea.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.IdeasTable, user.IdeasColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryResearchProjects queries the research_projects edge of a User.
-func (c *UserClient) QueryResearchProjects(u *User) *ResearchProjectQuery {
-	query := (&ResearchProjectClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(researchproject.Table, researchproject.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.ResearchProjectsTable, user.ResearchProjectsColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryPublications queries the publications edge of a User.
-func (c *UserClient) QueryPublications(u *User) *PublicationQuery {
-	query := (&PublicationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(publication.Table, publication.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.PublicationsTable, user.PublicationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryAwards queries the awards edge of a User.
-func (c *UserClient) QueryAwards(u *User) *AwardQuery {
-	query := (&AwardClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(award.Table, award.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.AwardsTable, user.AwardsColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryRecentUpdates queries the recent_updates edge of a User.
-func (c *UserClient) QueryRecentUpdates(u *User) *RecentUpdateQuery {
-	query := (&RecentUpdateClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(recentupdate.Table, recentupdate.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.RecentUpdatesTable, user.RecentUpdatesColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -10452,22 +9768,6 @@ func (c *WorkExperienceClient) GetX(ctx context.Context, id string) *WorkExperie
 		panic(err)
 	}
 	return obj
-}
-
-// QueryUser queries the user edge of a WorkExperience.
-func (c *WorkExperienceClient) QueryUser(we *WorkExperience) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := we.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(workexperience.Table, workexperience.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, workexperience.UserTable, workexperience.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(we.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a WorkExperience.
@@ -11026,10 +10326,10 @@ func (c *WorkExperienceTranslationClient) mutate(ctx context.Context, m *WorkExp
 type (
 	hooks struct {
 		Annotation, Award, AwardTranslation, BlogCategory, BlogCategoryTranslation,
-		BlogPost, BlogPostTag, BlogPostTranslation, BlogSeries, BlogSeriesTranslation,
-		BlogTag, Comment, CommentLike, ContentInteraction, ContentRelation, Education,
-		EducationDetail, EducationDetailTranslation, EducationTranslation, Episode,
-		EpisodeSeries, EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
+		BlogPost, BlogPostTag, BlogPostTranslation, BlogTag, Comment, CommentLike,
+		ContentInteraction, ContentRelation, Education, EducationDetail,
+		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
+		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
 		IdeaDetailTranslation, IdeaTag, IdeaTranslation, ItemPart, ItemPartTranslation,
 		Language, PartEntry, PartEntryTranslation, PersonalInfo,
 		PersonalInfoTranslation, Project, ProjectDetail, ProjectDetailTranslation,
@@ -11043,10 +10343,10 @@ type (
 	}
 	inters struct {
 		Annotation, Award, AwardTranslation, BlogCategory, BlogCategoryTranslation,
-		BlogPost, BlogPostTag, BlogPostTranslation, BlogSeries, BlogSeriesTranslation,
-		BlogTag, Comment, CommentLike, ContentInteraction, ContentRelation, Education,
-		EducationDetail, EducationDetailTranslation, EducationTranslation, Episode,
-		EpisodeSeries, EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
+		BlogPost, BlogPostTag, BlogPostTranslation, BlogTag, Comment, CommentLike,
+		ContentInteraction, ContentRelation, Education, EducationDetail,
+		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
+		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
 		IdeaDetailTranslation, IdeaTag, IdeaTranslation, ItemPart, ItemPartTranslation,
 		Language, PartEntry, PartEntryTranslation, PersonalInfo,
 		PersonalInfoTranslation, Project, ProjectDetail, ProjectDetailTranslation,

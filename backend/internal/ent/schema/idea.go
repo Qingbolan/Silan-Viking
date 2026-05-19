@@ -60,11 +60,13 @@ func (Idea) Fields() []ent.Field {
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -72,10 +74,6 @@ func (Idea) Fields() []ent.Field {
 // Edges of the Idea.
 func (Idea) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("ideas").
-			Field("user_id").
-			Unique(),
 		edge.To("translations", IdeaTranslation.Type),
 		edge.To("details", IdeaDetail.Type).
 			Unique(),

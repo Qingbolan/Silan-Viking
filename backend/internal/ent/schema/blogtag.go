@@ -40,6 +40,7 @@ func (BlogTag) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

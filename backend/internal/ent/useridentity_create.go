@@ -192,12 +192,6 @@ func (uic *UserIdentityCreate) check() error {
 	if _, ok := uic.mutation.Verified(); !ok {
 		return &ValidationError{Name: "verified", err: errors.New(`ent: missing required field "UserIdentity.verified"`)}
 	}
-	if _, ok := uic.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "UserIdentity.created_at"`)}
-	}
-	if _, ok := uic.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "UserIdentity.updated_at"`)}
-	}
 	return nil
 }
 

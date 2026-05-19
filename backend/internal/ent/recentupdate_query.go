@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/recentupdate"
 	"silan-backend/internal/ent/recentupdatetranslation"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -25,7 +24,6 @@ type RecentUpdateQuery struct {
 	order            []recentupdate.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.RecentUpdate
-	withUser         *UserQuery
 	withTranslations *RecentUpdateTranslationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -61,28 +59,6 @@ func (ruq *RecentUpdateQuery) Unique(unique bool) *RecentUpdateQuery {
 func (ruq *RecentUpdateQuery) Order(o ...recentupdate.OrderOption) *RecentUpdateQuery {
 	ruq.order = append(ruq.order, o...)
 	return ruq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (ruq *RecentUpdateQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: ruq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := ruq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := ruq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(recentupdate.Table, recentupdate.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, recentupdate.UserTable, recentupdate.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(ruq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -299,23 +275,11 @@ func (ruq *RecentUpdateQuery) Clone() *RecentUpdateQuery {
 		order:            append([]recentupdate.OrderOption{}, ruq.order...),
 		inters:           append([]Interceptor{}, ruq.inters...),
 		predicates:       append([]predicate.RecentUpdate{}, ruq.predicates...),
-		withUser:         ruq.withUser.Clone(),
 		withTranslations: ruq.withTranslations.Clone(),
 		// clone intermediate query.
 		sql:  ruq.sql.Clone(),
 		path: ruq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (ruq *RecentUpdateQuery) WithUser(opts ...func(*UserQuery)) *RecentUpdateQuery {
-	query := (&UserClient{config: ruq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	ruq.withUser = query
-	return ruq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -407,8 +371,7 @@ func (ruq *RecentUpdateQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	var (
 		nodes       = []*RecentUpdate{}
 		_spec       = ruq.querySpec()
-		loadedTypes = [2]bool{
-			ruq.withUser != nil,
+		loadedTypes = [1]bool{
 			ruq.withTranslations != nil,
 		}
 	)
@@ -430,12 +393,6 @@ func (ruq *RecentUpdateQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := ruq.withUser; query != nil {
-		if err := ruq.loadUser(ctx, query, nodes, nil,
-			func(n *RecentUpdate, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := ruq.withTranslations; query != nil {
 		if err := ruq.loadTranslations(ctx, query, nodes,
 			func(n *RecentUpdate) { n.Edges.Translations = []*RecentUpdateTranslation{} },
@@ -448,35 +405,6 @@ func (ruq *RecentUpdateQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	return nodes, nil
 }
 
-func (ruq *RecentUpdateQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*RecentUpdate, init func(*RecentUpdate), assign func(*RecentUpdate, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*RecentUpdate)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (ruq *RecentUpdateQuery) loadTranslations(ctx context.Context, query *RecentUpdateTranslationQuery, nodes []*RecentUpdate, init func(*RecentUpdate), assign func(*RecentUpdate, *RecentUpdateTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*RecentUpdate)
@@ -532,9 +460,6 @@ func (ruq *RecentUpdateQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != recentupdate.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if ruq.withUser != nil {
-			_spec.Node.AddColumnOnce(recentupdate.FieldUserID)
 		}
 	}
 	if ps := ruq.predicates; len(ps) > 0 {

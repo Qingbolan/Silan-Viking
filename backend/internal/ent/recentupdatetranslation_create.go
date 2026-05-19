@@ -40,9 +40,25 @@ func (rutc *RecentUpdateTranslationCreate) SetTitle(s string) *RecentUpdateTrans
 	return rutc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (rutc *RecentUpdateTranslationCreate) SetNillableTitle(s *string) *RecentUpdateTranslationCreate {
+	if s != nil {
+		rutc.SetTitle(*s)
+	}
+	return rutc
+}
+
 // SetDescription sets the "description" field.
 func (rutc *RecentUpdateTranslationCreate) SetDescription(s string) *RecentUpdateTranslationCreate {
 	rutc.mutation.SetDescription(s)
+	return rutc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (rutc *RecentUpdateTranslationCreate) SetNillableDescription(s *string) *RecentUpdateTranslationCreate {
+	if s != nil {
+		rutc.SetDescription(*s)
+	}
 	return rutc
 }
 
@@ -148,24 +164,10 @@ func (rutc *RecentUpdateTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "RecentUpdateTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := rutc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "RecentUpdateTranslation.title"`)}
-	}
 	if v, ok := rutc.mutation.Title(); ok {
 		if err := recentupdatetranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "RecentUpdateTranslation.title": %w`, err)}
 		}
-	}
-	if _, ok := rutc.mutation.Description(); !ok {
-		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "RecentUpdateTranslation.description"`)}
-	}
-	if v, ok := rutc.mutation.Description(); ok {
-		if err := recentupdatetranslation.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "RecentUpdateTranslation.description": %w`, err)}
-		}
-	}
-	if _, ok := rutc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RecentUpdateTranslation.created_at"`)}
 	}
 	if len(rutc.mutation.RecentUpdateIDs()) == 0 {
 		return &ValidationError{Name: "recent_update", err: errors.New(`ent: missing required edge "RecentUpdateTranslation.recent_update"`)}

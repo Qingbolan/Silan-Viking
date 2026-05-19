@@ -86,7 +86,7 @@ func Description(v string) predicate.RecentUpdate {
 }
 
 // Date applies equality check predicate on the "date" field. It's identical to DateEQ.
-func Date(v time.Time) predicate.RecentUpdate {
+func Date(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldDate, v))
 }
 
@@ -491,43 +491,78 @@ func DescriptionContainsFold(v string) predicate.RecentUpdate {
 }
 
 // DateEQ applies the EQ predicate on the "date" field.
-func DateEQ(v time.Time) predicate.RecentUpdate {
+func DateEQ(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldDate, v))
 }
 
 // DateNEQ applies the NEQ predicate on the "date" field.
-func DateNEQ(v time.Time) predicate.RecentUpdate {
+func DateNEQ(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNEQ(FieldDate, v))
 }
 
 // DateIn applies the In predicate on the "date" field.
-func DateIn(vs ...time.Time) predicate.RecentUpdate {
+func DateIn(vs ...string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldIn(FieldDate, vs...))
 }
 
 // DateNotIn applies the NotIn predicate on the "date" field.
-func DateNotIn(vs ...time.Time) predicate.RecentUpdate {
+func DateNotIn(vs ...string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNotIn(FieldDate, vs...))
 }
 
 // DateGT applies the GT predicate on the "date" field.
-func DateGT(v time.Time) predicate.RecentUpdate {
+func DateGT(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldGT(FieldDate, v))
 }
 
 // DateGTE applies the GTE predicate on the "date" field.
-func DateGTE(v time.Time) predicate.RecentUpdate {
+func DateGTE(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldGTE(FieldDate, v))
 }
 
 // DateLT applies the LT predicate on the "date" field.
-func DateLT(v time.Time) predicate.RecentUpdate {
+func DateLT(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldLT(FieldDate, v))
 }
 
 // DateLTE applies the LTE predicate on the "date" field.
-func DateLTE(v time.Time) predicate.RecentUpdate {
+func DateLTE(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldLTE(FieldDate, v))
+}
+
+// DateContains applies the Contains predicate on the "date" field.
+func DateContains(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldContains(FieldDate, v))
+}
+
+// DateHasPrefix applies the HasPrefix predicate on the "date" field.
+func DateHasPrefix(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldHasPrefix(FieldDate, v))
+}
+
+// DateHasSuffix applies the HasSuffix predicate on the "date" field.
+func DateHasSuffix(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldHasSuffix(FieldDate, v))
+}
+
+// DateIsNil applies the IsNil predicate on the "date" field.
+func DateIsNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldIsNull(FieldDate))
+}
+
+// DateNotNil applies the NotNil predicate on the "date" field.
+func DateNotNil() predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNotNull(FieldDate))
+}
+
+// DateEqualFold applies the EqualFold predicate on the "date" field.
+func DateEqualFold(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEqualFold(FieldDate, v))
+}
+
+// DateContainsFold applies the ContainsFold predicate on the "date" field.
+func DateContainsFold(v string) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldContainsFold(FieldDate, v))
 }
 
 // TagsIsNil applies the IsNil predicate on the "tags" field.
@@ -1283,29 +1318,6 @@ func UpdatedAtIsNil() predicate.RecentUpdate {
 // UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
 func UpdatedAtNotNil() predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNotNull(FieldUpdatedAt))
-}
-
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.RecentUpdate {
-	return predicate.RecentUpdate(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.RecentUpdate {
-	return predicate.RecentUpdate(func(s *sql.Selector) {
-		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // HasTranslations applies the HasEdge predicate on the "translations" edge.

@@ -60,10 +60,7 @@ func (RecentUpdate) Fields() []ent.Field {
 			Optional(),
 		field.Text("description").
 			Optional(),
-		field.Time("date").
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
+		field.String("date").Optional(),
 
 		// Metadata
 		field.JSON("tags", []string{}).
@@ -113,11 +110,13 @@ func (RecentUpdate) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -133,10 +132,6 @@ func (RecentUpdate) Indexes() []ent.Index {
 // Edges of the RecentUpdate.
 func (RecentUpdate) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("recent_updates").
-			Field("user_id").
-			Unique(),
 		edge.To("translations", RecentUpdateTranslation.Type),
 	}
 }

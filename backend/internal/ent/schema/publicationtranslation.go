@@ -36,7 +36,7 @@ func (PublicationTranslation) Fields() []ent.Field {
 			StorageKey("language_code"),
 		field.String("title").
 			MaxLen(500).
-			NotEmpty(),
+			Optional(),
 		field.String("journal_name").
 			Optional().
 			MaxLen(200),
@@ -45,6 +45,7 @@ func (PublicationTranslation) Fields() []ent.Field {
 			MaxLen(200),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

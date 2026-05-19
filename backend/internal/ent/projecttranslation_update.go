@@ -71,6 +71,12 @@ func (ptu *ProjectTranslationUpdate) SetNillableTitle(s *string) *ProjectTransla
 	return ptu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (ptu *ProjectTranslationUpdate) ClearTitle() *ProjectTranslationUpdate {
+	ptu.mutation.ClearTitle()
+	return ptu
+}
+
 // SetDescription sets the "description" field.
 func (ptu *ProjectTranslationUpdate) SetDescription(s string) *ProjectTranslationUpdate {
 	ptu.mutation.SetDescription(s)
@@ -212,6 +218,9 @@ func (ptu *ProjectTranslationUpdate) sqlSave(ctx context.Context) (n int, err er
 	if value, ok := ptu.mutation.Title(); ok {
 		_spec.SetField(projecttranslation.FieldTitle, field.TypeString, value)
 	}
+	if ptu.mutation.TitleCleared() {
+		_spec.ClearField(projecttranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := ptu.mutation.Description(); ok {
 		_spec.SetField(projecttranslation.FieldDescription, field.TypeString, value)
 	}
@@ -223,6 +232,9 @@ func (ptu *ProjectTranslationUpdate) sqlSave(ctx context.Context) (n int, err er
 	}
 	if ptu.mutation.ProjectTypeCleared() {
 		_spec.ClearField(projecttranslation.FieldProjectType, field.TypeString)
+	}
+	if ptu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projecttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if ptu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -341,6 +353,12 @@ func (ptuo *ProjectTranslationUpdateOne) SetNillableTitle(s *string) *ProjectTra
 	if s != nil {
 		ptuo.SetTitle(*s)
 	}
+	return ptuo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (ptuo *ProjectTranslationUpdateOne) ClearTitle() *ProjectTranslationUpdateOne {
+	ptuo.mutation.ClearTitle()
 	return ptuo
 }
 
@@ -515,6 +533,9 @@ func (ptuo *ProjectTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Pr
 	if value, ok := ptuo.mutation.Title(); ok {
 		_spec.SetField(projecttranslation.FieldTitle, field.TypeString, value)
 	}
+	if ptuo.mutation.TitleCleared() {
+		_spec.ClearField(projecttranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := ptuo.mutation.Description(); ok {
 		_spec.SetField(projecttranslation.FieldDescription, field.TypeString, value)
 	}
@@ -526,6 +547,9 @@ func (ptuo *ProjectTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Pr
 	}
 	if ptuo.mutation.ProjectTypeCleared() {
 		_spec.ClearField(projecttranslation.FieldProjectType, field.TypeString)
+	}
+	if ptuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projecttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if ptuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

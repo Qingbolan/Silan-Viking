@@ -79,9 +79,11 @@ func (Comment) Fields() []ent.Field {
 			Comment("Number of likes for this comment"),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

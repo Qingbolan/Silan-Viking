@@ -9,9 +9,7 @@ import (
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -242,15 +240,15 @@ func (bpc *BlogPostCreate) SetNillableCommentCount(i *int) *BlogPostCreate {
 }
 
 // SetPublishedAt sets the "published_at" field.
-func (bpc *BlogPostCreate) SetPublishedAt(t time.Time) *BlogPostCreate {
-	bpc.mutation.SetPublishedAt(t)
+func (bpc *BlogPostCreate) SetPublishedAt(s string) *BlogPostCreate {
+	bpc.mutation.SetPublishedAt(s)
 	return bpc
 }
 
 // SetNillablePublishedAt sets the "published_at" field if the given value is not nil.
-func (bpc *BlogPostCreate) SetNillablePublishedAt(t *time.Time) *BlogPostCreate {
-	if t != nil {
-		bpc.SetPublishedAt(*t)
+func (bpc *BlogPostCreate) SetNillablePublishedAt(s *string) *BlogPostCreate {
+	if s != nil {
+		bpc.SetPublishedAt(*s)
 	}
 	return bpc
 }
@@ -311,19 +309,9 @@ func (bpc *BlogPostCreate) SetNillableID(s *string) *BlogPostCreate {
 	return bpc
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (bpc *BlogPostCreate) SetUser(u *User) *BlogPostCreate {
-	return bpc.SetUserID(u.ID)
-}
-
 // SetCategory sets the "category" edge to the BlogCategory entity.
 func (bpc *BlogPostCreate) SetCategory(b *BlogCategory) *BlogPostCreate {
 	return bpc.SetCategoryID(b.ID)
-}
-
-// SetSeries sets the "series" edge to the BlogSeries entity.
-func (bpc *BlogPostCreate) SetSeries(b *BlogSeries) *BlogPostCreate {
-	return bpc.SetSeriesID(b.ID)
 }
 
 // AddTagIDs adds the "tags" edge to the BlogTag entity by IDs.
@@ -524,6 +512,14 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := bpc.mutation.UserID(); ok {
+		_spec.SetField(blogpost.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
+	if value, ok := bpc.mutation.SeriesID(); ok {
+		_spec.SetField(blogpost.FieldSeriesID, field.TypeString, value)
+		_node.SeriesID = value
+	}
 	if value, ok := bpc.mutation.Title(); ok {
 		_spec.SetField(blogpost.FieldTitle, field.TypeString, value)
 		_node.Title = value
@@ -577,7 +573,7 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 		_node.CommentCount = value
 	}
 	if value, ok := bpc.mutation.PublishedAt(); ok {
-		_spec.SetField(blogpost.FieldPublishedAt, field.TypeTime, value)
+		_spec.SetField(blogpost.FieldPublishedAt, field.TypeString, value)
 		_node.PublishedAt = value
 	}
 	if value, ok := bpc.mutation.SeriesOrder(); ok {
@@ -591,23 +587,6 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 	if value, ok := bpc.mutation.UpdatedAt(); ok {
 		_spec.SetField(blogpost.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := bpc.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.UserTable,
-			Columns: []string{blogpost.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bpc.mutation.CategoryIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -624,23 +603,6 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.CategoryID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := bpc.mutation.SeriesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.SeriesTable,
-			Columns: []string{blogpost.SeriesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseries.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.SeriesID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bpc.mutation.TagsIDs(); len(nodes) > 0 {

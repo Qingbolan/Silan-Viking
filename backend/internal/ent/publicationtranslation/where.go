@@ -280,6 +280,16 @@ func TitleHasSuffix(v string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldHasSuffix(FieldTitle, v))
 }
 
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldNotNull(FieldTitle))
+}
+
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
 func TitleEqualFold(v string) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldEqualFold(FieldTitle, v))
@@ -478,6 +488,16 @@ func CreatedAtLT(v time.Time) predicate.PublicationTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.PublicationTranslation {
 	return predicate.PublicationTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.PublicationTranslation {
+	return predicate.PublicationTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasPublication applies the HasEdge predicate on the "publication" edge.

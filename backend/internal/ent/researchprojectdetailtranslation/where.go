@@ -270,6 +270,16 @@ func DetailTextHasSuffix(v string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldHasSuffix(FieldDetailText, v))
 }
 
+// DetailTextIsNil applies the IsNil predicate on the "detail_text" field.
+func DetailTextIsNil() predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldIsNull(FieldDetailText))
+}
+
+// DetailTextNotNil applies the NotNil predicate on the "detail_text" field.
+func DetailTextNotNil() predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldNotNull(FieldDetailText))
+}
+
 // DetailTextEqualFold applies the EqualFold predicate on the "detail_text" field.
 func DetailTextEqualFold(v string) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldEqualFold(FieldDetailText, v))
@@ -318,6 +328,16 @@ func CreatedAtLT(v time.Time) predicate.ResearchProjectDetailTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.ResearchProjectDetailTranslation {
 	return predicate.ResearchProjectDetailTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ResearchProjectDetailTranslation {
+	return predicate.ResearchProjectDetailTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasResearchProjectDetail applies the HasEdge predicate on the "research_project_detail" edge.

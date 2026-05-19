@@ -189,12 +189,6 @@ func (plc *ProjectLikeCreate) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "ProjectLike.ip_address": %w`, err)}
 		}
 	}
-	if _, ok := plc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectLike.created_at"`)}
-	}
-	if _, ok := plc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectLike.updated_at"`)}
-	}
 	return nil
 }
 

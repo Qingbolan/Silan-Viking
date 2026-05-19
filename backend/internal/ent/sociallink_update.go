@@ -224,6 +224,9 @@ func (slu *SocialLinkUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := slu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(sociallink.FieldSortOrder, field.TypeInt, value)
 	}
+	if slu.mutation.CreatedAtCleared() {
+		_spec.ClearField(sociallink.FieldCreatedAt, field.TypeTime)
+	}
 	if slu.mutation.PersonalInfoCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -498,6 +501,9 @@ func (sluo *SocialLinkUpdateOne) sqlSave(ctx context.Context) (_node *SocialLink
 	}
 	if value, ok := sluo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(sociallink.FieldSortOrder, field.TypeInt, value)
+	}
+	if sluo.mutation.CreatedAtCleared() {
+		_spec.ClearField(sociallink.FieldCreatedAt, field.TypeTime)
 	}
 	if sluo.mutation.PersonalInfoCleared() {
 		edge := &sqlgraph.EdgeSpec{

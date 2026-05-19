@@ -71,6 +71,12 @@ func (atu *AwardTranslationUpdate) SetNillableTitle(s *string) *AwardTranslation
 	return atu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (atu *AwardTranslationUpdate) ClearTitle() *AwardTranslationUpdate {
+	atu.mutation.ClearTitle()
+	return atu
+}
+
 // SetAwardingOrganization sets the "awarding_organization" field.
 func (atu *AwardTranslationUpdate) SetAwardingOrganization(s string) *AwardTranslationUpdate {
 	atu.mutation.SetAwardingOrganization(s)
@@ -82,6 +88,12 @@ func (atu *AwardTranslationUpdate) SetNillableAwardingOrganization(s *string) *A
 	if s != nil {
 		atu.SetAwardingOrganization(*s)
 	}
+	return atu
+}
+
+// ClearAwardingOrganization clears the value of the "awarding_organization" field.
+func (atu *AwardTranslationUpdate) ClearAwardingOrganization() *AwardTranslationUpdate {
+	atu.mutation.ClearAwardingOrganization()
 	return atu
 }
 
@@ -231,8 +243,14 @@ func (atu *AwardTranslationUpdate) sqlSave(ctx context.Context) (n int, err erro
 	if value, ok := atu.mutation.Title(); ok {
 		_spec.SetField(awardtranslation.FieldTitle, field.TypeString, value)
 	}
+	if atu.mutation.TitleCleared() {
+		_spec.ClearField(awardtranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := atu.mutation.AwardingOrganization(); ok {
 		_spec.SetField(awardtranslation.FieldAwardingOrganization, field.TypeString, value)
+	}
+	if atu.mutation.AwardingOrganizationCleared() {
+		_spec.ClearField(awardtranslation.FieldAwardingOrganization, field.TypeString)
 	}
 	if value, ok := atu.mutation.AwardType(); ok {
 		_spec.SetField(awardtranslation.FieldAwardType, field.TypeString, value)
@@ -245,6 +263,9 @@ func (atu *AwardTranslationUpdate) sqlSave(ctx context.Context) (n int, err erro
 	}
 	if atu.mutation.DescriptionCleared() {
 		_spec.ClearField(awardtranslation.FieldDescription, field.TypeString)
+	}
+	if atu.mutation.CreatedAtCleared() {
+		_spec.ClearField(awardtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if atu.mutation.AwardCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -366,6 +387,12 @@ func (atuo *AwardTranslationUpdateOne) SetNillableTitle(s *string) *AwardTransla
 	return atuo
 }
 
+// ClearTitle clears the value of the "title" field.
+func (atuo *AwardTranslationUpdateOne) ClearTitle() *AwardTranslationUpdateOne {
+	atuo.mutation.ClearTitle()
+	return atuo
+}
+
 // SetAwardingOrganization sets the "awarding_organization" field.
 func (atuo *AwardTranslationUpdateOne) SetAwardingOrganization(s string) *AwardTranslationUpdateOne {
 	atuo.mutation.SetAwardingOrganization(s)
@@ -377,6 +404,12 @@ func (atuo *AwardTranslationUpdateOne) SetNillableAwardingOrganization(s *string
 	if s != nil {
 		atuo.SetAwardingOrganization(*s)
 	}
+	return atuo
+}
+
+// ClearAwardingOrganization clears the value of the "awarding_organization" field.
+func (atuo *AwardTranslationUpdateOne) ClearAwardingOrganization() *AwardTranslationUpdateOne {
+	atuo.mutation.ClearAwardingOrganization()
 	return atuo
 }
 
@@ -556,8 +589,14 @@ func (atuo *AwardTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Awar
 	if value, ok := atuo.mutation.Title(); ok {
 		_spec.SetField(awardtranslation.FieldTitle, field.TypeString, value)
 	}
+	if atuo.mutation.TitleCleared() {
+		_spec.ClearField(awardtranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := atuo.mutation.AwardingOrganization(); ok {
 		_spec.SetField(awardtranslation.FieldAwardingOrganization, field.TypeString, value)
+	}
+	if atuo.mutation.AwardingOrganizationCleared() {
+		_spec.ClearField(awardtranslation.FieldAwardingOrganization, field.TypeString)
 	}
 	if value, ok := atuo.mutation.AwardType(); ok {
 		_spec.SetField(awardtranslation.FieldAwardType, field.TypeString, value)
@@ -570,6 +609,9 @@ func (atuo *AwardTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Awar
 	}
 	if atuo.mutation.DescriptionCleared() {
 		_spec.ClearField(awardtranslation.FieldDescription, field.TypeString)
+	}
+	if atuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(awardtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if atuo.mutation.AwardCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -165,9 +165,6 @@ func (pec *PartEntryCreate) check() error {
 	if _, ok := pec.mutation.SharedPayload(); !ok {
 		return &ValidationError{Name: "shared_payload", err: errors.New(`ent: missing required field "PartEntry.shared_payload"`)}
 	}
-	if _, ok := pec.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PartEntry.created_at"`)}
-	}
 	if len(pec.mutation.ItemPartIDs()) == 0 {
 		return &ValidationError{Name: "item_part", err: errors.New(`ent: missing required edge "PartEntry.item_part"`)}
 	}

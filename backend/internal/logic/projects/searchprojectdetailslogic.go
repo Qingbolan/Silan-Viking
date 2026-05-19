@@ -103,17 +103,15 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 		// If project is loaded, get additional data
 		if pd.Edges.Project != nil {
 			proj := pd.Edges.Project
-			if !proj.StartDate.IsZero() {
-				timeline.Start = proj.StartDate.Format("2006-01-02")
-			}
-			if !proj.EndDate.IsZero() {
-				timeline.End = proj.EndDate.Format("2006-01-02")
-			}
+			// Dates are plain strings from the silan-viking engine.
+			timeline.Start = proj.StartDate
+			timeline.End = proj.EndDate
 
-			// Calculate duration if both dates are available
-			if !proj.StartDate.IsZero() && !proj.EndDate.IsZero() {
-				duration := proj.EndDate.Sub(proj.StartDate)
-				days := int(duration.Hours() / 24)
+			// Calculate duration if both dates parse as `YYYY-MM-DD`.
+			start, startErr := time.Parse("2006-01-02", proj.StartDate)
+			end, endErr := time.Parse("2006-01-02", proj.EndDate)
+			if startErr == nil && endErr == nil {
+				days := int(end.Sub(start).Hours() / 24)
 				if days > 0 {
 					timeline.Duration = fmt.Sprintf("%d days", days)
 				}

@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/personalinfo"
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/sociallink"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -205,11 +204,6 @@ func (pic *PersonalInfoCreate) SetNillableID(s *string) *PersonalInfoCreate {
 	return pic
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (pic *PersonalInfoCreate) SetUser(u *User) *PersonalInfoCreate {
-	return pic.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the PersonalInfoTranslation entity by IDs.
 func (pic *PersonalInfoCreate) AddTranslationIDs(ids ...string) *PersonalInfoCreate {
 	pic.mutation.AddTranslationIDs(ids...)
@@ -368,6 +362,10 @@ func (pic *PersonalInfoCreate) createSpec() (*PersonalInfo, *sqlgraph.CreateSpec
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := pic.mutation.UserID(); ok {
+		_spec.SetField(personalinfo.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := pic.mutation.FullName(); ok {
 		_spec.SetField(personalinfo.FieldFullName, field.TypeString, value)
 		_node.FullName = value
@@ -411,23 +409,6 @@ func (pic *PersonalInfoCreate) createSpec() (*PersonalInfo, *sqlgraph.CreateSpec
 	if value, ok := pic.mutation.UpdatedAt(); ok {
 		_spec.SetField(personalinfo.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := pic.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personalinfo.UserTable,
-			Columns: []string{personalinfo.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pic.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

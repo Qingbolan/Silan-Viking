@@ -81,7 +81,7 @@ func AwardingOrganization(v string) predicate.Award {
 }
 
 // AwardDate applies equality check predicate on the "award_date" field. It's identical to AwardDateEQ.
-func AwardDate(v time.Time) predicate.Award {
+func AwardDate(v string) predicate.Award {
 	return predicate.Award(sql.FieldEQ(FieldAwardDate, v))
 }
 
@@ -316,43 +316,58 @@ func AwardingOrganizationContainsFold(v string) predicate.Award {
 }
 
 // AwardDateEQ applies the EQ predicate on the "award_date" field.
-func AwardDateEQ(v time.Time) predicate.Award {
+func AwardDateEQ(v string) predicate.Award {
 	return predicate.Award(sql.FieldEQ(FieldAwardDate, v))
 }
 
 // AwardDateNEQ applies the NEQ predicate on the "award_date" field.
-func AwardDateNEQ(v time.Time) predicate.Award {
+func AwardDateNEQ(v string) predicate.Award {
 	return predicate.Award(sql.FieldNEQ(FieldAwardDate, v))
 }
 
 // AwardDateIn applies the In predicate on the "award_date" field.
-func AwardDateIn(vs ...time.Time) predicate.Award {
+func AwardDateIn(vs ...string) predicate.Award {
 	return predicate.Award(sql.FieldIn(FieldAwardDate, vs...))
 }
 
 // AwardDateNotIn applies the NotIn predicate on the "award_date" field.
-func AwardDateNotIn(vs ...time.Time) predicate.Award {
+func AwardDateNotIn(vs ...string) predicate.Award {
 	return predicate.Award(sql.FieldNotIn(FieldAwardDate, vs...))
 }
 
 // AwardDateGT applies the GT predicate on the "award_date" field.
-func AwardDateGT(v time.Time) predicate.Award {
+func AwardDateGT(v string) predicate.Award {
 	return predicate.Award(sql.FieldGT(FieldAwardDate, v))
 }
 
 // AwardDateGTE applies the GTE predicate on the "award_date" field.
-func AwardDateGTE(v time.Time) predicate.Award {
+func AwardDateGTE(v string) predicate.Award {
 	return predicate.Award(sql.FieldGTE(FieldAwardDate, v))
 }
 
 // AwardDateLT applies the LT predicate on the "award_date" field.
-func AwardDateLT(v time.Time) predicate.Award {
+func AwardDateLT(v string) predicate.Award {
 	return predicate.Award(sql.FieldLT(FieldAwardDate, v))
 }
 
 // AwardDateLTE applies the LTE predicate on the "award_date" field.
-func AwardDateLTE(v time.Time) predicate.Award {
+func AwardDateLTE(v string) predicate.Award {
 	return predicate.Award(sql.FieldLTE(FieldAwardDate, v))
+}
+
+// AwardDateContains applies the Contains predicate on the "award_date" field.
+func AwardDateContains(v string) predicate.Award {
+	return predicate.Award(sql.FieldContains(FieldAwardDate, v))
+}
+
+// AwardDateHasPrefix applies the HasPrefix predicate on the "award_date" field.
+func AwardDateHasPrefix(v string) predicate.Award {
+	return predicate.Award(sql.FieldHasPrefix(FieldAwardDate, v))
+}
+
+// AwardDateHasSuffix applies the HasSuffix predicate on the "award_date" field.
+func AwardDateHasSuffix(v string) predicate.Award {
+	return predicate.Award(sql.FieldHasSuffix(FieldAwardDate, v))
 }
 
 // AwardDateIsNil applies the IsNil predicate on the "award_date" field.
@@ -363,6 +378,16 @@ func AwardDateIsNil() predicate.Award {
 // AwardDateNotNil applies the NotNil predicate on the "award_date" field.
 func AwardDateNotNil() predicate.Award {
 	return predicate.Award(sql.FieldNotNull(FieldAwardDate))
+}
+
+// AwardDateEqualFold applies the EqualFold predicate on the "award_date" field.
+func AwardDateEqualFold(v string) predicate.Award {
+	return predicate.Award(sql.FieldEqualFold(FieldAwardDate, v))
+}
+
+// AwardDateContainsFold applies the ContainsFold predicate on the "award_date" field.
+func AwardDateContainsFold(v string) predicate.Award {
+	return predicate.Award(sql.FieldContainsFold(FieldAwardDate, v))
 }
 
 // AwardTypeEQ applies the EQ predicate on the "award_type" field.
@@ -720,6 +745,16 @@ func CreatedAtLTE(v time.Time) predicate.Award {
 	return predicate.Award(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.Award {
+	return predicate.Award(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.Award {
+	return predicate.Award(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Award {
 	return predicate.Award(sql.FieldEQ(FieldUpdatedAt, v))
@@ -760,27 +795,14 @@ func UpdatedAtLTE(v time.Time) predicate.Award {
 	return predicate.Award(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.Award {
-	return predicate.Award(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.Award {
+	return predicate.Award(sql.FieldIsNull(FieldUpdatedAt))
 }
 
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.Award {
-	return predicate.Award(func(s *sql.Selector) {
-		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.Award {
+	return predicate.Award(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasTranslations applies the HasEdge predicate on the "translations" edge.

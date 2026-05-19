@@ -38,9 +38,11 @@ func (IdeaTag) Fields() []ent.Field {
 			NotEmpty(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

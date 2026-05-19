@@ -250,6 +250,16 @@ func CreatedAtLTE(v time.Time) predicate.ProjectDetailTranslation {
 	return predicate.ProjectDetailTranslation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ProjectDetailTranslation {
+	return predicate.ProjectDetailTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ProjectDetailTranslation {
+	return predicate.ProjectDetailTranslation(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasProjectDetail applies the HasEdge predicate on the "project_detail" edge.
 func HasProjectDetail() predicate.ProjectDetailTranslation {
 	return predicate.ProjectDetailTranslation(func(s *sql.Selector) {

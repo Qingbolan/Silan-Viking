@@ -207,9 +207,6 @@ func (pitc *PersonalInfoTranslationCreate) check() error {
 			return &ValidationError{Name: "location", err: fmt.Errorf(`ent: validator failed for field "PersonalInfoTranslation.location": %w`, err)}
 		}
 	}
-	if _, ok := pitc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PersonalInfoTranslation.created_at"`)}
-	}
 	if len(pitc.mutation.PersonalInfoIDs()) == 0 {
 		return &ValidationError{Name: "personal_info", err: errors.New(`ent: missing required edge "PersonalInfoTranslation.personal_info"`)}
 	}

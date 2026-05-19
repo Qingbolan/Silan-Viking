@@ -193,9 +193,6 @@ func (wetc *WorkExperienceTranslationCreate) check() error {
 			return &ValidationError{Name: "location", err: fmt.Errorf(`ent: validator failed for field "WorkExperienceTranslation.location": %w`, err)}
 		}
 	}
-	if _, ok := wetc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkExperienceTranslation.created_at"`)}
-	}
 	if len(wetc.mutation.WorkExperienceIDs()) == 0 {
 		return &ValidationError{Name: "work_experience", err: errors.New(`ent: missing required edge "WorkExperienceTranslation.work_experience"`)}
 	}

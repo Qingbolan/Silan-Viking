@@ -71,6 +71,12 @@ func (rutu *RecentUpdateTranslationUpdate) SetNillableTitle(s *string) *RecentUp
 	return rutu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (rutu *RecentUpdateTranslationUpdate) ClearTitle() *RecentUpdateTranslationUpdate {
+	rutu.mutation.ClearTitle()
+	return rutu
+}
+
 // SetDescription sets the "description" field.
 func (rutu *RecentUpdateTranslationUpdate) SetDescription(s string) *RecentUpdateTranslationUpdate {
 	rutu.mutation.SetDescription(s)
@@ -82,6 +88,12 @@ func (rutu *RecentUpdateTranslationUpdate) SetNillableDescription(s *string) *Re
 	if s != nil {
 		rutu.SetDescription(*s)
 	}
+	return rutu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (rutu *RecentUpdateTranslationUpdate) ClearDescription() *RecentUpdateTranslationUpdate {
+	rutu.mutation.ClearDescription()
 	return rutu
 }
 
@@ -157,11 +169,6 @@ func (rutu *RecentUpdateTranslationUpdate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "RecentUpdateTranslation.title": %w`, err)}
 		}
 	}
-	if v, ok := rutu.mutation.Description(); ok {
-		if err := recentupdatetranslation.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "RecentUpdateTranslation.description": %w`, err)}
-		}
-	}
 	if rutu.mutation.RecentUpdateCleared() && len(rutu.mutation.RecentUpdateIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RecentUpdateTranslation.recent_update"`)
 	}
@@ -186,8 +193,17 @@ func (rutu *RecentUpdateTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if value, ok := rutu.mutation.Title(); ok {
 		_spec.SetField(recentupdatetranslation.FieldTitle, field.TypeString, value)
 	}
+	if rutu.mutation.TitleCleared() {
+		_spec.ClearField(recentupdatetranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := rutu.mutation.Description(); ok {
 		_spec.SetField(recentupdatetranslation.FieldDescription, field.TypeString, value)
+	}
+	if rutu.mutation.DescriptionCleared() {
+		_spec.ClearField(recentupdatetranslation.FieldDescription, field.TypeString)
+	}
+	if rutu.mutation.CreatedAtCleared() {
+		_spec.ClearField(recentupdatetranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if rutu.mutation.RecentUpdateCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -309,6 +325,12 @@ func (rutuo *RecentUpdateTranslationUpdateOne) SetNillableTitle(s *string) *Rece
 	return rutuo
 }
 
+// ClearTitle clears the value of the "title" field.
+func (rutuo *RecentUpdateTranslationUpdateOne) ClearTitle() *RecentUpdateTranslationUpdateOne {
+	rutuo.mutation.ClearTitle()
+	return rutuo
+}
+
 // SetDescription sets the "description" field.
 func (rutuo *RecentUpdateTranslationUpdateOne) SetDescription(s string) *RecentUpdateTranslationUpdateOne {
 	rutuo.mutation.SetDescription(s)
@@ -320,6 +342,12 @@ func (rutuo *RecentUpdateTranslationUpdateOne) SetNillableDescription(s *string)
 	if s != nil {
 		rutuo.SetDescription(*s)
 	}
+	return rutuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (rutuo *RecentUpdateTranslationUpdateOne) ClearDescription() *RecentUpdateTranslationUpdateOne {
+	rutuo.mutation.ClearDescription()
 	return rutuo
 }
 
@@ -408,11 +436,6 @@ func (rutuo *RecentUpdateTranslationUpdateOne) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "RecentUpdateTranslation.title": %w`, err)}
 		}
 	}
-	if v, ok := rutuo.mutation.Description(); ok {
-		if err := recentupdatetranslation.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "RecentUpdateTranslation.description": %w`, err)}
-		}
-	}
 	if rutuo.mutation.RecentUpdateCleared() && len(rutuo.mutation.RecentUpdateIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RecentUpdateTranslation.recent_update"`)
 	}
@@ -454,8 +477,17 @@ func (rutuo *RecentUpdateTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	if value, ok := rutuo.mutation.Title(); ok {
 		_spec.SetField(recentupdatetranslation.FieldTitle, field.TypeString, value)
 	}
+	if rutuo.mutation.TitleCleared() {
+		_spec.ClearField(recentupdatetranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := rutuo.mutation.Description(); ok {
 		_spec.SetField(recentupdatetranslation.FieldDescription, field.TypeString, value)
+	}
+	if rutuo.mutation.DescriptionCleared() {
+		_spec.ClearField(recentupdatetranslation.FieldDescription, field.TypeString)
+	}
+	if rutuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(recentupdatetranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if rutuo.mutation.RecentUpdateCleared() {
 		edge := &sqlgraph.EdgeSpec{

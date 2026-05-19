@@ -45,9 +45,11 @@ func (CommentLike) Fields() []ent.Field {
 			Comment("IP address of the user who liked"),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

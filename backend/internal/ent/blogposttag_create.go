@@ -107,9 +107,6 @@ func (bptc *BlogPostTagCreate) check() error {
 	if _, ok := bptc.mutation.BlogTagID(); !ok {
 		return &ValidationError{Name: "blog_tag_id", err: errors.New(`ent: missing required field "BlogPostTag.blog_tag_id"`)}
 	}
-	if _, ok := bptc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BlogPostTag.created_at"`)}
-	}
 	if len(bptc.mutation.BlogPostIDs()) == 0 {
 		return &ValidationError{Name: "blog_post", err: errors.New(`ent: missing required edge "BlogPostTag.blog_post"`)}
 	}

@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
@@ -29,7 +30,6 @@ func NewGetProjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPro
 func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.ProjectExtended, err error) {
 	proj, err := l.svcCtx.DB.Project.Query().
 		Where(project.Slug(req.Slug)).
-		WithUser().
 		WithTechnologies().
 		WithDetails().
 		WithImages().
@@ -39,13 +39,9 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		return nil, err
 	}
 
-	var startDate, endDate string
-	if !proj.StartDate.IsZero() {
-		startDate = proj.StartDate.Format("2006-01-02")
-	}
-	if !proj.EndDate.IsZero() {
-		endDate = proj.EndDate.Format("2006-01-02")
-	}
+	// Dates are stored as plain strings by the silan-viking engine.
+	startDate := proj.StartDate
+	endDate := proj.EndDate
 
 	var technologies []string
 	for _, tech := range proj.Edges.Technologies {
@@ -65,10 +61,13 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		}
 	}
 
-	// Generate annual plan name based on year
+	// Generate annual plan name based on year. `start_date` is a plain
+	// `YYYY-MM-DD` string; fall back to the created-at timestamp.
 	year := proj.CreatedAt.Year()
-	if !proj.StartDate.IsZero() {
-		year = proj.StartDate.Year()
+	if len(proj.StartDate) >= 4 {
+		if y, err := strconv.Atoi(proj.StartDate[:4]); err == nil {
+			year = y
+		}
 	}
 	annualPlan := fmt.Sprintf("Annual Plan %d", year)
 
@@ -78,11 +77,8 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 	documentationURL := proj.DocumentationURL
 	thumbnailURL := proj.ThumbnailURL
 
-	// Get user ID from edge relationship
+	// Single-owner system: a project has no per-item user/author.
 	var userID string
-	if proj.Edges.User != nil {
-		userID = proj.Edges.User.ID
-	}
 
 	return &types.ProjectExtended{
 		ID:               proj.ID,

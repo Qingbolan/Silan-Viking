@@ -134,6 +134,9 @@ func (bptu *BlogPostTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if bptu.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogposttag.FieldCreatedAt, field.TypeTime)
+	}
 	if bptu.mutation.BlogPostCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -348,6 +351,9 @@ func (bptuo *BlogPostTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost
 				ps[i](selector)
 			}
 		}
+	}
+	if bptuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogposttag.FieldCreatedAt, field.TypeTime)
 	}
 	if bptuo.mutation.BlogPostCleared() {
 		edge := &sqlgraph.EdgeSpec{

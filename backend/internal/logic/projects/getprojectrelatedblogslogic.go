@@ -110,10 +110,8 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 		}
 		sort.Strings(tags)
 
-		var publishDate string
-		if !post.PublishedAt.IsZero() {
-			publishDate = post.PublishedAt.Format("2006-01-02")
-		}
+		// `published_at` is a plain date string.
+		publishDate := post.PublishedAt
 
 		readTime := ""
 		if post.ReadingTimeMinutes > 0 {

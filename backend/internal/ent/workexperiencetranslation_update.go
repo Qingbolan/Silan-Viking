@@ -238,6 +238,9 @@ func (wetu *WorkExperienceTranslationUpdate) sqlSave(ctx context.Context) (n int
 	if wetu.mutation.LocationCleared() {
 		_spec.ClearField(workexperiencetranslation.FieldLocation, field.TypeString)
 	}
+	if wetu.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperiencetranslation.FieldCreatedAt, field.TypeTime)
+	}
 	if wetu.mutation.WorkExperienceCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -554,6 +557,9 @@ func (wetuo *WorkExperienceTranslationUpdateOne) sqlSave(ctx context.Context) (_
 	}
 	if wetuo.mutation.LocationCleared() {
 		_spec.ClearField(workexperiencetranslation.FieldLocation, field.TypeString)
+	}
+	if wetuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperiencetranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if wetuo.mutation.WorkExperienceCleared() {
 		edge := &sqlgraph.EdgeSpec{

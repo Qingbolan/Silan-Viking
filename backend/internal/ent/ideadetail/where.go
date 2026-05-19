@@ -405,6 +405,16 @@ func CreatedAtLTE(v time.Time) predicate.IdeaDetail {
 	return predicate.IdeaDetail(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.IdeaDetail {
 	return predicate.IdeaDetail(sql.FieldEQ(FieldUpdatedAt, v))
@@ -443,6 +453,16 @@ func UpdatedAtLT(v time.Time) predicate.IdeaDetail {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.IdeaDetail {
 	return predicate.IdeaDetail(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasIdea applies the HasEdge predicate on the "idea" edge.

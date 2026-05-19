@@ -275,6 +275,16 @@ func NameHasSuffix(v string) predicate.BlogCategoryTranslation {
 	return predicate.BlogCategoryTranslation(sql.FieldHasSuffix(FieldName, v))
 }
 
+// NameIsNil applies the IsNil predicate on the "name" field.
+func NameIsNil() predicate.BlogCategoryTranslation {
+	return predicate.BlogCategoryTranslation(sql.FieldIsNull(FieldName))
+}
+
+// NameNotNil applies the NotNil predicate on the "name" field.
+func NameNotNil() predicate.BlogCategoryTranslation {
+	return predicate.BlogCategoryTranslation(sql.FieldNotNull(FieldName))
+}
+
 // NameEqualFold applies the EqualFold predicate on the "name" field.
 func NameEqualFold(v string) predicate.BlogCategoryTranslation {
 	return predicate.BlogCategoryTranslation(sql.FieldEqualFold(FieldName, v))
@@ -398,6 +408,16 @@ func CreatedAtLT(v time.Time) predicate.BlogCategoryTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.BlogCategoryTranslation {
 	return predicate.BlogCategoryTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.BlogCategoryTranslation {
+	return predicate.BlogCategoryTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.BlogCategoryTranslation {
+	return predicate.BlogCategoryTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasBlogCategory applies the HasEdge predicate on the "blog_category" edge.

@@ -375,6 +375,16 @@ func CreatedAtLTE(v time.Time) predicate.ProjectTechnology {
 	return predicate.ProjectTechnology(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ProjectTechnology {
+	return predicate.ProjectTechnology(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ProjectTechnology {
+	return predicate.ProjectTechnology(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasProject applies the HasEdge predicate on the "project" edge.
 func HasProject() predicate.ProjectTechnology {
 	return predicate.ProjectTechnology(func(s *sql.Selector) {

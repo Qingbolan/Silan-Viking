@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/projectimage"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -102,29 +101,29 @@ func (pc *ProjectCreate) SetNillableStatus(pr *project.Status) *ProjectCreate {
 }
 
 // SetStartDate sets the "start_date" field.
-func (pc *ProjectCreate) SetStartDate(t time.Time) *ProjectCreate {
-	pc.mutation.SetStartDate(t)
+func (pc *ProjectCreate) SetStartDate(s string) *ProjectCreate {
+	pc.mutation.SetStartDate(s)
 	return pc
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableStartDate(t *time.Time) *ProjectCreate {
-	if t != nil {
-		pc.SetStartDate(*t)
+func (pc *ProjectCreate) SetNillableStartDate(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetStartDate(*s)
 	}
 	return pc
 }
 
 // SetEndDate sets the "end_date" field.
-func (pc *ProjectCreate) SetEndDate(t time.Time) *ProjectCreate {
-	pc.mutation.SetEndDate(t)
+func (pc *ProjectCreate) SetEndDate(s string) *ProjectCreate {
+	pc.mutation.SetEndDate(s)
 	return pc
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableEndDate(t *time.Time) *ProjectCreate {
-	if t != nil {
-		pc.SetEndDate(*t)
+func (pc *ProjectCreate) SetNillableEndDate(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetEndDate(*s)
 	}
 	return pc
 }
@@ -295,11 +294,6 @@ func (pc *ProjectCreate) SetNillableID(s *string) *ProjectCreate {
 		pc.SetID(*s)
 	}
 	return pc
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (pc *ProjectCreate) SetUser(u *User) *ProjectCreate {
-	return pc.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the ProjectTranslation entity by IDs.
@@ -549,6 +543,10 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := pc.mutation.UserID(); ok {
+		_spec.SetField(project.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := pc.mutation.Title(); ok {
 		_spec.SetField(project.FieldTitle, field.TypeString, value)
 		_node.Title = value
@@ -570,11 +568,11 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_node.Status = value
 	}
 	if value, ok := pc.mutation.StartDate(); ok {
-		_spec.SetField(project.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(project.FieldStartDate, field.TypeString, value)
 		_node.StartDate = value
 	}
 	if value, ok := pc.mutation.EndDate(); ok {
-		_spec.SetField(project.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(project.FieldEndDate, field.TypeString, value)
 		_node.EndDate = value
 	}
 	if value, ok := pc.mutation.GithubURL(); ok {
@@ -620,23 +618,6 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.UpdatedAt(); ok {
 		_spec.SetField(project.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := pc.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.UserTable,
-			Columns: []string{project.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

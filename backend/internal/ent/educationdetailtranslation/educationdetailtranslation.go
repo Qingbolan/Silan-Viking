@@ -68,8 +68,6 @@ func ValidColumn(column string) bool {
 var (
 	// LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
 	LanguageCodeValidator func(string) error
-	// DetailTextValidator is a validator for the "detail_text" field. It is called by the builders before save.
-	DetailTextValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.

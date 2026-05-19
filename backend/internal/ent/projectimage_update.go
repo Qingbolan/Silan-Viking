@@ -145,6 +145,12 @@ func (piu *ProjectImageUpdate) SetUpdatedAt(t time.Time) *ProjectImageUpdate {
 	return piu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (piu *ProjectImageUpdate) ClearUpdatedAt() *ProjectImageUpdate {
+	piu.mutation.ClearUpdatedAt()
+	return piu
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (piu *ProjectImageUpdate) SetProject(p *Project) *ProjectImageUpdate {
 	return piu.SetProjectID(p.ID)
@@ -227,7 +233,7 @@ func (piu *ProjectImageUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (piu *ProjectImageUpdate) defaults() {
-	if _, ok := piu.mutation.UpdatedAt(); !ok {
+	if _, ok := piu.mutation.UpdatedAt(); !ok && !piu.mutation.UpdatedAtCleared() {
 		v := projectimage.UpdateDefaultUpdatedAt()
 		piu.mutation.SetUpdatedAt(v)
 	}
@@ -295,8 +301,14 @@ func (piu *ProjectImageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := piu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(projectimage.FieldSortOrder, field.TypeInt, value)
 	}
+	if piu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectimage.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := piu.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectimage.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if piu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectimage.FieldUpdatedAt, field.TypeTime)
 	}
 	if piu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -507,6 +519,12 @@ func (piuo *ProjectImageUpdateOne) SetUpdatedAt(t time.Time) *ProjectImageUpdate
 	return piuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (piuo *ProjectImageUpdateOne) ClearUpdatedAt() *ProjectImageUpdateOne {
+	piuo.mutation.ClearUpdatedAt()
+	return piuo
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (piuo *ProjectImageUpdateOne) SetProject(p *Project) *ProjectImageUpdateOne {
 	return piuo.SetProjectID(p.ID)
@@ -602,7 +620,7 @@ func (piuo *ProjectImageUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (piuo *ProjectImageUpdateOne) defaults() {
-	if _, ok := piuo.mutation.UpdatedAt(); !ok {
+	if _, ok := piuo.mutation.UpdatedAt(); !ok && !piuo.mutation.UpdatedAtCleared() {
 		v := projectimage.UpdateDefaultUpdatedAt()
 		piuo.mutation.SetUpdatedAt(v)
 	}
@@ -687,8 +705,14 @@ func (piuo *ProjectImageUpdateOne) sqlSave(ctx context.Context) (_node *ProjectI
 	if value, ok := piuo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(projectimage.FieldSortOrder, field.TypeInt, value)
 	}
+	if piuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectimage.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := piuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectimage.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if piuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectimage.FieldUpdatedAt, field.TypeTime)
 	}
 	if piuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

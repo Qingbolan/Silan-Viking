@@ -36,7 +36,6 @@ func NewGetProjectsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPr
 func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *types.ProjectListResponse, err error) {
 	query := l.svcCtx.DB.Project.Query().
 		Where(project.VisibilityEQ(project.VisibilityPublic)).
-		WithUser().
 		WithTechnologies().
 		WithTranslations()
 
@@ -159,8 +158,11 @@ func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types
 }
 
 func projectYear(proj *ent.Project) int {
-	if !proj.StartDate.IsZero() {
-		return proj.StartDate.Year()
+	// `start_date` is a plain `YYYY-MM-DD` string; fall back to created-at.
+	if len(proj.StartDate) >= 4 {
+		if y, err := strconv.Atoi(proj.StartDate[:4]); err == nil {
+			return y
+		}
 	}
 	return proj.CreatedAt.Year()
 }

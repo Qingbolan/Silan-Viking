@@ -410,6 +410,16 @@ func CreatedAtLTE(v time.Time) predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ProjectImageTranslation {
+	return predicate.ProjectImageTranslation(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasProjectImage applies the HasEdge predicate on the "project_image" edge.
 func HasProjectImage() predicate.ProjectImageTranslation {
 	return predicate.ProjectImageTranslation(func(s *sql.Selector) {

@@ -42,8 +42,6 @@ const (
 	EdgeBlogCategoryTranslations = "blog_category_translations"
 	// EdgeBlogPostTranslations holds the string denoting the blog_post_translations edge name in mutations.
 	EdgeBlogPostTranslations = "blog_post_translations"
-	// EdgeBlogSeriesTranslations holds the string denoting the blog_series_translations edge name in mutations.
-	EdgeBlogSeriesTranslations = "blog_series_translations"
 	// EdgeIdeaTranslations holds the string denoting the idea_translations edge name in mutations.
 	EdgeIdeaTranslations = "idea_translations"
 	// EdgeIdeaDetailTranslations holds the string denoting the idea_detail_translations edge name in mutations.
@@ -78,8 +76,6 @@ const (
 	BlogCategoryTranslationFieldID = "id"
 	// BlogPostTranslationFieldID holds the string denoting the ID field of the BlogPostTranslation.
 	BlogPostTranslationFieldID = "id"
-	// BlogSeriesTranslationFieldID holds the string denoting the ID field of the BlogSeriesTranslation.
-	BlogSeriesTranslationFieldID = "id"
 	// IdeaTranslationFieldID holds the string denoting the ID field of the IdeaTranslation.
 	IdeaTranslationFieldID = "id"
 	// IdeaDetailTranslationFieldID holds the string denoting the ID field of the IdeaDetailTranslation.
@@ -166,13 +162,6 @@ const (
 	BlogPostTranslationsInverseTable = "blog_post_translations"
 	// BlogPostTranslationsColumn is the table column denoting the blog_post_translations relation/edge.
 	BlogPostTranslationsColumn = "language_code"
-	// BlogSeriesTranslationsTable is the table that holds the blog_series_translations relation/edge.
-	BlogSeriesTranslationsTable = "blog_series_translations"
-	// BlogSeriesTranslationsInverseTable is the table name for the BlogSeriesTranslation entity.
-	// It exists in this package in order to avoid circular dependency with the "blogseriestranslation" package.
-	BlogSeriesTranslationsInverseTable = "blog_series_translations"
-	// BlogSeriesTranslationsColumn is the table column denoting the blog_series_translations relation/edge.
-	BlogSeriesTranslationsColumn = "language_code"
 	// IdeaTranslationsTable is the table that holds the idea_translations relation/edge.
 	IdeaTranslationsTable = "idea_translations"
 	// IdeaTranslationsInverseTable is the table name for the IdeaTranslation entity.
@@ -424,20 +413,6 @@ func ByBlogPostTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpt
 	}
 }
 
-// ByBlogSeriesTranslationsCount orders the results by blog_series_translations count.
-func ByBlogSeriesTranslationsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newBlogSeriesTranslationsStep(), opts...)
-	}
-}
-
-// ByBlogSeriesTranslations orders the results by blog_series_translations terms.
-func ByBlogSeriesTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBlogSeriesTranslationsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByIdeaTranslationsCount orders the results by idea_translations count.
 func ByIdeaTranslationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -603,13 +578,6 @@ func newBlogPostTranslationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(BlogPostTranslationsInverseTable, BlogPostTranslationFieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, BlogPostTranslationsTable, BlogPostTranslationsColumn),
-	)
-}
-func newBlogSeriesTranslationsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(BlogSeriesTranslationsInverseTable, BlogSeriesTranslationFieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, BlogSeriesTranslationsTable, BlogSeriesTranslationsColumn),
 	)
 }
 func newIdeaTranslationsStep() *sqlgraph.Step {

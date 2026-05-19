@@ -71,6 +71,12 @@ func (bctu *BlogCategoryTranslationUpdate) SetNillableName(s *string) *BlogCateg
 	return bctu
 }
 
+// ClearName clears the value of the "name" field.
+func (bctu *BlogCategoryTranslationUpdate) ClearName() *BlogCategoryTranslationUpdate {
+	bctu.mutation.ClearName()
+	return bctu
+}
+
 // SetDescription sets the "description" field.
 func (bctu *BlogCategoryTranslationUpdate) SetDescription(s string) *BlogCategoryTranslationUpdate {
 	bctu.mutation.SetDescription(s)
@@ -187,11 +193,17 @@ func (bctu *BlogCategoryTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if value, ok := bctu.mutation.Name(); ok {
 		_spec.SetField(blogcategorytranslation.FieldName, field.TypeString, value)
 	}
+	if bctu.mutation.NameCleared() {
+		_spec.ClearField(blogcategorytranslation.FieldName, field.TypeString)
+	}
 	if value, ok := bctu.mutation.Description(); ok {
 		_spec.SetField(blogcategorytranslation.FieldDescription, field.TypeString, value)
 	}
 	if bctu.mutation.DescriptionCleared() {
 		_spec.ClearField(blogcategorytranslation.FieldDescription, field.TypeString)
+	}
+	if bctu.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogcategorytranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if bctu.mutation.BlogCategoryCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -310,6 +322,12 @@ func (bctuo *BlogCategoryTranslationUpdateOne) SetNillableName(s *string) *BlogC
 	if s != nil {
 		bctuo.SetName(*s)
 	}
+	return bctuo
+}
+
+// ClearName clears the value of the "name" field.
+func (bctuo *BlogCategoryTranslationUpdateOne) ClearName() *BlogCategoryTranslationUpdateOne {
+	bctuo.mutation.ClearName()
 	return bctuo
 }
 
@@ -459,11 +477,17 @@ func (bctuo *BlogCategoryTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	if value, ok := bctuo.mutation.Name(); ok {
 		_spec.SetField(blogcategorytranslation.FieldName, field.TypeString, value)
 	}
+	if bctuo.mutation.NameCleared() {
+		_spec.ClearField(blogcategorytranslation.FieldName, field.TypeString)
+	}
 	if value, ok := bctuo.mutation.Description(); ok {
 		_spec.SetField(blogcategorytranslation.FieldDescription, field.TypeString, value)
 	}
 	if bctuo.mutation.DescriptionCleared() {
 		_spec.ClearField(blogcategorytranslation.FieldDescription, field.TypeString)
+	}
+	if bctuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogcategorytranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if bctuo.mutation.BlogCategoryCleared() {
 		edge := &sqlgraph.EdgeSpec{

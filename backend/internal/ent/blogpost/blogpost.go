@@ -55,12 +55,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// EdgeUser holds the string denoting the user edge name in mutations.
-	EdgeUser = "user"
 	// EdgeCategory holds the string denoting the category edge name in mutations.
 	EdgeCategory = "category"
-	// EdgeSeries holds the string denoting the series edge name in mutations.
-	EdgeSeries = "series"
 	// EdgeTags holds the string denoting the tags edge name in mutations.
 	EdgeTags = "tags"
 	// EdgeTranslations holds the string denoting the translations edge name in mutations.
@@ -69,13 +65,6 @@ const (
 	EdgeBlogPostTags = "blog_post_tags"
 	// Table holds the table name of the blogpost in the database.
 	Table = "blog_posts"
-	// UserTable is the table that holds the user relation/edge.
-	UserTable = "blog_posts"
-	// UserInverseTable is the table name for the User entity.
-	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UserInverseTable = "users"
-	// UserColumn is the table column denoting the user relation/edge.
-	UserColumn = "user_id"
 	// CategoryTable is the table that holds the category relation/edge.
 	CategoryTable = "blog_posts"
 	// CategoryInverseTable is the table name for the BlogCategory entity.
@@ -83,13 +72,6 @@ const (
 	CategoryInverseTable = "blog_categories"
 	// CategoryColumn is the table column denoting the category relation/edge.
 	CategoryColumn = "category_id"
-	// SeriesTable is the table that holds the series relation/edge.
-	SeriesTable = "blog_posts"
-	// SeriesInverseTable is the table name for the BlogSeries entity.
-	// It exists in this package in order to avoid circular dependency with the "blogseries" package.
-	SeriesInverseTable = "blog_series"
-	// SeriesColumn is the table column denoting the series relation/edge.
-	SeriesColumn = "series_id"
 	// TagsTable is the table that holds the tags relation/edge. The primary key declared below.
 	TagsTable = "blog_post_tags"
 	// TagsInverseTable is the table name for the BlogTag entity.
@@ -367,24 +349,10 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByUserField orders the results by user field.
-func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByCategoryField orders the results by category field.
 func ByCategoryField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newCategoryStep(), sql.OrderByField(field, opts...))
-	}
-}
-
-// BySeriesField orders the results by series field.
-func BySeriesField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSeriesStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -429,25 +397,11 @@ func ByBlogPostTags(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newBlogPostTagsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newUserStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(UserInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-	)
-}
 func newCategoryStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(CategoryInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, CategoryTable, CategoryColumn),
-	)
-}
-func newSeriesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(SeriesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, SeriesTable, SeriesColumn),
 	)
 }
 func newTagsStep() *sqlgraph.Step {

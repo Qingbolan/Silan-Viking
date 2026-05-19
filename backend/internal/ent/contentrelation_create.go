@@ -127,10 +127,6 @@ func (crc *ContentRelationCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (crc *ContentRelationCreate) defaults() {
-	if _, ok := crc.mutation.SortOrder(); !ok {
-		v := contentrelation.DefaultSortOrder
-		crc.mutation.SetSortOrder(v)
-	}
 	if _, ok := crc.mutation.CreatedAt(); !ok {
 		v := contentrelation.DefaultCreatedAt()
 		crc.mutation.SetCreatedAt(v)
@@ -172,12 +168,6 @@ func (crc *ContentRelationCreate) check() error {
 		if err := contentrelation.RelationTypeValidator(v); err != nil {
 			return &ValidationError{Name: "relation_type", err: fmt.Errorf(`ent: validator failed for field "ContentRelation.relation_type": %w`, err)}
 		}
-	}
-	if _, ok := crc.mutation.SortOrder(); !ok {
-		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "ContentRelation.sort_order"`)}
-	}
-	if _, ok := crc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ContentRelation.created_at"`)}
 	}
 	return nil
 }

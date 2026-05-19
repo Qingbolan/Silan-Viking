@@ -195,6 +195,9 @@ func (peu *PartEntryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := peu.mutation.SharedPayload(); ok {
 		_spec.SetField(partentry.FieldSharedPayload, field.TypeJSON, value)
 	}
+	if peu.mutation.CreatedAtCleared() {
+		_spec.ClearField(partentry.FieldCreatedAt, field.TypeTime)
+	}
 	if peu.mutation.ItemPartCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -484,6 +487,9 @@ func (peuo *PartEntryUpdateOne) sqlSave(ctx context.Context) (_node *PartEntry, 
 	}
 	if value, ok := peuo.mutation.SharedPayload(); ok {
 		_spec.SetField(partentry.FieldSharedPayload, field.TypeJSON, value)
+	}
+	if peuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(partentry.FieldCreatedAt, field.TypeTime)
 	}
 	if peuo.mutation.ItemPartCleared() {
 		edge := &sqlgraph.EdgeSpec{

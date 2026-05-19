@@ -86,12 +86,12 @@ func FieldOfStudy(v string) predicate.Education {
 }
 
 // StartDate applies equality check predicate on the "start_date" field. It's identical to StartDateEQ.
-func StartDate(v time.Time) predicate.Education {
+func StartDate(v string) predicate.Education {
 	return predicate.Education(sql.FieldEQ(FieldStartDate, v))
 }
 
 // EndDate applies equality check predicate on the "end_date" field. It's identical to EndDateEQ.
-func EndDate(v time.Time) predicate.Education {
+func EndDate(v string) predicate.Education {
 	return predicate.Education(sql.FieldEQ(FieldEndDate, v))
 }
 
@@ -406,43 +406,58 @@ func FieldOfStudyContainsFold(v string) predicate.Education {
 }
 
 // StartDateEQ applies the EQ predicate on the "start_date" field.
-func StartDateEQ(v time.Time) predicate.Education {
+func StartDateEQ(v string) predicate.Education {
 	return predicate.Education(sql.FieldEQ(FieldStartDate, v))
 }
 
 // StartDateNEQ applies the NEQ predicate on the "start_date" field.
-func StartDateNEQ(v time.Time) predicate.Education {
+func StartDateNEQ(v string) predicate.Education {
 	return predicate.Education(sql.FieldNEQ(FieldStartDate, v))
 }
 
 // StartDateIn applies the In predicate on the "start_date" field.
-func StartDateIn(vs ...time.Time) predicate.Education {
+func StartDateIn(vs ...string) predicate.Education {
 	return predicate.Education(sql.FieldIn(FieldStartDate, vs...))
 }
 
 // StartDateNotIn applies the NotIn predicate on the "start_date" field.
-func StartDateNotIn(vs ...time.Time) predicate.Education {
+func StartDateNotIn(vs ...string) predicate.Education {
 	return predicate.Education(sql.FieldNotIn(FieldStartDate, vs...))
 }
 
 // StartDateGT applies the GT predicate on the "start_date" field.
-func StartDateGT(v time.Time) predicate.Education {
+func StartDateGT(v string) predicate.Education {
 	return predicate.Education(sql.FieldGT(FieldStartDate, v))
 }
 
 // StartDateGTE applies the GTE predicate on the "start_date" field.
-func StartDateGTE(v time.Time) predicate.Education {
+func StartDateGTE(v string) predicate.Education {
 	return predicate.Education(sql.FieldGTE(FieldStartDate, v))
 }
 
 // StartDateLT applies the LT predicate on the "start_date" field.
-func StartDateLT(v time.Time) predicate.Education {
+func StartDateLT(v string) predicate.Education {
 	return predicate.Education(sql.FieldLT(FieldStartDate, v))
 }
 
 // StartDateLTE applies the LTE predicate on the "start_date" field.
-func StartDateLTE(v time.Time) predicate.Education {
+func StartDateLTE(v string) predicate.Education {
 	return predicate.Education(sql.FieldLTE(FieldStartDate, v))
+}
+
+// StartDateContains applies the Contains predicate on the "start_date" field.
+func StartDateContains(v string) predicate.Education {
+	return predicate.Education(sql.FieldContains(FieldStartDate, v))
+}
+
+// StartDateHasPrefix applies the HasPrefix predicate on the "start_date" field.
+func StartDateHasPrefix(v string) predicate.Education {
+	return predicate.Education(sql.FieldHasPrefix(FieldStartDate, v))
+}
+
+// StartDateHasSuffix applies the HasSuffix predicate on the "start_date" field.
+func StartDateHasSuffix(v string) predicate.Education {
+	return predicate.Education(sql.FieldHasSuffix(FieldStartDate, v))
 }
 
 // StartDateIsNil applies the IsNil predicate on the "start_date" field.
@@ -455,44 +470,69 @@ func StartDateNotNil() predicate.Education {
 	return predicate.Education(sql.FieldNotNull(FieldStartDate))
 }
 
+// StartDateEqualFold applies the EqualFold predicate on the "start_date" field.
+func StartDateEqualFold(v string) predicate.Education {
+	return predicate.Education(sql.FieldEqualFold(FieldStartDate, v))
+}
+
+// StartDateContainsFold applies the ContainsFold predicate on the "start_date" field.
+func StartDateContainsFold(v string) predicate.Education {
+	return predicate.Education(sql.FieldContainsFold(FieldStartDate, v))
+}
+
 // EndDateEQ applies the EQ predicate on the "end_date" field.
-func EndDateEQ(v time.Time) predicate.Education {
+func EndDateEQ(v string) predicate.Education {
 	return predicate.Education(sql.FieldEQ(FieldEndDate, v))
 }
 
 // EndDateNEQ applies the NEQ predicate on the "end_date" field.
-func EndDateNEQ(v time.Time) predicate.Education {
+func EndDateNEQ(v string) predicate.Education {
 	return predicate.Education(sql.FieldNEQ(FieldEndDate, v))
 }
 
 // EndDateIn applies the In predicate on the "end_date" field.
-func EndDateIn(vs ...time.Time) predicate.Education {
+func EndDateIn(vs ...string) predicate.Education {
 	return predicate.Education(sql.FieldIn(FieldEndDate, vs...))
 }
 
 // EndDateNotIn applies the NotIn predicate on the "end_date" field.
-func EndDateNotIn(vs ...time.Time) predicate.Education {
+func EndDateNotIn(vs ...string) predicate.Education {
 	return predicate.Education(sql.FieldNotIn(FieldEndDate, vs...))
 }
 
 // EndDateGT applies the GT predicate on the "end_date" field.
-func EndDateGT(v time.Time) predicate.Education {
+func EndDateGT(v string) predicate.Education {
 	return predicate.Education(sql.FieldGT(FieldEndDate, v))
 }
 
 // EndDateGTE applies the GTE predicate on the "end_date" field.
-func EndDateGTE(v time.Time) predicate.Education {
+func EndDateGTE(v string) predicate.Education {
 	return predicate.Education(sql.FieldGTE(FieldEndDate, v))
 }
 
 // EndDateLT applies the LT predicate on the "end_date" field.
-func EndDateLT(v time.Time) predicate.Education {
+func EndDateLT(v string) predicate.Education {
 	return predicate.Education(sql.FieldLT(FieldEndDate, v))
 }
 
 // EndDateLTE applies the LTE predicate on the "end_date" field.
-func EndDateLTE(v time.Time) predicate.Education {
+func EndDateLTE(v string) predicate.Education {
 	return predicate.Education(sql.FieldLTE(FieldEndDate, v))
+}
+
+// EndDateContains applies the Contains predicate on the "end_date" field.
+func EndDateContains(v string) predicate.Education {
+	return predicate.Education(sql.FieldContains(FieldEndDate, v))
+}
+
+// EndDateHasPrefix applies the HasPrefix predicate on the "end_date" field.
+func EndDateHasPrefix(v string) predicate.Education {
+	return predicate.Education(sql.FieldHasPrefix(FieldEndDate, v))
+}
+
+// EndDateHasSuffix applies the HasSuffix predicate on the "end_date" field.
+func EndDateHasSuffix(v string) predicate.Education {
+	return predicate.Education(sql.FieldHasSuffix(FieldEndDate, v))
 }
 
 // EndDateIsNil applies the IsNil predicate on the "end_date" field.
@@ -503,6 +543,16 @@ func EndDateIsNil() predicate.Education {
 // EndDateNotNil applies the NotNil predicate on the "end_date" field.
 func EndDateNotNil() predicate.Education {
 	return predicate.Education(sql.FieldNotNull(FieldEndDate))
+}
+
+// EndDateEqualFold applies the EqualFold predicate on the "end_date" field.
+func EndDateEqualFold(v string) predicate.Education {
+	return predicate.Education(sql.FieldEqualFold(FieldEndDate, v))
+}
+
+// EndDateContainsFold applies the ContainsFold predicate on the "end_date" field.
+func EndDateContainsFold(v string) predicate.Education {
+	return predicate.Education(sql.FieldContainsFold(FieldEndDate, v))
 }
 
 // IsCurrentEQ applies the EQ predicate on the "is_current" field.
@@ -895,6 +945,16 @@ func CreatedAtLTE(v time.Time) predicate.Education {
 	return predicate.Education(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.Education {
+	return predicate.Education(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.Education {
+	return predicate.Education(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Education {
 	return predicate.Education(sql.FieldEQ(FieldUpdatedAt, v))
@@ -935,27 +995,14 @@ func UpdatedAtLTE(v time.Time) predicate.Education {
 	return predicate.Education(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.Education {
-	return predicate.Education(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.Education {
+	return predicate.Education(sql.FieldIsNull(FieldUpdatedAt))
 }
 
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.Education {
-	return predicate.Education(func(s *sql.Selector) {
-		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.Education {
+	return predicate.Education(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasTranslations applies the HasEdge predicate on the "translations" edge.

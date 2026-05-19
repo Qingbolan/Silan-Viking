@@ -265,9 +265,6 @@ func (rlc *RequestLogCreate) check() error {
 			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
 		}
 	}
-	if _, ok := rlc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RequestLog.created_at"`)}
-	}
 	return nil
 }
 

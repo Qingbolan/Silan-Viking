@@ -4,7 +4,9 @@ import (
 	"context"
 	"strings"
 
+	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/project"
+	"silan-backend/internal/logic/contentpart"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -68,7 +70,6 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 	proj, err := l.svcCtx.DB.Project.Query().
 		Where(project.ID(projectUUID)).
 		Where(project.VisibilityEQ(project.VisibilityPublic)).
-		WithUser().
 		WithTechnologies().
 		WithDetails().
 		WithImages().
@@ -78,13 +79,9 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 	}
 
 	// Get basic project information
-	var startDate, endDate string
-	if !proj.StartDate.IsZero() {
-		startDate = proj.StartDate.Format("2006-01-02")
-	}
-	if !proj.EndDate.IsZero() {
-		endDate = proj.EndDate.Format("2006-01-02")
-	}
+	// Dates are stored as plain strings by the silan-viking engine.
+	startDate := proj.StartDate
+	endDate := proj.EndDate
 
 	// Parse timeline
 	var timeline types.ProjectTimeline
@@ -128,11 +125,28 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		updatedAt = proj.UpdatedAt.Format("2006-01-02 15:04:05")
 	}
 
-	// The prose body (overview Part) lives in item_part_translation — the
-	// content engine no longer populates project_details.project_details.
+	// A project's prose lives in `item_part` Parts — one per role the
+	// silan-viking SCHEMA declares for `project`. Each is read from
+	// item_part_translation; an absent Part yields "" and the frontend
+	// simply does not render that tab.
 	detailedDescription = projectPartBody(l.ctx, l.svcCtx, proj.ID, "overview", req.Language)
+	goals := projectPartBody(l.ctx, l.svcCtx, proj.ID, "goals", req.Language)
+	challenges := projectPartBody(l.ctx, l.svcCtx, proj.ID, "challenges", req.Language)
+	solutions := projectPartBody(l.ctx, l.svcCtx, proj.ID, "solutions", req.Language)
+	lessons := projectPartBody(l.ctx, l.svcCtx, proj.ID, "lessons", req.Language)
+	quickStart := projectPartBody(l.ctx, l.svcCtx, proj.ID, "quick_start", req.Language)
+	releaseNotes := projectPartBody(l.ctx, l.svcCtx, proj.ID, "release_notes", req.Language)
 
 	relatedBlogs, err := NewGetProjectRelatedBlogsLogic(l.ctx, l.svcCtx).GetProjectRelatedBlogs(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// The data-driven Part list — whatever Parts the project actually has,
+	// in sort_order. The named fields above stay as a compatibility shim;
+	// the frontend renders tabs from `Parts`, so a project Part with a role
+	// the SCHEMA never declared still becomes its own tab.
+	parts, err := contentpart.Collect(l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, proj.ID, req.Language)
 	if err != nil {
 		return nil, err
 	}
@@ -141,8 +155,12 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		ID:                  detailID,
 		ProjectID:           proj.ID,
 		DetailedDescription: detailedDescription,
-		Release:             "", // M0.5a §11.8: moved to item_part
-		QuickStart:          "", // M0.5a §11.8: moved to item_part
+		Goals:               goals,
+		Challenges:          challenges,
+		Solutions:           solutions,
+		Lessons:             lessons,
+		Release:             releaseNotes,
+		QuickStart:          quickStart,
 		Dependance:          dependencies,
 		License:             license,
 		LicenseText:         licenseText,
@@ -152,5 +170,6 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		RelatedBlogs:        relatedBlogs,
 		CreatedAt:           createdAt,
 		UpdatedAt:           updatedAt,
+		Parts:               parts,
 	}, nil
 }

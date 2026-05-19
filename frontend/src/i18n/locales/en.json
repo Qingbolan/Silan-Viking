@@ -226,11 +226,7 @@
     "likes": "likes",
     "downloads": "downloads",
     "updated": "Updated",
-    "build": {
-      "passing": "Build passing",
-      "failing": "Build failing",
-      "unknown": "Build unknown"
-    },
+    "build": "Build",
     "viewProjectOnGitHub": "View {{title}} source code on GitHub",
     "viewLiveDemo": "View {{title}} live demo",
     "filterByTechnique": "Filter by Technique:",
@@ -270,7 +266,6 @@
     "viewOnOSI": "View on OSI",
     "noLicenseInformation": "No License Information",
     "licenseNotAvailable": "License information is not available for this project.",
-    "build": "Build",
     "coverage": "Coverage",
     "unknown": "Unknown",
     "by": "by",
@@ -278,7 +273,11 @@
     "viewProjectDemo": "View {{title}} demo",
     "viewProjectSourceCode": "View {{title}} source code",
     "projectFilters": "Project filters",
-    "discussion": "Discussion"
+    "discussion": "Discussion",
+    "goals": "Goals",
+    "challenges": "Challenges",
+    "solutions": "Solutions",
+    "lessons": "Lessons"
   },
   "time": {
     "justNow": "just now",

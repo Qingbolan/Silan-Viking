@@ -48,6 +48,7 @@ func (EducationTranslation) Fields() []ent.Field {
 			MaxLen(200),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

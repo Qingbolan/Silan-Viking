@@ -184,6 +184,9 @@ func (btu *BlogTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := btu.mutation.AddedUsageCount(); ok {
 		_spec.AddField(blogtag.FieldUsageCount, field.TypeInt, value)
 	}
+	if btu.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogtag.FieldCreatedAt, field.TypeTime)
+	}
 	if btu.mutation.BlogPostsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -446,6 +449,9 @@ func (btuo *BlogTagUpdateOne) sqlSave(ctx context.Context) (_node *BlogTag, err 
 	}
 	if value, ok := btuo.mutation.AddedUsageCount(); ok {
 		_spec.AddField(blogtag.FieldUsageCount, field.TypeInt, value)
+	}
+	if btuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogtag.FieldCreatedAt, field.TypeTime)
 	}
 	if btuo.mutation.BlogPostsCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -83,15 +83,15 @@ func (ec *EpisodeCreate) SetNillableVisibility(e *episode.Visibility) *EpisodeCr
 }
 
 // SetPublishedAt sets the "published_at" field.
-func (ec *EpisodeCreate) SetPublishedAt(t time.Time) *EpisodeCreate {
-	ec.mutation.SetPublishedAt(t)
+func (ec *EpisodeCreate) SetPublishedAt(s string) *EpisodeCreate {
+	ec.mutation.SetPublishedAt(s)
 	return ec
 }
 
 // SetNillablePublishedAt sets the "published_at" field if the given value is not nil.
-func (ec *EpisodeCreate) SetNillablePublishedAt(t *time.Time) *EpisodeCreate {
-	if t != nil {
-		ec.SetPublishedAt(*t)
+func (ec *EpisodeCreate) SetNillablePublishedAt(s *string) *EpisodeCreate {
+	if s != nil {
+		ec.SetPublishedAt(*s)
 	}
 	return ec
 }
@@ -325,7 +325,7 @@ func (ec *EpisodeCreate) createSpec() (*Episode, *sqlgraph.CreateSpec) {
 		_node.Visibility = value
 	}
 	if value, ok := ec.mutation.PublishedAt(); ok {
-		_spec.SetField(episode.FieldPublishedAt, field.TypeTime, value)
+		_spec.SetField(episode.FieldPublishedAt, field.TypeString, value)
 		_node.PublishedAt = &value
 	}
 	if value, ok := ec.mutation.DurationMinutes(); ok {

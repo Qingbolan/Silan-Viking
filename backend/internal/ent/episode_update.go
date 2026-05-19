@@ -128,15 +128,15 @@ func (eu *EpisodeUpdate) SetNillableVisibility(e *episode.Visibility) *EpisodeUp
 }
 
 // SetPublishedAt sets the "published_at" field.
-func (eu *EpisodeUpdate) SetPublishedAt(t time.Time) *EpisodeUpdate {
-	eu.mutation.SetPublishedAt(t)
+func (eu *EpisodeUpdate) SetPublishedAt(s string) *EpisodeUpdate {
+	eu.mutation.SetPublishedAt(s)
 	return eu
 }
 
 // SetNillablePublishedAt sets the "published_at" field if the given value is not nil.
-func (eu *EpisodeUpdate) SetNillablePublishedAt(t *time.Time) *EpisodeUpdate {
-	if t != nil {
-		eu.SetPublishedAt(*t)
+func (eu *EpisodeUpdate) SetNillablePublishedAt(s *string) *EpisodeUpdate {
+	if s != nil {
+		eu.SetPublishedAt(*s)
 	}
 	return eu
 }
@@ -336,10 +336,10 @@ func (eu *EpisodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(episode.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := eu.mutation.PublishedAt(); ok {
-		_spec.SetField(episode.FieldPublishedAt, field.TypeTime, value)
+		_spec.SetField(episode.FieldPublishedAt, field.TypeString, value)
 	}
 	if eu.mutation.PublishedAtCleared() {
-		_spec.ClearField(episode.FieldPublishedAt, field.TypeTime)
+		_spec.ClearField(episode.FieldPublishedAt, field.TypeString)
 	}
 	if value, ok := eu.mutation.DurationMinutes(); ok {
 		_spec.SetField(episode.FieldDurationMinutes, field.TypeInt, value)
@@ -551,15 +551,15 @@ func (euo *EpisodeUpdateOne) SetNillableVisibility(e *episode.Visibility) *Episo
 }
 
 // SetPublishedAt sets the "published_at" field.
-func (euo *EpisodeUpdateOne) SetPublishedAt(t time.Time) *EpisodeUpdateOne {
-	euo.mutation.SetPublishedAt(t)
+func (euo *EpisodeUpdateOne) SetPublishedAt(s string) *EpisodeUpdateOne {
+	euo.mutation.SetPublishedAt(s)
 	return euo
 }
 
 // SetNillablePublishedAt sets the "published_at" field if the given value is not nil.
-func (euo *EpisodeUpdateOne) SetNillablePublishedAt(t *time.Time) *EpisodeUpdateOne {
-	if t != nil {
-		euo.SetPublishedAt(*t)
+func (euo *EpisodeUpdateOne) SetNillablePublishedAt(s *string) *EpisodeUpdateOne {
+	if s != nil {
+		euo.SetPublishedAt(*s)
 	}
 	return euo
 }
@@ -789,10 +789,10 @@ func (euo *EpisodeUpdateOne) sqlSave(ctx context.Context) (_node *Episode, err e
 		_spec.SetField(episode.FieldVisibility, field.TypeEnum, value)
 	}
 	if value, ok := euo.mutation.PublishedAt(); ok {
-		_spec.SetField(episode.FieldPublishedAt, field.TypeTime, value)
+		_spec.SetField(episode.FieldPublishedAt, field.TypeString, value)
 	}
 	if euo.mutation.PublishedAtCleared() {
-		_spec.ClearField(episode.FieldPublishedAt, field.TypeTime)
+		_spec.ClearField(episode.FieldPublishedAt, field.TypeString)
 	}
 	if value, ok := euo.mutation.DurationMinutes(); ok {
 		_spec.SetField(episode.FieldDurationMinutes, field.TypeInt, value)

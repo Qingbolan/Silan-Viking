@@ -5,7 +5,6 @@ package ent
 import (
 	"fmt"
 	"silan-backend/internal/ent/education"
-	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
@@ -27,9 +26,9 @@ type Education struct {
 	// FieldOfStudy holds the value of the "field_of_study" field.
 	FieldOfStudy string `json:"field_of_study,omitempty"`
 	// StartDate holds the value of the "start_date" field.
-	StartDate time.Time `json:"start_date,omitempty"`
+	StartDate string `json:"start_date,omitempty"`
 	// EndDate holds the value of the "end_date" field.
-	EndDate time.Time `json:"end_date,omitempty"`
+	EndDate string `json:"end_date,omitempty"`
 	// IsCurrent holds the value of the "is_current" field.
 	IsCurrent bool `json:"is_current,omitempty"`
 	// Gpa holds the value of the "gpa" field.
@@ -54,32 +53,19 @@ type Education struct {
 
 // EducationEdges holds the relations/edges for other nodes in the graph.
 type EducationEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*EducationTranslation `json:"translations,omitempty"`
 	// Details holds the value of the details edge.
 	Details []*EducationDetail `json:"details,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e EducationEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [2]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e EducationEdges) TranslationsOrErr() ([]*EducationTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -88,7 +74,7 @@ func (e EducationEdges) TranslationsOrErr() ([]*EducationTranslation, error) {
 // DetailsOrErr returns the Details value or an error if the edge
 // was not loaded in eager-loading.
 func (e EducationEdges) DetailsOrErr() ([]*EducationDetail, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Details, nil
 	}
 	return nil, &NotLoadedError{edge: "details"}
@@ -103,9 +89,9 @@ func (*Education) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case education.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case education.FieldID, education.FieldUserID, education.FieldInstitution, education.FieldDegree, education.FieldFieldOfStudy, education.FieldGpa, education.FieldLocation, education.FieldInstitutionWebsite, education.FieldInstitutionLogoURL:
+		case education.FieldID, education.FieldUserID, education.FieldInstitution, education.FieldDegree, education.FieldFieldOfStudy, education.FieldStartDate, education.FieldEndDate, education.FieldGpa, education.FieldLocation, education.FieldInstitutionWebsite, education.FieldInstitutionLogoURL:
 			values[i] = new(sql.NullString)
-		case education.FieldStartDate, education.FieldEndDate, education.FieldCreatedAt, education.FieldUpdatedAt:
+		case education.FieldCreatedAt, education.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -153,16 +139,16 @@ func (e *Education) assignValues(columns []string, values []any) error {
 				e.FieldOfStudy = value.String
 			}
 		case education.FieldStartDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field start_date", values[i])
 			} else if value.Valid {
-				e.StartDate = value.Time
+				e.StartDate = value.String
 			}
 		case education.FieldEndDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field end_date", values[i])
 			} else if value.Valid {
-				e.EndDate = value.Time
+				e.EndDate = value.String
 			}
 		case education.FieldIsCurrent:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -225,11 +211,6 @@ func (e *Education) Value(name string) (ent.Value, error) {
 	return e.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the Education entity.
-func (e *Education) QueryUser() *UserQuery {
-	return NewEducationClient(e.config).QueryUser(e)
-}
-
 // QueryTranslations queries the "translations" edge of the Education entity.
 func (e *Education) QueryTranslations() *EducationTranslationQuery {
 	return NewEducationClient(e.config).QueryTranslations(e)
@@ -276,10 +257,10 @@ func (e *Education) String() string {
 	builder.WriteString(e.FieldOfStudy)
 	builder.WriteString(", ")
 	builder.WriteString("start_date=")
-	builder.WriteString(e.StartDate.Format(time.ANSIC))
+	builder.WriteString(e.StartDate)
 	builder.WriteString(", ")
 	builder.WriteString("end_date=")
-	builder.WriteString(e.EndDate.Format(time.ANSIC))
+	builder.WriteString(e.EndDate)
 	builder.WriteString(", ")
 	builder.WriteString("is_current=")
 	builder.WriteString(fmt.Sprintf("%v", e.IsCurrent))

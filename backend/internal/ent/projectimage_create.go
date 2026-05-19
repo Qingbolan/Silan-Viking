@@ -231,12 +231,6 @@ func (pic *ProjectImageCreate) check() error {
 	if _, ok := pic.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "ProjectImage.sort_order"`)}
 	}
-	if _, ok := pic.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectImage.created_at"`)}
-	}
-	if _, ok := pic.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectImage.updated_at"`)}
-	}
 	if len(pic.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectImage.project"`)}
 	}

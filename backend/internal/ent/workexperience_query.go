@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 	"silan-backend/internal/ent/workexperience"
 	"silan-backend/internal/ent/workexperiencedetail"
 	"silan-backend/internal/ent/workexperiencetranslation"
@@ -26,7 +25,6 @@ type WorkExperienceQuery struct {
 	order            []workexperience.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.WorkExperience
-	withUser         *UserQuery
 	withTranslations *WorkExperienceTranslationQuery
 	withDetails      *WorkExperienceDetailQuery
 	// intermediate query (i.e. traversal path).
@@ -63,28 +61,6 @@ func (weq *WorkExperienceQuery) Unique(unique bool) *WorkExperienceQuery {
 func (weq *WorkExperienceQuery) Order(o ...workexperience.OrderOption) *WorkExperienceQuery {
 	weq.order = append(weq.order, o...)
 	return weq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (weq *WorkExperienceQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: weq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := weq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := weq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(workexperience.Table, workexperience.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, workexperience.UserTable, workexperience.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(weq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -323,24 +299,12 @@ func (weq *WorkExperienceQuery) Clone() *WorkExperienceQuery {
 		order:            append([]workexperience.OrderOption{}, weq.order...),
 		inters:           append([]Interceptor{}, weq.inters...),
 		predicates:       append([]predicate.WorkExperience{}, weq.predicates...),
-		withUser:         weq.withUser.Clone(),
 		withTranslations: weq.withTranslations.Clone(),
 		withDetails:      weq.withDetails.Clone(),
 		// clone intermediate query.
 		sql:  weq.sql.Clone(),
 		path: weq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (weq *WorkExperienceQuery) WithUser(opts ...func(*UserQuery)) *WorkExperienceQuery {
-	query := (&UserClient{config: weq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	weq.withUser = query
-	return weq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -443,8 +407,7 @@ func (weq *WorkExperienceQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	var (
 		nodes       = []*WorkExperience{}
 		_spec       = weq.querySpec()
-		loadedTypes = [3]bool{
-			weq.withUser != nil,
+		loadedTypes = [2]bool{
 			weq.withTranslations != nil,
 			weq.withDetails != nil,
 		}
@@ -467,12 +430,6 @@ func (weq *WorkExperienceQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := weq.withUser; query != nil {
-		if err := weq.loadUser(ctx, query, nodes, nil,
-			func(n *WorkExperience, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := weq.withTranslations; query != nil {
 		if err := weq.loadTranslations(ctx, query, nodes,
 			func(n *WorkExperience) { n.Edges.Translations = []*WorkExperienceTranslation{} },
@@ -492,35 +449,6 @@ func (weq *WorkExperienceQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	return nodes, nil
 }
 
-func (weq *WorkExperienceQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*WorkExperience, init func(*WorkExperience), assign func(*WorkExperience, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*WorkExperience)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (weq *WorkExperienceQuery) loadTranslations(ctx context.Context, query *WorkExperienceTranslationQuery, nodes []*WorkExperience, init func(*WorkExperience), assign func(*WorkExperience, *WorkExperienceTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*WorkExperience)
@@ -606,9 +534,6 @@ func (weq *WorkExperienceQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != workexperience.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if weq.withUser != nil {
-			_spec.Node.AddColumnOnce(workexperience.FieldUserID)
 		}
 	}
 	if ps := weq.predicates; len(ps) > 0 {

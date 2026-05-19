@@ -81,12 +81,12 @@ func Position(v string) predicate.WorkExperience {
 }
 
 // StartDate applies equality check predicate on the "start_date" field. It's identical to StartDateEQ.
-func StartDate(v time.Time) predicate.WorkExperience {
+func StartDate(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldStartDate, v))
 }
 
 // EndDate applies equality check predicate on the "end_date" field. It's identical to EndDateEQ.
-func EndDate(v time.Time) predicate.WorkExperience {
+func EndDate(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldEndDate, v))
 }
 
@@ -321,43 +321,58 @@ func PositionContainsFold(v string) predicate.WorkExperience {
 }
 
 // StartDateEQ applies the EQ predicate on the "start_date" field.
-func StartDateEQ(v time.Time) predicate.WorkExperience {
+func StartDateEQ(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldStartDate, v))
 }
 
 // StartDateNEQ applies the NEQ predicate on the "start_date" field.
-func StartDateNEQ(v time.Time) predicate.WorkExperience {
+func StartDateNEQ(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNEQ(FieldStartDate, v))
 }
 
 // StartDateIn applies the In predicate on the "start_date" field.
-func StartDateIn(vs ...time.Time) predicate.WorkExperience {
+func StartDateIn(vs ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldIn(FieldStartDate, vs...))
 }
 
 // StartDateNotIn applies the NotIn predicate on the "start_date" field.
-func StartDateNotIn(vs ...time.Time) predicate.WorkExperience {
+func StartDateNotIn(vs ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNotIn(FieldStartDate, vs...))
 }
 
 // StartDateGT applies the GT predicate on the "start_date" field.
-func StartDateGT(v time.Time) predicate.WorkExperience {
+func StartDateGT(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldGT(FieldStartDate, v))
 }
 
 // StartDateGTE applies the GTE predicate on the "start_date" field.
-func StartDateGTE(v time.Time) predicate.WorkExperience {
+func StartDateGTE(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldGTE(FieldStartDate, v))
 }
 
 // StartDateLT applies the LT predicate on the "start_date" field.
-func StartDateLT(v time.Time) predicate.WorkExperience {
+func StartDateLT(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLT(FieldStartDate, v))
 }
 
 // StartDateLTE applies the LTE predicate on the "start_date" field.
-func StartDateLTE(v time.Time) predicate.WorkExperience {
+func StartDateLTE(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLTE(FieldStartDate, v))
+}
+
+// StartDateContains applies the Contains predicate on the "start_date" field.
+func StartDateContains(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldContains(FieldStartDate, v))
+}
+
+// StartDateHasPrefix applies the HasPrefix predicate on the "start_date" field.
+func StartDateHasPrefix(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldHasPrefix(FieldStartDate, v))
+}
+
+// StartDateHasSuffix applies the HasSuffix predicate on the "start_date" field.
+func StartDateHasSuffix(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldHasSuffix(FieldStartDate, v))
 }
 
 // StartDateIsNil applies the IsNil predicate on the "start_date" field.
@@ -370,44 +385,69 @@ func StartDateNotNil() predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNotNull(FieldStartDate))
 }
 
+// StartDateEqualFold applies the EqualFold predicate on the "start_date" field.
+func StartDateEqualFold(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldEqualFold(FieldStartDate, v))
+}
+
+// StartDateContainsFold applies the ContainsFold predicate on the "start_date" field.
+func StartDateContainsFold(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldContainsFold(FieldStartDate, v))
+}
+
 // EndDateEQ applies the EQ predicate on the "end_date" field.
-func EndDateEQ(v time.Time) predicate.WorkExperience {
+func EndDateEQ(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldEndDate, v))
 }
 
 // EndDateNEQ applies the NEQ predicate on the "end_date" field.
-func EndDateNEQ(v time.Time) predicate.WorkExperience {
+func EndDateNEQ(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNEQ(FieldEndDate, v))
 }
 
 // EndDateIn applies the In predicate on the "end_date" field.
-func EndDateIn(vs ...time.Time) predicate.WorkExperience {
+func EndDateIn(vs ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldIn(FieldEndDate, vs...))
 }
 
 // EndDateNotIn applies the NotIn predicate on the "end_date" field.
-func EndDateNotIn(vs ...time.Time) predicate.WorkExperience {
+func EndDateNotIn(vs ...string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNotIn(FieldEndDate, vs...))
 }
 
 // EndDateGT applies the GT predicate on the "end_date" field.
-func EndDateGT(v time.Time) predicate.WorkExperience {
+func EndDateGT(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldGT(FieldEndDate, v))
 }
 
 // EndDateGTE applies the GTE predicate on the "end_date" field.
-func EndDateGTE(v time.Time) predicate.WorkExperience {
+func EndDateGTE(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldGTE(FieldEndDate, v))
 }
 
 // EndDateLT applies the LT predicate on the "end_date" field.
-func EndDateLT(v time.Time) predicate.WorkExperience {
+func EndDateLT(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLT(FieldEndDate, v))
 }
 
 // EndDateLTE applies the LTE predicate on the "end_date" field.
-func EndDateLTE(v time.Time) predicate.WorkExperience {
+func EndDateLTE(v string) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLTE(FieldEndDate, v))
+}
+
+// EndDateContains applies the Contains predicate on the "end_date" field.
+func EndDateContains(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldContains(FieldEndDate, v))
+}
+
+// EndDateHasPrefix applies the HasPrefix predicate on the "end_date" field.
+func EndDateHasPrefix(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldHasPrefix(FieldEndDate, v))
+}
+
+// EndDateHasSuffix applies the HasSuffix predicate on the "end_date" field.
+func EndDateHasSuffix(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldHasSuffix(FieldEndDate, v))
 }
 
 // EndDateIsNil applies the IsNil predicate on the "end_date" field.
@@ -418,6 +458,16 @@ func EndDateIsNil() predicate.WorkExperience {
 // EndDateNotNil applies the NotNil predicate on the "end_date" field.
 func EndDateNotNil() predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldNotNull(FieldEndDate))
+}
+
+// EndDateEqualFold applies the EqualFold predicate on the "end_date" field.
+func EndDateEqualFold(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldEqualFold(FieldEndDate, v))
+}
+
+// EndDateContainsFold applies the ContainsFold predicate on the "end_date" field.
+func EndDateContainsFold(v string) predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldContainsFold(FieldEndDate, v))
 }
 
 // IsCurrentEQ applies the EQ predicate on the "is_current" field.
@@ -735,6 +785,16 @@ func CreatedAtLTE(v time.Time) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldEQ(FieldUpdatedAt, v))
@@ -775,27 +835,14 @@ func UpdatedAtLTE(v time.Time) predicate.WorkExperience {
 	return predicate.WorkExperience(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.WorkExperience {
-	return predicate.WorkExperience(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldIsNull(FieldUpdatedAt))
 }
 
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.WorkExperience {
-	return predicate.WorkExperience(func(s *sql.Selector) {
-		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.WorkExperience {
+	return predicate.WorkExperience(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasTranslations applies the HasEdge predicate on the "translations" edge.

@@ -250,6 +250,16 @@ func CreatedAtLTE(v time.Time) predicate.PartEntryTranslation {
 	return predicate.PartEntryTranslation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.PartEntryTranslation {
+	return predicate.PartEntryTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.PartEntryTranslation {
+	return predicate.PartEntryTranslation(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasPartEntry applies the HasEdge predicate on the "part_entry" edge.
 func HasPartEntry() predicate.PartEntryTranslation {
 	return predicate.PartEntryTranslation(func(s *sql.Selector) {

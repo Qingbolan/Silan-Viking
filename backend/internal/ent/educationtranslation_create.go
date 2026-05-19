@@ -212,9 +212,6 @@ func (etc *EducationTranslationCreate) check() error {
 			return &ValidationError{Name: "location", err: fmt.Errorf(`ent: validator failed for field "EducationTranslation.location": %w`, err)}
 		}
 	}
-	if _, ok := etc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "EducationTranslation.created_at"`)}
-	}
 	if len(etc.mutation.EducationIDs()) == 0 {
 		return &ValidationError{Name: "education", err: errors.New(`ent: missing required edge "EducationTranslation.education"`)}
 	}

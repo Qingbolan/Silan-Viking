@@ -88,7 +88,7 @@ fn propose_writes_the_part_path_on_a_branch() {
     let created = silan_viking_mcp::propose(
         &root,
         "silan://resources/blog/hello-world/body",
-        "# Revised body\n\nProposed via MCP.\n",
+        Some("# Revised body\n\nProposed via MCP.\n"),
         "en",
         &[],
     )
@@ -114,7 +114,7 @@ fn propose_lang_targets_the_language_variant() {
     let created = silan_viking_mcp::propose(
         &root,
         "silan://resources/blog/hello-world/body",
-        "# 修订正文\n\n经 MCP 提案。\n",
+        Some("# 修订正文\n\n经 MCP 提案。\n"),
         "zh",
         &[],
     )
@@ -128,35 +128,47 @@ fn propose_lang_targets_the_language_variant() {
 }
 
 #[test]
-fn propose_rejects_a_part_role_the_type_does_not_declare() {
-    // Regression for the camera-ready P6 bug: an agent proposing into a Part
-    // the SCHEMA does not declare (here, `body` on a resume — resume only has
-    // `summary` / `education` / …) used to silently create an off-schema
-    // `parts/body/` directory. It must now be rejected before any branch is
-    // created, with the valid Parts listed.
-    let root = fresh_repo("propose-bad-part");
-    let main_before = git(&root, &["rev-parse", "main"]);
+fn propose_accepts_a_part_role_the_type_does_not_declare() {
+    // The SCHEMA `parts` list is a *recommended* set, not a closed whitelist:
+    // an agent may extend an Item with a Part whose role the SCHEMA does not
+    // predeclare. Proposing into such a role must succeed — the Part lands at
+    // `parts/<role>/` with the default `prose` shape (`.md`), on its own
+    // branch — so the content model can grow new sections without a SCHEMA
+    // edit. An ill-formed role (not a lowercase identifier) is still rejected.
+    let root = fresh_repo("propose-open-part");
 
-    let err = silan_viking_mcp::propose(
+    let created = silan_viking_mcp::propose(
         &root,
-        "silan://resources/resume/resume/body",
-        "a resume drafted into the wrong Part",
+        "silan://resources/projects/sample-project/benchmark",
+        Some("a benchmark section the SCHEMA never declared"),
         "en",
         &[],
     )
-    .expect_err("propose must reject an undeclared Part role");
+    .expect("propose into an undeclared role must succeed (open-set Parts)");
 
-    let msg = err.to_string();
+    // The undeclared role lands at `parts/benchmark/` as prose (`.md`).
+    let part = "resources/projects/sample-project/parts/benchmark/en.md";
+    let body = git(&root, &["show", &format!("{}:{part}", created.branch)]);
     assert!(
-        msg.contains("has no Part `body`") && msg.contains("summary"),
-        "error should name the bad role and list valid Parts: {msg}"
+        body.contains("a benchmark section the SCHEMA never declared"),
+        "the undeclared Part must carry the proposed prose: {body}"
     );
 
-    // No branch was created and main is untouched.
-    let branches = git(&root, &["branch", "--list"]);
+    // An ill-formed role is still rejected before any branch is created.
+    let main_before = git(&root, &["rev-parse", "main"]);
+    let err = silan_viking_mcp::propose(
+        &root,
+        "silan://resources/projects/sample-project/BadRole",
+        Some("bad"),
+        "en",
+        &[],
+    )
+    .expect_err("an ill-formed Part role must still be rejected");
     assert!(
-        !branches.contains("proposal/"),
-        "a rejected proposal must leave no branch: {branches}"
+        err.to_string().contains("valid")
+            || err.to_string().contains("slug")
+            || err.to_string().contains("role"),
+        "error should explain the role is malformed: {err}"
     );
     assert_eq!(main_before, git(&root, &["rev-parse", "main"]));
 
@@ -173,7 +185,7 @@ fn propose_to_an_item_uri_resolves_the_types_primary_part() {
     let created = silan_viking_mcp::propose(
         &root,
         "silan://resources/resume/resume",
-        "A short professional summary, proposed via MCP.",
+        Some("A short professional summary, proposed via MCP."),
         "en",
         &[],
     )
@@ -201,7 +213,7 @@ fn propose_to_a_structured_part_lands_as_toml() {
     let created = silan_viking_mcp::propose(
         &root,
         "silan://resources/resume/resume/education",
-        "[[entries]]\ninstitution = \"NUS\"\ndegree = \"PhD\"\n",
+        Some("[[entries]]\ninstitution = \"NUS\"\ndegree = \"PhD\"\n"),
         "en",
         &[],
     )
@@ -230,7 +242,10 @@ fn propose_to_a_structured_part_lands_as_toml() {
         &root,
         &[
             "show",
-            &format!("{}:resources/resume/parts/education/meta.toml", created.branch),
+            &format!(
+                "{}:resources/resume/parts/education/meta.toml",
+                created.branch
+            ),
         ],
     );
     assert!(
@@ -262,7 +277,7 @@ fn propose_creates_a_multi_part_item_as_one_proposal() {
     let created = silan_viking_mcp::propose(
         &root,
         "silan://resources/projects/multi-demo",
-        overview,
+        Some(overview),
         "en",
         &[
             silan_viking_mcp::PartDraft {
@@ -295,7 +310,10 @@ fn propose_creates_a_multi_part_item_as_one_proposal() {
         &root,
         &[
             "show",
-            &format!("{}:resources/projects/multi-demo/parts/overview/en.md", created.branch),
+            &format!(
+                "{}:resources/projects/multi-demo/parts/overview/en.md",
+                created.branch
+            ),
         ],
     );
     assert!(body.contains("kind: project") && body.contains("the goals") == false);
@@ -311,7 +329,7 @@ fn propose_rejects_extra_parts_with_a_part_uri() {
     let err = silan_viking_mcp::propose(
         &root,
         "silan://resources/blog/hello-world/body",
-        "# body\n",
+        Some("# body\n"),
         "en",
         &[silan_viking_mcp::PartDraft {
             role: "goals".to_owned(),
@@ -320,6 +338,28 @@ fn propose_rejects_extra_parts_with_a_part_uri() {
     )
     .expect_err("extra_parts with a Part URI must be rejected");
     assert!(err.to_string().contains("Item URI"));
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn propose_rejects_an_ill_formed_slug() {
+    // An agent that invents a pseudo-slug like `my-project#goals` (cramming a
+    // Part role into the slug) must hit a clear error, not produce a stray
+    // off-tree `projects/my-project#goals/` directory. A slug is validated
+    // against `^[a-z0-9][a-z0-9-]*$`.
+    let root = fresh_repo("propose-bad-slug");
+    let err = silan_viking_mcp::propose(
+        &root,
+        "silan://resources/projects/silan-viking#goals",
+        Some("---\nslug: x\nkind: project\n---\n\n# x\n"),
+        "en",
+        &[],
+    )
+    .expect_err("an ill-formed slug must be rejected");
+    assert!(
+        err.to_string().contains("not a valid slug"),
+        "error should name the bad slug: {err}"
+    );
     let _ = std::fs::remove_dir_all(&root);
 }
 
@@ -335,9 +375,11 @@ fn propose_creates_an_episode_in_a_new_series() {
     let created = silan_viking_mcp::propose(
         &root,
         "silan://resources/episode/how-to-series/getting-started",
-        "---\nslug: getting-started\ntitle: Getting Started\nkind: episode\n\
+        Some(
+            "---\nslug: getting-started\ntitle: Getting Started\nkind: episode\n\
          series: how-to-series\nepisode_number: 1\nstatus: draft\n\
          visibility: private\n---\n\n# Getting Started\n\nepisode body.\n",
+        ),
         "en",
         &[],
     )
@@ -346,9 +388,7 @@ fn propose_creates_an_episode_in_a_new_series() {
     let tree = git(&root, &["ls-tree", "-r", "--name-only", &created.branch]);
     // The episode's body Part landed at the 3-deep episode path.
     assert!(
-        tree.contains(
-            "resources/episode/how-to-series/getting-started/parts/body/en.md"
-        ),
+        tree.contains("resources/episode/how-to-series/getting-started/parts/body/en.md"),
         "the episode body must land at the episode path: {tree}"
     );
     // The container series' `series.toml` was created.
@@ -360,7 +400,10 @@ fn propose_creates_an_episode_in_a_new_series() {
         &root,
         &[
             "show",
-            &format!("{}:resources/episode/how-to-series/series.toml", created.branch),
+            &format!(
+                "{}:resources/episode/how-to-series/series.toml",
+                created.branch
+            ),
         ],
     );
     assert!(
@@ -388,5 +431,128 @@ fn handshake_instructions_carry_schema_and_resources() {
         silan_viking_mcp::read_resource(&root, "silan://overview").expect("overview resolves");
     assert!(overview.contains("silan://resources/"));
 
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn propose_returns_a_next_step_hint() {
+    // A `propose` result carries a state-aware `hint`. Creating only the
+    // primary Part of a multi-Part type (project) must hint at the sibling
+    // Parts still unwritten — the call-site nudge that keeps an agent from
+    // leaving a project a one-paragraph stub.
+    let root = fresh_repo("propose-hint");
+
+    let created = silan_viking_mcp::propose(
+        &root,
+        "silan://resources/projects/hint-demo",
+        Some(
+            "---\nslug: hint-demo\ntitle: Hint Demo\nkind: project\n\
+         status: active\nvisibility: private\n---\n\n# Hint Demo\n\noverview.\n",
+        ),
+        "en",
+        &[],
+    )
+    .expect("propose succeeds");
+
+    let hint = created.hint.expect("propose must return a hint");
+    assert!(
+        hint.contains("goals") && hint.contains("challenges"),
+        "the hint must name the project's unwritten sibling Parts: {hint}"
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn propose_hints_at_an_entry_image_field() {
+    // A structured Part whose entry schema carries an image/logo field — a
+    // resume `experience` entry can have `company_logo_url` — must surface
+    // that in the hint, so an agent fills the cover instead of leaving the
+    // card a blank image.
+    let root = fresh_repo("propose-img-hint");
+
+    let created = silan_viking_mcp::propose(
+        &root,
+        "silan://resources/resume/resume/experience",
+        Some("[[entry]]\norganization = \"NUS\"\nrole = \"Researcher\"\n"),
+        "en",
+        &[],
+    )
+    .expect("propose to experience succeeds");
+
+    let hint = created.hint.expect("propose must return a hint");
+    assert!(
+        hint.contains("logo") || hint.contains("image"),
+        "the hint must mention the entry's image field: {hint}"
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn propose_with_only_parts_leaves_the_primary_part_untouched() {
+    // Adding sibling Parts to an existing Item must not require — and must not
+    // touch — the primary Part. Omitting `draft` and giving only `parts` adds
+    // the siblings; the Item's existing `overview` is left exactly as it was.
+    let root = fresh_repo("propose-parts-only");
+
+    // The fixture's `projects/sample-project` already has an `overview`.
+    let before = git(
+        &root,
+        &[
+            "show",
+            "HEAD:resources/projects/sample-project/parts/overview/en.md",
+        ],
+    );
+
+    let created = silan_viking_mcp::propose(
+        &root,
+        "silan://resources/projects/sample-project",
+        None,
+        "en",
+        &[silan_viking_mcp::PartDraft {
+            role: "goals".to_owned(),
+            content: "# Goals\n\nthe goals.\n".to_owned(),
+        }],
+    )
+    .expect("propose with only parts succeeds");
+
+    let tree = git(&root, &["ls-tree", "-r", "--name-only", &created.branch]);
+    assert!(
+        tree.contains("projects/sample-project/parts/goals/en.md"),
+        "the new sibling Part must be on the branch: {tree}"
+    );
+    // The overview on the proposal branch is byte-identical to before.
+    let after = git(
+        &root,
+        &[
+            "show",
+            &format!(
+                "{}:resources/projects/sample-project/parts/overview/en.md",
+                created.branch
+            ),
+        ],
+    );
+    assert_eq!(
+        before, after,
+        "propose with only `parts` must not rewrite the primary Part"
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn propose_with_neither_draft_nor_parts_is_rejected() {
+    // A `propose` that writes nothing is a mistake — it must be rejected.
+    let root = fresh_repo("propose-empty");
+    let err = silan_viking_mcp::propose(
+        &root,
+        "silan://resources/projects/sample-project",
+        None,
+        "en",
+        &[],
+    )
+    .expect_err("propose with neither draft nor parts must be rejected");
+    assert!(err.to_string().contains("cannot write nothing"));
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -40,6 +40,14 @@ func (wedtc *WorkExperienceDetailTranslationCreate) SetDetailText(s string) *Wor
 	return wedtc
 }
 
+// SetNillableDetailText sets the "detail_text" field if the given value is not nil.
+func (wedtc *WorkExperienceDetailTranslationCreate) SetNillableDetailText(s *string) *WorkExperienceDetailTranslationCreate {
+	if s != nil {
+		wedtc.SetDetailText(*s)
+	}
+	return wedtc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (wedtc *WorkExperienceDetailTranslationCreate) SetCreatedAt(t time.Time) *WorkExperienceDetailTranslationCreate {
 	wedtc.mutation.SetCreatedAt(t)
@@ -141,17 +149,6 @@ func (wedtc *WorkExperienceDetailTranslationCreate) check() error {
 		if err := workexperiencedetailtranslation.LanguageCodeValidator(v); err != nil {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "WorkExperienceDetailTranslation.language_code": %w`, err)}
 		}
-	}
-	if _, ok := wedtc.mutation.DetailText(); !ok {
-		return &ValidationError{Name: "detail_text", err: errors.New(`ent: missing required field "WorkExperienceDetailTranslation.detail_text"`)}
-	}
-	if v, ok := wedtc.mutation.DetailText(); ok {
-		if err := workexperiencedetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "WorkExperienceDetailTranslation.detail_text": %w`, err)}
-		}
-	}
-	if _, ok := wedtc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkExperienceDetailTranslation.created_at"`)}
 	}
 	if len(wedtc.mutation.WorkExperienceDetailIDs()) == 0 {
 		return &ValidationError{Name: "work_experience_detail", err: errors.New(`ent: missing required edge "WorkExperienceDetailTranslation.work_experience_detail"`)}

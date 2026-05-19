@@ -462,6 +462,31 @@ type IdeaData struct {
 	Keywords             []string             `json:"keywords,omitempty"`
 	EstimatedDuration    string               `json:"estimated_duration,omitempty"`
 	FundingStatus        string               `json:"funding_status,omitempty"`
+	Parts                []ContentPart        `json:"parts"`
+}
+
+// ContentPart is the type-agnostic Part shape returned by every detail
+// endpoint. The `parts` list a detail carries is whatever Parts the Item
+// actually has — the SCHEMA `parts` set is a recommendation, so an Item
+// may carry a Part whose role no type predeclares. The frontend renders
+// one tab per Part, in `sort_order`, with no fixed role list.
+type ContentEntry struct {
+	ID               string                 `json:"id"`
+	EntryID          string                 `json:"entry_id"`
+	SortOrder        int                    `json:"sort_order"`
+	SharedPayload    map[string]interface{} `json:"shared_payload"`
+	LocalizedPayload map[string]interface{} `json:"localized_payload"`
+}
+
+type ContentPart struct {
+	ID            string            `json:"id"`
+	PartID        string            `json:"part_id"`
+	Role          string            `json:"role"`
+	Shape         string            `json:"shape"`
+	SortOrder     int               `json:"sort_order"`
+	CanonicalLang string            `json:"canonical_lang"`
+	Body          map[string]string `json:"body"`
+	Entries       []ContentEntry    `json:"entries"`
 }
 
 type IdeaListRequest struct {
@@ -633,6 +658,10 @@ type ProjectDetail struct {
 	ID                  string           `json:"id"`
 	ProjectID           string           `json:"project_id"`
 	DetailedDescription string           `json:"detailed_description,omitempty"`
+	Goals               string           `json:"goals,omitempty"`
+	Challenges          string           `json:"challenges,omitempty"`
+	Solutions           string           `json:"solutions,omitempty"`
+	Lessons             string           `json:"lessons,omitempty"`
 	Release             string           `json:"release,omitempty"`
 	QuickStart          string           `json:"quick_start,omitempty"`
 	Dependance          string           `json:"dependance,omitempty"`
@@ -644,6 +673,7 @@ type ProjectDetail struct {
 	RelatedBlogs        []ProjectBlogRef `json:"related_blogs"`
 	CreatedAt           string           `json:"created_at"`
 	UpdatedAt           string           `json:"updated_at"`
+	Parts               []ContentPart    `json:"parts"`
 }
 
 type ProjectDetailRequest struct {

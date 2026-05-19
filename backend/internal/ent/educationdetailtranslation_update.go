@@ -71,6 +71,12 @@ func (edtu *EducationDetailTranslationUpdate) SetNillableDetailText(s *string) *
 	return edtu
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (edtu *EducationDetailTranslationUpdate) ClearDetailText() *EducationDetailTranslationUpdate {
+	edtu.mutation.ClearDetailText()
+	return edtu
+}
+
 // SetEducationDetail sets the "education_detail" edge to the EducationDetail entity.
 func (edtu *EducationDetailTranslationUpdate) SetEducationDetail(e *EducationDetail) *EducationDetailTranslationUpdate {
 	return edtu.SetEducationDetailID(e.ID)
@@ -138,11 +144,6 @@ func (edtu *EducationDetailTranslationUpdate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "EducationDetailTranslation.language_code": %w`, err)}
 		}
 	}
-	if v, ok := edtu.mutation.DetailText(); ok {
-		if err := educationdetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "EducationDetailTranslation.detail_text": %w`, err)}
-		}
-	}
 	if edtu.mutation.EducationDetailCleared() && len(edtu.mutation.EducationDetailIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EducationDetailTranslation.education_detail"`)
 	}
@@ -166,6 +167,12 @@ func (edtu *EducationDetailTranslationUpdate) sqlSave(ctx context.Context) (n in
 	}
 	if value, ok := edtu.mutation.DetailText(); ok {
 		_spec.SetField(educationdetailtranslation.FieldDetailText, field.TypeString, value)
+	}
+	if edtu.mutation.DetailTextCleared() {
+		_spec.ClearField(educationdetailtranslation.FieldDetailText, field.TypeString)
+	}
+	if edtu.mutation.CreatedAtCleared() {
+		_spec.ClearField(educationdetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if edtu.mutation.EducationDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -287,6 +294,12 @@ func (edtuo *EducationDetailTranslationUpdateOne) SetNillableDetailText(s *strin
 	return edtuo
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (edtuo *EducationDetailTranslationUpdateOne) ClearDetailText() *EducationDetailTranslationUpdateOne {
+	edtuo.mutation.ClearDetailText()
+	return edtuo
+}
+
 // SetEducationDetail sets the "education_detail" edge to the EducationDetail entity.
 func (edtuo *EducationDetailTranslationUpdateOne) SetEducationDetail(e *EducationDetail) *EducationDetailTranslationUpdateOne {
 	return edtuo.SetEducationDetailID(e.ID)
@@ -367,11 +380,6 @@ func (edtuo *EducationDetailTranslationUpdateOne) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "EducationDetailTranslation.language_code": %w`, err)}
 		}
 	}
-	if v, ok := edtuo.mutation.DetailText(); ok {
-		if err := educationdetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "EducationDetailTranslation.detail_text": %w`, err)}
-		}
-	}
 	if edtuo.mutation.EducationDetailCleared() && len(edtuo.mutation.EducationDetailIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EducationDetailTranslation.education_detail"`)
 	}
@@ -412,6 +420,12 @@ func (edtuo *EducationDetailTranslationUpdateOne) sqlSave(ctx context.Context) (
 	}
 	if value, ok := edtuo.mutation.DetailText(); ok {
 		_spec.SetField(educationdetailtranslation.FieldDetailText, field.TypeString, value)
+	}
+	if edtuo.mutation.DetailTextCleared() {
+		_spec.ClearField(educationdetailtranslation.FieldDetailText, field.TypeString)
+	}
+	if edtuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(educationdetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if edtuo.mutation.EducationDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{

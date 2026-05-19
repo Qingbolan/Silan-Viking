@@ -55,9 +55,11 @@ func (ProjectView) Fields() []ent.Field {
 			Comment("Duration spent viewing in seconds"),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

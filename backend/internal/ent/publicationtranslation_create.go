@@ -40,6 +40,14 @@ func (ptc *PublicationTranslationCreate) SetTitle(s string) *PublicationTranslat
 	return ptc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (ptc *PublicationTranslationCreate) SetNillableTitle(s *string) *PublicationTranslationCreate {
+	if s != nil {
+		ptc.SetTitle(*s)
+	}
+	return ptc
+}
+
 // SetJournalName sets the "journal_name" field.
 func (ptc *PublicationTranslationCreate) SetJournalName(s string) *PublicationTranslationCreate {
 	ptc.mutation.SetJournalName(s)
@@ -170,9 +178,6 @@ func (ptc *PublicationTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "PublicationTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := ptc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "PublicationTranslation.title"`)}
-	}
 	if v, ok := ptc.mutation.Title(); ok {
 		if err := publicationtranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "PublicationTranslation.title": %w`, err)}
@@ -187,9 +192,6 @@ func (ptc *PublicationTranslationCreate) check() error {
 		if err := publicationtranslation.ConferenceNameValidator(v); err != nil {
 			return &ValidationError{Name: "conference_name", err: fmt.Errorf(`ent: validator failed for field "PublicationTranslation.conference_name": %w`, err)}
 		}
-	}
-	if _, ok := ptc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PublicationTranslation.created_at"`)}
 	}
 	if len(ptc.mutation.PublicationIDs()) == 0 {
 		return &ValidationError{Name: "publication", err: errors.New(`ent: missing required edge "PublicationTranslation.publication"`)}

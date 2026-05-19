@@ -42,6 +42,7 @@ func (Language) Fields() []ent.Field {
 			Default(true),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }
@@ -59,7 +60,6 @@ func (Language) Edges() []ent.Edge {
 		edge.To("project_image_translations", ProjectImageTranslation.Type),
 		edge.To("blog_category_translations", BlogCategoryTranslation.Type),
 		edge.To("blog_post_translations", BlogPostTranslation.Type),
-		edge.To("blog_series_translations", BlogSeriesTranslation.Type),
 		edge.To("idea_translations", IdeaTranslation.Type),
 		edge.To("idea_detail_translations", IdeaDetailTranslation.Type),
 		edge.To("research_project_translations", ResearchProjectTranslation.Type),

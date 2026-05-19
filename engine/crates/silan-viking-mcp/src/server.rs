@@ -187,7 +187,7 @@ fn tool_to_json(spec: &ToolSpec) -> Value {
     json!({
         "name": spec.name,
         "description": spec.description,
-        "inputSchema": { "type": "object" }
+        "inputSchema": spec.input_schema,
     })
 }
 

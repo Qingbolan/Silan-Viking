@@ -5,9 +5,9 @@
 //!
 //! The flow (`03` §3.1 "accept 流程"):
 //! 1. Acquire `proposal-accept.lock` + `agent-write.lock` (`08` §8.5).
-//! 2. Record the main OID — this is the `expected_old` for step 6.
-//! 2.5. Refuse if the main `content/` working tree is dirty — step 6.5
-//!    `reset --hard`s it, so an uncommitted edit would be lost.
+//! 2. Record the main OID — this is the `expected_old` for step 6; then
+//!    refuse if the main `content/` working tree is dirty, since step 6
+//!    `reset --hard`s it and an uncommitted edit would be lost.
 //! 3. `git worktree add` a throwaway worktree at that OID.
 //! 4. In the worktree: `git merge proposal/<id>`. A conflict aborts the
 //!    accept; the main branch was never touched.
@@ -15,7 +15,7 @@
 //!    parsers' `validate`. Any `Fatal` issue aborts; main untouched.
 //! 6. `git update-ref refs/heads/main <merge_oid> <expected_old>` — the
 //!    compare-and-set. If main advanced meanwhile, this fails and main stays.
-//! 6.5. `git reset --hard <merge_oid>` the main working tree, so the
+//!    On success, `git reset --hard <merge_oid>` the main working tree so the
 //!    accepted files are actually on disk for `index sync` to scan.
 //! 7. The worktree is removed unconditionally — success, conflict, or
 //!    validation failure all clean it up.

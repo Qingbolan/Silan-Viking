@@ -71,6 +71,12 @@ func (rpdtu *ResearchProjectDetailTranslationUpdate) SetNillableDetailText(s *st
 	return rpdtu
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (rpdtu *ResearchProjectDetailTranslationUpdate) ClearDetailText() *ResearchProjectDetailTranslationUpdate {
+	rpdtu.mutation.ClearDetailText()
+	return rpdtu
+}
+
 // SetResearchProjectDetail sets the "research_project_detail" edge to the ResearchProjectDetail entity.
 func (rpdtu *ResearchProjectDetailTranslationUpdate) SetResearchProjectDetail(r *ResearchProjectDetail) *ResearchProjectDetailTranslationUpdate {
 	return rpdtu.SetResearchProjectDetailID(r.ID)
@@ -138,11 +144,6 @@ func (rpdtu *ResearchProjectDetailTranslationUpdate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectDetailTranslation.language_code": %w`, err)}
 		}
 	}
-	if v, ok := rpdtu.mutation.DetailText(); ok {
-		if err := researchprojectdetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectDetailTranslation.detail_text": %w`, err)}
-		}
-	}
 	if rpdtu.mutation.ResearchProjectDetailCleared() && len(rpdtu.mutation.ResearchProjectDetailIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ResearchProjectDetailTranslation.research_project_detail"`)
 	}
@@ -166,6 +167,12 @@ func (rpdtu *ResearchProjectDetailTranslationUpdate) sqlSave(ctx context.Context
 	}
 	if value, ok := rpdtu.mutation.DetailText(); ok {
 		_spec.SetField(researchprojectdetailtranslation.FieldDetailText, field.TypeString, value)
+	}
+	if rpdtu.mutation.DetailTextCleared() {
+		_spec.ClearField(researchprojectdetailtranslation.FieldDetailText, field.TypeString)
+	}
+	if rpdtu.mutation.CreatedAtCleared() {
+		_spec.ClearField(researchprojectdetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if rpdtu.mutation.ResearchProjectDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -287,6 +294,12 @@ func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) SetNillableDetailText(s
 	return rpdtuo
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) ClearDetailText() *ResearchProjectDetailTranslationUpdateOne {
+	rpdtuo.mutation.ClearDetailText()
+	return rpdtuo
+}
+
 // SetResearchProjectDetail sets the "research_project_detail" edge to the ResearchProjectDetail entity.
 func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) SetResearchProjectDetail(r *ResearchProjectDetail) *ResearchProjectDetailTranslationUpdateOne {
 	return rpdtuo.SetResearchProjectDetailID(r.ID)
@@ -367,11 +380,6 @@ func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectDetailTranslation.language_code": %w`, err)}
 		}
 	}
-	if v, ok := rpdtuo.mutation.DetailText(); ok {
-		if err := researchprojectdetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectDetailTranslation.detail_text": %w`, err)}
-		}
-	}
 	if rpdtuo.mutation.ResearchProjectDetailCleared() && len(rpdtuo.mutation.ResearchProjectDetailIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "ResearchProjectDetailTranslation.research_project_detail"`)
 	}
@@ -412,6 +420,12 @@ func (rpdtuo *ResearchProjectDetailTranslationUpdateOne) sqlSave(ctx context.Con
 	}
 	if value, ok := rpdtuo.mutation.DetailText(); ok {
 		_spec.SetField(researchprojectdetailtranslation.FieldDetailText, field.TypeString, value)
+	}
+	if rpdtuo.mutation.DetailTextCleared() {
+		_spec.ClearField(researchprojectdetailtranslation.FieldDetailText, field.TypeString)
+	}
+	if rpdtuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(researchprojectdetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if rpdtuo.mutation.ResearchProjectDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{

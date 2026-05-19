@@ -164,9 +164,6 @@ func (ptc *ProjectTechnologyCreate) check() error {
 	if _, ok := ptc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "ProjectTechnology.sort_order"`)}
 	}
-	if _, ok := ptc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectTechnology.created_at"`)}
-	}
 	if len(ptc.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectTechnology.project"`)}
 	}

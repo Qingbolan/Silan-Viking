@@ -275,6 +275,16 @@ func TitleHasSuffix(v string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldHasSuffix(FieldTitle, v))
 }
 
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldNotNull(FieldTitle))
+}
+
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
 func TitleEqualFold(v string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldEqualFold(FieldTitle, v))
@@ -340,6 +350,16 @@ func DescriptionHasSuffix(v string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldHasSuffix(FieldDescription, v))
 }
 
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldIsNull(FieldDescription))
+}
+
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldNotNull(FieldDescription))
+}
+
 // DescriptionEqualFold applies the EqualFold predicate on the "description" field.
 func DescriptionEqualFold(v string) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldEqualFold(FieldDescription, v))
@@ -388,6 +408,16 @@ func CreatedAtLT(v time.Time) predicate.RecentUpdateTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.RecentUpdateTranslation {
 	return predicate.RecentUpdateTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.RecentUpdateTranslation {
+	return predicate.RecentUpdateTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasRecentUpdate applies the HasEdge predicate on the "recent_update" edge.

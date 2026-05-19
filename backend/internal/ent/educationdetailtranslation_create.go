@@ -40,6 +40,14 @@ func (edtc *EducationDetailTranslationCreate) SetDetailText(s string) *Education
 	return edtc
 }
 
+// SetNillableDetailText sets the "detail_text" field if the given value is not nil.
+func (edtc *EducationDetailTranslationCreate) SetNillableDetailText(s *string) *EducationDetailTranslationCreate {
+	if s != nil {
+		edtc.SetDetailText(*s)
+	}
+	return edtc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (edtc *EducationDetailTranslationCreate) SetCreatedAt(t time.Time) *EducationDetailTranslationCreate {
 	edtc.mutation.SetCreatedAt(t)
@@ -141,17 +149,6 @@ func (edtc *EducationDetailTranslationCreate) check() error {
 		if err := educationdetailtranslation.LanguageCodeValidator(v); err != nil {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "EducationDetailTranslation.language_code": %w`, err)}
 		}
-	}
-	if _, ok := edtc.mutation.DetailText(); !ok {
-		return &ValidationError{Name: "detail_text", err: errors.New(`ent: missing required field "EducationDetailTranslation.detail_text"`)}
-	}
-	if v, ok := edtc.mutation.DetailText(); ok {
-		if err := educationdetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "EducationDetailTranslation.detail_text": %w`, err)}
-		}
-	}
-	if _, ok := edtc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "EducationDetailTranslation.created_at"`)}
 	}
 	if len(edtc.mutation.EducationDetailIDs()) == 0 {
 		return &ValidationError{Name: "education_detail", err: errors.New(`ent: missing required edge "EducationDetailTranslation.education_detail"`)}

@@ -38,12 +38,13 @@ func (EpisodeTranslation) Fields() []ent.Field {
 			NotEmpty(),
 		field.String("title").
 			MaxLen(500).
-			NotEmpty(),
+			Optional(),
 		field.Text("description").
 			Optional().
 			Nillable(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

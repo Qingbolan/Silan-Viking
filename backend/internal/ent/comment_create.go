@@ -395,12 +395,6 @@ func (cc *CommentCreate) check() error {
 	if _, ok := cc.mutation.LikesCount(); !ok {
 		return &ValidationError{Name: "likes_count", err: errors.New(`ent: missing required field "Comment.likes_count"`)}
 	}
-	if _, ok := cc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Comment.created_at"`)}
-	}
-	if _, ok := cc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Comment.updated_at"`)}
-	}
 	return nil
 }
 

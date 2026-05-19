@@ -1,5 +1,7 @@
 // API types definition file
 
+import type { ContentPart } from './index';
+
 export interface Contact {
   type: string;
   value: string;
@@ -323,6 +325,21 @@ export interface ProjectDetail {
   fullDescriptionZh?: string;
   image?: string;
   tags: string[];
+
+  // The silan-viking content model gives a `project` seven prose Parts.
+  // `fullDescription` is the `overview` Part; these are the rest. Each is a
+  // markdown string, empty when the author has not written that Part — the
+  // detail page then simply omits its tab.
+  goals?: string;
+  challenges?: string;
+  solutions?: string;
+  lessons?: string;
+
+  // Data-driven Part list — whatever Parts the project actually has, in
+  // sort_order. The named fields above are a compatibility shim; the detail
+  // page renders one tab per Part from here, so a project Part with a role
+  // the SCHEMA never declared still becomes its own tab.
+  parts?: ContentPart[];
 
   // Related blogs and articles
   relatedBlogs?: ProjectBlogReference[];

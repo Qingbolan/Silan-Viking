@@ -12,7 +12,6 @@ import (
 	"silan-backend/internal/ent/projectimage"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -136,15 +135,15 @@ func (pu *ProjectUpdate) SetNillableStatus(pr *project.Status) *ProjectUpdate {
 }
 
 // SetStartDate sets the "start_date" field.
-func (pu *ProjectUpdate) SetStartDate(t time.Time) *ProjectUpdate {
-	pu.mutation.SetStartDate(t)
+func (pu *ProjectUpdate) SetStartDate(s string) *ProjectUpdate {
+	pu.mutation.SetStartDate(s)
 	return pu
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableStartDate(t *time.Time) *ProjectUpdate {
-	if t != nil {
-		pu.SetStartDate(*t)
+func (pu *ProjectUpdate) SetNillableStartDate(s *string) *ProjectUpdate {
+	if s != nil {
+		pu.SetStartDate(*s)
 	}
 	return pu
 }
@@ -156,15 +155,15 @@ func (pu *ProjectUpdate) ClearStartDate() *ProjectUpdate {
 }
 
 // SetEndDate sets the "end_date" field.
-func (pu *ProjectUpdate) SetEndDate(t time.Time) *ProjectUpdate {
-	pu.mutation.SetEndDate(t)
+func (pu *ProjectUpdate) SetEndDate(s string) *ProjectUpdate {
+	pu.mutation.SetEndDate(s)
 	return pu
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableEndDate(t *time.Time) *ProjectUpdate {
-	if t != nil {
-		pu.SetEndDate(*t)
+func (pu *ProjectUpdate) SetNillableEndDate(s *string) *ProjectUpdate {
+	if s != nil {
+		pu.SetEndDate(*s)
 	}
 	return pu
 }
@@ -358,11 +357,6 @@ func (pu *ProjectUpdate) ClearUpdatedAt() *ProjectUpdate {
 	return pu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (pu *ProjectUpdate) SetUser(u *User) *ProjectUpdate {
-	return pu.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the ProjectTranslation entity by IDs.
 func (pu *ProjectUpdate) AddTranslationIDs(ids ...string) *ProjectUpdate {
 	pu.mutation.AddTranslationIDs(ids...)
@@ -430,12 +424,6 @@ func (pu *ProjectUpdate) AddImages(p ...*ProjectImage) *ProjectUpdate {
 // Mutation returns the ProjectMutation object of the builder.
 func (pu *ProjectUpdate) Mutation() *ProjectMutation {
 	return pu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (pu *ProjectUpdate) ClearUser() *ProjectUpdate {
-	pu.mutation.ClearUser()
-	return pu
 }
 
 // ClearTranslations clears all "translations" edges to the ProjectTranslation entity.
@@ -605,6 +593,12 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := pu.mutation.UserID(); ok {
+		_spec.SetField(project.FieldUserID, field.TypeString, value)
+	}
+	if pu.mutation.UserIDCleared() {
+		_spec.ClearField(project.FieldUserID, field.TypeString)
+	}
 	if value, ok := pu.mutation.Title(); ok {
 		_spec.SetField(project.FieldTitle, field.TypeString, value)
 	}
@@ -627,16 +621,16 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(project.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := pu.mutation.StartDate(); ok {
-		_spec.SetField(project.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(project.FieldStartDate, field.TypeString, value)
 	}
 	if pu.mutation.StartDateCleared() {
-		_spec.ClearField(project.FieldStartDate, field.TypeTime)
+		_spec.ClearField(project.FieldStartDate, field.TypeString)
 	}
 	if value, ok := pu.mutation.EndDate(); ok {
-		_spec.SetField(project.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(project.FieldEndDate, field.TypeString, value)
 	}
 	if pu.mutation.EndDateCleared() {
-		_spec.ClearField(project.FieldEndDate, field.TypeTime)
+		_spec.ClearField(project.FieldEndDate, field.TypeString)
 	}
 	if value, ok := pu.mutation.GithubURL(); ok {
 		_spec.SetField(project.FieldGithubURL, field.TypeString, value)
@@ -694,35 +688,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.UpdatedAtCleared() {
 		_spec.ClearField(project.FieldUpdatedAt, field.TypeTime)
-	}
-	if pu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.UserTable,
-			Columns: []string{project.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.UserTable,
-			Columns: []string{project.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if pu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1011,15 +976,15 @@ func (puo *ProjectUpdateOne) SetNillableStatus(pr *project.Status) *ProjectUpdat
 }
 
 // SetStartDate sets the "start_date" field.
-func (puo *ProjectUpdateOne) SetStartDate(t time.Time) *ProjectUpdateOne {
-	puo.mutation.SetStartDate(t)
+func (puo *ProjectUpdateOne) SetStartDate(s string) *ProjectUpdateOne {
+	puo.mutation.SetStartDate(s)
 	return puo
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableStartDate(t *time.Time) *ProjectUpdateOne {
-	if t != nil {
-		puo.SetStartDate(*t)
+func (puo *ProjectUpdateOne) SetNillableStartDate(s *string) *ProjectUpdateOne {
+	if s != nil {
+		puo.SetStartDate(*s)
 	}
 	return puo
 }
@@ -1031,15 +996,15 @@ func (puo *ProjectUpdateOne) ClearStartDate() *ProjectUpdateOne {
 }
 
 // SetEndDate sets the "end_date" field.
-func (puo *ProjectUpdateOne) SetEndDate(t time.Time) *ProjectUpdateOne {
-	puo.mutation.SetEndDate(t)
+func (puo *ProjectUpdateOne) SetEndDate(s string) *ProjectUpdateOne {
+	puo.mutation.SetEndDate(s)
 	return puo
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableEndDate(t *time.Time) *ProjectUpdateOne {
-	if t != nil {
-		puo.SetEndDate(*t)
+func (puo *ProjectUpdateOne) SetNillableEndDate(s *string) *ProjectUpdateOne {
+	if s != nil {
+		puo.SetEndDate(*s)
 	}
 	return puo
 }
@@ -1233,11 +1198,6 @@ func (puo *ProjectUpdateOne) ClearUpdatedAt() *ProjectUpdateOne {
 	return puo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (puo *ProjectUpdateOne) SetUser(u *User) *ProjectUpdateOne {
-	return puo.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the ProjectTranslation entity by IDs.
 func (puo *ProjectUpdateOne) AddTranslationIDs(ids ...string) *ProjectUpdateOne {
 	puo.mutation.AddTranslationIDs(ids...)
@@ -1305,12 +1265,6 @@ func (puo *ProjectUpdateOne) AddImages(p ...*ProjectImage) *ProjectUpdateOne {
 // Mutation returns the ProjectMutation object of the builder.
 func (puo *ProjectUpdateOne) Mutation() *ProjectMutation {
 	return puo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (puo *ProjectUpdateOne) ClearUser() *ProjectUpdateOne {
-	puo.mutation.ClearUser()
-	return puo
 }
 
 // ClearTranslations clears all "translations" edges to the ProjectTranslation entity.
@@ -1510,6 +1464,12 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 			}
 		}
 	}
+	if value, ok := puo.mutation.UserID(); ok {
+		_spec.SetField(project.FieldUserID, field.TypeString, value)
+	}
+	if puo.mutation.UserIDCleared() {
+		_spec.ClearField(project.FieldUserID, field.TypeString)
+	}
 	if value, ok := puo.mutation.Title(); ok {
 		_spec.SetField(project.FieldTitle, field.TypeString, value)
 	}
@@ -1532,16 +1492,16 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 		_spec.SetField(project.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := puo.mutation.StartDate(); ok {
-		_spec.SetField(project.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(project.FieldStartDate, field.TypeString, value)
 	}
 	if puo.mutation.StartDateCleared() {
-		_spec.ClearField(project.FieldStartDate, field.TypeTime)
+		_spec.ClearField(project.FieldStartDate, field.TypeString)
 	}
 	if value, ok := puo.mutation.EndDate(); ok {
-		_spec.SetField(project.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(project.FieldEndDate, field.TypeString, value)
 	}
 	if puo.mutation.EndDateCleared() {
-		_spec.ClearField(project.FieldEndDate, field.TypeTime)
+		_spec.ClearField(project.FieldEndDate, field.TypeString)
 	}
 	if value, ok := puo.mutation.GithubURL(); ok {
 		_spec.SetField(project.FieldGithubURL, field.TypeString, value)
@@ -1599,35 +1559,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	}
 	if puo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(project.FieldUpdatedAt, field.TypeTime)
-	}
-	if puo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.UserTable,
-			Columns: []string{project.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   project.UserTable,
-			Columns: []string{project.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if puo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

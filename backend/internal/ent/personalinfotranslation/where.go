@@ -570,6 +570,16 @@ func CreatedAtLTE(v time.Time) predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.PersonalInfoTranslation {
+	return predicate.PersonalInfoTranslation(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasPersonalInfo applies the HasEdge predicate on the "personal_info" edge.
 func HasPersonalInfo() predicate.PersonalInfoTranslation {
 	return predicate.PersonalInfoTranslation(func(s *sql.Selector) {

@@ -66,10 +66,19 @@ fn dry_run_lists_targets_and_deletes_nothing() {
     let (ok, out) = run(&root, &["--dry-run"], "");
     assert!(ok, "dry-run should succeed: {out}");
     assert!(out.contains("--dry-run: nothing deleted"), "{out}");
-    assert!(out.contains("_deploy"), "should list the derived dir: {out}");
+    assert!(
+        out.contains("_deploy"),
+        "should list the derived dir: {out}"
+    );
     // Nothing removed.
-    assert!(root.join("_deploy").exists(), "_deploy must survive dry-run");
-    assert!(root.join("content").exists(), "content must survive dry-run");
+    assert!(
+        root.join("_deploy").exists(),
+        "_deploy must survive dry-run"
+    );
+    assert!(
+        root.join("content").exists(),
+        "content must survive dry-run"
+    );
 }
 
 #[test]
@@ -103,7 +112,10 @@ fn purge_gate_rejects_a_bare_yes() {
     // `--purge` would delete content/, so a reflexive `y` must NOT suffice.
     let (ok, out) = run(&root, &["--purge"], "y\n");
     assert!(ok, "{out}");
-    assert!(out.contains("aborted"), "bare `y` must not confirm purge: {out}");
+    assert!(
+        out.contains("aborted"),
+        "bare `y` must not confirm purge: {out}"
+    );
     assert!(
         root.join("content").exists(),
         "content/ must survive a bare-`y` purge attempt"

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectdetail"
-	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
@@ -32,9 +31,9 @@ type Project struct {
 	// Status holds the value of the "status" field.
 	Status project.Status `json:"status,omitempty"`
 	// StartDate holds the value of the "start_date" field.
-	StartDate time.Time `json:"start_date,omitempty"`
+	StartDate string `json:"start_date,omitempty"`
 	// EndDate holds the value of the "end_date" field.
-	EndDate time.Time `json:"end_date,omitempty"`
+	EndDate string `json:"end_date,omitempty"`
 	// GithubURL holds the value of the "github_url" field.
 	GithubURL string `json:"github_url,omitempty"`
 	// DemoURL holds the value of the "demo_url" field.
@@ -65,8 +64,6 @@ type Project struct {
 
 // ProjectEdges holds the relations/edges for other nodes in the graph.
 type ProjectEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*ProjectTranslation `json:"translations,omitempty"`
 	// Technologies holds the value of the technologies edge.
@@ -77,24 +74,13 @@ type ProjectEdges struct {
 	Images []*ProjectImage `json:"images,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ProjectEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [4]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) TranslationsOrErr() ([]*ProjectTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -103,7 +89,7 @@ func (e ProjectEdges) TranslationsOrErr() ([]*ProjectTranslation, error) {
 // TechnologiesOrErr returns the Technologies value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) TechnologiesOrErr() ([]*ProjectTechnology, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Technologies, nil
 	}
 	return nil, &NotLoadedError{edge: "technologies"}
@@ -114,7 +100,7 @@ func (e ProjectEdges) TechnologiesOrErr() ([]*ProjectTechnology, error) {
 func (e ProjectEdges) DetailsOrErr() (*ProjectDetail, error) {
 	if e.Details != nil {
 		return e.Details, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: projectdetail.Label}
 	}
 	return nil, &NotLoadedError{edge: "details"}
@@ -123,7 +109,7 @@ func (e ProjectEdges) DetailsOrErr() (*ProjectDetail, error) {
 // ImagesOrErr returns the Images value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProjectEdges) ImagesOrErr() ([]*ProjectImage, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[3] {
 		return e.Images, nil
 	}
 	return nil, &NotLoadedError{edge: "images"}
@@ -138,9 +124,9 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case project.FieldViewCount, project.FieldLikeCount, project.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case project.FieldID, project.FieldUserID, project.FieldTitle, project.FieldSlug, project.FieldDescription, project.FieldProjectType, project.FieldStatus, project.FieldGithubURL, project.FieldDemoURL, project.FieldDocumentationURL, project.FieldThumbnailURL, project.FieldVisibility:
+		case project.FieldID, project.FieldUserID, project.FieldTitle, project.FieldSlug, project.FieldDescription, project.FieldProjectType, project.FieldStatus, project.FieldStartDate, project.FieldEndDate, project.FieldGithubURL, project.FieldDemoURL, project.FieldDocumentationURL, project.FieldThumbnailURL, project.FieldVisibility:
 			values[i] = new(sql.NullString)
-		case project.FieldStartDate, project.FieldEndDate, project.FieldCreatedAt, project.FieldUpdatedAt:
+		case project.FieldCreatedAt, project.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -200,16 +186,16 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 				pr.Status = project.Status(value.String)
 			}
 		case project.FieldStartDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field start_date", values[i])
 			} else if value.Valid {
-				pr.StartDate = value.Time
+				pr.StartDate = value.String
 			}
 		case project.FieldEndDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field end_date", values[i])
 			} else if value.Valid {
-				pr.EndDate = value.Time
+				pr.EndDate = value.String
 			}
 		case project.FieldGithubURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -290,11 +276,6 @@ func (pr *Project) Value(name string) (ent.Value, error) {
 	return pr.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the Project entity.
-func (pr *Project) QueryUser() *UserQuery {
-	return NewProjectClient(pr.config).QueryUser(pr)
-}
-
 // QueryTranslations queries the "translations" edge of the Project entity.
 func (pr *Project) QueryTranslations() *ProjectTranslationQuery {
 	return NewProjectClient(pr.config).QueryTranslations(pr)
@@ -357,10 +338,10 @@ func (pr *Project) String() string {
 	builder.WriteString(fmt.Sprintf("%v", pr.Status))
 	builder.WriteString(", ")
 	builder.WriteString("start_date=")
-	builder.WriteString(pr.StartDate.Format(time.ANSIC))
+	builder.WriteString(pr.StartDate)
 	builder.WriteString(", ")
 	builder.WriteString("end_date=")
-	builder.WriteString(pr.EndDate.Format(time.ANSIC))
+	builder.WriteString(pr.EndDate)
 	builder.WriteString(", ")
 	builder.WriteString("github_url=")
 	builder.WriteString(pr.GithubURL)

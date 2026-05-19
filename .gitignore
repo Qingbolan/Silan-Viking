@@ -63,3 +63,8 @@ yarn-error.log*
 # silan-viking site build output — a derived artifact of `site build`,
 # rebuilt from content/ on demand, never committed.
 /_site/
+
+# The content tree is its own git repository (the source of truth the
+# silan-viking engine reads). It is versioned independently — this repo
+# must not track its files.
+/content/

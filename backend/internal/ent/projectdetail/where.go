@@ -585,6 +585,16 @@ func CreatedAtLTE(v time.Time) predicate.ProjectDetail {
 	return predicate.ProjectDetail(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ProjectDetail {
+	return predicate.ProjectDetail(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ProjectDetail {
+	return predicate.ProjectDetail(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.ProjectDetail {
 	return predicate.ProjectDetail(sql.FieldEQ(FieldUpdatedAt, v))
@@ -623,6 +633,16 @@ func UpdatedAtLT(v time.Time) predicate.ProjectDetail {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.ProjectDetail {
 	return predicate.ProjectDetail(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.ProjectDetail {
+	return predicate.ProjectDetail(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.ProjectDetail {
+	return predicate.ProjectDetail(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasProject applies the HasEdge predicate on the "project" edge.

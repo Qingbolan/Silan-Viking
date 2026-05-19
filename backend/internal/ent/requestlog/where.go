@@ -784,6 +784,16 @@ func CreatedAtLTE(v time.Time) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.RequestLog) predicate.RequestLog {
 	return predicate.RequestLog(sql.AndPredicates(predicates...))

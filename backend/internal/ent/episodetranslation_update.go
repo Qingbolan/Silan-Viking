@@ -70,6 +70,12 @@ func (etu *EpisodeTranslationUpdate) SetNillableTitle(s *string) *EpisodeTransla
 	return etu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (etu *EpisodeTranslationUpdate) ClearTitle() *EpisodeTranslationUpdate {
+	etu.mutation.ClearTitle()
+	return etu
+}
+
 // SetDescription sets the "description" field.
 func (etu *EpisodeTranslationUpdate) SetDescription(s string) *EpisodeTranslationUpdate {
 	etu.mutation.SetDescription(s)
@@ -169,11 +175,17 @@ func (etu *EpisodeTranslationUpdate) sqlSave(ctx context.Context) (n int, err er
 	if value, ok := etu.mutation.Title(); ok {
 		_spec.SetField(episodetranslation.FieldTitle, field.TypeString, value)
 	}
+	if etu.mutation.TitleCleared() {
+		_spec.ClearField(episodetranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := etu.mutation.Description(); ok {
 		_spec.SetField(episodetranslation.FieldDescription, field.TypeString, value)
 	}
 	if etu.mutation.DescriptionCleared() {
 		_spec.ClearField(episodetranslation.FieldDescription, field.TypeString)
+	}
+	if etu.mutation.CreatedAtCleared() {
+		_spec.ClearField(episodetranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if etu.mutation.EpisodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -263,6 +275,12 @@ func (etuo *EpisodeTranslationUpdateOne) SetNillableTitle(s *string) *EpisodeTra
 	if s != nil {
 		etuo.SetTitle(*s)
 	}
+	return etuo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (etuo *EpisodeTranslationUpdateOne) ClearTitle() *EpisodeTranslationUpdateOne {
+	etuo.mutation.ClearTitle()
 	return etuo
 }
 
@@ -395,11 +413,17 @@ func (etuo *EpisodeTranslationUpdateOne) sqlSave(ctx context.Context) (_node *Ep
 	if value, ok := etuo.mutation.Title(); ok {
 		_spec.SetField(episodetranslation.FieldTitle, field.TypeString, value)
 	}
+	if etuo.mutation.TitleCleared() {
+		_spec.ClearField(episodetranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := etuo.mutation.Description(); ok {
 		_spec.SetField(episodetranslation.FieldDescription, field.TypeString, value)
 	}
 	if etuo.mutation.DescriptionCleared() {
 		_spec.ClearField(episodetranslation.FieldDescription, field.TypeString)
+	}
+	if etuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(episodetranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if etuo.mutation.EpisodeCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -118,6 +118,12 @@ func (pau *PublicationAuthorUpdate) SetUpdatedAt(t time.Time) *PublicationAuthor
 	return pau
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pau *PublicationAuthorUpdate) ClearUpdatedAt() *PublicationAuthorUpdate {
+	pau.mutation.ClearUpdatedAt()
+	return pau
+}
+
 // SetPublication sets the "publication" edge to the Publication entity.
 func (pau *PublicationAuthorUpdate) SetPublication(p *Publication) *PublicationAuthorUpdate {
 	return pau.SetPublicationID(p.ID)
@@ -164,7 +170,7 @@ func (pau *PublicationAuthorUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pau *PublicationAuthorUpdate) defaults() {
-	if _, ok := pau.mutation.UpdatedAt(); !ok {
+	if _, ok := pau.mutation.UpdatedAt(); !ok && !pau.mutation.UpdatedAtCleared() {
 		v := publicationauthor.UpdateDefaultUpdatedAt()
 		pau.mutation.SetUpdatedAt(v)
 	}
@@ -218,8 +224,14 @@ func (pau *PublicationAuthorUpdate) sqlSave(ctx context.Context) (n int, err err
 	if pau.mutation.AffiliationCleared() {
 		_spec.ClearField(publicationauthor.FieldAffiliation, field.TypeString)
 	}
+	if pau.mutation.CreatedAtCleared() {
+		_spec.ClearField(publicationauthor.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pau.mutation.UpdatedAt(); ok {
 		_spec.SetField(publicationauthor.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if pau.mutation.UpdatedAtCleared() {
+		_spec.ClearField(publicationauthor.FieldUpdatedAt, field.TypeTime)
 	}
 	if pau.mutation.PublicationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -359,6 +371,12 @@ func (pauo *PublicationAuthorUpdateOne) SetUpdatedAt(t time.Time) *PublicationAu
 	return pauo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pauo *PublicationAuthorUpdateOne) ClearUpdatedAt() *PublicationAuthorUpdateOne {
+	pauo.mutation.ClearUpdatedAt()
+	return pauo
+}
+
 // SetPublication sets the "publication" edge to the Publication entity.
 func (pauo *PublicationAuthorUpdateOne) SetPublication(p *Publication) *PublicationAuthorUpdateOne {
 	return pauo.SetPublicationID(p.ID)
@@ -418,7 +436,7 @@ func (pauo *PublicationAuthorUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pauo *PublicationAuthorUpdateOne) defaults() {
-	if _, ok := pauo.mutation.UpdatedAt(); !ok {
+	if _, ok := pauo.mutation.UpdatedAt(); !ok && !pauo.mutation.UpdatedAtCleared() {
 		v := publicationauthor.UpdateDefaultUpdatedAt()
 		pauo.mutation.SetUpdatedAt(v)
 	}
@@ -489,8 +507,14 @@ func (pauo *PublicationAuthorUpdateOne) sqlSave(ctx context.Context) (_node *Pub
 	if pauo.mutation.AffiliationCleared() {
 		_spec.ClearField(publicationauthor.FieldAffiliation, field.TypeString)
 	}
+	if pauo.mutation.CreatedAtCleared() {
+		_spec.ClearField(publicationauthor.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pauo.mutation.UpdatedAt(); ok {
 		_spec.SetField(publicationauthor.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if pauo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(publicationauthor.FieldUpdatedAt, field.TypeTime)
 	}
 	if pauo.mutation.PublicationCleared() {
 		edge := &sqlgraph.EdgeSpec{

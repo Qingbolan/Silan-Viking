@@ -199,9 +199,6 @@ func (slc *SocialLinkCreate) check() error {
 	if _, ok := slc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "SocialLink.sort_order"`)}
 	}
-	if _, ok := slc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "SocialLink.created_at"`)}
-	}
 	if len(slc.mutation.PersonalInfoIDs()) == 0 {
 		return &ValidationError{Name: "personal_info", err: errors.New(`ent: missing required edge "SocialLink.personal_info"`)}
 	}

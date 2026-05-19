@@ -37,7 +37,7 @@ pub enum ToolTier {
 }
 
 /// One advertised MCP tool.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ToolSpec {
     /// Tool name.
     pub name: &'static str,
@@ -45,10 +45,15 @@ pub struct ToolSpec {
     pub tier: ToolTier,
     /// Short contract description.
     pub description: &'static str,
+    /// The tool's JSON-Schema `inputSchema` — the parameter contract an MCP
+    /// client reads to know what arguments the tool accepts. Without it the
+    /// client cannot pass through anything but guessed scalar args (an empty
+    /// `{ "type": "object" }` drops structured params like `parts`).
+    pub input_schema: serde_json::Value,
 }
 
 /// Initial handshake payload: schema version plus tool surface.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Handshake {
     /// `content/SCHEMA.md` version.
     pub schema_version: u32,
@@ -65,6 +70,10 @@ pub struct ReadResult {
     pub title: String,
     /// Languages available.
     pub languages: Vec<String>,
+    /// The Part's prose body — `Some` when the URI addresses a single Part
+    /// (`…/<slug>/<role>`), so an agent can read back what a Part currently
+    /// says before revising it. `None` for an Item-level read (a summary).
+    pub body: Option<String>,
 }
 
 /// MCP adapter errors.
@@ -102,92 +111,174 @@ pub fn tool_specs() -> Vec<ToolSpec> {
             name: "recall",
             tier: ReadOnly,
             description: "local lexical recall over content",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"query": {"type":"string","description":"the search query"},"limit": {"type":"integer","description":"max hits, default 10"}},
+                "required": ["query"],
+            }),
         },
         ToolSpec {
             name: "list",
             tier: ReadOnly,
             description: "structured list by content type and status",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"type": {"type":"string","description":"content type: idea/blog/project/episode/update/resume"},"filter": {"type":"object","description":"optional {status, tag} filter","properties":{"status":{"type":"string"},"tag":{"type":"string"}}}},
+                "required": [],
+            }),
         },
         ToolSpec {
             name: "browse",
             tier: ReadOnly,
             description: "browse content tree",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"silan:// node to browse, default silan://resources"}},
+                "required": [],
+            }),
         },
         ToolSpec {
             name: "read",
             tier: ReadOnly,
-            description: "read one item summary",
+            description: "read content at a silan:// URI — an Item URI gives a \
+                          summary; a Part URI (…/<slug>/<role>) gives that \
+                          Part's full prose body, so you can read a Part back \
+                          before revising or continuing it",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item URI to read"}},
+                "required": ["uri"],
+            }),
         },
         ToolSpec {
             name: "context_brief",
             tier: ReadOnly,
             description: "brief owner/project context",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {},
+                "required": [],
+            }),
         },
         ToolSpec {
             name: "lint",
             tier: ReadOnly,
             description: "parser and schema health check",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"optional silan:// URI to lint; omit for everything"}},
+                "required": [],
+            }),
         },
         ToolSpec {
             name: "stats",
             tier: ReadOnly,
             description: "view/like/comment counts (local stats cache)",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item URI"}},
+                "required": ["uri"],
+            }),
         },
         ToolSpec {
             name: "visitors",
             tier: ReadOnly,
             description: "de-identified visitor list (local stats cache)",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item URI"}},
+                "required": ["uri"],
+            }),
         },
         ToolSpec {
             name: "crawler_breakdown",
             tier: ReadOnly,
             description: "visitor-kind breakdown (local stats cache)",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item URI"}},
+                "required": ["uri"],
+            }),
         },
         ToolSpec {
             name: "source_breakdown",
             tier: ReadOnly,
             description: "referrer-source breakdown (local stats cache)",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item URI"}},
+                "required": ["uri"],
+            }),
         },
         ToolSpec {
             name: "capture",
             tier: Capture,
             description: "capture a note into a proposal",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"note": {"type":"string","description":"the free-text note to capture"}},
+                "required": ["note"],
+            }),
         },
         ToolSpec {
             name: "ctx_read",
             tier: AgentContext,
             description: "read silan://agent context",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"a silan://agent/... URI"}},
+                "required": ["uri"],
+            }),
         },
         ToolSpec {
             name: "ctx_write",
             tier: AgentContext,
             description: "write silan://agent context",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"a silan://agent/... URI"},"content": {"type":"string","description":"the content to write"}},
+                "required": ["uri","content"],
+            }),
         },
         ToolSpec {
             name: "ctx_brief",
             tier: AgentContext,
             description: "brief agent memory",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {},
+                "required": [],
+            }),
         },
         ToolSpec {
             name: "reflect",
             tier: AgentContext,
             description: "append session memory",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"session": {"type":"string","description":"the session summary to settle into agent memory"}},
+                "required": ["session"],
+            }),
         },
         ToolSpec {
             name: "propose",
             tier: Proposal,
-            description: "draft a content proposal (args: uri, draft, lang?=en, \
-                          parts?) — targets an Item or Part. A URI whose Item \
-                          does not exist yet is created (no CLI `new` needed); \
-                          an existing one is modified. `parts` is a \
-                          {role: content} object of additional Parts of the \
-                          same Item — use it so a new multi-Part Item is ONE \
-                          proposal. lang picks the language variant",
+            description: "draft a content proposal — targets a silan:// Item or Part. A URI whose Item does not exist yet is created; an existing one is modified. Give `draft` to write the anchored Part, and/or `parts` (a {role: content} object) to write sibling Parts. Omit `draft` and give only `parts` to ADD sibling Parts while leaving the primary Part (e.g. an Item's overview) untouched — at least one of draft/parts is required. `lang` picks the language variant (default en).",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item or Part URI to propose against"},"draft": {"type":"string","description":"the draft body for the anchored Part — omit to add only sibling Parts via `parts`"},"lang": {"type":"string","description":"language variant, default en"},"parts": {"type":"object","description":"additional Parts of the same Item, as a {role: content} object","additionalProperties":{"type":"string"}}},
+                "required": ["uri"],
+            }),
         },
         ToolSpec {
             name: "summarize_updates",
             tier: Proposal,
             description: "draft update summary proposal",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"summary": {"type":"string","description":"the update summary text"}},
+                "required": [],
+            }),
         },
     ]
 }
@@ -230,6 +321,25 @@ pub fn list(
 /// Read one URI by using the query index metadata.
 pub fn read(content_root: &Path, uri: &str) -> Result<Option<ReadResult>, McpError> {
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
+
+    // A Part URI (`…/<slug>/<role>`) reads back that Part's prose body — what
+    // an agent needs before revising or continuing a Part. Anything else is
+    // an Item-level summary read from the query index.
+    if let Ok(target @ ProposalTarget::Part { .. }) = ProposalTarget::parse(uri) {
+        let loc = resolve_draft_location(&ws, &target, "en")?;
+        let path = content_root.join(&loc.draft_file);
+        let body = match fs::read_to_string(&path) {
+            Ok(text) => text,
+            Err(_) => return Ok(None),
+        };
+        return Ok(Some(ReadResult {
+            uri: uri.to_owned(),
+            title: loc.role.clone(),
+            languages: vec!["en".to_owned()],
+            body: Some(body),
+        }));
+    }
+
     let index = ws
         .query_index()
         .map_err(|e| McpError::Workspace(e.to_string()))?;
@@ -241,6 +351,7 @@ pub fn read(content_root: &Path, uri: &str) -> Result<Option<ReadResult>, McpErr
             uri: doc.uri.clone(),
             title: doc.title.clone(),
             languages: doc.languages.clone(),
+            body: None,
         }))
 }
 
@@ -343,6 +454,10 @@ pub struct ProposalCreated {
     pub id: String,
     /// The branch the draft was written to.
     pub branch: String,
+    /// A state-aware next-step hint — what the agent should consider given
+    /// what this call actually changed (a missing language variant, sibling
+    /// Parts not yet written, …). `None` when nothing is worth flagging.
+    pub hint: Option<String>,
 }
 
 /// One Part of a `propose` call: the Part `role`, and its draft `content`.
@@ -377,12 +492,25 @@ pub struct PartDraft {
 pub fn propose(
     content_root: &Path,
     uri: &str,
-    draft: &str,
+    draft: Option<&str>,
     lang: &str,
     extra_parts: &[PartDraft],
 ) -> Result<ProposalCreated, McpError> {
     let target = ProposalTarget::parse(uri).map_err(|e| McpError::Proposal(e.to_string()))?;
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
+
+    // `draft` writes the URI's anchored Part; `extra_parts` writes siblings.
+    // At least one must be present — a `propose` that writes nothing is a
+    // mistake. Omitting `draft` is the "only add sibling Parts, leave the
+    // primary Part untouched" path, so it is valid as long as `extra_parts`
+    // carries something.
+    if draft.is_none() && extra_parts.is_empty() {
+        return Err(McpError::Proposal(
+            "propose needs `draft` (the anchored Part) or `parts` (sibling \
+             Parts) — it cannot write nothing"
+                .to_owned(),
+        ));
+    }
 
     // `extra_parts` name sibling Parts of the same Item, so the anchor must be
     // an Item URI — a Part URI already names its one Part.
@@ -400,10 +528,16 @@ pub fn propose(
     // the type does not declare is rejected here, before any branch or file
     // exists, so a mis-named Part fails cleanly instead of producing a
     // silently mis-anchored proposal.
+    //
+    // The primary Part is written only when `draft` is given; with `draft`
+    // omitted the primary Part (e.g. an Item's `overview`) is left exactly
+    // as it is and only the `extra_parts` siblings are added.
     let mut writes: Vec<(DraftLocation, String, String)> = Vec::new();
-    let primary = resolve_draft_location(&ws, &target, lang)?;
-    let primary_meta = render_part_meta(&primary.role, primary.shape, lang);
-    writes.push((primary, draft.to_owned(), primary_meta));
+    if let Some(draft) = draft {
+        let primary = resolve_draft_location(&ws, &target, lang)?;
+        let primary_meta = render_part_meta(&primary.role, primary.shape, lang);
+        writes.push((primary, draft.to_owned(), primary_meta));
+    }
     for part in extra_parts {
         let part_uri = format!("{item_uri}/{}", part.role);
         let part_target =
@@ -451,10 +585,138 @@ pub fn propose(
     )
     .map_err(|e| McpError::Proposal(e.to_string()))?;
 
+    let hint = propose_hint(&ws, &target, &writes, lang);
     Ok(ProposalCreated {
         id: id.as_str().to_owned(),
         branch: id.branch_name(),
+        hint,
     })
+}
+
+/// Build the state-aware next-step hint for a completed `propose`.
+///
+/// It inspects what the proposal actually wrote against the content tree and
+/// the SCHEMA, and flags the things an agent most often forgets: a Part left
+/// without its `en` variant, the sibling Parts a multi-Part type still has
+/// empty, and the accept -> sync step that has to follow. `None` when there
+/// is nothing worth saying.
+fn propose_hint(
+    ws: &Workspace,
+    target: &ProposalTarget,
+    writes: &[(DraftLocation, String, String)],
+    lang: &str,
+) -> Option<String> {
+    let mut notes: Vec<String> = Vec::new();
+
+    let item_uri = match target {
+        ProposalTarget::Item(uri) => uri,
+        ProposalTarget::Part { item, .. } => item,
+    };
+    let kind = item_kind(item_uri).ok()?;
+    let item_str = item_uri.to_string();
+    let scan = ws.scan().ok();
+
+    // 1. A draft in a non-`en` language whose `en` variant does not exist.
+    //    `en` is the canonical variant; a zh-only Part has no fallback.
+    if lang != "en" {
+        let item = scan
+            .as_ref()
+            .and_then(|s| s.items().iter().find(|i| i.uri().to_string() == item_str));
+        for (loc, _, _) in writes {
+            let has_en = item
+                .map(|i| {
+                    i.parts().iter().any(|p| {
+                        p.role().as_str() == loc.role
+                            && p.files().iter().any(|f| f.lang().as_str() == "en")
+                    })
+                })
+                .unwrap_or(false);
+            if !has_en {
+                notes.push(format!(
+                    "the `{}` Part has no `en` variant — propose `{item_str}/{}` \
+                     with lang=en too; `en` is the canonical language",
+                    loc.role, loc.role
+                ));
+            }
+        }
+    }
+
+    // 2. A multi-Part type whose other declared Parts are still unwritten.
+    if let Some(type_spec) = ws.schema().type_spec(kind) {
+        if type_spec.parts.len() > 1 {
+            let written: Vec<&str> = writes.iter().map(|(l, _, _)| l.role.as_str()).collect();
+            let existing: Vec<String> = scan
+                .as_ref()
+                .and_then(|s| s.items().iter().find(|i| i.uri().to_string() == item_str))
+                .map(|i| i.parts().iter().map(|p| p.role().to_string()).collect())
+                .unwrap_or_default();
+            let missing: Vec<&str> = type_spec
+                .parts
+                .iter()
+                .map(|p| p.role.as_str())
+                .filter(|r| !written.contains(r) && !existing.iter().any(|e| e == r))
+                .collect();
+            if !missing.is_empty() {
+                notes.push(format!(
+                    "`{kind}` recommends these Parts you have not written yet: \
+                     {} — add them with the `parts` argument or a later \
+                     `propose` to each Part URI; this list is a recommendation, \
+                     not a limit — you may also propose any new Part role that \
+                     fits the Item",
+                    missing.join(", ")
+                ));
+            } else {
+                notes.push(format!(
+                    "all recommended `{kind}` Parts are covered — if the Item \
+                     needs a section the recommended set does not name, propose \
+                     a new Part role for it (it lands as prose)"
+                ));
+            }
+        }
+
+        // 2b. A structured Part whose entry schema has an image/logo field —
+        //     a work entry can carry a company logo, a publication a figure.
+        //     These are optional, so an agent leaves them empty unless
+        //     nudged; an empty cover then renders as a broken card image.
+        for (loc, _, _) in writes {
+            if let Some(part) = type_spec.part(&loc.role) {
+                let image_fields: Vec<&str> = part
+                    .entry_fields
+                    .iter()
+                    .map(|f| f.name.as_str())
+                    .filter(|n| {
+                        [
+                            "image",
+                            "logo",
+                            "cover",
+                            "avatar",
+                            "thumbnail",
+                            "certificate",
+                        ]
+                        .iter()
+                        .any(|kw| n.contains(kw))
+                    })
+                    .collect();
+                if !image_fields.is_empty() {
+                    notes.push(format!(
+                        "each `{}` entry can carry an image — set {} if you \
+                         have one, or the card shows a blank cover",
+                        loc.role,
+                        image_fields.join(" / ")
+                    ));
+                }
+            }
+        }
+    }
+
+    // 3. The publish path always follows acceptance.
+    notes.push(
+        "after you finish, the owner reviews with `proposal show`, accepts \
+         with the CLI, then `index sync` — the agent never publishes"
+            .to_owned(),
+    );
+
+    Some(notes.join("; "))
 }
 
 /// `capture(note)` — the lightweight entry point: drop a free-text note into
@@ -480,6 +742,9 @@ pub fn capture(content_root: &Path, note: &str) -> Result<ProposalCreated, McpEr
     Ok(ProposalCreated {
         id: id.as_str().to_owned(),
         branch: id.branch_name(),
+        // `capture` drops a scratch note — there is no Part/Item shape to
+        // reason about, so no next-step hint.
+        hint: None,
     })
 }
 
@@ -488,7 +753,8 @@ pub fn capture(content_root: &Path, note: &str) -> Result<ProposalCreated, McpEr
 /// `ProposalError`, so io failures map to `ProposalError::Io`.
 fn write_draft_file(path: &Path, body: &str) -> Result<(), silan_viking_app::ProposalError> {
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|e| silan_viking_app::ProposalError::Io(e.to_string()))?;
+        fs::create_dir_all(parent)
+            .map_err(|e| silan_viking_app::ProposalError::Io(e.to_string()))?;
     }
     fs::write(path, body).map_err(|e| silan_viking_app::ProposalError::Io(e.to_string()))
 }
@@ -531,42 +797,70 @@ fn resolve_draft_location(
         ProposalTarget::Part { item, role } => (item, item_kind(item)?, Some(role.as_str())),
     };
 
-    let type_spec = ws.schema().type_spec(kind).ok_or_else(|| {
-        McpError::Proposal(format!("schema has no type spec for `{}`", kind))
-    })?;
-
-    let part_spec = match role {
-        // Part target: the named role must be declared by the type.
-        Some(role) => type_spec.part(role).ok_or_else(|| {
-            let valid: Vec<&str> = type_spec.parts.iter().map(|p| p.role.as_str()).collect();
+    // Every Item-identifying segment after the type (`<slug>`, and the
+    // `<series>` of an episode) must be a well-formed slug. Rejecting an
+    // ill-formed one here turns "an agent invented `my-project#goals` as a
+    // pseudo-slug" into a clear error instead of a stray off-tree directory.
+    for seg in item_uri.segments().iter().skip(1) {
+        silan_viking_app::Slug::new(seg.clone()).map_err(|e| {
             McpError::Proposal(format!(
-                "`{}` has no Part `{}` — valid Parts: {}",
-                kind,
-                role,
-                valid.join(", ")
+                "`{seg}` is not a valid slug ({e}) — a slug is the Item's \
+                 identity; a Part goes in its own URI segment, not the slug"
             ))
-        })?,
+        })?;
+    }
+
+    let type_spec = ws
+        .schema()
+        .type_spec(kind)
+        .ok_or_else(|| McpError::Proposal(format!("schema has no type spec for `{}`", kind)))?;
+
+    // The type's `parts` list is a *recommended* set, not a closed whitelist:
+    // an agent may extend an Item with a Part whose role the SCHEMA does not
+    // predeclare (a project `benchmark` / `roadmap` section). A declared role
+    // keeps its SCHEMA `shape`; an undeclared one defaults to `prose` — the
+    // shape almost every Part is. A role still has to be a well-formed
+    // identifier so it maps cleanly to a `parts/<role>/` directory.
+    let (resolved_role, resolved_shape): (String, silan_viking_app::PartShape) = match role {
+        Some(role) => {
+            // A role names a `parts/<role>/` directory and an `item_part.role`
+            // column — it must be a lowercase identifier. Unlike a `Slug` it
+            // *may* contain `_` (the SCHEMA itself ships `quick_start` /
+            // `release_notes`), so it gets its own check rather than `Slug`.
+            let role_ok = !role.is_empty()
+                && role
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
+                && role.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit());
+            if !role_ok {
+                return Err(McpError::Proposal(format!(
+                    "`{role}` is not a valid Part role — a role must be a \
+                     lowercase identifier (a-z, 0-9, `_`, `-`)"
+                )));
+            }
+            match type_spec.part(role) {
+                Some(p) => (p.role.clone(), p.shape),
+                None => (role.to_owned(), silan_viking_app::PartShape::Prose),
+            }
+        }
         // Item target: fall back to the type's primary (lowest-order) Part.
-        None => type_spec
-            .parts
-            .iter()
-            .min_by_key(|p| p.order)
-            .ok_or_else(|| {
-                McpError::Proposal(format!("type `{}` declares no Parts", kind))
-            })?,
+        None => {
+            let p = type_spec
+                .parts
+                .iter()
+                .min_by_key(|p| p.order)
+                .ok_or_else(|| McpError::Proposal(format!("type `{}` declares no Parts", kind)))?;
+            (p.role.clone(), p.shape)
+        }
     };
 
-    let part_dir = format!(
-        "{}/parts/{}",
-        item_dir_rel(item_uri, kind),
-        part_spec.role
-    );
-    let draft_file = format!("{part_dir}/{lang}.{}", part_spec.shape.file_extension());
+    let part_dir = format!("{}/parts/{}", item_dir_rel(item_uri, kind), resolved_role);
+    let draft_file = format!("{part_dir}/{lang}.{}", resolved_shape.file_extension());
     Ok(DraftLocation {
         part_dir,
         draft_file,
-        role: part_spec.role.clone(),
-        shape: part_spec.shape,
+        role: resolved_role,
+        shape: resolved_shape,
     })
 }
 
@@ -851,7 +1145,7 @@ pub fn summarize_updates(content_root: &Path, summary: &str) -> Result<ProposalC
          status: active\nvisibility: private\ndate: {}\n---\n\n{summary}\n",
         today_utc()
     );
-    propose(content_root, &uri, &draft, "en", &[])
+    propose(content_root, &uri, Some(&draft), "en", &[])
 }
 
 /// Today's date `YYYY-MM-DD` (UTC).
@@ -1045,7 +1339,12 @@ pub fn call(
         "read" => {
             let uri = str_arg("uri")?;
             match read(content_root, &uri)? {
-                Some(r) => Ok(json!({ "uri": r.uri, "title": r.title, "languages": r.languages })),
+                Some(r) => Ok(json!({
+                    "uri": r.uri,
+                    "title": r.title,
+                    "languages": r.languages,
+                    "body": r.body,
+                })),
                 None => Err(McpError::InvalidRequest(format!("no item at `{uri}`"))),
             }
         }
@@ -1062,7 +1361,7 @@ pub fn call(
         "capture" => {
             let note = str_arg("note")?;
             let created = capture(content_root, &note)?;
-            Ok(json!({ "proposal_id": created.id, "branch": created.branch }))
+            Ok(json!({ "proposal_id": created.id, "branch": created.branch, "hint": created.hint }))
         }
         "ctx_read" => {
             let uri = str_arg("uri")?;
@@ -1081,7 +1380,9 @@ pub fn call(
         }
         "propose" => {
             let uri = str_arg("uri")?;
-            let draft = str_arg("draft")?;
+            // `draft` is optional: omitting it (with `parts` given) is the
+            // "add sibling Parts only, leave the primary Part untouched" path.
+            let draft = opt_str("draft");
             // `lang` is optional — defaults to the canonical `en` variant.
             let lang = opt_str("lang").unwrap_or_else(|| "en".to_owned());
             // `parts` is optional — a `{role: content}` object carrying extra
@@ -1093,9 +1394,7 @@ pub fn call(
                     let mut parts = Vec::with_capacity(map.len());
                     for (role, value) in map {
                         let content = value.as_str().ok_or_else(|| {
-                            McpError::Proposal(format!(
-                                "parts.{role} must be a string draft"
-                            ))
+                            McpError::Proposal(format!("parts.{role} must be a string draft"))
                         })?;
                         parts.push(PartDraft {
                             role: role.clone(),
@@ -1110,13 +1409,13 @@ pub fn call(
                     ));
                 }
             };
-            let created = propose(content_root, &uri, &draft, &lang, &extra_parts)?;
-            Ok(json!({ "proposal_id": created.id, "branch": created.branch }))
+            let created = propose(content_root, &uri, draft.as_deref(), &lang, &extra_parts)?;
+            Ok(json!({ "proposal_id": created.id, "branch": created.branch, "hint": created.hint }))
         }
         "summarize_updates" => {
             let summary = opt_str("summary").unwrap_or_else(|| "Recent updates.".to_owned());
             let created = summarize_updates(content_root, &summary)?;
-            Ok(json!({ "proposal_id": created.id, "branch": created.branch }))
+            Ok(json!({ "proposal_id": created.id, "branch": created.branch, "hint": created.hint }))
         }
         other => Err(McpError::UnknownTool(other.to_owned())),
     }

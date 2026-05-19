@@ -41,6 +41,7 @@ func (ProjectImageTranslation) Fields() []ent.Field {
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

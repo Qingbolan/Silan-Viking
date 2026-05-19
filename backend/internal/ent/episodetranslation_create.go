@@ -39,6 +39,14 @@ func (etc *EpisodeTranslationCreate) SetTitle(s string) *EpisodeTranslationCreat
 	return etc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (etc *EpisodeTranslationCreate) SetNillableTitle(s *string) *EpisodeTranslationCreate {
+	if s != nil {
+		etc.SetTitle(*s)
+	}
+	return etc
+}
+
 // SetDescription sets the "description" field.
 func (etc *EpisodeTranslationCreate) SetDescription(s string) *EpisodeTranslationCreate {
 	etc.mutation.SetDescription(s)
@@ -144,16 +152,10 @@ func (etc *EpisodeTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "EpisodeTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := etc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "EpisodeTranslation.title"`)}
-	}
 	if v, ok := etc.mutation.Title(); ok {
 		if err := episodetranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "EpisodeTranslation.title": %w`, err)}
 		}
-	}
-	if _, ok := etc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "EpisodeTranslation.created_at"`)}
 	}
 	if len(etc.mutation.EpisodeIDs()) == 0 {
 		return &ValidationError{Name: "episode", err: errors.New(`ent: missing required edge "EpisodeTranslation.episode"`)}

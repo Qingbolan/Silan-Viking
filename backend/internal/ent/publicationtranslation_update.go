@@ -71,6 +71,12 @@ func (ptu *PublicationTranslationUpdate) SetNillableTitle(s *string) *Publicatio
 	return ptu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (ptu *PublicationTranslationUpdate) ClearTitle() *PublicationTranslationUpdate {
+	ptu.mutation.ClearTitle()
+	return ptu
+}
+
 // SetJournalName sets the "journal_name" field.
 func (ptu *PublicationTranslationUpdate) SetJournalName(s string) *PublicationTranslationUpdate {
 	ptu.mutation.SetJournalName(s)
@@ -217,6 +223,9 @@ func (ptu *PublicationTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 	if value, ok := ptu.mutation.Title(); ok {
 		_spec.SetField(publicationtranslation.FieldTitle, field.TypeString, value)
 	}
+	if ptu.mutation.TitleCleared() {
+		_spec.ClearField(publicationtranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := ptu.mutation.JournalName(); ok {
 		_spec.SetField(publicationtranslation.FieldJournalName, field.TypeString, value)
 	}
@@ -228,6 +237,9 @@ func (ptu *PublicationTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 	}
 	if ptu.mutation.ConferenceNameCleared() {
 		_spec.ClearField(publicationtranslation.FieldConferenceName, field.TypeString)
+	}
+	if ptu.mutation.CreatedAtCleared() {
+		_spec.ClearField(publicationtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if ptu.mutation.PublicationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -346,6 +358,12 @@ func (ptuo *PublicationTranslationUpdateOne) SetNillableTitle(s *string) *Public
 	if s != nil {
 		ptuo.SetTitle(*s)
 	}
+	return ptuo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (ptuo *PublicationTranslationUpdateOne) ClearTitle() *PublicationTranslationUpdateOne {
+	ptuo.mutation.ClearTitle()
 	return ptuo
 }
 
@@ -525,6 +543,9 @@ func (ptuo *PublicationTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 	if value, ok := ptuo.mutation.Title(); ok {
 		_spec.SetField(publicationtranslation.FieldTitle, field.TypeString, value)
 	}
+	if ptuo.mutation.TitleCleared() {
+		_spec.ClearField(publicationtranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := ptuo.mutation.JournalName(); ok {
 		_spec.SetField(publicationtranslation.FieldJournalName, field.TypeString, value)
 	}
@@ -536,6 +557,9 @@ func (ptuo *PublicationTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 	}
 	if ptuo.mutation.ConferenceNameCleared() {
 		_spec.ClearField(publicationtranslation.FieldConferenceName, field.TypeString)
+	}
+	if ptuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(publicationtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if ptuo.mutation.PublicationCleared() {
 		edge := &sqlgraph.EdgeSpec{

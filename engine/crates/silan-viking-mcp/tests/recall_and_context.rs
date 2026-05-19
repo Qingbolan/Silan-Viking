@@ -76,7 +76,8 @@ fn recall_finds_the_item_whose_content_matches() {
         "recall for a topic the fixture covers must return at least one hit"
     );
     assert!(
-        hits.iter().any(|h| h.document.uri.contains("blog/hello-world")),
+        hits.iter()
+            .any(|h| h.document.uri.contains("blog/hello-world")),
         "recall must surface the blog/hello-world Item; got: {:?}",
         hits.iter().map(|h| &h.document.uri).collect::<Vec<_>>()
     );
@@ -155,6 +156,35 @@ fn context_brief_loads_agent_memory() {
     assert!(
         !brief.brief.trim().is_empty(),
         "context_brief must fold written agent memory into the brief"
+    );
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn read_returns_a_part_body() {
+    // An agent revising or continuing a Part must first read what the Part
+    // currently says. `read` on a Part URI (`…/<slug>/<role>`) returns its
+    // full prose body — an Item URI gives only a summary.
+    let root = fresh_repo("read-part");
+
+    // The fixture's blog Item carries a `body` Part with prose.
+    let res = silan_viking_mcp::read(&root, "silan://resources/blog/hello-world/body")
+        .expect("read runs")
+        .expect("the blog body Part exists");
+    let body = res.body.expect("a Part URI read must carry the prose body");
+    assert!(
+        !body.trim().is_empty(),
+        "the Part body must be the actual prose, not empty"
+    );
+
+    // An Item-level read stays a summary — no body.
+    let item = silan_viking_mcp::read(&root, "silan://resources/blog/hello-world")
+        .expect("read runs")
+        .expect("the blog Item exists");
+    assert!(
+        item.body.is_none(),
+        "an Item read is a summary, it must not carry a Part body"
     );
 
     let _ = std::fs::remove_dir_all(&root);

@@ -265,6 +265,16 @@ func CreatedAtLTE(v time.Time) predicate.Language {
 	return predicate.Language(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.Language {
+	return predicate.Language(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.Language {
+	return predicate.Language(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasPersonalInfoTranslations applies the HasEdge predicate on the "personal_info_translations" edge.
 func HasPersonalInfoTranslations() predicate.Language {
 	return predicate.Language(func(s *sql.Selector) {
@@ -487,29 +497,6 @@ func HasBlogPostTranslations() predicate.Language {
 func HasBlogPostTranslationsWith(preds ...predicate.BlogPostTranslation) predicate.Language {
 	return predicate.Language(func(s *sql.Selector) {
 		step := newBlogPostTranslationsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasBlogSeriesTranslations applies the HasEdge predicate on the "blog_series_translations" edge.
-func HasBlogSeriesTranslations() predicate.Language {
-	return predicate.Language(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, BlogSeriesTranslationsTable, BlogSeriesTranslationsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasBlogSeriesTranslationsWith applies the HasEdge predicate on the "blog_series_translations" edge with a given conditions (other predicates).
-func HasBlogSeriesTranslationsWith(preds ...predicate.BlogSeriesTranslation) predicate.Language {
-	return predicate.Language(func(s *sql.Selector) {
-		step := newBlogSeriesTranslationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

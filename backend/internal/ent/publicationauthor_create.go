@@ -191,12 +191,6 @@ func (pac *PublicationAuthorCreate) check() error {
 			return &ValidationError{Name: "affiliation", err: fmt.Errorf(`ent: validator failed for field "PublicationAuthor.affiliation": %w`, err)}
 		}
 	}
-	if _, ok := pac.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PublicationAuthor.created_at"`)}
-	}
-	if _, ok := pac.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "PublicationAuthor.updated_at"`)}
-	}
 	if len(pac.mutation.PublicationIDs()) == 0 {
 		return &ValidationError{Name: "publication", err: errors.New(`ent: missing required edge "PublicationAuthor.publication"`)}
 	}

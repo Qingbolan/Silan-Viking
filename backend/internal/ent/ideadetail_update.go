@@ -152,6 +152,12 @@ func (idu *IdeaDetailUpdate) SetUpdatedAt(t time.Time) *IdeaDetailUpdate {
 	return idu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (idu *IdeaDetailUpdate) ClearUpdatedAt() *IdeaDetailUpdate {
+	idu.mutation.ClearUpdatedAt()
+	return idu
+}
+
 // SetIdea sets the "idea" edge to the Idea entity.
 func (idu *IdeaDetailUpdate) SetIdea(i *Idea) *IdeaDetailUpdate {
 	return idu.SetIdeaID(i.ID)
@@ -234,7 +240,7 @@ func (idu *IdeaDetailUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (idu *IdeaDetailUpdate) defaults() {
-	if _, ok := idu.mutation.UpdatedAt(); !ok {
+	if _, ok := idu.mutation.UpdatedAt(); !ok && !idu.mutation.UpdatedAtCleared() {
 		v := ideadetail.UpdateDefaultUpdatedAt()
 		idu.mutation.SetUpdatedAt(v)
 	}
@@ -290,8 +296,14 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if idu.mutation.EstimatedBudgetCleared() {
 		_spec.ClearField(ideadetail.FieldEstimatedBudget, field.TypeFloat64)
 	}
+	if idu.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideadetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := idu.mutation.UpdatedAt(); ok {
 		_spec.SetField(ideadetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if idu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(ideadetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if idu.mutation.IdeaCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -509,6 +521,12 @@ func (iduo *IdeaDetailUpdateOne) SetUpdatedAt(t time.Time) *IdeaDetailUpdateOne 
 	return iduo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (iduo *IdeaDetailUpdateOne) ClearUpdatedAt() *IdeaDetailUpdateOne {
+	iduo.mutation.ClearUpdatedAt()
+	return iduo
+}
+
 // SetIdea sets the "idea" edge to the Idea entity.
 func (iduo *IdeaDetailUpdateOne) SetIdea(i *Idea) *IdeaDetailUpdateOne {
 	return iduo.SetIdeaID(i.ID)
@@ -604,7 +622,7 @@ func (iduo *IdeaDetailUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (iduo *IdeaDetailUpdateOne) defaults() {
-	if _, ok := iduo.mutation.UpdatedAt(); !ok {
+	if _, ok := iduo.mutation.UpdatedAt(); !ok && !iduo.mutation.UpdatedAtCleared() {
 		v := ideadetail.UpdateDefaultUpdatedAt()
 		iduo.mutation.SetUpdatedAt(v)
 	}
@@ -677,8 +695,14 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 	if iduo.mutation.EstimatedBudgetCleared() {
 		_spec.ClearField(ideadetail.FieldEstimatedBudget, field.TypeFloat64)
 	}
+	if iduo.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideadetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := iduo.mutation.UpdatedAt(); ok {
 		_spec.SetField(ideadetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if iduo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(ideadetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if iduo.mutation.IdeaCleared() {
 		edge := &sqlgraph.EdgeSpec{

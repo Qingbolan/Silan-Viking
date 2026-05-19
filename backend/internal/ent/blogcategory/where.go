@@ -460,6 +460,16 @@ func CreatedAtLTE(v time.Time) predicate.BlogCategory {
 	return predicate.BlogCategory(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.BlogCategory {
+	return predicate.BlogCategory(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.BlogCategory {
+	return predicate.BlogCategory(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.BlogCategory {
 	return predicate.BlogCategory(sql.FieldEQ(FieldUpdatedAt, v))
@@ -498,6 +508,16 @@ func UpdatedAtLT(v time.Time) predicate.BlogCategory {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.BlogCategory {
 	return predicate.BlogCategory(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.BlogCategory {
+	return predicate.BlogCategory(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.BlogCategory {
+	return predicate.BlogCategory(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasTranslations applies the HasEdge predicate on the "translations" edge.

@@ -285,6 +285,16 @@ func TitleHasSuffix(v string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldHasSuffix(FieldTitle, v))
 }
 
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldNotNull(FieldTitle))
+}
+
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
 func TitleEqualFold(v string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldEqualFold(FieldTitle, v))
@@ -348,6 +358,16 @@ func AwardingOrganizationHasPrefix(v string) predicate.AwardTranslation {
 // AwardingOrganizationHasSuffix applies the HasSuffix predicate on the "awarding_organization" field.
 func AwardingOrganizationHasSuffix(v string) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldHasSuffix(FieldAwardingOrganization, v))
+}
+
+// AwardingOrganizationIsNil applies the IsNil predicate on the "awarding_organization" field.
+func AwardingOrganizationIsNil() predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldIsNull(FieldAwardingOrganization))
+}
+
+// AwardingOrganizationNotNil applies the NotNil predicate on the "awarding_organization" field.
+func AwardingOrganizationNotNil() predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldNotNull(FieldAwardingOrganization))
 }
 
 // AwardingOrganizationEqualFold applies the EqualFold predicate on the "awarding_organization" field.
@@ -548,6 +568,16 @@ func CreatedAtLT(v time.Time) predicate.AwardTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.AwardTranslation {
 	return predicate.AwardTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.AwardTranslation {
+	return predicate.AwardTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasAward applies the HasEdge predicate on the "award" edge.

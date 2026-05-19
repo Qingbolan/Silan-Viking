@@ -30,8 +30,10 @@ func (UserIdentity) Fields() []ent.Field {
 		field.String("display_name").Optional(),
 		field.String("avatar_url").Optional(),
 		field.Bool("verified").Default(false),
-		field.Time("created_at").Default(time.Now).Immutable(),
-		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),
+		field.Time("created_at").Default(time.Now).Optional().
+			Immutable(),
+		field.Time("updated_at").Default(time.Now).Optional().
+			UpdateDefault(time.Now),
 	}
 }
 

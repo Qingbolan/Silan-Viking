@@ -179,12 +179,6 @@ func (edc *EducationDetailCreate) check() error {
 	if _, ok := edc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "EducationDetail.sort_order"`)}
 	}
-	if _, ok := edc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "EducationDetail.created_at"`)}
-	}
-	if _, ok := edc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "EducationDetail.updated_at"`)}
-	}
 	if len(edc.mutation.EducationIDs()) == 0 {
 		return &ValidationError{Name: "education", err: errors.New(`ent: missing required edge "EducationDetail.education"`)}
 	}

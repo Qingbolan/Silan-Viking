@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/award"
 	"silan-backend/internal/ent/awardtranslation"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -25,7 +24,6 @@ type AwardQuery struct {
 	order            []award.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Award
-	withUser         *UserQuery
 	withTranslations *AwardTranslationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -61,28 +59,6 @@ func (aq *AwardQuery) Unique(unique bool) *AwardQuery {
 func (aq *AwardQuery) Order(o ...award.OrderOption) *AwardQuery {
 	aq.order = append(aq.order, o...)
 	return aq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (aq *AwardQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: aq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := aq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := aq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(award.Table, award.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, award.UserTable, award.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -299,23 +275,11 @@ func (aq *AwardQuery) Clone() *AwardQuery {
 		order:            append([]award.OrderOption{}, aq.order...),
 		inters:           append([]Interceptor{}, aq.inters...),
 		predicates:       append([]predicate.Award{}, aq.predicates...),
-		withUser:         aq.withUser.Clone(),
 		withTranslations: aq.withTranslations.Clone(),
 		// clone intermediate query.
 		sql:  aq.sql.Clone(),
 		path: aq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (aq *AwardQuery) WithUser(opts ...func(*UserQuery)) *AwardQuery {
-	query := (&UserClient{config: aq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	aq.withUser = query
-	return aq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -407,8 +371,7 @@ func (aq *AwardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Award,
 	var (
 		nodes       = []*Award{}
 		_spec       = aq.querySpec()
-		loadedTypes = [2]bool{
-			aq.withUser != nil,
+		loadedTypes = [1]bool{
 			aq.withTranslations != nil,
 		}
 	)
@@ -430,12 +393,6 @@ func (aq *AwardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Award,
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := aq.withUser; query != nil {
-		if err := aq.loadUser(ctx, query, nodes, nil,
-			func(n *Award, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := aq.withTranslations; query != nil {
 		if err := aq.loadTranslations(ctx, query, nodes,
 			func(n *Award) { n.Edges.Translations = []*AwardTranslation{} },
@@ -446,35 +403,6 @@ func (aq *AwardQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Award,
 	return nodes, nil
 }
 
-func (aq *AwardQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Award, init func(*Award), assign func(*Award, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Award)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (aq *AwardQuery) loadTranslations(ctx context.Context, query *AwardTranslationQuery, nodes []*Award, init func(*Award), assign func(*Award, *AwardTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Award)
@@ -530,9 +458,6 @@ func (aq *AwardQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != award.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if aq.withUser != nil {
-			_spec.Node.AddColumnOnce(award.FieldUserID)
 		}
 	}
 	if ps := aq.predicates; len(ps) > 0 {

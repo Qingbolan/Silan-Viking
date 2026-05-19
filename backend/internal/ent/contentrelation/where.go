@@ -314,6 +314,16 @@ func SortOrderLTE(v int) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLTE(FieldSortOrder, v))
 }
 
+// SortOrderIsNil applies the IsNil predicate on the "sort_order" field.
+func SortOrderIsNil() predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldIsNull(FieldSortOrder))
+}
+
+// SortOrderNotNil applies the NotNil predicate on the "sort_order" field.
+func SortOrderNotNil() predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldNotNull(FieldSortOrder))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldEQ(FieldCreatedAt, v))
@@ -352,6 +362,16 @@ func CreatedAtLT(v time.Time) predicate.ContentRelation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.ContentRelation {
 	return predicate.ContentRelation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ContentRelation {
+	return predicate.ContentRelation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // And groups predicates with the AND operator between them.

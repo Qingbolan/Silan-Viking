@@ -9,6 +9,7 @@ import type {
 } from '../../types/api';
 import { get, post, del, formatLanguage } from '../utils';
 import { type PaginationRequest, type SearchRequest, type ListResponse } from '../config';
+import { mapContentParts } from '../contentParts';
 
 // Backend API request/response types
 interface ProjectListRequest extends PaginationRequest {
@@ -185,6 +186,14 @@ export const fetchProjectDetailById = async (
       title: basicProject.name,
       description: basicProject.description,
       fullDescription: projectDetail?.detailed_description || projectDetail?.project_details || basicProject.description,
+      // The silan-viking `project` Parts beyond `overview` — each a markdown
+      // string, undefined when the author has not written that Part.
+      goals: projectDetail?.goals || undefined,
+      challenges: projectDetail?.challenges || undefined,
+      solutions: projectDetail?.solutions || undefined,
+      lessons: projectDetail?.lessons || undefined,
+      // The data-driven Part list — ProjectTabs renders tabs from here.
+      parts: mapContentParts((projectDetail as any)?.parts),
       tags: basicProject.tags || [],
       year: basicProject.year,
 

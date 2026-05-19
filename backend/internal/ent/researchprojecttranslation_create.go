@@ -40,6 +40,14 @@ func (rptc *ResearchProjectTranslationCreate) SetTitle(s string) *ResearchProjec
 	return rptc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (rptc *ResearchProjectTranslationCreate) SetNillableTitle(s *string) *ResearchProjectTranslationCreate {
+	if s != nil {
+		rptc.SetTitle(*s)
+	}
+	return rptc
+}
+
 // SetLocation sets the "location" field.
 func (rptc *ResearchProjectTranslationCreate) SetLocation(s string) *ResearchProjectTranslationCreate {
 	rptc.mutation.SetLocation(s)
@@ -184,9 +192,6 @@ func (rptc *ResearchProjectTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := rptc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "ResearchProjectTranslation.title"`)}
-	}
 	if v, ok := rptc.mutation.Title(); ok {
 		if err := researchprojecttranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectTranslation.title": %w`, err)}
@@ -206,9 +211,6 @@ func (rptc *ResearchProjectTranslationCreate) check() error {
 		if err := researchprojecttranslation.FundingSourceValidator(v); err != nil {
 			return &ValidationError{Name: "funding_source", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectTranslation.funding_source": %w`, err)}
 		}
-	}
-	if _, ok := rptc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ResearchProjectTranslation.created_at"`)}
 	}
 	if len(rptc.mutation.ResearchProjectIDs()) == 0 {
 		return &ValidationError{Name: "research_project", err: errors.New(`ent: missing required edge "ResearchProjectTranslation.research_project"`)}

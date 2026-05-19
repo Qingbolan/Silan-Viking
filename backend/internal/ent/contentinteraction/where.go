@@ -829,6 +829,16 @@ func CreatedAtLTE(v time.Time) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.ContentInteraction) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.AndPredicates(predicates...))

@@ -40,6 +40,14 @@ func (bptc *BlogPostTranslationCreate) SetTitle(s string) *BlogPostTranslationCr
 	return bptc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (bptc *BlogPostTranslationCreate) SetNillableTitle(s *string) *BlogPostTranslationCreate {
+	if s != nil {
+		bptc.SetTitle(*s)
+	}
+	return bptc
+}
+
 // SetExcerpt sets the "excerpt" field.
 func (bptc *BlogPostTranslationCreate) SetExcerpt(s string) *BlogPostTranslationCreate {
 	bptc.mutation.SetExcerpt(s)
@@ -57,6 +65,14 @@ func (bptc *BlogPostTranslationCreate) SetNillableExcerpt(s *string) *BlogPostTr
 // SetContent sets the "content" field.
 func (bptc *BlogPostTranslationCreate) SetContent(s string) *BlogPostTranslationCreate {
 	bptc.mutation.SetContent(s)
+	return bptc
+}
+
+// SetNillableContent sets the "content" field if the given value is not nil.
+func (bptc *BlogPostTranslationCreate) SetNillableContent(s *string) *BlogPostTranslationCreate {
+	if s != nil {
+		bptc.SetContent(*s)
+	}
 	return bptc
 }
 
@@ -162,24 +178,10 @@ func (bptc *BlogPostTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "BlogPostTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := bptc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "BlogPostTranslation.title"`)}
-	}
 	if v, ok := bptc.mutation.Title(); ok {
 		if err := blogposttranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "BlogPostTranslation.title": %w`, err)}
 		}
-	}
-	if _, ok := bptc.mutation.Content(); !ok {
-		return &ValidationError{Name: "content", err: errors.New(`ent: missing required field "BlogPostTranslation.content"`)}
-	}
-	if v, ok := bptc.mutation.Content(); ok {
-		if err := blogposttranslation.ContentValidator(v); err != nil {
-			return &ValidationError{Name: "content", err: fmt.Errorf(`ent: validator failed for field "BlogPostTranslation.content": %w`, err)}
-		}
-	}
-	if _, ok := bptc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BlogPostTranslation.created_at"`)}
 	}
 	if len(bptc.mutation.BlogPostIDs()) == 0 {
 		return &ValidationError{Name: "blog_post", err: errors.New(`ent: missing required edge "BlogPostTranslation.blog_post"`)}

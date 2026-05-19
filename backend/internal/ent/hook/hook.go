@@ -104,30 +104,6 @@ func (f BlogPostTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlogPostTranslationMutation", m)
 }
 
-// The BlogSeriesFunc type is an adapter to allow the use of ordinary
-// function as BlogSeries mutator.
-type BlogSeriesFunc func(context.Context, *ent.BlogSeriesMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f BlogSeriesFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BlogSeriesMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlogSeriesMutation", m)
-}
-
-// The BlogSeriesTranslationFunc type is an adapter to allow the use of ordinary
-// function as BlogSeriesTranslation mutator.
-type BlogSeriesTranslationFunc func(context.Context, *ent.BlogSeriesTranslationMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f BlogSeriesTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BlogSeriesTranslationMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlogSeriesTranslationMutation", m)
-}
-
 // The BlogTagFunc type is an adapter to allow the use of ordinary
 // function as BlogTag mutator.
 type BlogTagFunc func(context.Context, *ent.BlogTagMutation) (ent.Value, error)

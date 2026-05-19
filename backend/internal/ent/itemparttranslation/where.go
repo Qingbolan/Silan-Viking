@@ -270,6 +270,16 @@ func BodyHasSuffix(v string) predicate.ItemPartTranslation {
 	return predicate.ItemPartTranslation(sql.FieldHasSuffix(FieldBody, v))
 }
 
+// BodyIsNil applies the IsNil predicate on the "body" field.
+func BodyIsNil() predicate.ItemPartTranslation {
+	return predicate.ItemPartTranslation(sql.FieldIsNull(FieldBody))
+}
+
+// BodyNotNil applies the NotNil predicate on the "body" field.
+func BodyNotNil() predicate.ItemPartTranslation {
+	return predicate.ItemPartTranslation(sql.FieldNotNull(FieldBody))
+}
+
 // BodyEqualFold applies the EqualFold predicate on the "body" field.
 func BodyEqualFold(v string) predicate.ItemPartTranslation {
 	return predicate.ItemPartTranslation(sql.FieldEqualFold(FieldBody, v))
@@ -318,6 +328,16 @@ func CreatedAtLT(v time.Time) predicate.ItemPartTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.ItemPartTranslation {
 	return predicate.ItemPartTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.ItemPartTranslation {
+	return predicate.ItemPartTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.ItemPartTranslation {
+	return predicate.ItemPartTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasItemPart applies the HasEdge predicate on the "item_part" edge.

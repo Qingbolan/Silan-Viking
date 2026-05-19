@@ -48,16 +48,8 @@ func (Project) Fields() []ent.Field {
 		field.Enum("status").
 			Values("active", "completed", "paused", "cancelled").
 			Default("active"),
-		field.Time("start_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
-		field.Time("end_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
+		field.String("start_date").Optional(),
+		field.String("end_date").Optional(),
 		field.String("github_url").
 			Optional().
 			MaxLen(500),
@@ -86,11 +78,13 @@ func (Project) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -98,10 +92,6 @@ func (Project) Fields() []ent.Field {
 // Edges of the Project.
 func (Project) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("projects").
-			Field("user_id").
-			Unique(),
 		edge.To("translations", ProjectTranslation.Type),
 		edge.To("technologies", ProjectTechnology.Type),
 		edge.To("details", ProjectDetail.Type).

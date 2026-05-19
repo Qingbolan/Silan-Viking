@@ -30,12 +30,6 @@ type BlogPostTag func(*sql.Selector)
 // BlogPostTranslation is the predicate function for blogposttranslation builders.
 type BlogPostTranslation func(*sql.Selector)
 
-// BlogSeries is the predicate function for blogseries builders.
-type BlogSeries func(*sql.Selector)
-
-// BlogSeriesTranslation is the predicate function for blogseriestranslation builders.
-type BlogSeriesTranslation func(*sql.Selector)
-
 // BlogTag is the predicate function for blogtag builders.
 type BlogTag func(*sql.Selector)
 

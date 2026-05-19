@@ -37,11 +37,7 @@ func (Award) Fields() []ent.Field {
 		field.String("awarding_organization").
 			MaxLen(200).
 			NotEmpty(),
-		field.Time("award_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
+		field.String("award_date").Optional(),
 		field.String("award_type").
 			Optional().
 			MaxLen(50),
@@ -56,9 +52,11 @@ func (Award) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -66,11 +64,6 @@ func (Award) Fields() []ent.Field {
 // Edges of the Award.
 func (Award) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("awards").
-			Field("user_id").
-			Required().
-			Unique(),
 		edge.To("translations", AwardTranslation.Type),
 	}
 }

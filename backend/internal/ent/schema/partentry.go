@@ -47,6 +47,7 @@ func (PartEntry) Fields() []ent.Field {
 		field.JSON("shared_payload", map[string]any{}),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

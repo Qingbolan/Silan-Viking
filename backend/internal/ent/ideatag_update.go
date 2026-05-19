@@ -63,6 +63,12 @@ func (itu *IdeaTagUpdate) SetUpdatedAt(t time.Time) *IdeaTagUpdate {
 	return itu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (itu *IdeaTagUpdate) ClearUpdatedAt() *IdeaTagUpdate {
+	itu.mutation.ClearUpdatedAt()
+	return itu
+}
+
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
 func (itu *IdeaTagUpdate) AddIdeaIDs(ids ...string) *IdeaTagUpdate {
 	itu.mutation.AddIdeaIDs(ids...)
@@ -134,7 +140,7 @@ func (itu *IdeaTagUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (itu *IdeaTagUpdate) defaults() {
-	if _, ok := itu.mutation.UpdatedAt(); !ok {
+	if _, ok := itu.mutation.UpdatedAt(); !ok && !itu.mutation.UpdatedAtCleared() {
 		v := ideatag.UpdateDefaultUpdatedAt()
 		itu.mutation.SetUpdatedAt(v)
 	}
@@ -173,8 +179,14 @@ func (itu *IdeaTagUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := itu.mutation.Slug(); ok {
 		_spec.SetField(ideatag.FieldSlug, field.TypeString, value)
 	}
+	if itu.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideatag.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := itu.mutation.UpdatedAt(); ok {
 		_spec.SetField(ideatag.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if itu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(ideatag.FieldUpdatedAt, field.TypeTime)
 	}
 	if itu.mutation.IdeasCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -275,6 +287,12 @@ func (ituo *IdeaTagUpdateOne) SetUpdatedAt(t time.Time) *IdeaTagUpdateOne {
 	return ituo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (ituo *IdeaTagUpdateOne) ClearUpdatedAt() *IdeaTagUpdateOne {
+	ituo.mutation.ClearUpdatedAt()
+	return ituo
+}
+
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by IDs.
 func (ituo *IdeaTagUpdateOne) AddIdeaIDs(ids ...string) *IdeaTagUpdateOne {
 	ituo.mutation.AddIdeaIDs(ids...)
@@ -359,7 +377,7 @@ func (ituo *IdeaTagUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ituo *IdeaTagUpdateOne) defaults() {
-	if _, ok := ituo.mutation.UpdatedAt(); !ok {
+	if _, ok := ituo.mutation.UpdatedAt(); !ok && !ituo.mutation.UpdatedAtCleared() {
 		v := ideatag.UpdateDefaultUpdatedAt()
 		ituo.mutation.SetUpdatedAt(v)
 	}
@@ -415,8 +433,14 @@ func (ituo *IdeaTagUpdateOne) sqlSave(ctx context.Context) (_node *IdeaTag, err 
 	if value, ok := ituo.mutation.Slug(); ok {
 		_spec.SetField(ideatag.FieldSlug, field.TypeString, value)
 	}
+	if ituo.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideatag.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := ituo.mutation.UpdatedAt(); ok {
 		_spec.SetField(ideatag.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ituo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(ideatag.FieldUpdatedAt, field.TypeTime)
 	}
 	if ituo.mutation.IdeasCleared() {
 		edge := &sqlgraph.EdgeSpec{

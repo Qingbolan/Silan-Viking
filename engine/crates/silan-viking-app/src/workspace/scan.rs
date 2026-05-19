@@ -614,7 +614,10 @@ mod tests {
         let paths: Vec<&str> = out.iter().map(|a| a.rel_path.as_str()).collect();
         assert_eq!(
             paths,
-            ["blog/my-post/assets/cover.png", "blog/my-post/assets/diagrams/flow.svg"],
+            [
+                "blog/my-post/assets/cover.png",
+                "blog/my-post/assets/diagrams/flow.svg"
+            ],
             "only the two images, addressed by their path below resources/"
         );
         let _ = std::fs::remove_dir_all(&root);

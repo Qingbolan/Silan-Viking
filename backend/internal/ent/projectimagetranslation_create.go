@@ -169,9 +169,6 @@ func (pitc *ProjectImageTranslationCreate) check() error {
 			return &ValidationError{Name: "alt_text", err: fmt.Errorf(`ent: validator failed for field "ProjectImageTranslation.alt_text": %w`, err)}
 		}
 	}
-	if _, ok := pitc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectImageTranslation.created_at"`)}
-	}
 	if len(pitc.mutation.ProjectImageIDs()) == 0 {
 		return &ValidationError{Name: "project_image", err: errors.New(`ent: missing required edge "ProjectImageTranslation.project_image"`)}
 	}

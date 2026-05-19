@@ -294,6 +294,12 @@ func (cu *CommentUpdate) SetUpdatedAt(t time.Time) *CommentUpdate {
 	return cu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (cu *CommentUpdate) ClearUpdatedAt() *CommentUpdate {
+	cu.mutation.ClearUpdatedAt()
+	return cu
+}
+
 // SetParent sets the "parent" edge to the Comment entity.
 func (cu *CommentUpdate) SetParent(c *Comment) *CommentUpdate {
 	return cu.SetParentID(c.ID)
@@ -387,7 +393,7 @@ func (cu *CommentUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cu *CommentUpdate) defaults() {
-	if _, ok := cu.mutation.UpdatedAt(); !ok {
+	if _, ok := cu.mutation.UpdatedAt(); !ok && !cu.mutation.UpdatedAtCleared() {
 		v := comment.UpdateDefaultUpdatedAt()
 		cu.mutation.SetUpdatedAt(v)
 	}
@@ -517,8 +523,14 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cu.mutation.AddedLikesCount(); ok {
 		_spec.AddField(comment.FieldLikesCount, field.TypeInt, value)
 	}
+	if cu.mutation.CreatedAtCleared() {
+		_spec.ClearField(comment.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := cu.mutation.UpdatedAt(); ok {
 		_spec.SetField(comment.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if cu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(comment.FieldUpdatedAt, field.TypeTime)
 	}
 	if cu.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -908,6 +920,12 @@ func (cuo *CommentUpdateOne) SetUpdatedAt(t time.Time) *CommentUpdateOne {
 	return cuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (cuo *CommentUpdateOne) ClearUpdatedAt() *CommentUpdateOne {
+	cuo.mutation.ClearUpdatedAt()
+	return cuo
+}
+
 // SetParent sets the "parent" edge to the Comment entity.
 func (cuo *CommentUpdateOne) SetParent(c *Comment) *CommentUpdateOne {
 	return cuo.SetParentID(c.ID)
@@ -1014,7 +1032,7 @@ func (cuo *CommentUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cuo *CommentUpdateOne) defaults() {
-	if _, ok := cuo.mutation.UpdatedAt(); !ok {
+	if _, ok := cuo.mutation.UpdatedAt(); !ok && !cuo.mutation.UpdatedAtCleared() {
 		v := comment.UpdateDefaultUpdatedAt()
 		cuo.mutation.SetUpdatedAt(v)
 	}
@@ -1161,8 +1179,14 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 	if value, ok := cuo.mutation.AddedLikesCount(); ok {
 		_spec.AddField(comment.FieldLikesCount, field.TypeInt, value)
 	}
+	if cuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(comment.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := cuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(comment.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if cuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(comment.FieldUpdatedAt, field.TypeTime)
 	}
 	if cuo.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{

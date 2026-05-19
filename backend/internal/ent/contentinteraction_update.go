@@ -391,6 +391,9 @@ func (ciu *ContentInteractionUpdate) sqlSave(ctx context.Context) (n int, err er
 	if value, ok := ciu.mutation.AddedScrollProgress(); ok {
 		_spec.AddField(contentinteraction.FieldScrollProgress, field.TypeFloat64, value)
 	}
+	if ciu.mutation.CreatedAtCleared() {
+		_spec.ClearField(contentinteraction.FieldCreatedAt, field.TypeTime)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ciu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{contentinteraction.Label}
@@ -804,6 +807,9 @@ func (ciuo *ContentInteractionUpdateOne) sqlSave(ctx context.Context) (_node *Co
 	}
 	if value, ok := ciuo.mutation.AddedScrollProgress(); ok {
 		_spec.AddField(contentinteraction.FieldScrollProgress, field.TypeFloat64, value)
+	}
+	if ciuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(contentinteraction.FieldCreatedAt, field.TypeTime)
 	}
 	_node = &ContentInteraction{config: ciuo.config}
 	_spec.Assign = _node.assignValues

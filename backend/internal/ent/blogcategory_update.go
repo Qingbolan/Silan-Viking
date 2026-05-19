@@ -125,6 +125,12 @@ func (bcu *BlogCategoryUpdate) SetUpdatedAt(t time.Time) *BlogCategoryUpdate {
 	return bcu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (bcu *BlogCategoryUpdate) ClearUpdatedAt() *BlogCategoryUpdate {
+	bcu.mutation.ClearUpdatedAt()
+	return bcu
+}
+
 // AddTranslationIDs adds the "translations" edge to the BlogCategoryTranslation entity by IDs.
 func (bcu *BlogCategoryUpdate) AddTranslationIDs(ids ...string) *BlogCategoryUpdate {
 	bcu.mutation.AddTranslationIDs(ids...)
@@ -232,7 +238,7 @@ func (bcu *BlogCategoryUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bcu *BlogCategoryUpdate) defaults() {
-	if _, ok := bcu.mutation.UpdatedAt(); !ok {
+	if _, ok := bcu.mutation.UpdatedAt(); !ok && !bcu.mutation.UpdatedAtCleared() {
 		v := blogcategory.UpdateDefaultUpdatedAt()
 		bcu.mutation.SetUpdatedAt(v)
 	}
@@ -294,8 +300,14 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := bcu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(blogcategory.FieldSortOrder, field.TypeInt, value)
 	}
+	if bcu.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogcategory.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := bcu.mutation.UpdatedAt(); ok {
 		_spec.SetField(blogcategory.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if bcu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(blogcategory.FieldUpdatedAt, field.TypeTime)
 	}
 	if bcu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -502,6 +514,12 @@ func (bcuo *BlogCategoryUpdateOne) SetUpdatedAt(t time.Time) *BlogCategoryUpdate
 	return bcuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (bcuo *BlogCategoryUpdateOne) ClearUpdatedAt() *BlogCategoryUpdateOne {
+	bcuo.mutation.ClearUpdatedAt()
+	return bcuo
+}
+
 // AddTranslationIDs adds the "translations" edge to the BlogCategoryTranslation entity by IDs.
 func (bcuo *BlogCategoryUpdateOne) AddTranslationIDs(ids ...string) *BlogCategoryUpdateOne {
 	bcuo.mutation.AddTranslationIDs(ids...)
@@ -622,7 +640,7 @@ func (bcuo *BlogCategoryUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (bcuo *BlogCategoryUpdateOne) defaults() {
-	if _, ok := bcuo.mutation.UpdatedAt(); !ok {
+	if _, ok := bcuo.mutation.UpdatedAt(); !ok && !bcuo.mutation.UpdatedAtCleared() {
 		v := blogcategory.UpdateDefaultUpdatedAt()
 		bcuo.mutation.SetUpdatedAt(v)
 	}
@@ -701,8 +719,14 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 	if value, ok := bcuo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(blogcategory.FieldSortOrder, field.TypeInt, value)
 	}
+	if bcuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogcategory.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := bcuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(blogcategory.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if bcuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(blogcategory.FieldUpdatedAt, field.TypeTime)
 	}
 	if bcuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

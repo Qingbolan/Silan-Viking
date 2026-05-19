@@ -303,7 +303,9 @@ pub fn new_resume(
     // would be a duplicate heading. Scaffold a plain paragraph.
     fs::write(
         &md,
-        format!("{frontmatter}\nA short professional summary — written as plain prose, no heading.\n"),
+        format!(
+            "{frontmatter}\nA short professional summary — written as plain prose, no heading.\n"
+        ),
     )?;
     Ok(Scaffolded {
         files: vec![meta, md],

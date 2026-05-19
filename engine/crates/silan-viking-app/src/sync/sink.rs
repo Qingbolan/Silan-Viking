@@ -154,8 +154,8 @@ impl Sink for SqliteSink {
         // always matches the Entity, even for columns no row used this
         // sync); a non-Entity table is built from the observed columns.
         for (table, columns) in &table_columns {
-            let create_columns = silan_viking_entities::table_columns(table)
-                .unwrap_or_else(|| columns.clone());
+            let create_columns =
+                silan_viking_entities::table_columns(table).unwrap_or_else(|| columns.clone());
             create_table(&tx, table, &create_columns)?;
             // Replace, not append: a sync derives the whole table afresh.
             tx.execute(&format!("DELETE FROM \"{table}\""), [])?;
@@ -335,11 +335,9 @@ mod tests {
 
         let linked: String = sink
             .connection()
-            .query_row(
-                "SELECT parent_id FROM a_child WHERE id = 'c1'",
-                [],
-                |r| r.get(0),
-            )
+            .query_row("SELECT parent_id FROM a_child WHERE id = 'c1'", [], |r| {
+                r.get(0)
+            })
             .expect("child row present");
         assert_eq!(linked, "p1");
     }

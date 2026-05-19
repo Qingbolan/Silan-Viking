@@ -250,6 +250,16 @@ func CreatedAtLTE(v time.Time) predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.IdeaDetailTranslation {
+	return predicate.IdeaDetailTranslation(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasIdeaDetail applies the HasEdge predicate on the "idea_detail" edge.
 func HasIdeaDetail() predicate.IdeaDetailTranslation {
 	return predicate.IdeaDetailTranslation(func(s *sql.Selector) {

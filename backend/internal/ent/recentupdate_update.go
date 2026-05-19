@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/recentupdate"
 	"silan-backend/internal/ent/recentupdatetranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -148,16 +147,22 @@ func (ruu *RecentUpdateUpdate) ClearDescription() *RecentUpdateUpdate {
 }
 
 // SetDate sets the "date" field.
-func (ruu *RecentUpdateUpdate) SetDate(t time.Time) *RecentUpdateUpdate {
-	ruu.mutation.SetDate(t)
+func (ruu *RecentUpdateUpdate) SetDate(s string) *RecentUpdateUpdate {
+	ruu.mutation.SetDate(s)
 	return ruu
 }
 
 // SetNillableDate sets the "date" field if the given value is not nil.
-func (ruu *RecentUpdateUpdate) SetNillableDate(t *time.Time) *RecentUpdateUpdate {
-	if t != nil {
-		ruu.SetDate(*t)
+func (ruu *RecentUpdateUpdate) SetNillableDate(s *string) *RecentUpdateUpdate {
+	if s != nil {
+		ruu.SetDate(*s)
 	}
+	return ruu
+}
+
+// ClearDate clears the value of the "date" field.
+func (ruu *RecentUpdateUpdate) ClearDate() *RecentUpdateUpdate {
+	ruu.mutation.ClearDate()
 	return ruu
 }
 
@@ -446,11 +451,6 @@ func (ruu *RecentUpdateUpdate) ClearUpdatedAt() *RecentUpdateUpdate {
 	return ruu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (ruu *RecentUpdateUpdate) SetUser(u *User) *RecentUpdateUpdate {
-	return ruu.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by IDs.
 func (ruu *RecentUpdateUpdate) AddTranslationIDs(ids ...string) *RecentUpdateUpdate {
 	ruu.mutation.AddTranslationIDs(ids...)
@@ -469,12 +469,6 @@ func (ruu *RecentUpdateUpdate) AddTranslations(r ...*RecentUpdateTranslation) *R
 // Mutation returns the RecentUpdateMutation object of the builder.
 func (ruu *RecentUpdateUpdate) Mutation() *RecentUpdateMutation {
 	return ruu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (ruu *RecentUpdateUpdate) ClearUser() *RecentUpdateUpdate {
-	ruu.mutation.ClearUser()
-	return ruu
 }
 
 // ClearTranslations clears all "translations" edges to the RecentUpdateTranslation entity.
@@ -621,6 +615,12 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := ruu.mutation.UserID(); ok {
+		_spec.SetField(recentupdate.FieldUserID, field.TypeString, value)
+	}
+	if ruu.mutation.UserIDCleared() {
+		_spec.ClearField(recentupdate.FieldUserID, field.TypeString)
+	}
 	if value, ok := ruu.mutation.Slug(); ok {
 		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
 	}
@@ -646,7 +646,10 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.ClearField(recentupdate.FieldDescription, field.TypeString)
 	}
 	if value, ok := ruu.mutation.Date(); ok {
-		_spec.SetField(recentupdate.FieldDate, field.TypeTime, value)
+		_spec.SetField(recentupdate.FieldDate, field.TypeString, value)
+	}
+	if ruu.mutation.DateCleared() {
+		_spec.ClearField(recentupdate.FieldDate, field.TypeString)
 	}
 	if value, ok := ruu.mutation.Tags(); ok {
 		_spec.SetField(recentupdate.FieldTags, field.TypeJSON, value)
@@ -760,35 +763,6 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ruu.mutation.UpdatedAtCleared() {
 		_spec.ClearField(recentupdate.FieldUpdatedAt, field.TypeTime)
-	}
-	if ruu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   recentupdate.UserTable,
-			Columns: []string{recentupdate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   recentupdate.UserTable,
-			Columns: []string{recentupdate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if ruu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -972,16 +946,22 @@ func (ruuo *RecentUpdateUpdateOne) ClearDescription() *RecentUpdateUpdateOne {
 }
 
 // SetDate sets the "date" field.
-func (ruuo *RecentUpdateUpdateOne) SetDate(t time.Time) *RecentUpdateUpdateOne {
-	ruuo.mutation.SetDate(t)
+func (ruuo *RecentUpdateUpdateOne) SetDate(s string) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetDate(s)
 	return ruuo
 }
 
 // SetNillableDate sets the "date" field if the given value is not nil.
-func (ruuo *RecentUpdateUpdateOne) SetNillableDate(t *time.Time) *RecentUpdateUpdateOne {
-	if t != nil {
-		ruuo.SetDate(*t)
+func (ruuo *RecentUpdateUpdateOne) SetNillableDate(s *string) *RecentUpdateUpdateOne {
+	if s != nil {
+		ruuo.SetDate(*s)
 	}
+	return ruuo
+}
+
+// ClearDate clears the value of the "date" field.
+func (ruuo *RecentUpdateUpdateOne) ClearDate() *RecentUpdateUpdateOne {
+	ruuo.mutation.ClearDate()
 	return ruuo
 }
 
@@ -1270,11 +1250,6 @@ func (ruuo *RecentUpdateUpdateOne) ClearUpdatedAt() *RecentUpdateUpdateOne {
 	return ruuo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (ruuo *RecentUpdateUpdateOne) SetUser(u *User) *RecentUpdateUpdateOne {
-	return ruuo.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by IDs.
 func (ruuo *RecentUpdateUpdateOne) AddTranslationIDs(ids ...string) *RecentUpdateUpdateOne {
 	ruuo.mutation.AddTranslationIDs(ids...)
@@ -1293,12 +1268,6 @@ func (ruuo *RecentUpdateUpdateOne) AddTranslations(r ...*RecentUpdateTranslation
 // Mutation returns the RecentUpdateMutation object of the builder.
 func (ruuo *RecentUpdateUpdateOne) Mutation() *RecentUpdateMutation {
 	return ruuo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (ruuo *RecentUpdateUpdateOne) ClearUser() *RecentUpdateUpdateOne {
-	ruuo.mutation.ClearUser()
-	return ruuo
 }
 
 // ClearTranslations clears all "translations" edges to the RecentUpdateTranslation entity.
@@ -1475,6 +1444,12 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 			}
 		}
 	}
+	if value, ok := ruuo.mutation.UserID(); ok {
+		_spec.SetField(recentupdate.FieldUserID, field.TypeString, value)
+	}
+	if ruuo.mutation.UserIDCleared() {
+		_spec.ClearField(recentupdate.FieldUserID, field.TypeString)
+	}
 	if value, ok := ruuo.mutation.Slug(); ok {
 		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
 	}
@@ -1500,7 +1475,10 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 		_spec.ClearField(recentupdate.FieldDescription, field.TypeString)
 	}
 	if value, ok := ruuo.mutation.Date(); ok {
-		_spec.SetField(recentupdate.FieldDate, field.TypeTime, value)
+		_spec.SetField(recentupdate.FieldDate, field.TypeString, value)
+	}
+	if ruuo.mutation.DateCleared() {
+		_spec.ClearField(recentupdate.FieldDate, field.TypeString)
 	}
 	if value, ok := ruuo.mutation.Tags(); ok {
 		_spec.SetField(recentupdate.FieldTags, field.TypeJSON, value)
@@ -1614,35 +1592,6 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 	}
 	if ruuo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(recentupdate.FieldUpdatedAt, field.TypeTime)
-	}
-	if ruuo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   recentupdate.UserTable,
-			Columns: []string{recentupdate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ruuo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   recentupdate.UserTable,
-			Columns: []string{recentupdate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if ruuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

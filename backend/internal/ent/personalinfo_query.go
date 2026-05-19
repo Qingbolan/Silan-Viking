@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/sociallink"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -26,7 +25,6 @@ type PersonalInfoQuery struct {
 	order            []personalinfo.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.PersonalInfo
-	withUser         *UserQuery
 	withTranslations *PersonalInfoTranslationQuery
 	withSocialLinks  *SocialLinkQuery
 	// intermediate query (i.e. traversal path).
@@ -63,28 +61,6 @@ func (piq *PersonalInfoQuery) Unique(unique bool) *PersonalInfoQuery {
 func (piq *PersonalInfoQuery) Order(o ...personalinfo.OrderOption) *PersonalInfoQuery {
 	piq.order = append(piq.order, o...)
 	return piq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (piq *PersonalInfoQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: piq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := piq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := piq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(personalinfo.Table, personalinfo.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, personalinfo.UserTable, personalinfo.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(piq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -323,24 +299,12 @@ func (piq *PersonalInfoQuery) Clone() *PersonalInfoQuery {
 		order:            append([]personalinfo.OrderOption{}, piq.order...),
 		inters:           append([]Interceptor{}, piq.inters...),
 		predicates:       append([]predicate.PersonalInfo{}, piq.predicates...),
-		withUser:         piq.withUser.Clone(),
 		withTranslations: piq.withTranslations.Clone(),
 		withSocialLinks:  piq.withSocialLinks.Clone(),
 		// clone intermediate query.
 		sql:  piq.sql.Clone(),
 		path: piq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (piq *PersonalInfoQuery) WithUser(opts ...func(*UserQuery)) *PersonalInfoQuery {
-	query := (&UserClient{config: piq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	piq.withUser = query
-	return piq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -443,8 +407,7 @@ func (piq *PersonalInfoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	var (
 		nodes       = []*PersonalInfo{}
 		_spec       = piq.querySpec()
-		loadedTypes = [3]bool{
-			piq.withUser != nil,
+		loadedTypes = [2]bool{
 			piq.withTranslations != nil,
 			piq.withSocialLinks != nil,
 		}
@@ -467,12 +430,6 @@ func (piq *PersonalInfoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := piq.withUser; query != nil {
-		if err := piq.loadUser(ctx, query, nodes, nil,
-			func(n *PersonalInfo, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := piq.withTranslations; query != nil {
 		if err := piq.loadTranslations(ctx, query, nodes,
 			func(n *PersonalInfo) { n.Edges.Translations = []*PersonalInfoTranslation{} },
@@ -492,35 +449,6 @@ func (piq *PersonalInfoQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	return nodes, nil
 }
 
-func (piq *PersonalInfoQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*PersonalInfo, init func(*PersonalInfo), assign func(*PersonalInfo, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*PersonalInfo)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (piq *PersonalInfoQuery) loadTranslations(ctx context.Context, query *PersonalInfoTranslationQuery, nodes []*PersonalInfo, init func(*PersonalInfo), assign func(*PersonalInfo, *PersonalInfoTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*PersonalInfo)
@@ -606,9 +534,6 @@ func (piq *PersonalInfoQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != personalinfo.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if piq.withUser != nil {
-			_spec.Node.AddColumnOnce(personalinfo.FieldUserID)
 		}
 	}
 	if ps := piq.predicates; len(ps) > 0 {

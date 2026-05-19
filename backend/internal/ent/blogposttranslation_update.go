@@ -71,6 +71,12 @@ func (bptu *BlogPostTranslationUpdate) SetNillableTitle(s *string) *BlogPostTran
 	return bptu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (bptu *BlogPostTranslationUpdate) ClearTitle() *BlogPostTranslationUpdate {
+	bptu.mutation.ClearTitle()
+	return bptu
+}
+
 // SetExcerpt sets the "excerpt" field.
 func (bptu *BlogPostTranslationUpdate) SetExcerpt(s string) *BlogPostTranslationUpdate {
 	bptu.mutation.SetExcerpt(s)
@@ -102,6 +108,12 @@ func (bptu *BlogPostTranslationUpdate) SetNillableContent(s *string) *BlogPostTr
 	if s != nil {
 		bptu.SetContent(*s)
 	}
+	return bptu
+}
+
+// ClearContent clears the value of the "content" field.
+func (bptu *BlogPostTranslationUpdate) ClearContent() *BlogPostTranslationUpdate {
+	bptu.mutation.ClearContent()
 	return bptu
 }
 
@@ -177,11 +189,6 @@ func (bptu *BlogPostTranslationUpdate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "BlogPostTranslation.title": %w`, err)}
 		}
 	}
-	if v, ok := bptu.mutation.Content(); ok {
-		if err := blogposttranslation.ContentValidator(v); err != nil {
-			return &ValidationError{Name: "content", err: fmt.Errorf(`ent: validator failed for field "BlogPostTranslation.content": %w`, err)}
-		}
-	}
 	if bptu.mutation.BlogPostCleared() && len(bptu.mutation.BlogPostIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "BlogPostTranslation.blog_post"`)
 	}
@@ -206,6 +213,9 @@ func (bptu *BlogPostTranslationUpdate) sqlSave(ctx context.Context) (n int, err 
 	if value, ok := bptu.mutation.Title(); ok {
 		_spec.SetField(blogposttranslation.FieldTitle, field.TypeString, value)
 	}
+	if bptu.mutation.TitleCleared() {
+		_spec.ClearField(blogposttranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := bptu.mutation.Excerpt(); ok {
 		_spec.SetField(blogposttranslation.FieldExcerpt, field.TypeString, value)
 	}
@@ -214,6 +224,12 @@ func (bptu *BlogPostTranslationUpdate) sqlSave(ctx context.Context) (n int, err 
 	}
 	if value, ok := bptu.mutation.Content(); ok {
 		_spec.SetField(blogposttranslation.FieldContent, field.TypeString, value)
+	}
+	if bptu.mutation.ContentCleared() {
+		_spec.ClearField(blogposttranslation.FieldContent, field.TypeString)
+	}
+	if bptu.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogposttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if bptu.mutation.BlogPostCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -335,6 +351,12 @@ func (bptuo *BlogPostTranslationUpdateOne) SetNillableTitle(s *string) *BlogPost
 	return bptuo
 }
 
+// ClearTitle clears the value of the "title" field.
+func (bptuo *BlogPostTranslationUpdateOne) ClearTitle() *BlogPostTranslationUpdateOne {
+	bptuo.mutation.ClearTitle()
+	return bptuo
+}
+
 // SetExcerpt sets the "excerpt" field.
 func (bptuo *BlogPostTranslationUpdateOne) SetExcerpt(s string) *BlogPostTranslationUpdateOne {
 	bptuo.mutation.SetExcerpt(s)
@@ -366,6 +388,12 @@ func (bptuo *BlogPostTranslationUpdateOne) SetNillableContent(s *string) *BlogPo
 	if s != nil {
 		bptuo.SetContent(*s)
 	}
+	return bptuo
+}
+
+// ClearContent clears the value of the "content" field.
+func (bptuo *BlogPostTranslationUpdateOne) ClearContent() *BlogPostTranslationUpdateOne {
+	bptuo.mutation.ClearContent()
 	return bptuo
 }
 
@@ -454,11 +482,6 @@ func (bptuo *BlogPostTranslationUpdateOne) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "BlogPostTranslation.title": %w`, err)}
 		}
 	}
-	if v, ok := bptuo.mutation.Content(); ok {
-		if err := blogposttranslation.ContentValidator(v); err != nil {
-			return &ValidationError{Name: "content", err: fmt.Errorf(`ent: validator failed for field "BlogPostTranslation.content": %w`, err)}
-		}
-	}
 	if bptuo.mutation.BlogPostCleared() && len(bptuo.mutation.BlogPostIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "BlogPostTranslation.blog_post"`)
 	}
@@ -500,6 +523,9 @@ func (bptuo *BlogPostTranslationUpdateOne) sqlSave(ctx context.Context) (_node *
 	if value, ok := bptuo.mutation.Title(); ok {
 		_spec.SetField(blogposttranslation.FieldTitle, field.TypeString, value)
 	}
+	if bptuo.mutation.TitleCleared() {
+		_spec.ClearField(blogposttranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := bptuo.mutation.Excerpt(); ok {
 		_spec.SetField(blogposttranslation.FieldExcerpt, field.TypeString, value)
 	}
@@ -508,6 +534,12 @@ func (bptuo *BlogPostTranslationUpdateOne) sqlSave(ctx context.Context) (_node *
 	}
 	if value, ok := bptuo.mutation.Content(); ok {
 		_spec.SetField(blogposttranslation.FieldContent, field.TypeString, value)
+	}
+	if bptuo.mutation.ContentCleared() {
+		_spec.ClearField(blogposttranslation.FieldContent, field.TypeString)
+	}
+	if bptuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(blogposttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if bptuo.mutation.BlogPostCleared() {
 		edge := &sqlgraph.EdgeSpec{

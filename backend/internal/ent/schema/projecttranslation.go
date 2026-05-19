@@ -36,7 +36,7 @@ func (ProjectTranslation) Fields() []ent.Field {
 			StorageKey("language_code"),
 		field.String("title").
 			MaxLen(300).
-			NotEmpty(),
+			Optional(),
 		field.Text("description").
 			Optional(),
 		field.String("project_type").
@@ -44,6 +44,7 @@ func (ProjectTranslation) Fields() []ent.Field {
 			MaxLen(50),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

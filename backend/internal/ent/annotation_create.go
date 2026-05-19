@@ -201,12 +201,6 @@ func (ac *AnnotationCreate) check() error {
 			return &ValidationError{Name: "author_kind", err: fmt.Errorf(`ent: validator failed for field "Annotation.author_kind": %w`, err)}
 		}
 	}
-	if _, ok := ac.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Annotation.created_at"`)}
-	}
-	if _, ok := ac.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Annotation.updated_at"`)}
-	}
 	return nil
 }
 

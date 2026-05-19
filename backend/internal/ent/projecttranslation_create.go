@@ -40,6 +40,14 @@ func (ptc *ProjectTranslationCreate) SetTitle(s string) *ProjectTranslationCreat
 	return ptc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (ptc *ProjectTranslationCreate) SetNillableTitle(s *string) *ProjectTranslationCreate {
+	if s != nil {
+		ptc.SetTitle(*s)
+	}
+	return ptc
+}
+
 // SetDescription sets the "description" field.
 func (ptc *ProjectTranslationCreate) SetDescription(s string) *ProjectTranslationCreate {
 	ptc.mutation.SetDescription(s)
@@ -170,9 +178,6 @@ func (ptc *ProjectTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "ProjectTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := ptc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "ProjectTranslation.title"`)}
-	}
 	if v, ok := ptc.mutation.Title(); ok {
 		if err := projecttranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "ProjectTranslation.title": %w`, err)}
@@ -182,9 +187,6 @@ func (ptc *ProjectTranslationCreate) check() error {
 		if err := projecttranslation.ProjectTypeValidator(v); err != nil {
 			return &ValidationError{Name: "project_type", err: fmt.Errorf(`ent: validator failed for field "ProjectTranslation.project_type": %w`, err)}
 		}
-	}
-	if _, ok := ptc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectTranslation.created_at"`)}
 	}
 	if len(ptc.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectTranslation.project"`)}

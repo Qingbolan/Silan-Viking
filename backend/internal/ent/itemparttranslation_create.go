@@ -39,6 +39,14 @@ func (iptc *ItemPartTranslationCreate) SetBody(s string) *ItemPartTranslationCre
 	return iptc
 }
 
+// SetNillableBody sets the "body" field if the given value is not nil.
+func (iptc *ItemPartTranslationCreate) SetNillableBody(s *string) *ItemPartTranslationCreate {
+	if s != nil {
+		iptc.SetBody(*s)
+	}
+	return iptc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (iptc *ItemPartTranslationCreate) SetCreatedAt(t time.Time) *ItemPartTranslationCreate {
 	iptc.mutation.SetCreatedAt(t)
@@ -124,12 +132,6 @@ func (iptc *ItemPartTranslationCreate) check() error {
 	}
 	if _, ok := iptc.mutation.LanguageCode(); !ok {
 		return &ValidationError{Name: "language_code", err: errors.New(`ent: missing required field "ItemPartTranslation.language_code"`)}
-	}
-	if _, ok := iptc.mutation.Body(); !ok {
-		return &ValidationError{Name: "body", err: errors.New(`ent: missing required field "ItemPartTranslation.body"`)}
-	}
-	if _, ok := iptc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ItemPartTranslation.created_at"`)}
 	}
 	if len(iptc.mutation.ItemPartIDs()) == 0 {
 		return &ValidationError{Name: "item_part", err: errors.New(`ent: missing required edge "ItemPartTranslation.item_part"`)}

@@ -91,12 +91,12 @@ func ProjectType(v string) predicate.Project {
 }
 
 // StartDate applies equality check predicate on the "start_date" field. It's identical to StartDateEQ.
-func StartDate(v time.Time) predicate.Project {
+func StartDate(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldStartDate, v))
 }
 
 // EndDate applies equality check predicate on the "end_date" field. It's identical to EndDateEQ.
-func EndDate(v time.Time) predicate.Project {
+func EndDate(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldEndDate, v))
 }
 
@@ -526,43 +526,58 @@ func StatusNotIn(vs ...Status) predicate.Project {
 }
 
 // StartDateEQ applies the EQ predicate on the "start_date" field.
-func StartDateEQ(v time.Time) predicate.Project {
+func StartDateEQ(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldStartDate, v))
 }
 
 // StartDateNEQ applies the NEQ predicate on the "start_date" field.
-func StartDateNEQ(v time.Time) predicate.Project {
+func StartDateNEQ(v string) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldStartDate, v))
 }
 
 // StartDateIn applies the In predicate on the "start_date" field.
-func StartDateIn(vs ...time.Time) predicate.Project {
+func StartDateIn(vs ...string) predicate.Project {
 	return predicate.Project(sql.FieldIn(FieldStartDate, vs...))
 }
 
 // StartDateNotIn applies the NotIn predicate on the "start_date" field.
-func StartDateNotIn(vs ...time.Time) predicate.Project {
+func StartDateNotIn(vs ...string) predicate.Project {
 	return predicate.Project(sql.FieldNotIn(FieldStartDate, vs...))
 }
 
 // StartDateGT applies the GT predicate on the "start_date" field.
-func StartDateGT(v time.Time) predicate.Project {
+func StartDateGT(v string) predicate.Project {
 	return predicate.Project(sql.FieldGT(FieldStartDate, v))
 }
 
 // StartDateGTE applies the GTE predicate on the "start_date" field.
-func StartDateGTE(v time.Time) predicate.Project {
+func StartDateGTE(v string) predicate.Project {
 	return predicate.Project(sql.FieldGTE(FieldStartDate, v))
 }
 
 // StartDateLT applies the LT predicate on the "start_date" field.
-func StartDateLT(v time.Time) predicate.Project {
+func StartDateLT(v string) predicate.Project {
 	return predicate.Project(sql.FieldLT(FieldStartDate, v))
 }
 
 // StartDateLTE applies the LTE predicate on the "start_date" field.
-func StartDateLTE(v time.Time) predicate.Project {
+func StartDateLTE(v string) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldStartDate, v))
+}
+
+// StartDateContains applies the Contains predicate on the "start_date" field.
+func StartDateContains(v string) predicate.Project {
+	return predicate.Project(sql.FieldContains(FieldStartDate, v))
+}
+
+// StartDateHasPrefix applies the HasPrefix predicate on the "start_date" field.
+func StartDateHasPrefix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasPrefix(FieldStartDate, v))
+}
+
+// StartDateHasSuffix applies the HasSuffix predicate on the "start_date" field.
+func StartDateHasSuffix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasSuffix(FieldStartDate, v))
 }
 
 // StartDateIsNil applies the IsNil predicate on the "start_date" field.
@@ -575,44 +590,69 @@ func StartDateNotNil() predicate.Project {
 	return predicate.Project(sql.FieldNotNull(FieldStartDate))
 }
 
+// StartDateEqualFold applies the EqualFold predicate on the "start_date" field.
+func StartDateEqualFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldEqualFold(FieldStartDate, v))
+}
+
+// StartDateContainsFold applies the ContainsFold predicate on the "start_date" field.
+func StartDateContainsFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldContainsFold(FieldStartDate, v))
+}
+
 // EndDateEQ applies the EQ predicate on the "end_date" field.
-func EndDateEQ(v time.Time) predicate.Project {
+func EndDateEQ(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldEndDate, v))
 }
 
 // EndDateNEQ applies the NEQ predicate on the "end_date" field.
-func EndDateNEQ(v time.Time) predicate.Project {
+func EndDateNEQ(v string) predicate.Project {
 	return predicate.Project(sql.FieldNEQ(FieldEndDate, v))
 }
 
 // EndDateIn applies the In predicate on the "end_date" field.
-func EndDateIn(vs ...time.Time) predicate.Project {
+func EndDateIn(vs ...string) predicate.Project {
 	return predicate.Project(sql.FieldIn(FieldEndDate, vs...))
 }
 
 // EndDateNotIn applies the NotIn predicate on the "end_date" field.
-func EndDateNotIn(vs ...time.Time) predicate.Project {
+func EndDateNotIn(vs ...string) predicate.Project {
 	return predicate.Project(sql.FieldNotIn(FieldEndDate, vs...))
 }
 
 // EndDateGT applies the GT predicate on the "end_date" field.
-func EndDateGT(v time.Time) predicate.Project {
+func EndDateGT(v string) predicate.Project {
 	return predicate.Project(sql.FieldGT(FieldEndDate, v))
 }
 
 // EndDateGTE applies the GTE predicate on the "end_date" field.
-func EndDateGTE(v time.Time) predicate.Project {
+func EndDateGTE(v string) predicate.Project {
 	return predicate.Project(sql.FieldGTE(FieldEndDate, v))
 }
 
 // EndDateLT applies the LT predicate on the "end_date" field.
-func EndDateLT(v time.Time) predicate.Project {
+func EndDateLT(v string) predicate.Project {
 	return predicate.Project(sql.FieldLT(FieldEndDate, v))
 }
 
 // EndDateLTE applies the LTE predicate on the "end_date" field.
-func EndDateLTE(v time.Time) predicate.Project {
+func EndDateLTE(v string) predicate.Project {
 	return predicate.Project(sql.FieldLTE(FieldEndDate, v))
+}
+
+// EndDateContains applies the Contains predicate on the "end_date" field.
+func EndDateContains(v string) predicate.Project {
+	return predicate.Project(sql.FieldContains(FieldEndDate, v))
+}
+
+// EndDateHasPrefix applies the HasPrefix predicate on the "end_date" field.
+func EndDateHasPrefix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasPrefix(FieldEndDate, v))
+}
+
+// EndDateHasSuffix applies the HasSuffix predicate on the "end_date" field.
+func EndDateHasSuffix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasSuffix(FieldEndDate, v))
 }
 
 // EndDateIsNil applies the IsNil predicate on the "end_date" field.
@@ -623,6 +663,16 @@ func EndDateIsNil() predicate.Project {
 // EndDateNotNil applies the NotNil predicate on the "end_date" field.
 func EndDateNotNil() predicate.Project {
 	return predicate.Project(sql.FieldNotNull(FieldEndDate))
+}
+
+// EndDateEqualFold applies the EqualFold predicate on the "end_date" field.
+func EndDateEqualFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldEqualFold(FieldEndDate, v))
+}
+
+// EndDateContainsFold applies the ContainsFold predicate on the "end_date" field.
+func EndDateContainsFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldContainsFold(FieldEndDate, v))
 }
 
 // GithubURLEQ applies the EQ predicate on the "github_url" field.
@@ -1173,29 +1223,6 @@ func UpdatedAtIsNil() predicate.Project {
 // UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
 func UpdatedAtNotNil() predicate.Project {
 	return predicate.Project(sql.FieldNotNull(FieldUpdatedAt))
-}
-
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.Project {
-	return predicate.Project(func(s *sql.Selector) {
-		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // HasTranslations applies the HasEdge predicate on the "translations" edge.

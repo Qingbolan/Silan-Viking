@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/awardtranslation"
 	"silan-backend/internal/ent/blogcategorytranslation"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseriestranslation"
 	"silan-backend/internal/ent/educationdetailtranslation"
 	"silan-backend/internal/ent/educationtranslation"
 	"silan-backend/internal/ent/ideadetailtranslation"
@@ -51,7 +50,6 @@ type LanguageQuery struct {
 	withProjectImageTranslations          *ProjectImageTranslationQuery
 	withBlogCategoryTranslations          *BlogCategoryTranslationQuery
 	withBlogPostTranslations              *BlogPostTranslationQuery
-	withBlogSeriesTranslations            *BlogSeriesTranslationQuery
 	withIdeaTranslations                  *IdeaTranslationQuery
 	withIdeaDetailTranslations            *IdeaDetailTranslationQuery
 	withResearchProjectTranslations       *ResearchProjectTranslationQuery
@@ -308,28 +306,6 @@ func (lq *LanguageQuery) QueryBlogPostTranslations() *BlogPostTranslationQuery {
 			sqlgraph.From(language.Table, language.FieldID, selector),
 			sqlgraph.To(blogposttranslation.Table, blogposttranslation.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, language.BlogPostTranslationsTable, language.BlogPostTranslationsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryBlogSeriesTranslations chains the current query on the "blog_series_translations" edge.
-func (lq *LanguageQuery) QueryBlogSeriesTranslations() *BlogSeriesTranslationQuery {
-	query := (&BlogSeriesTranslationClient{config: lq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := lq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := lq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(language.Table, language.FieldID, selector),
-			sqlgraph.To(blogseriestranslation.Table, blogseriestranslation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, language.BlogSeriesTranslationsTable, language.BlogSeriesTranslationsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
 		return fromU, nil
@@ -693,7 +669,6 @@ func (lq *LanguageQuery) Clone() *LanguageQuery {
 		withProjectImageTranslations:          lq.withProjectImageTranslations.Clone(),
 		withBlogCategoryTranslations:          lq.withBlogCategoryTranslations.Clone(),
 		withBlogPostTranslations:              lq.withBlogPostTranslations.Clone(),
-		withBlogSeriesTranslations:            lq.withBlogSeriesTranslations.Clone(),
 		withIdeaTranslations:                  lq.withIdeaTranslations.Clone(),
 		withIdeaDetailTranslations:            lq.withIdeaDetailTranslations.Clone(),
 		withResearchProjectTranslations:       lq.withResearchProjectTranslations.Clone(),
@@ -814,17 +789,6 @@ func (lq *LanguageQuery) WithBlogPostTranslations(opts ...func(*BlogPostTranslat
 		opt(query)
 	}
 	lq.withBlogPostTranslations = query
-	return lq
-}
-
-// WithBlogSeriesTranslations tells the query-builder to eager-load the nodes that are connected to
-// the "blog_series_translations" edge. The optional arguments are used to configure the query builder of the edge.
-func (lq *LanguageQuery) WithBlogSeriesTranslations(opts ...func(*BlogSeriesTranslationQuery)) *LanguageQuery {
-	query := (&BlogSeriesTranslationClient{config: lq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	lq.withBlogSeriesTranslations = query
 	return lq
 }
 
@@ -983,7 +947,7 @@ func (lq *LanguageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lan
 	var (
 		nodes       = []*Language{}
 		_spec       = lq.querySpec()
-		loadedTypes = [18]bool{
+		loadedTypes = [17]bool{
 			lq.withPersonalInfoTranslations != nil,
 			lq.withEducationTranslations != nil,
 			lq.withEducationDetailTranslations != nil,
@@ -994,7 +958,6 @@ func (lq *LanguageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lan
 			lq.withProjectImageTranslations != nil,
 			lq.withBlogCategoryTranslations != nil,
 			lq.withBlogPostTranslations != nil,
-			lq.withBlogSeriesTranslations != nil,
 			lq.withIdeaTranslations != nil,
 			lq.withIdeaDetailTranslations != nil,
 			lq.withResearchProjectTranslations != nil,
@@ -1108,15 +1071,6 @@ func (lq *LanguageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lan
 			func(n *Language) { n.Edges.BlogPostTranslations = []*BlogPostTranslation{} },
 			func(n *Language, e *BlogPostTranslation) {
 				n.Edges.BlogPostTranslations = append(n.Edges.BlogPostTranslations, e)
-			}); err != nil {
-			return nil, err
-		}
-	}
-	if query := lq.withBlogSeriesTranslations; query != nil {
-		if err := lq.loadBlogSeriesTranslations(ctx, query, nodes,
-			func(n *Language) { n.Edges.BlogSeriesTranslations = []*BlogSeriesTranslation{} },
-			func(n *Language, e *BlogSeriesTranslation) {
-				n.Edges.BlogSeriesTranslations = append(n.Edges.BlogSeriesTranslations, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -1470,36 +1424,6 @@ func (lq *LanguageQuery) loadBlogPostTranslations(ctx context.Context, query *Bl
 	}
 	query.Where(predicate.BlogPostTranslation(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(language.BlogPostTranslationsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.LanguageCode
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "language_code" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (lq *LanguageQuery) loadBlogSeriesTranslations(ctx context.Context, query *BlogSeriesTranslationQuery, nodes []*Language, init func(*Language), assign func(*Language, *BlogSeriesTranslation)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Language)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(blogseriestranslation.FieldLanguageCode)
-	}
-	query.Where(predicate.BlogSeriesTranslation(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(language.BlogSeriesTranslationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

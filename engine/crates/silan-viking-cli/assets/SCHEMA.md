@@ -53,6 +53,13 @@ field_types:
 #   Each type declares `fields` (frontmatter fields) and `parts` (Part list).
 #   Field attributes: type / required / default / source / column.
 #   Part attributes:  role / required / order / shape (default prose).
+#
+#   The `parts` list is a RECOMMENDED set, not a closed whitelist. An agent
+#   may extend any Item with a Part whose role this SCHEMA does not name —
+#   a project `benchmark`, an idea `related-work`. An undeclared role gets
+#   the default `prose` shape and sorts after the declared Parts; a `required`
+#   Part must still be present. The frontend renders whatever Parts an Item
+#   actually has, so a new section needs no SCHEMA edit and no UI change.
 # ---------------------------------------------------------------------------
 types:
 

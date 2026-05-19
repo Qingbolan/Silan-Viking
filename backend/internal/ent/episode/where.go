@@ -86,7 +86,7 @@ func EpisodeNumber(v int) predicate.Episode {
 }
 
 // PublishedAt applies equality check predicate on the "published_at" field. It's identical to PublishedAtEQ.
-func PublishedAt(v time.Time) predicate.Episode {
+func PublishedAt(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldPublishedAt, v))
 }
 
@@ -391,43 +391,58 @@ func VisibilityNotIn(vs ...Visibility) predicate.Episode {
 }
 
 // PublishedAtEQ applies the EQ predicate on the "published_at" field.
-func PublishedAtEQ(v time.Time) predicate.Episode {
+func PublishedAtEQ(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldPublishedAt, v))
 }
 
 // PublishedAtNEQ applies the NEQ predicate on the "published_at" field.
-func PublishedAtNEQ(v time.Time) predicate.Episode {
+func PublishedAtNEQ(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldNEQ(FieldPublishedAt, v))
 }
 
 // PublishedAtIn applies the In predicate on the "published_at" field.
-func PublishedAtIn(vs ...time.Time) predicate.Episode {
+func PublishedAtIn(vs ...string) predicate.Episode {
 	return predicate.Episode(sql.FieldIn(FieldPublishedAt, vs...))
 }
 
 // PublishedAtNotIn applies the NotIn predicate on the "published_at" field.
-func PublishedAtNotIn(vs ...time.Time) predicate.Episode {
+func PublishedAtNotIn(vs ...string) predicate.Episode {
 	return predicate.Episode(sql.FieldNotIn(FieldPublishedAt, vs...))
 }
 
 // PublishedAtGT applies the GT predicate on the "published_at" field.
-func PublishedAtGT(v time.Time) predicate.Episode {
+func PublishedAtGT(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldGT(FieldPublishedAt, v))
 }
 
 // PublishedAtGTE applies the GTE predicate on the "published_at" field.
-func PublishedAtGTE(v time.Time) predicate.Episode {
+func PublishedAtGTE(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldGTE(FieldPublishedAt, v))
 }
 
 // PublishedAtLT applies the LT predicate on the "published_at" field.
-func PublishedAtLT(v time.Time) predicate.Episode {
+func PublishedAtLT(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldLT(FieldPublishedAt, v))
 }
 
 // PublishedAtLTE applies the LTE predicate on the "published_at" field.
-func PublishedAtLTE(v time.Time) predicate.Episode {
+func PublishedAtLTE(v string) predicate.Episode {
 	return predicate.Episode(sql.FieldLTE(FieldPublishedAt, v))
+}
+
+// PublishedAtContains applies the Contains predicate on the "published_at" field.
+func PublishedAtContains(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldContains(FieldPublishedAt, v))
+}
+
+// PublishedAtHasPrefix applies the HasPrefix predicate on the "published_at" field.
+func PublishedAtHasPrefix(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldHasPrefix(FieldPublishedAt, v))
+}
+
+// PublishedAtHasSuffix applies the HasSuffix predicate on the "published_at" field.
+func PublishedAtHasSuffix(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldHasSuffix(FieldPublishedAt, v))
 }
 
 // PublishedAtIsNil applies the IsNil predicate on the "published_at" field.
@@ -438,6 +453,16 @@ func PublishedAtIsNil() predicate.Episode {
 // PublishedAtNotNil applies the NotNil predicate on the "published_at" field.
 func PublishedAtNotNil() predicate.Episode {
 	return predicate.Episode(sql.FieldNotNull(FieldPublishedAt))
+}
+
+// PublishedAtEqualFold applies the EqualFold predicate on the "published_at" field.
+func PublishedAtEqualFold(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldEqualFold(FieldPublishedAt, v))
+}
+
+// PublishedAtContainsFold applies the ContainsFold predicate on the "published_at" field.
+func PublishedAtContainsFold(v string) predicate.Episode {
+	return predicate.Episode(sql.FieldContainsFold(FieldPublishedAt, v))
 }
 
 // DurationMinutesEQ applies the EQ predicate on the "duration_minutes" field.

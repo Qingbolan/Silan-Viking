@@ -131,7 +131,7 @@ func CommentCount(v int) predicate.BlogPost {
 }
 
 // PublishedAt applies equality check predicate on the "published_at" field. It's identical to PublishedAtEQ.
-func PublishedAt(v time.Time) predicate.BlogPost {
+func PublishedAt(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldPublishedAt, v))
 }
 
@@ -981,43 +981,58 @@ func CommentCountLTE(v int) predicate.BlogPost {
 }
 
 // PublishedAtEQ applies the EQ predicate on the "published_at" field.
-func PublishedAtEQ(v time.Time) predicate.BlogPost {
+func PublishedAtEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldPublishedAt, v))
 }
 
 // PublishedAtNEQ applies the NEQ predicate on the "published_at" field.
-func PublishedAtNEQ(v time.Time) predicate.BlogPost {
+func PublishedAtNEQ(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNEQ(FieldPublishedAt, v))
 }
 
 // PublishedAtIn applies the In predicate on the "published_at" field.
-func PublishedAtIn(vs ...time.Time) predicate.BlogPost {
+func PublishedAtIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldIn(FieldPublishedAt, vs...))
 }
 
 // PublishedAtNotIn applies the NotIn predicate on the "published_at" field.
-func PublishedAtNotIn(vs ...time.Time) predicate.BlogPost {
+func PublishedAtNotIn(vs ...string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldPublishedAt, vs...))
 }
 
 // PublishedAtGT applies the GT predicate on the "published_at" field.
-func PublishedAtGT(v time.Time) predicate.BlogPost {
+func PublishedAtGT(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldGT(FieldPublishedAt, v))
 }
 
 // PublishedAtGTE applies the GTE predicate on the "published_at" field.
-func PublishedAtGTE(v time.Time) predicate.BlogPost {
+func PublishedAtGTE(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldGTE(FieldPublishedAt, v))
 }
 
 // PublishedAtLT applies the LT predicate on the "published_at" field.
-func PublishedAtLT(v time.Time) predicate.BlogPost {
+func PublishedAtLT(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldLT(FieldPublishedAt, v))
 }
 
 // PublishedAtLTE applies the LTE predicate on the "published_at" field.
-func PublishedAtLTE(v time.Time) predicate.BlogPost {
+func PublishedAtLTE(v string) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldLTE(FieldPublishedAt, v))
+}
+
+// PublishedAtContains applies the Contains predicate on the "published_at" field.
+func PublishedAtContains(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContains(FieldPublishedAt, v))
+}
+
+// PublishedAtHasPrefix applies the HasPrefix predicate on the "published_at" field.
+func PublishedAtHasPrefix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasPrefix(FieldPublishedAt, v))
+}
+
+// PublishedAtHasSuffix applies the HasSuffix predicate on the "published_at" field.
+func PublishedAtHasSuffix(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldHasSuffix(FieldPublishedAt, v))
 }
 
 // PublishedAtIsNil applies the IsNil predicate on the "published_at" field.
@@ -1028,6 +1043,16 @@ func PublishedAtIsNil() predicate.BlogPost {
 // PublishedAtNotNil applies the NotNil predicate on the "published_at" field.
 func PublishedAtNotNil() predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotNull(FieldPublishedAt))
+}
+
+// PublishedAtEqualFold applies the EqualFold predicate on the "published_at" field.
+func PublishedAtEqualFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldEqualFold(FieldPublishedAt, v))
+}
+
+// PublishedAtContainsFold applies the ContainsFold predicate on the "published_at" field.
+func PublishedAtContainsFold(v string) predicate.BlogPost {
+	return predicate.BlogPost(sql.FieldContainsFold(FieldPublishedAt, v))
 }
 
 // SeriesOrderEQ applies the EQ predicate on the "series_order" field.
@@ -1180,29 +1205,6 @@ func UpdatedAtNotNil() predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotNull(FieldUpdatedAt))
 }
 
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasCategory applies the HasEdge predicate on the "category" edge.
 func HasCategory() predicate.BlogPost {
 	return predicate.BlogPost(func(s *sql.Selector) {
@@ -1218,29 +1220,6 @@ func HasCategory() predicate.BlogPost {
 func HasCategoryWith(preds ...predicate.BlogCategory) predicate.BlogPost {
 	return predicate.BlogPost(func(s *sql.Selector) {
 		step := newCategoryStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasSeries applies the HasEdge predicate on the "series" edge.
-func HasSeries() predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, SeriesTable, SeriesColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasSeriesWith applies the HasEdge predicate on the "series" edge with a given conditions (other predicates).
-func HasSeriesWith(preds ...predicate.BlogSeries) predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := newSeriesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

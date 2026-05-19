@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/awardtranslation"
 	"silan-backend/internal/ent/blogcategorytranslation"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseriestranslation"
 	"silan-backend/internal/ent/educationdetailtranslation"
 	"silan-backend/internal/ent/educationtranslation"
 	"silan-backend/internal/ent/ideadetailtranslation"
@@ -235,21 +234,6 @@ func (lu *LanguageUpdate) AddBlogPostTranslations(b ...*BlogPostTranslation) *La
 		ids[i] = b[i].ID
 	}
 	return lu.AddBlogPostTranslationIDs(ids...)
-}
-
-// AddBlogSeriesTranslationIDs adds the "blog_series_translations" edge to the BlogSeriesTranslation entity by IDs.
-func (lu *LanguageUpdate) AddBlogSeriesTranslationIDs(ids ...string) *LanguageUpdate {
-	lu.mutation.AddBlogSeriesTranslationIDs(ids...)
-	return lu
-}
-
-// AddBlogSeriesTranslations adds the "blog_series_translations" edges to the BlogSeriesTranslation entity.
-func (lu *LanguageUpdate) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return lu.AddBlogSeriesTranslationIDs(ids...)
 }
 
 // AddIdeaTranslationIDs adds the "idea_translations" edge to the IdeaTranslation entity by IDs.
@@ -572,27 +556,6 @@ func (lu *LanguageUpdate) RemoveBlogPostTranslations(b ...*BlogPostTranslation) 
 	return lu.RemoveBlogPostTranslationIDs(ids...)
 }
 
-// ClearBlogSeriesTranslations clears all "blog_series_translations" edges to the BlogSeriesTranslation entity.
-func (lu *LanguageUpdate) ClearBlogSeriesTranslations() *LanguageUpdate {
-	lu.mutation.ClearBlogSeriesTranslations()
-	return lu
-}
-
-// RemoveBlogSeriesTranslationIDs removes the "blog_series_translations" edge to BlogSeriesTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveBlogSeriesTranslationIDs(ids ...string) *LanguageUpdate {
-	lu.mutation.RemoveBlogSeriesTranslationIDs(ids...)
-	return lu
-}
-
-// RemoveBlogSeriesTranslations removes "blog_series_translations" edges to BlogSeriesTranslation entities.
-func (lu *LanguageUpdate) RemoveBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return lu.RemoveBlogSeriesTranslationIDs(ids...)
-}
-
 // ClearIdeaTranslations clears all "idea_translations" edges to the IdeaTranslation entity.
 func (lu *LanguageUpdate) ClearIdeaTranslations() *LanguageUpdate {
 	lu.mutation.ClearIdeaTranslations()
@@ -802,6 +765,9 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := lu.mutation.IsActive(); ok {
 		_spec.SetField(language.FieldIsActive, field.TypeBool, value)
+	}
+	if lu.mutation.CreatedAtCleared() {
+		_spec.ClearField(language.FieldCreatedAt, field.TypeTime)
 	}
 	if lu.mutation.PersonalInfoTranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1246,51 +1212,6 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if lu.mutation.BlogSeriesTranslationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   language.BlogSeriesTranslationsTable,
-			Columns: []string{language.BlogSeriesTranslationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := lu.mutation.RemovedBlogSeriesTranslationsIDs(); len(nodes) > 0 && !lu.mutation.BlogSeriesTranslationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   language.BlogSeriesTranslationsTable,
-			Columns: []string{language.BlogSeriesTranslationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := lu.mutation.BlogSeriesTranslationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   language.BlogSeriesTranslationsTable,
-			Columns: []string{language.BlogSeriesTranslationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1825,21 +1746,6 @@ func (luo *LanguageUpdateOne) AddBlogPostTranslations(b ...*BlogPostTranslation)
 	return luo.AddBlogPostTranslationIDs(ids...)
 }
 
-// AddBlogSeriesTranslationIDs adds the "blog_series_translations" edge to the BlogSeriesTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddBlogSeriesTranslationIDs(ids ...string) *LanguageUpdateOne {
-	luo.mutation.AddBlogSeriesTranslationIDs(ids...)
-	return luo
-}
-
-// AddBlogSeriesTranslations adds the "blog_series_translations" edges to the BlogSeriesTranslation entity.
-func (luo *LanguageUpdateOne) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdateOne {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return luo.AddBlogSeriesTranslationIDs(ids...)
-}
-
 // AddIdeaTranslationIDs adds the "idea_translations" edge to the IdeaTranslation entity by IDs.
 func (luo *LanguageUpdateOne) AddIdeaTranslationIDs(ids ...string) *LanguageUpdateOne {
 	luo.mutation.AddIdeaTranslationIDs(ids...)
@@ -2160,27 +2066,6 @@ func (luo *LanguageUpdateOne) RemoveBlogPostTranslations(b ...*BlogPostTranslati
 	return luo.RemoveBlogPostTranslationIDs(ids...)
 }
 
-// ClearBlogSeriesTranslations clears all "blog_series_translations" edges to the BlogSeriesTranslation entity.
-func (luo *LanguageUpdateOne) ClearBlogSeriesTranslations() *LanguageUpdateOne {
-	luo.mutation.ClearBlogSeriesTranslations()
-	return luo
-}
-
-// RemoveBlogSeriesTranslationIDs removes the "blog_series_translations" edge to BlogSeriesTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveBlogSeriesTranslationIDs(ids ...string) *LanguageUpdateOne {
-	luo.mutation.RemoveBlogSeriesTranslationIDs(ids...)
-	return luo
-}
-
-// RemoveBlogSeriesTranslations removes "blog_series_translations" edges to BlogSeriesTranslation entities.
-func (luo *LanguageUpdateOne) RemoveBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageUpdateOne {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return luo.RemoveBlogSeriesTranslationIDs(ids...)
-}
-
 // ClearIdeaTranslations clears all "idea_translations" edges to the IdeaTranslation entity.
 func (luo *LanguageUpdateOne) ClearIdeaTranslations() *LanguageUpdateOne {
 	luo.mutation.ClearIdeaTranslations()
@@ -2420,6 +2305,9 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 	}
 	if value, ok := luo.mutation.IsActive(); ok {
 		_spec.SetField(language.FieldIsActive, field.TypeBool, value)
+	}
+	if luo.mutation.CreatedAtCleared() {
+		_spec.ClearField(language.FieldCreatedAt, field.TypeTime)
 	}
 	if luo.mutation.PersonalInfoTranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -2864,51 +2752,6 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if luo.mutation.BlogSeriesTranslationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   language.BlogSeriesTranslationsTable,
-			Columns: []string{language.BlogSeriesTranslationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := luo.mutation.RemovedBlogSeriesTranslationsIDs(); len(nodes) > 0 && !luo.mutation.BlogSeriesTranslationsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   language.BlogSeriesTranslationsTable,
-			Columns: []string{language.BlogSeriesTranslationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := luo.mutation.BlogSeriesTranslationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   language.BlogSeriesTranslationsTable,
-			Columns: []string{language.BlogSeriesTranslationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

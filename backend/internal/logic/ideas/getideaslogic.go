@@ -33,8 +33,7 @@ func NewGetIdeasLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetIdeas
 
 func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaListResponse, err error) {
 	query := l.svcCtx.DB.Idea.Query().
-		Where(idea.VisibilityEQ(idea.VisibilityPublic)).
-		WithUser()
+		Where(idea.VisibilityEQ(idea.VisibilityPublic))
 
 	// Apply filters
 	if req.Status != "" {

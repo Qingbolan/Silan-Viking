@@ -50,7 +50,7 @@ func (Episode) Fields() []ent.Field {
 		field.Enum("visibility").
 			Values("private", "unlisted", "public").
 			Default("private"),
-		field.Time("published_at").
+		field.String("published_at").
 			Optional().
 			Nillable(),
 		field.Int("duration_minutes").
@@ -58,11 +58,13 @@ func (Episode) Fields() []ent.Field {
 			Nillable(),
 		field.Time("created_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			UpdateDefault(time.Now),
 	}
 }

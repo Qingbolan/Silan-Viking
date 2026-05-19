@@ -127,6 +127,12 @@ func (ipu *ItemPartUpdate) SetUpdatedAt(t time.Time) *ItemPartUpdate {
 	return ipu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (ipu *ItemPartUpdate) ClearUpdatedAt() *ItemPartUpdate {
+	ipu.mutation.ClearUpdatedAt()
+	return ipu
+}
+
 // AddTranslationIDs adds the "translations" edge to the ItemPartTranslation entity by IDs.
 func (ipu *ItemPartUpdate) AddTranslationIDs(ids ...string) *ItemPartUpdate {
 	ipu.mutation.AddTranslationIDs(ids...)
@@ -234,7 +240,7 @@ func (ipu *ItemPartUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ipu *ItemPartUpdate) defaults() {
-	if _, ok := ipu.mutation.UpdatedAt(); !ok {
+	if _, ok := ipu.mutation.UpdatedAt(); !ok && !ipu.mutation.UpdatedAtCleared() {
 		v := itempart.UpdateDefaultUpdatedAt()
 		ipu.mutation.SetUpdatedAt(v)
 	}
@@ -283,8 +289,14 @@ func (ipu *ItemPartUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ipu.mutation.CanonicalLang(); ok {
 		_spec.SetField(itempart.FieldCanonicalLang, field.TypeString, value)
 	}
+	if ipu.mutation.CreatedAtCleared() {
+		_spec.ClearField(itempart.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := ipu.mutation.UpdatedAt(); ok {
 		_spec.SetField(itempart.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ipu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(itempart.FieldUpdatedAt, field.TypeTime)
 	}
 	if ipu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -493,6 +505,12 @@ func (ipuo *ItemPartUpdateOne) SetUpdatedAt(t time.Time) *ItemPartUpdateOne {
 	return ipuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (ipuo *ItemPartUpdateOne) ClearUpdatedAt() *ItemPartUpdateOne {
+	ipuo.mutation.ClearUpdatedAt()
+	return ipuo
+}
+
 // AddTranslationIDs adds the "translations" edge to the ItemPartTranslation entity by IDs.
 func (ipuo *ItemPartUpdateOne) AddTranslationIDs(ids ...string) *ItemPartUpdateOne {
 	ipuo.mutation.AddTranslationIDs(ids...)
@@ -613,7 +631,7 @@ func (ipuo *ItemPartUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ipuo *ItemPartUpdateOne) defaults() {
-	if _, ok := ipuo.mutation.UpdatedAt(); !ok {
+	if _, ok := ipuo.mutation.UpdatedAt(); !ok && !ipuo.mutation.UpdatedAtCleared() {
 		v := itempart.UpdateDefaultUpdatedAt()
 		ipuo.mutation.SetUpdatedAt(v)
 	}
@@ -679,8 +697,14 @@ func (ipuo *ItemPartUpdateOne) sqlSave(ctx context.Context) (_node *ItemPart, er
 	if value, ok := ipuo.mutation.CanonicalLang(); ok {
 		_spec.SetField(itempart.FieldCanonicalLang, field.TypeString, value)
 	}
+	if ipuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(itempart.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := ipuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(itempart.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ipuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(itempart.FieldUpdatedAt, field.TypeTime)
 	}
 	if ipuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

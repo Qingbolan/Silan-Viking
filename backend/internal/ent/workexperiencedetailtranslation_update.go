@@ -71,6 +71,12 @@ func (wedtu *WorkExperienceDetailTranslationUpdate) SetNillableDetailText(s *str
 	return wedtu
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (wedtu *WorkExperienceDetailTranslationUpdate) ClearDetailText() *WorkExperienceDetailTranslationUpdate {
+	wedtu.mutation.ClearDetailText()
+	return wedtu
+}
+
 // SetWorkExperienceDetail sets the "work_experience_detail" edge to the WorkExperienceDetail entity.
 func (wedtu *WorkExperienceDetailTranslationUpdate) SetWorkExperienceDetail(w *WorkExperienceDetail) *WorkExperienceDetailTranslationUpdate {
 	return wedtu.SetWorkExperienceDetailID(w.ID)
@@ -138,11 +144,6 @@ func (wedtu *WorkExperienceDetailTranslationUpdate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "WorkExperienceDetailTranslation.language_code": %w`, err)}
 		}
 	}
-	if v, ok := wedtu.mutation.DetailText(); ok {
-		if err := workexperiencedetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "WorkExperienceDetailTranslation.detail_text": %w`, err)}
-		}
-	}
 	if wedtu.mutation.WorkExperienceDetailCleared() && len(wedtu.mutation.WorkExperienceDetailIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkExperienceDetailTranslation.work_experience_detail"`)
 	}
@@ -166,6 +167,12 @@ func (wedtu *WorkExperienceDetailTranslationUpdate) sqlSave(ctx context.Context)
 	}
 	if value, ok := wedtu.mutation.DetailText(); ok {
 		_spec.SetField(workexperiencedetailtranslation.FieldDetailText, field.TypeString, value)
+	}
+	if wedtu.mutation.DetailTextCleared() {
+		_spec.ClearField(workexperiencedetailtranslation.FieldDetailText, field.TypeString)
+	}
+	if wedtu.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperiencedetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if wedtu.mutation.WorkExperienceDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -287,6 +294,12 @@ func (wedtuo *WorkExperienceDetailTranslationUpdateOne) SetNillableDetailText(s 
 	return wedtuo
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (wedtuo *WorkExperienceDetailTranslationUpdateOne) ClearDetailText() *WorkExperienceDetailTranslationUpdateOne {
+	wedtuo.mutation.ClearDetailText()
+	return wedtuo
+}
+
 // SetWorkExperienceDetail sets the "work_experience_detail" edge to the WorkExperienceDetail entity.
 func (wedtuo *WorkExperienceDetailTranslationUpdateOne) SetWorkExperienceDetail(w *WorkExperienceDetail) *WorkExperienceDetailTranslationUpdateOne {
 	return wedtuo.SetWorkExperienceDetailID(w.ID)
@@ -367,11 +380,6 @@ func (wedtuo *WorkExperienceDetailTranslationUpdateOne) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "WorkExperienceDetailTranslation.language_code": %w`, err)}
 		}
 	}
-	if v, ok := wedtuo.mutation.DetailText(); ok {
-		if err := workexperiencedetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "WorkExperienceDetailTranslation.detail_text": %w`, err)}
-		}
-	}
 	if wedtuo.mutation.WorkExperienceDetailCleared() && len(wedtuo.mutation.WorkExperienceDetailIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "WorkExperienceDetailTranslation.work_experience_detail"`)
 	}
@@ -412,6 +420,12 @@ func (wedtuo *WorkExperienceDetailTranslationUpdateOne) sqlSave(ctx context.Cont
 	}
 	if value, ok := wedtuo.mutation.DetailText(); ok {
 		_spec.SetField(workexperiencedetailtranslation.FieldDetailText, field.TypeString, value)
+	}
+	if wedtuo.mutation.DetailTextCleared() {
+		_spec.ClearField(workexperiencedetailtranslation.FieldDetailText, field.TypeString)
+	}
+	if wedtuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperiencedetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if wedtuo.mutation.WorkExperienceDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{

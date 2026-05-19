@@ -65,24 +65,24 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
           blockquote: ({ node, ...props }) => (
             <blockquote className="border-l-4 border-theme-primary pl-3 my-3 text-theme-secondary" {...props} />
           ),
-          code: (codeProps) => {
-            const { inline, className, children, ...props } = codeProps as any;
-            if (inline) {
-              return (
-                <code
-                  className={`inline-code ${className || ''}`}
-                  {...props}
-                >
-                  {children}
-                </code>
-              );
-            }
-            return (
-              <pre className="code-block">
-                <code className={className} {...props}>{children}</code>
-              </pre>
-            );
-          },
+          // react-markdown v9+ no longer passes an `inline` prop, so inline
+          // vs block must not be branched on inside the `code` renderer —
+          // doing so turned every inline `` `code` `` into a block. Structure
+          // decides instead: a fenced block is a `<code>` inside a `<pre>`.
+          // The stylesheet already keys off this — `:not(pre) > code` styles
+          // inline code, `pre` styles the block — so the renderers just pass
+          // the elements through with their block/inline class and let CSS
+          // do the rest. `className` carries `language-xxx` for highlighting.
+          code: ({ node, className, children, ...props }) => (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          ),
+          pre: ({ node, children, ...props }) => (
+            <pre className="code-block" {...props}>
+              {children}
+            </pre>
+          ),
           hr: ({ node, ...props }) => <hr className="my-6 border-theme-card" {...props} />,
           table: ({ node, ...props }) => (
             <div className="overflow-x-auto my-4">
