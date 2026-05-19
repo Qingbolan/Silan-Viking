@@ -32,6 +32,19 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		log.Fatalf("failed opening connection to database: %v", err)
 	}
 
+	// Guard against a stale-schema database. `Schema.Create` is append-only:
+	// it adds missing tables/columns but never ALTERs an existing column's
+	// type or nullability. A database left over from the legacy Python CLI
+	// has `ideas.user_id` as `NOT NULL` — the engine's `index sync` does not
+	// write `user_id`, so every sync into such a database fails silently and
+	// the served data goes stale without warning. Detect that here and fail
+	// loudly with a fix, rather than running on a database the engine can no
+	// longer write to. (We do not auto-drop: runtime tables — comments,
+	// likes, visitor analytics — hold data the content tree cannot regenerate.)
+	if c.Database.Driver == "sqlite3" {
+		assertSchemaIsCurrent(rawSchemaPeek(c.Database.Driver, c.Database.Source))
+	}
+
 	// Bring the schema up to date. `Schema.Create` is append-only by default
 	// — it creates the tables/columns the ent schema declares but the db is
 	// missing, and never drops or rewrites what is already there. The
@@ -570,5 +583,69 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 		if _, err := db.Exec(ddl); err != nil {
 			log.Printf("warning: failed creating analytics table/index: %v", err)
 		}
+	}
+}
+
+// schemaPeek is the minimal probe of a database's content-table schema —
+// enough to tell a current ent schema from a legacy Python-CLI one.
+type schemaPeek struct {
+	// hasIdeasTable is false for a brand-new (empty) database — nothing to
+	// guard, Schema.Create will build it fresh.
+	hasIdeasTable bool
+	// ideasUserIDNotNull is true when `ideas.user_id` is `NOT NULL`, the
+	// tell-tale of a legacy schema the engine's `index sync` cannot write.
+	ideasUserIDNotNull bool
+}
+
+// rawSchemaPeek inspects the `ideas` table definition without going through
+// ent, so it can run before Schema.Create. A database the probe cannot open
+// or read is treated as empty (hasIdeasTable=false) — Schema.Create handles
+// the fresh-database case.
+func rawSchemaPeek(driver, source string) schemaPeek {
+	db, err := sql.Open(driver, source)
+	if err != nil {
+		return schemaPeek{}
+	}
+	defer db.Close()
+
+	rows, err := db.Query(`PRAGMA table_info(ideas)`)
+	if err != nil {
+		return schemaPeek{}
+	}
+	defer rows.Close()
+
+	peek := schemaPeek{}
+	for rows.Next() {
+		var (
+			cid        int
+			name, ctyp string
+			notNull    int
+			dfltValue  sql.NullString
+			pk         int
+		)
+		if err := rows.Scan(&cid, &name, &ctyp, &notNull, &dfltValue, &pk); err != nil {
+			continue
+		}
+		peek.hasIdeasTable = true
+		if name == "user_id" && notNull == 1 {
+			peek.ideasUserIDNotNull = true
+		}
+	}
+	return peek
+}
+
+// assertSchemaIsCurrent fails loudly when the database carries a legacy
+// schema the silan-viking engine can no longer sync into. The database is a
+// derived projection of the content tree, so the fix is to rebuild it — but
+// runtime tables (comments, likes, analytics) hold data the content tree
+// cannot regenerate, so this never auto-drops; it tells the operator.
+func assertSchemaIsCurrent(peek schemaPeek) {
+	if peek.hasIdeasTable && peek.ideasUserIDNotNull {
+		log.Fatalf("stale database schema: `ideas.user_id` is NOT NULL — this " +
+			"database predates the current ent schema and the engine's " +
+			"`index sync` cannot write to it. Remove the database file and " +
+			"restart so the current schema is built, then re-run `index sync`. " +
+			"Note: runtime tables (comments, likes, analytics) are lost on " +
+			"rebuild — back them up first if they hold data you need.")
 	}
 }
