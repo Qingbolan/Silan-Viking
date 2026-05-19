@@ -1,5 +1,6 @@
 import type { IdeaData } from '../../types';
 import { get, post, del, formatLanguage } from '../utils';
+import { mapContentParts } from '../contentParts';
 import { type PaginationRequest, type SearchRequest, type ListResponse } from '../config';
 
 // Backend API request/response types
@@ -84,7 +85,9 @@ export const fetchIdeaById = async (id: string, language: 'en' | 'zh' = 'en'): P
     futureDirectionsZh: response.future_directions_zh || response.futureDirectionsZh,
     reference: response.reference || response.references,
     referenceZh: response.reference_zh || response.referenceZh,
-    relatedWorks: response.related_works || response.relatedWorks
+    relatedWorks: response.related_works || response.relatedWorks,
+    // The data-driven Part list — the detail page renders tabs from here.
+    parts: mapContentParts(response.parts),
   };
 };
 

@@ -103,6 +103,23 @@ fn render_skill_md(content_root: &Path) -> String {
          Never split a new multi-Part Item into one `propose` per Part: the\n\
          later branches cannot be accepted on their own.\n\
          \n\
+         ## Adding or revising a Part of an existing Item\n\
+         \n\
+         To add a Part to — or rewrite a Part of — an Item that already\n\
+         exists, `propose` to the **Part URI**:\n\
+         `silan://resources/<kind>/<slug>/<role>`. The SCHEMA's `parts` list\n\
+         is a **recommendation, not a limit**: a project recommends\n\
+         `overview` / `goals` / `challenges` / `solutions` / `lessons` /\n\
+         `quick_start` / `release_notes`, but if the Item needs a section the\n\
+         recommended set does not name — a `benchmark`, a `roadmap` — propose\n\
+         a Part for that new role directly. A new role must be a lowercase\n\
+         identifier (`a-z`, `0-9`, `_`, `-`); it lands as prose and the\n\
+         frontend renders it as its own tab automatically. Read\n\
+         `silan://schema` to see the recommended set. The `<slug>` is the\n\
+         Item's own slug, unchanged — never encode the Part into the slug\n\
+         (no `my-project#goals`); the role is its own URI segment. Each such\n\
+         `propose` is one Part and lands as its own proposal.\n\
+         \n\
          ## Three lines that must not be crossed\n\
          \n\
          (A restatement of the `03` security rules — not new rules.)\n\

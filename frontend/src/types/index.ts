@@ -131,6 +131,38 @@ export interface IdeaData {
   keywords?: string[];
   estimatedDuration?: string;
   fundingStatus?: 'unfunded' | 'seeking' | 'funded';
+
+  // Data-driven Part list — whatever Parts the Item actually has, in
+  // sort_order. The named fields above are a compatibility shim; the detail
+  // page renders one tab per Part from here. See [[ContentPart]].
+  parts?: ContentPart[];
+}
+
+/**
+ * A single Part of a content Item, as returned by every detail endpoint.
+ * The SCHEMA `parts` set is a *recommendation*, not a closed whitelist — an
+ * Item may carry a Part whose `role` no type predeclares. The UI renders one
+ * tab per Part, in `sortOrder`, with no fixed role list: a `prose` Part shows
+ * its markdown body, an `entry_list` Part shows its entries.
+ */
+export interface ContentEntry {
+  id: string;
+  entryId: string;
+  sortOrder: number;
+  sharedPayload: Record<string, unknown>;
+  localizedPayload: Record<string, unknown>;
+}
+
+export interface ContentPart {
+  id: string;
+  partId: string;
+  role: string;
+  shape: 'prose' | 'entry_list' | string;
+  sortOrder: number;
+  canonicalLang: string;
+  /** Prose body keyed by language code (e.g. `en`, `zh`). */
+  body: Record<string, string>;
+  entries: ContentEntry[];
 }
 
 export interface Experiment {

@@ -53,6 +53,13 @@ field_types:
 #   Each type declares `fields` (frontmatter fields) and `parts` (Part list).
 #   Field attributes: type / required / default / source / column.
 #   Part attributes:  role / required / order / shape (default prose).
+#
+#   The `parts` list is a RECOMMENDED set, not a closed whitelist. An agent
+#   may extend any Item with a Part whose role this SCHEMA does not name —
+#   a project `benchmark`, an idea `related-work`. An undeclared role gets
+#   the default `prose` shape and sorts after the declared Parts; a `required`
+#   Part must still be present. The frontend renders whatever Parts an Item
+#   actually has, so a new section needs no SCHEMA edit and no UI change.
 # ---------------------------------------------------------------------------
 types:
 
@@ -64,9 +71,10 @@ types:
       - { name: title,                      type: string,                               required: true,  default: null,    source: "py,ent", column: "ideas.title" }
       - { name: kind,                       type: "enum(idea)",                         required: true,  default: idea,    source: new,      column: null }
       - { name: status,                     type: "enum(draft,hypothesis,experimenting,validating,published,concluded)", required: true, default: draft, source: "py,ent", column: "ideas.status" }
-      - { name: visibility,                 type: "enum(private,unlisted,public)",      required: true,  default: private, source: new,      column: "ideas.is_public" }
+      - { name: visibility,                 type: "enum(private,unlisted,public)",      required: true,  default: private, source: new,      column: "ideas.visibility" }
       - { name: priority,                   type: "enum(high,medium,low)",              required: false, default: medium,  source: py,       column: "idea_details.priority" }
       - { name: category,                   type: string,                               required: false, default: null,    source: "py,ent", column: "ideas.category" }
+      - { name: tags,                       type: "list<string>",                       required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: abstract,                   type: text,                                 required: false, default: null,    source: "py,ent", column: "ideas.abstract" }
       - { name: collaboration_needed,       type: bool,                                 required: false, default: false,   source: "py,ent", column: "idea_details.collaboration_needed" }
       - { name: funding_required,           type: bool,                                 required: false, default: false,   source: "py,ent", column: "idea_details.funding_required" }
@@ -94,7 +102,7 @@ types:
       - { name: featured_image_url, type: string,                               required: false, default: null,    source: "py,ent", column: "blog_posts.featured_image_url" }
       - { name: published_at,       type: datetime,                             required: false, default: null,    source: "py,ent", column: "blog_posts.published_at" }
       - { name: category,          type: string,                               required: false, default: null,    source: "py,ent", column: "blog_posts.category_id" }
-      - { name: tags,               type: "list<string>",                      required: false, default: [],      source: "py,ent", column: "blog_post_tags" }
+      - { name: tags,               type: "list<string>",                      required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: series,             type: "string(slug)",                      required: false, default: null,    source: "py,ent", column: "blog_posts.series_id" }
       - { name: series_order,       type: int,                                  required: false, default: null,    source: "py,ent", column: "blog_posts.series_order" }
       - { name: relations,          type: "list<relation>",                    required: false, default: [],      source: new,      column: "content_relation" }
@@ -109,7 +117,7 @@ types:
       - { name: title,              type: string,                                     required: true,  default: null,            source: "py,ent", column: "projects.title" }
       - { name: kind,               type: "enum(project)",                            required: true,  default: project,         source: new,      column: null }
       - { name: status,             type: "enum(active,completed,paused,cancelled)",  required: true,  default: active,          source: "py,ent", column: "projects.status" }
-      - { name: visibility,         type: "enum(private,unlisted,public)",            required: true,  default: private,         source: new,      column: "projects.is_public" }
+      - { name: visibility,         type: "enum(private,unlisted,public)",            required: true,  default: private,         source: new,      column: "projects.visibility" }
       - { name: description,        type: text,                                       required: false, default: null,            source: "py,ent", column: "projects.description" }
       - { name: project_type,       type: string,                                     required: false, default: "Web Application", source: "py,ent", column: "projects.project_type" }
       - { name: start_date,         type: date,                                       required: false, default: null,            source: "py,ent", column: "projects.start_date" }
@@ -122,7 +130,7 @@ types:
       - { name: tech_stack,         type: "list<string>",                            required: false, default: [],              source: "py,ent", column: "project_technologies" }
       - { name: license,           type: "string(SPDX)",                            required: false, default: null,            source: "py,ent", column: "project_details.license" }
       - { name: version,           type: string,                                     required: false, default: null,            source: "py,ent", column: "project_details.version" }
-      - { name: tags,               type: "list<string>",                            required: false, default: [],              source: py,       column: "content_relation" }
+      - { name: tags,               type: "list<string>",                            required: false, default: [],              source: "py,ent", column: "content_tag" }
       - { name: relations,          type: "list<relation>",                          required: false, default: [],              source: new,      column: "content_relation" }
     parts:
       - { role: overview,      required: true,  order: 10, shape: prose }
@@ -155,6 +163,7 @@ types:
       - { name: visibility,       type: "enum(private,unlisted,public)",   required: true,  default: private, source: new, column: "episodes.visibility" }
       - { name: published_at,     type: datetime,                          required: false, default: null,    source: py,  column: "episodes.published_at" }
       - { name: duration_minutes, type: int,                               required: false, default: null,    source: py,  column: "episodes.duration_minutes" }
+      - { name: tags,             type: "list<string>",                    required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: relations,        type: "list<relation>",                  required: false, default: [],      source: new, column: "content_relation" }
     parts:
       - { role: body, required: true, order: 10, shape: prose }
@@ -171,7 +180,7 @@ types:
       - { name: priority,    type: "enum(high,medium,low)",                                               required: false, default: medium,  source: "py,ent", column: "recent_updates.priority" }
       - { name: visibility,  type: "enum(private,unlisted,public)",                                       required: true,  default: private, source: new,      column: "recent_updates.visibility" }
       - { name: date,        type: date,                                                                  required: true,  default: null,    source: "py,ent", column: "recent_updates.date" }
-      - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "recent_updates.tags" }
+      - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: relations,   type: "list<relation>",                                                     required: false, default: [],      source: new,      column: "content_relation" }
     parts:
       - { role: body, required: true, order: 10, shape: prose }
@@ -244,6 +253,7 @@ types:
           - { name: doi,              type: string,         required: false, translatable: false }
           - { name: url,              type: string,         required: false, translatable: false }
           - { name: pdf_url,          type: string,         required: false, translatable: false }
+          - { name: image_url,        type: string,         required: false, translatable: false }
           - { name: citation_count,   type: int,            required: false, translatable: false }
           - { name: is_peer_reviewed, type: bool,           required: false, translatable: false }
           - { name: sort_order,       type: int,            required: false, translatable: false }
@@ -271,6 +281,7 @@ types:
           - { name: is_ongoing,     type: bool,         required: false, translatable: false }
           - { name: location,       type: string,       required: false, translatable: true }
           - { name: research_type,  type: string,       required: false, translatable: true }
+          - { name: image_url,      type: string,       required: false, translatable: false }
           - { name: funding_source, type: string,       required: false, translatable: true }
           - { name: funding_amount, type: float,        required: false, translatable: false }
           - { name: details,        type: "list<text>", required: false, translatable: true }
@@ -279,6 +290,14 @@ types:
         required: false
         order: 70
         shape: key_value_list
+      - role: expectations
+        required: false
+        order: 80
+        shape: entry_list
+        entry_fields:
+          - { name: title,       type: string, required: true,  translatable: true }
+          - { name: description, type: text,   required: false, translatable: true }
+          - { name: sort_order,  type: int,    required: false, translatable: false }
 
 # ---------------------------------------------------------------------------
 # relations — relation types and canonicalization (per 10 §10.5, 01 §1.8.2)
@@ -318,7 +337,14 @@ errors:
 ## Field placement rules (how the parser decides where a field is read from / written to)
 
 1. **Structured, enumerable, indexable** fields go in the frontmatter and land
-   as columns of the content main table.
+   as columns of the content main table. The `column:` attribute reads
+   `"<table>.<column>"` for such a field.
+1a. **List fields that fan out into their own table** carry a `column:` that is
+   a bare table name with no dot — `content_tag` (the `tags` list),
+   `content_relation` (the `relations` list), `project_technologies` (the
+   `tech_stack` list). These do not land as a main-table column; the mapper
+   routes them to that table. `content_tag` / `content_relation` are the
+   cross-type tables shared by all 6 types (the `content_*` family of M0.5).
 2. **Long prose text in a prose Part** goes in the Part body (`.md`) and lands
    in the `item_part` table.
 3. **Identity and translation metadata** go in `parts/<role>/meta.toml` and
@@ -331,3 +357,23 @@ errors:
 6. **`status` and `visibility` are never merged** — `status` is the lifecycle,
    `visibility` is the visibility; only `visibility=public` lets the
    `SiteProjector` project an Item.
+
+## Frontmatter `relations` entry format
+
+An Item links to other Items through a `relations` list in the frontmatter of
+its primary Part. Each entry is a mapping with exactly two fields:
+
+- `type` — one of the relation types above
+  (`evolved_into` / `evolved_from` / `documents` / `references` /
+  `supersedes` / `part_of`).
+- `to` — the target Item's `silan://` URI.
+
+```yaml
+relations:
+  - { type: documents, to: silan://resources/ideas/silan-viking }
+  - { type: references, to: silan://resources/blog/some-post }
+```
+
+The field is `to`, not `target` / `dest` / `uri`. An entry missing either
+field is a `Fatal` parse error. The relations list lands in the cross-type
+`content_relation` table (placement rule 1a).

@@ -7,6 +7,8 @@ import (
 
 	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent/idea"
+	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/logic/contentpart"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -34,7 +36,6 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	// Query the idea with details
 	ideaEntity, err := l.svcCtx.DB.Idea.Query().
 		Where(idea.ID(ideaID)).
-		WithUser().
 		WithDetails().
 		WithTranslations().
 		First(l.ctx)
@@ -109,6 +110,15 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	var codeRepository string
 	var demoURL string
 
+	// The data-driven Part list — whatever Parts the idea actually has, in
+	// sort_order. The named abstract/progress/results fields stay as a
+	// compatibility shim; the frontend renders tabs from `Parts`, so an
+	// idea Part with a role the SCHEMA never declared still becomes a tab.
+	parts, err := contentpart.Collect(l.ctx, l.svcCtx.DB, itempart.EntityTypeIdea, ideaEntity.ID, req.Language)
+	if err != nil {
+		return nil, err
+	}
+
 	return &types.IdeaData{
 		ID:                   ideaEntity.ID,
 		Title:                title,
@@ -138,5 +148,6 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 		Keywords:             keywords,
 		EstimatedDuration:    estimatedDuration,
 		FundingStatus:        requiredResources,
+		Parts:                parts,
 	}, nil
 }

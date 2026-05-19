@@ -42,7 +42,7 @@ impl ProseMapper {
 
         rows.push(main_row(expected, &item_id, parsed, type_spec));
         push_translation_rows(expected, &item_id, parsed, &mut rows);
-        push_item_part_rows(expected, &item_id, parsed, &mut rows);
+        push_item_part_rows(expected, &item_id, parsed, type_spec, &mut rows);
         push_part_rows(parsed, &mut rows);
         push_relation_rows(expected, parsed, &mut rows);
         push_tag_rows(expected, &item_id, parsed, &mut rows);
@@ -119,45 +119,77 @@ fn push_translation_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows
 /// `part_id` (`01` §1.4 — minted at scaffold, read from `meta.toml`); the
 /// `part_id` column carries it too (the Entity's `unique` natural key);
 /// `entity_type` / `entity_id` locate the owning Item.
-fn push_item_part_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+///
+/// `sort_order` follows the SCHEMA's declared Part `order` — *not* the
+/// alphabetical key order `prose_roles()` happens to yield. A Part whose
+/// role the SCHEMA does not declare (open-set Parts) sorts *after* every
+/// declared Part, in role order, so a new section lands at the end of the
+/// tab strip rather than wherever its name falls in the alphabet.
+fn push_item_part_rows(
+    kind: ContentKind,
+    item_id: &str,
+    parsed: &Parsed,
+    type_spec: &TypeSpec,
+    rows: &mut RowSet,
+) {
+    // Collect every distinct prose role across all language variants, then
+    // rank by SCHEMA order. `seen` preserves a stable iteration for the
+    // undeclared-role tail-break.
     let mut seen: Vec<String> = Vec::new();
     for variant in parsed.langs().values() {
-        for (order, role) in variant.prose_roles().enumerate() {
-            if seen.contains(&role.to_owned()) {
-                continue;
+        for role in variant.prose_roles() {
+            if !seen.iter().any(|r| r == role) {
+                seen.push(role.to_owned());
             }
-            seen.push(role.to_owned());
-            // `id` = `part_id`: the Part's stable identity doubles as the
-            // row's primary key, so `item_part_translation` can point at it
-            // by a value a pure-function `Mapper` can compute (no DB-minted
-            // UUID needed). A role whose `meta.toml` lacked `part_id` falls
-            // back to the role name — still deterministic within the Item.
-            let part_id = parsed
-                .part_id(role)
-                .map(|p| p.as_str().to_owned())
-                .unwrap_or_else(|| role.to_owned());
-            // `canonical_lang`: the first language is the canonical one for
-            // M6's purposes; the Part's own `meta.toml` carries the truth,
-            // threaded once the parser exposes it per Part.
-            let canonical_lang = parsed
-                .languages()
-                .next()
-                .map(ToString::to_string)
-                .unwrap_or_default();
-            rows.push(
-                Row::new(table_names::ITEM_PART_TABLE)
-                    .with("id", SqlValue::Text(part_id.clone()))
-                    .with("part_id", SqlValue::Text(part_id))
-                    .with(
-                        "entity_type",
-                        SqlValue::Text(kind.frontmatter_value().to_owned()),
-                    )
-                    .with("entity_id", SqlValue::Text(item_id.to_owned()))
-                    .with("role", SqlValue::Text(role.to_owned()))
-                    .with("sort_order", SqlValue::Int(order as i64))
-                    .with("canonical_lang", SqlValue::Text(canonical_lang)),
-            );
         }
+    }
+
+    // Declared Parts sort by their SCHEMA `order`; an undeclared role sorts
+    // after the highest declared order, keeping a stable relative position.
+    let max_declared = type_spec.parts.iter().map(|p| p.order).max().unwrap_or(0);
+    let sort_key = |role: &str, tail: i64| -> i64 {
+        type_spec
+            .part(role)
+            .map(|p| p.order)
+            .unwrap_or(max_declared + 1 + tail)
+    };
+
+    let mut ranked: Vec<(i64, String)> = seen
+        .iter()
+        .enumerate()
+        .map(|(tail, role)| (sort_key(role, tail as i64), role.clone()))
+        .collect();
+    ranked.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+
+    let canonical_lang = parsed
+        .languages()
+        .next()
+        .map(ToString::to_string)
+        .unwrap_or_default();
+
+    for (order, (_, role)) in ranked.into_iter().enumerate() {
+        // `id` = `part_id`: the Part's stable identity doubles as the row's
+        // primary key, so `item_part_translation` can point at it by a value
+        // a pure-function `Mapper` can compute (no DB-minted UUID needed). A
+        // role whose `meta.toml` lacked `part_id` falls back to the role
+        // name — still deterministic within the Item.
+        let part_id = parsed
+            .part_id(&role)
+            .map(|p| p.as_str().to_owned())
+            .unwrap_or_else(|| role.clone());
+        rows.push(
+            Row::new(table_names::ITEM_PART_TABLE)
+                .with("id", SqlValue::Text(part_id.clone()))
+                .with("part_id", SqlValue::Text(part_id))
+                .with(
+                    "entity_type",
+                    SqlValue::Text(kind.frontmatter_value().to_owned()),
+                )
+                .with("entity_id", SqlValue::Text(item_id.to_owned()))
+                .with("role", SqlValue::Text(role))
+                .with("sort_order", SqlValue::Int(order as i64))
+                .with("canonical_lang", SqlValue::Text(canonical_lang.clone())),
+        );
     }
 }
 
