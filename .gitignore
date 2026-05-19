@@ -68,3 +68,8 @@ yarn-error.log*
 # silan-viking engine reads). It is versioned independently — this repo
 # must not track its files.
 /content/
+
+# silan-viking deploy staging — a derived artifact of `site deploy`: a
+# backend copy plus the projected `portfolio.db` (and its sqlite -wal / -shm
+# runtime files). Rebuilt on every deploy, never committed.
+/_deploy/
