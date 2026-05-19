@@ -221,11 +221,7 @@
     "likes": "点赞",
     "downloads": "下载",
     "updated": "更新于",
-    "build": {
-      "passing": "构建通过",
-      "failing": "构建失败",
-      "unknown": "构建未知"
-    },
+    "build": "构建",
     "viewProjectOnGitHub": "在GitHub上查看{{title}}源代码",
     "viewLiveDemo": "查看{{title}}在线演示",
     "filterByTechnique": "基于技术栈筛选：",
@@ -265,7 +261,6 @@
     "viewOnOSI": "在OSI查看",
     "noLicenseInformation": "无协议信息",
     "licenseNotAvailable": "此项目的协议信息不可用。",
-    "build": "构建",
     "coverage": "覆盖率",
     "unknown": "未知",
     "by": "由",
@@ -273,7 +268,11 @@
     "viewProjectDemo": "查看{{title}}演示",
     "viewProjectSourceCode": "查看{{title}}源代码",
     "projectFilters": "项目筛选器",
-    "discussion": "讨论"
+    "discussion": "讨论",
+    "goals": "目标",
+    "challenges": "挑战",
+    "solutions": "解决方案",
+    "lessons": "经验总结"
   },
   "time": {
     "justNow": "刚刚",

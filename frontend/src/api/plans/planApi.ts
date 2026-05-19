@@ -138,7 +138,9 @@ const convertProjectToProjectWithPlan = (project: Project): ProjectWithPlan => (
   id: project.id.toString(),
   title: project.name,
   description: project.description,
-  image: '/api/placeholder/400/250',
+  // No cover image: `image` is left undefined so the card renders its
+  // built-in branded placeholder (per the ProjectWithPlan.image contract).
+  // A real cover would come from the API once the project carries one.
   tags: project.tags,
   github: undefined,
   demo: undefined,
