@@ -146,6 +146,18 @@ fn run(args: Vec<String>) -> Result<(), String> {
         }
     }
 
+    // Top-level version: `silan-viking --version` / `-V` / `version`. Caught
+    // here, before `CliOptions::parse` would reject the flag as an unknown
+    // command. The banner's last line already carries the version; this is
+    // the conventional standalone form scripts and `--version` probes expect.
+    if args
+        .iter()
+        .any(|a| matches!(a.as_str(), "-V" | "--version" | "version"))
+    {
+        println!("silan-viking {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     // Top-level help is shown for no args, or whenever `-h`/`--help`/`help`
     // appears anywhere before a subcommand. We still parse `--content` so
     // the banner's status block reflects the project the user is pointing
