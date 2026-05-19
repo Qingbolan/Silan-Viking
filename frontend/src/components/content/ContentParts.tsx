@@ -26,9 +26,28 @@ import Markdown from '../ui/Markdown';
 import { useLanguage } from '../LanguageContext';
 import type { ContentPart, ContentEntry } from '../../types';
 
+/**
+ * A registered, fixed tab — a runtime feature (community feedback, issues)
+ * that is *not* a content Part. Unlike Part tabs, these are declared by the
+ * caller, not data-driven: they are always present, in the order given, and
+ * sit after the content Parts. The open-set model governs only Part tabs.
+ */
+export interface ExtraTab {
+  /** Stable key — also the tab's controlled value. */
+  key: string;
+  label: React.ReactNode;
+  icon?: React.ReactNode;
+  /** The panel rendered when this tab is active. */
+  render: () => React.ReactNode;
+}
+
 interface ContentPartsProps {
   parts: ContentPart[];
-  /** Preferred language; falls back to a Part's canonical language. */
+  /**
+   * Fixed runtime tabs appended after the content Parts (community, issues).
+   * Declared, not data-driven — always shown, never extended by an agent.
+   */
+  extraTabs?: ExtraTab[];
   className?: string;
 }
 
@@ -117,7 +136,15 @@ const EntryCard: React.FC<{ entry: ContentEntry }> = ({ entry }) => {
   );
 };
 
-const ContentParts: React.FC<ContentPartsProps> = ({ parts, className }) => {
+/** Extra-tab values are namespaced so a runtime tab never collides with a
+ *  Part `role` (a project could legitimately have a `community` Part). */
+const EXTRA_PREFIX = 'tab:';
+
+const ContentParts: React.FC<ContentPartsProps> = ({
+  parts,
+  extraTabs = [],
+  className,
+}) => {
   const { language } = useLanguage();
 
   // Only Parts with content become tabs, kept in SCHEMA `sortOrder`.
@@ -129,13 +156,35 @@ const ContentParts: React.FC<ContentPartsProps> = ({ parts, className }) => {
     [parts, language],
   );
 
-  const [active, setActive] = useState<string>(visible[0]?.role ?? '');
+  // The full tab strip: data-driven content Parts first, then the fixed
+  // runtime tabs. Runtime tabs are *registered* (declared by the caller),
+  // never extended by an agent — the open-set model governs Parts only.
+  const tabItems = [
+    ...visible.map((p) => ({
+      value: p.role,
+      label: roleLabel(p.role, language),
+      icon: ROLE_ICONS[p.role] ?? <ListTree size={16} />,
+    })),
+    ...extraTabs.map((t) => ({
+      value: EXTRA_PREFIX + t.key,
+      label: t.label,
+      icon: t.icon,
+    })),
+  ];
 
-  // The active Part may vanish on a language switch — fall back to the first.
-  const activePart =
-    visible.find((p) => p.role === active) ?? visible[0] ?? null;
+  const [active, setActive] = useState<string>(tabItems[0]?.value ?? '');
 
-  if (visible.length === 0) {
+  // The active value may vanish on a language switch — fall back to the
+  // first tab. It resolves to either a content Part or a runtime tab.
+  const activeValue = tabItems.some((t) => t.value === active)
+    ? active
+    : (tabItems[0]?.value ?? '');
+  const activePart = visible.find((p) => p.role === activeValue) ?? null;
+  const activeExtra = activeValue.startsWith(EXTRA_PREFIX)
+    ? extraTabs.find((t) => EXTRA_PREFIX + t.key === activeValue)
+    : undefined;
+
+  if (tabItems.length === 0) {
     return (
       <p className={`text-theme-secondary ${className || ''}`}>
         {language === 'en' ? 'No content yet.' : '暂无内容。'}
@@ -144,19 +193,23 @@ const ContentParts: React.FC<ContentPartsProps> = ({ parts, className }) => {
   }
 
   return (
-    <div className={className}>
-      <Tabs
-        appearance="vertical"
-        value={activePart?.role}
-        onChange={setActive}
-        items={visible.map((p) => ({
-          value: p.role,
-          label: roleLabel(p.role, language),
-          icon: ROLE_ICONS[p.role] ?? <ListTree size={16} />,
-        }))}
-      />
-      <div className="mt-4">
-        {activePart && activePart.shape === 'entry_list' ? (
+    // Two-column docs layout — a left-rail vertical nav and the content
+    // panel beside it. On a narrow viewport the rail stacks above.
+    <div className={`flex w-full flex-col gap-6 md:flex-row md:gap-8 ${className || ''}`}>
+      <nav className="shrink-0 md:w-56">
+        <div className="md:sticky md:top-16">
+          <Tabs
+            appearance="vertical"
+            value={activeValue}
+            onChange={setActive}
+            items={tabItems}
+          />
+        </div>
+      </nav>
+      <div className="min-w-0 flex-1">
+        {activeExtra ? (
+          activeExtra.render()
+        ) : activePart && activePart.shape === 'entry_list' ? (
           <div className="space-y-3">
             {[...activePart.entries]
               .sort((a, b) => a.sortOrder - b.sortOrder)

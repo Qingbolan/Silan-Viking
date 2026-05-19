@@ -5,11 +5,11 @@ import {
   Calendar,
   Clock,
   ExternalLink,
-  BookOpen,
+  ArrowLeft,
   Share2,
   Heart,
+  MessageSquare,
 } from 'lucide-react';
-import { useTheme } from '../ThemeContext';
 import { useLanguage } from '../LanguageContext';
 import { Seo, creativeWorkJsonLd } from '../Seo';
 import CommunityFeedback from './CommunityFeedback';
@@ -23,13 +23,13 @@ import {
   Badge,
   Button,
   BrandLoading,
+  ErrorState,
 } from '../../components/ds';
 
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { colors } = useTheme();
   const { language } = useLanguage();
 
   const [idea, setIdea] = useState<IdeaData | null>(null);
@@ -84,22 +84,31 @@ const IdeaDetail: React.FC = () => {
   }
 
   if (!idea) {
+    // A missing / non-public idea renders the ds standard page-level error,
+    // not a bespoke panel — same design language as every other route.
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background }}>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
-          <BookOpen size={48} className="mx-auto mb-4" style={{ color: colors.error }} />
-          <h2 className="text-xl font-semibold mb-2" style={{ color: colors.textPrimary }}>
-            {language === 'en' ? 'Research Not Found' : '未找到研究'}
-          </h2>
-          <button
-            onClick={() => navigate('/ideas')}
-            className="px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: colors.primary, color: 'white' }}
-          >
-            {language === 'en' ? 'Back to Ideas' : '返回想法列表'}
-          </button>
-        </motion.div>
-      </div>
+      <Container>
+        <Section>
+          <ErrorState
+            variant="page"
+            title={language === 'en' ? 'Research Not Found' : '未找到研究'}
+            description={
+              language === 'en'
+                ? 'This research idea does not exist, or has not been published yet.'
+                : '该研究想法不存在，或尚未发布。'
+            }
+            actions={
+              <Button
+                variant="primary"
+                onClick={() => navigate('/ideas')}
+                leadingIcon={<ArrowLeft />}
+              >
+                {language === 'en' ? 'Back to Ideas' : '返回想法列表'}
+              </Button>
+            }
+          />
+        </Section>
+      </Container>
     );
   }
 
@@ -191,17 +200,24 @@ const IdeaDetail: React.FC = () => {
             </div>
           )}
 
-          {/* --- Parts — one tab per Part the idea actually has, in
-              sort_order. Data-driven: an idea Part with a role the SCHEMA
-              never declared still becomes its own tab. -- */}
+          {/* --- Parts — data-driven content tabs, plus the fixed
+              `discussion` runtime tab. Content Parts are open-set (an
+              undeclared role still becomes a tab); the discussion tab is a
+              registered runtime feature, always present. -- */}
           <div className="mt-8 w-full">
-            <ContentParts parts={idea.parts ?? []} />
-          </div>
-
-          {/* Community feedback is a runtime feature, not a Part — it sits
-              below the content as its own section. */}
-          <div className="mt-12 w-full">
-            <CommunityFeedback projectId={`idea-${idea.id}`} />
+            <ContentParts
+              parts={idea.parts ?? []}
+              extraTabs={[
+                {
+                  key: 'discussion',
+                  label: language === 'en' ? 'Discussion' : '讨论',
+                  icon: <MessageSquare size={16} />,
+                  render: () => (
+                    <CommunityFeedback projectId={`idea-${idea.id}`} />
+                  ),
+                },
+              ]}
+            />
           </div>
         </Section>
       </Container>
