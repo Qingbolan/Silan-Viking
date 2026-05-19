@@ -52,11 +52,7 @@ func (Publication) Fields() []ent.Field {
 		field.String("pages").
 			Optional().
 			MaxLen(50),
-		field.Time("publication_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
+		field.String("publication_date").Optional(),
 		field.String("doi").
 			Optional().
 			MaxLen(100),
@@ -80,9 +76,11 @@ func (Publication) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -90,11 +88,6 @@ func (Publication) Fields() []ent.Field {
 // Edges of the Publication.
 func (Publication) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("publications").
-			Field("user_id").
-			Required().
-			Unique(),
 		edge.To("translations", PublicationTranslation.Type),
 		edge.To("authors", PublicationAuthor.Type),
 	}

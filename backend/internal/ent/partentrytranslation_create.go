@@ -128,9 +128,6 @@ func (petc *PartEntryTranslationCreate) check() error {
 	if _, ok := petc.mutation.LocalizedPayload(); !ok {
 		return &ValidationError{Name: "localized_payload", err: errors.New(`ent: missing required field "PartEntryTranslation.localized_payload"`)}
 	}
-	if _, ok := petc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PartEntryTranslation.created_at"`)}
-	}
 	if len(petc.mutation.PartEntryIDs()) == 0 {
 		return &ValidationError{Name: "part_entry", err: errors.New(`ent: missing required edge "PartEntryTranslation.part_entry"`)}
 	}

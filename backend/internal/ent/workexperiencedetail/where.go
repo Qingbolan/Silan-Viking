@@ -300,6 +300,16 @@ func CreatedAtLTE(v time.Time) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldEQ(FieldUpdatedAt, v))
@@ -338,6 +348,16 @@ func UpdatedAtLT(v time.Time) predicate.WorkExperienceDetail {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.WorkExperienceDetail {
 	return predicate.WorkExperienceDetail(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.WorkExperienceDetail {
+	return predicate.WorkExperienceDetail(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasWorkExperience applies the HasEdge predicate on the "work_experience" edge.

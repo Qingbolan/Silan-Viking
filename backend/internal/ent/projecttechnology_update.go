@@ -185,6 +185,9 @@ func (ptu *ProjectTechnologyUpdate) sqlSave(ctx context.Context) (n int, err err
 	if value, ok := ptu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(projecttechnology.FieldSortOrder, field.TypeInt, value)
 	}
+	if ptu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projecttechnology.FieldCreatedAt, field.TypeTime)
+	}
 	if ptu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -420,6 +423,9 @@ func (ptuo *ProjectTechnologyUpdateOne) sqlSave(ctx context.Context) (_node *Pro
 	}
 	if value, ok := ptuo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(projecttechnology.FieldSortOrder, field.TypeInt, value)
+	}
+	if ptuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projecttechnology.FieldCreatedAt, field.TypeTime)
 	}
 	if ptuo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

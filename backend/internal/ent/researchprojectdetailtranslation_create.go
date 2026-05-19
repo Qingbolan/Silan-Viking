@@ -40,6 +40,14 @@ func (rpdtc *ResearchProjectDetailTranslationCreate) SetDetailText(s string) *Re
 	return rpdtc
 }
 
+// SetNillableDetailText sets the "detail_text" field if the given value is not nil.
+func (rpdtc *ResearchProjectDetailTranslationCreate) SetNillableDetailText(s *string) *ResearchProjectDetailTranslationCreate {
+	if s != nil {
+		rpdtc.SetDetailText(*s)
+	}
+	return rpdtc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (rpdtc *ResearchProjectDetailTranslationCreate) SetCreatedAt(t time.Time) *ResearchProjectDetailTranslationCreate {
 	rpdtc.mutation.SetCreatedAt(t)
@@ -141,17 +149,6 @@ func (rpdtc *ResearchProjectDetailTranslationCreate) check() error {
 		if err := researchprojectdetailtranslation.LanguageCodeValidator(v); err != nil {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectDetailTranslation.language_code": %w`, err)}
 		}
-	}
-	if _, ok := rpdtc.mutation.DetailText(); !ok {
-		return &ValidationError{Name: "detail_text", err: errors.New(`ent: missing required field "ResearchProjectDetailTranslation.detail_text"`)}
-	}
-	if v, ok := rpdtc.mutation.DetailText(); ok {
-		if err := researchprojectdetailtranslation.DetailTextValidator(v); err != nil {
-			return &ValidationError{Name: "detail_text", err: fmt.Errorf(`ent: validator failed for field "ResearchProjectDetailTranslation.detail_text": %w`, err)}
-		}
-	}
-	if _, ok := rpdtc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ResearchProjectDetailTranslation.created_at"`)}
 	}
 	if len(rpdtc.mutation.ResearchProjectDetailIDs()) == 0 {
 		return &ValidationError{Name: "research_project_detail", err: errors.New(`ent: missing required edge "ResearchProjectDetailTranslation.research_project_detail"`)}

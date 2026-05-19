@@ -11,10 +11,8 @@ import (
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttag"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseries"
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -29,9 +27,7 @@ type BlogPostQuery struct {
 	order            []blogpost.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.BlogPost
-	withUser         *UserQuery
 	withCategory     *BlogCategoryQuery
-	withSeries       *BlogSeriesQuery
 	withTags         *BlogTagQuery
 	withTranslations *BlogPostTranslationQuery
 	withBlogPostTags *BlogPostTagQuery
@@ -71,28 +67,6 @@ func (bpq *BlogPostQuery) Order(o ...blogpost.OrderOption) *BlogPostQuery {
 	return bpq
 }
 
-// QueryUser chains the current query on the "user" edge.
-func (bpq *BlogPostQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: bpq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := bpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.UserTable, blogpost.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryCategory chains the current query on the "category" edge.
 func (bpq *BlogPostQuery) QueryCategory() *BlogCategoryQuery {
 	query := (&BlogCategoryClient{config: bpq.config}).Query()
@@ -108,28 +82,6 @@ func (bpq *BlogPostQuery) QueryCategory() *BlogCategoryQuery {
 			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
 			sqlgraph.To(blogcategory.Table, blogcategory.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.CategoryTable, blogpost.CategoryColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QuerySeries chains the current query on the "series" edge.
-func (bpq *BlogPostQuery) QuerySeries() *BlogSeriesQuery {
-	query := (&BlogSeriesClient{config: bpq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := bpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
-			sqlgraph.To(blogseries.Table, blogseries.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.SeriesTable, blogpost.SeriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
 		return fromU, nil
@@ -395,9 +347,7 @@ func (bpq *BlogPostQuery) Clone() *BlogPostQuery {
 		order:            append([]blogpost.OrderOption{}, bpq.order...),
 		inters:           append([]Interceptor{}, bpq.inters...),
 		predicates:       append([]predicate.BlogPost{}, bpq.predicates...),
-		withUser:         bpq.withUser.Clone(),
 		withCategory:     bpq.withCategory.Clone(),
-		withSeries:       bpq.withSeries.Clone(),
 		withTags:         bpq.withTags.Clone(),
 		withTranslations: bpq.withTranslations.Clone(),
 		withBlogPostTags: bpq.withBlogPostTags.Clone(),
@@ -405,17 +355,6 @@ func (bpq *BlogPostQuery) Clone() *BlogPostQuery {
 		sql:  bpq.sql.Clone(),
 		path: bpq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BlogPostQuery) WithUser(opts ...func(*UserQuery)) *BlogPostQuery {
-	query := (&UserClient{config: bpq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	bpq.withUser = query
-	return bpq
 }
 
 // WithCategory tells the query-builder to eager-load the nodes that are connected to
@@ -426,17 +365,6 @@ func (bpq *BlogPostQuery) WithCategory(opts ...func(*BlogCategoryQuery)) *BlogPo
 		opt(query)
 	}
 	bpq.withCategory = query
-	return bpq
-}
-
-// WithSeries tells the query-builder to eager-load the nodes that are connected to
-// the "series" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BlogPostQuery) WithSeries(opts ...func(*BlogSeriesQuery)) *BlogPostQuery {
-	query := (&BlogSeriesClient{config: bpq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	bpq.withSeries = query
 	return bpq
 }
 
@@ -551,10 +479,8 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	var (
 		nodes       = []*BlogPost{}
 		_spec       = bpq.querySpec()
-		loadedTypes = [6]bool{
-			bpq.withUser != nil,
+		loadedTypes = [4]bool{
 			bpq.withCategory != nil,
-			bpq.withSeries != nil,
 			bpq.withTags != nil,
 			bpq.withTranslations != nil,
 			bpq.withBlogPostTags != nil,
@@ -578,21 +504,9 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := bpq.withUser; query != nil {
-		if err := bpq.loadUser(ctx, query, nodes, nil,
-			func(n *BlogPost, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := bpq.withCategory; query != nil {
 		if err := bpq.loadCategory(ctx, query, nodes, nil,
 			func(n *BlogPost, e *BlogCategory) { n.Edges.Category = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := bpq.withSeries; query != nil {
-		if err := bpq.loadSeries(ctx, query, nodes, nil,
-			func(n *BlogPost, e *BlogSeries) { n.Edges.Series = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -620,35 +534,6 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	return nodes, nil
 }
 
-func (bpq *BlogPostQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*BlogPost)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (bpq *BlogPostQuery) loadCategory(ctx context.Context, query *BlogCategoryQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogCategory)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*BlogPost)
@@ -671,35 +556,6 @@ func (bpq *BlogPostQuery) loadCategory(ctx context.Context, query *BlogCategoryQ
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "category_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
-func (bpq *BlogPostQuery) loadSeries(ctx context.Context, query *BlogSeriesQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogSeries)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*BlogPost)
-	for i := range nodes {
-		fk := nodes[i].SeriesID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(blogseries.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "series_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -854,14 +710,8 @@ func (bpq *BlogPostQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if bpq.withUser != nil {
-			_spec.Node.AddColumnOnce(blogpost.FieldUserID)
-		}
 		if bpq.withCategory != nil {
 			_spec.Node.AddColumnOnce(blogpost.FieldCategoryID)
-		}
-		if bpq.withSeries != nil {
-			_spec.Node.AddColumnOnce(blogpost.FieldSeriesID)
 		}
 	}
 	if ps := bpq.predicates; len(ps) > 0 {

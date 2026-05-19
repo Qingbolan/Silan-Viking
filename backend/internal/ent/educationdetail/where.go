@@ -300,6 +300,16 @@ func CreatedAtLTE(v time.Time) predicate.EducationDetail {
 	return predicate.EducationDetail(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.EducationDetail {
+	return predicate.EducationDetail(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.EducationDetail {
+	return predicate.EducationDetail(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.EducationDetail {
 	return predicate.EducationDetail(sql.FieldEQ(FieldUpdatedAt, v))
@@ -338,6 +348,16 @@ func UpdatedAtLT(v time.Time) predicate.EducationDetail {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.EducationDetail {
 	return predicate.EducationDetail(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.EducationDetail {
+	return predicate.EducationDetail(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.EducationDetail {
+	return predicate.EducationDetail(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasEducation applies the HasEdge predicate on the "education" edge.

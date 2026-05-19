@@ -76,17 +76,19 @@ func (BlogPost) Fields() []ent.Field {
 			Default(0),
 		field.Int("comment_count").
 			Default(0),
-		field.Time("published_at").
+		field.String("published_at").
 			Optional(),
 		field.Int("series_order").
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -94,18 +96,14 @@ func (BlogPost) Fields() []ent.Field {
 // Edges of the BlogPost.
 func (BlogPost) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("blog_posts").
-			Field("user_id").
-			Unique(),
 		edge.From("category", BlogCategory.Type).
 			Ref("blog_posts").
 			Field("category_id").
 			Unique(),
-		edge.From("series", BlogSeries.Type).
-			Ref("blog_posts").
-			Field("series_id").
-			Unique(),
+		// No `series` edge: the silan-viking content model has no separate
+		// `blog_series` table — a blog's series is just the `series_id` /
+		// `series_order` fields on `blog_posts` itself (SCHEMA.md `blog`).
+		// Only `episode` has a real container series (`episode_series`).
 		edge.To("tags", BlogTag.Type).
 			Through("blog_post_tags", BlogPostTag.Type),
 		edge.To("translations", BlogPostTranslation.Type),

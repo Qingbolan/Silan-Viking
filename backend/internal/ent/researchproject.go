@@ -5,7 +5,6 @@ package ent
 import (
 	"fmt"
 	"silan-backend/internal/ent/researchproject"
-	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
@@ -23,9 +22,9 @@ type ResearchProject struct {
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// StartDate holds the value of the "start_date" field.
-	StartDate time.Time `json:"start_date,omitempty"`
+	StartDate string `json:"start_date,omitempty"`
 	// EndDate holds the value of the "end_date" field.
-	EndDate time.Time `json:"end_date,omitempty"`
+	EndDate string `json:"end_date,omitempty"`
 	// IsOngoing holds the value of the "is_ongoing" field.
 	IsOngoing bool `json:"is_ongoing,omitempty"`
 	// Location holds the value of the "location" field.
@@ -52,32 +51,19 @@ type ResearchProject struct {
 
 // ResearchProjectEdges holds the relations/edges for other nodes in the graph.
 type ResearchProjectEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*ResearchProjectTranslation `json:"translations,omitempty"`
 	// Details holds the value of the details edge.
 	Details []*ResearchProjectDetail `json:"details,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ResearchProjectEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [2]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e ResearchProjectEdges) TranslationsOrErr() ([]*ResearchProjectTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -86,7 +72,7 @@ func (e ResearchProjectEdges) TranslationsOrErr() ([]*ResearchProjectTranslation
 // DetailsOrErr returns the Details value or an error if the edge
 // was not loaded in eager-loading.
 func (e ResearchProjectEdges) DetailsOrErr() ([]*ResearchProjectDetail, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Details, nil
 	}
 	return nil, &NotLoadedError{edge: "details"}
@@ -103,9 +89,9 @@ func (*ResearchProject) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case researchproject.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case researchproject.FieldID, researchproject.FieldUserID, researchproject.FieldTitle, researchproject.FieldLocation, researchproject.FieldResearchType, researchproject.FieldImageURL, researchproject.FieldFundingSource:
+		case researchproject.FieldID, researchproject.FieldUserID, researchproject.FieldTitle, researchproject.FieldStartDate, researchproject.FieldEndDate, researchproject.FieldLocation, researchproject.FieldResearchType, researchproject.FieldImageURL, researchproject.FieldFundingSource:
 			values[i] = new(sql.NullString)
-		case researchproject.FieldStartDate, researchproject.FieldEndDate, researchproject.FieldCreatedAt, researchproject.FieldUpdatedAt:
+		case researchproject.FieldCreatedAt, researchproject.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -141,16 +127,16 @@ func (rp *ResearchProject) assignValues(columns []string, values []any) error {
 				rp.Title = value.String
 			}
 		case researchproject.FieldStartDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field start_date", values[i])
 			} else if value.Valid {
-				rp.StartDate = value.Time
+				rp.StartDate = value.String
 			}
 		case researchproject.FieldEndDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field end_date", values[i])
 			} else if value.Valid {
-				rp.EndDate = value.Time
+				rp.EndDate = value.String
 			}
 		case researchproject.FieldIsOngoing:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -219,11 +205,6 @@ func (rp *ResearchProject) Value(name string) (ent.Value, error) {
 	return rp.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the ResearchProject entity.
-func (rp *ResearchProject) QueryUser() *UserQuery {
-	return NewResearchProjectClient(rp.config).QueryUser(rp)
-}
-
 // QueryTranslations queries the "translations" edge of the ResearchProject entity.
 func (rp *ResearchProject) QueryTranslations() *ResearchProjectTranslationQuery {
 	return NewResearchProjectClient(rp.config).QueryTranslations(rp)
@@ -264,10 +245,10 @@ func (rp *ResearchProject) String() string {
 	builder.WriteString(rp.Title)
 	builder.WriteString(", ")
 	builder.WriteString("start_date=")
-	builder.WriteString(rp.StartDate.Format(time.ANSIC))
+	builder.WriteString(rp.StartDate)
 	builder.WriteString(", ")
 	builder.WriteString("end_date=")
-	builder.WriteString(rp.EndDate.Format(time.ANSIC))
+	builder.WriteString(rp.EndDate)
 	builder.WriteString(", ")
 	builder.WriteString("is_ongoing=")
 	builder.WriteString(fmt.Sprintf("%v", rp.IsOngoing))

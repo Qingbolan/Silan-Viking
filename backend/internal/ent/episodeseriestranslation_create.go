@@ -39,6 +39,14 @@ func (estc *EpisodeSeriesTranslationCreate) SetTitle(s string) *EpisodeSeriesTra
 	return estc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (estc *EpisodeSeriesTranslationCreate) SetNillableTitle(s *string) *EpisodeSeriesTranslationCreate {
+	if s != nil {
+		estc.SetTitle(*s)
+	}
+	return estc
+}
+
 // SetDescription sets the "description" field.
 func (estc *EpisodeSeriesTranslationCreate) SetDescription(s string) *EpisodeSeriesTranslationCreate {
 	estc.mutation.SetDescription(s)
@@ -144,16 +152,10 @@ func (estc *EpisodeSeriesTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeriesTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := estc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "EpisodeSeriesTranslation.title"`)}
-	}
 	if v, ok := estc.mutation.Title(); ok {
 		if err := episodeseriestranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeriesTranslation.title": %w`, err)}
 		}
-	}
-	if _, ok := estc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "EpisodeSeriesTranslation.created_at"`)}
 	}
 	if len(estc.mutation.EpisodeSeriesIDs()) == 0 {
 		return &ValidationError{Name: "episode_series", err: errors.New(`ent: missing required edge "EpisodeSeriesTranslation.episode_series"`)}

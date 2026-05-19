@@ -36,10 +36,10 @@ func (AwardTranslation) Fields() []ent.Field {
 			StorageKey("language_code"),
 		field.String("title").
 			MaxLen(300).
-			NotEmpty(),
+			Optional(),
 		field.String("awarding_organization").
 			MaxLen(200).
-			NotEmpty(),
+			Optional(),
 		field.String("award_type").
 			Optional().
 			MaxLen(50),
@@ -47,6 +47,7 @@ func (AwardTranslation) Fields() []ent.Field {
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

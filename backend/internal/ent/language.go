@@ -53,8 +53,6 @@ type LanguageEdges struct {
 	BlogCategoryTranslations []*BlogCategoryTranslation `json:"blog_category_translations,omitempty"`
 	// BlogPostTranslations holds the value of the blog_post_translations edge.
 	BlogPostTranslations []*BlogPostTranslation `json:"blog_post_translations,omitempty"`
-	// BlogSeriesTranslations holds the value of the blog_series_translations edge.
-	BlogSeriesTranslations []*BlogSeriesTranslation `json:"blog_series_translations,omitempty"`
 	// IdeaTranslations holds the value of the idea_translations edge.
 	IdeaTranslations []*IdeaTranslation `json:"idea_translations,omitempty"`
 	// IdeaDetailTranslations holds the value of the idea_detail_translations edge.
@@ -71,7 +69,7 @@ type LanguageEdges struct {
 	RecentUpdateTranslations []*RecentUpdateTranslation `json:"recent_update_translations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [18]bool
+	loadedTypes [17]bool
 }
 
 // PersonalInfoTranslationsOrErr returns the PersonalInfoTranslations value or an error if the edge
@@ -164,19 +162,10 @@ func (e LanguageEdges) BlogPostTranslationsOrErr() ([]*BlogPostTranslation, erro
 	return nil, &NotLoadedError{edge: "blog_post_translations"}
 }
 
-// BlogSeriesTranslationsOrErr returns the BlogSeriesTranslations value or an error if the edge
-// was not loaded in eager-loading.
-func (e LanguageEdges) BlogSeriesTranslationsOrErr() ([]*BlogSeriesTranslation, error) {
-	if e.loadedTypes[10] {
-		return e.BlogSeriesTranslations, nil
-	}
-	return nil, &NotLoadedError{edge: "blog_series_translations"}
-}
-
 // IdeaTranslationsOrErr returns the IdeaTranslations value or an error if the edge
 // was not loaded in eager-loading.
 func (e LanguageEdges) IdeaTranslationsOrErr() ([]*IdeaTranslation, error) {
-	if e.loadedTypes[11] {
+	if e.loadedTypes[10] {
 		return e.IdeaTranslations, nil
 	}
 	return nil, &NotLoadedError{edge: "idea_translations"}
@@ -185,7 +174,7 @@ func (e LanguageEdges) IdeaTranslationsOrErr() ([]*IdeaTranslation, error) {
 // IdeaDetailTranslationsOrErr returns the IdeaDetailTranslations value or an error if the edge
 // was not loaded in eager-loading.
 func (e LanguageEdges) IdeaDetailTranslationsOrErr() ([]*IdeaDetailTranslation, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[11] {
 		return e.IdeaDetailTranslations, nil
 	}
 	return nil, &NotLoadedError{edge: "idea_detail_translations"}
@@ -194,7 +183,7 @@ func (e LanguageEdges) IdeaDetailTranslationsOrErr() ([]*IdeaDetailTranslation, 
 // ResearchProjectTranslationsOrErr returns the ResearchProjectTranslations value or an error if the edge
 // was not loaded in eager-loading.
 func (e LanguageEdges) ResearchProjectTranslationsOrErr() ([]*ResearchProjectTranslation, error) {
-	if e.loadedTypes[13] {
+	if e.loadedTypes[12] {
 		return e.ResearchProjectTranslations, nil
 	}
 	return nil, &NotLoadedError{edge: "research_project_translations"}
@@ -203,7 +192,7 @@ func (e LanguageEdges) ResearchProjectTranslationsOrErr() ([]*ResearchProjectTra
 // ResearchProjectDetailTranslationsOrErr returns the ResearchProjectDetailTranslations value or an error if the edge
 // was not loaded in eager-loading.
 func (e LanguageEdges) ResearchProjectDetailTranslationsOrErr() ([]*ResearchProjectDetailTranslation, error) {
-	if e.loadedTypes[14] {
+	if e.loadedTypes[13] {
 		return e.ResearchProjectDetailTranslations, nil
 	}
 	return nil, &NotLoadedError{edge: "research_project_detail_translations"}
@@ -212,7 +201,7 @@ func (e LanguageEdges) ResearchProjectDetailTranslationsOrErr() ([]*ResearchProj
 // PublicationTranslationsOrErr returns the PublicationTranslations value or an error if the edge
 // was not loaded in eager-loading.
 func (e LanguageEdges) PublicationTranslationsOrErr() ([]*PublicationTranslation, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[14] {
 		return e.PublicationTranslations, nil
 	}
 	return nil, &NotLoadedError{edge: "publication_translations"}
@@ -221,7 +210,7 @@ func (e LanguageEdges) PublicationTranslationsOrErr() ([]*PublicationTranslation
 // AwardTranslationsOrErr returns the AwardTranslations value or an error if the edge
 // was not loaded in eager-loading.
 func (e LanguageEdges) AwardTranslationsOrErr() ([]*AwardTranslation, error) {
-	if e.loadedTypes[16] {
+	if e.loadedTypes[15] {
 		return e.AwardTranslations, nil
 	}
 	return nil, &NotLoadedError{edge: "award_translations"}
@@ -230,7 +219,7 @@ func (e LanguageEdges) AwardTranslationsOrErr() ([]*AwardTranslation, error) {
 // RecentUpdateTranslationsOrErr returns the RecentUpdateTranslations value or an error if the edge
 // was not loaded in eager-loading.
 func (e LanguageEdges) RecentUpdateTranslationsOrErr() ([]*RecentUpdateTranslation, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[16] {
 		return e.RecentUpdateTranslations, nil
 	}
 	return nil, &NotLoadedError{edge: "recent_update_translations"}
@@ -353,11 +342,6 @@ func (l *Language) QueryBlogCategoryTranslations() *BlogCategoryTranslationQuery
 // QueryBlogPostTranslations queries the "blog_post_translations" edge of the Language entity.
 func (l *Language) QueryBlogPostTranslations() *BlogPostTranslationQuery {
 	return NewLanguageClient(l.config).QueryBlogPostTranslations(l)
-}
-
-// QueryBlogSeriesTranslations queries the "blog_series_translations" edge of the Language entity.
-func (l *Language) QueryBlogSeriesTranslations() *BlogSeriesTranslationQuery {
-	return NewLanguageClient(l.config).QueryBlogSeriesTranslations(l)
 }
 
 // QueryIdeaTranslations queries the "idea_translations" edge of the Language entity.

@@ -460,6 +460,16 @@ func CreatedAtLTE(v time.Time) predicate.SocialLink {
 	return predicate.SocialLink(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.SocialLink {
+	return predicate.SocialLink(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasPersonalInfo applies the HasEdge predicate on the "personal_info" edge.
 func HasPersonalInfo() predicate.SocialLink {
 	return predicate.SocialLink(func(s *sql.Selector) {

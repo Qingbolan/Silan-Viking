@@ -280,6 +280,16 @@ func TitleHasSuffix(v string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldHasSuffix(FieldTitle, v))
 }
 
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldNotNull(FieldTitle))
+}
+
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
 func TitleEqualFold(v string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldEqualFold(FieldTitle, v))
@@ -420,6 +430,16 @@ func ContentHasSuffix(v string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldHasSuffix(FieldContent, v))
 }
 
+// ContentIsNil applies the IsNil predicate on the "content" field.
+func ContentIsNil() predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldIsNull(FieldContent))
+}
+
+// ContentNotNil applies the NotNil predicate on the "content" field.
+func ContentNotNil() predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldNotNull(FieldContent))
+}
+
 // ContentEqualFold applies the EqualFold predicate on the "content" field.
 func ContentEqualFold(v string) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldEqualFold(FieldContent, v))
@@ -468,6 +488,16 @@ func CreatedAtLT(v time.Time) predicate.BlogPostTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.BlogPostTranslation {
 	return predicate.BlogPostTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.BlogPostTranslation {
+	return predicate.BlogPostTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasBlogPost applies the HasEdge predicate on the "blog_post" edge.

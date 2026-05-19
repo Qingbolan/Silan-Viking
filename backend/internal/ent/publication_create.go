@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/publication"
 	"silan-backend/internal/ent/publicationauthor"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -112,15 +111,15 @@ func (pc *PublicationCreate) SetNillablePages(s *string) *PublicationCreate {
 }
 
 // SetPublicationDate sets the "publication_date" field.
-func (pc *PublicationCreate) SetPublicationDate(t time.Time) *PublicationCreate {
-	pc.mutation.SetPublicationDate(t)
+func (pc *PublicationCreate) SetPublicationDate(s string) *PublicationCreate {
+	pc.mutation.SetPublicationDate(s)
 	return pc
 }
 
 // SetNillablePublicationDate sets the "publication_date" field if the given value is not nil.
-func (pc *PublicationCreate) SetNillablePublicationDate(t *time.Time) *PublicationCreate {
-	if t != nil {
-		pc.SetPublicationDate(*t)
+func (pc *PublicationCreate) SetNillablePublicationDate(s *string) *PublicationCreate {
+	if s != nil {
+		pc.SetPublicationDate(*s)
 	}
 	return pc
 }
@@ -277,11 +276,6 @@ func (pc *PublicationCreate) SetNillableID(s *string) *PublicationCreate {
 		pc.SetID(*s)
 	}
 	return pc
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (pc *PublicationCreate) SetUser(u *User) *PublicationCreate {
-	return pc.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the PublicationTranslation entity by IDs.
@@ -455,15 +449,6 @@ func (pc *PublicationCreate) check() error {
 	if _, ok := pc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "Publication.sort_order"`)}
 	}
-	if _, ok := pc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Publication.created_at"`)}
-	}
-	if _, ok := pc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Publication.updated_at"`)}
-	}
-	if len(pc.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Publication.user"`)}
-	}
 	return nil
 }
 
@@ -499,6 +484,10 @@ func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := pc.mutation.UserID(); ok {
+		_spec.SetField(publication.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := pc.mutation.Title(); ok {
 		_spec.SetField(publication.FieldTitle, field.TypeString, value)
 		_node.Title = value
@@ -528,7 +517,7 @@ func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 		_node.Pages = value
 	}
 	if value, ok := pc.mutation.PublicationDate(); ok {
-		_spec.SetField(publication.FieldPublicationDate, field.TypeTime, value)
+		_spec.SetField(publication.FieldPublicationDate, field.TypeString, value)
 		_node.PublicationDate = value
 	}
 	if value, ok := pc.mutation.Doi(); ok {
@@ -570,23 +559,6 @@ func (pc *PublicationCreate) createSpec() (*Publication, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.UpdatedAt(); ok {
 		_spec.SetField(publication.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := pc.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   publication.UserTable,
-			Columns: []string{publication.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

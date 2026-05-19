@@ -55,8 +55,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
-	DefaultSortOrder int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.

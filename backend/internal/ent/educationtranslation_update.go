@@ -269,6 +269,9 @@ func (etu *EducationTranslationUpdate) sqlSave(ctx context.Context) (n int, err 
 	if etu.mutation.LocationCleared() {
 		_spec.ClearField(educationtranslation.FieldLocation, field.TypeString)
 	}
+	if etu.mutation.CreatedAtCleared() {
+		_spec.ClearField(educationtranslation.FieldCreatedAt, field.TypeTime)
+	}
 	if etu.mutation.EducationCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -616,6 +619,9 @@ func (etuo *EducationTranslationUpdateOne) sqlSave(ctx context.Context) (_node *
 	}
 	if etuo.mutation.LocationCleared() {
 		_spec.ClearField(educationtranslation.FieldLocation, field.TypeString)
+	}
+	if etuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(educationtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if etuo.mutation.EducationCleared() {
 		edge := &sqlgraph.EdgeSpec{

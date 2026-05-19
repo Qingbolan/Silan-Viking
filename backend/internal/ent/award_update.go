@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/award"
 	"silan-backend/internal/ent/awardtranslation"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -73,15 +72,15 @@ func (au *AwardUpdate) SetNillableAwardingOrganization(s *string) *AwardUpdate {
 }
 
 // SetAwardDate sets the "award_date" field.
-func (au *AwardUpdate) SetAwardDate(t time.Time) *AwardUpdate {
-	au.mutation.SetAwardDate(t)
+func (au *AwardUpdate) SetAwardDate(s string) *AwardUpdate {
+	au.mutation.SetAwardDate(s)
 	return au
 }
 
 // SetNillableAwardDate sets the "award_date" field if the given value is not nil.
-func (au *AwardUpdate) SetNillableAwardDate(t *time.Time) *AwardUpdate {
-	if t != nil {
-		au.SetAwardDate(*t)
+func (au *AwardUpdate) SetNillableAwardDate(s *string) *AwardUpdate {
+	if s != nil {
+		au.SetAwardDate(*s)
 	}
 	return au
 }
@@ -206,9 +205,10 @@ func (au *AwardUpdate) SetUpdatedAt(t time.Time) *AwardUpdate {
 	return au
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (au *AwardUpdate) SetUser(u *User) *AwardUpdate {
-	return au.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (au *AwardUpdate) ClearUpdatedAt() *AwardUpdate {
+	au.mutation.ClearUpdatedAt()
+	return au
 }
 
 // AddTranslationIDs adds the "translations" edge to the AwardTranslation entity by IDs.
@@ -229,12 +229,6 @@ func (au *AwardUpdate) AddTranslations(a ...*AwardTranslation) *AwardUpdate {
 // Mutation returns the AwardMutation object of the builder.
 func (au *AwardUpdate) Mutation() *AwardMutation {
 	return au.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (au *AwardUpdate) ClearUser() *AwardUpdate {
-	au.mutation.ClearUser()
-	return au
 }
 
 // ClearTranslations clears all "translations" edges to the AwardTranslation entity.
@@ -288,7 +282,7 @@ func (au *AwardUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (au *AwardUpdate) defaults() {
-	if _, ok := au.mutation.UpdatedAt(); !ok {
+	if _, ok := au.mutation.UpdatedAt(); !ok && !au.mutation.UpdatedAtCleared() {
 		v := award.UpdateDefaultUpdatedAt()
 		au.mutation.SetUpdatedAt(v)
 	}
@@ -316,9 +310,6 @@ func (au *AwardUpdate) check() error {
 			return &ValidationError{Name: "certificate_url", err: fmt.Errorf(`ent: validator failed for field "Award.certificate_url": %w`, err)}
 		}
 	}
-	if au.mutation.UserCleared() && len(au.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Award.user"`)
-	}
 	return nil
 }
 
@@ -334,6 +325,9 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := au.mutation.UserID(); ok {
+		_spec.SetField(award.FieldUserID, field.TypeString, value)
+	}
 	if value, ok := au.mutation.Title(); ok {
 		_spec.SetField(award.FieldTitle, field.TypeString, value)
 	}
@@ -341,10 +335,10 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(award.FieldAwardingOrganization, field.TypeString, value)
 	}
 	if value, ok := au.mutation.AwardDate(); ok {
-		_spec.SetField(award.FieldAwardDate, field.TypeTime, value)
+		_spec.SetField(award.FieldAwardDate, field.TypeString, value)
 	}
 	if au.mutation.AwardDateCleared() {
-		_spec.ClearField(award.FieldAwardDate, field.TypeTime)
+		_spec.ClearField(award.FieldAwardDate, field.TypeString)
 	}
 	if value, ok := au.mutation.AwardType(); ok {
 		_spec.SetField(award.FieldAwardType, field.TypeString, value)
@@ -379,37 +373,14 @@ func (au *AwardUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := au.mutation.AddedSortOrder(); ok {
 		_spec.AddField(award.FieldSortOrder, field.TypeInt, value)
 	}
+	if au.mutation.CreatedAtCleared() {
+		_spec.ClearField(award.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := au.mutation.UpdatedAt(); ok {
 		_spec.SetField(award.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if au.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   award.UserTable,
-			Columns: []string{award.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := au.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   award.UserTable,
-			Columns: []string{award.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if au.mutation.UpdatedAtCleared() {
+		_spec.ClearField(award.FieldUpdatedAt, field.TypeTime)
 	}
 	if au.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -519,15 +490,15 @@ func (auo *AwardUpdateOne) SetNillableAwardingOrganization(s *string) *AwardUpda
 }
 
 // SetAwardDate sets the "award_date" field.
-func (auo *AwardUpdateOne) SetAwardDate(t time.Time) *AwardUpdateOne {
-	auo.mutation.SetAwardDate(t)
+func (auo *AwardUpdateOne) SetAwardDate(s string) *AwardUpdateOne {
+	auo.mutation.SetAwardDate(s)
 	return auo
 }
 
 // SetNillableAwardDate sets the "award_date" field if the given value is not nil.
-func (auo *AwardUpdateOne) SetNillableAwardDate(t *time.Time) *AwardUpdateOne {
-	if t != nil {
-		auo.SetAwardDate(*t)
+func (auo *AwardUpdateOne) SetNillableAwardDate(s *string) *AwardUpdateOne {
+	if s != nil {
+		auo.SetAwardDate(*s)
 	}
 	return auo
 }
@@ -652,9 +623,10 @@ func (auo *AwardUpdateOne) SetUpdatedAt(t time.Time) *AwardUpdateOne {
 	return auo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (auo *AwardUpdateOne) SetUser(u *User) *AwardUpdateOne {
-	return auo.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (auo *AwardUpdateOne) ClearUpdatedAt() *AwardUpdateOne {
+	auo.mutation.ClearUpdatedAt()
+	return auo
 }
 
 // AddTranslationIDs adds the "translations" edge to the AwardTranslation entity by IDs.
@@ -675,12 +647,6 @@ func (auo *AwardUpdateOne) AddTranslations(a ...*AwardTranslation) *AwardUpdateO
 // Mutation returns the AwardMutation object of the builder.
 func (auo *AwardUpdateOne) Mutation() *AwardMutation {
 	return auo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (auo *AwardUpdateOne) ClearUser() *AwardUpdateOne {
-	auo.mutation.ClearUser()
-	return auo
 }
 
 // ClearTranslations clears all "translations" edges to the AwardTranslation entity.
@@ -747,7 +713,7 @@ func (auo *AwardUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (auo *AwardUpdateOne) defaults() {
-	if _, ok := auo.mutation.UpdatedAt(); !ok {
+	if _, ok := auo.mutation.UpdatedAt(); !ok && !auo.mutation.UpdatedAtCleared() {
 		v := award.UpdateDefaultUpdatedAt()
 		auo.mutation.SetUpdatedAt(v)
 	}
@@ -774,9 +740,6 @@ func (auo *AwardUpdateOne) check() error {
 		if err := award.CertificateURLValidator(v); err != nil {
 			return &ValidationError{Name: "certificate_url", err: fmt.Errorf(`ent: validator failed for field "Award.certificate_url": %w`, err)}
 		}
-	}
-	if auo.mutation.UserCleared() && len(auo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Award.user"`)
 	}
 	return nil
 }
@@ -810,6 +773,9 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 			}
 		}
 	}
+	if value, ok := auo.mutation.UserID(); ok {
+		_spec.SetField(award.FieldUserID, field.TypeString, value)
+	}
 	if value, ok := auo.mutation.Title(); ok {
 		_spec.SetField(award.FieldTitle, field.TypeString, value)
 	}
@@ -817,10 +783,10 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 		_spec.SetField(award.FieldAwardingOrganization, field.TypeString, value)
 	}
 	if value, ok := auo.mutation.AwardDate(); ok {
-		_spec.SetField(award.FieldAwardDate, field.TypeTime, value)
+		_spec.SetField(award.FieldAwardDate, field.TypeString, value)
 	}
 	if auo.mutation.AwardDateCleared() {
-		_spec.ClearField(award.FieldAwardDate, field.TypeTime)
+		_spec.ClearField(award.FieldAwardDate, field.TypeString)
 	}
 	if value, ok := auo.mutation.AwardType(); ok {
 		_spec.SetField(award.FieldAwardType, field.TypeString, value)
@@ -855,37 +821,14 @@ func (auo *AwardUpdateOne) sqlSave(ctx context.Context) (_node *Award, err error
 	if value, ok := auo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(award.FieldSortOrder, field.TypeInt, value)
 	}
+	if auo.mutation.CreatedAtCleared() {
+		_spec.ClearField(award.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := auo.mutation.UpdatedAt(); ok {
 		_spec.SetField(award.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if auo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   award.UserTable,
-			Columns: []string{award.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := auo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   award.UserTable,
-			Columns: []string{award.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if auo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(award.FieldUpdatedAt, field.TypeTime)
 	}
 	if auo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

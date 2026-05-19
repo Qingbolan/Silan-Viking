@@ -85,6 +85,12 @@ func (edu *EducationDetailUpdate) SetUpdatedAt(t time.Time) *EducationDetailUpda
 	return edu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (edu *EducationDetailUpdate) ClearUpdatedAt() *EducationDetailUpdate {
+	edu.mutation.ClearUpdatedAt()
+	return edu
+}
+
 // SetEducation sets the "education" edge to the Education entity.
 func (edu *EducationDetailUpdate) SetEducation(e *Education) *EducationDetailUpdate {
 	return edu.SetEducationID(e.ID)
@@ -167,7 +173,7 @@ func (edu *EducationDetailUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (edu *EducationDetailUpdate) defaults() {
-	if _, ok := edu.mutation.UpdatedAt(); !ok {
+	if _, ok := edu.mutation.UpdatedAt(); !ok && !edu.mutation.UpdatedAtCleared() {
 		v := educationdetail.UpdateDefaultUpdatedAt()
 		edu.mutation.SetUpdatedAt(v)
 	}
@@ -207,8 +213,14 @@ func (edu *EducationDetailUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := edu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(educationdetail.FieldSortOrder, field.TypeInt, value)
 	}
+	if edu.mutation.CreatedAtCleared() {
+		_spec.ClearField(educationdetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := edu.mutation.UpdatedAt(); ok {
 		_spec.SetField(educationdetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if edu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(educationdetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if edu.mutation.EducationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -359,6 +371,12 @@ func (eduo *EducationDetailUpdateOne) SetUpdatedAt(t time.Time) *EducationDetail
 	return eduo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (eduo *EducationDetailUpdateOne) ClearUpdatedAt() *EducationDetailUpdateOne {
+	eduo.mutation.ClearUpdatedAt()
+	return eduo
+}
+
 // SetEducation sets the "education" edge to the Education entity.
 func (eduo *EducationDetailUpdateOne) SetEducation(e *Education) *EducationDetailUpdateOne {
 	return eduo.SetEducationID(e.ID)
@@ -454,7 +472,7 @@ func (eduo *EducationDetailUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (eduo *EducationDetailUpdateOne) defaults() {
-	if _, ok := eduo.mutation.UpdatedAt(); !ok {
+	if _, ok := eduo.mutation.UpdatedAt(); !ok && !eduo.mutation.UpdatedAtCleared() {
 		v := educationdetail.UpdateDefaultUpdatedAt()
 		eduo.mutation.SetUpdatedAt(v)
 	}
@@ -511,8 +529,14 @@ func (eduo *EducationDetailUpdateOne) sqlSave(ctx context.Context) (_node *Educa
 	if value, ok := eduo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(educationdetail.FieldSortOrder, field.TypeInt, value)
 	}
+	if eduo.mutation.CreatedAtCleared() {
+		_spec.ClearField(educationdetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := eduo.mutation.UpdatedAt(); ok {
 		_spec.SetField(educationdetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if eduo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(educationdetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if eduo.mutation.EducationCleared() {
 		edge := &sqlgraph.EdgeSpec{

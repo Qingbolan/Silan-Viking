@@ -36,7 +36,7 @@ func (IdeaTranslation) Fields() []ent.Field {
 			StorageKey("language_code"),
 		field.String("title").
 			MaxLen(300).
-			NotEmpty(),
+			Optional(),
 		field.Text("abstract").
 			Optional(),
 		field.Text("motivation").
@@ -49,6 +49,7 @@ func (IdeaTranslation) Fields() []ent.Field {
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

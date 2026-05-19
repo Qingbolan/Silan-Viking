@@ -150,6 +150,12 @@ func (au *AnnotationUpdate) SetUpdatedAt(t time.Time) *AnnotationUpdate {
 	return au
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (au *AnnotationUpdate) ClearUpdatedAt() *AnnotationUpdate {
+	au.mutation.ClearUpdatedAt()
+	return au
+}
+
 // Mutation returns the AnnotationMutation object of the builder.
 func (au *AnnotationUpdate) Mutation() *AnnotationMutation {
 	return au.mutation
@@ -185,7 +191,7 @@ func (au *AnnotationUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (au *AnnotationUpdate) defaults() {
-	if _, ok := au.mutation.UpdatedAt(); !ok {
+	if _, ok := au.mutation.UpdatedAt(); !ok && !au.mutation.UpdatedAtCleared() {
 		v := annotation.UpdateDefaultUpdatedAt()
 		au.mutation.SetUpdatedAt(v)
 	}
@@ -248,8 +254,14 @@ func (au *AnnotationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if au.mutation.UserIdentityIDCleared() {
 		_spec.ClearField(annotation.FieldUserIdentityID, field.TypeString)
 	}
+	if au.mutation.CreatedAtCleared() {
+		_spec.ClearField(annotation.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := au.mutation.UpdatedAt(); ok {
 		_spec.SetField(annotation.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if au.mutation.UpdatedAtCleared() {
+		_spec.ClearField(annotation.FieldUpdatedAt, field.TypeTime)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -393,6 +405,12 @@ func (auo *AnnotationUpdateOne) SetUpdatedAt(t time.Time) *AnnotationUpdateOne {
 	return auo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (auo *AnnotationUpdateOne) ClearUpdatedAt() *AnnotationUpdateOne {
+	auo.mutation.ClearUpdatedAt()
+	return auo
+}
+
 // Mutation returns the AnnotationMutation object of the builder.
 func (auo *AnnotationUpdateOne) Mutation() *AnnotationMutation {
 	return auo.mutation
@@ -441,7 +459,7 @@ func (auo *AnnotationUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (auo *AnnotationUpdateOne) defaults() {
-	if _, ok := auo.mutation.UpdatedAt(); !ok {
+	if _, ok := auo.mutation.UpdatedAt(); !ok && !auo.mutation.UpdatedAtCleared() {
 		v := annotation.UpdateDefaultUpdatedAt()
 		auo.mutation.SetUpdatedAt(v)
 	}
@@ -521,8 +539,14 @@ func (auo *AnnotationUpdateOne) sqlSave(ctx context.Context) (_node *Annotation,
 	if auo.mutation.UserIdentityIDCleared() {
 		_spec.ClearField(annotation.FieldUserIdentityID, field.TypeString)
 	}
+	if auo.mutation.CreatedAtCleared() {
+		_spec.ClearField(annotation.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := auo.mutation.UpdatedAt(); ok {
 		_spec.SetField(annotation.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if auo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(annotation.FieldUpdatedAt, field.TypeTime)
 	}
 	_node = &Annotation{config: auo.config}
 	_spec.Assign = _node.assignValues

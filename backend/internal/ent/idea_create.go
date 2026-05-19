@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -196,11 +195,6 @@ func (ic *IdeaCreate) SetNillableID(s *string) *IdeaCreate {
 		ic.SetID(*s)
 	}
 	return ic
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (ic *IdeaCreate) SetUser(u *User) *IdeaCreate {
-	return ic.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by IDs.
@@ -398,6 +392,10 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := ic.mutation.UserID(); ok {
+		_spec.SetField(idea.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := ic.mutation.Title(); ok {
 		_spec.SetField(idea.FieldTitle, field.TypeString, value)
 		_node.Title = value
@@ -441,23 +439,6 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 	if value, ok := ic.mutation.UpdatedAt(); ok {
 		_spec.SetField(idea.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := ic.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   idea.UserTable,
-			Columns: []string{idea.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ic.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

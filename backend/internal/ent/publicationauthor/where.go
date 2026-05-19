@@ -395,6 +395,16 @@ func CreatedAtLTE(v time.Time) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldEQ(FieldUpdatedAt, v))
@@ -433,6 +443,16 @@ func UpdatedAtLT(v time.Time) predicate.PublicationAuthor {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.PublicationAuthor {
 	return predicate.PublicationAuthor(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.PublicationAuthor {
+	return predicate.PublicationAuthor(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasPublication applies the HasEdge predicate on the "publication" edge.

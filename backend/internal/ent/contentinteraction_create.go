@@ -310,9 +310,6 @@ func (cic *ContentInteractionCreate) check() error {
 	if _, ok := cic.mutation.ScrollProgress(); !ok {
 		return &ValidationError{Name: "scroll_progress", err: errors.New(`ent: missing required field "ContentInteraction.scroll_progress"`)}
 	}
-	if _, ok := cic.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ContentInteraction.created_at"`)}
-	}
 	return nil
 }
 

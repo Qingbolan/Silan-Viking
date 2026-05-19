@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
 	"silan-backend/internal/ent/researchprojecttranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -72,15 +71,15 @@ func (rpu *ResearchProjectUpdate) ClearTitle() *ResearchProjectUpdate {
 }
 
 // SetStartDate sets the "start_date" field.
-func (rpu *ResearchProjectUpdate) SetStartDate(t time.Time) *ResearchProjectUpdate {
-	rpu.mutation.SetStartDate(t)
+func (rpu *ResearchProjectUpdate) SetStartDate(s string) *ResearchProjectUpdate {
+	rpu.mutation.SetStartDate(s)
 	return rpu
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (rpu *ResearchProjectUpdate) SetNillableStartDate(t *time.Time) *ResearchProjectUpdate {
-	if t != nil {
-		rpu.SetStartDate(*t)
+func (rpu *ResearchProjectUpdate) SetNillableStartDate(s *string) *ResearchProjectUpdate {
+	if s != nil {
+		rpu.SetStartDate(*s)
 	}
 	return rpu
 }
@@ -92,15 +91,15 @@ func (rpu *ResearchProjectUpdate) ClearStartDate() *ResearchProjectUpdate {
 }
 
 // SetEndDate sets the "end_date" field.
-func (rpu *ResearchProjectUpdate) SetEndDate(t time.Time) *ResearchProjectUpdate {
-	rpu.mutation.SetEndDate(t)
+func (rpu *ResearchProjectUpdate) SetEndDate(s string) *ResearchProjectUpdate {
+	rpu.mutation.SetEndDate(s)
 	return rpu
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (rpu *ResearchProjectUpdate) SetNillableEndDate(t *time.Time) *ResearchProjectUpdate {
-	if t != nil {
-		rpu.SetEndDate(*t)
+func (rpu *ResearchProjectUpdate) SetNillableEndDate(s *string) *ResearchProjectUpdate {
+	if s != nil {
+		rpu.SetEndDate(*s)
 	}
 	return rpu
 }
@@ -265,11 +264,6 @@ func (rpu *ResearchProjectUpdate) ClearUpdatedAt() *ResearchProjectUpdate {
 	return rpu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (rpu *ResearchProjectUpdate) SetUser(u *User) *ResearchProjectUpdate {
-	return rpu.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectTranslation entity by IDs.
 func (rpu *ResearchProjectUpdate) AddTranslationIDs(ids ...string) *ResearchProjectUpdate {
 	rpu.mutation.AddTranslationIDs(ids...)
@@ -303,12 +297,6 @@ func (rpu *ResearchProjectUpdate) AddDetails(r ...*ResearchProjectDetail) *Resea
 // Mutation returns the ResearchProjectMutation object of the builder.
 func (rpu *ResearchProjectUpdate) Mutation() *ResearchProjectMutation {
 	return rpu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (rpu *ResearchProjectUpdate) ClearUser() *ResearchProjectUpdate {
-	rpu.mutation.ClearUser()
-	return rpu
 }
 
 // ClearTranslations clears all "translations" edges to the ResearchProjectTranslation entity.
@@ -431,6 +419,12 @@ func (rpu *ResearchProjectUpdate) sqlSave(ctx context.Context) (n int, err error
 			}
 		}
 	}
+	if value, ok := rpu.mutation.UserID(); ok {
+		_spec.SetField(researchproject.FieldUserID, field.TypeString, value)
+	}
+	if rpu.mutation.UserIDCleared() {
+		_spec.ClearField(researchproject.FieldUserID, field.TypeString)
+	}
 	if value, ok := rpu.mutation.Title(); ok {
 		_spec.SetField(researchproject.FieldTitle, field.TypeString, value)
 	}
@@ -438,16 +432,16 @@ func (rpu *ResearchProjectUpdate) sqlSave(ctx context.Context) (n int, err error
 		_spec.ClearField(researchproject.FieldTitle, field.TypeString)
 	}
 	if value, ok := rpu.mutation.StartDate(); ok {
-		_spec.SetField(researchproject.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(researchproject.FieldStartDate, field.TypeString, value)
 	}
 	if rpu.mutation.StartDateCleared() {
-		_spec.ClearField(researchproject.FieldStartDate, field.TypeTime)
+		_spec.ClearField(researchproject.FieldStartDate, field.TypeString)
 	}
 	if value, ok := rpu.mutation.EndDate(); ok {
-		_spec.SetField(researchproject.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(researchproject.FieldEndDate, field.TypeString, value)
 	}
 	if rpu.mutation.EndDateCleared() {
-		_spec.ClearField(researchproject.FieldEndDate, field.TypeTime)
+		_spec.ClearField(researchproject.FieldEndDate, field.TypeString)
 	}
 	if value, ok := rpu.mutation.IsOngoing(); ok {
 		_spec.SetField(researchproject.FieldIsOngoing, field.TypeBool, value)
@@ -499,35 +493,6 @@ func (rpu *ResearchProjectUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if rpu.mutation.UpdatedAtCleared() {
 		_spec.ClearField(researchproject.FieldUpdatedAt, field.TypeTime)
-	}
-	if rpu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   researchproject.UserTable,
-			Columns: []string{researchproject.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   researchproject.UserTable,
-			Columns: []string{researchproject.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if rpu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -680,15 +645,15 @@ func (rpuo *ResearchProjectUpdateOne) ClearTitle() *ResearchProjectUpdateOne {
 }
 
 // SetStartDate sets the "start_date" field.
-func (rpuo *ResearchProjectUpdateOne) SetStartDate(t time.Time) *ResearchProjectUpdateOne {
-	rpuo.mutation.SetStartDate(t)
+func (rpuo *ResearchProjectUpdateOne) SetStartDate(s string) *ResearchProjectUpdateOne {
+	rpuo.mutation.SetStartDate(s)
 	return rpuo
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (rpuo *ResearchProjectUpdateOne) SetNillableStartDate(t *time.Time) *ResearchProjectUpdateOne {
-	if t != nil {
-		rpuo.SetStartDate(*t)
+func (rpuo *ResearchProjectUpdateOne) SetNillableStartDate(s *string) *ResearchProjectUpdateOne {
+	if s != nil {
+		rpuo.SetStartDate(*s)
 	}
 	return rpuo
 }
@@ -700,15 +665,15 @@ func (rpuo *ResearchProjectUpdateOne) ClearStartDate() *ResearchProjectUpdateOne
 }
 
 // SetEndDate sets the "end_date" field.
-func (rpuo *ResearchProjectUpdateOne) SetEndDate(t time.Time) *ResearchProjectUpdateOne {
-	rpuo.mutation.SetEndDate(t)
+func (rpuo *ResearchProjectUpdateOne) SetEndDate(s string) *ResearchProjectUpdateOne {
+	rpuo.mutation.SetEndDate(s)
 	return rpuo
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (rpuo *ResearchProjectUpdateOne) SetNillableEndDate(t *time.Time) *ResearchProjectUpdateOne {
-	if t != nil {
-		rpuo.SetEndDate(*t)
+func (rpuo *ResearchProjectUpdateOne) SetNillableEndDate(s *string) *ResearchProjectUpdateOne {
+	if s != nil {
+		rpuo.SetEndDate(*s)
 	}
 	return rpuo
 }
@@ -873,11 +838,6 @@ func (rpuo *ResearchProjectUpdateOne) ClearUpdatedAt() *ResearchProjectUpdateOne
 	return rpuo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (rpuo *ResearchProjectUpdateOne) SetUser(u *User) *ResearchProjectUpdateOne {
-	return rpuo.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectTranslation entity by IDs.
 func (rpuo *ResearchProjectUpdateOne) AddTranslationIDs(ids ...string) *ResearchProjectUpdateOne {
 	rpuo.mutation.AddTranslationIDs(ids...)
@@ -911,12 +871,6 @@ func (rpuo *ResearchProjectUpdateOne) AddDetails(r ...*ResearchProjectDetail) *R
 // Mutation returns the ResearchProjectMutation object of the builder.
 func (rpuo *ResearchProjectUpdateOne) Mutation() *ResearchProjectMutation {
 	return rpuo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (rpuo *ResearchProjectUpdateOne) ClearUser() *ResearchProjectUpdateOne {
-	rpuo.mutation.ClearUser()
-	return rpuo
 }
 
 // ClearTranslations clears all "translations" edges to the ResearchProjectTranslation entity.
@@ -1069,6 +1023,12 @@ func (rpuo *ResearchProjectUpdateOne) sqlSave(ctx context.Context) (_node *Resea
 			}
 		}
 	}
+	if value, ok := rpuo.mutation.UserID(); ok {
+		_spec.SetField(researchproject.FieldUserID, field.TypeString, value)
+	}
+	if rpuo.mutation.UserIDCleared() {
+		_spec.ClearField(researchproject.FieldUserID, field.TypeString)
+	}
 	if value, ok := rpuo.mutation.Title(); ok {
 		_spec.SetField(researchproject.FieldTitle, field.TypeString, value)
 	}
@@ -1076,16 +1036,16 @@ func (rpuo *ResearchProjectUpdateOne) sqlSave(ctx context.Context) (_node *Resea
 		_spec.ClearField(researchproject.FieldTitle, field.TypeString)
 	}
 	if value, ok := rpuo.mutation.StartDate(); ok {
-		_spec.SetField(researchproject.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(researchproject.FieldStartDate, field.TypeString, value)
 	}
 	if rpuo.mutation.StartDateCleared() {
-		_spec.ClearField(researchproject.FieldStartDate, field.TypeTime)
+		_spec.ClearField(researchproject.FieldStartDate, field.TypeString)
 	}
 	if value, ok := rpuo.mutation.EndDate(); ok {
-		_spec.SetField(researchproject.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(researchproject.FieldEndDate, field.TypeString, value)
 	}
 	if rpuo.mutation.EndDateCleared() {
-		_spec.ClearField(researchproject.FieldEndDate, field.TypeTime)
+		_spec.ClearField(researchproject.FieldEndDate, field.TypeString)
 	}
 	if value, ok := rpuo.mutation.IsOngoing(); ok {
 		_spec.SetField(researchproject.FieldIsOngoing, field.TypeBool, value)
@@ -1137,35 +1097,6 @@ func (rpuo *ResearchProjectUpdateOne) sqlSave(ctx context.Context) (_node *Resea
 	}
 	if rpuo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(researchproject.FieldUpdatedAt, field.TypeTime)
-	}
-	if rpuo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   researchproject.UserTable,
-			Columns: []string{researchproject.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := rpuo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   researchproject.UserTable,
-			Columns: []string{researchproject.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if rpuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

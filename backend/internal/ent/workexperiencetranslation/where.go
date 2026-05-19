@@ -490,6 +490,16 @@ func CreatedAtLTE(v time.Time) predicate.WorkExperienceTranslation {
 	return predicate.WorkExperienceTranslation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.WorkExperienceTranslation {
+	return predicate.WorkExperienceTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.WorkExperienceTranslation {
+	return predicate.WorkExperienceTranslation(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasWorkExperience applies the HasEdge predicate on the "work_experience" edge.
 func HasWorkExperience() predicate.WorkExperienceTranslation {
 	return predicate.WorkExperienceTranslation(func(s *sql.Selector) {

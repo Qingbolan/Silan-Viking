@@ -224,12 +224,6 @@ func (pdc *ProjectDetailCreate) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "ProjectDetail.version": %w`, err)}
 		}
 	}
-	if _, ok := pdc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectDetail.created_at"`)}
-	}
-	if _, ok := pdc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectDetail.updated_at"`)}
-	}
 	if len(pdc.mutation.ProjectIDs()) == 0 {
 		return &ValidationError{Name: "project", err: errors.New(`ent: missing required edge "ProjectDetail.project"`)}
 	}

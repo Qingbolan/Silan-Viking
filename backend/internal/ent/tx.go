@@ -28,10 +28,6 @@ type Tx struct {
 	BlogPostTag *BlogPostTagClient
 	// BlogPostTranslation is the client for interacting with the BlogPostTranslation builders.
 	BlogPostTranslation *BlogPostTranslationClient
-	// BlogSeries is the client for interacting with the BlogSeries builders.
-	BlogSeries *BlogSeriesClient
-	// BlogSeriesTranslation is the client for interacting with the BlogSeriesTranslation builders.
-	BlogSeriesTranslation *BlogSeriesTranslationClient
 	// BlogTag is the client for interacting with the BlogTag builders.
 	BlogTag *BlogTagClient
 	// Comment is the client for interacting with the Comment builders.
@@ -273,8 +269,6 @@ func (tx *Tx) init() {
 	tx.BlogPost = NewBlogPostClient(tx.config)
 	tx.BlogPostTag = NewBlogPostTagClient(tx.config)
 	tx.BlogPostTranslation = NewBlogPostTranslationClient(tx.config)
-	tx.BlogSeries = NewBlogSeriesClient(tx.config)
-	tx.BlogSeriesTranslation = NewBlogSeriesTranslationClient(tx.config)
 	tx.BlogTag = NewBlogTagClient(tx.config)
 	tx.Comment = NewCommentClient(tx.config)
 	tx.CommentLike = NewCommentLikeClient(tx.config)

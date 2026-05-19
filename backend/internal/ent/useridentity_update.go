@@ -136,6 +136,12 @@ func (uiu *UserIdentityUpdate) SetUpdatedAt(t time.Time) *UserIdentityUpdate {
 	return uiu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (uiu *UserIdentityUpdate) ClearUpdatedAt() *UserIdentityUpdate {
+	uiu.mutation.ClearUpdatedAt()
+	return uiu
+}
+
 // Mutation returns the UserIdentityMutation object of the builder.
 func (uiu *UserIdentityUpdate) Mutation() *UserIdentityMutation {
 	return uiu.mutation
@@ -171,7 +177,7 @@ func (uiu *UserIdentityUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (uiu *UserIdentityUpdate) defaults() {
-	if _, ok := uiu.mutation.UpdatedAt(); !ok {
+	if _, ok := uiu.mutation.UpdatedAt(); !ok && !uiu.mutation.UpdatedAtCleared() {
 		v := useridentity.UpdateDefaultUpdatedAt()
 		uiu.mutation.SetUpdatedAt(v)
 	}
@@ -231,8 +237,14 @@ func (uiu *UserIdentityUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uiu.mutation.Verified(); ok {
 		_spec.SetField(useridentity.FieldVerified, field.TypeBool, value)
 	}
+	if uiu.mutation.CreatedAtCleared() {
+		_spec.ClearField(useridentity.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := uiu.mutation.UpdatedAt(); ok {
 		_spec.SetField(useridentity.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if uiu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(useridentity.FieldUpdatedAt, field.TypeTime)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uiu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -362,6 +374,12 @@ func (uiuo *UserIdentityUpdateOne) SetUpdatedAt(t time.Time) *UserIdentityUpdate
 	return uiuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (uiuo *UserIdentityUpdateOne) ClearUpdatedAt() *UserIdentityUpdateOne {
+	uiuo.mutation.ClearUpdatedAt()
+	return uiuo
+}
+
 // Mutation returns the UserIdentityMutation object of the builder.
 func (uiuo *UserIdentityUpdateOne) Mutation() *UserIdentityMutation {
 	return uiuo.mutation
@@ -410,7 +428,7 @@ func (uiuo *UserIdentityUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (uiuo *UserIdentityUpdateOne) defaults() {
-	if _, ok := uiuo.mutation.UpdatedAt(); !ok {
+	if _, ok := uiuo.mutation.UpdatedAt(); !ok && !uiuo.mutation.UpdatedAtCleared() {
 		v := useridentity.UpdateDefaultUpdatedAt()
 		uiuo.mutation.SetUpdatedAt(v)
 	}
@@ -487,8 +505,14 @@ func (uiuo *UserIdentityUpdateOne) sqlSave(ctx context.Context) (_node *UserIden
 	if value, ok := uiuo.mutation.Verified(); ok {
 		_spec.SetField(useridentity.FieldVerified, field.TypeBool, value)
 	}
+	if uiuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(useridentity.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := uiuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(useridentity.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if uiuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(useridentity.FieldUpdatedAt, field.TypeTime)
 	}
 	_node = &UserIdentity{config: uiuo.config}
 	_spec.Assign = _node.assignValues

@@ -4,7 +4,6 @@ package ent
 
 import (
 	"fmt"
-	"silan-backend/internal/ent/user"
 	"silan-backend/internal/ent/workexperience"
 	"strings"
 	"time"
@@ -25,9 +24,9 @@ type WorkExperience struct {
 	// Position holds the value of the "position" field.
 	Position string `json:"position,omitempty"`
 	// StartDate holds the value of the "start_date" field.
-	StartDate time.Time `json:"start_date,omitempty"`
+	StartDate string `json:"start_date,omitempty"`
 	// EndDate holds the value of the "end_date" field.
-	EndDate time.Time `json:"end_date,omitempty"`
+	EndDate string `json:"end_date,omitempty"`
 	// IsCurrent holds the value of the "is_current" field.
 	IsCurrent bool `json:"is_current,omitempty"`
 	// Location holds the value of the "location" field.
@@ -50,32 +49,19 @@ type WorkExperience struct {
 
 // WorkExperienceEdges holds the relations/edges for other nodes in the graph.
 type WorkExperienceEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*WorkExperienceTranslation `json:"translations,omitempty"`
 	// Details holds the value of the details edge.
 	Details []*WorkExperienceDetail `json:"details,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e WorkExperienceEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [2]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e WorkExperienceEdges) TranslationsOrErr() ([]*WorkExperienceTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -84,7 +70,7 @@ func (e WorkExperienceEdges) TranslationsOrErr() ([]*WorkExperienceTranslation, 
 // DetailsOrErr returns the Details value or an error if the edge
 // was not loaded in eager-loading.
 func (e WorkExperienceEdges) DetailsOrErr() ([]*WorkExperienceDetail, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Details, nil
 	}
 	return nil, &NotLoadedError{edge: "details"}
@@ -99,9 +85,9 @@ func (*WorkExperience) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case workexperience.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case workexperience.FieldID, workexperience.FieldUserID, workexperience.FieldCompany, workexperience.FieldPosition, workexperience.FieldLocation, workexperience.FieldCompanyWebsite, workexperience.FieldCompanyLogoURL:
+		case workexperience.FieldID, workexperience.FieldUserID, workexperience.FieldCompany, workexperience.FieldPosition, workexperience.FieldStartDate, workexperience.FieldEndDate, workexperience.FieldLocation, workexperience.FieldCompanyWebsite, workexperience.FieldCompanyLogoURL:
 			values[i] = new(sql.NullString)
-		case workexperience.FieldStartDate, workexperience.FieldEndDate, workexperience.FieldCreatedAt, workexperience.FieldUpdatedAt:
+		case workexperience.FieldCreatedAt, workexperience.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -143,16 +129,16 @@ func (we *WorkExperience) assignValues(columns []string, values []any) error {
 				we.Position = value.String
 			}
 		case workexperience.FieldStartDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field start_date", values[i])
 			} else if value.Valid {
-				we.StartDate = value.Time
+				we.StartDate = value.String
 			}
 		case workexperience.FieldEndDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field end_date", values[i])
 			} else if value.Valid {
-				we.EndDate = value.Time
+				we.EndDate = value.String
 			}
 		case workexperience.FieldIsCurrent:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -209,11 +195,6 @@ func (we *WorkExperience) Value(name string) (ent.Value, error) {
 	return we.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the WorkExperience entity.
-func (we *WorkExperience) QueryUser() *UserQuery {
-	return NewWorkExperienceClient(we.config).QueryUser(we)
-}
-
 // QueryTranslations queries the "translations" edge of the WorkExperience entity.
 func (we *WorkExperience) QueryTranslations() *WorkExperienceTranslationQuery {
 	return NewWorkExperienceClient(we.config).QueryTranslations(we)
@@ -257,10 +238,10 @@ func (we *WorkExperience) String() string {
 	builder.WriteString(we.Position)
 	builder.WriteString(", ")
 	builder.WriteString("start_date=")
-	builder.WriteString(we.StartDate.Format(time.ANSIC))
+	builder.WriteString(we.StartDate)
 	builder.WriteString(", ")
 	builder.WriteString("end_date=")
-	builder.WriteString(we.EndDate.Format(time.ANSIC))
+	builder.WriteString(we.EndDate)
 	builder.WriteString(", ")
 	builder.WriteString("is_current=")
 	builder.WriteString(fmt.Sprintf("%v", we.IsCurrent))

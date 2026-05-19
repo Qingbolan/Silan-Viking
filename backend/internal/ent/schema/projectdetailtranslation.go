@@ -40,6 +40,7 @@ func (ProjectDetailTranslation) Fields() []ent.Field {
 		// anchor; dropping it is deferred (not an M0.5a irreversible action).
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

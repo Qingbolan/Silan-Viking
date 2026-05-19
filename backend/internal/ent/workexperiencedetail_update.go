@@ -85,6 +85,12 @@ func (wedu *WorkExperienceDetailUpdate) SetUpdatedAt(t time.Time) *WorkExperienc
 	return wedu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (wedu *WorkExperienceDetailUpdate) ClearUpdatedAt() *WorkExperienceDetailUpdate {
+	wedu.mutation.ClearUpdatedAt()
+	return wedu
+}
+
 // SetWorkExperience sets the "work_experience" edge to the WorkExperience entity.
 func (wedu *WorkExperienceDetailUpdate) SetWorkExperience(w *WorkExperience) *WorkExperienceDetailUpdate {
 	return wedu.SetWorkExperienceID(w.ID)
@@ -167,7 +173,7 @@ func (wedu *WorkExperienceDetailUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (wedu *WorkExperienceDetailUpdate) defaults() {
-	if _, ok := wedu.mutation.UpdatedAt(); !ok {
+	if _, ok := wedu.mutation.UpdatedAt(); !ok && !wedu.mutation.UpdatedAtCleared() {
 		v := workexperiencedetail.UpdateDefaultUpdatedAt()
 		wedu.mutation.SetUpdatedAt(v)
 	}
@@ -207,8 +213,14 @@ func (wedu *WorkExperienceDetailUpdate) sqlSave(ctx context.Context) (n int, err
 	if value, ok := wedu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(workexperiencedetail.FieldSortOrder, field.TypeInt, value)
 	}
+	if wedu.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperiencedetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := wedu.mutation.UpdatedAt(); ok {
 		_spec.SetField(workexperiencedetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if wedu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(workexperiencedetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if wedu.mutation.WorkExperienceCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -359,6 +371,12 @@ func (weduo *WorkExperienceDetailUpdateOne) SetUpdatedAt(t time.Time) *WorkExper
 	return weduo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (weduo *WorkExperienceDetailUpdateOne) ClearUpdatedAt() *WorkExperienceDetailUpdateOne {
+	weduo.mutation.ClearUpdatedAt()
+	return weduo
+}
+
 // SetWorkExperience sets the "work_experience" edge to the WorkExperience entity.
 func (weduo *WorkExperienceDetailUpdateOne) SetWorkExperience(w *WorkExperience) *WorkExperienceDetailUpdateOne {
 	return weduo.SetWorkExperienceID(w.ID)
@@ -454,7 +472,7 @@ func (weduo *WorkExperienceDetailUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (weduo *WorkExperienceDetailUpdateOne) defaults() {
-	if _, ok := weduo.mutation.UpdatedAt(); !ok {
+	if _, ok := weduo.mutation.UpdatedAt(); !ok && !weduo.mutation.UpdatedAtCleared() {
 		v := workexperiencedetail.UpdateDefaultUpdatedAt()
 		weduo.mutation.SetUpdatedAt(v)
 	}
@@ -511,8 +529,14 @@ func (weduo *WorkExperienceDetailUpdateOne) sqlSave(ctx context.Context) (_node 
 	if value, ok := weduo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(workexperiencedetail.FieldSortOrder, field.TypeInt, value)
 	}
+	if weduo.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperiencedetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := weduo.mutation.UpdatedAt(); ok {
 		_spec.SetField(workexperiencedetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if weduo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(workexperiencedetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if weduo.mutation.WorkExperienceCleared() {
 		edge := &sqlgraph.EdgeSpec{

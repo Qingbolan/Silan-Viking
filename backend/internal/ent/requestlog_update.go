@@ -382,6 +382,9 @@ func (rlu *RequestLogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if rlu.mutation.BotNameCleared() {
 		_spec.ClearField(requestlog.FieldBotName, field.TypeString)
 	}
+	if rlu.mutation.CreatedAtCleared() {
+		_spec.ClearField(requestlog.FieldCreatedAt, field.TypeTime)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, rlu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{requestlog.Label}
@@ -786,6 +789,9 @@ func (rluo *RequestLogUpdateOne) sqlSave(ctx context.Context) (_node *RequestLog
 	}
 	if rluo.mutation.BotNameCleared() {
 		_spec.ClearField(requestlog.FieldBotName, field.TypeString)
+	}
+	if rluo.mutation.CreatedAtCleared() {
+		_spec.ClearField(requestlog.FieldCreatedAt, field.TypeTime)
 	}
 	_node = &RequestLog{config: rluo.config}
 	_spec.Assign = _node.assignValues

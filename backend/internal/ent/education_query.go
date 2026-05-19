@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/educationdetail"
 	"silan-backend/internal/ent/educationtranslation"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -26,7 +25,6 @@ type EducationQuery struct {
 	order            []education.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Education
-	withUser         *UserQuery
 	withTranslations *EducationTranslationQuery
 	withDetails      *EducationDetailQuery
 	// intermediate query (i.e. traversal path).
@@ -63,28 +61,6 @@ func (eq *EducationQuery) Unique(unique bool) *EducationQuery {
 func (eq *EducationQuery) Order(o ...education.OrderOption) *EducationQuery {
 	eq.order = append(eq.order, o...)
 	return eq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (eq *EducationQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: eq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := eq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := eq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(education.Table, education.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, education.UserTable, education.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -323,24 +299,12 @@ func (eq *EducationQuery) Clone() *EducationQuery {
 		order:            append([]education.OrderOption{}, eq.order...),
 		inters:           append([]Interceptor{}, eq.inters...),
 		predicates:       append([]predicate.Education{}, eq.predicates...),
-		withUser:         eq.withUser.Clone(),
 		withTranslations: eq.withTranslations.Clone(),
 		withDetails:      eq.withDetails.Clone(),
 		// clone intermediate query.
 		sql:  eq.sql.Clone(),
 		path: eq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (eq *EducationQuery) WithUser(opts ...func(*UserQuery)) *EducationQuery {
-	query := (&UserClient{config: eq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	eq.withUser = query
-	return eq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -443,8 +407,7 @@ func (eq *EducationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 	var (
 		nodes       = []*Education{}
 		_spec       = eq.querySpec()
-		loadedTypes = [3]bool{
-			eq.withUser != nil,
+		loadedTypes = [2]bool{
 			eq.withTranslations != nil,
 			eq.withDetails != nil,
 		}
@@ -467,12 +430,6 @@ func (eq *EducationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := eq.withUser; query != nil {
-		if err := eq.loadUser(ctx, query, nodes, nil,
-			func(n *Education, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := eq.withTranslations; query != nil {
 		if err := eq.loadTranslations(ctx, query, nodes,
 			func(n *Education) { n.Edges.Translations = []*EducationTranslation{} },
@@ -490,35 +447,6 @@ func (eq *EducationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ed
 	return nodes, nil
 }
 
-func (eq *EducationQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Education, init func(*Education), assign func(*Education, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Education)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (eq *EducationQuery) loadTranslations(ctx context.Context, query *EducationTranslationQuery, nodes []*Education, init func(*Education), assign func(*Education, *EducationTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Education)
@@ -604,9 +532,6 @@ func (eq *EducationQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != education.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if eq.withUser != nil {
-			_spec.Node.AddColumnOnce(education.FieldUserID)
 		}
 	}
 	if ps := eq.predicates; len(ps) > 0 {

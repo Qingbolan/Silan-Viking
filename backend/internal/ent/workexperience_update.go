@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 	"silan-backend/internal/ent/workexperience"
 	"silan-backend/internal/ent/workexperiencedetail"
 	"silan-backend/internal/ent/workexperiencetranslation"
@@ -74,15 +73,15 @@ func (weu *WorkExperienceUpdate) SetNillablePosition(s *string) *WorkExperienceU
 }
 
 // SetStartDate sets the "start_date" field.
-func (weu *WorkExperienceUpdate) SetStartDate(t time.Time) *WorkExperienceUpdate {
-	weu.mutation.SetStartDate(t)
+func (weu *WorkExperienceUpdate) SetStartDate(s string) *WorkExperienceUpdate {
+	weu.mutation.SetStartDate(s)
 	return weu
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (weu *WorkExperienceUpdate) SetNillableStartDate(t *time.Time) *WorkExperienceUpdate {
-	if t != nil {
-		weu.SetStartDate(*t)
+func (weu *WorkExperienceUpdate) SetNillableStartDate(s *string) *WorkExperienceUpdate {
+	if s != nil {
+		weu.SetStartDate(*s)
 	}
 	return weu
 }
@@ -94,15 +93,15 @@ func (weu *WorkExperienceUpdate) ClearStartDate() *WorkExperienceUpdate {
 }
 
 // SetEndDate sets the "end_date" field.
-func (weu *WorkExperienceUpdate) SetEndDate(t time.Time) *WorkExperienceUpdate {
-	weu.mutation.SetEndDate(t)
+func (weu *WorkExperienceUpdate) SetEndDate(s string) *WorkExperienceUpdate {
+	weu.mutation.SetEndDate(s)
 	return weu
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (weu *WorkExperienceUpdate) SetNillableEndDate(t *time.Time) *WorkExperienceUpdate {
-	if t != nil {
-		weu.SetEndDate(*t)
+func (weu *WorkExperienceUpdate) SetNillableEndDate(s *string) *WorkExperienceUpdate {
+	if s != nil {
+		weu.SetEndDate(*s)
 	}
 	return weu
 }
@@ -214,9 +213,10 @@ func (weu *WorkExperienceUpdate) SetUpdatedAt(t time.Time) *WorkExperienceUpdate
 	return weu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (weu *WorkExperienceUpdate) SetUser(u *User) *WorkExperienceUpdate {
-	return weu.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (weu *WorkExperienceUpdate) ClearUpdatedAt() *WorkExperienceUpdate {
+	weu.mutation.ClearUpdatedAt()
+	return weu
 }
 
 // AddTranslationIDs adds the "translations" edge to the WorkExperienceTranslation entity by IDs.
@@ -252,12 +252,6 @@ func (weu *WorkExperienceUpdate) AddDetails(w ...*WorkExperienceDetail) *WorkExp
 // Mutation returns the WorkExperienceMutation object of the builder.
 func (weu *WorkExperienceUpdate) Mutation() *WorkExperienceMutation {
 	return weu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (weu *WorkExperienceUpdate) ClearUser() *WorkExperienceUpdate {
-	weu.mutation.ClearUser()
-	return weu
 }
 
 // ClearTranslations clears all "translations" edges to the WorkExperienceTranslation entity.
@@ -332,7 +326,7 @@ func (weu *WorkExperienceUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (weu *WorkExperienceUpdate) defaults() {
-	if _, ok := weu.mutation.UpdatedAt(); !ok {
+	if _, ok := weu.mutation.UpdatedAt(); !ok && !weu.mutation.UpdatedAtCleared() {
 		v := workexperience.UpdateDefaultUpdatedAt()
 		weu.mutation.SetUpdatedAt(v)
 	}
@@ -365,9 +359,6 @@ func (weu *WorkExperienceUpdate) check() error {
 			return &ValidationError{Name: "company_logo_url", err: fmt.Errorf(`ent: validator failed for field "WorkExperience.company_logo_url": %w`, err)}
 		}
 	}
-	if weu.mutation.UserCleared() && len(weu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "WorkExperience.user"`)
-	}
 	return nil
 }
 
@@ -383,6 +374,9 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 			}
 		}
 	}
+	if value, ok := weu.mutation.UserID(); ok {
+		_spec.SetField(workexperience.FieldUserID, field.TypeString, value)
+	}
 	if value, ok := weu.mutation.Company(); ok {
 		_spec.SetField(workexperience.FieldCompany, field.TypeString, value)
 	}
@@ -390,16 +384,16 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 		_spec.SetField(workexperience.FieldPosition, field.TypeString, value)
 	}
 	if value, ok := weu.mutation.StartDate(); ok {
-		_spec.SetField(workexperience.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(workexperience.FieldStartDate, field.TypeString, value)
 	}
 	if weu.mutation.StartDateCleared() {
-		_spec.ClearField(workexperience.FieldStartDate, field.TypeTime)
+		_spec.ClearField(workexperience.FieldStartDate, field.TypeString)
 	}
 	if value, ok := weu.mutation.EndDate(); ok {
-		_spec.SetField(workexperience.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(workexperience.FieldEndDate, field.TypeString, value)
 	}
 	if weu.mutation.EndDateCleared() {
-		_spec.ClearField(workexperience.FieldEndDate, field.TypeTime)
+		_spec.ClearField(workexperience.FieldEndDate, field.TypeString)
 	}
 	if value, ok := weu.mutation.IsCurrent(); ok {
 		_spec.SetField(workexperience.FieldIsCurrent, field.TypeBool, value)
@@ -428,37 +422,14 @@ func (weu *WorkExperienceUpdate) sqlSave(ctx context.Context) (n int, err error)
 	if value, ok := weu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(workexperience.FieldSortOrder, field.TypeInt, value)
 	}
+	if weu.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperience.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := weu.mutation.UpdatedAt(); ok {
 		_spec.SetField(workexperience.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if weu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workexperience.UserTable,
-			Columns: []string{workexperience.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := weu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workexperience.UserTable,
-			Columns: []string{workexperience.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if weu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(workexperience.FieldUpdatedAt, field.TypeTime)
 	}
 	if weu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -613,15 +584,15 @@ func (weuo *WorkExperienceUpdateOne) SetNillablePosition(s *string) *WorkExperie
 }
 
 // SetStartDate sets the "start_date" field.
-func (weuo *WorkExperienceUpdateOne) SetStartDate(t time.Time) *WorkExperienceUpdateOne {
-	weuo.mutation.SetStartDate(t)
+func (weuo *WorkExperienceUpdateOne) SetStartDate(s string) *WorkExperienceUpdateOne {
+	weuo.mutation.SetStartDate(s)
 	return weuo
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (weuo *WorkExperienceUpdateOne) SetNillableStartDate(t *time.Time) *WorkExperienceUpdateOne {
-	if t != nil {
-		weuo.SetStartDate(*t)
+func (weuo *WorkExperienceUpdateOne) SetNillableStartDate(s *string) *WorkExperienceUpdateOne {
+	if s != nil {
+		weuo.SetStartDate(*s)
 	}
 	return weuo
 }
@@ -633,15 +604,15 @@ func (weuo *WorkExperienceUpdateOne) ClearStartDate() *WorkExperienceUpdateOne {
 }
 
 // SetEndDate sets the "end_date" field.
-func (weuo *WorkExperienceUpdateOne) SetEndDate(t time.Time) *WorkExperienceUpdateOne {
-	weuo.mutation.SetEndDate(t)
+func (weuo *WorkExperienceUpdateOne) SetEndDate(s string) *WorkExperienceUpdateOne {
+	weuo.mutation.SetEndDate(s)
 	return weuo
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (weuo *WorkExperienceUpdateOne) SetNillableEndDate(t *time.Time) *WorkExperienceUpdateOne {
-	if t != nil {
-		weuo.SetEndDate(*t)
+func (weuo *WorkExperienceUpdateOne) SetNillableEndDate(s *string) *WorkExperienceUpdateOne {
+	if s != nil {
+		weuo.SetEndDate(*s)
 	}
 	return weuo
 }
@@ -753,9 +724,10 @@ func (weuo *WorkExperienceUpdateOne) SetUpdatedAt(t time.Time) *WorkExperienceUp
 	return weuo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (weuo *WorkExperienceUpdateOne) SetUser(u *User) *WorkExperienceUpdateOne {
-	return weuo.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (weuo *WorkExperienceUpdateOne) ClearUpdatedAt() *WorkExperienceUpdateOne {
+	weuo.mutation.ClearUpdatedAt()
+	return weuo
 }
 
 // AddTranslationIDs adds the "translations" edge to the WorkExperienceTranslation entity by IDs.
@@ -791,12 +763,6 @@ func (weuo *WorkExperienceUpdateOne) AddDetails(w ...*WorkExperienceDetail) *Wor
 // Mutation returns the WorkExperienceMutation object of the builder.
 func (weuo *WorkExperienceUpdateOne) Mutation() *WorkExperienceMutation {
 	return weuo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (weuo *WorkExperienceUpdateOne) ClearUser() *WorkExperienceUpdateOne {
-	weuo.mutation.ClearUser()
-	return weuo
 }
 
 // ClearTranslations clears all "translations" edges to the WorkExperienceTranslation entity.
@@ -884,7 +850,7 @@ func (weuo *WorkExperienceUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (weuo *WorkExperienceUpdateOne) defaults() {
-	if _, ok := weuo.mutation.UpdatedAt(); !ok {
+	if _, ok := weuo.mutation.UpdatedAt(); !ok && !weuo.mutation.UpdatedAtCleared() {
 		v := workexperience.UpdateDefaultUpdatedAt()
 		weuo.mutation.SetUpdatedAt(v)
 	}
@@ -916,9 +882,6 @@ func (weuo *WorkExperienceUpdateOne) check() error {
 		if err := workexperience.CompanyLogoURLValidator(v); err != nil {
 			return &ValidationError{Name: "company_logo_url", err: fmt.Errorf(`ent: validator failed for field "WorkExperience.company_logo_url": %w`, err)}
 		}
-	}
-	if weuo.mutation.UserCleared() && len(weuo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "WorkExperience.user"`)
 	}
 	return nil
 }
@@ -952,6 +915,9 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 			}
 		}
 	}
+	if value, ok := weuo.mutation.UserID(); ok {
+		_spec.SetField(workexperience.FieldUserID, field.TypeString, value)
+	}
 	if value, ok := weuo.mutation.Company(); ok {
 		_spec.SetField(workexperience.FieldCompany, field.TypeString, value)
 	}
@@ -959,16 +925,16 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 		_spec.SetField(workexperience.FieldPosition, field.TypeString, value)
 	}
 	if value, ok := weuo.mutation.StartDate(); ok {
-		_spec.SetField(workexperience.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(workexperience.FieldStartDate, field.TypeString, value)
 	}
 	if weuo.mutation.StartDateCleared() {
-		_spec.ClearField(workexperience.FieldStartDate, field.TypeTime)
+		_spec.ClearField(workexperience.FieldStartDate, field.TypeString)
 	}
 	if value, ok := weuo.mutation.EndDate(); ok {
-		_spec.SetField(workexperience.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(workexperience.FieldEndDate, field.TypeString, value)
 	}
 	if weuo.mutation.EndDateCleared() {
-		_spec.ClearField(workexperience.FieldEndDate, field.TypeTime)
+		_spec.ClearField(workexperience.FieldEndDate, field.TypeString)
 	}
 	if value, ok := weuo.mutation.IsCurrent(); ok {
 		_spec.SetField(workexperience.FieldIsCurrent, field.TypeBool, value)
@@ -997,37 +963,14 @@ func (weuo *WorkExperienceUpdateOne) sqlSave(ctx context.Context) (_node *WorkEx
 	if value, ok := weuo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(workexperience.FieldSortOrder, field.TypeInt, value)
 	}
+	if weuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(workexperience.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := weuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(workexperience.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if weuo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workexperience.UserTable,
-			Columns: []string{workexperience.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := weuo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workexperience.UserTable,
-			Columns: []string{workexperience.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if weuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(workexperience.FieldUpdatedAt, field.TypeTime)
 	}
 	if weuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

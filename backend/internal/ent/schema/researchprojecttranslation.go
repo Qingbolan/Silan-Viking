@@ -36,7 +36,7 @@ func (ResearchProjectTranslation) Fields() []ent.Field {
 			StorageKey("language_code"),
 		field.String("title").
 			MaxLen(300).
-			NotEmpty(),
+			Optional(),
 		field.String("location").
 			Optional().
 			MaxLen(200),
@@ -48,6 +48,7 @@ func (ResearchProjectTranslation) Fields() []ent.Field {
 			MaxLen(200),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

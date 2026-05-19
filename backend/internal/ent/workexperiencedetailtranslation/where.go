@@ -270,6 +270,16 @@ func DetailTextHasSuffix(v string) predicate.WorkExperienceDetailTranslation {
 	return predicate.WorkExperienceDetailTranslation(sql.FieldHasSuffix(FieldDetailText, v))
 }
 
+// DetailTextIsNil applies the IsNil predicate on the "detail_text" field.
+func DetailTextIsNil() predicate.WorkExperienceDetailTranslation {
+	return predicate.WorkExperienceDetailTranslation(sql.FieldIsNull(FieldDetailText))
+}
+
+// DetailTextNotNil applies the NotNil predicate on the "detail_text" field.
+func DetailTextNotNil() predicate.WorkExperienceDetailTranslation {
+	return predicate.WorkExperienceDetailTranslation(sql.FieldNotNull(FieldDetailText))
+}
+
 // DetailTextEqualFold applies the EqualFold predicate on the "detail_text" field.
 func DetailTextEqualFold(v string) predicate.WorkExperienceDetailTranslation {
 	return predicate.WorkExperienceDetailTranslation(sql.FieldEqualFold(FieldDetailText, v))
@@ -318,6 +328,16 @@ func CreatedAtLT(v time.Time) predicate.WorkExperienceDetailTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.WorkExperienceDetailTranslation {
 	return predicate.WorkExperienceDetailTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.WorkExperienceDetailTranslation {
+	return predicate.WorkExperienceDetailTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.WorkExperienceDetailTranslation {
+	return predicate.WorkExperienceDetailTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasWorkExperienceDetail applies the HasEdge predicate on the "work_experience_detail" edge.

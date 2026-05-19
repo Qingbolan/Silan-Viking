@@ -40,6 +40,14 @@ func (itc *IdeaTranslationCreate) SetTitle(s string) *IdeaTranslationCreate {
 	return itc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (itc *IdeaTranslationCreate) SetNillableTitle(s *string) *IdeaTranslationCreate {
+	if s != nil {
+		itc.SetTitle(*s)
+	}
+	return itc
+}
+
 // SetAbstract sets the "abstract" field.
 func (itc *IdeaTranslationCreate) SetAbstract(s string) *IdeaTranslationCreate {
 	itc.mutation.SetAbstract(s)
@@ -212,16 +220,10 @@ func (itc *IdeaTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "IdeaTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := itc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "IdeaTranslation.title"`)}
-	}
 	if v, ok := itc.mutation.Title(); ok {
 		if err := ideatranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "IdeaTranslation.title": %w`, err)}
 		}
-	}
-	if _, ok := itc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "IdeaTranslation.created_at"`)}
 	}
 	if len(itc.mutation.IdeaIDs()) == 0 {
 		return &ValidationError{Name: "idea", err: errors.New(`ent: missing required edge "IdeaTranslation.idea"`)}

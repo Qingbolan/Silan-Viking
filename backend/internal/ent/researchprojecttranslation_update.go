@@ -71,6 +71,12 @@ func (rptu *ResearchProjectTranslationUpdate) SetNillableTitle(s *string) *Resea
 	return rptu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (rptu *ResearchProjectTranslationUpdate) ClearTitle() *ResearchProjectTranslationUpdate {
+	rptu.mutation.ClearTitle()
+	return rptu
+}
+
 // SetLocation sets the "location" field.
 func (rptu *ResearchProjectTranslationUpdate) SetLocation(s string) *ResearchProjectTranslationUpdate {
 	rptu.mutation.SetLocation(s)
@@ -242,6 +248,9 @@ func (rptu *ResearchProjectTranslationUpdate) sqlSave(ctx context.Context) (n in
 	if value, ok := rptu.mutation.Title(); ok {
 		_spec.SetField(researchprojecttranslation.FieldTitle, field.TypeString, value)
 	}
+	if rptu.mutation.TitleCleared() {
+		_spec.ClearField(researchprojecttranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := rptu.mutation.Location(); ok {
 		_spec.SetField(researchprojecttranslation.FieldLocation, field.TypeString, value)
 	}
@@ -259,6 +268,9 @@ func (rptu *ResearchProjectTranslationUpdate) sqlSave(ctx context.Context) (n in
 	}
 	if rptu.mutation.FundingSourceCleared() {
 		_spec.ClearField(researchprojecttranslation.FieldFundingSource, field.TypeString)
+	}
+	if rptu.mutation.CreatedAtCleared() {
+		_spec.ClearField(researchprojecttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if rptu.mutation.ResearchProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -377,6 +389,12 @@ func (rptuo *ResearchProjectTranslationUpdateOne) SetNillableTitle(s *string) *R
 	if s != nil {
 		rptuo.SetTitle(*s)
 	}
+	return rptuo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (rptuo *ResearchProjectTranslationUpdateOne) ClearTitle() *ResearchProjectTranslationUpdateOne {
+	rptuo.mutation.ClearTitle()
 	return rptuo
 }
 
@@ -581,6 +599,9 @@ func (rptuo *ResearchProjectTranslationUpdateOne) sqlSave(ctx context.Context) (
 	if value, ok := rptuo.mutation.Title(); ok {
 		_spec.SetField(researchprojecttranslation.FieldTitle, field.TypeString, value)
 	}
+	if rptuo.mutation.TitleCleared() {
+		_spec.ClearField(researchprojecttranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := rptuo.mutation.Location(); ok {
 		_spec.SetField(researchprojecttranslation.FieldLocation, field.TypeString, value)
 	}
@@ -598,6 +619,9 @@ func (rptuo *ResearchProjectTranslationUpdateOne) sqlSave(ctx context.Context) (
 	}
 	if rptuo.mutation.FundingSourceCleared() {
 		_spec.ClearField(researchprojecttranslation.FieldFundingSource, field.TypeString)
+	}
+	if rptuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(researchprojecttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if rptuo.mutation.ResearchProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -11,8 +11,6 @@ import (
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttag"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseries"
-	"silan-backend/internal/ent/blogseriestranslation"
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
@@ -161,39 +159,11 @@ func init() {
 	// awardtranslationDescTitle is the schema descriptor for title field.
 	awardtranslationDescTitle := awardtranslationFields[3].Descriptor()
 	// awardtranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	awardtranslation.TitleValidator = func() func(string) error {
-		validators := awardtranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	awardtranslation.TitleValidator = awardtranslationDescTitle.Validators[0].(func(string) error)
 	// awardtranslationDescAwardingOrganization is the schema descriptor for awarding_organization field.
 	awardtranslationDescAwardingOrganization := awardtranslationFields[4].Descriptor()
 	// awardtranslation.AwardingOrganizationValidator is a validator for the "awarding_organization" field. It is called by the builders before save.
-	awardtranslation.AwardingOrganizationValidator = func() func(string) error {
-		validators := awardtranslationDescAwardingOrganization.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(awarding_organization string) error {
-			for _, fn := range fns {
-				if err := fn(awarding_organization); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	awardtranslation.AwardingOrganizationValidator = awardtranslationDescAwardingOrganization.Validators[0].(func(string) error)
 	// awardtranslationDescAwardType is the schema descriptor for award_type field.
 	awardtranslationDescAwardType := awardtranslationFields[5].Descriptor()
 	// awardtranslation.AwardTypeValidator is a validator for the "award_type" field. It is called by the builders before save.
@@ -275,21 +245,7 @@ func init() {
 	// blogcategorytranslationDescName is the schema descriptor for name field.
 	blogcategorytranslationDescName := blogcategorytranslationFields[3].Descriptor()
 	// blogcategorytranslation.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	blogcategorytranslation.NameValidator = func() func(string) error {
-		validators := blogcategorytranslationDescName.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(name string) error {
-			for _, fn := range fns {
-				if err := fn(name); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	blogcategorytranslation.NameValidator = blogcategorytranslationDescName.Validators[0].(func(string) error)
 	// blogcategorytranslationDescCreatedAt is the schema descriptor for created_at field.
 	blogcategorytranslationDescCreatedAt := blogcategorytranslationFields[5].Descriptor()
 	// blogcategorytranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -371,25 +327,7 @@ func init() {
 	// blogposttranslationDescTitle is the schema descriptor for title field.
 	blogposttranslationDescTitle := blogposttranslationFields[3].Descriptor()
 	// blogposttranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	blogposttranslation.TitleValidator = func() func(string) error {
-		validators := blogposttranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// blogposttranslationDescContent is the schema descriptor for content field.
-	blogposttranslationDescContent := blogposttranslationFields[5].Descriptor()
-	// blogposttranslation.ContentValidator is a validator for the "content" field. It is called by the builders before save.
-	blogposttranslation.ContentValidator = blogposttranslationDescContent.Validators[0].(func(string) error)
+	blogposttranslation.TitleValidator = blogposttranslationDescTitle.Validators[0].(func(string) error)
 	// blogposttranslationDescCreatedAt is the schema descriptor for created_at field.
 	blogposttranslationDescCreatedAt := blogposttranslationFields[6].Descriptor()
 	// blogposttranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -398,104 +336,6 @@ func init() {
 	blogposttranslationDescID := blogposttranslationFields[0].Descriptor()
 	// blogposttranslation.DefaultID holds the default value on creation for the id field.
 	blogposttranslation.DefaultID = blogposttranslationDescID.Default.(func() string)
-	blogseriesFields := schema.BlogSeries{}.Fields()
-	_ = blogseriesFields
-	// blogseriesDescTitle is the schema descriptor for title field.
-	blogseriesDescTitle := blogseriesFields[1].Descriptor()
-	// blogseries.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	blogseries.TitleValidator = func() func(string) error {
-		validators := blogseriesDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// blogseriesDescSlug is the schema descriptor for slug field.
-	blogseriesDescSlug := blogseriesFields[2].Descriptor()
-	// blogseries.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
-	blogseries.SlugValidator = func() func(string) error {
-		validators := blogseriesDescSlug.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(slug string) error {
-			for _, fn := range fns {
-				if err := fn(slug); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// blogseriesDescThumbnailURL is the schema descriptor for thumbnail_url field.
-	blogseriesDescThumbnailURL := blogseriesFields[4].Descriptor()
-	// blogseries.ThumbnailURLValidator is a validator for the "thumbnail_url" field. It is called by the builders before save.
-	blogseries.ThumbnailURLValidator = blogseriesDescThumbnailURL.Validators[0].(func(string) error)
-	// blogseriesDescStatus is the schema descriptor for status field.
-	blogseriesDescStatus := blogseriesFields[5].Descriptor()
-	// blogseries.DefaultStatus holds the default value on creation for the status field.
-	blogseries.DefaultStatus = blogseriesDescStatus.Default.(string)
-	// blogseries.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	blogseries.StatusValidator = blogseriesDescStatus.Validators[0].(func(string) error)
-	// blogseriesDescEpisodeCount is the schema descriptor for episode_count field.
-	blogseriesDescEpisodeCount := blogseriesFields[6].Descriptor()
-	// blogseries.DefaultEpisodeCount holds the default value on creation for the episode_count field.
-	blogseries.DefaultEpisodeCount = blogseriesDescEpisodeCount.Default.(int)
-	// blogseriesDescCreatedAt is the schema descriptor for created_at field.
-	blogseriesDescCreatedAt := blogseriesFields[7].Descriptor()
-	// blogseries.DefaultCreatedAt holds the default value on creation for the created_at field.
-	blogseries.DefaultCreatedAt = blogseriesDescCreatedAt.Default.(func() time.Time)
-	// blogseriesDescUpdatedAt is the schema descriptor for updated_at field.
-	blogseriesDescUpdatedAt := blogseriesFields[8].Descriptor()
-	// blogseries.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	blogseries.DefaultUpdatedAt = blogseriesDescUpdatedAt.Default.(func() time.Time)
-	// blogseries.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	blogseries.UpdateDefaultUpdatedAt = blogseriesDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// blogseriesDescID is the schema descriptor for id field.
-	blogseriesDescID := blogseriesFields[0].Descriptor()
-	// blogseries.DefaultID holds the default value on creation for the id field.
-	blogseries.DefaultID = blogseriesDescID.Default.(func() string)
-	blogseriestranslationFields := schema.BlogSeriesTranslation{}.Fields()
-	_ = blogseriestranslationFields
-	// blogseriestranslationDescLanguageCode is the schema descriptor for language_code field.
-	blogseriestranslationDescLanguageCode := blogseriestranslationFields[2].Descriptor()
-	// blogseriestranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
-	blogseriestranslation.LanguageCodeValidator = blogseriestranslationDescLanguageCode.Validators[0].(func(string) error)
-	// blogseriestranslationDescTitle is the schema descriptor for title field.
-	blogseriestranslationDescTitle := blogseriestranslationFields[3].Descriptor()
-	// blogseriestranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	blogseriestranslation.TitleValidator = func() func(string) error {
-		validators := blogseriestranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// blogseriestranslationDescCreatedAt is the schema descriptor for created_at field.
-	blogseriestranslationDescCreatedAt := blogseriestranslationFields[5].Descriptor()
-	// blogseriestranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
-	blogseriestranslation.DefaultCreatedAt = blogseriestranslationDescCreatedAt.Default.(func() time.Time)
-	// blogseriestranslationDescID is the schema descriptor for id field.
-	blogseriestranslationDescID := blogseriestranslationFields[0].Descriptor()
-	// blogseriestranslation.DefaultID holds the default value on creation for the id field.
-	blogseriestranslation.DefaultID = blogseriestranslationDescID.Default.(func() string)
 	blogtagFields := schema.BlogTag{}.Fields()
 	_ = blogtagFields
 	// blogtagDescName is the schema descriptor for name field.
@@ -670,10 +510,6 @@ func init() {
 	contentinteraction.DefaultID = contentinteractionDescID.Default.(func() string)
 	contentrelationFields := schema.ContentRelation{}.Fields()
 	_ = contentrelationFields
-	// contentrelationDescSortOrder is the schema descriptor for sort_order field.
-	contentrelationDescSortOrder := contentrelationFields[6].Descriptor()
-	// contentrelation.DefaultSortOrder holds the default value on creation for the sort_order field.
-	contentrelation.DefaultSortOrder = contentrelationDescSortOrder.Default.(int)
 	// contentrelationDescCreatedAt is the schema descriptor for created_at field.
 	contentrelationDescCreatedAt := contentrelationFields[7].Descriptor()
 	// contentrelation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -792,10 +628,6 @@ func init() {
 	educationdetailtranslationDescLanguageCode := educationdetailtranslationFields[2].Descriptor()
 	// educationdetailtranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
 	educationdetailtranslation.LanguageCodeValidator = educationdetailtranslationDescLanguageCode.Validators[0].(func(string) error)
-	// educationdetailtranslationDescDetailText is the schema descriptor for detail_text field.
-	educationdetailtranslationDescDetailText := educationdetailtranslationFields[3].Descriptor()
-	// educationdetailtranslation.DetailTextValidator is a validator for the "detail_text" field. It is called by the builders before save.
-	educationdetailtranslation.DetailTextValidator = educationdetailtranslationDescDetailText.Validators[0].(func(string) error)
 	// educationdetailtranslationDescCreatedAt is the schema descriptor for created_at field.
 	educationdetailtranslationDescCreatedAt := educationdetailtranslationFields[4].Descriptor()
 	// educationdetailtranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -933,21 +765,7 @@ func init() {
 	// episodeseriestranslationDescTitle is the schema descriptor for title field.
 	episodeseriestranslationDescTitle := episodeseriestranslationFields[3].Descriptor()
 	// episodeseriestranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	episodeseriestranslation.TitleValidator = func() func(string) error {
-		validators := episodeseriestranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	episodeseriestranslation.TitleValidator = episodeseriestranslationDescTitle.Validators[0].(func(string) error)
 	// episodeseriestranslationDescCreatedAt is the schema descriptor for created_at field.
 	episodeseriestranslationDescCreatedAt := episodeseriestranslationFields[5].Descriptor()
 	// episodeseriestranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -979,21 +797,7 @@ func init() {
 	// episodetranslationDescTitle is the schema descriptor for title field.
 	episodetranslationDescTitle := episodetranslationFields[3].Descriptor()
 	// episodetranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	episodetranslation.TitleValidator = func() func(string) error {
-		validators := episodetranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	episodetranslation.TitleValidator = episodetranslationDescTitle.Validators[0].(func(string) error)
 	// episodetranslationDescCreatedAt is the schema descriptor for created_at field.
 	episodetranslationDescCreatedAt := episodetranslationFields[5].Descriptor()
 	// episodetranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -1153,21 +957,7 @@ func init() {
 	// ideatranslationDescTitle is the schema descriptor for title field.
 	ideatranslationDescTitle := ideatranslationFields[3].Descriptor()
 	// ideatranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	ideatranslation.TitleValidator = func() func(string) error {
-		validators := ideatranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	ideatranslation.TitleValidator = ideatranslationDescTitle.Validators[0].(func(string) error)
 	// ideatranslationDescCreatedAt is the schema descriptor for created_at field.
 	ideatranslationDescCreatedAt := ideatranslationFields[9].Descriptor()
 	// ideatranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -1625,21 +1415,7 @@ func init() {
 	// projecttranslationDescTitle is the schema descriptor for title field.
 	projecttranslationDescTitle := projecttranslationFields[3].Descriptor()
 	// projecttranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	projecttranslation.TitleValidator = func() func(string) error {
-		validators := projecttranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	projecttranslation.TitleValidator = projecttranslationDescTitle.Validators[0].(func(string) error)
 	// projecttranslationDescProjectType is the schema descriptor for project_type field.
 	projecttranslationDescProjectType := projecttranslationFields[5].Descriptor()
 	// projecttranslation.ProjectTypeValidator is a validator for the "project_type" field. It is called by the builders before save.
@@ -1831,21 +1607,7 @@ func init() {
 	// publicationtranslationDescTitle is the schema descriptor for title field.
 	publicationtranslationDescTitle := publicationtranslationFields[3].Descriptor()
 	// publicationtranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	publicationtranslation.TitleValidator = func() func(string) error {
-		validators := publicationtranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	publicationtranslation.TitleValidator = publicationtranslationDescTitle.Validators[0].(func(string) error)
 	// publicationtranslationDescJournalName is the schema descriptor for journal_name field.
 	publicationtranslationDescJournalName := publicationtranslationFields[4].Descriptor()
 	// publicationtranslation.JournalNameValidator is a validator for the "journal_name" field. It is called by the builders before save.
@@ -1955,25 +1717,7 @@ func init() {
 	// recentupdatetranslationDescTitle is the schema descriptor for title field.
 	recentupdatetranslationDescTitle := recentupdatetranslationFields[3].Descriptor()
 	// recentupdatetranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	recentupdatetranslation.TitleValidator = func() func(string) error {
-		validators := recentupdatetranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// recentupdatetranslationDescDescription is the schema descriptor for description field.
-	recentupdatetranslationDescDescription := recentupdatetranslationFields[4].Descriptor()
-	// recentupdatetranslation.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	recentupdatetranslation.DescriptionValidator = recentupdatetranslationDescDescription.Validators[0].(func(string) error)
+	recentupdatetranslation.TitleValidator = recentupdatetranslationDescTitle.Validators[0].(func(string) error)
 	// recentupdatetranslationDescCreatedAt is the schema descriptor for created_at field.
 	recentupdatetranslationDescCreatedAt := recentupdatetranslationFields[5].Descriptor()
 	// recentupdatetranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -2094,10 +1838,6 @@ func init() {
 	researchprojectdetailtranslationDescLanguageCode := researchprojectdetailtranslationFields[2].Descriptor()
 	// researchprojectdetailtranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
 	researchprojectdetailtranslation.LanguageCodeValidator = researchprojectdetailtranslationDescLanguageCode.Validators[0].(func(string) error)
-	// researchprojectdetailtranslationDescDetailText is the schema descriptor for detail_text field.
-	researchprojectdetailtranslationDescDetailText := researchprojectdetailtranslationFields[3].Descriptor()
-	// researchprojectdetailtranslation.DetailTextValidator is a validator for the "detail_text" field. It is called by the builders before save.
-	researchprojectdetailtranslation.DetailTextValidator = researchprojectdetailtranslationDescDetailText.Validators[0].(func(string) error)
 	// researchprojectdetailtranslationDescCreatedAt is the schema descriptor for created_at field.
 	researchprojectdetailtranslationDescCreatedAt := researchprojectdetailtranslationFields[4].Descriptor()
 	// researchprojectdetailtranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
@@ -2115,21 +1855,7 @@ func init() {
 	// researchprojecttranslationDescTitle is the schema descriptor for title field.
 	researchprojecttranslationDescTitle := researchprojecttranslationFields[3].Descriptor()
 	// researchprojecttranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	researchprojecttranslation.TitleValidator = func() func(string) error {
-		validators := researchprojecttranslationDescTitle.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(title string) error {
-			for _, fn := range fns {
-				if err := fn(title); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	researchprojecttranslation.TitleValidator = researchprojecttranslationDescTitle.Validators[0].(func(string) error)
 	// researchprojecttranslationDescLocation is the schema descriptor for location field.
 	researchprojecttranslationDescLocation := researchprojecttranslationFields[4].Descriptor()
 	// researchprojecttranslation.LocationValidator is a validator for the "location" field. It is called by the builders before save.
@@ -2452,10 +2178,6 @@ func init() {
 	workexperiencedetailtranslationDescLanguageCode := workexperiencedetailtranslationFields[2].Descriptor()
 	// workexperiencedetailtranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
 	workexperiencedetailtranslation.LanguageCodeValidator = workexperiencedetailtranslationDescLanguageCode.Validators[0].(func(string) error)
-	// workexperiencedetailtranslationDescDetailText is the schema descriptor for detail_text field.
-	workexperiencedetailtranslationDescDetailText := workexperiencedetailtranslationFields[3].Descriptor()
-	// workexperiencedetailtranslation.DetailTextValidator is a validator for the "detail_text" field. It is called by the builders before save.
-	workexperiencedetailtranslation.DetailTextValidator = workexperiencedetailtranslationDescDetailText.Validators[0].(func(string) error)
 	// workexperiencedetailtranslationDescCreatedAt is the schema descriptor for created_at field.
 	workexperiencedetailtranslationDescCreatedAt := workexperiencedetailtranslationFields[4].Descriptor()
 	// workexperiencedetailtranslation.DefaultCreatedAt holds the default value on creation for the created_at field.

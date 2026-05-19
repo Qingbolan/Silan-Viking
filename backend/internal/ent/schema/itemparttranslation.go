@@ -35,9 +35,11 @@ func (ItemPartTranslation) Fields() []ent.Field {
 			StorageKey("item_part_id"),
 		field.String("language_code"),
 		// The body of this Part in this language.
-		field.Text("body"),
+		field.Text("body").
+			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
-	"silan-backend/internal/ent/blogseries"
-	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
@@ -53,7 +51,7 @@ type BlogPost struct {
 	// CommentCount holds the value of the "comment_count" field.
 	CommentCount int `json:"comment_count,omitempty"`
 	// PublishedAt holds the value of the "published_at" field.
-	PublishedAt time.Time `json:"published_at,omitempty"`
+	PublishedAt string `json:"published_at,omitempty"`
 	// SeriesOrder holds the value of the "series_order" field.
 	SeriesOrder int `json:"series_order,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -68,12 +66,8 @@ type BlogPost struct {
 
 // BlogPostEdges holds the relations/edges for other nodes in the graph.
 type BlogPostEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Category holds the value of the category edge.
 	Category *BlogCategory `json:"category,omitempty"`
-	// Series holds the value of the series edge.
-	Series *BlogSeries `json:"series,omitempty"`
 	// Tags holds the value of the tags edge.
 	Tags []*BlogTag `json:"tags,omitempty"`
 	// Translations holds the value of the translations edge.
@@ -82,18 +76,7 @@ type BlogPostEdges struct {
 	BlogPostTags []*BlogPostTag `json:"blog_post_tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e BlogPostEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [4]bool
 }
 
 // CategoryOrErr returns the Category value or an error if the edge
@@ -101,27 +84,16 @@ func (e BlogPostEdges) UserOrErr() (*User, error) {
 func (e BlogPostEdges) CategoryOrErr() (*BlogCategory, error) {
 	if e.Category != nil {
 		return e.Category, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: blogcategory.Label}
 	}
 	return nil, &NotLoadedError{edge: "category"}
 }
 
-// SeriesOrErr returns the Series value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e BlogPostEdges) SeriesOrErr() (*BlogSeries, error) {
-	if e.Series != nil {
-		return e.Series, nil
-	} else if e.loadedTypes[2] {
-		return nil, &NotFoundError{label: blogseries.Label}
-	}
-	return nil, &NotLoadedError{edge: "series"}
-}
-
 // TagsOrErr returns the Tags value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) TagsOrErr() ([]*BlogTag, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[1] {
 		return e.Tags, nil
 	}
 	return nil, &NotLoadedError{edge: "tags"}
@@ -130,7 +102,7 @@ func (e BlogPostEdges) TagsOrErr() ([]*BlogTag, error) {
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) TranslationsOrErr() ([]*BlogPostTranslation, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[2] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -139,7 +111,7 @@ func (e BlogPostEdges) TranslationsOrErr() ([]*BlogPostTranslation, error) {
 // BlogPostTagsOrErr returns the BlogPostTags value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) BlogPostTagsOrErr() ([]*BlogPostTag, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[3] {
 		return e.BlogPostTags, nil
 	}
 	return nil, &NotLoadedError{edge: "blog_post_tags"}
@@ -154,9 +126,9 @@ func (*BlogPost) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case blogpost.FieldReadingTimeMinutes, blogpost.FieldViewCount, blogpost.FieldLikeCount, blogpost.FieldCommentCount, blogpost.FieldSeriesOrder:
 			values[i] = new(sql.NullInt64)
-		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID, blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldStatus, blogpost.FieldVisibility, blogpost.FieldFeaturedImageURL:
+		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID, blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldStatus, blogpost.FieldVisibility, blogpost.FieldFeaturedImageURL, blogpost.FieldPublishedAt:
 			values[i] = new(sql.NullString)
-		case blogpost.FieldPublishedAt, blogpost.FieldCreatedAt, blogpost.FieldUpdatedAt:
+		case blogpost.FieldCreatedAt, blogpost.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -276,10 +248,10 @@ func (bp *BlogPost) assignValues(columns []string, values []any) error {
 				bp.CommentCount = int(value.Int64)
 			}
 		case blogpost.FieldPublishedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field published_at", values[i])
 			} else if value.Valid {
-				bp.PublishedAt = value.Time
+				bp.PublishedAt = value.String
 			}
 		case blogpost.FieldSeriesOrder:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -312,19 +284,9 @@ func (bp *BlogPost) Value(name string) (ent.Value, error) {
 	return bp.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the BlogPost entity.
-func (bp *BlogPost) QueryUser() *UserQuery {
-	return NewBlogPostClient(bp.config).QueryUser(bp)
-}
-
 // QueryCategory queries the "category" edge of the BlogPost entity.
 func (bp *BlogPost) QueryCategory() *BlogCategoryQuery {
 	return NewBlogPostClient(bp.config).QueryCategory(bp)
-}
-
-// QuerySeries queries the "series" edge of the BlogPost entity.
-func (bp *BlogPost) QuerySeries() *BlogSeriesQuery {
-	return NewBlogPostClient(bp.config).QuerySeries(bp)
 }
 
 // QueryTags queries the "tags" edge of the BlogPost entity.
@@ -414,7 +376,7 @@ func (bp *BlogPost) String() string {
 	builder.WriteString(fmt.Sprintf("%v", bp.CommentCount))
 	builder.WriteString(", ")
 	builder.WriteString("published_at=")
-	builder.WriteString(bp.PublishedAt.Format(time.ANSIC))
+	builder.WriteString(bp.PublishedAt)
 	builder.WriteString(", ")
 	builder.WriteString("series_order=")
 	builder.WriteString(fmt.Sprintf("%v", bp.SeriesOrder))

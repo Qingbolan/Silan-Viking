@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/publication"
 	"silan-backend/internal/ent/publicationauthor"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -174,15 +173,15 @@ func (pu *PublicationUpdate) ClearPages() *PublicationUpdate {
 }
 
 // SetPublicationDate sets the "publication_date" field.
-func (pu *PublicationUpdate) SetPublicationDate(t time.Time) *PublicationUpdate {
-	pu.mutation.SetPublicationDate(t)
+func (pu *PublicationUpdate) SetPublicationDate(s string) *PublicationUpdate {
+	pu.mutation.SetPublicationDate(s)
 	return pu
 }
 
 // SetNillablePublicationDate sets the "publication_date" field if the given value is not nil.
-func (pu *PublicationUpdate) SetNillablePublicationDate(t *time.Time) *PublicationUpdate {
-	if t != nil {
-		pu.SetPublicationDate(*t)
+func (pu *PublicationUpdate) SetNillablePublicationDate(s *string) *PublicationUpdate {
+	if s != nil {
+		pu.SetPublicationDate(*s)
 	}
 	return pu
 }
@@ -355,9 +354,10 @@ func (pu *PublicationUpdate) SetUpdatedAt(t time.Time) *PublicationUpdate {
 	return pu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (pu *PublicationUpdate) SetUser(u *User) *PublicationUpdate {
-	return pu.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pu *PublicationUpdate) ClearUpdatedAt() *PublicationUpdate {
+	pu.mutation.ClearUpdatedAt()
+	return pu
 }
 
 // AddTranslationIDs adds the "translations" edge to the PublicationTranslation entity by IDs.
@@ -393,12 +393,6 @@ func (pu *PublicationUpdate) AddAuthors(p ...*PublicationAuthor) *PublicationUpd
 // Mutation returns the PublicationMutation object of the builder.
 func (pu *PublicationUpdate) Mutation() *PublicationMutation {
 	return pu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (pu *PublicationUpdate) ClearUser() *PublicationUpdate {
-	pu.mutation.ClearUser()
-	return pu
 }
 
 // ClearTranslations clears all "translations" edges to the PublicationTranslation entity.
@@ -473,7 +467,7 @@ func (pu *PublicationUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pu *PublicationUpdate) defaults() {
-	if _, ok := pu.mutation.UpdatedAt(); !ok {
+	if _, ok := pu.mutation.UpdatedAt(); !ok && !pu.mutation.UpdatedAtCleared() {
 		v := publication.UpdateDefaultUpdatedAt()
 		pu.mutation.SetUpdatedAt(v)
 	}
@@ -541,9 +535,6 @@ func (pu *PublicationUpdate) check() error {
 			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "Publication.image_url": %w`, err)}
 		}
 	}
-	if pu.mutation.UserCleared() && len(pu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Publication.user"`)
-	}
 	return nil
 }
 
@@ -558,6 +549,9 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pu.mutation.UserID(); ok {
+		_spec.SetField(publication.FieldUserID, field.TypeString, value)
 	}
 	if value, ok := pu.mutation.Title(); ok {
 		_spec.SetField(publication.FieldTitle, field.TypeString, value)
@@ -596,10 +590,10 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.ClearField(publication.FieldPages, field.TypeString)
 	}
 	if value, ok := pu.mutation.PublicationDate(); ok {
-		_spec.SetField(publication.FieldPublicationDate, field.TypeTime, value)
+		_spec.SetField(publication.FieldPublicationDate, field.TypeString, value)
 	}
 	if pu.mutation.PublicationDateCleared() {
-		_spec.ClearField(publication.FieldPublicationDate, field.TypeTime)
+		_spec.ClearField(publication.FieldPublicationDate, field.TypeString)
 	}
 	if value, ok := pu.mutation.Doi(); ok {
 		_spec.SetField(publication.FieldDoi, field.TypeString, value)
@@ -646,37 +640,14 @@ func (pu *PublicationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(publication.FieldSortOrder, field.TypeInt, value)
 	}
+	if pu.mutation.CreatedAtCleared() {
+		_spec.ClearField(publication.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pu.mutation.UpdatedAt(); ok {
 		_spec.SetField(publication.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if pu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   publication.UserTable,
-			Columns: []string{publication.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := pu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   publication.UserTable,
-			Columns: []string{publication.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if pu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(publication.FieldUpdatedAt, field.TypeTime)
 	}
 	if pu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -931,15 +902,15 @@ func (puo *PublicationUpdateOne) ClearPages() *PublicationUpdateOne {
 }
 
 // SetPublicationDate sets the "publication_date" field.
-func (puo *PublicationUpdateOne) SetPublicationDate(t time.Time) *PublicationUpdateOne {
-	puo.mutation.SetPublicationDate(t)
+func (puo *PublicationUpdateOne) SetPublicationDate(s string) *PublicationUpdateOne {
+	puo.mutation.SetPublicationDate(s)
 	return puo
 }
 
 // SetNillablePublicationDate sets the "publication_date" field if the given value is not nil.
-func (puo *PublicationUpdateOne) SetNillablePublicationDate(t *time.Time) *PublicationUpdateOne {
-	if t != nil {
-		puo.SetPublicationDate(*t)
+func (puo *PublicationUpdateOne) SetNillablePublicationDate(s *string) *PublicationUpdateOne {
+	if s != nil {
+		puo.SetPublicationDate(*s)
 	}
 	return puo
 }
@@ -1112,9 +1083,10 @@ func (puo *PublicationUpdateOne) SetUpdatedAt(t time.Time) *PublicationUpdateOne
 	return puo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (puo *PublicationUpdateOne) SetUser(u *User) *PublicationUpdateOne {
-	return puo.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (puo *PublicationUpdateOne) ClearUpdatedAt() *PublicationUpdateOne {
+	puo.mutation.ClearUpdatedAt()
+	return puo
 }
 
 // AddTranslationIDs adds the "translations" edge to the PublicationTranslation entity by IDs.
@@ -1150,12 +1122,6 @@ func (puo *PublicationUpdateOne) AddAuthors(p ...*PublicationAuthor) *Publicatio
 // Mutation returns the PublicationMutation object of the builder.
 func (puo *PublicationUpdateOne) Mutation() *PublicationMutation {
 	return puo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (puo *PublicationUpdateOne) ClearUser() *PublicationUpdateOne {
-	puo.mutation.ClearUser()
-	return puo
 }
 
 // ClearTranslations clears all "translations" edges to the PublicationTranslation entity.
@@ -1243,7 +1209,7 @@ func (puo *PublicationUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (puo *PublicationUpdateOne) defaults() {
-	if _, ok := puo.mutation.UpdatedAt(); !ok {
+	if _, ok := puo.mutation.UpdatedAt(); !ok && !puo.mutation.UpdatedAtCleared() {
 		v := publication.UpdateDefaultUpdatedAt()
 		puo.mutation.SetUpdatedAt(v)
 	}
@@ -1311,9 +1277,6 @@ func (puo *PublicationUpdateOne) check() error {
 			return &ValidationError{Name: "image_url", err: fmt.Errorf(`ent: validator failed for field "Publication.image_url": %w`, err)}
 		}
 	}
-	if puo.mutation.UserCleared() && len(puo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Publication.user"`)
-	}
 	return nil
 }
 
@@ -1345,6 +1308,9 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := puo.mutation.UserID(); ok {
+		_spec.SetField(publication.FieldUserID, field.TypeString, value)
 	}
 	if value, ok := puo.mutation.Title(); ok {
 		_spec.SetField(publication.FieldTitle, field.TypeString, value)
@@ -1383,10 +1349,10 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 		_spec.ClearField(publication.FieldPages, field.TypeString)
 	}
 	if value, ok := puo.mutation.PublicationDate(); ok {
-		_spec.SetField(publication.FieldPublicationDate, field.TypeTime, value)
+		_spec.SetField(publication.FieldPublicationDate, field.TypeString, value)
 	}
 	if puo.mutation.PublicationDateCleared() {
-		_spec.ClearField(publication.FieldPublicationDate, field.TypeTime)
+		_spec.ClearField(publication.FieldPublicationDate, field.TypeString)
 	}
 	if value, ok := puo.mutation.Doi(); ok {
 		_spec.SetField(publication.FieldDoi, field.TypeString, value)
@@ -1433,37 +1399,14 @@ func (puo *PublicationUpdateOne) sqlSave(ctx context.Context) (_node *Publicatio
 	if value, ok := puo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(publication.FieldSortOrder, field.TypeInt, value)
 	}
+	if puo.mutation.CreatedAtCleared() {
+		_spec.ClearField(publication.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := puo.mutation.UpdatedAt(); ok {
 		_spec.SetField(publication.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if puo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   publication.UserTable,
-			Columns: []string{publication.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := puo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   publication.UserTable,
-			Columns: []string{publication.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if puo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(publication.FieldUpdatedAt, field.TypeTime)
 	}
 	if puo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

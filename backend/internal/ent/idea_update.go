@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -228,11 +227,6 @@ func (iu *IdeaUpdate) ClearUpdatedAt() *IdeaUpdate {
 	return iu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (iu *IdeaUpdate) SetUser(u *User) *IdeaUpdate {
-	return iu.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by IDs.
 func (iu *IdeaUpdate) AddTranslationIDs(ids ...string) *IdeaUpdate {
 	iu.mutation.AddTranslationIDs(ids...)
@@ -285,12 +279,6 @@ func (iu *IdeaUpdate) AddTags(i ...*IdeaTag) *IdeaUpdate {
 // Mutation returns the IdeaMutation object of the builder.
 func (iu *IdeaUpdate) Mutation() *IdeaMutation {
 	return iu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (iu *IdeaUpdate) ClearUser() *IdeaUpdate {
-	iu.mutation.ClearUser()
-	return iu
 }
 
 // ClearTranslations clears all "translations" edges to the IdeaTranslation entity.
@@ -419,6 +407,12 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := iu.mutation.UserID(); ok {
+		_spec.SetField(idea.FieldUserID, field.TypeString, value)
+	}
+	if iu.mutation.UserIDCleared() {
+		_spec.ClearField(idea.FieldUserID, field.TypeString)
+	}
 	if value, ok := iu.mutation.Title(); ok {
 		_spec.SetField(idea.FieldTitle, field.TypeString, value)
 	}
@@ -472,35 +466,6 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if iu.mutation.UpdatedAtCleared() {
 		_spec.ClearField(idea.FieldUpdatedAt, field.TypeTime)
-	}
-	if iu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   idea.UserTable,
-			Columns: []string{idea.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   idea.UserTable,
-			Columns: []string{idea.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if iu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -837,11 +802,6 @@ func (iuo *IdeaUpdateOne) ClearUpdatedAt() *IdeaUpdateOne {
 	return iuo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (iuo *IdeaUpdateOne) SetUser(u *User) *IdeaUpdateOne {
-	return iuo.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by IDs.
 func (iuo *IdeaUpdateOne) AddTranslationIDs(ids ...string) *IdeaUpdateOne {
 	iuo.mutation.AddTranslationIDs(ids...)
@@ -894,12 +854,6 @@ func (iuo *IdeaUpdateOne) AddTags(i ...*IdeaTag) *IdeaUpdateOne {
 // Mutation returns the IdeaMutation object of the builder.
 func (iuo *IdeaUpdateOne) Mutation() *IdeaMutation {
 	return iuo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (iuo *IdeaUpdateOne) ClearUser() *IdeaUpdateOne {
-	iuo.mutation.ClearUser()
-	return iuo
 }
 
 // ClearTranslations clears all "translations" edges to the IdeaTranslation entity.
@@ -1058,6 +1012,12 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			}
 		}
 	}
+	if value, ok := iuo.mutation.UserID(); ok {
+		_spec.SetField(idea.FieldUserID, field.TypeString, value)
+	}
+	if iuo.mutation.UserIDCleared() {
+		_spec.ClearField(idea.FieldUserID, field.TypeString)
+	}
 	if value, ok := iuo.mutation.Title(); ok {
 		_spec.SetField(idea.FieldTitle, field.TypeString, value)
 	}
@@ -1111,35 +1071,6 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 	}
 	if iuo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(idea.FieldUpdatedAt, field.TypeTime)
-	}
-	if iuo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   idea.UserTable,
-			Columns: []string{idea.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iuo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   idea.UserTable,
-			Columns: []string{idea.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if iuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

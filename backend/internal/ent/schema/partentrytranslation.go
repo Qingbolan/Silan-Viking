@@ -39,6 +39,7 @@ func (PartEntryTranslation) Fields() []ent.Field {
 		field.JSON("localized_payload", map[string]any{}),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

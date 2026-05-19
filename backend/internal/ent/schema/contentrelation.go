@@ -44,10 +44,13 @@ func (ContentRelation) Fields() []ent.Field {
 		field.Enum("relation_type").
 			Values("evolved_into", "documents", "references",
 				"supersedes", "part_of"),
+		// The silan-viking engine writes this only for ordered relation
+		// types (`part_of`); it is NULL otherwise, so it must be optional.
 		field.Int("sort_order").
-			Default(0),
+			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

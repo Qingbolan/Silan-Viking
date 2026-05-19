@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/education"
 	"silan-backend/internal/ent/educationdetail"
 	"silan-backend/internal/ent/educationtranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -56,29 +55,29 @@ func (ec *EducationCreate) SetNillableFieldOfStudy(s *string) *EducationCreate {
 }
 
 // SetStartDate sets the "start_date" field.
-func (ec *EducationCreate) SetStartDate(t time.Time) *EducationCreate {
-	ec.mutation.SetStartDate(t)
+func (ec *EducationCreate) SetStartDate(s string) *EducationCreate {
+	ec.mutation.SetStartDate(s)
 	return ec
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (ec *EducationCreate) SetNillableStartDate(t *time.Time) *EducationCreate {
-	if t != nil {
-		ec.SetStartDate(*t)
+func (ec *EducationCreate) SetNillableStartDate(s *string) *EducationCreate {
+	if s != nil {
+		ec.SetStartDate(*s)
 	}
 	return ec
 }
 
 // SetEndDate sets the "end_date" field.
-func (ec *EducationCreate) SetEndDate(t time.Time) *EducationCreate {
-	ec.mutation.SetEndDate(t)
+func (ec *EducationCreate) SetEndDate(s string) *EducationCreate {
+	ec.mutation.SetEndDate(s)
 	return ec
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (ec *EducationCreate) SetNillableEndDate(t *time.Time) *EducationCreate {
-	if t != nil {
-		ec.SetEndDate(*t)
+func (ec *EducationCreate) SetNillableEndDate(s *string) *EducationCreate {
+	if s != nil {
+		ec.SetEndDate(*s)
 	}
 	return ec
 }
@@ -207,11 +206,6 @@ func (ec *EducationCreate) SetNillableID(s *string) *EducationCreate {
 		ec.SetID(*s)
 	}
 	return ec
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (ec *EducationCreate) SetUser(u *User) *EducationCreate {
-	return ec.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationTranslation entity by IDs.
@@ -353,15 +347,6 @@ func (ec *EducationCreate) check() error {
 	if _, ok := ec.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "Education.sort_order"`)}
 	}
-	if _, ok := ec.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Education.created_at"`)}
-	}
-	if _, ok := ec.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Education.updated_at"`)}
-	}
-	if len(ec.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Education.user"`)}
-	}
 	return nil
 }
 
@@ -397,6 +382,10 @@ func (ec *EducationCreate) createSpec() (*Education, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := ec.mutation.UserID(); ok {
+		_spec.SetField(education.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := ec.mutation.Institution(); ok {
 		_spec.SetField(education.FieldInstitution, field.TypeString, value)
 		_node.Institution = value
@@ -410,11 +399,11 @@ func (ec *EducationCreate) createSpec() (*Education, *sqlgraph.CreateSpec) {
 		_node.FieldOfStudy = value
 	}
 	if value, ok := ec.mutation.StartDate(); ok {
-		_spec.SetField(education.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(education.FieldStartDate, field.TypeString, value)
 		_node.StartDate = value
 	}
 	if value, ok := ec.mutation.EndDate(); ok {
-		_spec.SetField(education.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(education.FieldEndDate, field.TypeString, value)
 		_node.EndDate = value
 	}
 	if value, ok := ec.mutation.IsCurrent(); ok {
@@ -448,23 +437,6 @@ func (ec *EducationCreate) createSpec() (*Education, *sqlgraph.CreateSpec) {
 	if value, ok := ec.mutation.UpdatedAt(); ok {
 		_spec.SetField(education.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := ec.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   education.UserTable,
-			Columns: []string{education.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ec.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

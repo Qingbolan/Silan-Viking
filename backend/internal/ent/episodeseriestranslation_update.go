@@ -70,6 +70,12 @@ func (estu *EpisodeSeriesTranslationUpdate) SetNillableTitle(s *string) *Episode
 	return estu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (estu *EpisodeSeriesTranslationUpdate) ClearTitle() *EpisodeSeriesTranslationUpdate {
+	estu.mutation.ClearTitle()
+	return estu
+}
+
 // SetDescription sets the "description" field.
 func (estu *EpisodeSeriesTranslationUpdate) SetDescription(s string) *EpisodeSeriesTranslationUpdate {
 	estu.mutation.SetDescription(s)
@@ -169,11 +175,17 @@ func (estu *EpisodeSeriesTranslationUpdate) sqlSave(ctx context.Context) (n int,
 	if value, ok := estu.mutation.Title(); ok {
 		_spec.SetField(episodeseriestranslation.FieldTitle, field.TypeString, value)
 	}
+	if estu.mutation.TitleCleared() {
+		_spec.ClearField(episodeseriestranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := estu.mutation.Description(); ok {
 		_spec.SetField(episodeseriestranslation.FieldDescription, field.TypeString, value)
 	}
 	if estu.mutation.DescriptionCleared() {
 		_spec.ClearField(episodeseriestranslation.FieldDescription, field.TypeString)
+	}
+	if estu.mutation.CreatedAtCleared() {
+		_spec.ClearField(episodeseriestranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if estu.mutation.EpisodeSeriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -263,6 +275,12 @@ func (estuo *EpisodeSeriesTranslationUpdateOne) SetNillableTitle(s *string) *Epi
 	if s != nil {
 		estuo.SetTitle(*s)
 	}
+	return estuo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (estuo *EpisodeSeriesTranslationUpdateOne) ClearTitle() *EpisodeSeriesTranslationUpdateOne {
+	estuo.mutation.ClearTitle()
 	return estuo
 }
 
@@ -395,11 +413,17 @@ func (estuo *EpisodeSeriesTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 	if value, ok := estuo.mutation.Title(); ok {
 		_spec.SetField(episodeseriestranslation.FieldTitle, field.TypeString, value)
 	}
+	if estuo.mutation.TitleCleared() {
+		_spec.ClearField(episodeseriestranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := estuo.mutation.Description(); ok {
 		_spec.SetField(episodeseriestranslation.FieldDescription, field.TypeString, value)
 	}
 	if estuo.mutation.DescriptionCleared() {
 		_spec.ClearField(episodeseriestranslation.FieldDescription, field.TypeString)
+	}
+	if estuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(episodeseriestranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if estuo.mutation.EpisodeSeriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

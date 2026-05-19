@@ -175,12 +175,6 @@ func (clc *CommentLikeCreate) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "CommentLike.ip_address": %w`, err)}
 		}
 	}
-	if _, ok := clc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "CommentLike.created_at"`)}
-	}
-	if _, ok := clc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "CommentLike.updated_at"`)}
-	}
 	return nil
 }
 

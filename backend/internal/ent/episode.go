@@ -31,7 +31,7 @@ type Episode struct {
 	// Visibility holds the value of the "visibility" field.
 	Visibility episode.Visibility `json:"visibility,omitempty"`
 	// PublishedAt holds the value of the "published_at" field.
-	PublishedAt *time.Time `json:"published_at,omitempty"`
+	PublishedAt *string `json:"published_at,omitempty"`
 	// DurationMinutes holds the value of the "duration_minutes" field.
 	DurationMinutes *int `json:"duration_minutes,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -82,9 +82,9 @@ func (*Episode) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case episode.FieldEpisodeNumber, episode.FieldDurationMinutes:
 			values[i] = new(sql.NullInt64)
-		case episode.FieldID, episode.FieldSeriesID, episode.FieldSlug, episode.FieldTitle, episode.FieldStatus, episode.FieldVisibility:
+		case episode.FieldID, episode.FieldSeriesID, episode.FieldSlug, episode.FieldTitle, episode.FieldStatus, episode.FieldVisibility, episode.FieldPublishedAt:
 			values[i] = new(sql.NullString)
-		case episode.FieldPublishedAt, episode.FieldCreatedAt, episode.FieldUpdatedAt:
+		case episode.FieldCreatedAt, episode.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -144,11 +144,11 @@ func (e *Episode) assignValues(columns []string, values []any) error {
 				e.Visibility = episode.Visibility(value.String)
 			}
 		case episode.FieldPublishedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field published_at", values[i])
 			} else if value.Valid {
-				e.PublishedAt = new(time.Time)
-				*e.PublishedAt = value.Time
+				e.PublishedAt = new(string)
+				*e.PublishedAt = value.String
 			}
 		case episode.FieldDurationMinutes:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -235,7 +235,7 @@ func (e *Episode) String() string {
 	builder.WriteString(", ")
 	if v := e.PublishedAt; v != nil {
 		builder.WriteString("published_at=")
-		builder.WriteString(v.Format(time.ANSIC))
+		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
 	if v := e.DurationMinutes; v != nil {

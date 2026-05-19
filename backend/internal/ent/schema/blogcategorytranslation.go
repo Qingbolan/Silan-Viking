@@ -36,11 +36,12 @@ func (BlogCategoryTranslation) Fields() []ent.Field {
 			StorageKey("language_code"),
 		field.String("name").
 			MaxLen(100).
-			NotEmpty(),
+			Optional(),
 		field.Text("description").
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

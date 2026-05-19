@@ -157,12 +157,6 @@ func (itc *IdeaTagCreate) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "IdeaTag.slug": %w`, err)}
 		}
 	}
-	if _, ok := itc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "IdeaTag.created_at"`)}
-	}
-	if _, ok := itc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "IdeaTag.updated_at"`)}
-	}
 	return nil
 }
 

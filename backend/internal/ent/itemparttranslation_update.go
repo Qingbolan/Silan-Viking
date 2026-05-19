@@ -70,6 +70,12 @@ func (iptu *ItemPartTranslationUpdate) SetNillableBody(s *string) *ItemPartTrans
 	return iptu
 }
 
+// ClearBody clears the value of the "body" field.
+func (iptu *ItemPartTranslationUpdate) ClearBody() *ItemPartTranslationUpdate {
+	iptu.mutation.ClearBody()
+	return iptu
+}
+
 // SetItemPart sets the "item_part" edge to the ItemPart entity.
 func (iptu *ItemPartTranslationUpdate) SetItemPart(i *ItemPart) *ItemPartTranslationUpdate {
 	return iptu.SetItemPartID(i.ID)
@@ -138,6 +144,12 @@ func (iptu *ItemPartTranslationUpdate) sqlSave(ctx context.Context) (n int, err 
 	}
 	if value, ok := iptu.mutation.Body(); ok {
 		_spec.SetField(itemparttranslation.FieldBody, field.TypeString, value)
+	}
+	if iptu.mutation.BodyCleared() {
+		_spec.ClearField(itemparttranslation.FieldBody, field.TypeString)
+	}
+	if iptu.mutation.CreatedAtCleared() {
+		_spec.ClearField(itemparttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if iptu.mutation.ItemPartCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -227,6 +239,12 @@ func (iptuo *ItemPartTranslationUpdateOne) SetNillableBody(s *string) *ItemPartT
 	if s != nil {
 		iptuo.SetBody(*s)
 	}
+	return iptuo
+}
+
+// ClearBody clears the value of the "body" field.
+func (iptuo *ItemPartTranslationUpdateOne) ClearBody() *ItemPartTranslationUpdateOne {
+	iptuo.mutation.ClearBody()
 	return iptuo
 }
 
@@ -328,6 +346,12 @@ func (iptuo *ItemPartTranslationUpdateOne) sqlSave(ctx context.Context) (_node *
 	}
 	if value, ok := iptuo.mutation.Body(); ok {
 		_spec.SetField(itemparttranslation.FieldBody, field.TypeString, value)
+	}
+	if iptuo.mutation.BodyCleared() {
+		_spec.ClearField(itemparttranslation.FieldBody, field.TypeString)
+	}
+	if iptuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(itemparttranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if iptuo.mutation.ItemPartCleared() {
 		edge := &sqlgraph.EdgeSpec{

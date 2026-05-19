@@ -59,11 +59,13 @@ func (PersonalInfo) Fields() []ent.Field {
 			Default(false),
 		field.Time("created_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -71,10 +73,6 @@ func (PersonalInfo) Fields() []ent.Field {
 // Edges of the PersonalInfo.
 func (PersonalInfo) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("personal_infos").
-			Field("user_id").
-			Unique(),
 		edge.To("translations", PersonalInfoTranslation.Type),
 		edge.To("social_links", SocialLink.Type),
 	}

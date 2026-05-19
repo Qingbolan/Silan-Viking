@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"silan-backend/internal/ent/recentupdate"
-	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
@@ -34,7 +33,7 @@ type RecentUpdate struct {
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Date holds the value of the "date" field.
-	Date time.Time `json:"date,omitempty"`
+	Date string `json:"date,omitempty"`
 	// Tags holds the value of the "tags" field.
 	Tags []string `json:"tags,omitempty"`
 	// Status holds the value of the "status" field.
@@ -77,30 +76,17 @@ type RecentUpdate struct {
 
 // RecentUpdateEdges holds the relations/edges for other nodes in the graph.
 type RecentUpdateEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*RecentUpdateTranslation `json:"translations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e RecentUpdateEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [1]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e RecentUpdateEdges) TranslationsOrErr() ([]*RecentUpdateTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -115,9 +101,9 @@ func (*RecentUpdate) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case recentupdate.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case recentupdate.FieldID, recentupdate.FieldUserID, recentupdate.FieldSlug, recentupdate.FieldSubjectKind, recentupdate.FieldUpdateType, recentupdate.FieldVisibility, recentupdate.FieldTitle, recentupdate.FieldDescription, recentupdate.FieldStatus, recentupdate.FieldPriority, recentupdate.FieldExternalID, recentupdate.FieldImageURL, recentupdate.FieldVideoURL, recentupdate.FieldDocumentURL, recentupdate.FieldDemoURL, recentupdate.FieldGithubURL, recentupdate.FieldExternalURL:
+		case recentupdate.FieldID, recentupdate.FieldUserID, recentupdate.FieldSlug, recentupdate.FieldSubjectKind, recentupdate.FieldUpdateType, recentupdate.FieldVisibility, recentupdate.FieldTitle, recentupdate.FieldDescription, recentupdate.FieldDate, recentupdate.FieldStatus, recentupdate.FieldPriority, recentupdate.FieldExternalID, recentupdate.FieldImageURL, recentupdate.FieldVideoURL, recentupdate.FieldDocumentURL, recentupdate.FieldDemoURL, recentupdate.FieldGithubURL, recentupdate.FieldExternalURL:
 			values[i] = new(sql.NullString)
-		case recentupdate.FieldDate, recentupdate.FieldCreatedAt, recentupdate.FieldUpdatedAt:
+		case recentupdate.FieldCreatedAt, recentupdate.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -183,10 +169,10 @@ func (ru *RecentUpdate) assignValues(columns []string, values []any) error {
 				ru.Description = value.String
 			}
 		case recentupdate.FieldDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field date", values[i])
 			} else if value.Valid {
-				ru.Date = value.Time
+				ru.Date = value.String
 			}
 		case recentupdate.FieldTags:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -313,11 +299,6 @@ func (ru *RecentUpdate) Value(name string) (ent.Value, error) {
 	return ru.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the RecentUpdate entity.
-func (ru *RecentUpdate) QueryUser() *UserQuery {
-	return NewRecentUpdateClient(ru.config).QueryUser(ru)
-}
-
 // QueryTranslations queries the "translations" edge of the RecentUpdate entity.
 func (ru *RecentUpdate) QueryTranslations() *RecentUpdateTranslationQuery {
 	return NewRecentUpdateClient(ru.config).QueryTranslations(ru)
@@ -368,7 +349,7 @@ func (ru *RecentUpdate) String() string {
 	builder.WriteString(ru.Description)
 	builder.WriteString(", ")
 	builder.WriteString("date=")
-	builder.WriteString(ru.Date.Format(time.ANSIC))
+	builder.WriteString(ru.Date)
 	builder.WriteString(", ")
 	builder.WriteString("tags=")
 	builder.WriteString(fmt.Sprintf("%v", ru.Tags))

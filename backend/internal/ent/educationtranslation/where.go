@@ -570,6 +570,16 @@ func CreatedAtLTE(v time.Time) predicate.EducationTranslation {
 	return predicate.EducationTranslation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.EducationTranslation {
+	return predicate.EducationTranslation(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasEducation applies the HasEdge predicate on the "education" edge.
 func HasEducation() predicate.EducationTranslation {
 	return predicate.EducationTranslation(func(s *sql.Selector) {

@@ -145,6 +145,9 @@ func (pdtu *ProjectDetailTranslationUpdate) sqlSave(ctx context.Context) (n int,
 			}
 		}
 	}
+	if pdtu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectdetailtranslation.FieldCreatedAt, field.TypeTime)
+	}
 	if pdtu.mutation.ProjectDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -368,6 +371,9 @@ func (pdtuo *ProjectDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_n
 				ps[i](selector)
 			}
 		}
+	}
+	if pdtuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectdetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if pdtuo.mutation.ProjectDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{

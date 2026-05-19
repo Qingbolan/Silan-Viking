@@ -160,9 +160,6 @@ func (btc *BlogTagCreate) check() error {
 	if _, ok := btc.mutation.UsageCount(); !ok {
 		return &ValidationError{Name: "usage_count", err: errors.New(`ent: missing required field "BlogTag.usage_count"`)}
 	}
-	if _, ok := btc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BlogTag.created_at"`)}
-	}
 	return nil
 }
 

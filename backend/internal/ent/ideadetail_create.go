@@ -228,12 +228,6 @@ func (idc *IdeaDetailCreate) check() error {
 	if _, ok := idc.mutation.FundingRequired(); !ok {
 		return &ValidationError{Name: "funding_required", err: errors.New(`ent: missing required field "IdeaDetail.funding_required"`)}
 	}
-	if _, ok := idc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "IdeaDetail.created_at"`)}
-	}
-	if _, ok := idc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "IdeaDetail.updated_at"`)}
-	}
 	if len(idc.mutation.IdeaIDs()) == 0 {
 		return &ValidationError{Name: "idea", err: errors.New(`ent: missing required edge "IdeaDetail.idea"`)}
 	}

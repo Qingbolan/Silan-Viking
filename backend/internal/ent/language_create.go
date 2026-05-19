@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/awardtranslation"
 	"silan-backend/internal/ent/blogcategorytranslation"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseriestranslation"
 	"silan-backend/internal/ent/educationdetailtranslation"
 	"silan-backend/internal/ent/educationtranslation"
 	"silan-backend/internal/ent/ideadetailtranslation"
@@ -234,21 +233,6 @@ func (lc *LanguageCreate) AddBlogPostTranslations(b ...*BlogPostTranslation) *La
 	return lc.AddBlogPostTranslationIDs(ids...)
 }
 
-// AddBlogSeriesTranslationIDs adds the "blog_series_translations" edge to the BlogSeriesTranslation entity by IDs.
-func (lc *LanguageCreate) AddBlogSeriesTranslationIDs(ids ...string) *LanguageCreate {
-	lc.mutation.AddBlogSeriesTranslationIDs(ids...)
-	return lc
-}
-
-// AddBlogSeriesTranslations adds the "blog_series_translations" edges to the BlogSeriesTranslation entity.
-func (lc *LanguageCreate) AddBlogSeriesTranslations(b ...*BlogSeriesTranslation) *LanguageCreate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return lc.AddBlogSeriesTranslationIDs(ids...)
-}
-
 // AddIdeaTranslationIDs adds the "idea_translations" edge to the IdeaTranslation entity by IDs.
 func (lc *LanguageCreate) AddIdeaTranslationIDs(ids ...string) *LanguageCreate {
 	lc.mutation.AddIdeaTranslationIDs(ids...)
@@ -419,9 +403,6 @@ func (lc *LanguageCreate) check() error {
 	}
 	if _, ok := lc.mutation.IsActive(); !ok {
 		return &ValidationError{Name: "is_active", err: errors.New(`ent: missing required field "Language.is_active"`)}
-	}
-	if _, ok := lc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Language.created_at"`)}
 	}
 	if v, ok := lc.mutation.ID(); ok {
 		if err := language.IDValidator(v); err != nil {
@@ -632,22 +613,6 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogposttranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := lc.mutation.BlogSeriesTranslationsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   language.BlogSeriesTranslationsTable,
-			Columns: []string{language.BlogSeriesTranslationsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogseriestranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -176,6 +176,12 @@ func (pvu *ProjectViewUpdate) SetUpdatedAt(t time.Time) *ProjectViewUpdate {
 	return pvu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pvu *ProjectViewUpdate) ClearUpdatedAt() *ProjectViewUpdate {
+	pvu.mutation.ClearUpdatedAt()
+	return pvu
+}
+
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (pvu *ProjectViewUpdate) SetUserIdentity(u *UserIdentity) *ProjectViewUpdate {
 	return pvu.SetUserIdentityID(u.ID)
@@ -222,7 +228,7 @@ func (pvu *ProjectViewUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pvu *ProjectViewUpdate) defaults() {
-	if _, ok := pvu.mutation.UpdatedAt(); !ok {
+	if _, ok := pvu.mutation.UpdatedAt(); !ok && !pvu.mutation.UpdatedAtCleared() {
 		v := projectview.UpdateDefaultUpdatedAt()
 		pvu.mutation.SetUpdatedAt(v)
 	}
@@ -286,8 +292,14 @@ func (pvu *ProjectViewUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if pvu.mutation.SessionDurationCleared() {
 		_spec.ClearField(projectview.FieldSessionDuration, field.TypeInt)
 	}
+	if pvu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectview.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pvu.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectview.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if pvu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectview.FieldUpdatedAt, field.TypeTime)
 	}
 	if pvu.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -485,6 +497,12 @@ func (pvuo *ProjectViewUpdateOne) SetUpdatedAt(t time.Time) *ProjectViewUpdateOn
 	return pvuo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pvuo *ProjectViewUpdateOne) ClearUpdatedAt() *ProjectViewUpdateOne {
+	pvuo.mutation.ClearUpdatedAt()
+	return pvuo
+}
+
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (pvuo *ProjectViewUpdateOne) SetUserIdentity(u *UserIdentity) *ProjectViewUpdateOne {
 	return pvuo.SetUserIdentityID(u.ID)
@@ -544,7 +562,7 @@ func (pvuo *ProjectViewUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pvuo *ProjectViewUpdateOne) defaults() {
-	if _, ok := pvuo.mutation.UpdatedAt(); !ok {
+	if _, ok := pvuo.mutation.UpdatedAt(); !ok && !pvuo.mutation.UpdatedAtCleared() {
 		v := projectview.UpdateDefaultUpdatedAt()
 		pvuo.mutation.SetUpdatedAt(v)
 	}
@@ -625,8 +643,14 @@ func (pvuo *ProjectViewUpdateOne) sqlSave(ctx context.Context) (_node *ProjectVi
 	if pvuo.mutation.SessionDurationCleared() {
 		_spec.ClearField(projectview.FieldSessionDuration, field.TypeInt)
 	}
+	if pvuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectview.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pvuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectview.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if pvuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectview.FieldUpdatedAt, field.TypeTime)
 	}
 	if pvuo.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{

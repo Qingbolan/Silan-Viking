@@ -179,12 +179,6 @@ func (wedc *WorkExperienceDetailCreate) check() error {
 	if _, ok := wedc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "WorkExperienceDetail.sort_order"`)}
 	}
-	if _, ok := wedc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkExperienceDetail.created_at"`)}
-	}
-	if _, ok := wedc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "WorkExperienceDetail.updated_at"`)}
-	}
 	if len(wedc.mutation.WorkExperienceIDs()) == 0 {
 		return &ValidationError{Name: "work_experience", err: errors.New(`ent: missing required edge "WorkExperienceDetail.work_experience"`)}
 	}

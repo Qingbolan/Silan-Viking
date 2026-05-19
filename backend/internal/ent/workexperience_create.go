@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/user"
 	"silan-backend/internal/ent/workexperience"
 	"silan-backend/internal/ent/workexperiencedetail"
 	"silan-backend/internal/ent/workexperiencetranslation"
@@ -42,29 +41,29 @@ func (wec *WorkExperienceCreate) SetPosition(s string) *WorkExperienceCreate {
 }
 
 // SetStartDate sets the "start_date" field.
-func (wec *WorkExperienceCreate) SetStartDate(t time.Time) *WorkExperienceCreate {
-	wec.mutation.SetStartDate(t)
+func (wec *WorkExperienceCreate) SetStartDate(s string) *WorkExperienceCreate {
+	wec.mutation.SetStartDate(s)
 	return wec
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (wec *WorkExperienceCreate) SetNillableStartDate(t *time.Time) *WorkExperienceCreate {
-	if t != nil {
-		wec.SetStartDate(*t)
+func (wec *WorkExperienceCreate) SetNillableStartDate(s *string) *WorkExperienceCreate {
+	if s != nil {
+		wec.SetStartDate(*s)
 	}
 	return wec
 }
 
 // SetEndDate sets the "end_date" field.
-func (wec *WorkExperienceCreate) SetEndDate(t time.Time) *WorkExperienceCreate {
-	wec.mutation.SetEndDate(t)
+func (wec *WorkExperienceCreate) SetEndDate(s string) *WorkExperienceCreate {
+	wec.mutation.SetEndDate(s)
 	return wec
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (wec *WorkExperienceCreate) SetNillableEndDate(t *time.Time) *WorkExperienceCreate {
-	if t != nil {
-		wec.SetEndDate(*t)
+func (wec *WorkExperienceCreate) SetNillableEndDate(s *string) *WorkExperienceCreate {
+	if s != nil {
+		wec.SetEndDate(*s)
 	}
 	return wec
 }
@@ -179,11 +178,6 @@ func (wec *WorkExperienceCreate) SetNillableID(s *string) *WorkExperienceCreate 
 		wec.SetID(*s)
 	}
 	return wec
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (wec *WorkExperienceCreate) SetUser(u *User) *WorkExperienceCreate {
-	return wec.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the WorkExperienceTranslation entity by IDs.
@@ -315,15 +309,6 @@ func (wec *WorkExperienceCreate) check() error {
 	if _, ok := wec.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "WorkExperience.sort_order"`)}
 	}
-	if _, ok := wec.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "WorkExperience.created_at"`)}
-	}
-	if _, ok := wec.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "WorkExperience.updated_at"`)}
-	}
-	if len(wec.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "WorkExperience.user"`)}
-	}
 	return nil
 }
 
@@ -359,6 +344,10 @@ func (wec *WorkExperienceCreate) createSpec() (*WorkExperience, *sqlgraph.Create
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := wec.mutation.UserID(); ok {
+		_spec.SetField(workexperience.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := wec.mutation.Company(); ok {
 		_spec.SetField(workexperience.FieldCompany, field.TypeString, value)
 		_node.Company = value
@@ -368,11 +357,11 @@ func (wec *WorkExperienceCreate) createSpec() (*WorkExperience, *sqlgraph.Create
 		_node.Position = value
 	}
 	if value, ok := wec.mutation.StartDate(); ok {
-		_spec.SetField(workexperience.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(workexperience.FieldStartDate, field.TypeString, value)
 		_node.StartDate = value
 	}
 	if value, ok := wec.mutation.EndDate(); ok {
-		_spec.SetField(workexperience.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(workexperience.FieldEndDate, field.TypeString, value)
 		_node.EndDate = value
 	}
 	if value, ok := wec.mutation.IsCurrent(); ok {
@@ -402,23 +391,6 @@ func (wec *WorkExperienceCreate) createSpec() (*WorkExperience, *sqlgraph.Create
 	if value, ok := wec.mutation.UpdatedAt(); ok {
 		_spec.SetField(workexperience.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := wec.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   workexperience.UserTable,
-			Columns: []string{workexperience.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := wec.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

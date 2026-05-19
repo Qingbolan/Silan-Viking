@@ -14,8 +14,6 @@ import (
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttag"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogseries"
-	"silan-backend/internal/ent/blogseriestranslation"
 	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
@@ -92,8 +90,6 @@ const (
 	TypeBlogPost                         = "BlogPost"
 	TypeBlogPostTag                      = "BlogPostTag"
 	TypeBlogPostTranslation              = "BlogPostTranslation"
-	TypeBlogSeries                       = "BlogSeries"
-	TypeBlogSeriesTranslation            = "BlogSeriesTranslation"
 	TypeBlogTag                          = "BlogTag"
 	TypeComment                          = "Comment"
 	TypeCommentLike                      = "CommentLike"
@@ -594,9 +590,22 @@ func (m *AnnotationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *AnnotationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[annotation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *AnnotationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[annotation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *AnnotationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, annotation.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -630,9 +639,22 @@ func (m *AnnotationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *AnnotationMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[annotation.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *AnnotationMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[annotation.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *AnnotationMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, annotation.FieldUpdatedAt)
 }
 
 // Where appends a list predicates to the AnnotationMutation builder.
@@ -861,6 +883,12 @@ func (m *AnnotationMutation) ClearedFields() []string {
 	if m.FieldCleared(annotation.FieldUserIdentityID) {
 		fields = append(fields, annotation.FieldUserIdentityID)
 	}
+	if m.FieldCleared(annotation.FieldCreatedAt) {
+		fields = append(fields, annotation.FieldCreatedAt)
+	}
+	if m.FieldCleared(annotation.FieldUpdatedAt) {
+		fields = append(fields, annotation.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -883,6 +911,12 @@ func (m *AnnotationMutation) ClearField(name string) error {
 		return nil
 	case annotation.FieldUserIdentityID:
 		m.ClearUserIdentityID()
+		return nil
+	case annotation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case annotation.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Annotation nullable field %s", name)
@@ -977,9 +1011,10 @@ type AwardMutation struct {
 	op                    Op
 	typ                   string
 	id                    *string
+	user_id               *string
 	title                 *string
 	awarding_organization *string
-	award_date            *time.Time
+	award_date            *string
 	award_type            *string
 	amount                *float64
 	addamount             *float64
@@ -990,8 +1025,6 @@ type AwardMutation struct {
 	created_at            *time.Time
 	updated_at            *time.Time
 	clearedFields         map[string]struct{}
-	user                  *string
-	cleareduser           bool
 	translations          map[string]struct{}
 	removedtranslations   map[string]struct{}
 	clearedtranslations   bool
@@ -1106,12 +1139,12 @@ func (m *AwardMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *AwardMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *AwardMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -1137,7 +1170,7 @@ func (m *AwardMutation) OldUserID(ctx context.Context) (v string, err error) {
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *AwardMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 }
 
 // SetTitle sets the "title" field.
@@ -1213,12 +1246,12 @@ func (m *AwardMutation) ResetAwardingOrganization() {
 }
 
 // SetAwardDate sets the "award_date" field.
-func (m *AwardMutation) SetAwardDate(t time.Time) {
-	m.award_date = &t
+func (m *AwardMutation) SetAwardDate(s string) {
+	m.award_date = &s
 }
 
 // AwardDate returns the value of the "award_date" field in the mutation.
-func (m *AwardMutation) AwardDate() (r time.Time, exists bool) {
+func (m *AwardMutation) AwardDate() (r string, exists bool) {
 	v := m.award_date
 	if v == nil {
 		return
@@ -1229,7 +1262,7 @@ func (m *AwardMutation) AwardDate() (r time.Time, exists bool) {
 // OldAwardDate returns the old "award_date" field's value of the Award entity.
 // If the Award object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AwardMutation) OldAwardDate(ctx context.Context) (v time.Time, err error) {
+func (m *AwardMutation) OldAwardDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldAwardDate is only allowed on UpdateOne operations")
 	}
@@ -1565,9 +1598,22 @@ func (m *AwardMutation) OldCreatedAt(ctx context.Context) (v time.Time, err erro
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *AwardMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[award.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *AwardMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[award.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *AwardMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, award.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -1601,36 +1647,22 @@ func (m *AwardMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err erro
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *AwardMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[award.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *AwardMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[award.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *AwardMutation) ResetUpdatedAt() {
 	m.updated_at = nil
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (m *AwardMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[award.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *AwardMutation) UserCleared() bool {
-	return m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *AwardMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *AwardMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
+	delete(m.clearedFields, award.FieldUpdatedAt)
 }
 
 // AddTranslationIDs adds the "translations" edge to the AwardTranslation entity by ids.
@@ -1722,7 +1754,7 @@ func (m *AwardMutation) Type() string {
 // AddedFields().
 func (m *AwardMutation) Fields() []string {
 	fields := make([]string, 0, 11)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, award.FieldUserID)
 	}
 	if m.title != nil {
@@ -1847,7 +1879,7 @@ func (m *AwardMutation) SetField(name string, value ent.Value) error {
 		m.SetAwardingOrganization(v)
 		return nil
 	case award.FieldAwardDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1974,6 +2006,12 @@ func (m *AwardMutation) ClearedFields() []string {
 	if m.FieldCleared(award.FieldCertificateURL) {
 		fields = append(fields, award.FieldCertificateURL)
 	}
+	if m.FieldCleared(award.FieldCreatedAt) {
+		fields = append(fields, award.FieldCreatedAt)
+	}
+	if m.FieldCleared(award.FieldUpdatedAt) {
+		fields = append(fields, award.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -2002,6 +2040,12 @@ func (m *AwardMutation) ClearField(name string) error {
 		return nil
 	case award.FieldCertificateURL:
 		m.ClearCertificateURL()
+		return nil
+	case award.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case award.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Award nullable field %s", name)
@@ -2050,10 +2094,7 @@ func (m *AwardMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AwardMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.user != nil {
-		edges = append(edges, award.EdgeUser)
-	}
+	edges := make([]string, 0, 1)
 	if m.translations != nil {
 		edges = append(edges, award.EdgeTranslations)
 	}
@@ -2064,10 +2105,6 @@ func (m *AwardMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *AwardMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case award.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case award.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -2080,7 +2117,7 @@ func (m *AwardMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AwardMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.removedtranslations != nil {
 		edges = append(edges, award.EdgeTranslations)
 	}
@@ -2103,10 +2140,7 @@ func (m *AwardMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AwardMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.cleareduser {
-		edges = append(edges, award.EdgeUser)
-	}
+	edges := make([]string, 0, 1)
 	if m.clearedtranslations {
 		edges = append(edges, award.EdgeTranslations)
 	}
@@ -2117,8 +2151,6 @@ func (m *AwardMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *AwardMutation) EdgeCleared(name string) bool {
 	switch name {
-	case award.EdgeUser:
-		return m.cleareduser
 	case award.EdgeTranslations:
 		return m.clearedtranslations
 	}
@@ -2129,9 +2161,6 @@ func (m *AwardMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *AwardMutation) ClearEdge(name string) error {
 	switch name {
-	case award.EdgeUser:
-		m.ClearUser()
-		return nil
 	}
 	return fmt.Errorf("unknown Award unique edge %s", name)
 }
@@ -2140,9 +2169,6 @@ func (m *AwardMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *AwardMutation) ResetEdge(name string) error {
 	switch name {
-	case award.EdgeUser:
-		m.ResetUser()
-		return nil
 	case award.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -2378,9 +2404,22 @@ func (m *AwardTranslationMutation) OldTitle(ctx context.Context) (v string, err 
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *AwardTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[awardtranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *AwardTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[awardtranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *AwardTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, awardtranslation.FieldTitle)
 }
 
 // SetAwardingOrganization sets the "awarding_organization" field.
@@ -2414,9 +2453,22 @@ func (m *AwardTranslationMutation) OldAwardingOrganization(ctx context.Context) 
 	return oldValue.AwardingOrganization, nil
 }
 
+// ClearAwardingOrganization clears the value of the "awarding_organization" field.
+func (m *AwardTranslationMutation) ClearAwardingOrganization() {
+	m.awarding_organization = nil
+	m.clearedFields[awardtranslation.FieldAwardingOrganization] = struct{}{}
+}
+
+// AwardingOrganizationCleared returns if the "awarding_organization" field was cleared in this mutation.
+func (m *AwardTranslationMutation) AwardingOrganizationCleared() bool {
+	_, ok := m.clearedFields[awardtranslation.FieldAwardingOrganization]
+	return ok
+}
+
 // ResetAwardingOrganization resets all changes to the "awarding_organization" field.
 func (m *AwardTranslationMutation) ResetAwardingOrganization() {
 	m.awarding_organization = nil
+	delete(m.clearedFields, awardtranslation.FieldAwardingOrganization)
 }
 
 // SetAwardType sets the "award_type" field.
@@ -2548,9 +2600,22 @@ func (m *AwardTranslationMutation) OldCreatedAt(ctx context.Context) (v time.Tim
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *AwardTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[awardtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *AwardTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[awardtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *AwardTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, awardtranslation.FieldCreatedAt)
 }
 
 // ClearAward clears the "award" edge to the Award entity.
@@ -2809,11 +2874,20 @@ func (m *AwardTranslationMutation) AddField(name string, value ent.Value) error 
 // mutation.
 func (m *AwardTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(awardtranslation.FieldTitle) {
+		fields = append(fields, awardtranslation.FieldTitle)
+	}
+	if m.FieldCleared(awardtranslation.FieldAwardingOrganization) {
+		fields = append(fields, awardtranslation.FieldAwardingOrganization)
+	}
 	if m.FieldCleared(awardtranslation.FieldAwardType) {
 		fields = append(fields, awardtranslation.FieldAwardType)
 	}
 	if m.FieldCleared(awardtranslation.FieldDescription) {
 		fields = append(fields, awardtranslation.FieldDescription)
+	}
+	if m.FieldCleared(awardtranslation.FieldCreatedAt) {
+		fields = append(fields, awardtranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -2829,11 +2903,20 @@ func (m *AwardTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *AwardTranslationMutation) ClearField(name string) error {
 	switch name {
+	case awardtranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
+	case awardtranslation.FieldAwardingOrganization:
+		m.ClearAwardingOrganization()
+		return nil
 	case awardtranslation.FieldAwardType:
 		m.ClearAwardType()
 		return nil
 	case awardtranslation.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case awardtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown AwardTranslation nullable field %s", name)
@@ -3347,9 +3430,22 @@ func (m *BlogCategoryMutation) OldCreatedAt(ctx context.Context) (v time.Time, e
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *BlogCategoryMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[blogcategory.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *BlogCategoryMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[blogcategory.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *BlogCategoryMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, blogcategory.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -3383,9 +3479,22 @@ func (m *BlogCategoryMutation) OldUpdatedAt(ctx context.Context) (v time.Time, e
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *BlogCategoryMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[blogcategory.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *BlogCategoryMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[blogcategory.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *BlogCategoryMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, blogcategory.FieldUpdatedAt)
 }
 
 // AddTranslationIDs adds the "translations" edge to the BlogCategoryTranslation entity by ids.
@@ -3706,6 +3815,12 @@ func (m *BlogCategoryMutation) ClearedFields() []string {
 	if m.FieldCleared(blogcategory.FieldColor) {
 		fields = append(fields, blogcategory.FieldColor)
 	}
+	if m.FieldCleared(blogcategory.FieldCreatedAt) {
+		fields = append(fields, blogcategory.FieldCreatedAt)
+	}
+	if m.FieldCleared(blogcategory.FieldUpdatedAt) {
+		fields = append(fields, blogcategory.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -3725,6 +3840,12 @@ func (m *BlogCategoryMutation) ClearField(name string) error {
 		return nil
 	case blogcategory.FieldColor:
 		m.ClearColor()
+		return nil
+	case blogcategory.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case blogcategory.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown BlogCategory nullable field %s", name)
@@ -4095,9 +4216,22 @@ func (m *BlogCategoryTranslationMutation) OldName(ctx context.Context) (v string
 	return oldValue.Name, nil
 }
 
+// ClearName clears the value of the "name" field.
+func (m *BlogCategoryTranslationMutation) ClearName() {
+	m.name = nil
+	m.clearedFields[blogcategorytranslation.FieldName] = struct{}{}
+}
+
+// NameCleared returns if the "name" field was cleared in this mutation.
+func (m *BlogCategoryTranslationMutation) NameCleared() bool {
+	_, ok := m.clearedFields[blogcategorytranslation.FieldName]
+	return ok
+}
+
 // ResetName resets all changes to the "name" field.
 func (m *BlogCategoryTranslationMutation) ResetName() {
 	m.name = nil
+	delete(m.clearedFields, blogcategorytranslation.FieldName)
 }
 
 // SetDescription sets the "description" field.
@@ -4180,9 +4314,22 @@ func (m *BlogCategoryTranslationMutation) OldCreatedAt(ctx context.Context) (v t
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *BlogCategoryTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[blogcategorytranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *BlogCategoryTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[blogcategorytranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *BlogCategoryTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, blogcategorytranslation.FieldCreatedAt)
 }
 
 // ClearBlogCategory clears the "blog_category" edge to the BlogCategory entity.
@@ -4413,8 +4560,14 @@ func (m *BlogCategoryTranslationMutation) AddField(name string, value ent.Value)
 // mutation.
 func (m *BlogCategoryTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(blogcategorytranslation.FieldName) {
+		fields = append(fields, blogcategorytranslation.FieldName)
+	}
 	if m.FieldCleared(blogcategorytranslation.FieldDescription) {
 		fields = append(fields, blogcategorytranslation.FieldDescription)
+	}
+	if m.FieldCleared(blogcategorytranslation.FieldCreatedAt) {
+		fields = append(fields, blogcategorytranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -4430,8 +4583,14 @@ func (m *BlogCategoryTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *BlogCategoryTranslationMutation) ClearField(name string) error {
 	switch name {
+	case blogcategorytranslation.FieldName:
+		m.ClearName()
+		return nil
 	case blogcategorytranslation.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case blogcategorytranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown BlogCategoryTranslation nullable field %s", name)
@@ -4558,6 +4717,8 @@ type BlogPostMutation struct {
 	op                      Op
 	typ                     string
 	id                      *string
+	user_id                 *string
+	series_id               *string
 	title                   *string
 	slug                    *string
 	excerpt                 *string
@@ -4575,18 +4736,14 @@ type BlogPostMutation struct {
 	addlike_count           *int
 	comment_count           *int
 	addcomment_count        *int
-	published_at            *time.Time
+	published_at            *string
 	series_order            *int
 	addseries_order         *int
 	created_at              *time.Time
 	updated_at              *time.Time
 	clearedFields           map[string]struct{}
-	user                    *string
-	cleareduser             bool
 	category                *string
 	clearedcategory         bool
-	series                  *string
-	clearedseries           bool
 	tags                    map[string]struct{}
 	removedtags             map[string]struct{}
 	clearedtags             bool
@@ -4704,12 +4861,12 @@ func (m *BlogPostMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *BlogPostMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *BlogPostMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -4735,7 +4892,7 @@ func (m *BlogPostMutation) OldUserID(ctx context.Context) (v string, err error) 
 
 // ClearUserID clears the value of the "user_id" field.
 func (m *BlogPostMutation) ClearUserID() {
-	m.user = nil
+	m.user_id = nil
 	m.clearedFields[blogpost.FieldUserID] = struct{}{}
 }
 
@@ -4747,7 +4904,7 @@ func (m *BlogPostMutation) UserIDCleared() bool {
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *BlogPostMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 	delete(m.clearedFields, blogpost.FieldUserID)
 }
 
@@ -4802,12 +4959,12 @@ func (m *BlogPostMutation) ResetCategoryID() {
 
 // SetSeriesID sets the "series_id" field.
 func (m *BlogPostMutation) SetSeriesID(s string) {
-	m.series = &s
+	m.series_id = &s
 }
 
 // SeriesID returns the value of the "series_id" field in the mutation.
 func (m *BlogPostMutation) SeriesID() (r string, exists bool) {
-	v := m.series
+	v := m.series_id
 	if v == nil {
 		return
 	}
@@ -4833,7 +4990,7 @@ func (m *BlogPostMutation) OldSeriesID(ctx context.Context) (v string, err error
 
 // ClearSeriesID clears the value of the "series_id" field.
 func (m *BlogPostMutation) ClearSeriesID() {
-	m.series = nil
+	m.series_id = nil
 	m.clearedFields[blogpost.FieldSeriesID] = struct{}{}
 }
 
@@ -4845,7 +5002,7 @@ func (m *BlogPostMutation) SeriesIDCleared() bool {
 
 // ResetSeriesID resets all changes to the "series_id" field.
 func (m *BlogPostMutation) ResetSeriesID() {
-	m.series = nil
+	m.series_id = nil
 	delete(m.clearedFields, blogpost.FieldSeriesID)
 }
 
@@ -5464,12 +5621,12 @@ func (m *BlogPostMutation) ResetCommentCount() {
 }
 
 // SetPublishedAt sets the "published_at" field.
-func (m *BlogPostMutation) SetPublishedAt(t time.Time) {
-	m.published_at = &t
+func (m *BlogPostMutation) SetPublishedAt(s string) {
+	m.published_at = &s
 }
 
 // PublishedAt returns the value of the "published_at" field in the mutation.
-func (m *BlogPostMutation) PublishedAt() (r time.Time, exists bool) {
+func (m *BlogPostMutation) PublishedAt() (r string, exists bool) {
 	v := m.published_at
 	if v == nil {
 		return
@@ -5480,7 +5637,7 @@ func (m *BlogPostMutation) PublishedAt() (r time.Time, exists bool) {
 // OldPublishedAt returns the old "published_at" field's value of the BlogPost entity.
 // If the BlogPost object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogPostMutation) OldPublishedAt(ctx context.Context) (v time.Time, err error) {
+func (m *BlogPostMutation) OldPublishedAt(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPublishedAt is only allowed on UpdateOne operations")
 	}
@@ -5680,33 +5837,6 @@ func (m *BlogPostMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, blogpost.FieldUpdatedAt)
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (m *BlogPostMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[blogpost.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *BlogPostMutation) UserCleared() bool {
-	return m.UserIDCleared() || m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *BlogPostMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *BlogPostMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
 // ClearCategory clears the "category" edge to the BlogCategory entity.
 func (m *BlogPostMutation) ClearCategory() {
 	m.clearedcategory = true
@@ -5732,33 +5862,6 @@ func (m *BlogPostMutation) CategoryIDs() (ids []string) {
 func (m *BlogPostMutation) ResetCategory() {
 	m.category = nil
 	m.clearedcategory = false
-}
-
-// ClearSeries clears the "series" edge to the BlogSeries entity.
-func (m *BlogPostMutation) ClearSeries() {
-	m.clearedseries = true
-	m.clearedFields[blogpost.FieldSeriesID] = struct{}{}
-}
-
-// SeriesCleared reports if the "series" edge to the BlogSeries entity was cleared.
-func (m *BlogPostMutation) SeriesCleared() bool {
-	return m.SeriesIDCleared() || m.clearedseries
-}
-
-// SeriesIDs returns the "series" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// SeriesID instead. It exists only for internal usage by the builders.
-func (m *BlogPostMutation) SeriesIDs() (ids []string) {
-	if id := m.series; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetSeries resets all changes to the "series" edge.
-func (m *BlogPostMutation) ResetSeries() {
-	m.series = nil
-	m.clearedseries = false
 }
 
 // AddTagIDs adds the "tags" edge to the BlogTag entity by ids.
@@ -5904,13 +6007,13 @@ func (m *BlogPostMutation) Type() string {
 // AddedFields().
 func (m *BlogPostMutation) Fields() []string {
 	fields := make([]string, 0, 20)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, blogpost.FieldUserID)
 	}
 	if m.category != nil {
 		fields = append(fields, blogpost.FieldCategoryID)
 	}
-	if m.series != nil {
+	if m.series_id != nil {
 		fields = append(fields, blogpost.FieldSeriesID)
 	}
 	if m.title != nil {
@@ -6183,7 +6286,7 @@ func (m *BlogPostMutation) SetField(name string, value ent.Value) error {
 		m.SetCommentCount(v)
 		return nil
 	case blogpost.FieldPublishedAt:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -6463,15 +6566,9 @@ func (m *BlogPostMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BlogPostMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.user != nil {
-		edges = append(edges, blogpost.EdgeUser)
-	}
+	edges := make([]string, 0, 3)
 	if m.category != nil {
 		edges = append(edges, blogpost.EdgeCategory)
-	}
-	if m.series != nil {
-		edges = append(edges, blogpost.EdgeSeries)
 	}
 	if m.tags != nil {
 		edges = append(edges, blogpost.EdgeTags)
@@ -6486,16 +6583,8 @@ func (m *BlogPostMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *BlogPostMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case blogpost.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case blogpost.EdgeCategory:
 		if id := m.category; id != nil {
-			return []ent.Value{*id}
-		}
-	case blogpost.EdgeSeries:
-		if id := m.series; id != nil {
 			return []ent.Value{*id}
 		}
 	case blogpost.EdgeTags:
@@ -6516,7 +6605,7 @@ func (m *BlogPostMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BlogPostMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 3)
 	if m.removedtags != nil {
 		edges = append(edges, blogpost.EdgeTags)
 	}
@@ -6548,15 +6637,9 @@ func (m *BlogPostMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BlogPostMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.cleareduser {
-		edges = append(edges, blogpost.EdgeUser)
-	}
+	edges := make([]string, 0, 3)
 	if m.clearedcategory {
 		edges = append(edges, blogpost.EdgeCategory)
-	}
-	if m.clearedseries {
-		edges = append(edges, blogpost.EdgeSeries)
 	}
 	if m.clearedtags {
 		edges = append(edges, blogpost.EdgeTags)
@@ -6571,12 +6654,8 @@ func (m *BlogPostMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *BlogPostMutation) EdgeCleared(name string) bool {
 	switch name {
-	case blogpost.EdgeUser:
-		return m.cleareduser
 	case blogpost.EdgeCategory:
 		return m.clearedcategory
-	case blogpost.EdgeSeries:
-		return m.clearedseries
 	case blogpost.EdgeTags:
 		return m.clearedtags
 	case blogpost.EdgeTranslations:
@@ -6589,14 +6668,8 @@ func (m *BlogPostMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *BlogPostMutation) ClearEdge(name string) error {
 	switch name {
-	case blogpost.EdgeUser:
-		m.ClearUser()
-		return nil
 	case blogpost.EdgeCategory:
 		m.ClearCategory()
-		return nil
-	case blogpost.EdgeSeries:
-		m.ClearSeries()
 		return nil
 	}
 	return fmt.Errorf("unknown BlogPost unique edge %s", name)
@@ -6606,14 +6679,8 @@ func (m *BlogPostMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *BlogPostMutation) ResetEdge(name string) error {
 	switch name {
-	case blogpost.EdgeUser:
-		m.ResetUser()
-		return nil
 	case blogpost.EdgeCategory:
 		m.ResetCategory()
-		return nil
-	case blogpost.EdgeSeries:
-		m.ResetSeries()
 		return nil
 	case blogpost.EdgeTags:
 		m.ResetTags()
@@ -6731,9 +6798,22 @@ func (m *BlogPostTagMutation) CreatedAt() (r time.Time, exists bool) {
 	return *v, true
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *BlogPostTagMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[blogposttag.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *BlogPostTagMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[blogposttag.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *BlogPostTagMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, blogposttag.FieldCreatedAt)
 }
 
 // ClearBlogPost clears the "blog_post" edge to the BlogPost entity.
@@ -6914,7 +6994,11 @@ func (m *BlogPostTagMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *BlogPostTagMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(blogposttag.FieldCreatedAt) {
+		fields = append(fields, blogposttag.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -6927,6 +7011,11 @@ func (m *BlogPostTagMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *BlogPostTagMutation) ClearField(name string) error {
+	switch name {
+	case blogposttag.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown BlogPostTag nullable field %s", name)
 }
 
@@ -7266,9 +7355,22 @@ func (m *BlogPostTranslationMutation) OldTitle(ctx context.Context) (v string, e
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *BlogPostTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[blogposttranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *BlogPostTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[blogposttranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *BlogPostTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, blogposttranslation.FieldTitle)
 }
 
 // SetExcerpt sets the "excerpt" field.
@@ -7351,9 +7453,22 @@ func (m *BlogPostTranslationMutation) OldContent(ctx context.Context) (v string,
 	return oldValue.Content, nil
 }
 
+// ClearContent clears the value of the "content" field.
+func (m *BlogPostTranslationMutation) ClearContent() {
+	m.content = nil
+	m.clearedFields[blogposttranslation.FieldContent] = struct{}{}
+}
+
+// ContentCleared returns if the "content" field was cleared in this mutation.
+func (m *BlogPostTranslationMutation) ContentCleared() bool {
+	_, ok := m.clearedFields[blogposttranslation.FieldContent]
+	return ok
+}
+
 // ResetContent resets all changes to the "content" field.
 func (m *BlogPostTranslationMutation) ResetContent() {
 	m.content = nil
+	delete(m.clearedFields, blogposttranslation.FieldContent)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -7387,9 +7502,22 @@ func (m *BlogPostTranslationMutation) OldCreatedAt(ctx context.Context) (v time.
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *BlogPostTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[blogposttranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *BlogPostTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[blogposttranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *BlogPostTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, blogposttranslation.FieldCreatedAt)
 }
 
 // ClearBlogPost clears the "blog_post" edge to the BlogPost entity.
@@ -7634,8 +7762,17 @@ func (m *BlogPostTranslationMutation) AddField(name string, value ent.Value) err
 // mutation.
 func (m *BlogPostTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(blogposttranslation.FieldTitle) {
+		fields = append(fields, blogposttranslation.FieldTitle)
+	}
 	if m.FieldCleared(blogposttranslation.FieldExcerpt) {
 		fields = append(fields, blogposttranslation.FieldExcerpt)
+	}
+	if m.FieldCleared(blogposttranslation.FieldContent) {
+		fields = append(fields, blogposttranslation.FieldContent)
+	}
+	if m.FieldCleared(blogposttranslation.FieldCreatedAt) {
+		fields = append(fields, blogposttranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -7651,8 +7788,17 @@ func (m *BlogPostTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *BlogPostTranslationMutation) ClearField(name string) error {
 	switch name {
+	case blogposttranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
 	case blogposttranslation.FieldExcerpt:
 		m.ClearExcerpt()
+		return nil
+	case blogposttranslation.FieldContent:
+		m.ClearContent()
+		return nil
+	case blogposttranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown BlogPostTranslation nullable field %s", name)
@@ -7774,1652 +7920,6 @@ func (m *BlogPostTranslationMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown BlogPostTranslation edge %s", name)
-}
-
-// BlogSeriesMutation represents an operation that mutates the BlogSeries nodes in the graph.
-type BlogSeriesMutation struct {
-	config
-	op                  Op
-	typ                 string
-	id                  *string
-	title               *string
-	slug                *string
-	description         *string
-	thumbnail_url       *string
-	status              *string
-	episode_count       *int
-	addepisode_count    *int
-	created_at          *time.Time
-	updated_at          *time.Time
-	clearedFields       map[string]struct{}
-	blog_posts          map[string]struct{}
-	removedblog_posts   map[string]struct{}
-	clearedblog_posts   bool
-	translations        map[string]struct{}
-	removedtranslations map[string]struct{}
-	clearedtranslations bool
-	done                bool
-	oldValue            func(context.Context) (*BlogSeries, error)
-	predicates          []predicate.BlogSeries
-}
-
-var _ ent.Mutation = (*BlogSeriesMutation)(nil)
-
-// blogseriesOption allows management of the mutation configuration using functional options.
-type blogseriesOption func(*BlogSeriesMutation)
-
-// newBlogSeriesMutation creates new mutation for the BlogSeries entity.
-func newBlogSeriesMutation(c config, op Op, opts ...blogseriesOption) *BlogSeriesMutation {
-	m := &BlogSeriesMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeBlogSeries,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withBlogSeriesID sets the ID field of the mutation.
-func withBlogSeriesID(id string) blogseriesOption {
-	return func(m *BlogSeriesMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *BlogSeries
-		)
-		m.oldValue = func(ctx context.Context) (*BlogSeries, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().BlogSeries.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withBlogSeries sets the old BlogSeries of the mutation.
-func withBlogSeries(node *BlogSeries) blogseriesOption {
-	return func(m *BlogSeriesMutation) {
-		m.oldValue = func(context.Context) (*BlogSeries, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m BlogSeriesMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m BlogSeriesMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of BlogSeries entities.
-func (m *BlogSeriesMutation) SetID(id string) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *BlogSeriesMutation) ID() (id string, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *BlogSeriesMutation) IDs(ctx context.Context) ([]string, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []string{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().BlogSeries.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetTitle sets the "title" field.
-func (m *BlogSeriesMutation) SetTitle(s string) {
-	m.title = &s
-}
-
-// Title returns the value of the "title" field in the mutation.
-func (m *BlogSeriesMutation) Title() (r string, exists bool) {
-	v := m.title
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTitle returns the old "title" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldTitle(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTitle requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
-	}
-	return oldValue.Title, nil
-}
-
-// ResetTitle resets all changes to the "title" field.
-func (m *BlogSeriesMutation) ResetTitle() {
-	m.title = nil
-}
-
-// SetSlug sets the "slug" field.
-func (m *BlogSeriesMutation) SetSlug(s string) {
-	m.slug = &s
-}
-
-// Slug returns the value of the "slug" field in the mutation.
-func (m *BlogSeriesMutation) Slug() (r string, exists bool) {
-	v := m.slug
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSlug returns the old "slug" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldSlug(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSlug requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
-	}
-	return oldValue.Slug, nil
-}
-
-// ResetSlug resets all changes to the "slug" field.
-func (m *BlogSeriesMutation) ResetSlug() {
-	m.slug = nil
-}
-
-// SetDescription sets the "description" field.
-func (m *BlogSeriesMutation) SetDescription(s string) {
-	m.description = &s
-}
-
-// Description returns the value of the "description" field in the mutation.
-func (m *BlogSeriesMutation) Description() (r string, exists bool) {
-	v := m.description
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDescription returns the old "description" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldDescription(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDescription requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
-	}
-	return oldValue.Description, nil
-}
-
-// ClearDescription clears the value of the "description" field.
-func (m *BlogSeriesMutation) ClearDescription() {
-	m.description = nil
-	m.clearedFields[blogseries.FieldDescription] = struct{}{}
-}
-
-// DescriptionCleared returns if the "description" field was cleared in this mutation.
-func (m *BlogSeriesMutation) DescriptionCleared() bool {
-	_, ok := m.clearedFields[blogseries.FieldDescription]
-	return ok
-}
-
-// ResetDescription resets all changes to the "description" field.
-func (m *BlogSeriesMutation) ResetDescription() {
-	m.description = nil
-	delete(m.clearedFields, blogseries.FieldDescription)
-}
-
-// SetThumbnailURL sets the "thumbnail_url" field.
-func (m *BlogSeriesMutation) SetThumbnailURL(s string) {
-	m.thumbnail_url = &s
-}
-
-// ThumbnailURL returns the value of the "thumbnail_url" field in the mutation.
-func (m *BlogSeriesMutation) ThumbnailURL() (r string, exists bool) {
-	v := m.thumbnail_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldThumbnailURL returns the old "thumbnail_url" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldThumbnailURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldThumbnailURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldThumbnailURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldThumbnailURL: %w", err)
-	}
-	return oldValue.ThumbnailURL, nil
-}
-
-// ClearThumbnailURL clears the value of the "thumbnail_url" field.
-func (m *BlogSeriesMutation) ClearThumbnailURL() {
-	m.thumbnail_url = nil
-	m.clearedFields[blogseries.FieldThumbnailURL] = struct{}{}
-}
-
-// ThumbnailURLCleared returns if the "thumbnail_url" field was cleared in this mutation.
-func (m *BlogSeriesMutation) ThumbnailURLCleared() bool {
-	_, ok := m.clearedFields[blogseries.FieldThumbnailURL]
-	return ok
-}
-
-// ResetThumbnailURL resets all changes to the "thumbnail_url" field.
-func (m *BlogSeriesMutation) ResetThumbnailURL() {
-	m.thumbnail_url = nil
-	delete(m.clearedFields, blogseries.FieldThumbnailURL)
-}
-
-// SetStatus sets the "status" field.
-func (m *BlogSeriesMutation) SetStatus(s string) {
-	m.status = &s
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *BlogSeriesMutation) Status() (r string, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldStatus(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *BlogSeriesMutation) ResetStatus() {
-	m.status = nil
-}
-
-// SetEpisodeCount sets the "episode_count" field.
-func (m *BlogSeriesMutation) SetEpisodeCount(i int) {
-	m.episode_count = &i
-	m.addepisode_count = nil
-}
-
-// EpisodeCount returns the value of the "episode_count" field in the mutation.
-func (m *BlogSeriesMutation) EpisodeCount() (r int, exists bool) {
-	v := m.episode_count
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEpisodeCount returns the old "episode_count" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldEpisodeCount(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEpisodeCount is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEpisodeCount requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEpisodeCount: %w", err)
-	}
-	return oldValue.EpisodeCount, nil
-}
-
-// AddEpisodeCount adds i to the "episode_count" field.
-func (m *BlogSeriesMutation) AddEpisodeCount(i int) {
-	if m.addepisode_count != nil {
-		*m.addepisode_count += i
-	} else {
-		m.addepisode_count = &i
-	}
-}
-
-// AddedEpisodeCount returns the value that was added to the "episode_count" field in this mutation.
-func (m *BlogSeriesMutation) AddedEpisodeCount() (r int, exists bool) {
-	v := m.addepisode_count
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetEpisodeCount resets all changes to the "episode_count" field.
-func (m *BlogSeriesMutation) ResetEpisodeCount() {
-	m.episode_count = nil
-	m.addepisode_count = nil
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *BlogSeriesMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *BlogSeriesMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *BlogSeriesMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (m *BlogSeriesMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
-}
-
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *BlogSeriesMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdatedAt returns the old "updated_at" field's value of the BlogSeries entity.
-// If the BlogSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
-}
-
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *BlogSeriesMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-}
-
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by ids.
-func (m *BlogSeriesMutation) AddBlogPostIDs(ids ...string) {
-	if m.blog_posts == nil {
-		m.blog_posts = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.blog_posts[ids[i]] = struct{}{}
-	}
-}
-
-// ClearBlogPosts clears the "blog_posts" edge to the BlogPost entity.
-func (m *BlogSeriesMutation) ClearBlogPosts() {
-	m.clearedblog_posts = true
-}
-
-// BlogPostsCleared reports if the "blog_posts" edge to the BlogPost entity was cleared.
-func (m *BlogSeriesMutation) BlogPostsCleared() bool {
-	return m.clearedblog_posts
-}
-
-// RemoveBlogPostIDs removes the "blog_posts" edge to the BlogPost entity by IDs.
-func (m *BlogSeriesMutation) RemoveBlogPostIDs(ids ...string) {
-	if m.removedblog_posts == nil {
-		m.removedblog_posts = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.blog_posts, ids[i])
-		m.removedblog_posts[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedBlogPosts returns the removed IDs of the "blog_posts" edge to the BlogPost entity.
-func (m *BlogSeriesMutation) RemovedBlogPostsIDs() (ids []string) {
-	for id := range m.removedblog_posts {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// BlogPostsIDs returns the "blog_posts" edge IDs in the mutation.
-func (m *BlogSeriesMutation) BlogPostsIDs() (ids []string) {
-	for id := range m.blog_posts {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetBlogPosts resets all changes to the "blog_posts" edge.
-func (m *BlogSeriesMutation) ResetBlogPosts() {
-	m.blog_posts = nil
-	m.clearedblog_posts = false
-	m.removedblog_posts = nil
-}
-
-// AddTranslationIDs adds the "translations" edge to the BlogSeriesTranslation entity by ids.
-func (m *BlogSeriesMutation) AddTranslationIDs(ids ...string) {
-	if m.translations == nil {
-		m.translations = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.translations[ids[i]] = struct{}{}
-	}
-}
-
-// ClearTranslations clears the "translations" edge to the BlogSeriesTranslation entity.
-func (m *BlogSeriesMutation) ClearTranslations() {
-	m.clearedtranslations = true
-}
-
-// TranslationsCleared reports if the "translations" edge to the BlogSeriesTranslation entity was cleared.
-func (m *BlogSeriesMutation) TranslationsCleared() bool {
-	return m.clearedtranslations
-}
-
-// RemoveTranslationIDs removes the "translations" edge to the BlogSeriesTranslation entity by IDs.
-func (m *BlogSeriesMutation) RemoveTranslationIDs(ids ...string) {
-	if m.removedtranslations == nil {
-		m.removedtranslations = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.translations, ids[i])
-		m.removedtranslations[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedTranslations returns the removed IDs of the "translations" edge to the BlogSeriesTranslation entity.
-func (m *BlogSeriesMutation) RemovedTranslationsIDs() (ids []string) {
-	for id := range m.removedtranslations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// TranslationsIDs returns the "translations" edge IDs in the mutation.
-func (m *BlogSeriesMutation) TranslationsIDs() (ids []string) {
-	for id := range m.translations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetTranslations resets all changes to the "translations" edge.
-func (m *BlogSeriesMutation) ResetTranslations() {
-	m.translations = nil
-	m.clearedtranslations = false
-	m.removedtranslations = nil
-}
-
-// Where appends a list predicates to the BlogSeriesMutation builder.
-func (m *BlogSeriesMutation) Where(ps ...predicate.BlogSeries) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the BlogSeriesMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *BlogSeriesMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.BlogSeries, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *BlogSeriesMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *BlogSeriesMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (BlogSeries).
-func (m *BlogSeriesMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *BlogSeriesMutation) Fields() []string {
-	fields := make([]string, 0, 8)
-	if m.title != nil {
-		fields = append(fields, blogseries.FieldTitle)
-	}
-	if m.slug != nil {
-		fields = append(fields, blogseries.FieldSlug)
-	}
-	if m.description != nil {
-		fields = append(fields, blogseries.FieldDescription)
-	}
-	if m.thumbnail_url != nil {
-		fields = append(fields, blogseries.FieldThumbnailURL)
-	}
-	if m.status != nil {
-		fields = append(fields, blogseries.FieldStatus)
-	}
-	if m.episode_count != nil {
-		fields = append(fields, blogseries.FieldEpisodeCount)
-	}
-	if m.created_at != nil {
-		fields = append(fields, blogseries.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, blogseries.FieldUpdatedAt)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *BlogSeriesMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case blogseries.FieldTitle:
-		return m.Title()
-	case blogseries.FieldSlug:
-		return m.Slug()
-	case blogseries.FieldDescription:
-		return m.Description()
-	case blogseries.FieldThumbnailURL:
-		return m.ThumbnailURL()
-	case blogseries.FieldStatus:
-		return m.Status()
-	case blogseries.FieldEpisodeCount:
-		return m.EpisodeCount()
-	case blogseries.FieldCreatedAt:
-		return m.CreatedAt()
-	case blogseries.FieldUpdatedAt:
-		return m.UpdatedAt()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *BlogSeriesMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case blogseries.FieldTitle:
-		return m.OldTitle(ctx)
-	case blogseries.FieldSlug:
-		return m.OldSlug(ctx)
-	case blogseries.FieldDescription:
-		return m.OldDescription(ctx)
-	case blogseries.FieldThumbnailURL:
-		return m.OldThumbnailURL(ctx)
-	case blogseries.FieldStatus:
-		return m.OldStatus(ctx)
-	case blogseries.FieldEpisodeCount:
-		return m.OldEpisodeCount(ctx)
-	case blogseries.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case blogseries.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
-	}
-	return nil, fmt.Errorf("unknown BlogSeries field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *BlogSeriesMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case blogseries.FieldTitle:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTitle(v)
-		return nil
-	case blogseries.FieldSlug:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSlug(v)
-		return nil
-	case blogseries.FieldDescription:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDescription(v)
-		return nil
-	case blogseries.FieldThumbnailURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetThumbnailURL(v)
-		return nil
-	case blogseries.FieldStatus:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
-		return nil
-	case blogseries.FieldEpisodeCount:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEpisodeCount(v)
-		return nil
-	case blogseries.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case blogseries.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeries field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *BlogSeriesMutation) AddedFields() []string {
-	var fields []string
-	if m.addepisode_count != nil {
-		fields = append(fields, blogseries.FieldEpisodeCount)
-	}
-	return fields
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *BlogSeriesMutation) AddedField(name string) (ent.Value, bool) {
-	switch name {
-	case blogseries.FieldEpisodeCount:
-		return m.AddedEpisodeCount()
-	}
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *BlogSeriesMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	case blogseries.FieldEpisodeCount:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddEpisodeCount(v)
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeries numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *BlogSeriesMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(blogseries.FieldDescription) {
-		fields = append(fields, blogseries.FieldDescription)
-	}
-	if m.FieldCleared(blogseries.FieldThumbnailURL) {
-		fields = append(fields, blogseries.FieldThumbnailURL)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *BlogSeriesMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *BlogSeriesMutation) ClearField(name string) error {
-	switch name {
-	case blogseries.FieldDescription:
-		m.ClearDescription()
-		return nil
-	case blogseries.FieldThumbnailURL:
-		m.ClearThumbnailURL()
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeries nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *BlogSeriesMutation) ResetField(name string) error {
-	switch name {
-	case blogseries.FieldTitle:
-		m.ResetTitle()
-		return nil
-	case blogseries.FieldSlug:
-		m.ResetSlug()
-		return nil
-	case blogseries.FieldDescription:
-		m.ResetDescription()
-		return nil
-	case blogseries.FieldThumbnailURL:
-		m.ResetThumbnailURL()
-		return nil
-	case blogseries.FieldStatus:
-		m.ResetStatus()
-		return nil
-	case blogseries.FieldEpisodeCount:
-		m.ResetEpisodeCount()
-		return nil
-	case blogseries.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case blogseries.FieldUpdatedAt:
-		m.ResetUpdatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeries field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *BlogSeriesMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.blog_posts != nil {
-		edges = append(edges, blogseries.EdgeBlogPosts)
-	}
-	if m.translations != nil {
-		edges = append(edges, blogseries.EdgeTranslations)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *BlogSeriesMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case blogseries.EdgeBlogPosts:
-		ids := make([]ent.Value, 0, len(m.blog_posts))
-		for id := range m.blog_posts {
-			ids = append(ids, id)
-		}
-		return ids
-	case blogseries.EdgeTranslations:
-		ids := make([]ent.Value, 0, len(m.translations))
-		for id := range m.translations {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *BlogSeriesMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.removedblog_posts != nil {
-		edges = append(edges, blogseries.EdgeBlogPosts)
-	}
-	if m.removedtranslations != nil {
-		edges = append(edges, blogseries.EdgeTranslations)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *BlogSeriesMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case blogseries.EdgeBlogPosts:
-		ids := make([]ent.Value, 0, len(m.removedblog_posts))
-		for id := range m.removedblog_posts {
-			ids = append(ids, id)
-		}
-		return ids
-	case blogseries.EdgeTranslations:
-		ids := make([]ent.Value, 0, len(m.removedtranslations))
-		for id := range m.removedtranslations {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *BlogSeriesMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedblog_posts {
-		edges = append(edges, blogseries.EdgeBlogPosts)
-	}
-	if m.clearedtranslations {
-		edges = append(edges, blogseries.EdgeTranslations)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *BlogSeriesMutation) EdgeCleared(name string) bool {
-	switch name {
-	case blogseries.EdgeBlogPosts:
-		return m.clearedblog_posts
-	case blogseries.EdgeTranslations:
-		return m.clearedtranslations
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *BlogSeriesMutation) ClearEdge(name string) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown BlogSeries unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *BlogSeriesMutation) ResetEdge(name string) error {
-	switch name {
-	case blogseries.EdgeBlogPosts:
-		m.ResetBlogPosts()
-		return nil
-	case blogseries.EdgeTranslations:
-		m.ResetTranslations()
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeries edge %s", name)
-}
-
-// BlogSeriesTranslationMutation represents an operation that mutates the BlogSeriesTranslation nodes in the graph.
-type BlogSeriesTranslationMutation struct {
-	config
-	op                 Op
-	typ                string
-	id                 *string
-	title              *string
-	description        *string
-	created_at         *time.Time
-	clearedFields      map[string]struct{}
-	blog_series        *string
-	clearedblog_series bool
-	language           *string
-	clearedlanguage    bool
-	done               bool
-	oldValue           func(context.Context) (*BlogSeriesTranslation, error)
-	predicates         []predicate.BlogSeriesTranslation
-}
-
-var _ ent.Mutation = (*BlogSeriesTranslationMutation)(nil)
-
-// blogseriestranslationOption allows management of the mutation configuration using functional options.
-type blogseriestranslationOption func(*BlogSeriesTranslationMutation)
-
-// newBlogSeriesTranslationMutation creates new mutation for the BlogSeriesTranslation entity.
-func newBlogSeriesTranslationMutation(c config, op Op, opts ...blogseriestranslationOption) *BlogSeriesTranslationMutation {
-	m := &BlogSeriesTranslationMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeBlogSeriesTranslation,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withBlogSeriesTranslationID sets the ID field of the mutation.
-func withBlogSeriesTranslationID(id string) blogseriestranslationOption {
-	return func(m *BlogSeriesTranslationMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *BlogSeriesTranslation
-		)
-		m.oldValue = func(ctx context.Context) (*BlogSeriesTranslation, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().BlogSeriesTranslation.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withBlogSeriesTranslation sets the old BlogSeriesTranslation of the mutation.
-func withBlogSeriesTranslation(node *BlogSeriesTranslation) blogseriestranslationOption {
-	return func(m *BlogSeriesTranslationMutation) {
-		m.oldValue = func(context.Context) (*BlogSeriesTranslation, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m BlogSeriesTranslationMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m BlogSeriesTranslationMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of BlogSeriesTranslation entities.
-func (m *BlogSeriesTranslationMutation) SetID(id string) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *BlogSeriesTranslationMutation) ID() (id string, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *BlogSeriesTranslationMutation) IDs(ctx context.Context) ([]string, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []string{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().BlogSeriesTranslation.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetBlogSeriesID sets the "blog_series_id" field.
-func (m *BlogSeriesTranslationMutation) SetBlogSeriesID(s string) {
-	m.blog_series = &s
-}
-
-// BlogSeriesID returns the value of the "blog_series_id" field in the mutation.
-func (m *BlogSeriesTranslationMutation) BlogSeriesID() (r string, exists bool) {
-	v := m.blog_series
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldBlogSeriesID returns the old "blog_series_id" field's value of the BlogSeriesTranslation entity.
-// If the BlogSeriesTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesTranslationMutation) OldBlogSeriesID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldBlogSeriesID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldBlogSeriesID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldBlogSeriesID: %w", err)
-	}
-	return oldValue.BlogSeriesID, nil
-}
-
-// ResetBlogSeriesID resets all changes to the "blog_series_id" field.
-func (m *BlogSeriesTranslationMutation) ResetBlogSeriesID() {
-	m.blog_series = nil
-}
-
-// SetLanguageCode sets the "language_code" field.
-func (m *BlogSeriesTranslationMutation) SetLanguageCode(s string) {
-	m.language = &s
-}
-
-// LanguageCode returns the value of the "language_code" field in the mutation.
-func (m *BlogSeriesTranslationMutation) LanguageCode() (r string, exists bool) {
-	v := m.language
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLanguageCode returns the old "language_code" field's value of the BlogSeriesTranslation entity.
-// If the BlogSeriesTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesTranslationMutation) OldLanguageCode(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLanguageCode is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLanguageCode requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLanguageCode: %w", err)
-	}
-	return oldValue.LanguageCode, nil
-}
-
-// ResetLanguageCode resets all changes to the "language_code" field.
-func (m *BlogSeriesTranslationMutation) ResetLanguageCode() {
-	m.language = nil
-}
-
-// SetTitle sets the "title" field.
-func (m *BlogSeriesTranslationMutation) SetTitle(s string) {
-	m.title = &s
-}
-
-// Title returns the value of the "title" field in the mutation.
-func (m *BlogSeriesTranslationMutation) Title() (r string, exists bool) {
-	v := m.title
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTitle returns the old "title" field's value of the BlogSeriesTranslation entity.
-// If the BlogSeriesTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesTranslationMutation) OldTitle(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTitle requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
-	}
-	return oldValue.Title, nil
-}
-
-// ResetTitle resets all changes to the "title" field.
-func (m *BlogSeriesTranslationMutation) ResetTitle() {
-	m.title = nil
-}
-
-// SetDescription sets the "description" field.
-func (m *BlogSeriesTranslationMutation) SetDescription(s string) {
-	m.description = &s
-}
-
-// Description returns the value of the "description" field in the mutation.
-func (m *BlogSeriesTranslationMutation) Description() (r string, exists bool) {
-	v := m.description
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDescription returns the old "description" field's value of the BlogSeriesTranslation entity.
-// If the BlogSeriesTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesTranslationMutation) OldDescription(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDescription requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
-	}
-	return oldValue.Description, nil
-}
-
-// ClearDescription clears the value of the "description" field.
-func (m *BlogSeriesTranslationMutation) ClearDescription() {
-	m.description = nil
-	m.clearedFields[blogseriestranslation.FieldDescription] = struct{}{}
-}
-
-// DescriptionCleared returns if the "description" field was cleared in this mutation.
-func (m *BlogSeriesTranslationMutation) DescriptionCleared() bool {
-	_, ok := m.clearedFields[blogseriestranslation.FieldDescription]
-	return ok
-}
-
-// ResetDescription resets all changes to the "description" field.
-func (m *BlogSeriesTranslationMutation) ResetDescription() {
-	m.description = nil
-	delete(m.clearedFields, blogseriestranslation.FieldDescription)
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *BlogSeriesTranslationMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *BlogSeriesTranslationMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the BlogSeriesTranslation entity.
-// If the BlogSeriesTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogSeriesTranslationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *BlogSeriesTranslationMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// ClearBlogSeries clears the "blog_series" edge to the BlogSeries entity.
-func (m *BlogSeriesTranslationMutation) ClearBlogSeries() {
-	m.clearedblog_series = true
-	m.clearedFields[blogseriestranslation.FieldBlogSeriesID] = struct{}{}
-}
-
-// BlogSeriesCleared reports if the "blog_series" edge to the BlogSeries entity was cleared.
-func (m *BlogSeriesTranslationMutation) BlogSeriesCleared() bool {
-	return m.clearedblog_series
-}
-
-// BlogSeriesIDs returns the "blog_series" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// BlogSeriesID instead. It exists only for internal usage by the builders.
-func (m *BlogSeriesTranslationMutation) BlogSeriesIDs() (ids []string) {
-	if id := m.blog_series; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetBlogSeries resets all changes to the "blog_series" edge.
-func (m *BlogSeriesTranslationMutation) ResetBlogSeries() {
-	m.blog_series = nil
-	m.clearedblog_series = false
-}
-
-// SetLanguageID sets the "language" edge to the Language entity by id.
-func (m *BlogSeriesTranslationMutation) SetLanguageID(id string) {
-	m.language = &id
-}
-
-// ClearLanguage clears the "language" edge to the Language entity.
-func (m *BlogSeriesTranslationMutation) ClearLanguage() {
-	m.clearedlanguage = true
-	m.clearedFields[blogseriestranslation.FieldLanguageCode] = struct{}{}
-}
-
-// LanguageCleared reports if the "language" edge to the Language entity was cleared.
-func (m *BlogSeriesTranslationMutation) LanguageCleared() bool {
-	return m.clearedlanguage
-}
-
-// LanguageID returns the "language" edge ID in the mutation.
-func (m *BlogSeriesTranslationMutation) LanguageID() (id string, exists bool) {
-	if m.language != nil {
-		return *m.language, true
-	}
-	return
-}
-
-// LanguageIDs returns the "language" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// LanguageID instead. It exists only for internal usage by the builders.
-func (m *BlogSeriesTranslationMutation) LanguageIDs() (ids []string) {
-	if id := m.language; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetLanguage resets all changes to the "language" edge.
-func (m *BlogSeriesTranslationMutation) ResetLanguage() {
-	m.language = nil
-	m.clearedlanguage = false
-}
-
-// Where appends a list predicates to the BlogSeriesTranslationMutation builder.
-func (m *BlogSeriesTranslationMutation) Where(ps ...predicate.BlogSeriesTranslation) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the BlogSeriesTranslationMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *BlogSeriesTranslationMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.BlogSeriesTranslation, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *BlogSeriesTranslationMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *BlogSeriesTranslationMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (BlogSeriesTranslation).
-func (m *BlogSeriesTranslationMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *BlogSeriesTranslationMutation) Fields() []string {
-	fields := make([]string, 0, 5)
-	if m.blog_series != nil {
-		fields = append(fields, blogseriestranslation.FieldBlogSeriesID)
-	}
-	if m.language != nil {
-		fields = append(fields, blogseriestranslation.FieldLanguageCode)
-	}
-	if m.title != nil {
-		fields = append(fields, blogseriestranslation.FieldTitle)
-	}
-	if m.description != nil {
-		fields = append(fields, blogseriestranslation.FieldDescription)
-	}
-	if m.created_at != nil {
-		fields = append(fields, blogseriestranslation.FieldCreatedAt)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *BlogSeriesTranslationMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case blogseriestranslation.FieldBlogSeriesID:
-		return m.BlogSeriesID()
-	case blogseriestranslation.FieldLanguageCode:
-		return m.LanguageCode()
-	case blogseriestranslation.FieldTitle:
-		return m.Title()
-	case blogseriestranslation.FieldDescription:
-		return m.Description()
-	case blogseriestranslation.FieldCreatedAt:
-		return m.CreatedAt()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *BlogSeriesTranslationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case blogseriestranslation.FieldBlogSeriesID:
-		return m.OldBlogSeriesID(ctx)
-	case blogseriestranslation.FieldLanguageCode:
-		return m.OldLanguageCode(ctx)
-	case blogseriestranslation.FieldTitle:
-		return m.OldTitle(ctx)
-	case blogseriestranslation.FieldDescription:
-		return m.OldDescription(ctx)
-	case blogseriestranslation.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	}
-	return nil, fmt.Errorf("unknown BlogSeriesTranslation field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *BlogSeriesTranslationMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case blogseriestranslation.FieldBlogSeriesID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetBlogSeriesID(v)
-		return nil
-	case blogseriestranslation.FieldLanguageCode:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLanguageCode(v)
-		return nil
-	case blogseriestranslation.FieldTitle:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTitle(v)
-		return nil
-	case blogseriestranslation.FieldDescription:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDescription(v)
-		return nil
-	case blogseriestranslation.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeriesTranslation field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *BlogSeriesTranslationMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *BlogSeriesTranslationMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *BlogSeriesTranslationMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown BlogSeriesTranslation numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *BlogSeriesTranslationMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(blogseriestranslation.FieldDescription) {
-		fields = append(fields, blogseriestranslation.FieldDescription)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *BlogSeriesTranslationMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *BlogSeriesTranslationMutation) ClearField(name string) error {
-	switch name {
-	case blogseriestranslation.FieldDescription:
-		m.ClearDescription()
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeriesTranslation nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *BlogSeriesTranslationMutation) ResetField(name string) error {
-	switch name {
-	case blogseriestranslation.FieldBlogSeriesID:
-		m.ResetBlogSeriesID()
-		return nil
-	case blogseriestranslation.FieldLanguageCode:
-		m.ResetLanguageCode()
-		return nil
-	case blogseriestranslation.FieldTitle:
-		m.ResetTitle()
-		return nil
-	case blogseriestranslation.FieldDescription:
-		m.ResetDescription()
-		return nil
-	case blogseriestranslation.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeriesTranslation field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *BlogSeriesTranslationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.blog_series != nil {
-		edges = append(edges, blogseriestranslation.EdgeBlogSeries)
-	}
-	if m.language != nil {
-		edges = append(edges, blogseriestranslation.EdgeLanguage)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *BlogSeriesTranslationMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case blogseriestranslation.EdgeBlogSeries:
-		if id := m.blog_series; id != nil {
-			return []ent.Value{*id}
-		}
-	case blogseriestranslation.EdgeLanguage:
-		if id := m.language; id != nil {
-			return []ent.Value{*id}
-		}
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *BlogSeriesTranslationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *BlogSeriesTranslationMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *BlogSeriesTranslationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedblog_series {
-		edges = append(edges, blogseriestranslation.EdgeBlogSeries)
-	}
-	if m.clearedlanguage {
-		edges = append(edges, blogseriestranslation.EdgeLanguage)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *BlogSeriesTranslationMutation) EdgeCleared(name string) bool {
-	switch name {
-	case blogseriestranslation.EdgeBlogSeries:
-		return m.clearedblog_series
-	case blogseriestranslation.EdgeLanguage:
-		return m.clearedlanguage
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *BlogSeriesTranslationMutation) ClearEdge(name string) error {
-	switch name {
-	case blogseriestranslation.EdgeBlogSeries:
-		m.ClearBlogSeries()
-		return nil
-	case blogseriestranslation.EdgeLanguage:
-		m.ClearLanguage()
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeriesTranslation unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *BlogSeriesTranslationMutation) ResetEdge(name string) error {
-	switch name {
-	case blogseriestranslation.EdgeBlogSeries:
-		m.ResetBlogSeries()
-		return nil
-	case blogseriestranslation.EdgeLanguage:
-		m.ResetLanguage()
-		return nil
-	}
-	return fmt.Errorf("unknown BlogSeriesTranslation edge %s", name)
 }
 
 // BlogTagMutation represents an operation that mutates the BlogTag nodes in the graph.
@@ -9705,9 +8205,22 @@ func (m *BlogTagMutation) OldCreatedAt(ctx context.Context) (v time.Time, err er
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *BlogTagMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[blogtag.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *BlogTagMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[blogtag.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *BlogTagMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, blogtag.FieldCreatedAt)
 }
 
 // AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by ids.
@@ -9925,7 +8438,11 @@ func (m *BlogTagMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *BlogTagMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(blogtag.FieldCreatedAt) {
+		fields = append(fields, blogtag.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -9938,6 +8455,11 @@ func (m *BlogTagMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *BlogTagMutation) ClearField(name string) error {
+	switch name {
+	case blogtag.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown BlogTag nullable field %s", name)
 }
 
@@ -10866,9 +9388,22 @@ func (m *CommentMutation) OldCreatedAt(ctx context.Context) (v time.Time, err er
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *CommentMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[comment.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *CommentMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[comment.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *CommentMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, comment.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -10902,9 +9437,22 @@ func (m *CommentMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err er
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *CommentMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[comment.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *CommentMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[comment.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *CommentMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, comment.FieldUpdatedAt)
 }
 
 // ClearParent clears the "parent" edge to the Comment entity.
@@ -11380,6 +9928,12 @@ func (m *CommentMutation) ClearedFields() []string {
 	if m.FieldCleared(comment.FieldUserIdentityID) {
 		fields = append(fields, comment.FieldUserIdentityID)
 	}
+	if m.FieldCleared(comment.FieldCreatedAt) {
+		fields = append(fields, comment.FieldCreatedAt)
+	}
+	if m.FieldCleared(comment.FieldUpdatedAt) {
+		fields = append(fields, comment.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -11414,6 +9968,12 @@ func (m *CommentMutation) ClearField(name string) error {
 		return nil
 	case comment.FieldUserIdentityID:
 		m.ClearUserIdentityID()
+		return nil
+	case comment.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case comment.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Comment nullable field %s", name)
@@ -11935,9 +10495,22 @@ func (m *CommentLikeMutation) OldCreatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *CommentLikeMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[commentlike.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *CommentLikeMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[commentlike.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *CommentLikeMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, commentlike.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -11971,9 +10544,22 @@ func (m *CommentLikeMutation) OldUpdatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *CommentLikeMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[commentlike.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *CommentLikeMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[commentlike.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *CommentLikeMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, commentlike.FieldUpdatedAt)
 }
 
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
@@ -12187,6 +10773,12 @@ func (m *CommentLikeMutation) ClearedFields() []string {
 	if m.FieldCleared(commentlike.FieldIPAddress) {
 		fields = append(fields, commentlike.FieldIPAddress)
 	}
+	if m.FieldCleared(commentlike.FieldCreatedAt) {
+		fields = append(fields, commentlike.FieldCreatedAt)
+	}
+	if m.FieldCleared(commentlike.FieldUpdatedAt) {
+		fields = append(fields, commentlike.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -12209,6 +10801,12 @@ func (m *CommentLikeMutation) ClearField(name string) error {
 		return nil
 	case commentlike.FieldIPAddress:
 		m.ClearIPAddress()
+		return nil
+	case commentlike.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case commentlike.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown CommentLike nullable field %s", name)
@@ -13063,9 +11661,22 @@ func (m *ContentInteractionMutation) OldCreatedAt(ctx context.Context) (v time.T
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ContentInteractionMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[contentinteraction.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ContentInteractionMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ContentInteractionMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, contentinteraction.FieldCreatedAt)
 }
 
 // Where appends a list predicates to the ContentInteractionMutation builder.
@@ -13400,6 +12011,9 @@ func (m *ContentInteractionMutation) ClearedFields() []string {
 	if m.FieldCleared(contentinteraction.FieldCrawlerName) {
 		fields = append(fields, contentinteraction.FieldCrawlerName)
 	}
+	if m.FieldCleared(contentinteraction.FieldCreatedAt) {
+		fields = append(fields, contentinteraction.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -13431,6 +12045,9 @@ func (m *ContentInteractionMutation) ClearField(name string) error {
 		return nil
 	case contentinteraction.FieldCrawlerName:
 		m.ClearCrawlerName()
+		return nil
+	case contentinteraction.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ContentInteraction nullable field %s", name)
@@ -13888,10 +12505,24 @@ func (m *ContentRelationMutation) AddedSortOrder() (r int, exists bool) {
 	return *v, true
 }
 
+// ClearSortOrder clears the value of the "sort_order" field.
+func (m *ContentRelationMutation) ClearSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+	m.clearedFields[contentrelation.FieldSortOrder] = struct{}{}
+}
+
+// SortOrderCleared returns if the "sort_order" field was cleared in this mutation.
+func (m *ContentRelationMutation) SortOrderCleared() bool {
+	_, ok := m.clearedFields[contentrelation.FieldSortOrder]
+	return ok
+}
+
 // ResetSortOrder resets all changes to the "sort_order" field.
 func (m *ContentRelationMutation) ResetSortOrder() {
 	m.sort_order = nil
 	m.addsort_order = nil
+	delete(m.clearedFields, contentrelation.FieldSortOrder)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -13925,9 +12556,22 @@ func (m *ContentRelationMutation) OldCreatedAt(ctx context.Context) (v time.Time
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ContentRelationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[contentrelation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ContentRelationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[contentrelation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ContentRelationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, contentrelation.FieldCreatedAt)
 }
 
 // Where appends a list predicates to the ContentRelationMutation builder.
@@ -14133,7 +12777,14 @@ func (m *ContentRelationMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ContentRelationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(contentrelation.FieldSortOrder) {
+		fields = append(fields, contentrelation.FieldSortOrder)
+	}
+	if m.FieldCleared(contentrelation.FieldCreatedAt) {
+		fields = append(fields, contentrelation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -14146,6 +12797,14 @@ func (m *ContentRelationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ContentRelationMutation) ClearField(name string) error {
+	switch name {
+	case contentrelation.FieldSortOrder:
+		m.ClearSortOrder()
+		return nil
+	case contentrelation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown ContentRelation nullable field %s", name)
 }
 
@@ -14232,11 +12891,12 @@ type EducationMutation struct {
 	op                   Op
 	typ                  string
 	id                   *string
+	user_id              *string
 	institution          *string
 	degree               *string
 	field_of_study       *string
-	start_date           *time.Time
-	end_date             *time.Time
+	start_date           *string
+	end_date             *string
 	is_current           *bool
 	gpa                  *string
 	location             *string
@@ -14247,8 +12907,6 @@ type EducationMutation struct {
 	created_at           *time.Time
 	updated_at           *time.Time
 	clearedFields        map[string]struct{}
-	user                 *string
-	cleareduser          bool
 	translations         map[string]struct{}
 	removedtranslations  map[string]struct{}
 	clearedtranslations  bool
@@ -14366,12 +13024,12 @@ func (m *EducationMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *EducationMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *EducationMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -14397,7 +13055,7 @@ func (m *EducationMutation) OldUserID(ctx context.Context) (v string, err error)
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *EducationMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 }
 
 // SetInstitution sets the "institution" field.
@@ -14522,12 +13180,12 @@ func (m *EducationMutation) ResetFieldOfStudy() {
 }
 
 // SetStartDate sets the "start_date" field.
-func (m *EducationMutation) SetStartDate(t time.Time) {
-	m.start_date = &t
+func (m *EducationMutation) SetStartDate(s string) {
+	m.start_date = &s
 }
 
 // StartDate returns the value of the "start_date" field in the mutation.
-func (m *EducationMutation) StartDate() (r time.Time, exists bool) {
+func (m *EducationMutation) StartDate() (r string, exists bool) {
 	v := m.start_date
 	if v == nil {
 		return
@@ -14538,7 +13196,7 @@ func (m *EducationMutation) StartDate() (r time.Time, exists bool) {
 // OldStartDate returns the old "start_date" field's value of the Education entity.
 // If the Education object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EducationMutation) OldStartDate(ctx context.Context) (v time.Time, err error) {
+func (m *EducationMutation) OldStartDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStartDate is only allowed on UpdateOne operations")
 	}
@@ -14571,12 +13229,12 @@ func (m *EducationMutation) ResetStartDate() {
 }
 
 // SetEndDate sets the "end_date" field.
-func (m *EducationMutation) SetEndDate(t time.Time) {
-	m.end_date = &t
+func (m *EducationMutation) SetEndDate(s string) {
+	m.end_date = &s
 }
 
 // EndDate returns the value of the "end_date" field in the mutation.
-func (m *EducationMutation) EndDate() (r time.Time, exists bool) {
+func (m *EducationMutation) EndDate() (r string, exists bool) {
 	v := m.end_date
 	if v == nil {
 		return
@@ -14587,7 +13245,7 @@ func (m *EducationMutation) EndDate() (r time.Time, exists bool) {
 // OldEndDate returns the old "end_date" field's value of the Education entity.
 // If the Education object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EducationMutation) OldEndDate(ctx context.Context) (v time.Time, err error) {
+func (m *EducationMutation) OldEndDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldEndDate is only allowed on UpdateOne operations")
 	}
@@ -14938,9 +13596,22 @@ func (m *EducationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err 
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *EducationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[education.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *EducationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[education.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *EducationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, education.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -14974,36 +13645,22 @@ func (m *EducationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err 
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *EducationMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[education.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *EducationMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[education.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *EducationMutation) ResetUpdatedAt() {
 	m.updated_at = nil
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (m *EducationMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[education.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *EducationMutation) UserCleared() bool {
-	return m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *EducationMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *EducationMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
+	delete(m.clearedFields, education.FieldUpdatedAt)
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationTranslation entity by ids.
@@ -15149,7 +13806,7 @@ func (m *EducationMutation) Type() string {
 // AddedFields().
 func (m *EducationMutation) Fields() []string {
 	fields := make([]string, 0, 14)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, education.FieldUserID)
 	}
 	if m.institution != nil {
@@ -15302,14 +13959,14 @@ func (m *EducationMutation) SetField(name string, value ent.Value) error {
 		m.SetFieldOfStudy(v)
 		return nil
 	case education.FieldStartDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStartDate(v)
 		return nil
 	case education.FieldEndDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -15437,6 +14094,12 @@ func (m *EducationMutation) ClearedFields() []string {
 	if m.FieldCleared(education.FieldInstitutionLogoURL) {
 		fields = append(fields, education.FieldInstitutionLogoURL)
 	}
+	if m.FieldCleared(education.FieldCreatedAt) {
+		fields = append(fields, education.FieldCreatedAt)
+	}
+	if m.FieldCleared(education.FieldUpdatedAt) {
+		fields = append(fields, education.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -15471,6 +14134,12 @@ func (m *EducationMutation) ClearField(name string) error {
 		return nil
 	case education.FieldInstitutionLogoURL:
 		m.ClearInstitutionLogoURL()
+		return nil
+	case education.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case education.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Education nullable field %s", name)
@@ -15528,10 +14197,7 @@ func (m *EducationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EducationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.user != nil {
-		edges = append(edges, education.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.translations != nil {
 		edges = append(edges, education.EdgeTranslations)
 	}
@@ -15545,10 +14211,6 @@ func (m *EducationMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *EducationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case education.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case education.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -15567,7 +14229,7 @@ func (m *EducationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EducationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.removedtranslations != nil {
 		edges = append(edges, education.EdgeTranslations)
 	}
@@ -15599,10 +14261,7 @@ func (m *EducationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EducationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.cleareduser {
-		edges = append(edges, education.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedtranslations {
 		edges = append(edges, education.EdgeTranslations)
 	}
@@ -15616,8 +14275,6 @@ func (m *EducationMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *EducationMutation) EdgeCleared(name string) bool {
 	switch name {
-	case education.EdgeUser:
-		return m.cleareduser
 	case education.EdgeTranslations:
 		return m.clearedtranslations
 	case education.EdgeDetails:
@@ -15630,9 +14287,6 @@ func (m *EducationMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *EducationMutation) ClearEdge(name string) error {
 	switch name {
-	case education.EdgeUser:
-		m.ClearUser()
-		return nil
 	}
 	return fmt.Errorf("unknown Education unique edge %s", name)
 }
@@ -15641,9 +14295,6 @@ func (m *EducationMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *EducationMutation) ResetEdge(name string) error {
 	switch name {
-	case education.EdgeUser:
-		m.ResetUser()
-		return nil
 	case education.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -15939,9 +14590,22 @@ func (m *EducationDetailMutation) OldCreatedAt(ctx context.Context) (v time.Time
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *EducationDetailMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[educationdetail.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *EducationDetailMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[educationdetail.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *EducationDetailMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, educationdetail.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -15975,9 +14639,22 @@ func (m *EducationDetailMutation) OldUpdatedAt(ctx context.Context) (v time.Time
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *EducationDetailMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[educationdetail.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *EducationDetailMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[educationdetail.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *EducationDetailMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, educationdetail.FieldUpdatedAt)
 }
 
 // ClearEducation clears the "education" edge to the Education entity.
@@ -16236,7 +14913,14 @@ func (m *EducationDetailMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *EducationDetailMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(educationdetail.FieldCreatedAt) {
+		fields = append(fields, educationdetail.FieldCreatedAt)
+	}
+	if m.FieldCleared(educationdetail.FieldUpdatedAt) {
+		fields = append(fields, educationdetail.FieldUpdatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -16249,6 +14933,14 @@ func (m *EducationDetailMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *EducationDetailMutation) ClearField(name string) error {
+	switch name {
+	case educationdetail.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case educationdetail.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown EducationDetail nullable field %s", name)
 }
 
@@ -16602,9 +15294,22 @@ func (m *EducationDetailTranslationMutation) OldDetailText(ctx context.Context) 
 	return oldValue.DetailText, nil
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (m *EducationDetailTranslationMutation) ClearDetailText() {
+	m.detail_text = nil
+	m.clearedFields[educationdetailtranslation.FieldDetailText] = struct{}{}
+}
+
+// DetailTextCleared returns if the "detail_text" field was cleared in this mutation.
+func (m *EducationDetailTranslationMutation) DetailTextCleared() bool {
+	_, ok := m.clearedFields[educationdetailtranslation.FieldDetailText]
+	return ok
+}
+
 // ResetDetailText resets all changes to the "detail_text" field.
 func (m *EducationDetailTranslationMutation) ResetDetailText() {
 	m.detail_text = nil
+	delete(m.clearedFields, educationdetailtranslation.FieldDetailText)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -16638,9 +15343,22 @@ func (m *EducationDetailTranslationMutation) OldCreatedAt(ctx context.Context) (
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *EducationDetailTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[educationdetailtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *EducationDetailTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[educationdetailtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *EducationDetailTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, educationdetailtranslation.FieldCreatedAt)
 }
 
 // ClearEducationDetail clears the "education_detail" edge to the EducationDetail entity.
@@ -16856,7 +15574,14 @@ func (m *EducationDetailTranslationMutation) AddField(name string, value ent.Val
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *EducationDetailTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(educationdetailtranslation.FieldDetailText) {
+		fields = append(fields, educationdetailtranslation.FieldDetailText)
+	}
+	if m.FieldCleared(educationdetailtranslation.FieldCreatedAt) {
+		fields = append(fields, educationdetailtranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -16869,6 +15594,14 @@ func (m *EducationDetailTranslationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *EducationDetailTranslationMutation) ClearField(name string) error {
+	switch name {
+	case educationdetailtranslation.FieldDetailText:
+		m.ClearDetailText()
+		return nil
+	case educationdetailtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown EducationDetailTranslation nullable field %s", name)
 }
 
@@ -17408,9 +16141,22 @@ func (m *EducationTranslationMutation) OldCreatedAt(ctx context.Context) (v time
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *EducationTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[educationtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *EducationTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[educationtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *EducationTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, educationtranslation.FieldCreatedAt)
 }
 
 // ClearEducation clears the "education" edge to the Education entity.
@@ -17681,6 +16427,9 @@ func (m *EducationTranslationMutation) ClearedFields() []string {
 	if m.FieldCleared(educationtranslation.FieldLocation) {
 		fields = append(fields, educationtranslation.FieldLocation)
 	}
+	if m.FieldCleared(educationtranslation.FieldCreatedAt) {
+		fields = append(fields, educationtranslation.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -17706,6 +16455,9 @@ func (m *EducationTranslationMutation) ClearField(name string) error {
 		return nil
 	case educationtranslation.FieldLocation:
 		m.ClearLocation()
+		return nil
+	case educationtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown EducationTranslation nullable field %s", name)
@@ -17844,7 +16596,7 @@ type EpisodeMutation struct {
 	addepisode_number   *int
 	status              *episode.Status
 	visibility          *episode.Visibility
-	published_at        *time.Time
+	published_at        *string
 	duration_minutes    *int
 	addduration_minutes *int
 	created_at          *time.Time
@@ -18214,12 +16966,12 @@ func (m *EpisodeMutation) ResetVisibility() {
 }
 
 // SetPublishedAt sets the "published_at" field.
-func (m *EpisodeMutation) SetPublishedAt(t time.Time) {
-	m.published_at = &t
+func (m *EpisodeMutation) SetPublishedAt(s string) {
+	m.published_at = &s
 }
 
 // PublishedAt returns the value of the "published_at" field in the mutation.
-func (m *EpisodeMutation) PublishedAt() (r time.Time, exists bool) {
+func (m *EpisodeMutation) PublishedAt() (r string, exists bool) {
 	v := m.published_at
 	if v == nil {
 		return
@@ -18230,7 +16982,7 @@ func (m *EpisodeMutation) PublishedAt() (r time.Time, exists bool) {
 // OldPublishedAt returns the old "published_at" field's value of the Episode entity.
 // If the Episode object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EpisodeMutation) OldPublishedAt(ctx context.Context) (v *time.Time, err error) {
+func (m *EpisodeMutation) OldPublishedAt(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPublishedAt is only allowed on UpdateOne operations")
 	}
@@ -18685,7 +17437,7 @@ func (m *EpisodeMutation) SetField(name string, value ent.Value) error {
 		m.SetVisibility(v)
 		return nil
 	case episode.FieldPublishedAt:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -20039,9 +18791,22 @@ func (m *EpisodeSeriesTranslationMutation) OldTitle(ctx context.Context) (v stri
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *EpisodeSeriesTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[episodeseriestranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *EpisodeSeriesTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[episodeseriestranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *EpisodeSeriesTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, episodeseriestranslation.FieldTitle)
 }
 
 // SetDescription sets the "description" field.
@@ -20124,9 +18889,22 @@ func (m *EpisodeSeriesTranslationMutation) OldCreatedAt(ctx context.Context) (v 
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *EpisodeSeriesTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[episodeseriestranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *EpisodeSeriesTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[episodeseriestranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *EpisodeSeriesTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, episodeseriestranslation.FieldCreatedAt)
 }
 
 // ClearEpisodeSeries clears the "episode_series" edge to the EpisodeSeries entity.
@@ -20317,8 +19095,14 @@ func (m *EpisodeSeriesTranslationMutation) AddField(name string, value ent.Value
 // mutation.
 func (m *EpisodeSeriesTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(episodeseriestranslation.FieldTitle) {
+		fields = append(fields, episodeseriestranslation.FieldTitle)
+	}
 	if m.FieldCleared(episodeseriestranslation.FieldDescription) {
 		fields = append(fields, episodeseriestranslation.FieldDescription)
+	}
+	if m.FieldCleared(episodeseriestranslation.FieldCreatedAt) {
+		fields = append(fields, episodeseriestranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -20334,8 +19118,14 @@ func (m *EpisodeSeriesTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *EpisodeSeriesTranslationMutation) ClearField(name string) error {
 	switch name {
+	case episodeseriestranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
 	case episodeseriestranslation.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case episodeseriestranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown EpisodeSeriesTranslation nullable field %s", name)
@@ -20663,9 +19453,22 @@ func (m *EpisodeTranslationMutation) OldTitle(ctx context.Context) (v string, er
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *EpisodeTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[episodetranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *EpisodeTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[episodetranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *EpisodeTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, episodetranslation.FieldTitle)
 }
 
 // SetDescription sets the "description" field.
@@ -20748,9 +19551,22 @@ func (m *EpisodeTranslationMutation) OldCreatedAt(ctx context.Context) (v time.T
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *EpisodeTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[episodetranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *EpisodeTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[episodetranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *EpisodeTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, episodetranslation.FieldCreatedAt)
 }
 
 // ClearEpisode clears the "episode" edge to the Episode entity.
@@ -20941,8 +19757,14 @@ func (m *EpisodeTranslationMutation) AddField(name string, value ent.Value) erro
 // mutation.
 func (m *EpisodeTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(episodetranslation.FieldTitle) {
+		fields = append(fields, episodetranslation.FieldTitle)
+	}
 	if m.FieldCleared(episodetranslation.FieldDescription) {
 		fields = append(fields, episodetranslation.FieldDescription)
+	}
+	if m.FieldCleared(episodetranslation.FieldCreatedAt) {
+		fields = append(fields, episodetranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -20958,8 +19780,14 @@ func (m *EpisodeTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *EpisodeTranslationMutation) ClearField(name string) error {
 	switch name {
+	case episodetranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
 	case episodetranslation.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case episodetranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown EpisodeTranslation nullable field %s", name)
@@ -21068,6 +19896,7 @@ type IdeaMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	user_id             *string
 	title               *string
 	slug                *string
 	description         *string
@@ -21082,8 +19911,6 @@ type IdeaMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
-	user                *string
-	cleareduser         bool
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
@@ -21203,12 +20030,12 @@ func (m *IdeaMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *IdeaMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *IdeaMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -21234,7 +20061,7 @@ func (m *IdeaMutation) OldUserID(ctx context.Context) (v string, err error) {
 
 // ClearUserID clears the value of the "user_id" field.
 func (m *IdeaMutation) ClearUserID() {
-	m.user = nil
+	m.user_id = nil
 	m.clearedFields[idea.FieldUserID] = struct{}{}
 }
 
@@ -21246,7 +20073,7 @@ func (m *IdeaMutation) UserIDCleared() bool {
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *IdeaMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 	delete(m.clearedFields, idea.FieldUserID)
 }
 
@@ -21764,33 +20591,6 @@ func (m *IdeaMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, idea.FieldUpdatedAt)
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (m *IdeaMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[idea.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *IdeaMutation) UserCleared() bool {
-	return m.UserIDCleared() || m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *IdeaMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *IdeaMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
 // AddTranslationIDs adds the "translations" edge to the IdeaTranslation entity by ids.
 func (m *IdeaMutation) AddTranslationIDs(ids ...string) {
 	if m.translations == nil {
@@ -21973,7 +20773,7 @@ func (m *IdeaMutation) Type() string {
 // AddedFields().
 func (m *IdeaMutation) Fields() []string {
 	fields := make([]string, 0, 12)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, idea.FieldUserID)
 	}
 	if m.title != nil {
@@ -22330,10 +21130,7 @@ func (m *IdeaMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *IdeaMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
-	if m.user != nil {
-		edges = append(edges, idea.EdgeUser)
-	}
+	edges := make([]string, 0, 3)
 	if m.translations != nil {
 		edges = append(edges, idea.EdgeTranslations)
 	}
@@ -22350,10 +21147,6 @@ func (m *IdeaMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *IdeaMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case idea.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case idea.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -22376,7 +21169,7 @@ func (m *IdeaMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *IdeaMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 3)
 	if m.removedtranslations != nil {
 		edges = append(edges, idea.EdgeTranslations)
 	}
@@ -22408,10 +21201,7 @@ func (m *IdeaMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *IdeaMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
-	if m.cleareduser {
-		edges = append(edges, idea.EdgeUser)
-	}
+	edges := make([]string, 0, 3)
 	if m.clearedtranslations {
 		edges = append(edges, idea.EdgeTranslations)
 	}
@@ -22428,8 +21218,6 @@ func (m *IdeaMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *IdeaMutation) EdgeCleared(name string) bool {
 	switch name {
-	case idea.EdgeUser:
-		return m.cleareduser
 	case idea.EdgeTranslations:
 		return m.clearedtranslations
 	case idea.EdgeDetails:
@@ -22444,9 +21232,6 @@ func (m *IdeaMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *IdeaMutation) ClearEdge(name string) error {
 	switch name {
-	case idea.EdgeUser:
-		m.ClearUser()
-		return nil
 	case idea.EdgeDetails:
 		m.ClearDetails()
 		return nil
@@ -22458,9 +21243,6 @@ func (m *IdeaMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *IdeaMutation) ResetEdge(name string) error {
 	switch name {
-	case idea.EdgeUser:
-		m.ResetUser()
-		return nil
 	case idea.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -22932,9 +21714,22 @@ func (m *IdeaDetailMutation) OldCreatedAt(ctx context.Context) (v time.Time, err
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *IdeaDetailMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[ideadetail.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *IdeaDetailMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[ideadetail.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *IdeaDetailMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, ideadetail.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -22968,9 +21763,22 @@ func (m *IdeaDetailMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *IdeaDetailMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[ideadetail.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *IdeaDetailMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[ideadetail.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *IdeaDetailMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, ideadetail.FieldUpdatedAt)
 }
 
 // ClearIdea clears the "idea" edge to the Idea entity.
@@ -23293,6 +22101,12 @@ func (m *IdeaDetailMutation) ClearedFields() []string {
 	if m.FieldCleared(ideadetail.FieldEstimatedBudget) {
 		fields = append(fields, ideadetail.FieldEstimatedBudget)
 	}
+	if m.FieldCleared(ideadetail.FieldCreatedAt) {
+		fields = append(fields, ideadetail.FieldCreatedAt)
+	}
+	if m.FieldCleared(ideadetail.FieldUpdatedAt) {
+		fields = append(fields, ideadetail.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -23315,6 +22129,12 @@ func (m *IdeaDetailMutation) ClearField(name string) error {
 		return nil
 	case ideadetail.FieldEstimatedBudget:
 		m.ClearEstimatedBudget()
+		return nil
+	case ideadetail.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case ideadetail.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown IdeaDetail nullable field %s", name)
@@ -23678,9 +22498,22 @@ func (m *IdeaDetailTranslationMutation) OldCreatedAt(ctx context.Context) (v tim
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *IdeaDetailTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[ideadetailtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *IdeaDetailTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[ideadetailtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *IdeaDetailTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, ideadetailtranslation.FieldCreatedAt)
 }
 
 // ClearIdeaDetail clears the "idea_detail" edge to the IdeaDetail entity.
@@ -23882,7 +22715,11 @@ func (m *IdeaDetailTranslationMutation) AddField(name string, value ent.Value) e
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *IdeaDetailTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(ideadetailtranslation.FieldCreatedAt) {
+		fields = append(fields, ideadetailtranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -23895,6 +22732,11 @@ func (m *IdeaDetailTranslationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *IdeaDetailTranslationMutation) ClearField(name string) error {
+	switch name {
+	case ideadetailtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown IdeaDetailTranslation nullable field %s", name)
 }
 
@@ -24233,9 +23075,22 @@ func (m *IdeaTagMutation) OldCreatedAt(ctx context.Context) (v time.Time, err er
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *IdeaTagMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[ideatag.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *IdeaTagMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[ideatag.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *IdeaTagMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, ideatag.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -24269,9 +23124,22 @@ func (m *IdeaTagMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err er
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *IdeaTagMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[ideatag.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *IdeaTagMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[ideatag.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *IdeaTagMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, ideatag.FieldUpdatedAt)
 }
 
 // AddIdeaIDs adds the "ideas" edge to the Idea entity by ids.
@@ -24474,7 +23342,14 @@ func (m *IdeaTagMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *IdeaTagMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(ideatag.FieldCreatedAt) {
+		fields = append(fields, ideatag.FieldCreatedAt)
+	}
+	if m.FieldCleared(ideatag.FieldUpdatedAt) {
+		fields = append(fields, ideatag.FieldUpdatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -24487,6 +23362,14 @@ func (m *IdeaTagMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *IdeaTagMutation) ClearField(name string) error {
+	switch name {
+	case ideatag.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case ideatag.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown IdeaTag nullable field %s", name)
 }
 
@@ -24824,9 +23707,22 @@ func (m *IdeaTranslationMutation) OldTitle(ctx context.Context) (v string, err e
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *IdeaTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[ideatranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *IdeaTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[ideatranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *IdeaTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, ideatranslation.FieldTitle)
 }
 
 // SetAbstract sets the "abstract" field.
@@ -25105,9 +24001,22 @@ func (m *IdeaTranslationMutation) OldCreatedAt(ctx context.Context) (v time.Time
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *IdeaTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[ideatranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *IdeaTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[ideatranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *IdeaTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, ideatranslation.FieldCreatedAt)
 }
 
 // ClearIdea clears the "idea" edge to the Idea entity.
@@ -25394,6 +24303,9 @@ func (m *IdeaTranslationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *IdeaTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(ideatranslation.FieldTitle) {
+		fields = append(fields, ideatranslation.FieldTitle)
+	}
 	if m.FieldCleared(ideatranslation.FieldAbstract) {
 		fields = append(fields, ideatranslation.FieldAbstract)
 	}
@@ -25409,6 +24321,9 @@ func (m *IdeaTranslationMutation) ClearedFields() []string {
 	if m.FieldCleared(ideatranslation.FieldRequiredResources) {
 		fields = append(fields, ideatranslation.FieldRequiredResources)
 	}
+	if m.FieldCleared(ideatranslation.FieldCreatedAt) {
+		fields = append(fields, ideatranslation.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -25423,6 +24338,9 @@ func (m *IdeaTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *IdeaTranslationMutation) ClearField(name string) error {
 	switch name {
+	case ideatranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
 	case ideatranslation.FieldAbstract:
 		m.ClearAbstract()
 		return nil
@@ -25437,6 +24355,9 @@ func (m *IdeaTranslationMutation) ClearField(name string) error {
 		return nil
 	case ideatranslation.FieldRequiredResources:
 		m.ClearRequiredResources()
+		return nil
+	case ideatranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown IdeaTranslation nullable field %s", name)
@@ -25967,9 +24888,22 @@ func (m *ItemPartMutation) OldCreatedAt(ctx context.Context) (v time.Time, err e
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ItemPartMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[itempart.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ItemPartMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[itempart.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ItemPartMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, itempart.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -26003,9 +24937,22 @@ func (m *ItemPartMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err e
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *ItemPartMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[itempart.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *ItemPartMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[itempart.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *ItemPartMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, itempart.FieldUpdatedAt)
 }
 
 // AddTranslationIDs adds the "translations" edge to the ItemPartTranslation entity by ids.
@@ -26333,7 +25280,14 @@ func (m *ItemPartMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ItemPartMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(itempart.FieldCreatedAt) {
+		fields = append(fields, itempart.FieldCreatedAt)
+	}
+	if m.FieldCleared(itempart.FieldUpdatedAt) {
+		fields = append(fields, itempart.FieldUpdatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -26346,6 +25300,14 @@ func (m *ItemPartMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ItemPartMutation) ClearField(name string) error {
+	switch name {
+	case itempart.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case itempart.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown ItemPart nullable field %s", name)
 }
 
@@ -26715,9 +25677,22 @@ func (m *ItemPartTranslationMutation) OldBody(ctx context.Context) (v string, er
 	return oldValue.Body, nil
 }
 
+// ClearBody clears the value of the "body" field.
+func (m *ItemPartTranslationMutation) ClearBody() {
+	m.body = nil
+	m.clearedFields[itemparttranslation.FieldBody] = struct{}{}
+}
+
+// BodyCleared returns if the "body" field was cleared in this mutation.
+func (m *ItemPartTranslationMutation) BodyCleared() bool {
+	_, ok := m.clearedFields[itemparttranslation.FieldBody]
+	return ok
+}
+
 // ResetBody resets all changes to the "body" field.
 func (m *ItemPartTranslationMutation) ResetBody() {
 	m.body = nil
+	delete(m.clearedFields, itemparttranslation.FieldBody)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -26751,9 +25726,22 @@ func (m *ItemPartTranslationMutation) OldCreatedAt(ctx context.Context) (v time.
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ItemPartTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[itemparttranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ItemPartTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[itemparttranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ItemPartTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, itemparttranslation.FieldCreatedAt)
 }
 
 // ClearItemPart clears the "item_part" edge to the ItemPart entity.
@@ -26929,7 +25917,14 @@ func (m *ItemPartTranslationMutation) AddField(name string, value ent.Value) err
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ItemPartTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(itemparttranslation.FieldBody) {
+		fields = append(fields, itemparttranslation.FieldBody)
+	}
+	if m.FieldCleared(itemparttranslation.FieldCreatedAt) {
+		fields = append(fields, itemparttranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -26942,6 +25937,14 @@ func (m *ItemPartTranslationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ItemPartTranslationMutation) ClearField(name string) error {
+	switch name {
+	case itemparttranslation.FieldBody:
+		m.ClearBody()
+		return nil
+	case itemparttranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown ItemPartTranslation nullable field %s", name)
 }
 
@@ -27080,9 +26083,6 @@ type LanguageMutation struct {
 	blog_post_translations                      map[string]struct{}
 	removedblog_post_translations               map[string]struct{}
 	clearedblog_post_translations               bool
-	blog_series_translations                    map[string]struct{}
-	removedblog_series_translations             map[string]struct{}
-	clearedblog_series_translations             bool
 	idea_translations                           map[string]struct{}
 	removedidea_translations                    map[string]struct{}
 	clearedidea_translations                    bool
@@ -27352,9 +26352,22 @@ func (m *LanguageMutation) OldCreatedAt(ctx context.Context) (v time.Time, err e
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *LanguageMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[language.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *LanguageMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[language.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *LanguageMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, language.FieldCreatedAt)
 }
 
 // AddPersonalInfoTranslationIDs adds the "personal_info_translations" edge to the PersonalInfoTranslation entity by ids.
@@ -27897,60 +26910,6 @@ func (m *LanguageMutation) ResetBlogPostTranslations() {
 	m.removedblog_post_translations = nil
 }
 
-// AddBlogSeriesTranslationIDs adds the "blog_series_translations" edge to the BlogSeriesTranslation entity by ids.
-func (m *LanguageMutation) AddBlogSeriesTranslationIDs(ids ...string) {
-	if m.blog_series_translations == nil {
-		m.blog_series_translations = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.blog_series_translations[ids[i]] = struct{}{}
-	}
-}
-
-// ClearBlogSeriesTranslations clears the "blog_series_translations" edge to the BlogSeriesTranslation entity.
-func (m *LanguageMutation) ClearBlogSeriesTranslations() {
-	m.clearedblog_series_translations = true
-}
-
-// BlogSeriesTranslationsCleared reports if the "blog_series_translations" edge to the BlogSeriesTranslation entity was cleared.
-func (m *LanguageMutation) BlogSeriesTranslationsCleared() bool {
-	return m.clearedblog_series_translations
-}
-
-// RemoveBlogSeriesTranslationIDs removes the "blog_series_translations" edge to the BlogSeriesTranslation entity by IDs.
-func (m *LanguageMutation) RemoveBlogSeriesTranslationIDs(ids ...string) {
-	if m.removedblog_series_translations == nil {
-		m.removedblog_series_translations = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.blog_series_translations, ids[i])
-		m.removedblog_series_translations[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedBlogSeriesTranslations returns the removed IDs of the "blog_series_translations" edge to the BlogSeriesTranslation entity.
-func (m *LanguageMutation) RemovedBlogSeriesTranslationsIDs() (ids []string) {
-	for id := range m.removedblog_series_translations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// BlogSeriesTranslationsIDs returns the "blog_series_translations" edge IDs in the mutation.
-func (m *LanguageMutation) BlogSeriesTranslationsIDs() (ids []string) {
-	for id := range m.blog_series_translations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetBlogSeriesTranslations resets all changes to the "blog_series_translations" edge.
-func (m *LanguageMutation) ResetBlogSeriesTranslations() {
-	m.blog_series_translations = nil
-	m.clearedblog_series_translations = false
-	m.removedblog_series_translations = nil
-}
-
 // AddIdeaTranslationIDs adds the "idea_translations" edge to the IdeaTranslation entity by ids.
 func (m *LanguageMutation) AddIdeaTranslationIDs(ids ...string) {
 	if m.idea_translations == nil {
@@ -28475,7 +27434,11 @@ func (m *LanguageMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *LanguageMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(language.FieldCreatedAt) {
+		fields = append(fields, language.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -28488,6 +27451,11 @@ func (m *LanguageMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *LanguageMutation) ClearField(name string) error {
+	switch name {
+	case language.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown Language nullable field %s", name)
 }
 
@@ -28513,7 +27481,7 @@ func (m *LanguageMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *LanguageMutation) AddedEdges() []string {
-	edges := make([]string, 0, 18)
+	edges := make([]string, 0, 17)
 	if m.personal_info_translations != nil {
 		edges = append(edges, language.EdgePersonalInfoTranslations)
 	}
@@ -28543,9 +27511,6 @@ func (m *LanguageMutation) AddedEdges() []string {
 	}
 	if m.blog_post_translations != nil {
 		edges = append(edges, language.EdgeBlogPostTranslations)
-	}
-	if m.blog_series_translations != nil {
-		edges = append(edges, language.EdgeBlogSeriesTranslations)
 	}
 	if m.idea_translations != nil {
 		edges = append(edges, language.EdgeIdeaTranslations)
@@ -28635,12 +27600,6 @@ func (m *LanguageMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case language.EdgeBlogSeriesTranslations:
-		ids := make([]ent.Value, 0, len(m.blog_series_translations))
-		for id := range m.blog_series_translations {
-			ids = append(ids, id)
-		}
-		return ids
 	case language.EdgeIdeaTranslations:
 		ids := make([]ent.Value, 0, len(m.idea_translations))
 		for id := range m.idea_translations {
@@ -28689,7 +27648,7 @@ func (m *LanguageMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *LanguageMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 18)
+	edges := make([]string, 0, 17)
 	if m.removedpersonal_info_translations != nil {
 		edges = append(edges, language.EdgePersonalInfoTranslations)
 	}
@@ -28719,9 +27678,6 @@ func (m *LanguageMutation) RemovedEdges() []string {
 	}
 	if m.removedblog_post_translations != nil {
 		edges = append(edges, language.EdgeBlogPostTranslations)
-	}
-	if m.removedblog_series_translations != nil {
-		edges = append(edges, language.EdgeBlogSeriesTranslations)
 	}
 	if m.removedidea_translations != nil {
 		edges = append(edges, language.EdgeIdeaTranslations)
@@ -28811,12 +27767,6 @@ func (m *LanguageMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case language.EdgeBlogSeriesTranslations:
-		ids := make([]ent.Value, 0, len(m.removedblog_series_translations))
-		for id := range m.removedblog_series_translations {
-			ids = append(ids, id)
-		}
-		return ids
 	case language.EdgeIdeaTranslations:
 		ids := make([]ent.Value, 0, len(m.removedidea_translations))
 		for id := range m.removedidea_translations {
@@ -28865,7 +27815,7 @@ func (m *LanguageMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *LanguageMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 18)
+	edges := make([]string, 0, 17)
 	if m.clearedpersonal_info_translations {
 		edges = append(edges, language.EdgePersonalInfoTranslations)
 	}
@@ -28895,9 +27845,6 @@ func (m *LanguageMutation) ClearedEdges() []string {
 	}
 	if m.clearedblog_post_translations {
 		edges = append(edges, language.EdgeBlogPostTranslations)
-	}
-	if m.clearedblog_series_translations {
-		edges = append(edges, language.EdgeBlogSeriesTranslations)
 	}
 	if m.clearedidea_translations {
 		edges = append(edges, language.EdgeIdeaTranslations)
@@ -28947,8 +27894,6 @@ func (m *LanguageMutation) EdgeCleared(name string) bool {
 		return m.clearedblog_category_translations
 	case language.EdgeBlogPostTranslations:
 		return m.clearedblog_post_translations
-	case language.EdgeBlogSeriesTranslations:
-		return m.clearedblog_series_translations
 	case language.EdgeIdeaTranslations:
 		return m.clearedidea_translations
 	case language.EdgeIdeaDetailTranslations:
@@ -29008,9 +27953,6 @@ func (m *LanguageMutation) ResetEdge(name string) error {
 		return nil
 	case language.EdgeBlogPostTranslations:
 		m.ResetBlogPostTranslations()
-		return nil
-	case language.EdgeBlogSeriesTranslations:
-		m.ResetBlogSeriesTranslations()
 		return nil
 	case language.EdgeIdeaTranslations:
 		m.ResetIdeaTranslations()
@@ -29358,9 +28300,22 @@ func (m *PartEntryMutation) OldCreatedAt(ctx context.Context) (v time.Time, err 
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *PartEntryMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[partentry.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *PartEntryMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[partentry.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *PartEntryMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, partentry.FieldCreatedAt)
 }
 
 // ClearItemPart clears the "item_part" edge to the ItemPart entity.
@@ -29619,7 +28574,11 @@ func (m *PartEntryMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *PartEntryMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(partentry.FieldCreatedAt) {
+		fields = append(fields, partentry.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -29632,6 +28591,11 @@ func (m *PartEntryMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *PartEntryMutation) ClearField(name string) error {
+	switch name {
+	case partentry.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown PartEntry nullable field %s", name)
 }
 
@@ -30020,9 +28984,22 @@ func (m *PartEntryTranslationMutation) OldCreatedAt(ctx context.Context) (v time
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *PartEntryTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[partentrytranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *PartEntryTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[partentrytranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *PartEntryTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, partentrytranslation.FieldCreatedAt)
 }
 
 // ClearPartEntry clears the "part_entry" edge to the PartEntry entity.
@@ -30198,7 +29175,11 @@ func (m *PartEntryTranslationMutation) AddField(name string, value ent.Value) er
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *PartEntryTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(partentrytranslation.FieldCreatedAt) {
+		fields = append(fields, partentrytranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -30211,6 +29192,11 @@ func (m *PartEntryTranslationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *PartEntryTranslationMutation) ClearField(name string) error {
+	switch name {
+	case partentrytranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown PartEntryTranslation nullable field %s", name)
 }
 
@@ -30314,6 +29300,7 @@ type PersonalInfoMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	user_id             *string
 	full_name           *string
 	title               *string
 	current_status      *string
@@ -30326,8 +29313,6 @@ type PersonalInfoMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
-	user                *string
-	cleareduser         bool
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
@@ -30445,12 +29430,12 @@ func (m *PersonalInfoMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *PersonalInfoMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *PersonalInfoMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -30476,7 +29461,7 @@ func (m *PersonalInfoMutation) OldUserID(ctx context.Context) (v string, err err
 
 // ClearUserID clears the value of the "user_id" field.
 func (m *PersonalInfoMutation) ClearUserID() {
-	m.user = nil
+	m.user_id = nil
 	m.clearedFields[personalinfo.FieldUserID] = struct{}{}
 }
 
@@ -30488,7 +29473,7 @@ func (m *PersonalInfoMutation) UserIDCleared() bool {
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *PersonalInfoMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 	delete(m.clearedFields, personalinfo.FieldUserID)
 }
 
@@ -31018,33 +30003,6 @@ func (m *PersonalInfoMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, personalinfo.FieldUpdatedAt)
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (m *PersonalInfoMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[personalinfo.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *PersonalInfoMutation) UserCleared() bool {
-	return m.UserIDCleared() || m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *PersonalInfoMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *PersonalInfoMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
 // AddTranslationIDs adds the "translations" edge to the PersonalInfoTranslation entity by ids.
 func (m *PersonalInfoMutation) AddTranslationIDs(ids ...string) {
 	if m.translations == nil {
@@ -31188,7 +30146,7 @@ func (m *PersonalInfoMutation) Type() string {
 // AddedFields().
 func (m *PersonalInfoMutation) Fields() []string {
 	fields := make([]string, 0, 12)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, personalinfo.FieldUserID)
 	}
 	if m.full_name != nil {
@@ -31542,10 +30500,7 @@ func (m *PersonalInfoMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PersonalInfoMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.user != nil {
-		edges = append(edges, personalinfo.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.translations != nil {
 		edges = append(edges, personalinfo.EdgeTranslations)
 	}
@@ -31559,10 +30514,6 @@ func (m *PersonalInfoMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *PersonalInfoMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case personalinfo.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case personalinfo.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -31581,7 +30532,7 @@ func (m *PersonalInfoMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PersonalInfoMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.removedtranslations != nil {
 		edges = append(edges, personalinfo.EdgeTranslations)
 	}
@@ -31613,10 +30564,7 @@ func (m *PersonalInfoMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PersonalInfoMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.cleareduser {
-		edges = append(edges, personalinfo.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedtranslations {
 		edges = append(edges, personalinfo.EdgeTranslations)
 	}
@@ -31630,8 +30578,6 @@ func (m *PersonalInfoMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *PersonalInfoMutation) EdgeCleared(name string) bool {
 	switch name {
-	case personalinfo.EdgeUser:
-		return m.cleareduser
 	case personalinfo.EdgeTranslations:
 		return m.clearedtranslations
 	case personalinfo.EdgeSocialLinks:
@@ -31644,9 +30590,6 @@ func (m *PersonalInfoMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *PersonalInfoMutation) ClearEdge(name string) error {
 	switch name {
-	case personalinfo.EdgeUser:
-		m.ClearUser()
-		return nil
 	}
 	return fmt.Errorf("unknown PersonalInfo unique edge %s", name)
 }
@@ -31655,9 +30598,6 @@ func (m *PersonalInfoMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *PersonalInfoMutation) ResetEdge(name string) error {
 	switch name {
-	case personalinfo.EdgeUser:
-		m.ResetUser()
-		return nil
 	case personalinfo.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -32092,9 +31032,22 @@ func (m *PersonalInfoTranslationMutation) OldCreatedAt(ctx context.Context) (v t
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *PersonalInfoTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[personalinfotranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *PersonalInfoTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[personalinfotranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *PersonalInfoTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, personalinfotranslation.FieldCreatedAt)
 }
 
 // ClearPersonalInfo clears the "personal_info" edge to the PersonalInfo entity.
@@ -32365,6 +31318,9 @@ func (m *PersonalInfoTranslationMutation) ClearedFields() []string {
 	if m.FieldCleared(personalinfotranslation.FieldLocation) {
 		fields = append(fields, personalinfotranslation.FieldLocation)
 	}
+	if m.FieldCleared(personalinfotranslation.FieldCreatedAt) {
+		fields = append(fields, personalinfotranslation.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -32390,6 +31346,9 @@ func (m *PersonalInfoTranslationMutation) ClearField(name string) error {
 		return nil
 	case personalinfotranslation.FieldLocation:
 		m.ClearLocation()
+		return nil
+	case personalinfotranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown PersonalInfoTranslation nullable field %s", name)
@@ -32522,13 +31481,14 @@ type ProjectMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	user_id             *string
 	title               *string
 	slug                *string
 	description         *string
 	project_type        *string
 	status              *project.Status
-	start_date          *time.Time
-	end_date            *time.Time
+	start_date          *string
+	end_date            *string
 	github_url          *string
 	demo_url            *string
 	documentation_url   *string
@@ -32544,8 +31504,6 @@ type ProjectMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
-	user                *string
-	cleareduser         bool
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
@@ -32668,12 +31626,12 @@ func (m *ProjectMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *ProjectMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *ProjectMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -32699,7 +31657,7 @@ func (m *ProjectMutation) OldUserID(ctx context.Context) (v string, err error) {
 
 // ClearUserID clears the value of the "user_id" field.
 func (m *ProjectMutation) ClearUserID() {
-	m.user = nil
+	m.user_id = nil
 	m.clearedFields[project.FieldUserID] = struct{}{}
 }
 
@@ -32711,7 +31669,7 @@ func (m *ProjectMutation) UserIDCleared() bool {
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *ProjectMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 	delete(m.clearedFields, project.FieldUserID)
 }
 
@@ -32922,12 +31880,12 @@ func (m *ProjectMutation) ResetStatus() {
 }
 
 // SetStartDate sets the "start_date" field.
-func (m *ProjectMutation) SetStartDate(t time.Time) {
-	m.start_date = &t
+func (m *ProjectMutation) SetStartDate(s string) {
+	m.start_date = &s
 }
 
 // StartDate returns the value of the "start_date" field in the mutation.
-func (m *ProjectMutation) StartDate() (r time.Time, exists bool) {
+func (m *ProjectMutation) StartDate() (r string, exists bool) {
 	v := m.start_date
 	if v == nil {
 		return
@@ -32938,7 +31896,7 @@ func (m *ProjectMutation) StartDate() (r time.Time, exists bool) {
 // OldStartDate returns the old "start_date" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldStartDate(ctx context.Context) (v time.Time, err error) {
+func (m *ProjectMutation) OldStartDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStartDate is only allowed on UpdateOne operations")
 	}
@@ -32971,12 +31929,12 @@ func (m *ProjectMutation) ResetStartDate() {
 }
 
 // SetEndDate sets the "end_date" field.
-func (m *ProjectMutation) SetEndDate(t time.Time) {
-	m.end_date = &t
+func (m *ProjectMutation) SetEndDate(s string) {
+	m.end_date = &s
 }
 
 // EndDate returns the value of the "end_date" field in the mutation.
-func (m *ProjectMutation) EndDate() (r time.Time, exists bool) {
+func (m *ProjectMutation) EndDate() (r string, exists bool) {
 	v := m.end_date
 	if v == nil {
 		return
@@ -32987,7 +31945,7 @@ func (m *ProjectMutation) EndDate() (r time.Time, exists bool) {
 // OldEndDate returns the old "end_date" field's value of the Project entity.
 // If the Project object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldEndDate(ctx context.Context) (v time.Time, err error) {
+func (m *ProjectMutation) OldEndDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldEndDate is only allowed on UpdateOne operations")
 	}
@@ -33553,33 +32511,6 @@ func (m *ProjectMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, project.FieldUpdatedAt)
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (m *ProjectMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[project.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *ProjectMutation) UserCleared() bool {
-	return m.UserIDCleared() || m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *ProjectMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *ProjectMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
 // AddTranslationIDs adds the "translations" edge to the ProjectTranslation entity by ids.
 func (m *ProjectMutation) AddTranslationIDs(ids ...string) {
 	if m.translations == nil {
@@ -33816,7 +32747,7 @@ func (m *ProjectMutation) Type() string {
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
 	fields := make([]string, 0, 19)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, project.FieldUserID)
 	}
 	if m.title != nil {
@@ -34018,14 +32949,14 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		m.SetStatus(v)
 		return nil
 	case project.FieldStartDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStartDate(v)
 		return nil
 	case project.FieldEndDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -34328,10 +33259,7 @@ func (m *ProjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.user != nil {
-		edges = append(edges, project.EdgeUser)
-	}
+	edges := make([]string, 0, 4)
 	if m.translations != nil {
 		edges = append(edges, project.EdgeTranslations)
 	}
@@ -34351,10 +33279,6 @@ func (m *ProjectMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case project.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case project.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -34383,7 +33307,7 @@ func (m *ProjectMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 4)
 	if m.removedtranslations != nil {
 		edges = append(edges, project.EdgeTranslations)
 	}
@@ -34424,10 +33348,7 @@ func (m *ProjectMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
-	if m.cleareduser {
-		edges = append(edges, project.EdgeUser)
-	}
+	edges := make([]string, 0, 4)
 	if m.clearedtranslations {
 		edges = append(edges, project.EdgeTranslations)
 	}
@@ -34447,8 +33368,6 @@ func (m *ProjectMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ProjectMutation) EdgeCleared(name string) bool {
 	switch name {
-	case project.EdgeUser:
-		return m.cleareduser
 	case project.EdgeTranslations:
 		return m.clearedtranslations
 	case project.EdgeTechnologies:
@@ -34465,9 +33384,6 @@ func (m *ProjectMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ProjectMutation) ClearEdge(name string) error {
 	switch name {
-	case project.EdgeUser:
-		m.ClearUser()
-		return nil
 	case project.EdgeDetails:
 		m.ClearDetails()
 		return nil
@@ -34479,9 +33395,6 @@ func (m *ProjectMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ProjectMutation) ResetEdge(name string) error {
 	switch name {
-	case project.EdgeUser:
-		m.ResetUser()
-		return nil
 	case project.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -34938,9 +33851,22 @@ func (m *ProjectDetailMutation) OldCreatedAt(ctx context.Context) (v time.Time, 
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectDetailMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projectdetail.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectDetailMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projectdetail.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectDetailMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projectdetail.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -34974,9 +33900,22 @@ func (m *ProjectDetailMutation) OldUpdatedAt(ctx context.Context) (v time.Time, 
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *ProjectDetailMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[projectdetail.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *ProjectDetailMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[projectdetail.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *ProjectDetailMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, projectdetail.FieldUpdatedAt)
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -35278,6 +34217,12 @@ func (m *ProjectDetailMutation) ClearedFields() []string {
 	if m.FieldCleared(projectdetail.FieldVersion) {
 		fields = append(fields, projectdetail.FieldVersion)
 	}
+	if m.FieldCleared(projectdetail.FieldCreatedAt) {
+		fields = append(fields, projectdetail.FieldCreatedAt)
+	}
+	if m.FieldCleared(projectdetail.FieldUpdatedAt) {
+		fields = append(fields, projectdetail.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -35306,6 +34251,12 @@ func (m *ProjectDetailMutation) ClearField(name string) error {
 		return nil
 	case projectdetail.FieldVersion:
 		m.ClearVersion()
+		return nil
+	case projectdetail.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case projectdetail.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectDetail nullable field %s", name)
@@ -35669,9 +34620,22 @@ func (m *ProjectDetailTranslationMutation) OldCreatedAt(ctx context.Context) (v 
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectDetailTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projectdetailtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectDetailTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projectdetailtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectDetailTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projectdetailtranslation.FieldCreatedAt)
 }
 
 // ClearProjectDetail clears the "project_detail" edge to the ProjectDetail entity.
@@ -35873,7 +34837,11 @@ func (m *ProjectDetailTranslationMutation) AddField(name string, value ent.Value
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ProjectDetailTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(projectdetailtranslation.FieldCreatedAt) {
+		fields = append(fields, projectdetailtranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -35886,6 +34854,11 @@ func (m *ProjectDetailTranslationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ProjectDetailTranslationMutation) ClearField(name string) error {
+	switch name {
+	case projectdetailtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown ProjectDetailTranslation nullable field %s", name)
 }
 
@@ -36433,9 +35406,22 @@ func (m *ProjectImageMutation) OldCreatedAt(ctx context.Context) (v time.Time, e
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectImageMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projectimage.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectImageMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projectimage.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectImageMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projectimage.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -36469,9 +35455,22 @@ func (m *ProjectImageMutation) OldUpdatedAt(ctx context.Context) (v time.Time, e
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *ProjectImageMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[projectimage.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *ProjectImageMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[projectimage.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *ProjectImageMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, projectimage.FieldUpdatedAt)
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -36782,6 +35781,12 @@ func (m *ProjectImageMutation) ClearedFields() []string {
 	if m.FieldCleared(projectimage.FieldImageType) {
 		fields = append(fields, projectimage.FieldImageType)
 	}
+	if m.FieldCleared(projectimage.FieldCreatedAt) {
+		fields = append(fields, projectimage.FieldCreatedAt)
+	}
+	if m.FieldCleared(projectimage.FieldUpdatedAt) {
+		fields = append(fields, projectimage.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -36804,6 +35809,12 @@ func (m *ProjectImageMutation) ClearField(name string) error {
 		return nil
 	case projectimage.FieldImageType:
 		m.ClearImageType()
+		return nil
+	case projectimage.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case projectimage.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectImage nullable field %s", name)
@@ -37267,9 +36278,22 @@ func (m *ProjectImageTranslationMutation) OldCreatedAt(ctx context.Context) (v t
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectImageTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projectimagetranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectImageTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projectimagetranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectImageTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projectimagetranslation.FieldCreatedAt)
 }
 
 // ClearProjectImage clears the "project_image" edge to the ProjectImage entity.
@@ -37506,6 +36530,9 @@ func (m *ProjectImageTranslationMutation) ClearedFields() []string {
 	if m.FieldCleared(projectimagetranslation.FieldCaption) {
 		fields = append(fields, projectimagetranslation.FieldCaption)
 	}
+	if m.FieldCleared(projectimagetranslation.FieldCreatedAt) {
+		fields = append(fields, projectimagetranslation.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -37525,6 +36552,9 @@ func (m *ProjectImageTranslationMutation) ClearField(name string) error {
 		return nil
 	case projectimagetranslation.FieldCaption:
 		m.ClearCaption()
+		return nil
+	case projectimagetranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectImageTranslation nullable field %s", name)
@@ -38032,9 +37062,22 @@ func (m *ProjectLikeMutation) OldCreatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectLikeMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projectlike.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectLikeMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projectlike.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectLikeMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projectlike.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -38068,9 +37111,22 @@ func (m *ProjectLikeMutation) OldUpdatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *ProjectLikeMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[projectlike.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *ProjectLikeMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[projectlike.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *ProjectLikeMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, projectlike.FieldUpdatedAt)
 }
 
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
@@ -38301,6 +37357,12 @@ func (m *ProjectLikeMutation) ClearedFields() []string {
 	if m.FieldCleared(projectlike.FieldUserAgent) {
 		fields = append(fields, projectlike.FieldUserAgent)
 	}
+	if m.FieldCleared(projectlike.FieldCreatedAt) {
+		fields = append(fields, projectlike.FieldCreatedAt)
+	}
+	if m.FieldCleared(projectlike.FieldUpdatedAt) {
+		fields = append(fields, projectlike.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -38326,6 +37388,12 @@ func (m *ProjectLikeMutation) ClearField(name string) error {
 		return nil
 	case projectlike.FieldUserAgent:
 		m.ClearUserAgent()
+		return nil
+	case projectlike.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case projectlike.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectLike nullable field %s", name)
@@ -38765,9 +37833,22 @@ func (m *ProjectTechnologyMutation) OldCreatedAt(ctx context.Context) (v time.Ti
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectTechnologyMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projecttechnology.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectTechnologyMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projecttechnology.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectTechnologyMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projecttechnology.FieldCreatedAt)
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -38976,6 +38057,9 @@ func (m *ProjectTechnologyMutation) ClearedFields() []string {
 	if m.FieldCleared(projecttechnology.FieldTechnologyType) {
 		fields = append(fields, projecttechnology.FieldTechnologyType)
 	}
+	if m.FieldCleared(projecttechnology.FieldCreatedAt) {
+		fields = append(fields, projecttechnology.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -38992,6 +38076,9 @@ func (m *ProjectTechnologyMutation) ClearField(name string) error {
 	switch name {
 	case projecttechnology.FieldTechnologyType:
 		m.ClearTechnologyType()
+		return nil
+	case projecttechnology.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectTechnology nullable field %s", name)
@@ -39321,9 +38408,22 @@ func (m *ProjectTranslationMutation) OldTitle(ctx context.Context) (v string, er
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *ProjectTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[projecttranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *ProjectTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[projecttranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *ProjectTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, projecttranslation.FieldTitle)
 }
 
 // SetDescription sets the "description" field.
@@ -39455,9 +38555,22 @@ func (m *ProjectTranslationMutation) OldCreatedAt(ctx context.Context) (v time.T
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projecttranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projecttranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projecttranslation.FieldCreatedAt)
 }
 
 // ClearProject clears the "project" edge to the Project entity.
@@ -39702,11 +38815,17 @@ func (m *ProjectTranslationMutation) AddField(name string, value ent.Value) erro
 // mutation.
 func (m *ProjectTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(projecttranslation.FieldTitle) {
+		fields = append(fields, projecttranslation.FieldTitle)
+	}
 	if m.FieldCleared(projecttranslation.FieldDescription) {
 		fields = append(fields, projecttranslation.FieldDescription)
 	}
 	if m.FieldCleared(projecttranslation.FieldProjectType) {
 		fields = append(fields, projecttranslation.FieldProjectType)
+	}
+	if m.FieldCleared(projecttranslation.FieldCreatedAt) {
+		fields = append(fields, projecttranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -39722,11 +38841,17 @@ func (m *ProjectTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ProjectTranslationMutation) ClearField(name string) error {
 	switch name {
+	case projecttranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
 	case projecttranslation.FieldDescription:
 		m.ClearDescription()
 		return nil
 	case projecttranslation.FieldProjectType:
 		m.ClearProjectType()
+		return nil
+	case projecttranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectTranslation nullable field %s", name)
@@ -40359,9 +39484,22 @@ func (m *ProjectViewMutation) OldCreatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ProjectViewMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[projectview.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ProjectViewMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[projectview.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ProjectViewMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, projectview.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -40395,9 +39533,22 @@ func (m *ProjectViewMutation) OldUpdatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *ProjectViewMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[projectview.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *ProjectViewMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[projectview.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *ProjectViewMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, projectview.FieldUpdatedAt)
 }
 
 // ClearUserIdentity clears the "user_identity" edge to the UserIdentity entity.
@@ -40677,6 +39828,12 @@ func (m *ProjectViewMutation) ClearedFields() []string {
 	if m.FieldCleared(projectview.FieldSessionDuration) {
 		fields = append(fields, projectview.FieldSessionDuration)
 	}
+	if m.FieldCleared(projectview.FieldCreatedAt) {
+		fields = append(fields, projectview.FieldCreatedAt)
+	}
+	if m.FieldCleared(projectview.FieldUpdatedAt) {
+		fields = append(fields, projectview.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -40708,6 +39865,12 @@ func (m *ProjectViewMutation) ClearField(name string) error {
 		return nil
 	case projectview.FieldSessionDuration:
 		m.ClearSessionDuration()
+		return nil
+	case projectview.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case projectview.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ProjectView nullable field %s", name)
@@ -40828,6 +39991,7 @@ type PublicationMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	user_id             *string
 	title               *string
 	publication_type    *string
 	journal_name        *string
@@ -40835,7 +39999,7 @@ type PublicationMutation struct {
 	volume              *string
 	issue               *string
 	pages               *string
-	publication_date    *time.Time
+	publication_date    *string
 	doi                 *string
 	isbn                *string
 	url                 *string
@@ -40849,8 +40013,6 @@ type PublicationMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
-	user                *string
-	cleareduser         bool
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
@@ -40968,12 +40130,12 @@ func (m *PublicationMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *PublicationMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *PublicationMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -40999,7 +40161,7 @@ func (m *PublicationMutation) OldUserID(ctx context.Context) (v string, err erro
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *PublicationMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 }
 
 // SetTitle sets the "title" field.
@@ -41320,12 +40482,12 @@ func (m *PublicationMutation) ResetPages() {
 }
 
 // SetPublicationDate sets the "publication_date" field.
-func (m *PublicationMutation) SetPublicationDate(t time.Time) {
-	m.publication_date = &t
+func (m *PublicationMutation) SetPublicationDate(s string) {
+	m.publication_date = &s
 }
 
 // PublicationDate returns the value of the "publication_date" field in the mutation.
-func (m *PublicationMutation) PublicationDate() (r time.Time, exists bool) {
+func (m *PublicationMutation) PublicationDate() (r string, exists bool) {
 	v := m.publication_date
 	if v == nil {
 		return
@@ -41336,7 +40498,7 @@ func (m *PublicationMutation) PublicationDate() (r time.Time, exists bool) {
 // OldPublicationDate returns the old "publication_date" field's value of the Publication entity.
 // If the Publication object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PublicationMutation) OldPublicationDate(ctx context.Context) (v time.Time, err error) {
+func (m *PublicationMutation) OldPublicationDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPublicationDate is only allowed on UpdateOne operations")
 	}
@@ -41792,9 +40954,22 @@ func (m *PublicationMutation) OldCreatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *PublicationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[publication.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *PublicationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[publication.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *PublicationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, publication.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -41828,36 +41003,22 @@ func (m *PublicationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, er
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *PublicationMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[publication.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *PublicationMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[publication.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *PublicationMutation) ResetUpdatedAt() {
 	m.updated_at = nil
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (m *PublicationMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[publication.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *PublicationMutation) UserCleared() bool {
-	return m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *PublicationMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *PublicationMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
+	delete(m.clearedFields, publication.FieldUpdatedAt)
 }
 
 // AddTranslationIDs adds the "translations" edge to the PublicationTranslation entity by ids.
@@ -42003,7 +41164,7 @@ func (m *PublicationMutation) Type() string {
 // AddedFields().
 func (m *PublicationMutation) Fields() []string {
 	fields := make([]string, 0, 19)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, publication.FieldUserID)
 	}
 	if m.title != nil {
@@ -42219,7 +41380,7 @@ func (m *PublicationMutation) SetField(name string, value ent.Value) error {
 		m.SetPages(v)
 		return nil
 	case publication.FieldPublicationDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -42385,6 +41546,12 @@ func (m *PublicationMutation) ClearedFields() []string {
 	if m.FieldCleared(publication.FieldImageURL) {
 		fields = append(fields, publication.FieldImageURL)
 	}
+	if m.FieldCleared(publication.FieldCreatedAt) {
+		fields = append(fields, publication.FieldCreatedAt)
+	}
+	if m.FieldCleared(publication.FieldUpdatedAt) {
+		fields = append(fields, publication.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -42431,6 +41598,12 @@ func (m *PublicationMutation) ClearField(name string) error {
 		return nil
 	case publication.FieldImageURL:
 		m.ClearImageURL()
+		return nil
+	case publication.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case publication.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Publication nullable field %s", name)
@@ -42503,10 +41676,7 @@ func (m *PublicationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PublicationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.user != nil {
-		edges = append(edges, publication.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.translations != nil {
 		edges = append(edges, publication.EdgeTranslations)
 	}
@@ -42520,10 +41690,6 @@ func (m *PublicationMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *PublicationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case publication.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case publication.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -42542,7 +41708,7 @@ func (m *PublicationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PublicationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.removedtranslations != nil {
 		edges = append(edges, publication.EdgeTranslations)
 	}
@@ -42574,10 +41740,7 @@ func (m *PublicationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PublicationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.cleareduser {
-		edges = append(edges, publication.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedtranslations {
 		edges = append(edges, publication.EdgeTranslations)
 	}
@@ -42591,8 +41754,6 @@ func (m *PublicationMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *PublicationMutation) EdgeCleared(name string) bool {
 	switch name {
-	case publication.EdgeUser:
-		return m.cleareduser
 	case publication.EdgeTranslations:
 		return m.clearedtranslations
 	case publication.EdgeAuthors:
@@ -42605,9 +41766,6 @@ func (m *PublicationMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *PublicationMutation) ClearEdge(name string) error {
 	switch name {
-	case publication.EdgeUser:
-		m.ClearUser()
-		return nil
 	}
 	return fmt.Errorf("unknown Publication unique edge %s", name)
 }
@@ -42616,9 +41774,6 @@ func (m *PublicationMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *PublicationMutation) ResetEdge(name string) error {
 	switch name {
-	case publication.EdgeUser:
-		m.ResetUser()
-		return nil
 	case publication.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -42998,9 +42153,22 @@ func (m *PublicationAuthorMutation) OldCreatedAt(ctx context.Context) (v time.Ti
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *PublicationAuthorMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[publicationauthor.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *PublicationAuthorMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[publicationauthor.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *PublicationAuthorMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, publicationauthor.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -43034,9 +42202,22 @@ func (m *PublicationAuthorMutation) OldUpdatedAt(ctx context.Context) (v time.Ti
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *PublicationAuthorMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[publicationauthor.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *PublicationAuthorMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[publicationauthor.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *PublicationAuthorMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, publicationauthor.FieldUpdatedAt)
 }
 
 // ClearPublication clears the "publication" edge to the Publication entity.
@@ -43273,6 +42454,12 @@ func (m *PublicationAuthorMutation) ClearedFields() []string {
 	if m.FieldCleared(publicationauthor.FieldAffiliation) {
 		fields = append(fields, publicationauthor.FieldAffiliation)
 	}
+	if m.FieldCleared(publicationauthor.FieldCreatedAt) {
+		fields = append(fields, publicationauthor.FieldCreatedAt)
+	}
+	if m.FieldCleared(publicationauthor.FieldUpdatedAt) {
+		fields = append(fields, publicationauthor.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -43289,6 +42476,12 @@ func (m *PublicationAuthorMutation) ClearField(name string) error {
 	switch name {
 	case publicationauthor.FieldAffiliation:
 		m.ClearAffiliation()
+		return nil
+	case publicationauthor.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case publicationauthor.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown PublicationAuthor nullable field %s", name)
@@ -43624,9 +42817,22 @@ func (m *PublicationTranslationMutation) OldTitle(ctx context.Context) (v string
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *PublicationTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[publicationtranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *PublicationTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[publicationtranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *PublicationTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, publicationtranslation.FieldTitle)
 }
 
 // SetJournalName sets the "journal_name" field.
@@ -43758,9 +42964,22 @@ func (m *PublicationTranslationMutation) OldCreatedAt(ctx context.Context) (v ti
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *PublicationTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[publicationtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *PublicationTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[publicationtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *PublicationTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, publicationtranslation.FieldCreatedAt)
 }
 
 // ClearPublication clears the "publication" edge to the Publication entity.
@@ -44005,11 +43224,17 @@ func (m *PublicationTranslationMutation) AddField(name string, value ent.Value) 
 // mutation.
 func (m *PublicationTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(publicationtranslation.FieldTitle) {
+		fields = append(fields, publicationtranslation.FieldTitle)
+	}
 	if m.FieldCleared(publicationtranslation.FieldJournalName) {
 		fields = append(fields, publicationtranslation.FieldJournalName)
 	}
 	if m.FieldCleared(publicationtranslation.FieldConferenceName) {
 		fields = append(fields, publicationtranslation.FieldConferenceName)
+	}
+	if m.FieldCleared(publicationtranslation.FieldCreatedAt) {
+		fields = append(fields, publicationtranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -44025,11 +43250,17 @@ func (m *PublicationTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *PublicationTranslationMutation) ClearField(name string) error {
 	switch name {
+	case publicationtranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
 	case publicationtranslation.FieldJournalName:
 		m.ClearJournalName()
 		return nil
 	case publicationtranslation.FieldConferenceName:
 		m.ClearConferenceName()
+		return nil
+	case publicationtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown PublicationTranslation nullable field %s", name)
@@ -44159,13 +43390,14 @@ type RecentUpdateMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	user_id             *string
 	slug                *string
 	subject_kind        *recentupdate.SubjectKind
 	update_type         *recentupdate.UpdateType
 	visibility          *recentupdate.Visibility
 	title               *string
 	description         *string
-	date                *time.Time
+	date                *string
 	tags                *[]string
 	appendtags          []string
 	status              *recentupdate.Status
@@ -44189,8 +43421,6 @@ type RecentUpdateMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
-	user                *string
-	cleareduser         bool
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
@@ -44305,12 +43535,12 @@ func (m *RecentUpdateMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *RecentUpdateMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *RecentUpdateMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -44336,7 +43566,7 @@ func (m *RecentUpdateMutation) OldUserID(ctx context.Context) (v string, err err
 
 // ClearUserID clears the value of the "user_id" field.
 func (m *RecentUpdateMutation) ClearUserID() {
-	m.user = nil
+	m.user_id = nil
 	m.clearedFields[recentupdate.FieldUserID] = struct{}{}
 }
 
@@ -44348,7 +43578,7 @@ func (m *RecentUpdateMutation) UserIDCleared() bool {
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *RecentUpdateMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 	delete(m.clearedFields, recentupdate.FieldUserID)
 }
 
@@ -44595,12 +43825,12 @@ func (m *RecentUpdateMutation) ResetDescription() {
 }
 
 // SetDate sets the "date" field.
-func (m *RecentUpdateMutation) SetDate(t time.Time) {
-	m.date = &t
+func (m *RecentUpdateMutation) SetDate(s string) {
+	m.date = &s
 }
 
 // Date returns the value of the "date" field in the mutation.
-func (m *RecentUpdateMutation) Date() (r time.Time, exists bool) {
+func (m *RecentUpdateMutation) Date() (r string, exists bool) {
 	v := m.date
 	if v == nil {
 		return
@@ -44611,7 +43841,7 @@ func (m *RecentUpdateMutation) Date() (r time.Time, exists bool) {
 // OldDate returns the old "date" field's value of the RecentUpdate entity.
 // If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldDate(ctx context.Context) (v time.Time, err error) {
+func (m *RecentUpdateMutation) OldDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDate is only allowed on UpdateOne operations")
 	}
@@ -44625,9 +43855,22 @@ func (m *RecentUpdateMutation) OldDate(ctx context.Context) (v time.Time, err er
 	return oldValue.Date, nil
 }
 
+// ClearDate clears the value of the "date" field.
+func (m *RecentUpdateMutation) ClearDate() {
+	m.date = nil
+	m.clearedFields[recentupdate.FieldDate] = struct{}{}
+}
+
+// DateCleared returns if the "date" field was cleared in this mutation.
+func (m *RecentUpdateMutation) DateCleared() bool {
+	_, ok := m.clearedFields[recentupdate.FieldDate]
+	return ok
+}
+
 // ResetDate resets all changes to the "date" field.
 func (m *RecentUpdateMutation) ResetDate() {
 	m.date = nil
+	delete(m.clearedFields, recentupdate.FieldDate)
 }
 
 // SetTags sets the "tags" field.
@@ -45508,33 +44751,6 @@ func (m *RecentUpdateMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, recentupdate.FieldUpdatedAt)
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (m *RecentUpdateMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[recentupdate.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *RecentUpdateMutation) UserCleared() bool {
-	return m.UserIDCleared() || m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *RecentUpdateMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *RecentUpdateMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
 // AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by ids.
 func (m *RecentUpdateMutation) AddTranslationIDs(ids ...string) {
 	if m.translations == nil {
@@ -45624,7 +44840,7 @@ func (m *RecentUpdateMutation) Type() string {
 // AddedFields().
 func (m *RecentUpdateMutation) Fields() []string {
 	fields := make([]string, 0, 25)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, recentupdate.FieldUserID)
 	}
 	if m.slug != nil {
@@ -45875,7 +45091,7 @@ func (m *RecentUpdateMutation) SetField(name string, value ent.Value) error {
 		m.SetDescription(v)
 		return nil
 	case recentupdate.FieldDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -46054,6 +45270,9 @@ func (m *RecentUpdateMutation) ClearedFields() []string {
 	if m.FieldCleared(recentupdate.FieldDescription) {
 		fields = append(fields, recentupdate.FieldDescription)
 	}
+	if m.FieldCleared(recentupdate.FieldDate) {
+		fields = append(fields, recentupdate.FieldDate)
+	}
 	if m.FieldCleared(recentupdate.FieldTags) {
 		fields = append(fields, recentupdate.FieldTags)
 	}
@@ -46118,6 +45337,9 @@ func (m *RecentUpdateMutation) ClearField(name string) error {
 		return nil
 	case recentupdate.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case recentupdate.FieldDate:
+		m.ClearDate()
 		return nil
 	case recentupdate.FieldTags:
 		m.ClearTags()
@@ -46250,10 +45472,7 @@ func (m *RecentUpdateMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RecentUpdateMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.user != nil {
-		edges = append(edges, recentupdate.EdgeUser)
-	}
+	edges := make([]string, 0, 1)
 	if m.translations != nil {
 		edges = append(edges, recentupdate.EdgeTranslations)
 	}
@@ -46264,10 +45483,6 @@ func (m *RecentUpdateMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *RecentUpdateMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case recentupdate.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case recentupdate.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -46280,7 +45495,7 @@ func (m *RecentUpdateMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RecentUpdateMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.removedtranslations != nil {
 		edges = append(edges, recentupdate.EdgeTranslations)
 	}
@@ -46303,10 +45518,7 @@ func (m *RecentUpdateMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RecentUpdateMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.cleareduser {
-		edges = append(edges, recentupdate.EdgeUser)
-	}
+	edges := make([]string, 0, 1)
 	if m.clearedtranslations {
 		edges = append(edges, recentupdate.EdgeTranslations)
 	}
@@ -46317,8 +45529,6 @@ func (m *RecentUpdateMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *RecentUpdateMutation) EdgeCleared(name string) bool {
 	switch name {
-	case recentupdate.EdgeUser:
-		return m.cleareduser
 	case recentupdate.EdgeTranslations:
 		return m.clearedtranslations
 	}
@@ -46329,9 +45539,6 @@ func (m *RecentUpdateMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *RecentUpdateMutation) ClearEdge(name string) error {
 	switch name {
-	case recentupdate.EdgeUser:
-		m.ClearUser()
-		return nil
 	}
 	return fmt.Errorf("unknown RecentUpdate unique edge %s", name)
 }
@@ -46340,9 +45547,6 @@ func (m *RecentUpdateMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *RecentUpdateMutation) ResetEdge(name string) error {
 	switch name {
-	case recentupdate.EdgeUser:
-		m.ResetUser()
-		return nil
 	case recentupdate.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -46576,9 +45780,22 @@ func (m *RecentUpdateTranslationMutation) OldTitle(ctx context.Context) (v strin
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *RecentUpdateTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[recentupdatetranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *RecentUpdateTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[recentupdatetranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *RecentUpdateTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, recentupdatetranslation.FieldTitle)
 }
 
 // SetDescription sets the "description" field.
@@ -46612,9 +45829,22 @@ func (m *RecentUpdateTranslationMutation) OldDescription(ctx context.Context) (v
 	return oldValue.Description, nil
 }
 
+// ClearDescription clears the value of the "description" field.
+func (m *RecentUpdateTranslationMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[recentupdatetranslation.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *RecentUpdateTranslationMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[recentupdatetranslation.FieldDescription]
+	return ok
+}
+
 // ResetDescription resets all changes to the "description" field.
 func (m *RecentUpdateTranslationMutation) ResetDescription() {
 	m.description = nil
+	delete(m.clearedFields, recentupdatetranslation.FieldDescription)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -46648,9 +45878,22 @@ func (m *RecentUpdateTranslationMutation) OldCreatedAt(ctx context.Context) (v t
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *RecentUpdateTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[recentupdatetranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *RecentUpdateTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[recentupdatetranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *RecentUpdateTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, recentupdatetranslation.FieldCreatedAt)
 }
 
 // ClearRecentUpdate clears the "recent_update" edge to the RecentUpdate entity.
@@ -46880,7 +46123,17 @@ func (m *RecentUpdateTranslationMutation) AddField(name string, value ent.Value)
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *RecentUpdateTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(recentupdatetranslation.FieldTitle) {
+		fields = append(fields, recentupdatetranslation.FieldTitle)
+	}
+	if m.FieldCleared(recentupdatetranslation.FieldDescription) {
+		fields = append(fields, recentupdatetranslation.FieldDescription)
+	}
+	if m.FieldCleared(recentupdatetranslation.FieldCreatedAt) {
+		fields = append(fields, recentupdatetranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -46893,6 +46146,17 @@ func (m *RecentUpdateTranslationMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *RecentUpdateTranslationMutation) ClearField(name string) error {
+	switch name {
+	case recentupdatetranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
+	case recentupdatetranslation.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case recentupdatetranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown RecentUpdateTranslation nullable field %s", name)
 }
 
@@ -47690,9 +46954,22 @@ func (m *RequestLogMutation) OldCreatedAt(ctx context.Context) (v time.Time, err
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *RequestLogMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[requestlog.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *RequestLogMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *RequestLogMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, requestlog.FieldCreatedAt)
 }
 
 // Where appends a list predicates to the RequestLogMutation builder.
@@ -47994,6 +47271,9 @@ func (m *RequestLogMutation) ClearedFields() []string {
 	if m.FieldCleared(requestlog.FieldBotName) {
 		fields = append(fields, requestlog.FieldBotName)
 	}
+	if m.FieldCleared(requestlog.FieldCreatedAt) {
+		fields = append(fields, requestlog.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -48034,6 +47314,9 @@ func (m *RequestLogMutation) ClearField(name string) error {
 		return nil
 	case requestlog.FieldBotName:
 		m.ClearBotName()
+		return nil
+	case requestlog.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown RequestLog nullable field %s", name)
@@ -48134,9 +47417,10 @@ type ResearchProjectMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	user_id             *string
 	title               *string
-	start_date          *time.Time
-	end_date            *time.Time
+	start_date          *string
+	end_date            *string
 	is_ongoing          *bool
 	location            *string
 	research_type       *string
@@ -48149,8 +47433,6 @@ type ResearchProjectMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
-	user                *string
-	cleareduser         bool
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
@@ -48268,12 +47550,12 @@ func (m *ResearchProjectMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *ResearchProjectMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *ResearchProjectMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -48299,7 +47581,7 @@ func (m *ResearchProjectMutation) OldUserID(ctx context.Context) (v string, err 
 
 // ClearUserID clears the value of the "user_id" field.
 func (m *ResearchProjectMutation) ClearUserID() {
-	m.user = nil
+	m.user_id = nil
 	m.clearedFields[researchproject.FieldUserID] = struct{}{}
 }
 
@@ -48311,7 +47593,7 @@ func (m *ResearchProjectMutation) UserIDCleared() bool {
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *ResearchProjectMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 	delete(m.clearedFields, researchproject.FieldUserID)
 }
 
@@ -48365,12 +47647,12 @@ func (m *ResearchProjectMutation) ResetTitle() {
 }
 
 // SetStartDate sets the "start_date" field.
-func (m *ResearchProjectMutation) SetStartDate(t time.Time) {
-	m.start_date = &t
+func (m *ResearchProjectMutation) SetStartDate(s string) {
+	m.start_date = &s
 }
 
 // StartDate returns the value of the "start_date" field in the mutation.
-func (m *ResearchProjectMutation) StartDate() (r time.Time, exists bool) {
+func (m *ResearchProjectMutation) StartDate() (r string, exists bool) {
 	v := m.start_date
 	if v == nil {
 		return
@@ -48381,7 +47663,7 @@ func (m *ResearchProjectMutation) StartDate() (r time.Time, exists bool) {
 // OldStartDate returns the old "start_date" field's value of the ResearchProject entity.
 // If the ResearchProject object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ResearchProjectMutation) OldStartDate(ctx context.Context) (v time.Time, err error) {
+func (m *ResearchProjectMutation) OldStartDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStartDate is only allowed on UpdateOne operations")
 	}
@@ -48414,12 +47696,12 @@ func (m *ResearchProjectMutation) ResetStartDate() {
 }
 
 // SetEndDate sets the "end_date" field.
-func (m *ResearchProjectMutation) SetEndDate(t time.Time) {
-	m.end_date = &t
+func (m *ResearchProjectMutation) SetEndDate(s string) {
+	m.end_date = &s
 }
 
 // EndDate returns the value of the "end_date" field in the mutation.
-func (m *ResearchProjectMutation) EndDate() (r time.Time, exists bool) {
+func (m *ResearchProjectMutation) EndDate() (r string, exists bool) {
 	v := m.end_date
 	if v == nil {
 		return
@@ -48430,7 +47712,7 @@ func (m *ResearchProjectMutation) EndDate() (r time.Time, exists bool) {
 // OldEndDate returns the old "end_date" field's value of the ResearchProject entity.
 // If the ResearchProject object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ResearchProjectMutation) OldEndDate(ctx context.Context) (v time.Time, err error) {
+func (m *ResearchProjectMutation) OldEndDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldEndDate is only allowed on UpdateOne operations")
 	}
@@ -48918,33 +48200,6 @@ func (m *ResearchProjectMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, researchproject.FieldUpdatedAt)
 }
 
-// ClearUser clears the "user" edge to the User entity.
-func (m *ResearchProjectMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[researchproject.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *ResearchProjectMutation) UserCleared() bool {
-	return m.UserIDCleared() || m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *ResearchProjectMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *ResearchProjectMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectTranslation entity by ids.
 func (m *ResearchProjectMutation) AddTranslationIDs(ids ...string) {
 	if m.translations == nil {
@@ -49088,7 +48343,7 @@ func (m *ResearchProjectMutation) Type() string {
 // AddedFields().
 func (m *ResearchProjectMutation) Fields() []string {
 	fields := make([]string, 0, 13)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, researchproject.FieldUserID)
 	}
 	if m.title != nil {
@@ -49220,14 +48475,14 @@ func (m *ResearchProjectMutation) SetField(name string, value ent.Value) error {
 		m.SetTitle(v)
 		return nil
 	case researchproject.FieldStartDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStartDate(v)
 		return nil
 	case researchproject.FieldEndDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -49486,10 +48741,7 @@ func (m *ResearchProjectMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ResearchProjectMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.user != nil {
-		edges = append(edges, researchproject.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.translations != nil {
 		edges = append(edges, researchproject.EdgeTranslations)
 	}
@@ -49503,10 +48755,6 @@ func (m *ResearchProjectMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ResearchProjectMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case researchproject.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case researchproject.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -49525,7 +48773,7 @@ func (m *ResearchProjectMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ResearchProjectMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.removedtranslations != nil {
 		edges = append(edges, researchproject.EdgeTranslations)
 	}
@@ -49557,10 +48805,7 @@ func (m *ResearchProjectMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ResearchProjectMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.cleareduser {
-		edges = append(edges, researchproject.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedtranslations {
 		edges = append(edges, researchproject.EdgeTranslations)
 	}
@@ -49574,8 +48819,6 @@ func (m *ResearchProjectMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ResearchProjectMutation) EdgeCleared(name string) bool {
 	switch name {
-	case researchproject.EdgeUser:
-		return m.cleareduser
 	case researchproject.EdgeTranslations:
 		return m.clearedtranslations
 	case researchproject.EdgeDetails:
@@ -49588,9 +48831,6 @@ func (m *ResearchProjectMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ResearchProjectMutation) ClearEdge(name string) error {
 	switch name {
-	case researchproject.EdgeUser:
-		m.ClearUser()
-		return nil
 	}
 	return fmt.Errorf("unknown ResearchProject unique edge %s", name)
 }
@@ -49599,9 +48839,6 @@ func (m *ResearchProjectMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ResearchProjectMutation) ResetEdge(name string) error {
 	switch name {
-	case researchproject.EdgeUser:
-		m.ResetUser()
-		return nil
 	case researchproject.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -49897,9 +49134,22 @@ func (m *ResearchProjectDetailMutation) OldCreatedAt(ctx context.Context) (v tim
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ResearchProjectDetailMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[researchprojectdetail.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ResearchProjectDetailMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[researchprojectdetail.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ResearchProjectDetailMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, researchprojectdetail.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -49933,9 +49183,22 @@ func (m *ResearchProjectDetailMutation) OldUpdatedAt(ctx context.Context) (v tim
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *ResearchProjectDetailMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[researchprojectdetail.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *ResearchProjectDetailMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[researchprojectdetail.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *ResearchProjectDetailMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, researchprojectdetail.FieldUpdatedAt)
 }
 
 // ClearResearchProject clears the "research_project" edge to the ResearchProject entity.
@@ -50194,7 +49457,14 @@ func (m *ResearchProjectDetailMutation) AddField(name string, value ent.Value) e
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ResearchProjectDetailMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(researchprojectdetail.FieldCreatedAt) {
+		fields = append(fields, researchprojectdetail.FieldCreatedAt)
+	}
+	if m.FieldCleared(researchprojectdetail.FieldUpdatedAt) {
+		fields = append(fields, researchprojectdetail.FieldUpdatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -50207,6 +49477,14 @@ func (m *ResearchProjectDetailMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ResearchProjectDetailMutation) ClearField(name string) error {
+	switch name {
+	case researchprojectdetail.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case researchprojectdetail.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown ResearchProjectDetail nullable field %s", name)
 }
 
@@ -50560,9 +49838,22 @@ func (m *ResearchProjectDetailTranslationMutation) OldDetailText(ctx context.Con
 	return oldValue.DetailText, nil
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (m *ResearchProjectDetailTranslationMutation) ClearDetailText() {
+	m.detail_text = nil
+	m.clearedFields[researchprojectdetailtranslation.FieldDetailText] = struct{}{}
+}
+
+// DetailTextCleared returns if the "detail_text" field was cleared in this mutation.
+func (m *ResearchProjectDetailTranslationMutation) DetailTextCleared() bool {
+	_, ok := m.clearedFields[researchprojectdetailtranslation.FieldDetailText]
+	return ok
+}
+
 // ResetDetailText resets all changes to the "detail_text" field.
 func (m *ResearchProjectDetailTranslationMutation) ResetDetailText() {
 	m.detail_text = nil
+	delete(m.clearedFields, researchprojectdetailtranslation.FieldDetailText)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -50596,9 +49887,22 @@ func (m *ResearchProjectDetailTranslationMutation) OldCreatedAt(ctx context.Cont
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ResearchProjectDetailTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[researchprojectdetailtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ResearchProjectDetailTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[researchprojectdetailtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ResearchProjectDetailTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, researchprojectdetailtranslation.FieldCreatedAt)
 }
 
 // ClearResearchProjectDetail clears the "research_project_detail" edge to the ResearchProjectDetail entity.
@@ -50814,7 +50118,14 @@ func (m *ResearchProjectDetailTranslationMutation) AddField(name string, value e
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ResearchProjectDetailTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(researchprojectdetailtranslation.FieldDetailText) {
+		fields = append(fields, researchprojectdetailtranslation.FieldDetailText)
+	}
+	if m.FieldCleared(researchprojectdetailtranslation.FieldCreatedAt) {
+		fields = append(fields, researchprojectdetailtranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -50827,6 +50138,14 @@ func (m *ResearchProjectDetailTranslationMutation) FieldCleared(name string) boo
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ResearchProjectDetailTranslationMutation) ClearField(name string) error {
+	switch name {
+	case researchprojectdetailtranslation.FieldDetailText:
+		m.ClearDetailText()
+		return nil
+	case researchprojectdetailtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown ResearchProjectDetailTranslation nullable field %s", name)
 }
 
@@ -51170,9 +50489,22 @@ func (m *ResearchProjectTranslationMutation) OldTitle(ctx context.Context) (v st
 	return oldValue.Title, nil
 }
 
+// ClearTitle clears the value of the "title" field.
+func (m *ResearchProjectTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[researchprojecttranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *ResearchProjectTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[researchprojecttranslation.FieldTitle]
+	return ok
+}
+
 // ResetTitle resets all changes to the "title" field.
 func (m *ResearchProjectTranslationMutation) ResetTitle() {
 	m.title = nil
+	delete(m.clearedFields, researchprojecttranslation.FieldTitle)
 }
 
 // SetLocation sets the "location" field.
@@ -51353,9 +50685,22 @@ func (m *ResearchProjectTranslationMutation) OldCreatedAt(ctx context.Context) (
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *ResearchProjectTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[researchprojecttranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *ResearchProjectTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[researchprojecttranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ResearchProjectTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, researchprojecttranslation.FieldCreatedAt)
 }
 
 // ClearResearchProject clears the "research_project" edge to the ResearchProject entity.
@@ -51614,6 +50959,9 @@ func (m *ResearchProjectTranslationMutation) AddField(name string, value ent.Val
 // mutation.
 func (m *ResearchProjectTranslationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(researchprojecttranslation.FieldTitle) {
+		fields = append(fields, researchprojecttranslation.FieldTitle)
+	}
 	if m.FieldCleared(researchprojecttranslation.FieldLocation) {
 		fields = append(fields, researchprojecttranslation.FieldLocation)
 	}
@@ -51622,6 +50970,9 @@ func (m *ResearchProjectTranslationMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(researchprojecttranslation.FieldFundingSource) {
 		fields = append(fields, researchprojecttranslation.FieldFundingSource)
+	}
+	if m.FieldCleared(researchprojecttranslation.FieldCreatedAt) {
+		fields = append(fields, researchprojecttranslation.FieldCreatedAt)
 	}
 	return fields
 }
@@ -51637,6 +50988,9 @@ func (m *ResearchProjectTranslationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ResearchProjectTranslationMutation) ClearField(name string) error {
 	switch name {
+	case researchprojecttranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
 	case researchprojecttranslation.FieldLocation:
 		m.ClearLocation()
 		return nil
@@ -51645,6 +50999,9 @@ func (m *ResearchProjectTranslationMutation) ClearField(name string) error {
 		return nil
 	case researchprojecttranslation.FieldFundingSource:
 		m.ClearFundingSource()
+		return nil
+	case researchprojecttranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown ResearchProjectTranslation nullable field %s", name)
@@ -52176,9 +51533,22 @@ func (m *SocialLinkMutation) OldCreatedAt(ctx context.Context) (v time.Time, err
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *SocialLinkMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[sociallink.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *SocialLinkMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[sociallink.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *SocialLinkMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, sociallink.FieldCreatedAt)
 }
 
 // ClearPersonalInfo clears the "personal_info" edge to the PersonalInfo entity.
@@ -52415,6 +51785,9 @@ func (m *SocialLinkMutation) ClearedFields() []string {
 	if m.FieldCleared(sociallink.FieldDisplayName) {
 		fields = append(fields, sociallink.FieldDisplayName)
 	}
+	if m.FieldCleared(sociallink.FieldCreatedAt) {
+		fields = append(fields, sociallink.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -52431,6 +51804,9 @@ func (m *SocialLinkMutation) ClearField(name string) error {
 	switch name {
 	case sociallink.FieldDisplayName:
 		m.ClearDisplayName()
+		return nil
+	case sociallink.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown SocialLink nullable field %s", name)
@@ -52542,55 +51918,25 @@ func (m *SocialLinkMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *string
-	username                 *string
-	email                    *string
-	password_hash            *string
-	first_name               *string
-	last_name                *string
-	avatar_url               *string
-	bio                      *string
-	is_active                *bool
-	is_admin                 *bool
-	last_login_at            *time.Time
-	created_at               *time.Time
-	updated_at               *time.Time
-	clearedFields            map[string]struct{}
-	personal_infos           map[string]struct{}
-	removedpersonal_infos    map[string]struct{}
-	clearedpersonal_infos    bool
-	educations               map[string]struct{}
-	removededucations        map[string]struct{}
-	clearededucations        bool
-	work_experiences         map[string]struct{}
-	removedwork_experiences  map[string]struct{}
-	clearedwork_experiences  bool
-	projects                 map[string]struct{}
-	removedprojects          map[string]struct{}
-	clearedprojects          bool
-	blog_posts               map[string]struct{}
-	removedblog_posts        map[string]struct{}
-	clearedblog_posts        bool
-	ideas                    map[string]struct{}
-	removedideas             map[string]struct{}
-	clearedideas             bool
-	research_projects        map[string]struct{}
-	removedresearch_projects map[string]struct{}
-	clearedresearch_projects bool
-	publications             map[string]struct{}
-	removedpublications      map[string]struct{}
-	clearedpublications      bool
-	awards                   map[string]struct{}
-	removedawards            map[string]struct{}
-	clearedawards            bool
-	recent_updates           map[string]struct{}
-	removedrecent_updates    map[string]struct{}
-	clearedrecent_updates    bool
-	done                     bool
-	oldValue                 func(context.Context) (*User, error)
-	predicates               []predicate.User
+	op            Op
+	typ           string
+	id            *string
+	username      *string
+	email         *string
+	password_hash *string
+	first_name    *string
+	last_name     *string
+	avatar_url    *string
+	bio           *string
+	is_active     *bool
+	is_admin      *bool
+	last_login_at *time.Time
+	created_at    *time.Time
+	updated_at    *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*User, error)
+	predicates    []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -53127,9 +52473,22 @@ func (m *UserMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *UserMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[user.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *UserMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *UserMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, user.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -53163,549 +52522,22 @@ func (m *UserMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *UserMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[user.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *UserMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *UserMutation) ResetUpdatedAt() {
 	m.updated_at = nil
-}
-
-// AddPersonalInfoIDs adds the "personal_infos" edge to the PersonalInfo entity by ids.
-func (m *UserMutation) AddPersonalInfoIDs(ids ...string) {
-	if m.personal_infos == nil {
-		m.personal_infos = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.personal_infos[ids[i]] = struct{}{}
-	}
-}
-
-// ClearPersonalInfos clears the "personal_infos" edge to the PersonalInfo entity.
-func (m *UserMutation) ClearPersonalInfos() {
-	m.clearedpersonal_infos = true
-}
-
-// PersonalInfosCleared reports if the "personal_infos" edge to the PersonalInfo entity was cleared.
-func (m *UserMutation) PersonalInfosCleared() bool {
-	return m.clearedpersonal_infos
-}
-
-// RemovePersonalInfoIDs removes the "personal_infos" edge to the PersonalInfo entity by IDs.
-func (m *UserMutation) RemovePersonalInfoIDs(ids ...string) {
-	if m.removedpersonal_infos == nil {
-		m.removedpersonal_infos = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.personal_infos, ids[i])
-		m.removedpersonal_infos[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPersonalInfos returns the removed IDs of the "personal_infos" edge to the PersonalInfo entity.
-func (m *UserMutation) RemovedPersonalInfosIDs() (ids []string) {
-	for id := range m.removedpersonal_infos {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PersonalInfosIDs returns the "personal_infos" edge IDs in the mutation.
-func (m *UserMutation) PersonalInfosIDs() (ids []string) {
-	for id := range m.personal_infos {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPersonalInfos resets all changes to the "personal_infos" edge.
-func (m *UserMutation) ResetPersonalInfos() {
-	m.personal_infos = nil
-	m.clearedpersonal_infos = false
-	m.removedpersonal_infos = nil
-}
-
-// AddEducationIDs adds the "educations" edge to the Education entity by ids.
-func (m *UserMutation) AddEducationIDs(ids ...string) {
-	if m.educations == nil {
-		m.educations = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.educations[ids[i]] = struct{}{}
-	}
-}
-
-// ClearEducations clears the "educations" edge to the Education entity.
-func (m *UserMutation) ClearEducations() {
-	m.clearededucations = true
-}
-
-// EducationsCleared reports if the "educations" edge to the Education entity was cleared.
-func (m *UserMutation) EducationsCleared() bool {
-	return m.clearededucations
-}
-
-// RemoveEducationIDs removes the "educations" edge to the Education entity by IDs.
-func (m *UserMutation) RemoveEducationIDs(ids ...string) {
-	if m.removededucations == nil {
-		m.removededucations = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.educations, ids[i])
-		m.removededucations[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedEducations returns the removed IDs of the "educations" edge to the Education entity.
-func (m *UserMutation) RemovedEducationsIDs() (ids []string) {
-	for id := range m.removededucations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// EducationsIDs returns the "educations" edge IDs in the mutation.
-func (m *UserMutation) EducationsIDs() (ids []string) {
-	for id := range m.educations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetEducations resets all changes to the "educations" edge.
-func (m *UserMutation) ResetEducations() {
-	m.educations = nil
-	m.clearededucations = false
-	m.removededucations = nil
-}
-
-// AddWorkExperienceIDs adds the "work_experiences" edge to the WorkExperience entity by ids.
-func (m *UserMutation) AddWorkExperienceIDs(ids ...string) {
-	if m.work_experiences == nil {
-		m.work_experiences = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.work_experiences[ids[i]] = struct{}{}
-	}
-}
-
-// ClearWorkExperiences clears the "work_experiences" edge to the WorkExperience entity.
-func (m *UserMutation) ClearWorkExperiences() {
-	m.clearedwork_experiences = true
-}
-
-// WorkExperiencesCleared reports if the "work_experiences" edge to the WorkExperience entity was cleared.
-func (m *UserMutation) WorkExperiencesCleared() bool {
-	return m.clearedwork_experiences
-}
-
-// RemoveWorkExperienceIDs removes the "work_experiences" edge to the WorkExperience entity by IDs.
-func (m *UserMutation) RemoveWorkExperienceIDs(ids ...string) {
-	if m.removedwork_experiences == nil {
-		m.removedwork_experiences = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.work_experiences, ids[i])
-		m.removedwork_experiences[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedWorkExperiences returns the removed IDs of the "work_experiences" edge to the WorkExperience entity.
-func (m *UserMutation) RemovedWorkExperiencesIDs() (ids []string) {
-	for id := range m.removedwork_experiences {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// WorkExperiencesIDs returns the "work_experiences" edge IDs in the mutation.
-func (m *UserMutation) WorkExperiencesIDs() (ids []string) {
-	for id := range m.work_experiences {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetWorkExperiences resets all changes to the "work_experiences" edge.
-func (m *UserMutation) ResetWorkExperiences() {
-	m.work_experiences = nil
-	m.clearedwork_experiences = false
-	m.removedwork_experiences = nil
-}
-
-// AddProjectIDs adds the "projects" edge to the Project entity by ids.
-func (m *UserMutation) AddProjectIDs(ids ...string) {
-	if m.projects == nil {
-		m.projects = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.projects[ids[i]] = struct{}{}
-	}
-}
-
-// ClearProjects clears the "projects" edge to the Project entity.
-func (m *UserMutation) ClearProjects() {
-	m.clearedprojects = true
-}
-
-// ProjectsCleared reports if the "projects" edge to the Project entity was cleared.
-func (m *UserMutation) ProjectsCleared() bool {
-	return m.clearedprojects
-}
-
-// RemoveProjectIDs removes the "projects" edge to the Project entity by IDs.
-func (m *UserMutation) RemoveProjectIDs(ids ...string) {
-	if m.removedprojects == nil {
-		m.removedprojects = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.projects, ids[i])
-		m.removedprojects[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedProjects returns the removed IDs of the "projects" edge to the Project entity.
-func (m *UserMutation) RemovedProjectsIDs() (ids []string) {
-	for id := range m.removedprojects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ProjectsIDs returns the "projects" edge IDs in the mutation.
-func (m *UserMutation) ProjectsIDs() (ids []string) {
-	for id := range m.projects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetProjects resets all changes to the "projects" edge.
-func (m *UserMutation) ResetProjects() {
-	m.projects = nil
-	m.clearedprojects = false
-	m.removedprojects = nil
-}
-
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by ids.
-func (m *UserMutation) AddBlogPostIDs(ids ...string) {
-	if m.blog_posts == nil {
-		m.blog_posts = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.blog_posts[ids[i]] = struct{}{}
-	}
-}
-
-// ClearBlogPosts clears the "blog_posts" edge to the BlogPost entity.
-func (m *UserMutation) ClearBlogPosts() {
-	m.clearedblog_posts = true
-}
-
-// BlogPostsCleared reports if the "blog_posts" edge to the BlogPost entity was cleared.
-func (m *UserMutation) BlogPostsCleared() bool {
-	return m.clearedblog_posts
-}
-
-// RemoveBlogPostIDs removes the "blog_posts" edge to the BlogPost entity by IDs.
-func (m *UserMutation) RemoveBlogPostIDs(ids ...string) {
-	if m.removedblog_posts == nil {
-		m.removedblog_posts = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.blog_posts, ids[i])
-		m.removedblog_posts[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedBlogPosts returns the removed IDs of the "blog_posts" edge to the BlogPost entity.
-func (m *UserMutation) RemovedBlogPostsIDs() (ids []string) {
-	for id := range m.removedblog_posts {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// BlogPostsIDs returns the "blog_posts" edge IDs in the mutation.
-func (m *UserMutation) BlogPostsIDs() (ids []string) {
-	for id := range m.blog_posts {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetBlogPosts resets all changes to the "blog_posts" edge.
-func (m *UserMutation) ResetBlogPosts() {
-	m.blog_posts = nil
-	m.clearedblog_posts = false
-	m.removedblog_posts = nil
-}
-
-// AddIdeaIDs adds the "ideas" edge to the Idea entity by ids.
-func (m *UserMutation) AddIdeaIDs(ids ...string) {
-	if m.ideas == nil {
-		m.ideas = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.ideas[ids[i]] = struct{}{}
-	}
-}
-
-// ClearIdeas clears the "ideas" edge to the Idea entity.
-func (m *UserMutation) ClearIdeas() {
-	m.clearedideas = true
-}
-
-// IdeasCleared reports if the "ideas" edge to the Idea entity was cleared.
-func (m *UserMutation) IdeasCleared() bool {
-	return m.clearedideas
-}
-
-// RemoveIdeaIDs removes the "ideas" edge to the Idea entity by IDs.
-func (m *UserMutation) RemoveIdeaIDs(ids ...string) {
-	if m.removedideas == nil {
-		m.removedideas = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.ideas, ids[i])
-		m.removedideas[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedIdeas returns the removed IDs of the "ideas" edge to the Idea entity.
-func (m *UserMutation) RemovedIdeasIDs() (ids []string) {
-	for id := range m.removedideas {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// IdeasIDs returns the "ideas" edge IDs in the mutation.
-func (m *UserMutation) IdeasIDs() (ids []string) {
-	for id := range m.ideas {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetIdeas resets all changes to the "ideas" edge.
-func (m *UserMutation) ResetIdeas() {
-	m.ideas = nil
-	m.clearedideas = false
-	m.removedideas = nil
-}
-
-// AddResearchProjectIDs adds the "research_projects" edge to the ResearchProject entity by ids.
-func (m *UserMutation) AddResearchProjectIDs(ids ...string) {
-	if m.research_projects == nil {
-		m.research_projects = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.research_projects[ids[i]] = struct{}{}
-	}
-}
-
-// ClearResearchProjects clears the "research_projects" edge to the ResearchProject entity.
-func (m *UserMutation) ClearResearchProjects() {
-	m.clearedresearch_projects = true
-}
-
-// ResearchProjectsCleared reports if the "research_projects" edge to the ResearchProject entity was cleared.
-func (m *UserMutation) ResearchProjectsCleared() bool {
-	return m.clearedresearch_projects
-}
-
-// RemoveResearchProjectIDs removes the "research_projects" edge to the ResearchProject entity by IDs.
-func (m *UserMutation) RemoveResearchProjectIDs(ids ...string) {
-	if m.removedresearch_projects == nil {
-		m.removedresearch_projects = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.research_projects, ids[i])
-		m.removedresearch_projects[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedResearchProjects returns the removed IDs of the "research_projects" edge to the ResearchProject entity.
-func (m *UserMutation) RemovedResearchProjectsIDs() (ids []string) {
-	for id := range m.removedresearch_projects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResearchProjectsIDs returns the "research_projects" edge IDs in the mutation.
-func (m *UserMutation) ResearchProjectsIDs() (ids []string) {
-	for id := range m.research_projects {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetResearchProjects resets all changes to the "research_projects" edge.
-func (m *UserMutation) ResetResearchProjects() {
-	m.research_projects = nil
-	m.clearedresearch_projects = false
-	m.removedresearch_projects = nil
-}
-
-// AddPublicationIDs adds the "publications" edge to the Publication entity by ids.
-func (m *UserMutation) AddPublicationIDs(ids ...string) {
-	if m.publications == nil {
-		m.publications = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.publications[ids[i]] = struct{}{}
-	}
-}
-
-// ClearPublications clears the "publications" edge to the Publication entity.
-func (m *UserMutation) ClearPublications() {
-	m.clearedpublications = true
-}
-
-// PublicationsCleared reports if the "publications" edge to the Publication entity was cleared.
-func (m *UserMutation) PublicationsCleared() bool {
-	return m.clearedpublications
-}
-
-// RemovePublicationIDs removes the "publications" edge to the Publication entity by IDs.
-func (m *UserMutation) RemovePublicationIDs(ids ...string) {
-	if m.removedpublications == nil {
-		m.removedpublications = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.publications, ids[i])
-		m.removedpublications[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPublications returns the removed IDs of the "publications" edge to the Publication entity.
-func (m *UserMutation) RemovedPublicationsIDs() (ids []string) {
-	for id := range m.removedpublications {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PublicationsIDs returns the "publications" edge IDs in the mutation.
-func (m *UserMutation) PublicationsIDs() (ids []string) {
-	for id := range m.publications {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPublications resets all changes to the "publications" edge.
-func (m *UserMutation) ResetPublications() {
-	m.publications = nil
-	m.clearedpublications = false
-	m.removedpublications = nil
-}
-
-// AddAwardIDs adds the "awards" edge to the Award entity by ids.
-func (m *UserMutation) AddAwardIDs(ids ...string) {
-	if m.awards == nil {
-		m.awards = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.awards[ids[i]] = struct{}{}
-	}
-}
-
-// ClearAwards clears the "awards" edge to the Award entity.
-func (m *UserMutation) ClearAwards() {
-	m.clearedawards = true
-}
-
-// AwardsCleared reports if the "awards" edge to the Award entity was cleared.
-func (m *UserMutation) AwardsCleared() bool {
-	return m.clearedawards
-}
-
-// RemoveAwardIDs removes the "awards" edge to the Award entity by IDs.
-func (m *UserMutation) RemoveAwardIDs(ids ...string) {
-	if m.removedawards == nil {
-		m.removedawards = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.awards, ids[i])
-		m.removedawards[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedAwards returns the removed IDs of the "awards" edge to the Award entity.
-func (m *UserMutation) RemovedAwardsIDs() (ids []string) {
-	for id := range m.removedawards {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// AwardsIDs returns the "awards" edge IDs in the mutation.
-func (m *UserMutation) AwardsIDs() (ids []string) {
-	for id := range m.awards {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetAwards resets all changes to the "awards" edge.
-func (m *UserMutation) ResetAwards() {
-	m.awards = nil
-	m.clearedawards = false
-	m.removedawards = nil
-}
-
-// AddRecentUpdateIDs adds the "recent_updates" edge to the RecentUpdate entity by ids.
-func (m *UserMutation) AddRecentUpdateIDs(ids ...string) {
-	if m.recent_updates == nil {
-		m.recent_updates = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.recent_updates[ids[i]] = struct{}{}
-	}
-}
-
-// ClearRecentUpdates clears the "recent_updates" edge to the RecentUpdate entity.
-func (m *UserMutation) ClearRecentUpdates() {
-	m.clearedrecent_updates = true
-}
-
-// RecentUpdatesCleared reports if the "recent_updates" edge to the RecentUpdate entity was cleared.
-func (m *UserMutation) RecentUpdatesCleared() bool {
-	return m.clearedrecent_updates
-}
-
-// RemoveRecentUpdateIDs removes the "recent_updates" edge to the RecentUpdate entity by IDs.
-func (m *UserMutation) RemoveRecentUpdateIDs(ids ...string) {
-	if m.removedrecent_updates == nil {
-		m.removedrecent_updates = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.recent_updates, ids[i])
-		m.removedrecent_updates[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedRecentUpdates returns the removed IDs of the "recent_updates" edge to the RecentUpdate entity.
-func (m *UserMutation) RemovedRecentUpdatesIDs() (ids []string) {
-	for id := range m.removedrecent_updates {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// RecentUpdatesIDs returns the "recent_updates" edge IDs in the mutation.
-func (m *UserMutation) RecentUpdatesIDs() (ids []string) {
-	for id := range m.recent_updates {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetRecentUpdates resets all changes to the "recent_updates" edge.
-func (m *UserMutation) ResetRecentUpdates() {
-	m.recent_updates = nil
-	m.clearedrecent_updates = false
-	m.removedrecent_updates = nil
+	delete(m.clearedFields, user.FieldUpdatedAt)
 }
 
 // Where appends a list predicates to the UserMutation builder.
@@ -53976,6 +52808,12 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldLastLoginAt) {
 		fields = append(fields, user.FieldLastLoginAt)
 	}
+	if m.FieldCleared(user.FieldCreatedAt) {
+		fields = append(fields, user.FieldCreatedAt)
+	}
+	if m.FieldCleared(user.FieldUpdatedAt) {
+		fields = append(fields, user.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -53998,6 +52836,12 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldLastLoginAt:
 		m.ClearLastLoginAt()
+		return nil
+	case user.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case user.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown User nullable field %s", name)
@@ -54049,319 +52893,49 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 10)
-	if m.personal_infos != nil {
-		edges = append(edges, user.EdgePersonalInfos)
-	}
-	if m.educations != nil {
-		edges = append(edges, user.EdgeEducations)
-	}
-	if m.work_experiences != nil {
-		edges = append(edges, user.EdgeWorkExperiences)
-	}
-	if m.projects != nil {
-		edges = append(edges, user.EdgeProjects)
-	}
-	if m.blog_posts != nil {
-		edges = append(edges, user.EdgeBlogPosts)
-	}
-	if m.ideas != nil {
-		edges = append(edges, user.EdgeIdeas)
-	}
-	if m.research_projects != nil {
-		edges = append(edges, user.EdgeResearchProjects)
-	}
-	if m.publications != nil {
-		edges = append(edges, user.EdgePublications)
-	}
-	if m.awards != nil {
-		edges = append(edges, user.EdgeAwards)
-	}
-	if m.recent_updates != nil {
-		edges = append(edges, user.EdgeRecentUpdates)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *UserMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case user.EdgePersonalInfos:
-		ids := make([]ent.Value, 0, len(m.personal_infos))
-		for id := range m.personal_infos {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeEducations:
-		ids := make([]ent.Value, 0, len(m.educations))
-		for id := range m.educations {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeWorkExperiences:
-		ids := make([]ent.Value, 0, len(m.work_experiences))
-		for id := range m.work_experiences {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeProjects:
-		ids := make([]ent.Value, 0, len(m.projects))
-		for id := range m.projects {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeBlogPosts:
-		ids := make([]ent.Value, 0, len(m.blog_posts))
-		for id := range m.blog_posts {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeIdeas:
-		ids := make([]ent.Value, 0, len(m.ideas))
-		for id := range m.ideas {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeResearchProjects:
-		ids := make([]ent.Value, 0, len(m.research_projects))
-		for id := range m.research_projects {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgePublications:
-		ids := make([]ent.Value, 0, len(m.publications))
-		for id := range m.publications {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeAwards:
-		ids := make([]ent.Value, 0, len(m.awards))
-		for id := range m.awards {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeRecentUpdates:
-		ids := make([]ent.Value, 0, len(m.recent_updates))
-		for id := range m.recent_updates {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 10)
-	if m.removedpersonal_infos != nil {
-		edges = append(edges, user.EdgePersonalInfos)
-	}
-	if m.removededucations != nil {
-		edges = append(edges, user.EdgeEducations)
-	}
-	if m.removedwork_experiences != nil {
-		edges = append(edges, user.EdgeWorkExperiences)
-	}
-	if m.removedprojects != nil {
-		edges = append(edges, user.EdgeProjects)
-	}
-	if m.removedblog_posts != nil {
-		edges = append(edges, user.EdgeBlogPosts)
-	}
-	if m.removedideas != nil {
-		edges = append(edges, user.EdgeIdeas)
-	}
-	if m.removedresearch_projects != nil {
-		edges = append(edges, user.EdgeResearchProjects)
-	}
-	if m.removedpublications != nil {
-		edges = append(edges, user.EdgePublications)
-	}
-	if m.removedawards != nil {
-		edges = append(edges, user.EdgeAwards)
-	}
-	if m.removedrecent_updates != nil {
-		edges = append(edges, user.EdgeRecentUpdates)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *UserMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case user.EdgePersonalInfos:
-		ids := make([]ent.Value, 0, len(m.removedpersonal_infos))
-		for id := range m.removedpersonal_infos {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeEducations:
-		ids := make([]ent.Value, 0, len(m.removededucations))
-		for id := range m.removededucations {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeWorkExperiences:
-		ids := make([]ent.Value, 0, len(m.removedwork_experiences))
-		for id := range m.removedwork_experiences {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeProjects:
-		ids := make([]ent.Value, 0, len(m.removedprojects))
-		for id := range m.removedprojects {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeBlogPosts:
-		ids := make([]ent.Value, 0, len(m.removedblog_posts))
-		for id := range m.removedblog_posts {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeIdeas:
-		ids := make([]ent.Value, 0, len(m.removedideas))
-		for id := range m.removedideas {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeResearchProjects:
-		ids := make([]ent.Value, 0, len(m.removedresearch_projects))
-		for id := range m.removedresearch_projects {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgePublications:
-		ids := make([]ent.Value, 0, len(m.removedpublications))
-		for id := range m.removedpublications {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeAwards:
-		ids := make([]ent.Value, 0, len(m.removedawards))
-		for id := range m.removedawards {
-			ids = append(ids, id)
-		}
-		return ids
-	case user.EdgeRecentUpdates:
-		ids := make([]ent.Value, 0, len(m.removedrecent_updates))
-		for id := range m.removedrecent_updates {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 10)
-	if m.clearedpersonal_infos {
-		edges = append(edges, user.EdgePersonalInfos)
-	}
-	if m.clearededucations {
-		edges = append(edges, user.EdgeEducations)
-	}
-	if m.clearedwork_experiences {
-		edges = append(edges, user.EdgeWorkExperiences)
-	}
-	if m.clearedprojects {
-		edges = append(edges, user.EdgeProjects)
-	}
-	if m.clearedblog_posts {
-		edges = append(edges, user.EdgeBlogPosts)
-	}
-	if m.clearedideas {
-		edges = append(edges, user.EdgeIdeas)
-	}
-	if m.clearedresearch_projects {
-		edges = append(edges, user.EdgeResearchProjects)
-	}
-	if m.clearedpublications {
-		edges = append(edges, user.EdgePublications)
-	}
-	if m.clearedawards {
-		edges = append(edges, user.EdgeAwards)
-	}
-	if m.clearedrecent_updates {
-		edges = append(edges, user.EdgeRecentUpdates)
-	}
+	edges := make([]string, 0, 0)
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *UserMutation) EdgeCleared(name string) bool {
-	switch name {
-	case user.EdgePersonalInfos:
-		return m.clearedpersonal_infos
-	case user.EdgeEducations:
-		return m.clearededucations
-	case user.EdgeWorkExperiences:
-		return m.clearedwork_experiences
-	case user.EdgeProjects:
-		return m.clearedprojects
-	case user.EdgeBlogPosts:
-		return m.clearedblog_posts
-	case user.EdgeIdeas:
-		return m.clearedideas
-	case user.EdgeResearchProjects:
-		return m.clearedresearch_projects
-	case user.EdgePublications:
-		return m.clearedpublications
-	case user.EdgeAwards:
-		return m.clearedawards
-	case user.EdgeRecentUpdates:
-		return m.clearedrecent_updates
-	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *UserMutation) ClearEdge(name string) error {
-	switch name {
-	}
 	return fmt.Errorf("unknown User unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *UserMutation) ResetEdge(name string) error {
-	switch name {
-	case user.EdgePersonalInfos:
-		m.ResetPersonalInfos()
-		return nil
-	case user.EdgeEducations:
-		m.ResetEducations()
-		return nil
-	case user.EdgeWorkExperiences:
-		m.ResetWorkExperiences()
-		return nil
-	case user.EdgeProjects:
-		m.ResetProjects()
-		return nil
-	case user.EdgeBlogPosts:
-		m.ResetBlogPosts()
-		return nil
-	case user.EdgeIdeas:
-		m.ResetIdeas()
-		return nil
-	case user.EdgeResearchProjects:
-		m.ResetResearchProjects()
-		return nil
-	case user.EdgePublications:
-		m.ResetPublications()
-		return nil
-	case user.EdgeAwards:
-		m.ResetAwards()
-		return nil
-	case user.EdgeRecentUpdates:
-		m.ResetRecentUpdates()
-		return nil
-	}
 	return fmt.Errorf("unknown User edge %s", name)
 }
 
@@ -54775,9 +53349,22 @@ func (m *UserIdentityMutation) OldCreatedAt(ctx context.Context) (v time.Time, e
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *UserIdentityMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[useridentity.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *UserIdentityMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[useridentity.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *UserIdentityMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, useridentity.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -54811,9 +53398,22 @@ func (m *UserIdentityMutation) OldUpdatedAt(ctx context.Context) (v time.Time, e
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *UserIdentityMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[useridentity.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *UserIdentityMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[useridentity.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *UserIdentityMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, useridentity.FieldUpdatedAt)
 }
 
 // Where appends a list predicates to the UserIdentityMutation builder.
@@ -55028,6 +53628,12 @@ func (m *UserIdentityMutation) ClearedFields() []string {
 	if m.FieldCleared(useridentity.FieldAvatarURL) {
 		fields = append(fields, useridentity.FieldAvatarURL)
 	}
+	if m.FieldCleared(useridentity.FieldCreatedAt) {
+		fields = append(fields, useridentity.FieldCreatedAt)
+	}
+	if m.FieldCleared(useridentity.FieldUpdatedAt) {
+		fields = append(fields, useridentity.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -55050,6 +53656,12 @@ func (m *UserIdentityMutation) ClearField(name string) error {
 		return nil
 	case useridentity.FieldAvatarURL:
 		m.ClearAvatarURL()
+		return nil
+	case useridentity.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case useridentity.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown UserIdentity nullable field %s", name)
@@ -55141,10 +53753,11 @@ type WorkExperienceMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	user_id             *string
 	company             *string
 	position            *string
-	start_date          *time.Time
-	end_date            *time.Time
+	start_date          *string
+	end_date            *string
 	is_current          *bool
 	location            *string
 	company_website     *string
@@ -55154,8 +53767,6 @@ type WorkExperienceMutation struct {
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
-	user                *string
-	cleareduser         bool
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
@@ -55273,12 +53884,12 @@ func (m *WorkExperienceMutation) IDs(ctx context.Context) ([]string, error) {
 
 // SetUserID sets the "user_id" field.
 func (m *WorkExperienceMutation) SetUserID(s string) {
-	m.user = &s
+	m.user_id = &s
 }
 
 // UserID returns the value of the "user_id" field in the mutation.
 func (m *WorkExperienceMutation) UserID() (r string, exists bool) {
-	v := m.user
+	v := m.user_id
 	if v == nil {
 		return
 	}
@@ -55304,7 +53915,7 @@ func (m *WorkExperienceMutation) OldUserID(ctx context.Context) (v string, err e
 
 // ResetUserID resets all changes to the "user_id" field.
 func (m *WorkExperienceMutation) ResetUserID() {
-	m.user = nil
+	m.user_id = nil
 }
 
 // SetCompany sets the "company" field.
@@ -55380,12 +53991,12 @@ func (m *WorkExperienceMutation) ResetPosition() {
 }
 
 // SetStartDate sets the "start_date" field.
-func (m *WorkExperienceMutation) SetStartDate(t time.Time) {
-	m.start_date = &t
+func (m *WorkExperienceMutation) SetStartDate(s string) {
+	m.start_date = &s
 }
 
 // StartDate returns the value of the "start_date" field in the mutation.
-func (m *WorkExperienceMutation) StartDate() (r time.Time, exists bool) {
+func (m *WorkExperienceMutation) StartDate() (r string, exists bool) {
 	v := m.start_date
 	if v == nil {
 		return
@@ -55396,7 +54007,7 @@ func (m *WorkExperienceMutation) StartDate() (r time.Time, exists bool) {
 // OldStartDate returns the old "start_date" field's value of the WorkExperience entity.
 // If the WorkExperience object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *WorkExperienceMutation) OldStartDate(ctx context.Context) (v time.Time, err error) {
+func (m *WorkExperienceMutation) OldStartDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStartDate is only allowed on UpdateOne operations")
 	}
@@ -55429,12 +54040,12 @@ func (m *WorkExperienceMutation) ResetStartDate() {
 }
 
 // SetEndDate sets the "end_date" field.
-func (m *WorkExperienceMutation) SetEndDate(t time.Time) {
-	m.end_date = &t
+func (m *WorkExperienceMutation) SetEndDate(s string) {
+	m.end_date = &s
 }
 
 // EndDate returns the value of the "end_date" field in the mutation.
-func (m *WorkExperienceMutation) EndDate() (r time.Time, exists bool) {
+func (m *WorkExperienceMutation) EndDate() (r string, exists bool) {
 	v := m.end_date
 	if v == nil {
 		return
@@ -55445,7 +54056,7 @@ func (m *WorkExperienceMutation) EndDate() (r time.Time, exists bool) {
 // OldEndDate returns the old "end_date" field's value of the WorkExperience entity.
 // If the WorkExperience object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *WorkExperienceMutation) OldEndDate(ctx context.Context) (v time.Time, err error) {
+func (m *WorkExperienceMutation) OldEndDate(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldEndDate is only allowed on UpdateOne operations")
 	}
@@ -55747,9 +54358,22 @@ func (m *WorkExperienceMutation) OldCreatedAt(ctx context.Context) (v time.Time,
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *WorkExperienceMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[workexperience.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *WorkExperienceMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[workexperience.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *WorkExperienceMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, workexperience.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -55783,36 +54407,22 @@ func (m *WorkExperienceMutation) OldUpdatedAt(ctx context.Context) (v time.Time,
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *WorkExperienceMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[workexperience.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *WorkExperienceMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[workexperience.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *WorkExperienceMutation) ResetUpdatedAt() {
 	m.updated_at = nil
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (m *WorkExperienceMutation) ClearUser() {
-	m.cleareduser = true
-	m.clearedFields[workexperience.FieldUserID] = struct{}{}
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *WorkExperienceMutation) UserCleared() bool {
-	return m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *WorkExperienceMutation) UserIDs() (ids []string) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *WorkExperienceMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
+	delete(m.clearedFields, workexperience.FieldUpdatedAt)
 }
 
 // AddTranslationIDs adds the "translations" edge to the WorkExperienceTranslation entity by ids.
@@ -55958,7 +54568,7 @@ func (m *WorkExperienceMutation) Type() string {
 // AddedFields().
 func (m *WorkExperienceMutation) Fields() []string {
 	fields := make([]string, 0, 12)
-	if m.user != nil {
+	if m.user_id != nil {
 		fields = append(fields, workexperience.FieldUserID)
 	}
 	if m.company != nil {
@@ -56090,14 +54700,14 @@ func (m *WorkExperienceMutation) SetField(name string, value ent.Value) error {
 		m.SetPosition(v)
 		return nil
 	case workexperience.FieldStartDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStartDate(v)
 		return nil
 	case workexperience.FieldEndDate:
-		v, ok := value.(time.Time)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -56212,6 +54822,12 @@ func (m *WorkExperienceMutation) ClearedFields() []string {
 	if m.FieldCleared(workexperience.FieldCompanyLogoURL) {
 		fields = append(fields, workexperience.FieldCompanyLogoURL)
 	}
+	if m.FieldCleared(workexperience.FieldCreatedAt) {
+		fields = append(fields, workexperience.FieldCreatedAt)
+	}
+	if m.FieldCleared(workexperience.FieldUpdatedAt) {
+		fields = append(fields, workexperience.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -56240,6 +54856,12 @@ func (m *WorkExperienceMutation) ClearField(name string) error {
 		return nil
 	case workexperience.FieldCompanyLogoURL:
 		m.ClearCompanyLogoURL()
+		return nil
+	case workexperience.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case workexperience.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkExperience nullable field %s", name)
@@ -56291,10 +54913,7 @@ func (m *WorkExperienceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *WorkExperienceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.user != nil {
-		edges = append(edges, workexperience.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.translations != nil {
 		edges = append(edges, workexperience.EdgeTranslations)
 	}
@@ -56308,10 +54927,6 @@ func (m *WorkExperienceMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *WorkExperienceMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case workexperience.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
 	case workexperience.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -56330,7 +54945,7 @@ func (m *WorkExperienceMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *WorkExperienceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.removedtranslations != nil {
 		edges = append(edges, workexperience.EdgeTranslations)
 	}
@@ -56362,10 +54977,7 @@ func (m *WorkExperienceMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *WorkExperienceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.cleareduser {
-		edges = append(edges, workexperience.EdgeUser)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedtranslations {
 		edges = append(edges, workexperience.EdgeTranslations)
 	}
@@ -56379,8 +54991,6 @@ func (m *WorkExperienceMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *WorkExperienceMutation) EdgeCleared(name string) bool {
 	switch name {
-	case workexperience.EdgeUser:
-		return m.cleareduser
 	case workexperience.EdgeTranslations:
 		return m.clearedtranslations
 	case workexperience.EdgeDetails:
@@ -56393,9 +55003,6 @@ func (m *WorkExperienceMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *WorkExperienceMutation) ClearEdge(name string) error {
 	switch name {
-	case workexperience.EdgeUser:
-		m.ClearUser()
-		return nil
 	}
 	return fmt.Errorf("unknown WorkExperience unique edge %s", name)
 }
@@ -56404,9 +55011,6 @@ func (m *WorkExperienceMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *WorkExperienceMutation) ResetEdge(name string) error {
 	switch name {
-	case workexperience.EdgeUser:
-		m.ResetUser()
-		return nil
 	case workexperience.EdgeTranslations:
 		m.ResetTranslations()
 		return nil
@@ -56702,9 +55306,22 @@ func (m *WorkExperienceDetailMutation) OldCreatedAt(ctx context.Context) (v time
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *WorkExperienceDetailMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[workexperiencedetail.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *WorkExperienceDetailMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[workexperiencedetail.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *WorkExperienceDetailMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, workexperiencedetail.FieldCreatedAt)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -56738,9 +55355,22 @@ func (m *WorkExperienceDetailMutation) OldUpdatedAt(ctx context.Context) (v time
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *WorkExperienceDetailMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[workexperiencedetail.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *WorkExperienceDetailMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[workexperiencedetail.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *WorkExperienceDetailMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, workexperiencedetail.FieldUpdatedAt)
 }
 
 // ClearWorkExperience clears the "work_experience" edge to the WorkExperience entity.
@@ -56999,7 +55629,14 @@ func (m *WorkExperienceDetailMutation) AddField(name string, value ent.Value) er
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *WorkExperienceDetailMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(workexperiencedetail.FieldCreatedAt) {
+		fields = append(fields, workexperiencedetail.FieldCreatedAt)
+	}
+	if m.FieldCleared(workexperiencedetail.FieldUpdatedAt) {
+		fields = append(fields, workexperiencedetail.FieldUpdatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -57012,6 +55649,14 @@ func (m *WorkExperienceDetailMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *WorkExperienceDetailMutation) ClearField(name string) error {
+	switch name {
+	case workexperiencedetail.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case workexperiencedetail.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown WorkExperienceDetail nullable field %s", name)
 }
 
@@ -57365,9 +56010,22 @@ func (m *WorkExperienceDetailTranslationMutation) OldDetailText(ctx context.Cont
 	return oldValue.DetailText, nil
 }
 
+// ClearDetailText clears the value of the "detail_text" field.
+func (m *WorkExperienceDetailTranslationMutation) ClearDetailText() {
+	m.detail_text = nil
+	m.clearedFields[workexperiencedetailtranslation.FieldDetailText] = struct{}{}
+}
+
+// DetailTextCleared returns if the "detail_text" field was cleared in this mutation.
+func (m *WorkExperienceDetailTranslationMutation) DetailTextCleared() bool {
+	_, ok := m.clearedFields[workexperiencedetailtranslation.FieldDetailText]
+	return ok
+}
+
 // ResetDetailText resets all changes to the "detail_text" field.
 func (m *WorkExperienceDetailTranslationMutation) ResetDetailText() {
 	m.detail_text = nil
+	delete(m.clearedFields, workexperiencedetailtranslation.FieldDetailText)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -57401,9 +56059,22 @@ func (m *WorkExperienceDetailTranslationMutation) OldCreatedAt(ctx context.Conte
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *WorkExperienceDetailTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[workexperiencedetailtranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *WorkExperienceDetailTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[workexperiencedetailtranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *WorkExperienceDetailTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, workexperiencedetailtranslation.FieldCreatedAt)
 }
 
 // ClearWorkExperienceDetail clears the "work_experience_detail" edge to the WorkExperienceDetail entity.
@@ -57619,7 +56290,14 @@ func (m *WorkExperienceDetailTranslationMutation) AddField(name string, value en
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *WorkExperienceDetailTranslationMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(workexperiencedetailtranslation.FieldDetailText) {
+		fields = append(fields, workexperiencedetailtranslation.FieldDetailText)
+	}
+	if m.FieldCleared(workexperiencedetailtranslation.FieldCreatedAt) {
+		fields = append(fields, workexperiencedetailtranslation.FieldCreatedAt)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -57632,6 +56310,14 @@ func (m *WorkExperienceDetailTranslationMutation) FieldCleared(name string) bool
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *WorkExperienceDetailTranslationMutation) ClearField(name string) error {
+	switch name {
+	case workexperiencedetailtranslation.FieldDetailText:
+		m.ClearDetailText()
+		return nil
+	case workexperiencedetailtranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown WorkExperienceDetailTranslation nullable field %s", name)
 }
 
@@ -58121,9 +56807,22 @@ func (m *WorkExperienceTranslationMutation) OldCreatedAt(ctx context.Context) (v
 	return oldValue.CreatedAt, nil
 }
 
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *WorkExperienceTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[workexperiencetranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *WorkExperienceTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[workexperiencetranslation.FieldCreatedAt]
+	return ok
+}
+
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *WorkExperienceTranslationMutation) ResetCreatedAt() {
 	m.created_at = nil
+	delete(m.clearedFields, workexperiencetranslation.FieldCreatedAt)
 }
 
 // ClearWorkExperience clears the "work_experience" edge to the WorkExperience entity.
@@ -58377,6 +57076,9 @@ func (m *WorkExperienceTranslationMutation) ClearedFields() []string {
 	if m.FieldCleared(workexperiencetranslation.FieldLocation) {
 		fields = append(fields, workexperiencetranslation.FieldLocation)
 	}
+	if m.FieldCleared(workexperiencetranslation.FieldCreatedAt) {
+		fields = append(fields, workexperiencetranslation.FieldCreatedAt)
+	}
 	return fields
 }
 
@@ -58399,6 +57101,9 @@ func (m *WorkExperienceTranslationMutation) ClearField(name string) error {
 		return nil
 	case workexperiencetranslation.FieldLocation:
 		m.ClearLocation()
+		return nil
+	case workexperiencetranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkExperienceTranslation nullable field %s", name)

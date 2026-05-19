@@ -109,6 +109,12 @@ func (clu *CommentLikeUpdate) SetUpdatedAt(t time.Time) *CommentLikeUpdate {
 	return clu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (clu *CommentLikeUpdate) ClearUpdatedAt() *CommentLikeUpdate {
+	clu.mutation.ClearUpdatedAt()
+	return clu
+}
+
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (clu *CommentLikeUpdate) SetUserIdentity(u *UserIdentity) *CommentLikeUpdate {
 	return clu.SetUserIdentityID(u.ID)
@@ -155,7 +161,7 @@ func (clu *CommentLikeUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (clu *CommentLikeUpdate) defaults() {
-	if _, ok := clu.mutation.UpdatedAt(); !ok {
+	if _, ok := clu.mutation.UpdatedAt(); !ok && !clu.mutation.UpdatedAtCleared() {
 		v := commentlike.UpdateDefaultUpdatedAt()
 		clu.mutation.SetUpdatedAt(v)
 	}
@@ -198,8 +204,14 @@ func (clu *CommentLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if clu.mutation.IPAddressCleared() {
 		_spec.ClearField(commentlike.FieldIPAddress, field.TypeString)
 	}
+	if clu.mutation.CreatedAtCleared() {
+		_spec.ClearField(commentlike.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := clu.mutation.UpdatedAt(); ok {
 		_spec.SetField(commentlike.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if clu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(commentlike.FieldUpdatedAt, field.TypeTime)
 	}
 	if clu.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -330,6 +342,12 @@ func (cluo *CommentLikeUpdateOne) SetUpdatedAt(t time.Time) *CommentLikeUpdateOn
 	return cluo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (cluo *CommentLikeUpdateOne) ClearUpdatedAt() *CommentLikeUpdateOne {
+	cluo.mutation.ClearUpdatedAt()
+	return cluo
+}
+
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (cluo *CommentLikeUpdateOne) SetUserIdentity(u *UserIdentity) *CommentLikeUpdateOne {
 	return cluo.SetUserIdentityID(u.ID)
@@ -389,7 +407,7 @@ func (cluo *CommentLikeUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (cluo *CommentLikeUpdateOne) defaults() {
-	if _, ok := cluo.mutation.UpdatedAt(); !ok {
+	if _, ok := cluo.mutation.UpdatedAt(); !ok && !cluo.mutation.UpdatedAtCleared() {
 		v := commentlike.UpdateDefaultUpdatedAt()
 		cluo.mutation.SetUpdatedAt(v)
 	}
@@ -449,8 +467,14 @@ func (cluo *CommentLikeUpdateOne) sqlSave(ctx context.Context) (_node *CommentLi
 	if cluo.mutation.IPAddressCleared() {
 		_spec.ClearField(commentlike.FieldIPAddress, field.TypeString)
 	}
+	if cluo.mutation.CreatedAtCleared() {
+		_spec.ClearField(commentlike.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := cluo.mutation.UpdatedAt(); ok {
 		_spec.SetField(commentlike.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if cluo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(commentlike.FieldUpdatedAt, field.TypeTime)
 	}
 	if cluo.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{

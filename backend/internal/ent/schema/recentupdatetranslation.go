@@ -38,13 +38,14 @@ func (RecentUpdateTranslation) Fields() []ent.Field {
 		// Translatable fields - matching Python model exactly
 		field.String("title").
 			MaxLen(200).
-			NotEmpty(),
+			Optional(),
 		field.Text("description").
-			NotEmpty(),
+			Optional(),
 
 		// System fields
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

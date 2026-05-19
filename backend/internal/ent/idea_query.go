@@ -12,7 +12,6 @@ import (
 	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -27,7 +26,6 @@ type IdeaQuery struct {
 	order            []idea.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Idea
-	withUser         *UserQuery
 	withTranslations *IdeaTranslationQuery
 	withDetails      *IdeaDetailQuery
 	withTags         *IdeaTagQuery
@@ -65,28 +63,6 @@ func (iq *IdeaQuery) Unique(unique bool) *IdeaQuery {
 func (iq *IdeaQuery) Order(o ...idea.OrderOption) *IdeaQuery {
 	iq.order = append(iq.order, o...)
 	return iq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (iq *IdeaQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: iq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := iq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(idea.Table, idea.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, idea.UserTable, idea.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -347,7 +323,6 @@ func (iq *IdeaQuery) Clone() *IdeaQuery {
 		order:            append([]idea.OrderOption{}, iq.order...),
 		inters:           append([]Interceptor{}, iq.inters...),
 		predicates:       append([]predicate.Idea{}, iq.predicates...),
-		withUser:         iq.withUser.Clone(),
 		withTranslations: iq.withTranslations.Clone(),
 		withDetails:      iq.withDetails.Clone(),
 		withTags:         iq.withTags.Clone(),
@@ -355,17 +330,6 @@ func (iq *IdeaQuery) Clone() *IdeaQuery {
 		sql:  iq.sql.Clone(),
 		path: iq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *IdeaQuery) WithUser(opts ...func(*UserQuery)) *IdeaQuery {
-	query := (&UserClient{config: iq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	iq.withUser = query
-	return iq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -479,8 +443,7 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	var (
 		nodes       = []*Idea{}
 		_spec       = iq.querySpec()
-		loadedTypes = [4]bool{
-			iq.withUser != nil,
+		loadedTypes = [3]bool{
 			iq.withTranslations != nil,
 			iq.withDetails != nil,
 			iq.withTags != nil,
@@ -503,12 +466,6 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
-	}
-	if query := iq.withUser; query != nil {
-		if err := iq.loadUser(ctx, query, nodes, nil,
-			func(n *Idea, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
 	}
 	if query := iq.withTranslations; query != nil {
 		if err := iq.loadTranslations(ctx, query, nodes,
@@ -533,35 +490,6 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	return nodes, nil
 }
 
-func (iq *IdeaQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Idea)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (iq *IdeaQuery) loadTranslations(ctx context.Context, query *IdeaTranslationQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Idea)
@@ -705,9 +633,6 @@ func (iq *IdeaQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != idea.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if iq.withUser != nil {
-			_spec.Node.AddColumnOnce(idea.FieldUserID)
 		}
 	}
 	if ps := iq.predicates; len(ps) > 0 {

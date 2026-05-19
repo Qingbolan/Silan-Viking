@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
@@ -45,10 +46,13 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 		technologies = append(technologies, tech.TechnologyName)
 	}
 
-	// Get the year from start date or created date
+	// Get the year from the start date (a plain `YYYY-MM-DD` string) or,
+	// failing that, the created-at timestamp.
 	year := proj.CreatedAt.Year()
-	if !proj.StartDate.IsZero() {
-		year = proj.StartDate.Year()
+	if len(proj.StartDate) >= 4 {
+		if y, err := strconv.Atoi(proj.StartDate[:4]); err == nil {
+			year = y
+		}
 	}
 
 	// Generate annual plan name based on year

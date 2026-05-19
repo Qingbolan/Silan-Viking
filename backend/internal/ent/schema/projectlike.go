@@ -48,9 +48,11 @@ func (ProjectLike) Fields() []ent.Field {
 			Comment("User agent string"),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

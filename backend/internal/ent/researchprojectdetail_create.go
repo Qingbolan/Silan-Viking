@@ -179,12 +179,6 @@ func (rpdc *ResearchProjectDetailCreate) check() error {
 	if _, ok := rpdc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "ResearchProjectDetail.sort_order"`)}
 	}
-	if _, ok := rpdc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ResearchProjectDetail.created_at"`)}
-	}
-	if _, ok := rpdc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ResearchProjectDetail.updated_at"`)}
-	}
 	if len(rpdc.mutation.ResearchProjectIDs()) == 0 {
 		return &ValidationError{Name: "research_project", err: errors.New(`ent: missing required edge "ResearchProjectDetail.research_project"`)}
 	}

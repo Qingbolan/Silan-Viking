@@ -118,6 +118,12 @@ func (cru *ContentRelationUpdate) AddSortOrder(i int) *ContentRelationUpdate {
 	return cru
 }
 
+// ClearSortOrder clears the value of the "sort_order" field.
+func (cru *ContentRelationUpdate) ClearSortOrder() *ContentRelationUpdate {
+	cru.mutation.ClearSortOrder()
+	return cru
+}
+
 // Mutation returns the ContentRelationMutation object of the builder.
 func (cru *ContentRelationUpdate) Mutation() *ContentRelationMutation {
 	return cru.mutation
@@ -202,6 +208,12 @@ func (cru *ContentRelationUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if value, ok := cru.mutation.AddedSortOrder(); ok {
 		_spec.AddField(contentrelation.FieldSortOrder, field.TypeInt, value)
+	}
+	if cru.mutation.SortOrderCleared() {
+		_spec.ClearField(contentrelation.FieldSortOrder, field.TypeInt)
+	}
+	if cru.mutation.CreatedAtCleared() {
+		_spec.ClearField(contentrelation.FieldCreatedAt, field.TypeTime)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -311,6 +323,12 @@ func (cruo *ContentRelationUpdateOne) SetNillableSortOrder(i *int) *ContentRelat
 // AddSortOrder adds i to the "sort_order" field.
 func (cruo *ContentRelationUpdateOne) AddSortOrder(i int) *ContentRelationUpdateOne {
 	cruo.mutation.AddSortOrder(i)
+	return cruo
+}
+
+// ClearSortOrder clears the value of the "sort_order" field.
+func (cruo *ContentRelationUpdateOne) ClearSortOrder() *ContentRelationUpdateOne {
+	cruo.mutation.ClearSortOrder()
 	return cruo
 }
 
@@ -428,6 +446,12 @@ func (cruo *ContentRelationUpdateOne) sqlSave(ctx context.Context) (_node *Conte
 	}
 	if value, ok := cruo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(contentrelation.FieldSortOrder, field.TypeInt, value)
+	}
+	if cruo.mutation.SortOrderCleared() {
+		_spec.ClearField(contentrelation.FieldSortOrder, field.TypeInt)
+	}
+	if cruo.mutation.CreatedAtCleared() {
+		_spec.ClearField(contentrelation.FieldCreatedAt, field.TypeTime)
 	}
 	_node = &ContentRelation{config: cruo.config}
 	_spec.Assign = _node.assignValues

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/award"
 	"silan-backend/internal/ent/awardtranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -41,15 +40,15 @@ func (ac *AwardCreate) SetAwardingOrganization(s string) *AwardCreate {
 }
 
 // SetAwardDate sets the "award_date" field.
-func (ac *AwardCreate) SetAwardDate(t time.Time) *AwardCreate {
-	ac.mutation.SetAwardDate(t)
+func (ac *AwardCreate) SetAwardDate(s string) *AwardCreate {
+	ac.mutation.SetAwardDate(s)
 	return ac
 }
 
 // SetNillableAwardDate sets the "award_date" field if the given value is not nil.
-func (ac *AwardCreate) SetNillableAwardDate(t *time.Time) *AwardCreate {
-	if t != nil {
-		ac.SetAwardDate(*t)
+func (ac *AwardCreate) SetNillableAwardDate(s *string) *AwardCreate {
+	if s != nil {
+		ac.SetAwardDate(*s)
 	}
 	return ac
 }
@@ -166,11 +165,6 @@ func (ac *AwardCreate) SetNillableID(s *string) *AwardCreate {
 	return ac
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (ac *AwardCreate) SetUser(u *User) *AwardCreate {
-	return ac.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the AwardTranslation entity by IDs.
 func (ac *AwardCreate) AddTranslationIDs(ids ...string) *AwardCreate {
 	ac.mutation.AddTranslationIDs(ids...)
@@ -273,15 +267,6 @@ func (ac *AwardCreate) check() error {
 	if _, ok := ac.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "Award.sort_order"`)}
 	}
-	if _, ok := ac.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Award.created_at"`)}
-	}
-	if _, ok := ac.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Award.updated_at"`)}
-	}
-	if len(ac.mutation.UserIDs()) == 0 {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Award.user"`)}
-	}
 	return nil
 }
 
@@ -317,6 +302,10 @@ func (ac *AwardCreate) createSpec() (*Award, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := ac.mutation.UserID(); ok {
+		_spec.SetField(award.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := ac.mutation.Title(); ok {
 		_spec.SetField(award.FieldTitle, field.TypeString, value)
 		_node.Title = value
@@ -326,7 +315,7 @@ func (ac *AwardCreate) createSpec() (*Award, *sqlgraph.CreateSpec) {
 		_node.AwardingOrganization = value
 	}
 	if value, ok := ac.mutation.AwardDate(); ok {
-		_spec.SetField(award.FieldAwardDate, field.TypeTime, value)
+		_spec.SetField(award.FieldAwardDate, field.TypeString, value)
 		_node.AwardDate = value
 	}
 	if value, ok := ac.mutation.AwardType(); ok {
@@ -356,23 +345,6 @@ func (ac *AwardCreate) createSpec() (*Award, *sqlgraph.CreateSpec) {
 	if value, ok := ac.mutation.UpdatedAt(); ok {
 		_spec.SetField(award.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := ac.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   award.UserTable,
-			Columns: []string{award.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ac.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

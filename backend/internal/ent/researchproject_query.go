@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
 	"silan-backend/internal/ent/researchprojecttranslation"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -26,7 +25,6 @@ type ResearchProjectQuery struct {
 	order            []researchproject.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.ResearchProject
-	withUser         *UserQuery
 	withTranslations *ResearchProjectTranslationQuery
 	withDetails      *ResearchProjectDetailQuery
 	// intermediate query (i.e. traversal path).
@@ -63,28 +61,6 @@ func (rpq *ResearchProjectQuery) Unique(unique bool) *ResearchProjectQuery {
 func (rpq *ResearchProjectQuery) Order(o ...researchproject.OrderOption) *ResearchProjectQuery {
 	rpq.order = append(rpq.order, o...)
 	return rpq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (rpq *ResearchProjectQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: rpq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(researchproject.Table, researchproject.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, researchproject.UserTable, researchproject.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -323,24 +299,12 @@ func (rpq *ResearchProjectQuery) Clone() *ResearchProjectQuery {
 		order:            append([]researchproject.OrderOption{}, rpq.order...),
 		inters:           append([]Interceptor{}, rpq.inters...),
 		predicates:       append([]predicate.ResearchProject{}, rpq.predicates...),
-		withUser:         rpq.withUser.Clone(),
 		withTranslations: rpq.withTranslations.Clone(),
 		withDetails:      rpq.withDetails.Clone(),
 		// clone intermediate query.
 		sql:  rpq.sql.Clone(),
 		path: rpq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (rpq *ResearchProjectQuery) WithUser(opts ...func(*UserQuery)) *ResearchProjectQuery {
-	query := (&UserClient{config: rpq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	rpq.withUser = query
-	return rpq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -443,8 +407,7 @@ func (rpq *ResearchProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	var (
 		nodes       = []*ResearchProject{}
 		_spec       = rpq.querySpec()
-		loadedTypes = [3]bool{
-			rpq.withUser != nil,
+		loadedTypes = [2]bool{
 			rpq.withTranslations != nil,
 			rpq.withDetails != nil,
 		}
@@ -467,12 +430,6 @@ func (rpq *ResearchProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := rpq.withUser; query != nil {
-		if err := rpq.loadUser(ctx, query, nodes, nil,
-			func(n *ResearchProject, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := rpq.withTranslations; query != nil {
 		if err := rpq.loadTranslations(ctx, query, nodes,
 			func(n *ResearchProject) { n.Edges.Translations = []*ResearchProjectTranslation{} },
@@ -492,35 +449,6 @@ func (rpq *ResearchProjectQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	return nodes, nil
 }
 
-func (rpq *ResearchProjectQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*ResearchProject, init func(*ResearchProject), assign func(*ResearchProject, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*ResearchProject)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (rpq *ResearchProjectQuery) loadTranslations(ctx context.Context, query *ResearchProjectTranslationQuery, nodes []*ResearchProject, init func(*ResearchProject), assign func(*ResearchProject, *ResearchProjectTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*ResearchProject)
@@ -606,9 +534,6 @@ func (rpq *ResearchProjectQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != researchproject.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if rpq.withUser != nil {
-			_spec.Node.AddColumnOnce(researchproject.FieldUserID)
 		}
 	}
 	if ps := rpq.predicates; len(ps) > 0 {

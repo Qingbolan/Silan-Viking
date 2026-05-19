@@ -216,12 +216,6 @@ func (ipc *ItemPartCreate) check() error {
 	if _, ok := ipc.mutation.CanonicalLang(); !ok {
 		return &ValidationError{Name: "canonical_lang", err: errors.New(`ent: missing required field "ItemPart.canonical_lang"`)}
 	}
-	if _, ok := ipc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ItemPart.created_at"`)}
-	}
-	if _, ok := ipc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ItemPart.updated_at"`)}
-	}
 	return nil
 }
 

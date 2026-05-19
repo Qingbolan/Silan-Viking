@@ -37,16 +37,8 @@ func (WorkExperience) Fields() []ent.Field {
 		field.String("position").
 			MaxLen(200).
 			NotEmpty(),
-		field.Time("start_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
-		field.Time("end_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
+		field.String("start_date").Optional(),
+		field.String("end_date").Optional(),
 		field.Bool("is_current").
 			Default(false),
 		field.String("location").
@@ -62,9 +54,11 @@ func (WorkExperience) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -72,11 +66,6 @@ func (WorkExperience) Fields() []ent.Field {
 // Edges of the WorkExperience.
 func (WorkExperience) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("work_experiences").
-			Field("user_id").
-			Required().
-			Unique(),
 		edge.To("translations", WorkExperienceTranslation.Type),
 		edge.To("details", WorkExperienceDetail.Type),
 	}

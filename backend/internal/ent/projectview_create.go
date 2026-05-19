@@ -221,12 +221,6 @@ func (pvc *ProjectViewCreate) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "ProjectView.ip_address": %w`, err)}
 		}
 	}
-	if _, ok := pvc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectView.created_at"`)}
-	}
-	if _, ok := pvc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "ProjectView.updated_at"`)}
-	}
 	return nil
 }
 

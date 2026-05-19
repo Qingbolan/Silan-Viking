@@ -145,6 +145,9 @@ func (idtu *IdeaDetailTranslationUpdate) sqlSave(ctx context.Context) (n int, er
 			}
 		}
 	}
+	if idtu.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideadetailtranslation.FieldCreatedAt, field.TypeTime)
+	}
 	if idtu.mutation.IdeaDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -368,6 +371,9 @@ func (idtuo *IdeaDetailTranslationUpdateOne) sqlSave(ctx context.Context) (_node
 				ps[i](selector)
 			}
 		}
+	}
+	if idtuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideadetailtranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if idtuo.mutation.IdeaDetailCleared() {
 		edge := &sqlgraph.EdgeSpec{

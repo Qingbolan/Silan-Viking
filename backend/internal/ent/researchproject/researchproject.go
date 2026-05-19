@@ -40,21 +40,12 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// EdgeUser holds the string denoting the user edge name in mutations.
-	EdgeUser = "user"
 	// EdgeTranslations holds the string denoting the translations edge name in mutations.
 	EdgeTranslations = "translations"
 	// EdgeDetails holds the string denoting the details edge name in mutations.
 	EdgeDetails = "details"
 	// Table holds the table name of the researchproject in the database.
 	Table = "research_projects"
-	// UserTable is the table that holds the user relation/edge.
-	UserTable = "research_projects"
-	// UserInverseTable is the table name for the User entity.
-	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UserInverseTable = "users"
-	// UserColumn is the table column denoting the user relation/edge.
-	UserColumn = "user_id"
 	// TranslationsTable is the table that holds the translations relation/edge.
 	TranslationsTable = "research_project_translations"
 	// TranslationsInverseTable is the table name for the ResearchProjectTranslation entity.
@@ -197,13 +188,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByUserField orders the results by user field.
-func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByTranslationsCount orders the results by translations count.
 func ByTranslationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -230,13 +214,6 @@ func ByDetails(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newDetailsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
-}
-func newUserStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(UserInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-	)
 }
 func newTranslationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

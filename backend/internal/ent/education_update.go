@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/educationdetail"
 	"silan-backend/internal/ent/educationtranslation"
 	"silan-backend/internal/ent/predicate"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -94,15 +93,15 @@ func (eu *EducationUpdate) ClearFieldOfStudy() *EducationUpdate {
 }
 
 // SetStartDate sets the "start_date" field.
-func (eu *EducationUpdate) SetStartDate(t time.Time) *EducationUpdate {
-	eu.mutation.SetStartDate(t)
+func (eu *EducationUpdate) SetStartDate(s string) *EducationUpdate {
+	eu.mutation.SetStartDate(s)
 	return eu
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (eu *EducationUpdate) SetNillableStartDate(t *time.Time) *EducationUpdate {
-	if t != nil {
-		eu.SetStartDate(*t)
+func (eu *EducationUpdate) SetNillableStartDate(s *string) *EducationUpdate {
+	if s != nil {
+		eu.SetStartDate(*s)
 	}
 	return eu
 }
@@ -114,15 +113,15 @@ func (eu *EducationUpdate) ClearStartDate() *EducationUpdate {
 }
 
 // SetEndDate sets the "end_date" field.
-func (eu *EducationUpdate) SetEndDate(t time.Time) *EducationUpdate {
-	eu.mutation.SetEndDate(t)
+func (eu *EducationUpdate) SetEndDate(s string) *EducationUpdate {
+	eu.mutation.SetEndDate(s)
 	return eu
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (eu *EducationUpdate) SetNillableEndDate(t *time.Time) *EducationUpdate {
-	if t != nil {
-		eu.SetEndDate(*t)
+func (eu *EducationUpdate) SetNillableEndDate(s *string) *EducationUpdate {
+	if s != nil {
+		eu.SetEndDate(*s)
 	}
 	return eu
 }
@@ -254,9 +253,10 @@ func (eu *EducationUpdate) SetUpdatedAt(t time.Time) *EducationUpdate {
 	return eu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (eu *EducationUpdate) SetUser(u *User) *EducationUpdate {
-	return eu.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (eu *EducationUpdate) ClearUpdatedAt() *EducationUpdate {
+	eu.mutation.ClearUpdatedAt()
+	return eu
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationTranslation entity by IDs.
@@ -292,12 +292,6 @@ func (eu *EducationUpdate) AddDetails(e ...*EducationDetail) *EducationUpdate {
 // Mutation returns the EducationMutation object of the builder.
 func (eu *EducationUpdate) Mutation() *EducationMutation {
 	return eu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (eu *EducationUpdate) ClearUser() *EducationUpdate {
-	eu.mutation.ClearUser()
-	return eu
 }
 
 // ClearTranslations clears all "translations" edges to the EducationTranslation entity.
@@ -372,7 +366,7 @@ func (eu *EducationUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (eu *EducationUpdate) defaults() {
-	if _, ok := eu.mutation.UpdatedAt(); !ok {
+	if _, ok := eu.mutation.UpdatedAt(); !ok && !eu.mutation.UpdatedAtCleared() {
 		v := education.UpdateDefaultUpdatedAt()
 		eu.mutation.SetUpdatedAt(v)
 	}
@@ -415,9 +409,6 @@ func (eu *EducationUpdate) check() error {
 			return &ValidationError{Name: "institution_logo_url", err: fmt.Errorf(`ent: validator failed for field "Education.institution_logo_url": %w`, err)}
 		}
 	}
-	if eu.mutation.UserCleared() && len(eu.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Education.user"`)
-	}
 	return nil
 }
 
@@ -433,6 +424,9 @@ func (eu *EducationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := eu.mutation.UserID(); ok {
+		_spec.SetField(education.FieldUserID, field.TypeString, value)
+	}
 	if value, ok := eu.mutation.Institution(); ok {
 		_spec.SetField(education.FieldInstitution, field.TypeString, value)
 	}
@@ -446,16 +440,16 @@ func (eu *EducationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.ClearField(education.FieldFieldOfStudy, field.TypeString)
 	}
 	if value, ok := eu.mutation.StartDate(); ok {
-		_spec.SetField(education.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(education.FieldStartDate, field.TypeString, value)
 	}
 	if eu.mutation.StartDateCleared() {
-		_spec.ClearField(education.FieldStartDate, field.TypeTime)
+		_spec.ClearField(education.FieldStartDate, field.TypeString)
 	}
 	if value, ok := eu.mutation.EndDate(); ok {
-		_spec.SetField(education.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(education.FieldEndDate, field.TypeString, value)
 	}
 	if eu.mutation.EndDateCleared() {
-		_spec.ClearField(education.FieldEndDate, field.TypeTime)
+		_spec.ClearField(education.FieldEndDate, field.TypeString)
 	}
 	if value, ok := eu.mutation.IsCurrent(); ok {
 		_spec.SetField(education.FieldIsCurrent, field.TypeBool, value)
@@ -490,37 +484,14 @@ func (eu *EducationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := eu.mutation.AddedSortOrder(); ok {
 		_spec.AddField(education.FieldSortOrder, field.TypeInt, value)
 	}
+	if eu.mutation.CreatedAtCleared() {
+		_spec.ClearField(education.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := eu.mutation.UpdatedAt(); ok {
 		_spec.SetField(education.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if eu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   education.UserTable,
-			Columns: []string{education.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := eu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   education.UserTable,
-			Columns: []string{education.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if eu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(education.FieldUpdatedAt, field.TypeTime)
 	}
 	if eu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -695,15 +666,15 @@ func (euo *EducationUpdateOne) ClearFieldOfStudy() *EducationUpdateOne {
 }
 
 // SetStartDate sets the "start_date" field.
-func (euo *EducationUpdateOne) SetStartDate(t time.Time) *EducationUpdateOne {
-	euo.mutation.SetStartDate(t)
+func (euo *EducationUpdateOne) SetStartDate(s string) *EducationUpdateOne {
+	euo.mutation.SetStartDate(s)
 	return euo
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (euo *EducationUpdateOne) SetNillableStartDate(t *time.Time) *EducationUpdateOne {
-	if t != nil {
-		euo.SetStartDate(*t)
+func (euo *EducationUpdateOne) SetNillableStartDate(s *string) *EducationUpdateOne {
+	if s != nil {
+		euo.SetStartDate(*s)
 	}
 	return euo
 }
@@ -715,15 +686,15 @@ func (euo *EducationUpdateOne) ClearStartDate() *EducationUpdateOne {
 }
 
 // SetEndDate sets the "end_date" field.
-func (euo *EducationUpdateOne) SetEndDate(t time.Time) *EducationUpdateOne {
-	euo.mutation.SetEndDate(t)
+func (euo *EducationUpdateOne) SetEndDate(s string) *EducationUpdateOne {
+	euo.mutation.SetEndDate(s)
 	return euo
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (euo *EducationUpdateOne) SetNillableEndDate(t *time.Time) *EducationUpdateOne {
-	if t != nil {
-		euo.SetEndDate(*t)
+func (euo *EducationUpdateOne) SetNillableEndDate(s *string) *EducationUpdateOne {
+	if s != nil {
+		euo.SetEndDate(*s)
 	}
 	return euo
 }
@@ -855,9 +826,10 @@ func (euo *EducationUpdateOne) SetUpdatedAt(t time.Time) *EducationUpdateOne {
 	return euo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (euo *EducationUpdateOne) SetUser(u *User) *EducationUpdateOne {
-	return euo.SetUserID(u.ID)
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (euo *EducationUpdateOne) ClearUpdatedAt() *EducationUpdateOne {
+	euo.mutation.ClearUpdatedAt()
+	return euo
 }
 
 // AddTranslationIDs adds the "translations" edge to the EducationTranslation entity by IDs.
@@ -893,12 +865,6 @@ func (euo *EducationUpdateOne) AddDetails(e ...*EducationDetail) *EducationUpdat
 // Mutation returns the EducationMutation object of the builder.
 func (euo *EducationUpdateOne) Mutation() *EducationMutation {
 	return euo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (euo *EducationUpdateOne) ClearUser() *EducationUpdateOne {
-	euo.mutation.ClearUser()
-	return euo
 }
 
 // ClearTranslations clears all "translations" edges to the EducationTranslation entity.
@@ -986,7 +952,7 @@ func (euo *EducationUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (euo *EducationUpdateOne) defaults() {
-	if _, ok := euo.mutation.UpdatedAt(); !ok {
+	if _, ok := euo.mutation.UpdatedAt(); !ok && !euo.mutation.UpdatedAtCleared() {
 		v := education.UpdateDefaultUpdatedAt()
 		euo.mutation.SetUpdatedAt(v)
 	}
@@ -1029,9 +995,6 @@ func (euo *EducationUpdateOne) check() error {
 			return &ValidationError{Name: "institution_logo_url", err: fmt.Errorf(`ent: validator failed for field "Education.institution_logo_url": %w`, err)}
 		}
 	}
-	if euo.mutation.UserCleared() && len(euo.mutation.UserIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Education.user"`)
-	}
 	return nil
 }
 
@@ -1064,6 +1027,9 @@ func (euo *EducationUpdateOne) sqlSave(ctx context.Context) (_node *Education, e
 			}
 		}
 	}
+	if value, ok := euo.mutation.UserID(); ok {
+		_spec.SetField(education.FieldUserID, field.TypeString, value)
+	}
 	if value, ok := euo.mutation.Institution(); ok {
 		_spec.SetField(education.FieldInstitution, field.TypeString, value)
 	}
@@ -1077,16 +1043,16 @@ func (euo *EducationUpdateOne) sqlSave(ctx context.Context) (_node *Education, e
 		_spec.ClearField(education.FieldFieldOfStudy, field.TypeString)
 	}
 	if value, ok := euo.mutation.StartDate(); ok {
-		_spec.SetField(education.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(education.FieldStartDate, field.TypeString, value)
 	}
 	if euo.mutation.StartDateCleared() {
-		_spec.ClearField(education.FieldStartDate, field.TypeTime)
+		_spec.ClearField(education.FieldStartDate, field.TypeString)
 	}
 	if value, ok := euo.mutation.EndDate(); ok {
-		_spec.SetField(education.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(education.FieldEndDate, field.TypeString, value)
 	}
 	if euo.mutation.EndDateCleared() {
-		_spec.ClearField(education.FieldEndDate, field.TypeTime)
+		_spec.ClearField(education.FieldEndDate, field.TypeString)
 	}
 	if value, ok := euo.mutation.IsCurrent(); ok {
 		_spec.SetField(education.FieldIsCurrent, field.TypeBool, value)
@@ -1121,37 +1087,14 @@ func (euo *EducationUpdateOne) sqlSave(ctx context.Context) (_node *Education, e
 	if value, ok := euo.mutation.AddedSortOrder(); ok {
 		_spec.AddField(education.FieldSortOrder, field.TypeInt, value)
 	}
+	if euo.mutation.CreatedAtCleared() {
+		_spec.ClearField(education.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := euo.mutation.UpdatedAt(); ok {
 		_spec.SetField(education.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if euo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   education.UserTable,
-			Columns: []string{education.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := euo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   education.UserTable,
-			Columns: []string{education.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	if euo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(education.FieldUpdatedAt, field.TypeTime)
 	}
 	if euo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

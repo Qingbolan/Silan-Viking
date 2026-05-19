@@ -36,13 +36,17 @@ func (BlogPostTranslation) Fields() []ent.Field {
 			StorageKey("language_code"),
 		field.String("title").
 			MaxLen(500).
-			NotEmpty(),
+			Optional(),
 		field.Text("excerpt").
 			Optional(),
+		// The blog body lives in `item_part_translation` (the prose Part of
+		// the silan-viking content model); this column is legacy and stays
+		// empty, so it must be optional.
 		field.Text("content").
-			NotEmpty(),
+			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

@@ -64,6 +64,7 @@ func (RequestLog) Fields() []ent.Field {
 			Comment("Canonical crawler name when is_bot is true (e.g. Googlebot)."),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

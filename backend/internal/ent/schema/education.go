@@ -40,16 +40,8 @@ func (Education) Fields() []ent.Field {
 		field.String("field_of_study").
 			Optional().
 			MaxLen(200),
-		field.Time("start_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
-		field.Time("end_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
+		field.String("start_date").Optional(),
+		field.String("end_date").Optional(),
 		field.Bool("is_current").
 			Default(false),
 		field.String("gpa").
@@ -68,9 +60,11 @@ func (Education) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -78,11 +72,6 @@ func (Education) Fields() []ent.Field {
 // Edges of the Education.
 func (Education) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("educations").
-			Field("user_id").
-			Required().
-			Unique(),
 		edge.To("translations", EducationTranslation.Type),
 		edge.To("details", EducationDetail.Type),
 	}

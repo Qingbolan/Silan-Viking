@@ -6,7 +6,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
-	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
@@ -59,25 +58,21 @@ func (User) Fields() []ent.Field {
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }
 
 // Edges of the User.
+//
+// silan-viking is a single-owner system: content has no per-item author, so
+// `users` carries no edge to any content type — the engine's content tables
+// have no `user_id` relationship. `users` is a runtime table, used by the
+// comment flow (a comment's author is a real, separate user).
 func (User) Edges() []ent.Edge {
-	return []ent.Edge{
-		edge.To("personal_infos", PersonalInfo.Type),
-		edge.To("educations", Education.Type),
-		edge.To("work_experiences", WorkExperience.Type),
-		edge.To("projects", Project.Type),
-		edge.To("blog_posts", BlogPost.Type),
-		edge.To("ideas", Idea.Type),
-		edge.To("research_projects", ResearchProject.Type),
-		edge.To("publications", Publication.Type),
-		edge.To("awards", Award.Type),
-		edge.To("recent_updates", RecentUpdate.Type),
-	}
+	return []ent.Edge{}
 }

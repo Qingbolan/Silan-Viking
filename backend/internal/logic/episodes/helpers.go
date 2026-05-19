@@ -82,9 +82,10 @@ func episodeToData(ep *ent.Episode, language string) types.EpisodeData {
 		}
 	}
 
+	// `published_at` is a plain date string (nillable).
 	var publishDate string
 	if ep.PublishedAt != nil {
-		publishDate = ep.PublishedAt.Format("2006-01-02")
+		publishDate = *ep.PublishedAt
 	}
 
 	var duration int

@@ -71,6 +71,12 @@ func (itu *IdeaTranslationUpdate) SetNillableTitle(s *string) *IdeaTranslationUp
 	return itu
 }
 
+// ClearTitle clears the value of the "title" field.
+func (itu *IdeaTranslationUpdate) ClearTitle() *IdeaTranslationUpdate {
+	itu.mutation.ClearTitle()
+	return itu
+}
+
 // SetAbstract sets the "abstract" field.
 func (itu *IdeaTranslationUpdate) SetAbstract(s string) *IdeaTranslationUpdate {
 	itu.mutation.SetAbstract(s)
@@ -267,6 +273,9 @@ func (itu *IdeaTranslationUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := itu.mutation.Title(); ok {
 		_spec.SetField(ideatranslation.FieldTitle, field.TypeString, value)
 	}
+	if itu.mutation.TitleCleared() {
+		_spec.ClearField(ideatranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := itu.mutation.Abstract(); ok {
 		_spec.SetField(ideatranslation.FieldAbstract, field.TypeString, value)
 	}
@@ -296,6 +305,9 @@ func (itu *IdeaTranslationUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if itu.mutation.RequiredResourcesCleared() {
 		_spec.ClearField(ideatranslation.FieldRequiredResources, field.TypeString)
+	}
+	if itu.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideatranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if itu.mutation.IdeaCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -414,6 +426,12 @@ func (ituo *IdeaTranslationUpdateOne) SetNillableTitle(s *string) *IdeaTranslati
 	if s != nil {
 		ituo.SetTitle(*s)
 	}
+	return ituo
+}
+
+// ClearTitle clears the value of the "title" field.
+func (ituo *IdeaTranslationUpdateOne) ClearTitle() *IdeaTranslationUpdateOne {
+	ituo.mutation.ClearTitle()
 	return ituo
 }
 
@@ -643,6 +661,9 @@ func (ituo *IdeaTranslationUpdateOne) sqlSave(ctx context.Context) (_node *IdeaT
 	if value, ok := ituo.mutation.Title(); ok {
 		_spec.SetField(ideatranslation.FieldTitle, field.TypeString, value)
 	}
+	if ituo.mutation.TitleCleared() {
+		_spec.ClearField(ideatranslation.FieldTitle, field.TypeString)
+	}
 	if value, ok := ituo.mutation.Abstract(); ok {
 		_spec.SetField(ideatranslation.FieldAbstract, field.TypeString, value)
 	}
@@ -672,6 +693,9 @@ func (ituo *IdeaTranslationUpdateOne) sqlSave(ctx context.Context) (_node *IdeaT
 	}
 	if ituo.mutation.RequiredResourcesCleared() {
 		_spec.ClearField(ideatranslation.FieldRequiredResources, field.TypeString)
+	}
+	if ituo.mutation.CreatedAtCleared() {
+		_spec.ClearField(ideatranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if ituo.mutation.IdeaCleared() {
 		edge := &sqlgraph.EdgeSpec{

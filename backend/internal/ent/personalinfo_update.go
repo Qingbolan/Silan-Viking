@@ -10,7 +10,6 @@ import (
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/sociallink"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -237,11 +236,6 @@ func (piu *PersonalInfoUpdate) ClearUpdatedAt() *PersonalInfoUpdate {
 	return piu
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (piu *PersonalInfoUpdate) SetUser(u *User) *PersonalInfoUpdate {
-	return piu.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the PersonalInfoTranslation entity by IDs.
 func (piu *PersonalInfoUpdate) AddTranslationIDs(ids ...string) *PersonalInfoUpdate {
 	piu.mutation.AddTranslationIDs(ids...)
@@ -275,12 +269,6 @@ func (piu *PersonalInfoUpdate) AddSocialLinks(s ...*SocialLink) *PersonalInfoUpd
 // Mutation returns the PersonalInfoMutation object of the builder.
 func (piu *PersonalInfoUpdate) Mutation() *PersonalInfoMutation {
 	return piu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (piu *PersonalInfoUpdate) ClearUser() *PersonalInfoUpdate {
-	piu.mutation.ClearUser()
-	return piu
 }
 
 // ClearTranslations clears all "translations" edges to the PersonalInfoTranslation entity.
@@ -413,6 +401,12 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := piu.mutation.UserID(); ok {
+		_spec.SetField(personalinfo.FieldUserID, field.TypeString, value)
+	}
+	if piu.mutation.UserIDCleared() {
+		_spec.ClearField(personalinfo.FieldUserID, field.TypeString)
+	}
 	if value, ok := piu.mutation.FullName(); ok {
 		_spec.SetField(personalinfo.FieldFullName, field.TypeString, value)
 	}
@@ -472,35 +466,6 @@ func (piu *PersonalInfoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if piu.mutation.UpdatedAtCleared() {
 		_spec.ClearField(personalinfo.FieldUpdatedAt, field.TypeTime)
-	}
-	if piu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personalinfo.UserTable,
-			Columns: []string{personalinfo.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := piu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personalinfo.UserTable,
-			Columns: []string{personalinfo.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if piu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -818,11 +783,6 @@ func (piuo *PersonalInfoUpdateOne) ClearUpdatedAt() *PersonalInfoUpdateOne {
 	return piuo
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (piuo *PersonalInfoUpdateOne) SetUser(u *User) *PersonalInfoUpdateOne {
-	return piuo.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the PersonalInfoTranslation entity by IDs.
 func (piuo *PersonalInfoUpdateOne) AddTranslationIDs(ids ...string) *PersonalInfoUpdateOne {
 	piuo.mutation.AddTranslationIDs(ids...)
@@ -856,12 +816,6 @@ func (piuo *PersonalInfoUpdateOne) AddSocialLinks(s ...*SocialLink) *PersonalInf
 // Mutation returns the PersonalInfoMutation object of the builder.
 func (piuo *PersonalInfoUpdateOne) Mutation() *PersonalInfoMutation {
 	return piuo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (piuo *PersonalInfoUpdateOne) ClearUser() *PersonalInfoUpdateOne {
-	piuo.mutation.ClearUser()
-	return piuo
 }
 
 // ClearTranslations clears all "translations" edges to the PersonalInfoTranslation entity.
@@ -1024,6 +978,12 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 			}
 		}
 	}
+	if value, ok := piuo.mutation.UserID(); ok {
+		_spec.SetField(personalinfo.FieldUserID, field.TypeString, value)
+	}
+	if piuo.mutation.UserIDCleared() {
+		_spec.ClearField(personalinfo.FieldUserID, field.TypeString)
+	}
 	if value, ok := piuo.mutation.FullName(); ok {
 		_spec.SetField(personalinfo.FieldFullName, field.TypeString, value)
 	}
@@ -1083,35 +1043,6 @@ func (piuo *PersonalInfoUpdateOne) sqlSave(ctx context.Context) (_node *Personal
 	}
 	if piuo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(personalinfo.FieldUpdatedAt, field.TypeTime)
-	}
-	if piuo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personalinfo.UserTable,
-			Columns: []string{personalinfo.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := piuo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   personalinfo.UserTable,
-			Columns: []string{personalinfo.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if piuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

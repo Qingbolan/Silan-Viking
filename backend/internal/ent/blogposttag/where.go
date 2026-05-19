@@ -195,6 +195,16 @@ func CreatedAtLTE(v time.Time) predicate.BlogPostTag {
 	return predicate.BlogPostTag(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.BlogPostTag {
+	return predicate.BlogPostTag(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // HasBlogPost applies the HasEdge predicate on the "blog_post" edge.
 func HasBlogPost() predicate.BlogPostTag {
 	return predicate.BlogPostTag(func(s *sql.Selector) {

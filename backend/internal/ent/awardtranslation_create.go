@@ -40,9 +40,25 @@ func (atc *AwardTranslationCreate) SetTitle(s string) *AwardTranslationCreate {
 	return atc
 }
 
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (atc *AwardTranslationCreate) SetNillableTitle(s *string) *AwardTranslationCreate {
+	if s != nil {
+		atc.SetTitle(*s)
+	}
+	return atc
+}
+
 // SetAwardingOrganization sets the "awarding_organization" field.
 func (atc *AwardTranslationCreate) SetAwardingOrganization(s string) *AwardTranslationCreate {
 	atc.mutation.SetAwardingOrganization(s)
+	return atc
+}
+
+// SetNillableAwardingOrganization sets the "awarding_organization" field if the given value is not nil.
+func (atc *AwardTranslationCreate) SetNillableAwardingOrganization(s *string) *AwardTranslationCreate {
+	if s != nil {
+		atc.SetAwardingOrganization(*s)
+	}
 	return atc
 }
 
@@ -176,16 +192,10 @@ func (atc *AwardTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "AwardTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := atc.mutation.Title(); !ok {
-		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "AwardTranslation.title"`)}
-	}
 	if v, ok := atc.mutation.Title(); ok {
 		if err := awardtranslation.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "AwardTranslation.title": %w`, err)}
 		}
-	}
-	if _, ok := atc.mutation.AwardingOrganization(); !ok {
-		return &ValidationError{Name: "awarding_organization", err: errors.New(`ent: missing required field "AwardTranslation.awarding_organization"`)}
 	}
 	if v, ok := atc.mutation.AwardingOrganization(); ok {
 		if err := awardtranslation.AwardingOrganizationValidator(v); err != nil {
@@ -196,9 +206,6 @@ func (atc *AwardTranslationCreate) check() error {
 		if err := awardtranslation.AwardTypeValidator(v); err != nil {
 			return &ValidationError{Name: "award_type", err: fmt.Errorf(`ent: validator failed for field "AwardTranslation.award_type": %w`, err)}
 		}
-	}
-	if _, ok := atc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "AwardTranslation.created_at"`)}
 	}
 	if len(atc.mutation.AwardIDs()) == 0 {
 		return &ValidationError{Name: "award", err: errors.New(`ent: missing required edge "AwardTranslation.award"`)}

@@ -295,6 +295,16 @@ func TitleHasSuffix(v string) predicate.IdeaTranslation {
 	return predicate.IdeaTranslation(sql.FieldHasSuffix(FieldTitle, v))
 }
 
+// TitleIsNil applies the IsNil predicate on the "title" field.
+func TitleIsNil() predicate.IdeaTranslation {
+	return predicate.IdeaTranslation(sql.FieldIsNull(FieldTitle))
+}
+
+// TitleNotNil applies the NotNil predicate on the "title" field.
+func TitleNotNil() predicate.IdeaTranslation {
+	return predicate.IdeaTranslation(sql.FieldNotNull(FieldTitle))
+}
+
 // TitleEqualFold applies the EqualFold predicate on the "title" field.
 func TitleEqualFold(v string) predicate.IdeaTranslation {
 	return predicate.IdeaTranslation(sql.FieldEqualFold(FieldTitle, v))
@@ -718,6 +728,16 @@ func CreatedAtLT(v time.Time) predicate.IdeaTranslation {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.IdeaTranslation {
 	return predicate.IdeaTranslation(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.IdeaTranslation {
+	return predicate.IdeaTranslation(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.IdeaTranslation {
+	return predicate.IdeaTranslation(sql.FieldNotNull(FieldCreatedAt))
 }
 
 // HasIdea applies the HasEdge predicate on the "idea" edge.

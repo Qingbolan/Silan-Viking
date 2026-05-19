@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"sort"
 
 	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
@@ -37,11 +36,7 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
-		WithUser().
 		WithCategory().
-		WithSeries(func(q *ent.BlogSeriesQuery) {
-			q.WithTranslations()
-		}).
 		WithTranslations()
 
 	// Apply filters
@@ -79,54 +74,16 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		query = query.Where(blogpost.IDIn(ids...))
 	}
 
-	nonEpisodePosts, err := query.
-		Where(blogpost.SeriesIDIsNil()).
+	// The silan-viking model has no separate `blog_series` table, so the
+	// listing does not fold a series into one representative post — every
+	// published post is listed, newest first. Each post still carries its
+	// `series_id` / `series_order`, so a client can group by series itself.
+	allFilteredPosts, err := query.
 		Order(ent.Desc(blogpost.FieldPublishedAt)).
 		All(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	var seriesRepresentatives []*ent.BlogPost
-	allSeries, err := l.svcCtx.DB.BlogSeries.Query().
-		WithTranslations().
-		WithBlogPosts(func(bpq *ent.BlogPostQuery) {
-			bpq.WithUser().
-				WithCategory().
-				WithSeries(func(q *ent.BlogSeriesQuery) {
-					q.WithTranslations()
-				}).
-				WithTranslations().
-				Where(
-					blogpost.StatusEQ(blogpost.StatusPublished),
-					blogpost.VisibilityEQ(blogpost.VisibilityPublic),
-				)
-		}).
-		All(l.ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, series := range allSeries {
-		if len(series.Edges.BlogPosts) == 0 {
-			continue
-		}
-		var latestEpisode *ent.BlogPost
-		for _, episode := range series.Edges.BlogPosts {
-			if latestEpisode == nil || episode.SeriesOrder > latestEpisode.SeriesOrder {
-				latestEpisode = episode
-			}
-		}
-		if latestEpisode != nil {
-			seriesRepresentatives = append(seriesRepresentatives, latestEpisode)
-		}
-	}
-
-	allFilteredPosts := append([]*ent.BlogPost{}, nonEpisodePosts...)
-	allFilteredPosts = append(allFilteredPosts, seriesRepresentatives...)
-	sort.Slice(allFilteredPosts, func(i, j int) bool {
-		return allFilteredPosts[i].PublishedAt.After(allFilteredPosts[j].PublishedAt)
-	})
 
 	total := len(allFilteredPosts)
 	offset := (req.Page - 1) * req.Size
@@ -142,10 +99,8 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 
 	var result []types.BlogData
 	for _, post := range posts {
-		var publishDate string
-		if !post.PublishedAt.IsZero() {
-			publishDate = post.PublishedAt.Format("2006-01-02")
-		}
+		// `published_at` is a plain date string.
+		publishDate := post.PublishedAt
 
 		var readTime string
 		if post.ReadingTimeMinutes > 0 {
@@ -164,10 +119,9 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			l.Errorf("content_tag lookup for blog %s: %v", post.ID, err)
 		}
 
+		// Single-owner system: content has no per-item author. The site
+		// owner is the author of everything; the frontend supplies that.
 		var author string
-		if post.Edges.User != nil {
-			author = post.Edges.User.FirstName + " " + post.Edges.User.LastName
-		}
 
 		// Resolve language-variant fields. The content engine keeps title /
 		// excerpt in blog_post_translations for every language (the main
@@ -206,25 +160,17 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			}
 		}
 
+		// A blog's series is just the `series_id` / `series_order` fields on
+		// the post — no separate `blog_series` table. `series_id` is the
+		// series slug; it doubles as id and slug.
 		var seriesID, seriesSlug, seriesTitle, seriesTitleZh, seriesDescription, seriesDescriptionZh, seriesImage string
 		var episodeNumber, totalEpisodes int
 		contentType := string(post.ContentType)
-		if post.Edges.Series != nil {
-			seriesID = post.Edges.Series.ID
-			seriesSlug = post.Edges.Series.Slug
-			seriesTitle = post.Edges.Series.Title
-			seriesDescription = post.Edges.Series.Description
-			seriesImage = post.Edges.Series.ThumbnailURL
+		if post.SeriesID != "" {
+			seriesID = post.SeriesID
+			seriesSlug = post.SeriesID
+			seriesTitle = post.SeriesID
 			episodeNumber = post.SeriesOrder
-			totalEpisodes = post.Edges.Series.EpisodeCount
-			contentType = "episode"
-			for _, translation := range post.Edges.Series.Edges.Translations {
-				if translation.LanguageCode == "zh" {
-					seriesTitleZh = translation.Title
-					seriesDescriptionZh = translation.Description
-					break
-				}
-			}
 		}
 
 		result = append(result, types.BlogData{

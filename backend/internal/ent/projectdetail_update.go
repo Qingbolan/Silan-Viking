@@ -150,6 +150,12 @@ func (pdu *ProjectDetailUpdate) SetUpdatedAt(t time.Time) *ProjectDetailUpdate {
 	return pdu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pdu *ProjectDetailUpdate) ClearUpdatedAt() *ProjectDetailUpdate {
+	pdu.mutation.ClearUpdatedAt()
+	return pdu
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pdu *ProjectDetailUpdate) SetProject(p *Project) *ProjectDetailUpdate {
 	return pdu.SetProjectID(p.ID)
@@ -232,7 +238,7 @@ func (pdu *ProjectDetailUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pdu *ProjectDetailUpdate) defaults() {
-	if _, ok := pdu.mutation.UpdatedAt(); !ok {
+	if _, ok := pdu.mutation.UpdatedAt(); !ok && !pdu.mutation.UpdatedAtCleared() {
 		v := projectdetail.UpdateDefaultUpdatedAt()
 		pdu.mutation.SetUpdatedAt(v)
 	}
@@ -298,8 +304,14 @@ func (pdu *ProjectDetailUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if pdu.mutation.VersionCleared() {
 		_spec.ClearField(projectdetail.FieldVersion, field.TypeString)
 	}
+	if pdu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectdetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pdu.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectdetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if pdu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectdetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if pdu.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -515,6 +527,12 @@ func (pduo *ProjectDetailUpdateOne) SetUpdatedAt(t time.Time) *ProjectDetailUpda
 	return pduo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pduo *ProjectDetailUpdateOne) ClearUpdatedAt() *ProjectDetailUpdateOne {
+	pduo.mutation.ClearUpdatedAt()
+	return pduo
+}
+
 // SetProject sets the "project" edge to the Project entity.
 func (pduo *ProjectDetailUpdateOne) SetProject(p *Project) *ProjectDetailUpdateOne {
 	return pduo.SetProjectID(p.ID)
@@ -610,7 +628,7 @@ func (pduo *ProjectDetailUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pduo *ProjectDetailUpdateOne) defaults() {
-	if _, ok := pduo.mutation.UpdatedAt(); !ok {
+	if _, ok := pduo.mutation.UpdatedAt(); !ok && !pduo.mutation.UpdatedAtCleared() {
 		v := projectdetail.UpdateDefaultUpdatedAt()
 		pduo.mutation.SetUpdatedAt(v)
 	}
@@ -693,8 +711,14 @@ func (pduo *ProjectDetailUpdateOne) sqlSave(ctx context.Context) (_node *Project
 	if pduo.mutation.VersionCleared() {
 		_spec.ClearField(projectdetail.FieldVersion, field.TypeString)
 	}
+	if pduo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectdetail.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pduo.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectdetail.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if pduo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectdetail.FieldUpdatedAt, field.TypeTime)
 	}
 	if pduo.mutation.ProjectCleared() {
 		edge := &sqlgraph.EdgeSpec{

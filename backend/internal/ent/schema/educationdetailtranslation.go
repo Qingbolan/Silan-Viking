@@ -35,9 +35,10 @@ func (EducationDetailTranslation) Fields() []ent.Field {
 			MaxLen(5).
 			StorageKey("language_code"),
 		field.Text("detail_text").
-			NotEmpty(),
+			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

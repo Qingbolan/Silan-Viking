@@ -106,7 +106,7 @@ func Pages(v string) predicate.Publication {
 }
 
 // PublicationDate applies equality check predicate on the "publication_date" field. It's identical to PublicationDateEQ.
-func PublicationDate(v time.Time) predicate.Publication {
+func PublicationDate(v string) predicate.Publication {
 	return predicate.Publication(sql.FieldEQ(FieldPublicationDate, v))
 }
 
@@ -731,43 +731,58 @@ func PagesContainsFold(v string) predicate.Publication {
 }
 
 // PublicationDateEQ applies the EQ predicate on the "publication_date" field.
-func PublicationDateEQ(v time.Time) predicate.Publication {
+func PublicationDateEQ(v string) predicate.Publication {
 	return predicate.Publication(sql.FieldEQ(FieldPublicationDate, v))
 }
 
 // PublicationDateNEQ applies the NEQ predicate on the "publication_date" field.
-func PublicationDateNEQ(v time.Time) predicate.Publication {
+func PublicationDateNEQ(v string) predicate.Publication {
 	return predicate.Publication(sql.FieldNEQ(FieldPublicationDate, v))
 }
 
 // PublicationDateIn applies the In predicate on the "publication_date" field.
-func PublicationDateIn(vs ...time.Time) predicate.Publication {
+func PublicationDateIn(vs ...string) predicate.Publication {
 	return predicate.Publication(sql.FieldIn(FieldPublicationDate, vs...))
 }
 
 // PublicationDateNotIn applies the NotIn predicate on the "publication_date" field.
-func PublicationDateNotIn(vs ...time.Time) predicate.Publication {
+func PublicationDateNotIn(vs ...string) predicate.Publication {
 	return predicate.Publication(sql.FieldNotIn(FieldPublicationDate, vs...))
 }
 
 // PublicationDateGT applies the GT predicate on the "publication_date" field.
-func PublicationDateGT(v time.Time) predicate.Publication {
+func PublicationDateGT(v string) predicate.Publication {
 	return predicate.Publication(sql.FieldGT(FieldPublicationDate, v))
 }
 
 // PublicationDateGTE applies the GTE predicate on the "publication_date" field.
-func PublicationDateGTE(v time.Time) predicate.Publication {
+func PublicationDateGTE(v string) predicate.Publication {
 	return predicate.Publication(sql.FieldGTE(FieldPublicationDate, v))
 }
 
 // PublicationDateLT applies the LT predicate on the "publication_date" field.
-func PublicationDateLT(v time.Time) predicate.Publication {
+func PublicationDateLT(v string) predicate.Publication {
 	return predicate.Publication(sql.FieldLT(FieldPublicationDate, v))
 }
 
 // PublicationDateLTE applies the LTE predicate on the "publication_date" field.
-func PublicationDateLTE(v time.Time) predicate.Publication {
+func PublicationDateLTE(v string) predicate.Publication {
 	return predicate.Publication(sql.FieldLTE(FieldPublicationDate, v))
+}
+
+// PublicationDateContains applies the Contains predicate on the "publication_date" field.
+func PublicationDateContains(v string) predicate.Publication {
+	return predicate.Publication(sql.FieldContains(FieldPublicationDate, v))
+}
+
+// PublicationDateHasPrefix applies the HasPrefix predicate on the "publication_date" field.
+func PublicationDateHasPrefix(v string) predicate.Publication {
+	return predicate.Publication(sql.FieldHasPrefix(FieldPublicationDate, v))
+}
+
+// PublicationDateHasSuffix applies the HasSuffix predicate on the "publication_date" field.
+func PublicationDateHasSuffix(v string) predicate.Publication {
+	return predicate.Publication(sql.FieldHasSuffix(FieldPublicationDate, v))
 }
 
 // PublicationDateIsNil applies the IsNil predicate on the "publication_date" field.
@@ -778,6 +793,16 @@ func PublicationDateIsNil() predicate.Publication {
 // PublicationDateNotNil applies the NotNil predicate on the "publication_date" field.
 func PublicationDateNotNil() predicate.Publication {
 	return predicate.Publication(sql.FieldNotNull(FieldPublicationDate))
+}
+
+// PublicationDateEqualFold applies the EqualFold predicate on the "publication_date" field.
+func PublicationDateEqualFold(v string) predicate.Publication {
+	return predicate.Publication(sql.FieldEqualFold(FieldPublicationDate, v))
+}
+
+// PublicationDateContainsFold applies the ContainsFold predicate on the "publication_date" field.
+func PublicationDateContainsFold(v string) predicate.Publication {
+	return predicate.Publication(sql.FieldContainsFold(FieldPublicationDate, v))
 }
 
 // DoiEQ applies the EQ predicate on the "doi" field.
@@ -1285,6 +1310,16 @@ func CreatedAtLTE(v time.Time) predicate.Publication {
 	return predicate.Publication(sql.FieldLTE(FieldCreatedAt, v))
 }
 
+// CreatedAtIsNil applies the IsNil predicate on the "created_at" field.
+func CreatedAtIsNil() predicate.Publication {
+	return predicate.Publication(sql.FieldIsNull(FieldCreatedAt))
+}
+
+// CreatedAtNotNil applies the NotNil predicate on the "created_at" field.
+func CreatedAtNotNil() predicate.Publication {
+	return predicate.Publication(sql.FieldNotNull(FieldCreatedAt))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Publication {
 	return predicate.Publication(sql.FieldEQ(FieldUpdatedAt, v))
@@ -1325,27 +1360,14 @@ func UpdatedAtLTE(v time.Time) predicate.Publication {
 	return predicate.Publication(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// HasUser applies the HasEdge predicate on the "user" edge.
-func HasUser() predicate.Publication {
-	return predicate.Publication(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.Publication {
+	return predicate.Publication(sql.FieldIsNull(FieldUpdatedAt))
 }
 
-// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
-func HasUserWith(preds ...predicate.User) predicate.Publication {
-	return predicate.Publication(func(s *sql.Selector) {
-		step := newUserStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.Publication {
+	return predicate.Publication(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasTranslations applies the HasEdge predicate on the "translations" edge.

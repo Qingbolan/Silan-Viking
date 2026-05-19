@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
 	"silan-backend/internal/ent/researchprojecttranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -52,29 +51,29 @@ func (rpc *ResearchProjectCreate) SetNillableTitle(s *string) *ResearchProjectCr
 }
 
 // SetStartDate sets the "start_date" field.
-func (rpc *ResearchProjectCreate) SetStartDate(t time.Time) *ResearchProjectCreate {
-	rpc.mutation.SetStartDate(t)
+func (rpc *ResearchProjectCreate) SetStartDate(s string) *ResearchProjectCreate {
+	rpc.mutation.SetStartDate(s)
 	return rpc
 }
 
 // SetNillableStartDate sets the "start_date" field if the given value is not nil.
-func (rpc *ResearchProjectCreate) SetNillableStartDate(t *time.Time) *ResearchProjectCreate {
-	if t != nil {
-		rpc.SetStartDate(*t)
+func (rpc *ResearchProjectCreate) SetNillableStartDate(s *string) *ResearchProjectCreate {
+	if s != nil {
+		rpc.SetStartDate(*s)
 	}
 	return rpc
 }
 
 // SetEndDate sets the "end_date" field.
-func (rpc *ResearchProjectCreate) SetEndDate(t time.Time) *ResearchProjectCreate {
-	rpc.mutation.SetEndDate(t)
+func (rpc *ResearchProjectCreate) SetEndDate(s string) *ResearchProjectCreate {
+	rpc.mutation.SetEndDate(s)
 	return rpc
 }
 
 // SetNillableEndDate sets the "end_date" field if the given value is not nil.
-func (rpc *ResearchProjectCreate) SetNillableEndDate(t *time.Time) *ResearchProjectCreate {
-	if t != nil {
-		rpc.SetEndDate(*t)
+func (rpc *ResearchProjectCreate) SetNillableEndDate(s *string) *ResearchProjectCreate {
+	if s != nil {
+		rpc.SetEndDate(*s)
 	}
 	return rpc
 }
@@ -217,11 +216,6 @@ func (rpc *ResearchProjectCreate) SetNillableID(s *string) *ResearchProjectCreat
 		rpc.SetID(*s)
 	}
 	return rpc
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (rpc *ResearchProjectCreate) SetUser(u *User) *ResearchProjectCreate {
-	return rpc.SetUserID(u.ID)
 }
 
 // AddTranslationIDs adds the "translations" edge to the ResearchProjectTranslation entity by IDs.
@@ -379,16 +373,20 @@ func (rpc *ResearchProjectCreate) createSpec() (*ResearchProject, *sqlgraph.Crea
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := rpc.mutation.UserID(); ok {
+		_spec.SetField(researchproject.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := rpc.mutation.Title(); ok {
 		_spec.SetField(researchproject.FieldTitle, field.TypeString, value)
 		_node.Title = value
 	}
 	if value, ok := rpc.mutation.StartDate(); ok {
-		_spec.SetField(researchproject.FieldStartDate, field.TypeTime, value)
+		_spec.SetField(researchproject.FieldStartDate, field.TypeString, value)
 		_node.StartDate = value
 	}
 	if value, ok := rpc.mutation.EndDate(); ok {
-		_spec.SetField(researchproject.FieldEndDate, field.TypeTime, value)
+		_spec.SetField(researchproject.FieldEndDate, field.TypeString, value)
 		_node.EndDate = value
 	}
 	if value, ok := rpc.mutation.IsOngoing(); ok {
@@ -426,23 +424,6 @@ func (rpc *ResearchProjectCreate) createSpec() (*ResearchProject, *sqlgraph.Crea
 	if value, ok := rpc.mutation.UpdatedAt(); ok {
 		_spec.SetField(researchproject.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := rpc.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   researchproject.UserTable,
-			Columns: []string{researchproject.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rpc.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

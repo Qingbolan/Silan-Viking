@@ -5,7 +5,6 @@ package ent
 import (
 	"fmt"
 	"silan-backend/internal/ent/publication"
-	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
@@ -35,7 +34,7 @@ type Publication struct {
 	// Pages holds the value of the "pages" field.
 	Pages string `json:"pages,omitempty"`
 	// PublicationDate holds the value of the "publication_date" field.
-	PublicationDate time.Time `json:"publication_date,omitempty"`
+	PublicationDate string `json:"publication_date,omitempty"`
 	// Doi holds the value of the "doi" field.
 	Doi string `json:"doi,omitempty"`
 	// Isbn holds the value of the "isbn" field.
@@ -64,32 +63,19 @@ type Publication struct {
 
 // PublicationEdges holds the relations/edges for other nodes in the graph.
 type PublicationEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*PublicationTranslation `json:"translations,omitempty"`
 	// Authors holds the value of the authors edge.
 	Authors []*PublicationAuthor `json:"authors,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e PublicationEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [2]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e PublicationEdges) TranslationsOrErr() ([]*PublicationTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -98,7 +84,7 @@ func (e PublicationEdges) TranslationsOrErr() ([]*PublicationTranslation, error)
 // AuthorsOrErr returns the Authors value or an error if the edge
 // was not loaded in eager-loading.
 func (e PublicationEdges) AuthorsOrErr() ([]*PublicationAuthor, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Authors, nil
 	}
 	return nil, &NotLoadedError{edge: "authors"}
@@ -113,9 +99,9 @@ func (*Publication) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case publication.FieldCitationCount, publication.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case publication.FieldID, publication.FieldUserID, publication.FieldTitle, publication.FieldPublicationType, publication.FieldJournalName, publication.FieldConferenceName, publication.FieldVolume, publication.FieldIssue, publication.FieldPages, publication.FieldDoi, publication.FieldIsbn, publication.FieldURL, publication.FieldPdfURL, publication.FieldImageURL:
+		case publication.FieldID, publication.FieldUserID, publication.FieldTitle, publication.FieldPublicationType, publication.FieldJournalName, publication.FieldConferenceName, publication.FieldVolume, publication.FieldIssue, publication.FieldPages, publication.FieldPublicationDate, publication.FieldDoi, publication.FieldIsbn, publication.FieldURL, publication.FieldPdfURL, publication.FieldImageURL:
 			values[i] = new(sql.NullString)
-		case publication.FieldPublicationDate, publication.FieldCreatedAt, publication.FieldUpdatedAt:
+		case publication.FieldCreatedAt, publication.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -187,10 +173,10 @@ func (pu *Publication) assignValues(columns []string, values []any) error {
 				pu.Pages = value.String
 			}
 		case publication.FieldPublicationDate:
-			if value, ok := values[i].(*sql.NullTime); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field publication_date", values[i])
 			} else if value.Valid {
-				pu.PublicationDate = value.Time
+				pu.PublicationDate = value.String
 			}
 		case publication.FieldDoi:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -265,11 +251,6 @@ func (pu *Publication) Value(name string) (ent.Value, error) {
 	return pu.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the Publication entity.
-func (pu *Publication) QueryUser() *UserQuery {
-	return NewPublicationClient(pu.config).QueryUser(pu)
-}
-
 // QueryTranslations queries the "translations" edge of the Publication entity.
 func (pu *Publication) QueryTranslations() *PublicationTranslationQuery {
 	return NewPublicationClient(pu.config).QueryTranslations(pu)
@@ -328,7 +309,7 @@ func (pu *Publication) String() string {
 	builder.WriteString(pu.Pages)
 	builder.WriteString(", ")
 	builder.WriteString("publication_date=")
-	builder.WriteString(pu.PublicationDate.Format(time.ANSIC))
+	builder.WriteString(pu.PublicationDate)
 	builder.WriteString(", ")
 	builder.WriteString("doi=")
 	builder.WriteString(pu.Doi)

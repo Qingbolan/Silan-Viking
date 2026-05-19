@@ -202,6 +202,9 @@ func (pitu *ProjectImageTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if pitu.mutation.CaptionCleared() {
 		_spec.ClearField(projectimagetranslation.FieldCaption, field.TypeString)
 	}
+	if pitu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectimagetranslation.FieldCreatedAt, field.TypeTime)
+	}
 	if pitu.mutation.ProjectImageCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -482,6 +485,9 @@ func (pituo *ProjectImageTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	}
 	if pituo.mutation.CaptionCleared() {
 		_spec.ClearField(projectimagetranslation.FieldCaption, field.TypeString)
+	}
+	if pituo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectimagetranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if pituo.mutation.ProjectImageCleared() {
 		edge := &sqlgraph.EdgeSpec{

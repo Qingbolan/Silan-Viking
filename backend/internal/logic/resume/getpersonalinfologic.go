@@ -28,16 +28,12 @@ func NewGetPersonalInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *G
 
 func (l *GetPersonalInfoLogic) GetPersonalInfo(req *types.PersonalInfoRequest) (resp *types.PersonalInfo, err error) {
 	personalInfo, err := l.svcCtx.DB.PersonalInfo.Query().
-		WithUser().
 		WithTranslations().
 		First(l.ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// The content engine is single-tenant and writes no user_id, so the
-	// `user` edge can be nil — read it defensively.
-	user := personalInfo.Edges.User
 	socialLinks, err := l.svcCtx.DB.SocialLink.Query().Where(
 		sociallink.HasPersonalInfoWith(),
 	).All(l.ctx)
@@ -76,11 +72,10 @@ func (l *GetPersonalInfoLogic) GetPersonalInfo(req *types.PersonalInfoRequest) (
 		}
 	}
 
-	var userID, avatarURL string
-	if user != nil {
-		userID = user.ID
-		avatarURL = user.AvatarURL
-	}
+	// Single-owner system: no separate user. The avatar is a field of
+	// `personal_info` itself; there is no per-item user id.
+	var userID string
+	avatarURL := personalInfo.AvatarURL
 
 	return &types.PersonalInfo{
 		ID:            personalInfo.ID,

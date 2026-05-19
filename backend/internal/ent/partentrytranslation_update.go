@@ -131,6 +131,9 @@ func (petu *PartEntryTranslationUpdate) sqlSave(ctx context.Context) (n int, err
 	if value, ok := petu.mutation.LocalizedPayload(); ok {
 		_spec.SetField(partentrytranslation.FieldLocalizedPayload, field.TypeJSON, value)
 	}
+	if petu.mutation.CreatedAtCleared() {
+		_spec.ClearField(partentrytranslation.FieldCreatedAt, field.TypeTime)
+	}
 	if petu.mutation.PartEntryCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -312,6 +315,9 @@ func (petuo *PartEntryTranslationUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if value, ok := petuo.mutation.LocalizedPayload(); ok {
 		_spec.SetField(partentrytranslation.FieldLocalizedPayload, field.TypeJSON, value)
+	}
+	if petuo.mutation.CreatedAtCleared() {
+		_spec.ClearField(partentrytranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if petuo.mutation.PartEntryCleared() {
 		edge := &sqlgraph.EdgeSpec{

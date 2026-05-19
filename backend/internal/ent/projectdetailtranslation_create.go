@@ -136,9 +136,6 @@ func (pdtc *ProjectDetailTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "ProjectDetailTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := pdtc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProjectDetailTranslation.created_at"`)}
-	}
 	if len(pdtc.mutation.ProjectDetailIDs()) == 0 {
 		return &ValidationError{Name: "project_detail", err: errors.New(`ent: missing required edge "ProjectDetailTranslation.project_detail"`)}
 	}

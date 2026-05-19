@@ -129,6 +129,12 @@ func (plu *ProjectLikeUpdate) SetUpdatedAt(t time.Time) *ProjectLikeUpdate {
 	return plu
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (plu *ProjectLikeUpdate) ClearUpdatedAt() *ProjectLikeUpdate {
+	plu.mutation.ClearUpdatedAt()
+	return plu
+}
+
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (plu *ProjectLikeUpdate) SetUserIdentity(u *UserIdentity) *ProjectLikeUpdate {
 	return plu.SetUserIdentityID(u.ID)
@@ -175,7 +181,7 @@ func (plu *ProjectLikeUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (plu *ProjectLikeUpdate) defaults() {
-	if _, ok := plu.mutation.UpdatedAt(); !ok {
+	if _, ok := plu.mutation.UpdatedAt(); !ok && !plu.mutation.UpdatedAtCleared() {
 		v := projectlike.UpdateDefaultUpdatedAt()
 		plu.mutation.SetUpdatedAt(v)
 	}
@@ -224,8 +230,14 @@ func (plu *ProjectLikeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if plu.mutation.UserAgentCleared() {
 		_spec.ClearField(projectlike.FieldUserAgent, field.TypeString)
 	}
+	if plu.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectlike.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := plu.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectlike.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if plu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectlike.FieldUpdatedAt, field.TypeTime)
 	}
 	if plu.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -376,6 +388,12 @@ func (pluo *ProjectLikeUpdateOne) SetUpdatedAt(t time.Time) *ProjectLikeUpdateOn
 	return pluo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (pluo *ProjectLikeUpdateOne) ClearUpdatedAt() *ProjectLikeUpdateOne {
+	pluo.mutation.ClearUpdatedAt()
+	return pluo
+}
+
 // SetUserIdentity sets the "user_identity" edge to the UserIdentity entity.
 func (pluo *ProjectLikeUpdateOne) SetUserIdentity(u *UserIdentity) *ProjectLikeUpdateOne {
 	return pluo.SetUserIdentityID(u.ID)
@@ -435,7 +453,7 @@ func (pluo *ProjectLikeUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pluo *ProjectLikeUpdateOne) defaults() {
-	if _, ok := pluo.mutation.UpdatedAt(); !ok {
+	if _, ok := pluo.mutation.UpdatedAt(); !ok && !pluo.mutation.UpdatedAtCleared() {
 		v := projectlike.UpdateDefaultUpdatedAt()
 		pluo.mutation.SetUpdatedAt(v)
 	}
@@ -501,8 +519,14 @@ func (pluo *ProjectLikeUpdateOne) sqlSave(ctx context.Context) (_node *ProjectLi
 	if pluo.mutation.UserAgentCleared() {
 		_spec.ClearField(projectlike.FieldUserAgent, field.TypeString)
 	}
+	if pluo.mutation.CreatedAtCleared() {
+		_spec.ClearField(projectlike.FieldCreatedAt, field.TypeTime)
+	}
 	if value, ok := pluo.mutation.UpdatedAt(); ok {
 		_spec.SetField(projectlike.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if pluo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(projectlike.FieldUpdatedAt, field.TypeTime)
 	}
 	if pluo.mutation.UserIdentityCleared() {
 		edge := &sqlgraph.EdgeSpec{

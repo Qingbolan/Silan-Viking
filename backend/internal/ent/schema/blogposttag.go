@@ -32,6 +32,7 @@ func (BlogPostTag) Fields() []ent.Field {
 			StorageKey("blog_tag_id"),
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

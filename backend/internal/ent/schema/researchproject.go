@@ -35,16 +35,8 @@ func (ResearchProject) Fields() []ent.Field {
 		field.String("title").
 			MaxLen(300).
 			Optional(),
-		field.Time("start_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
-		field.Time("end_date").
-			Optional().
-			SchemaType(map[string]string{
-				"mysql": "date",
-			}),
+		field.String("start_date").Optional(),
+		field.String("end_date").Optional(),
 		field.Bool("is_ongoing").
 			Default(false),
 		field.String("location").
@@ -65,11 +57,13 @@ func (ResearchProject) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-			Optional().
+		Optional().
+				Optional().
 			UpdateDefault(time.Now),
 	}
 }
@@ -77,10 +71,6 @@ func (ResearchProject) Fields() []ent.Field {
 // Edges of the ResearchProject.
 func (ResearchProject) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("user", User.Type).
-			Ref("research_projects").
-			Field("user_id").
-			Unique(),
 		edge.To("translations", ResearchProjectTranslation.Type),
 		edge.To("details", ResearchProjectDetail.Type),
 	}

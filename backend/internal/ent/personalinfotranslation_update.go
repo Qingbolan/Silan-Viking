@@ -264,6 +264,9 @@ func (pitu *PersonalInfoTranslationUpdate) sqlSave(ctx context.Context) (n int, 
 	if pitu.mutation.LocationCleared() {
 		_spec.ClearField(personalinfotranslation.FieldLocation, field.TypeString)
 	}
+	if pitu.mutation.CreatedAtCleared() {
+		_spec.ClearField(personalinfotranslation.FieldCreatedAt, field.TypeTime)
+	}
 	if pitu.mutation.PersonalInfoCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -606,6 +609,9 @@ func (pituo *PersonalInfoTranslationUpdateOne) sqlSave(ctx context.Context) (_no
 	}
 	if pituo.mutation.LocationCleared() {
 		_spec.ClearField(personalinfotranslation.FieldLocation, field.TypeString)
+	}
+	if pituo.mutation.CreatedAtCleared() {
+		_spec.ClearField(personalinfotranslation.FieldCreatedAt, field.TypeTime)
 	}
 	if pituo.mutation.PersonalInfoCleared() {
 		edge := &sqlgraph.EdgeSpec{

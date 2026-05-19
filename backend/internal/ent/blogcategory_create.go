@@ -227,12 +227,6 @@ func (bcc *BlogCategoryCreate) check() error {
 	if _, ok := bcc.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "BlogCategory.sort_order"`)}
 	}
-	if _, ok := bcc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BlogCategory.created_at"`)}
-	}
-	if _, ok := bcc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "BlogCategory.updated_at"`)}
-	}
 	return nil
 }
 

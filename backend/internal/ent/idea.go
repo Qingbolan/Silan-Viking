@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
-	"silan-backend/internal/ent/user"
 	"strings"
 	"time"
 
@@ -51,8 +50,6 @@ type Idea struct {
 
 // IdeaEdges holds the relations/edges for other nodes in the graph.
 type IdeaEdges struct {
-	// User holds the value of the user edge.
-	User *User `json:"user,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*IdeaTranslation `json:"translations,omitempty"`
 	// Details holds the value of the details edge.
@@ -61,24 +58,13 @@ type IdeaEdges struct {
 	Tags []*IdeaTag `json:"tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
-}
-
-// UserOrErr returns the User value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e IdeaEdges) UserOrErr() (*User, error) {
-	if e.User != nil {
-		return e.User, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "user"}
+	loadedTypes [3]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e IdeaEdges) TranslationsOrErr() ([]*IdeaTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -89,7 +75,7 @@ func (e IdeaEdges) TranslationsOrErr() ([]*IdeaTranslation, error) {
 func (e IdeaEdges) DetailsOrErr() (*IdeaDetail, error) {
 	if e.Details != nil {
 		return e.Details, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: ideadetail.Label}
 	}
 	return nil, &NotLoadedError{edge: "details"}
@@ -98,7 +84,7 @@ func (e IdeaEdges) DetailsOrErr() (*IdeaDetail, error) {
 // TagsOrErr returns the Tags value or an error if the edge
 // was not loaded in eager-loading.
 func (e IdeaEdges) TagsOrErr() ([]*IdeaTag, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.Tags, nil
 	}
 	return nil, &NotLoadedError{edge: "tags"}
@@ -219,11 +205,6 @@ func (i *Idea) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (i *Idea) Value(name string) (ent.Value, error) {
 	return i.selectValues.Get(name)
-}
-
-// QueryUser queries the "user" edge of the Idea entity.
-func (i *Idea) QueryUser() *UserQuery {
-	return NewIdeaClient(i.config).QueryUser(i)
 }
 
 // QueryTranslations queries the "translations" edge of the Idea entity.

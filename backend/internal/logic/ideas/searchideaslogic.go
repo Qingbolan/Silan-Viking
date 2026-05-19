@@ -32,8 +32,7 @@ func NewSearchIdeasLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Searc
 
 func (l *SearchIdeasLogic) SearchIdeas(req *types.IdeaSearchRequest) (resp *types.IdeaListResponse, err error) {
 	query := l.svcCtx.DB.Idea.Query().
-		Where(idea.VisibilityEQ(idea.VisibilityPublic)).
-		WithUser()
+		Where(idea.VisibilityEQ(idea.VisibilityPublic))
 
 	// Apply search query if provided
 	if req.Query != "" {

@@ -11,7 +11,6 @@ import (
 	"silan-backend/internal/ent/publication"
 	"silan-backend/internal/ent/publicationauthor"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -26,7 +25,6 @@ type PublicationQuery struct {
 	order            []publication.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.Publication
-	withUser         *UserQuery
 	withTranslations *PublicationTranslationQuery
 	withAuthors      *PublicationAuthorQuery
 	// intermediate query (i.e. traversal path).
@@ -63,28 +61,6 @@ func (pq *PublicationQuery) Unique(unique bool) *PublicationQuery {
 func (pq *PublicationQuery) Order(o ...publication.OrderOption) *PublicationQuery {
 	pq.order = append(pq.order, o...)
 	return pq
-}
-
-// QueryUser chains the current query on the "user" edge.
-func (pq *PublicationQuery) QueryUser() *UserQuery {
-	query := (&UserClient{config: pq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := pq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := pq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(publication.Table, publication.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, publication.UserTable, publication.UserColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -323,24 +299,12 @@ func (pq *PublicationQuery) Clone() *PublicationQuery {
 		order:            append([]publication.OrderOption{}, pq.order...),
 		inters:           append([]Interceptor{}, pq.inters...),
 		predicates:       append([]predicate.Publication{}, pq.predicates...),
-		withUser:         pq.withUser.Clone(),
 		withTranslations: pq.withTranslations.Clone(),
 		withAuthors:      pq.withAuthors.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
 	}
-}
-
-// WithUser tells the query-builder to eager-load the nodes that are connected to
-// the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PublicationQuery) WithUser(opts ...func(*UserQuery)) *PublicationQuery {
-	query := (&UserClient{config: pq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	pq.withUser = query
-	return pq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -443,8 +407,7 @@ func (pq *PublicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	var (
 		nodes       = []*Publication{}
 		_spec       = pq.querySpec()
-		loadedTypes = [3]bool{
-			pq.withUser != nil,
+		loadedTypes = [2]bool{
 			pq.withTranslations != nil,
 			pq.withAuthors != nil,
 		}
@@ -467,12 +430,6 @@ func (pq *PublicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := pq.withUser; query != nil {
-		if err := pq.loadUser(ctx, query, nodes, nil,
-			func(n *Publication, e *User) { n.Edges.User = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := pq.withTranslations; query != nil {
 		if err := pq.loadTranslations(ctx, query, nodes,
 			func(n *Publication) { n.Edges.Translations = []*PublicationTranslation{} },
@@ -492,35 +449,6 @@ func (pq *PublicationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	return nodes, nil
 }
 
-func (pq *PublicationQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Publication, init func(*Publication), assign func(*Publication, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Publication)
-	for i := range nodes {
-		fk := nodes[i].UserID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (pq *PublicationQuery) loadTranslations(ctx context.Context, query *PublicationTranslationQuery, nodes []*Publication, init func(*Publication), assign func(*Publication, *PublicationTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Publication)
@@ -606,9 +534,6 @@ func (pq *PublicationQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != publication.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if pq.withUser != nil {
-			_spec.Node.AddColumnOnce(publication.FieldUserID)
 		}
 	}
 	if ps := pq.predicates; len(ps) > 0 {

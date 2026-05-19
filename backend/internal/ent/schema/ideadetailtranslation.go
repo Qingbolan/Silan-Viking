@@ -38,6 +38,7 @@ func (IdeaDetailTranslation) Fields() []ent.Field {
 		// (Part body text) moved out to item_part_translation.
 		field.Time("created_at").
 			Default(time.Now).
+			Optional().
 			Immutable(),
 	}
 }

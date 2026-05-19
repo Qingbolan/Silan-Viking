@@ -40,6 +40,14 @@ func (bctc *BlogCategoryTranslationCreate) SetName(s string) *BlogCategoryTransl
 	return bctc
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (bctc *BlogCategoryTranslationCreate) SetNillableName(s *string) *BlogCategoryTranslationCreate {
+	if s != nil {
+		bctc.SetName(*s)
+	}
+	return bctc
+}
+
 // SetDescription sets the "description" field.
 func (bctc *BlogCategoryTranslationCreate) SetDescription(s string) *BlogCategoryTranslationCreate {
 	bctc.mutation.SetDescription(s)
@@ -156,16 +164,10 @@ func (bctc *BlogCategoryTranslationCreate) check() error {
 			return &ValidationError{Name: "language_code", err: fmt.Errorf(`ent: validator failed for field "BlogCategoryTranslation.language_code": %w`, err)}
 		}
 	}
-	if _, ok := bctc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "BlogCategoryTranslation.name"`)}
-	}
 	if v, ok := bctc.mutation.Name(); ok {
 		if err := blogcategorytranslation.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "BlogCategoryTranslation.name": %w`, err)}
 		}
-	}
-	if _, ok := bctc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "BlogCategoryTranslation.created_at"`)}
 	}
 	if len(bctc.mutation.BlogCategoryIDs()) == 0 {
 		return &ValidationError{Name: "blog_category", err: errors.New(`ent: missing required edge "BlogCategoryTranslation.blog_category"`)}

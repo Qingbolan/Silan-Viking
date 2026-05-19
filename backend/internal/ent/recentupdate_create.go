@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/recentupdate"
 	"silan-backend/internal/ent/recentupdatetranslation"
-	"silan-backend/internal/ent/user"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -113,8 +112,16 @@ func (ruc *RecentUpdateCreate) SetNillableDescription(s *string) *RecentUpdateCr
 }
 
 // SetDate sets the "date" field.
-func (ruc *RecentUpdateCreate) SetDate(t time.Time) *RecentUpdateCreate {
-	ruc.mutation.SetDate(t)
+func (ruc *RecentUpdateCreate) SetDate(s string) *RecentUpdateCreate {
+	ruc.mutation.SetDate(s)
+	return ruc
+}
+
+// SetNillableDate sets the "date" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillableDate(s *string) *RecentUpdateCreate {
+	if s != nil {
+		ruc.SetDate(*s)
+	}
 	return ruc
 }
 
@@ -330,11 +337,6 @@ func (ruc *RecentUpdateCreate) SetNillableID(s *string) *RecentUpdateCreate {
 	return ruc
 }
 
-// SetUser sets the "user" edge to the User entity.
-func (ruc *RecentUpdateCreate) SetUser(u *User) *RecentUpdateCreate {
-	return ruc.SetUserID(u.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by IDs.
 func (ruc *RecentUpdateCreate) AddTranslationIDs(ids ...string) *RecentUpdateCreate {
 	ruc.mutation.AddTranslationIDs(ids...)
@@ -462,9 +464,6 @@ func (ruc *RecentUpdateCreate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.title": %w`, err)}
 		}
 	}
-	if _, ok := ruc.mutation.Date(); !ok {
-		return &ValidationError{Name: "date", err: errors.New(`ent: missing required field "RecentUpdate.date"`)}
-	}
 	if _, ok := ruc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RecentUpdate.status"`)}
 	}
@@ -554,6 +553,10 @@ func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec
 		_node.ID = id
 		_spec.ID.Value = id
 	}
+	if value, ok := ruc.mutation.UserID(); ok {
+		_spec.SetField(recentupdate.FieldUserID, field.TypeString, value)
+		_node.UserID = value
+	}
 	if value, ok := ruc.mutation.Slug(); ok {
 		_spec.SetField(recentupdate.FieldSlug, field.TypeString, value)
 		_node.Slug = value
@@ -579,7 +582,7 @@ func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec
 		_node.Description = value
 	}
 	if value, ok := ruc.mutation.Date(); ok {
-		_spec.SetField(recentupdate.FieldDate, field.TypeTime, value)
+		_spec.SetField(recentupdate.FieldDate, field.TypeString, value)
 		_node.Date = value
 	}
 	if value, ok := ruc.mutation.Tags(); ok {
@@ -649,23 +652,6 @@ func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec
 	if value, ok := ruc.mutation.UpdatedAt(); ok {
 		_spec.SetField(recentupdate.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := ruc.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   recentupdate.UserTable,
-			Columns: []string{recentupdate.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.UserID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ruc.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
