@@ -40,7 +40,7 @@ pub use stats::{CountRow, ItemStats, StatsCache, StatsError, StatsSync, VisitorR
 pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
 
 // Re-export the content-layer types that appear across the app's public API.
-pub use silan_viking_base::{Identified, SilanUri};
+pub use silan_viking_base::{Identified, SilanUri, Slug};
 pub use silan_viking_content::{
     ContentKind, Item, Part, PartRole, PartShape, Relation, RelationType,
 };

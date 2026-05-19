@@ -192,7 +192,10 @@ fn write_project_status(buf: &mut String, style: ColourMode, content_root: &Path
         &format!(
             "{} {}",
             style.paint(dot_sgr, dot),
-            style.paint(if initialised { sgr::ACCENT } else { sgr::DIM }, &project_text),
+            style.paint(
+                if initialised { sgr::ACCENT } else { sgr::DIM },
+                &project_text
+            ),
         ),
     );
 

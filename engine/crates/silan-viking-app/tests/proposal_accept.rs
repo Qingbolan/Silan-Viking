@@ -120,10 +120,8 @@ fn accept_advances_main_to_validated_merge() {
         status.is_empty(),
         "accept must leave a clean working tree, got: {status}"
     );
-    let on_disk = std::fs::read_to_string(
-        root.join("resources/blog/hello-world/parts/body/en.md"),
-    )
-    .expect("the accepted Part file must exist in the working tree");
+    let on_disk = std::fs::read_to_string(root.join("resources/blog/hello-world/parts/body/en.md"))
+        .expect("the accepted Part file must exist in the working tree");
     assert!(
         on_disk.contains("An extra paragraph from the proposal."),
         "the working-tree file must hold the accepted edit"

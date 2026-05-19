@@ -100,10 +100,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
         ],
         "mcp" => &["mcp serve [--stdio] · mcp status"],
         "uninstall" => &["uninstall [--purge] [--dry-run|--yes]"],
-        "skill" => &[
-            "skill emit|status [--path PATH]",
-            "skill rm [--path PATH]",
-        ],
+        "skill" => &["skill emit|status [--path PATH]", "skill rm [--path PATH]"],
         "config" => &["config · config edit [--global]"],
         "completion" => &["completion bash|zsh|fish"],
         _ => return None,
@@ -153,7 +150,11 @@ fn run(args: Vec<String>) -> Result<(), String> {
     // appears anywhere before a subcommand. We still parse `--content` so
     // the banner's status block reflects the project the user is pointing
     // at, not a stray cwd default.
-    if args.is_empty() || args.iter().any(|a| matches!(a.as_str(), "-h" | "--help" | "help")) {
+    if args.is_empty()
+        || args
+            .iter()
+            .any(|a| matches!(a.as_str(), "-h" | "--help" | "help"))
+    {
         let content_root = resolve_content_root(&args);
         print_help(&content_root);
         return Ok(());
@@ -437,8 +438,8 @@ impl CliOptions {
         // `--db` wins. Otherwise resolve from `silan-viking.toml`'s
         // `[database].path` (relative to the project root) so `index sync` and
         // `site deploy` write where the config says, not a stray cwd file.
-        let db_path =
-            db_path.unwrap_or_else(|| resolve_db_path(&content_root).unwrap_or(cwd.join("portfolio.db")));
+        let db_path = db_path
+            .unwrap_or_else(|| resolve_db_path(&content_root).unwrap_or(cwd.join("portfolio.db")));
         Ok(Self {
             content_root,
             db_path,
@@ -540,7 +541,10 @@ fn print_help(content_root: &Path) {
     };
 
     println!("  {}", h("[Content]"));
-    row("idea|blog|project|update", "Create / edit / list a content item");
+    row(
+        "idea|blog|project|update",
+        "Create / edit / list a content item",
+    );
     row("episode", "Manage episode series and per-episode entries");
     row("resume", "Show and edit the single resume Item");
     println!();
@@ -549,7 +553,10 @@ fn print_help(content_root: &Path) {
     row("index", "Sync, lint, or rebuild the derived database");
     row("content", "Inspect the content tree (tree, ls, show)");
     row("relation", "Inspect and link cross-item relations");
-    row("proposal", "Review agent proposals (list, accept, reject, rebase)");
+    row(
+        "proposal",
+        "Review agent proposals (list, accept, reject, rebase)",
+    );
     println!();
 
     println!("  {}", h("[Publish]"));
@@ -558,8 +565,14 @@ fn print_help(content_root: &Path) {
     println!();
 
     println!("  {}", h("[Integration]"));
-    row("mcp", "MCP server — expose the content engine to AI assistants");
-    row("skill", "Manage the silan-viking Claude skill (emit, status, rm)");
+    row(
+        "mcp",
+        "MCP server — expose the content engine to AI assistants",
+    );
+    row(
+        "skill",
+        "Manage the silan-viking Claude skill (emit, status, rm)",
+    );
     println!();
 
     println!("  {}", h("[Maintenance]"));
@@ -567,38 +580,86 @@ fn print_help(content_root: &Path) {
     row("guide", "Show the next recommended step for this project");
     row("doctor", "Health check — content, index, embedder");
     row("config", "Show resolved paths, or edit silan-viking.toml");
-    row("completion", "Emit a shell completion script (bash/zsh/fish)");
-    row("uninstall", "Remove the skill + derived files (--purge: content too)");
+    row(
+        "completion",
+        "Emit a shell completion script (bash/zsh/fish)",
+    );
+    row(
+        "uninstall",
+        "Remove the skill + derived files (--purge: content too)",
+    );
     println!();
 
     // Per-group detail, for the verbs the one-line summary can't carry.
     println!("{}", h("Content verbs:"));
-    println!("  {}", d("idea|blog|project|update new|list|show|edit|archive|rm <slug>"));
-    println!("  {}", d("idea|blog|project|update add-part <slug> <role> · add-lang <slug> <lang>"));
-    println!("  {}", d("idea status <slug> <state> · idea promote <slug> --to blog|project"));
-    println!("  {}", d("blog publish|unpublish <slug> · project progress <slug>"));
-    println!("  {}", d("update status <slug> <state> · update set-type <slug> <update-type>"));
-    println!("  {}", d("episode series new|list|show|reorder|archive|rm <series>"));
-    println!("  {}", d("episode new|show|edit|add-lang|publish|unpublish|archive|rm <series> <slug>"));
-    println!("  {}", d("resume show|list · resume add-part|add-lang|edit <role> [lang]"));
+    println!(
+        "  {}",
+        d("idea|blog|project|update new|list|show|edit|archive|rm <slug>")
+    );
+    println!(
+        "  {}",
+        d("idea|blog|project|update add-part <slug> <role> · add-lang <slug> <lang>")
+    );
+    println!(
+        "  {}",
+        d("idea status <slug> <state> · idea promote <slug> --to blog|project")
+    );
+    println!(
+        "  {}",
+        d("blog publish|unpublish <slug> · project progress <slug>")
+    );
+    println!(
+        "  {}",
+        d("update status <slug> <state> · update set-type <slug> <update-type>")
+    );
+    println!(
+        "  {}",
+        d("episode series new|list|show|reorder|archive|rm <series>")
+    );
+    println!(
+        "  {}",
+        d("episode new|show|edit|add-lang|publish|unpublish|archive|rm <series> <slug>")
+    );
+    println!(
+        "  {}",
+        d("resume show|list · resume add-part|add-lang|edit <role> [lang]")
+    );
     println!();
 
     println!("{}", h("Workflow verbs:"));
     println!("  {}", d("index sync|status|lint|rebuild"));
-    println!("  {}", d("content tree|ls|show <uri> · relation graph|show <uri>"));
+    println!(
+        "  {}",
+        d("content tree|ls|show <uri> · relation graph|show <uri>")
+    );
     println!("  {}", d("relation link <from> <to> --type <kind>"));
-    println!("  {}", d("proposal list|show|accept|reject <id> · proposal rebase <id> [--continue]"));
+    println!(
+        "  {}",
+        d("proposal list|show|accept|reject <id> · proposal rebase <id> [--continue]")
+    );
     println!();
 
     println!("{}", h("Publish verbs:"));
     println!("  {}", d("site build|preview|check|status [--out PATH]"));
-    println!("  {}", d("site publish <uri> · site deploy [--dry-run|--confirm]"));
-    println!("  {}", d("site rollback · site promote <live-db> <snapshot-db> <content-commit>"));
-    println!("  {}", d("stats sync <uri> · stats show|visitors|crawlers|sources <uri>"));
+    println!(
+        "  {}",
+        d("site publish <uri> · site deploy [--dry-run|--confirm]")
+    );
+    println!(
+        "  {}",
+        d("site rollback · site promote <live-db> <snapshot-db> <content-commit>")
+    );
+    println!(
+        "  {}",
+        d("stats sync <uri> · stats show|visitors|crawlers|sources <uri>")
+    );
     println!();
 
     println!("{}", h("Maintenance verbs:"));
-    println!("  {}", d("config edit [--global] · completion bash|zsh|fish"));
+    println!(
+        "  {}",
+        d("config edit [--global] · completion bash|zsh|fish")
+    );
     println!("  {}", d("uninstall [--purge] [--dry-run|--yes]"));
     println!();
 
@@ -842,7 +903,12 @@ fn doctor(content_root: &Path) -> Result<(), String> {
 /// waits for a typed `y` (or the purge confirm word) before touching disk.
 /// `--dry-run` lists and stops; `--yes` skips the prompt for scripts. This
 /// mirrors `site deploy`'s dry-run-by-intent / `--confirm` discipline.
-fn uninstall(content_root: &Path, purge: bool, dry_run: bool, assume_yes: bool) -> Result<(), String> {
+fn uninstall(
+    content_root: &Path,
+    purge: bool,
+    dry_run: bool,
+    assume_yes: bool,
+) -> Result<(), String> {
     let project_root = content_root.parent().unwrap_or(content_root);
     let skill_dir = skill::default_skill_dir();
     let deploy_dir = project_root.join("_deploy");
@@ -859,7 +925,10 @@ fn uninstall(content_root: &Path, purge: bool, dry_run: bool, assume_yes: bool) 
     if purge {
         // content/ and the project config — the irreplaceable half.
         if content_root.exists() {
-            targets.push((content_root.to_path_buf(), "content/ — YOUR AUTHORED CONTENT"));
+            targets.push((
+                content_root.to_path_buf(),
+                "content/ — YOUR AUTHORED CONTENT",
+            ));
         }
         let config = project_root.join("silan-viking.toml");
         if config.exists() {
@@ -881,9 +950,7 @@ fn uninstall(content_root: &Path, purge: bool, dry_run: bool, assume_yes: bool) 
         println!("  {}  ({what})", path.display());
     }
     if !purge {
-        println!(
-            "\ncontent/ and silan-viking.toml are kept. Pass --purge to delete those too.",
-        );
+        println!("\ncontent/ and silan-viking.toml are kept. Pass --purge to delete those too.",);
     }
 
     if dry_run {
@@ -896,7 +963,10 @@ fn uninstall(content_root: &Path, purge: bool, dry_run: bool, assume_yes: bool) 
     // `y`. --yes skips the prompt entirely, for non-interactive callers.
     if !assume_yes {
         let (prompt, expected) = if purge {
-            ("\nThis DELETES your content/ — type `purge` to confirm: ", "purge")
+            (
+                "\nThis DELETES your content/ — type `purge` to confirm: ",
+                "purge",
+            )
         } else {
             ("\nProceed? [y/N]: ", "y")
         };
@@ -944,8 +1014,8 @@ enum ProjectStage {
 /// on what stage a directory is in.
 fn project_stage(content_root: &Path) -> ProjectStage {
     let project_root = content_root.parent().unwrap_or(content_root);
-    let initialised = project_root.join("silan-viking.toml").exists()
-        && content_root.join("SCHEMA.md").exists();
+    let initialised =
+        project_root.join("silan-viking.toml").exists() && content_root.join("SCHEMA.md").exists();
     if !initialised {
         return ProjectStage::NotInitialised;
     }
@@ -988,18 +1058,39 @@ fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
                 "Project is initialised but not yet synced. Next steps:"
             },
             vec![
-                ("silan-viking index sync", "build the derived database from content/"),
-                ("silan-viking site preview", "build the site and preview it locally"),
-                ("silan-viking blog new <slug>", "write your first post (or idea/project)"),
+                (
+                    "silan-viking index sync",
+                    "build the derived database from content/",
+                ),
+                (
+                    "silan-viking site preview",
+                    "build the site and preview it locally",
+                ),
+                (
+                    "silan-viking blog new <slug>",
+                    "write your first post (or idea/project)",
+                ),
             ],
         ),
         ProjectStage::Synced => (
             "Project is initialised and synced. From here you can:",
             vec![
-                ("silan-viking site preview", "rebuild and preview the site locally"),
-                ("silan-viking blog new <slug>", "add content, then re-run index sync"),
-                ("silan-viking site deploy --confirm", "deploy to the host in silan-viking.toml"),
-                ("silan-viking doctor", "health-check content, index, and embedder"),
+                (
+                    "silan-viking site preview",
+                    "rebuild and preview the site locally",
+                ),
+                (
+                    "silan-viking blog new <slug>",
+                    "add content, then re-run index sync",
+                ),
+                (
+                    "silan-viking site deploy --confirm",
+                    "deploy to the host in silan-viking.toml",
+                ),
+                (
+                    "silan-viking doctor",
+                    "health-check content, index, and embedder",
+                ),
             ],
         ),
     };
@@ -1958,9 +2049,19 @@ fn site_deploy(
             println!("  target  {target}:{}", cfg.remote_dir);
         }
         println!("  1 sync     content/ -> {}", db_path.display());
-        println!("  2 build    stage embedded sources + SEO artifacts + media -> {}", out_dir.display());
+        println!(
+            "  2 build    stage embedded sources + SEO artifacts + media -> {}",
+            out_dir.display()
+        );
         println!("  3 package  docker compose build (backend/web images, multi-stage)");
-        println!("  4 ship     {}", if is_local { "load images locally" } else { "docker save | ssh docker load" });
+        println!(
+            "  4 ship     {}",
+            if is_local {
+                "load images locally"
+            } else {
+                "docker save | ssh docker load"
+            }
+        );
         println!("  5 promote  replace derived tables on the live db (runtime tables preserved)");
         println!("  6 up       docker compose up -d");
         return Ok(());
@@ -1999,7 +2100,11 @@ fn site_deploy(
     // into the backend's media volume.
     let media_root = stage_media(&staging, &assets)?;
     if let Some(ref dir) = media_root {
-        println!("        staged {} media file(s) -> {}", assets.len(), dir.display());
+        println!(
+            "        staged {} media file(s) -> {}",
+            assets.len(),
+            dir.display()
+        );
     }
 
     // 3 — package: build the docker images from the staged compose file.
@@ -2031,11 +2136,27 @@ fn site_deploy(
         // delete the now-stale `-wal`/`-shm` before the backend reopens.
         docker_compose(&staging, compose, &["stop", "backend"])?;
         let live_snapshot = project_root.join("_deploy/live-portfolio.db");
-        docker_cp_from(compose, &staging, "backend", "/data/portfolio.db", &live_snapshot)
-            // First deploy: no live db yet — start from the fresh snapshot.
-            .or_else(|_| fs::copy(db_path, &live_snapshot).map(|_| ()).map_err(|e| e.to_string()))?;
+        docker_cp_from(
+            compose,
+            &staging,
+            "backend",
+            "/data/portfolio.db",
+            &live_snapshot,
+        )
+        // First deploy: no live db yet — start from the fresh snapshot.
+        .or_else(|_| {
+            fs::copy(db_path, &live_snapshot)
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        })?;
         promote_db(&live_snapshot, db_path, &content_commit)?;
-        docker_cp_to(compose, &staging, "backend", &live_snapshot, "/data/portfolio.db")?;
+        docker_cp_to(
+            compose,
+            &staging,
+            "backend",
+            &live_snapshot,
+            "/data/portfolio.db",
+        )?;
         // Drop the stale WAL companions left from before the stop — the
         // promoted `.db` is a complete, self-contained file; a leftover
         // `-wal`/`-shm` keyed to the old db generation would corrupt it.
@@ -2152,7 +2273,10 @@ fn site_deploy(
     // for the operator's OS/arch and may not run on the target. promote
     // is a pure SQLite operation — it runs here, on the operator's
     // machine, against a db copied down from the server.
-    ssh(&format!("cd {} && docker load -i images.tar", cfg.remote_dir))?;
+    ssh(&format!(
+        "cd {} && docker load -i images.tar",
+        cfg.remote_dir
+    ))?;
 
     println!("[5/6] promote");
     // Bring the stack up so the named volume + live db exist.

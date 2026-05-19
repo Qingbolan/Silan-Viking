@@ -17,8 +17,7 @@ fn fixture(tag: &str) -> PathBuf {
     use std::sync::atomic::{AtomicU32, Ordering};
     static SEQ: AtomicU32 = AtomicU32::new(0);
     let seq = SEQ.fetch_add(1, Ordering::Relaxed);
-    let root =
-        std::env::temp_dir().join(format!("silan-guide-{}-{tag}-{seq}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("silan-guide-{}-{tag}-{seq}", std::process::id()));
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&root).expect("root");
     root
@@ -41,7 +40,10 @@ fn guide_on_a_bare_dir_says_run_init() {
     let (ok, out) = cli(&root, &["guide"]);
     assert!(ok, "guide should succeed on a bare dir: {out}");
     assert!(out.contains("No silan-viking project"), "{out}");
-    assert!(out.contains("silan-viking init"), "must point at init: {out}");
+    assert!(
+        out.contains("silan-viking init"),
+        "must point at init: {out}"
+    );
 }
 
 #[test]
@@ -50,7 +52,10 @@ fn init_ends_with_the_next_steps_block() {
     let (ok, out) = cli(&root, &["init"]);
     assert!(ok, "init should succeed: {out}");
     // init's tail is the guide block for a freshly created project.
-    assert!(out.contains("Next steps"), "init must print Next steps: {out}");
+    assert!(
+        out.contains("Next steps"),
+        "init must print Next steps: {out}"
+    );
     assert!(
         out.contains("silan-viking index sync"),
         "the first next step is index sync: {out}"

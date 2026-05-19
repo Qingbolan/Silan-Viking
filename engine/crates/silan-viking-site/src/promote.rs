@@ -308,9 +308,7 @@ fn column_plan(conn: &Connection, table: &str) -> Result<Vec<(String, String)>, 
         let quoted = format!("\"{}\"", col.name);
         if col.not_null {
             let all_null: bool = conn.query_row(
-                &format!(
-                    "SELECT count(*) = 0 FROM snapshot.{table} WHERE {quoted} IS NOT NULL"
-                ),
+                &format!("SELECT count(*) = 0 FROM snapshot.{table} WHERE {quoted} IS NOT NULL"),
                 [],
                 |row| row.get(0),
             )?;

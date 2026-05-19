@@ -90,7 +90,10 @@ fn init_scaffolds_schema_config_and_git() {
     let c = fresh_init();
     assert!(c.join("SCHEMA.md").is_file(), "init must write SCHEMA.md");
     assert!(
-        c.parent().expect("root").join("silan-viking.toml").is_file(),
+        c.parent()
+            .expect("root")
+            .join("silan-viking.toml")
+            .is_file(),
         "init must write silan-viking.toml at the project root"
     );
     assert!(
@@ -108,8 +111,9 @@ fn init_scaffolds_schema_config_and_git() {
 #[test]
 fn scaffolded_meta_toml_carries_a_stable_part_id() {
     let c = fresh_init();
-    let meta = std::fs::read_to_string(c.join("resources/ideas/first-idea/parts/overview/meta.toml"))
-        .expect("read meta.toml");
+    let meta =
+        std::fs::read_to_string(c.join("resources/ideas/first-idea/parts/overview/meta.toml"))
+            .expect("read meta.toml");
     // `01` §1.4: `part_id` is minted at scaffold time, not by sync.
     assert!(
         meta.contains("part_id"),

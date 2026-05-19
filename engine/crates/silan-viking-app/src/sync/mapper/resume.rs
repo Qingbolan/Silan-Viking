@@ -117,7 +117,11 @@ fn push_personal_info_translations(item_id: &str, parsed: &Parsed, rows: &mut Ro
 /// rebuilds the same rows deterministically; `created_at` is left to the
 /// DB default.
 fn push_social_links_rows(item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
-    let Some(records) = parsed.main().get("social_links").and_then(FieldValue::as_records) else {
+    let Some(records) = parsed
+        .main()
+        .get("social_links")
+        .and_then(FieldValue::as_records)
+    else {
         return;
     };
     for (index, record) in records.iter().enumerate() {
@@ -185,10 +189,7 @@ fn push_summary_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
         if let Some(body) = variant.prose("summary") {
             rows.push(
                 Row::new(table_names::ITEM_PART_TRANSLATION_TABLE)
-                    .with(
-                        "id",
-                        SqlValue::Text(format!("{summary_part_id}_{lang}")),
-                    )
+                    .with("id", SqlValue::Text(format!("{summary_part_id}_{lang}")))
                     .with("item_part_id", SqlValue::Text(summary_part_id.clone()))
                     .with("language_code", SqlValue::Text(lang.to_string()))
                     .with("body", SqlValue::Text(body.to_owned())),
@@ -239,10 +240,7 @@ fn push_entry_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
                 // `id` derived from (entry, language) — the row's natural key.
                 rows.push(
                     Row::new(table_names::PART_ENTRY_TRANSLATION_TABLE)
-                        .with(
-                            "id",
-                            SqlValue::Text(format!("{}_{lang}", entry.entry_id())),
-                        )
+                        .with("id", SqlValue::Text(format!("{}_{lang}", entry.entry_id())))
                         .with("part_entry_id", SqlValue::Text(entry.entry_id().to_owned()))
                         .with("language_code", SqlValue::Text(lang.to_string()))
                         .with(
@@ -282,9 +280,13 @@ fn entry_json(value: &EntryValue) -> serde_json::Value {
         EntryValue::Int(i) => serde_json::Value::from(*i),
         EntryValue::Float(f) => serde_json::Value::from(*f),
         EntryValue::Bool(b) => serde_json::Value::Bool(*b),
-        EntryValue::List(items) => {
-            serde_json::Value::Array(items.iter().cloned().map(serde_json::Value::String).collect())
-        }
+        EntryValue::List(items) => serde_json::Value::Array(
+            items
+                .iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect(),
+        ),
     }
 }
 
