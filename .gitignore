@@ -60,6 +60,13 @@ yarn-error.log*
 # Database snapshots taken before migrations — local backups only.
 *.db.before-*.bak
 
+# sqlite runtime databases — a derived projection of content/, rebuilt by
+# `index sync`, plus the -wal / -shm files sqlite writes alongside. Local
+# runtime state, never source. (The deployed db lives under /_deploy/.)
+*.db
+*.db-wal
+*.db-shm
+
 # silan-viking site build output — a derived artifact of `site build`,
 # rebuilt from content/ on demand, never committed.
 /_site/
