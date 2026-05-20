@@ -116,6 +116,70 @@ silan schema check  —— ★新增的三方一致性闸门★
 **实现落点**：`silan-viking-cli` 加 `schema` 命令组（`check`/`diff`），
 `silan-viking-mcp` 加 `propose_schema` 工具。无新 crate。
 
+> **fixture 同步**:一个改 `SCHEMA.md` 的 `schema-proposal`,**必须在同一
+> 提案分支里同步升级 `engine/tests/fixtures/content/`** —— `schema check`
+> 的引擎侧校验跑的就是升级后的 fixture,没同步就过不了闸门。完整规则见
+> `08` §8.7.1。
+
+### §15.2.1 `schema check` 的 DB 侧推演算法(E2 实现级 spec)
+
+> 红队审查补:§15.2 的流程图把「DB 侧:推演 DDL diff」当一步黑箱。
+> 本节给出可实现级算法 —— E2 实现 `schema check` 时以此为依据。
+
+**输入**:提案分支的 `SCHEMA.md`(新)+ 主分支的 `SCHEMA.md`(旧)。
+**输出**:一个 `DdlDiff` 报告 —— 每个 type 的派生表需要哪些 `ADD COLUMN` /
+类型变更 / 无变更,以及是否触碰编译期闭集。
+
+**算法(纯推演,不连真实 DB)**:
+
+```
+1. 解析新旧 SCHEMA.md,各得一个 { type -> [FieldDef] } 映射。
+   FieldDef = { name, kind(见下表), required, enum_values? }
+2. 对 6 个 type 逐一 diff 字段集合,每条变更归一个 verdict:
+   - 新增非 enum 字段        → ADD_COLUMN
+   - 新增 enum 字段          → ADD_COLUMN(列自带 CHECK,SQLite 的 ADD COLUMN
+                               支持带 CHECK 的新列 —— 安全)
+   - 已有 enum 扩值/减值      → REBUILD ★关键:SQLite 无法原地改 CHECK 约束,
+                               只能「建新表+迁数据+换名」12 步重建。这是
+                               破坏性迁移,不是 ADD,但 ent migration 能做。
+   - 删除字段 / 字段 kind 变更 → FATAL(§15.2 安全表禁止;列类型变更破坏性)
+3. 对每个 ADD_COLUMN,用「字段 kind → SQLite 列类型」映射表(下)算出列定义。
+4. 新增 Part role:若 shape 已知 → 仅 item_part 表多几行数据,无 DDL,verdict
+   = NO_OP;若 shape 未知(新 shape)→ verdict = ENGINE(触碰编译期闭集)。
+5. 汇总成四态 schema_check 结果(与 §15.5.1 propose_schema 的枚举一致):
+   - 全部 NO_OP                          → passed
+   - 含 ADD_COLUMN / REBUILD,无 FATAL/ENGINE → needs_ent
+       (REBUILD 在 ddl_diff 里 action 标 `rebuild_table`,工单注明
+        「破坏性迁移、ent 走 12 步重建、需停服窗口或影子表」)
+   - 含 ENGINE                            → needs_engine
+   - 含 FATAL                             → failed(提案标红,不可 accept)
+```
+
+**字段 kind → SQLite 列类型映射表**(推演 DDL 的唯一依据):
+
+| SCHEMA `kind` | SQLite 列类型 | 可空性 | 备注 |
+|---|---|---|---|
+| `string` / `slug` / `uri` | `TEXT` | `required` → `NOT NULL` | — |
+| `text`(长文)| `TEXT` | 同上 | 正文类一般走 `item_part`,不进主表 |
+| `int` | `INTEGER` | 同上 | — |
+| `bool` | `INTEGER`(0/1)| `NOT NULL DEFAULT 0` | — |
+| `date` / `datetime` | `TEXT`(ISO-8601)| 同上 | 与现有 ent `field.Time` 一致 |
+| `enum` | `TEXT` + `CHECK(col IN (...))` | 同上 | **新增 enum 字段**=安全 ADD;**改已有 enum 的值集**=REBUILD(见算法第 2 步)|
+| `string_list` / `tag_list` | 不进主表 | — | 走关系表或 JSON,verdict = ENGINE |
+
+> **三种非 passed verdict 的区别**:
+> - `needs_ent` —— Go ent 改表即可,引擎 Rust 不动(`silan-viking-entities`
+>   反向重新生成)。其中 `ADD_COLUMN` 是轻量迁移,`REBUILD`(enum 改值集)
+>   是**破坏性迁移** —— ent 仍能做(SQLite 12 步重建表),但 `ddl_diff` 必须
+>   把它标 `rebuild_table`,工单注明需停服窗口/影子表,owner `accept` 时知情。
+> - `needs_engine` —— 触碰编译期闭集(新 shape / 新 type / list 类字段),
+>   引擎 Rust 要改。`accept` 仍只合 `SCHEMA.md`,工单标「需引擎改代码」。
+> - `failed` —— 删字段/改 kind 等破坏性或禁止操作,提案不可 `accept`。
+>
+> 这把 §15.2 流程图「检测是否需要 ent 变更」落成**可判定的四态**,且对
+> 「SQLite 改 enum 值集是破坏性操作」这一真实约束不再含糊(早期初稿误把
+> enum 增值当安全 ADD —— 红队审查纠正,此处定死)。
+
 ---
 
 ## §15.3 L-界面演化 —— agent 起草,人审 PR,不做「自动上线」
@@ -190,6 +254,86 @@ owner 说："我那个 AI content optimizer 的想法，最近想得挺深了。
 > E1 低风险、纯增量,可立即排。E2 是这章的核心工程量 —— `schema check`
 > 的三方校验是关键,它把「agent 改结构」从一件危险的事变成一件有闸门的事。
 > E3 不引入「UI 自动演化」,只是把 agent 改 UI 时的输入做厚。
+
+> **接入主干**:E1/E2/E3 已正式排入 `04-里程碑.md` 的「E1–E3」节(排在
+> M9 之后)。本章新增的 MCP 工具(`suggest_*`/`propose_schema`)是 M9
+> 的 18 工具闭集之外的增量 —— E1 后闭集为 21、E2 后为 22,`03` §3.2
+> 闭集说明已注明;`silan schema` 命令组在 E2 加入 `02`。
+
+### §15.5.1 E 阶段工具的 JSON schema 合同
+
+> 红队审查补:E1/E2 的 4 个 MCP 工具此前只有行为语义,缺 `03` §3.2 风格的
+> 输入/输出 JSON schema。本节补齐 —— E1/E2 实现 `silan-viking-mcp` 时以此
+> 为工具签名来源。错误返回沿用 `03` §3.2 的统一 `{ "error": {...} }` 形态。
+
+```json
+{
+  "suggest_relations": {
+    "input": { "scope": "uri[]?", "limit": "integer?" },
+    "output": { "suggestions": [
+      { "from": "uri", "to": "uri", "relation_type": "string",
+        "confidence": "number", "rationale": "string",
+        "proposal_id": "string" }
+    ] }
+  },
+  "suggest_parts": {
+    "input": { "uri": "uri" },
+    "output": { "uri": "uri", "suggestions": [
+      { "role": "string", "shape": "prose|entry_list|key_value_list",
+        "rationale": "string", "proposal_id": "string" }
+    ] }
+  },
+  "suggest_lifecycle": {
+    "input": { "uri": "uri" },
+    "output": { "uri": "uri", "current_status": "string",
+      "suggested_status": "string", "rationale": "string",
+      "proposal_id": "string?" }
+  },
+  "propose_schema": {
+    "input": {
+      "change": {
+        "op": "add_field | extend_enum | add_part_role",
+        "target_type": "idea|blog|project|episode|resume|update",
+        "field_def": {
+          "name": "string", "kind": "string",
+          "required": "bool", "enum_values": "string[]?"
+        },
+        "part_role": { "role": "string", "shape": "prose|entry_list|key_value_list" }
+      },
+      "rationale": "string?"
+    },
+    "output": { "proposal_id": "string", "branch": "proposal/<id>",
+      "kind": "schema-proposal",
+      "schema_check": "passed|needs_ent|needs_engine|failed",
+      "ddl_diff": [ { "type": "string",
+        "action": "no_op|add_column|rebuild_table",
+        "column": "string?", "sql_type": "string?",
+        "destructive": "bool" } ],
+      "issues": ["string"] }
+  }
+}
+```
+
+> `propose_schema.input.change` 是**结构化**对象,不是自由文本 —— 它必须能
+> 直接驱动 §15.2.1 的推演算法,所以字段与算法的 `FieldDef` 同构。`op` 三选一:
+> `add_field`(用 `field_def`)、`extend_enum`(用 `field_def.name` +
+> `field_def.enum_values` 给新值集)、`add_part_role`(用 `part_role`)。
+> 与 `op` 无关的子对象传 `null`。删字段/删 type 等破坏性操作**没有对应
+> `op`** —— agent 在合同层就无法发起(§15.2 安全表「agent 永不」的落地)。
+
+合同要点(与现有机制一致,不另起一套):
+
+- 三个 `suggest_*` **永远只产出提案** —— `output` 里每条 `suggestion` 都带
+  `proposal_id`,产物进 `silan proposal list`,owner 逐条 `accept`/`reject`。
+  `suggest_*` 自身不 apply、无副作用(§15.2「闸门」)。
+- `propose_schema` 的 `schema_check` 字段是 §15.2.1 推演算法的四态结果
+  (`passed`/`needs_ent`/`needs_engine`/`failed`);`ddl_diff` 是该算法的
+  `DdlDiff` 报告,`action` 三态 `no_op`/`add_column`/`rebuild_table` 与
+  算法 verdict 对应,`destructive=true` 即 `rebuild_table`(SQLite 改 enum
+  值集那类破坏性迁移)。`failed` 时提案标红不可 `accept`。
+- 这 4 个工具的错误码复用 `03` §3.2 的 `McpError` 变体:参数错 →
+  `InvalidRequest`,目标 Item 不存在 → `Workspace`,提案/校验失败 →
+  `Proposal`。E 阶段不新增错误变体。
 
 ---
 

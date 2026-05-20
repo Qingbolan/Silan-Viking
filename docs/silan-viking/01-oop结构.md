@@ -264,6 +264,23 @@ parser 按 `shape` 选解析路径,不假设 Part 文件总是 `.md`
 (blog/idea/project/episode/update 全 `prose` 故都是 `.md`;只有 resume 有
 `entry_list`/`key_value_list` 的 Part 用 `.toml`)。
 
+> **「配置驱动」与「闭集分派」的边界 —— 三个层级,只有一个是闭集**
+> (红队审查点:`propose_schema` 加 Part 时 parser 改不改 Rust):
+>
+> | 层级 | 可扩展性 | 加新值要不要改 Rust |
+> |---|---|---|
+> | **type**(6 个)| **编译期闭集** —— `ParserRegistry` 静态分派 | 要(加 type = 加 Parser 实现 + 重编译)|
+> | **Part `role`** | **配置驱动** —— parser 读 SCHEMA 的 `parts` 列表 | **不要** —— 新 role 只要 `shape` 是已知的,parser 当数据处理 |
+> | **Part `shape`**(prose / entry_list / key_value_list)| **编译期闭集** —— parser 按 shape 选解析路径 | 要(加 shape = 加解析路径 + 重编译)|
+>
+> 所以 `15` 章 `propose_schema` 给某 type 加一个**新 Part role**(沿用
+> 已有 shape):parser 不改 Rust、不重编译,纯配置生效 —— `silan schema
+> check` 验证 SCHEMA 配置合法即可。但若 `propose_schema` 想引入一种**新
+> shape**:那触碰编译期闭集,`schema check` 必须判定「需要引擎改代码」并
+> 标记为不可纯配置落地的提案(`15` §15.2 三方校验、§15.2.1 推演算法判
+> `needs_engine` 的一类)。
+> 闭集的是 type 与 shape,不是 role —— 文档此前未点明,此处定死。
+
 ### 1.3.2 多语言模型的三阶段演进路线
 
 > Part==Identity 是地基。完整的 AI-native 多语言能力分三阶段落地,
