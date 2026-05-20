@@ -1,8 +1,13 @@
-# silan-viking engine CI — the three-stage pipeline (per docs/silan-viking/05 §5.5).
+# silan-viking engine CI — the four-stage pipeline (per docs/silan-viking/05 §5.5
+# plus the docs-drift gate from 17 §17.4 / GOAL §8).
 #
-#   1. fmt    — cargo fmt --check
-#   2. clippy — cargo clippy, -D warnings + -D clippy::unwrap_used
-#   3. test   — cargo test --workspace
+#   1. fmt         — cargo fmt --check
+#   2. clippy      — cargo clippy, -D warnings + -D clippy::unwrap_used
+#   3. test        — cargo test --workspace
+#   4. docs-drift  — engine/scripts/check_docs_drift.py (runs the §17.4
+#                    consistency checklist as code so MCP tool counts /
+#                    enum values / 6-type closed set can't silently
+#                    diverge between authoritative and citing chapters).
 #
 # The criterion performance-benchmark job is wired in once benches/ land in
 # M5/M6 (09 §9.5).
@@ -10,9 +15,9 @@ name: engine-ci
 
 on:
   push:
-    paths: ["engine/**"]
+    paths: ["engine/**", "docs/silan-viking/**"]
   pull_request:
-    paths: ["engine/**"]
+    paths: ["engine/**", "docs/silan-viking/**"]
 
 defaults:
   run:
@@ -38,3 +43,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cargo test --workspace
+
+  docs-drift:
+    # Doc-only gate; doesn't need cargo. Cheap to run on every push so
+    # drift between authoritative chapter (e.g. 17 §17.2 MCP tool count)
+    # and citing chapters (03 / 04 / GOAL) is caught the moment it lands.
+    runs-on: ubuntu-latest
+    # The checker reads docs/silan-viking, which sits outside the engine/
+    # working directory the file's `defaults.run.working-directory` pins.
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 engine/scripts/check_docs_drift.py
