@@ -31,11 +31,11 @@ func NewGetIdeaLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetIdeaLo
 }
 
 func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, err error) {
-	ideaID := req.ID
-
-	// Query the idea with details
+	// Idea is fetched by its stable slug (M0.5b GOAL #6, matches the
+	// blog/episode/update/project detail conventions). `idea.slug` carries
+	// the same value the content engine writes to `content_tag.entity_slug`.
 	ideaEntity, err := l.svcCtx.DB.Idea.Query().
-		Where(idea.ID(ideaID)).
+		Where(idea.Slug(req.Slug)).
 		WithDetails().
 		WithTranslations().
 		First(l.ctx)

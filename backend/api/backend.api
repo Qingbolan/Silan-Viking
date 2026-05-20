@@ -635,7 +635,7 @@ type (
 		TotalPages int        `json:"total_pages"`
 	}
 	IdeaRequest {
-		ID       string `path:"id"`
+		Slug     string `path:"slug"`
 		Language string `form:"lang,default=en"`
 	}
 	CreateIdeaRequest {
@@ -1080,9 +1080,9 @@ service backend-api {
 	@handler GetIdeas
 	get / (IdeaListRequest) returns (IdeaListResponse)
 
-	@doc "Get single idea by ID"
+	@doc "Get single idea by slug (matches blog/episode/update/project main detail conventions)"
 	@handler GetIdea
-	get /:id (IdeaRequest) returns (IdeaData)
+	get /:slug (IdeaRequest) returns (IdeaData)
 
 	@doc "Get idea categories"
 	@handler GetIdeaCategories
