@@ -79,7 +79,10 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "resume edit <role> [lang]",
         ],
         "index" => &["index sync|status|lint|rebuild"],
-        "content" => &["content tree|ls|show <uri>"],
+        "content" => &[
+            "content tree|ls|show <uri>",
+            "content lint [<uri>] · content lint --drift",
+        ],
         "relation" => &[
             "relation graph",
             "relation show <uri>",
@@ -248,6 +251,15 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["content", "ls"] => content_ls(&opts.content_root, None),
         ["content", "ls", uri] => content_ls(&opts.content_root, Some(uri)),
         ["content", "show", uri] => content_show(&opts.content_root, uri),
+        // `content lint` — graded content-health report (GOAL §7.3 / 14
+        // §14.3 类 B 漂移). Subset surfaces today:
+        //   `content lint`         — run Workspace::lint over every Item
+        //   `content lint <uri>`   — same, scoped to one Item
+        //   `content lint --drift` — doc / schema drift self-check; dev-only,
+        //                            shells out to engine/scripts/check_docs_drift.py
+        ["content", "lint"] => content_lint(&opts.content_root, None),
+        ["content", "lint", "--drift"] => content_lint_drift(),
+        ["content", "lint", uri] => content_lint(&opts.content_root, Some(uri)),
         ["relation", "graph"] => relation_graph(&opts.content_root),
         ["relation", "show", uri] => relation_show(&opts.content_root, uri),
         ["relation", "link", from, to, "--type", kind] => {
@@ -1175,6 +1187,89 @@ fn content_show(content_root: &Path, uri: &str) -> Result<(), String> {
         .find(|item| item.uri().to_string() == uri)
         .ok_or_else(|| format!("not found: {uri}"))?;
     print_item(&ws, item)
+}
+
+/// `content lint [<uri>]` — graded content-health report. Defers to
+/// `Workspace::lint` for the per-Item validate() chain (parser dispatch +
+/// per-type validation). `fatal` issues exit non-zero; `warn` / `info`
+/// print but succeed, so this command works as a CI gate.
+fn content_lint(content_root: &Path, uri: Option<&str>) -> Result<(), String> {
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    let issues = ws.lint(uri).map_err(|e| e.to_string())?;
+    if issues.is_empty() {
+        println!("ok — 0 lint issues");
+        return Ok(());
+    }
+    let mut fatals = 0usize;
+    for issue in &issues {
+        println!("{:<5} {}  {}", issue.level, issue.uri, issue.message);
+        if issue.level == "fatal" {
+            fatals += 1;
+        }
+    }
+    println!("\n{} issue(s); {fatals} fatal", issues.len());
+    if fatals > 0 {
+        return Err(format!("{fatals} fatal lint issue(s)"));
+    }
+    Ok(())
+}
+
+/// `content lint --drift` — run the §17.4 doc-drift self-check. The
+/// authoritative check script lives at `engine/scripts/check_docs_drift.py`
+/// (the same one the engine-ci `docs-drift` job runs). It needs python3
+/// and the silan-viking source checkout — when invoked from an installed
+/// binary outside the repo it can't find either, so we degrade gracefully
+/// and explain rather than crash.
+fn content_lint_drift() -> Result<(), String> {
+    // Search for the checker relative to a likely cargo workspace root.
+    // CARGO_MANIFEST_DIR is set during `cargo run` but not in installed
+    // binaries — that's the explicit signal this is dev-mode.
+    let manifest = env::var("CARGO_MANIFEST_DIR").ok();
+    let script = match manifest {
+        Some(m) => Path::new(&m)
+            .parent() // crates/silan-viking-cli -> crates
+            .and_then(Path::parent) // -> engine
+            .map(|engine| engine.join("scripts/check_docs_drift.py")),
+        None => None,
+    };
+    let script = match script {
+        Some(p) if p.exists() => p,
+        _ => {
+            // Try walking up from CWD: lets owners run this in a content
+            // project that happens to sit inside the silan-viking checkout
+            // (the test fixtures do).
+            let mut cur: Option<&Path> = Some(Path::new("."));
+            let mut found: Option<PathBuf> = None;
+            while let Some(p) = cur {
+                let candidate = p.join("engine/scripts/check_docs_drift.py");
+                if candidate.exists() {
+                    found = Some(candidate);
+                    break;
+                }
+                cur = p.parent();
+            }
+            match found {
+                Some(p) => p,
+                None => {
+                    return Err(
+                        "doc-drift check needs the silan-viking source \
+                         checkout (it reads docs/silan-viking/). Run this \
+                         inside a clone of the repo, or rely on the \
+                         engine-ci `docs-drift` job."
+                            .to_owned(),
+                    );
+                }
+            }
+        }
+    };
+    let status = Command::new("python3")
+        .arg(&script)
+        .status()
+        .map_err(|e| format!("python3 not available ({e}); needed for content lint --drift"))?;
+    if !status.success() {
+        return Err("doc drift detected — see output above".to_owned());
+    }
+    Ok(())
 }
 
 fn type_list(
