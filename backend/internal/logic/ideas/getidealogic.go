@@ -119,8 +119,13 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 		return nil, err
 	}
 
+	// `IdeaData.id` is the frontend's URL key — must round-trip through
+	// `/ideas/<id>` and back. The detail route is keyed by slug now
+	// (M0.5b GOAL #6), so hand back the slug here. The internal UUID
+	// stays inside the backend; sub-routes (comments/like/view) resolve
+	// slug → UUID via helpers.go:resolveIdeaID.
 	return &types.IdeaData{
-		ID:                   ideaEntity.ID,
+		ID:                   ideaEntity.Slug,
 		Title:                title,
 		Description:          description,
 		Category:             category,

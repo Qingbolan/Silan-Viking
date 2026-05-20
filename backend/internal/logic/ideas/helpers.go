@@ -4,9 +4,37 @@ import (
 	"context"
 
 	"silan-backend/internal/ent"
+	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/svc"
 )
+
+// resolveIdeaID accepts either an idea's stable slug (the new URL key
+// for `/ideas/<slug>` and its sub-routes, M0.5b GOAL #6) or its legacy
+// UUID, and returns the UUID — the natural key of comment / interaction
+// / annotation tables. Sub-routes (`:id/comments`, `:id/like`, etc.)
+// still join runtime data by UUID; only the main detail route is
+// keyed by slug. This helper is the bridge.
+//
+// Resolution order:
+//   1. treat the input as a slug; if an idea with that slug exists,
+//      return its UUID.
+//   2. fall through to treating the input as a UUID directly, so
+//      bookmarked or cached UUID-shaped URLs still work.
+//
+// Returns the resolved UUID and ok=true on success.
+func resolveIdeaID(ctx context.Context, svcCtx *svc.ServiceContext, ref string) (string, bool) {
+	if ref == "" {
+		return "", false
+	}
+	if entity, err := svcCtx.DB.Idea.Query().Where(idea.Slug(ref)).First(ctx); err == nil {
+		return entity.ID, true
+	}
+	if entity, err := svcCtx.DB.Idea.Query().Where(idea.ID(ref)).First(ctx); err == nil {
+		return entity.ID, true
+	}
+	return "", false
+}
 
 // resolveLang normalizes an empty language to the default ("en").
 func resolveLang(lang string) string {

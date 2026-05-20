@@ -39,6 +39,13 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		return nil, fmt.Errorf("invalid idea id")
 	}
 
+	// `req.ID` is the URL key — slug after M0.5b GOAL #6, UUID for legacy
+	// clients. comment.entity_id stores the idea UUID, so translate.
+	ideaUUID, ok := resolveIdeaID(l.ctx, l.svcCtx, req.ID)
+	if !ok {
+		return nil, fmt.Errorf("idea not found: %s", req.ID)
+	}
+
 	// Validate parent comment if provided
 	var parentID string
 	if req.ParentId != "" {
@@ -47,7 +54,7 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		if err != nil {
 			return nil, errors.New("parent comment not found")
 		}
-		if parentComment.EntityID != req.ID {
+		if parentComment.EntityID != ideaUUID {
 			return nil, errors.New("parent comment belongs to different idea")
 		}
 		parentID = req.ParentId
@@ -95,7 +102,7 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 	entityType := "idea_" + strings.ToLower(req.Type)
 	commentBuilder := l.svcCtx.DB.Comment.Create().
 		SetEntityType(entcomment.EntityType(entityType)).
-		SetEntityID(req.ID).
+		SetEntityID(ideaUUID).
 		SetType(entcomment.Type(req.Type)).
 		SetAuthorName(authorName).
 		SetAuthorEmail(authorEmail).

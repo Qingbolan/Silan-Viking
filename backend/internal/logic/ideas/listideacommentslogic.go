@@ -32,7 +32,13 @@ func NewListIdeaCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clientIP, userAgent, fingerprint, userIdentityID string) (resp *types.IdeaCommentListResponse, err error) {
-	ideaUUID := req.ID
+	// `req.ID` is the URL key — slug for new clients, UUID for legacy
+	// ones. comment.entity_id stores the idea's UUID, so translate the
+	// slug back here. See helpers.go:resolveIdeaID for the policy.
+	ideaUUID, ok := resolveIdeaID(l.ctx, l.svcCtx, req.ID)
+	if !ok {
+		return &types.IdeaCommentListResponse{Comments: []types.IdeaCommentData{}}, nil
+	}
 
 	// Fetch comments using entgo
 	// Support both legacy entity_type "idea" and new namespaced form "idea_<type>"
