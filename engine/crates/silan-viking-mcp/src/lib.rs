@@ -34,6 +34,14 @@ pub enum ToolTier {
     AgentContext,
     /// Content proposal tools.
     Proposal,
+    /// Deploy-class tools — gated; only advertised when the server is
+    /// launched with `--enable-deploy` (`03` §3.2 / GOAL §5.2).
+    Deploy,
+    /// E-stage self-evolution tools (`15` §15.2 / §15.5.1). E1 ships
+    /// `suggest_{relations,parts,lifecycle}`; E2 adds `propose_schema`.
+    /// Listed in the closed set so they participate in dispatch coverage,
+    /// gated at advertise time the same way as Deploy.
+    Evolve,
 }
 
 /// One advertised MCP tool.
@@ -280,7 +288,112 @@ pub fn tool_specs() -> Vec<ToolSpec> {
                 "required": [],
             }),
         },
+        // Deploy tool — the 18th member of the M9 closed set (GOAL §5 /
+        // 17 §17.2). The server filters it out of `tools/list` unless
+        // started with `--enable-deploy`; dispatch refuses it for the
+        // same reason. Keeping it in `tool_specs()` means the closed-set
+        // count matches the documented 18.
+        ToolSpec {
+            name: "deploy",
+            tier: Deploy,
+            description: "deploy the site via the bundled Docker pipeline — \
+                          gated, only callable when the server runs with \
+                          `--enable-deploy`",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "confirm": {"type":"boolean","description":"must be true to actually run the pipeline"}
+                },
+                "required": [],
+            }),
+        },
+        // ── E1 stubs (`15` §15.2 / §15.5.1) ────────────────────────────
+        // These three lift the closed set to 21. They are advertised only
+        // when the server runs with `--enable-evolve` (`15` §15.5.1 gates
+        // them the same way deploy is gated). The current implementation
+        // returns an empty suggestion list — a legal output per the JSON
+        // schema, plus a stable hook for the full algorithm to drop in
+        // without changing the wire shape.
+        ToolSpec {
+            name: "suggest_relations",
+            tier: Evolve,
+            description: "scan the workspace for missing evolution edges \
+                          (E1, `15` §15.2). Returns candidate \
+                          `content_relation` rows the owner can accept.",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "scope": {"type":"array","items":{"type":"string"},"description":"optional URIs to restrict the scan"},
+                    "limit": {"type":"integer","description":"max suggestions, default 20"}
+                },
+                "required": [],
+            }),
+        },
+        ToolSpec {
+            name: "suggest_parts",
+            tier: Evolve,
+            description: "propose missing Parts for an Item — e.g. an \
+                          `experimenting` idea with no `progress` Part \
+                          (E1, `15` §15.2).",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item URI to inspect"}},
+                "required": ["uri"],
+            }),
+        },
+        ToolSpec {
+            name: "suggest_lifecycle",
+            tier: Evolve,
+            description: "propose a status transition based on content \
+                          maturity (E1, `15` §15.2). For idea: \
+                          draft→hypothesis→experimenting→validating→published.",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"uri": {"type":"string","description":"the silan:// Item URI to assess"}},
+                "required": ["uri"],
+            }),
+        },
     ]
+}
+
+/// The MCP server's advertise-time gating policy. Controls which tools
+/// from the closed [`tool_specs`] set are surfaced through `tools/list`.
+/// Dispatch still refuses gated tools that aren't enabled — the gate
+/// applies to both surfaces so an agent that calls a hidden tool gets
+/// the same `BackendUnavailable` either way.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ToolGate {
+    /// Surface the `deploy` tool. Off by default; `--enable-deploy`.
+    pub deploy: bool,
+    /// Surface the E-stage `suggest_*` / `propose_schema` tools.
+    /// Off by default; `--enable-evolve`.
+    pub evolve: bool,
+}
+
+impl ToolGate {
+    /// Build a gate that surfaces every tool — used by tests and by
+    /// callers that need to enumerate the full closed set.
+    pub fn all() -> Self {
+        Self { deploy: true, evolve: true }
+    }
+
+    /// Decide whether a tool tier is advertised under this gate.
+    fn allows(&self, tier: ToolTier) -> bool {
+        match tier {
+            ToolTier::Deploy => self.deploy,
+            ToolTier::Evolve => self.evolve,
+            _ => true,
+        }
+    }
+}
+
+/// Filter [`tool_specs`] to the subset the server should advertise under
+/// the supplied gate. The closed set itself never changes.
+pub fn advertised_tool_specs(gate: ToolGate) -> Vec<ToolSpec> {
+    tool_specs()
+        .into_iter()
+        .filter(|t| gate.allows(t.tier))
+        .collect()
 }
 
 /// Build the MCP handshake.
@@ -1417,6 +1530,64 @@ pub fn call(
             let created = summarize_updates(content_root, &summary)?;
             Ok(json!({ "proposal_id": created.id, "branch": created.branch, "hint": created.hint }))
         }
+        // Deploy is a gated tool. `call()` answers the wire even when
+        // the gate is closed — but only the server's `--enable-deploy`
+        // path actually advertises it (`tools/list` filters it out
+        // otherwise). Calling deploy through the JSON-RPC server when
+        // it isn't advertised hits this arm with `confirm=false`-style
+        // semantics: we surface a `BackendUnavailable` so the host
+        // understands the gate, instead of `UnknownTool` which would be
+        // a coverage drift.
+        "deploy" => {
+            let confirm = args.get("confirm").and_then(|v| v.as_bool()).unwrap_or(false);
+            if !confirm {
+                return Err(McpError::InvalidRequest(
+                    "deploy requires `confirm: true` to run the pipeline".to_owned(),
+                ));
+            }
+            // The real deploy lives in `silan-viking-site::deploy`; calling
+            // it from MCP couples this crate to the site crate, which the
+            // L4 adapter independence rule forbids. The CLI `silan site
+            // deploy` covers the human path; the MCP surface stays as a
+            // gated placeholder until the proxy via the server's deploy
+            // hook is wired (`03` §3.2 note).
+            Err(McpError::BackendUnavailable(
+                "deploy via MCP is gated — invoke `silan site deploy` from \
+                 the CLI, or start the MCP server with `--enable-deploy` \
+                 once the deploy hook is wired".to_owned(),
+            ))
+        }
+        // ── E1 stubs (`15` §15.2) — return empty suggestion lists. The
+        // shape is the documented one from §15.5.1 so an agent can
+        // ingest the response today; the algorithm that fills the
+        // suggestions is the next implementation pass.
+        "suggest_relations" => {
+            // `scope` and `limit` accepted but unused by the stub; we
+            // still validate that `scope` is an array of strings if
+            // supplied so a real client failure surfaces at the boundary.
+            if let Some(scope) = args.get("scope") {
+                if !scope.is_array() {
+                    return Err(McpError::InvalidRequest(
+                        "suggest_relations.scope must be an array of URIs".to_owned(),
+                    ));
+                }
+            }
+            Ok(json!({ "suggestions": [] }))
+        }
+        "suggest_parts" => {
+            let uri = str_arg("uri")?;
+            Ok(json!({ "uri": uri, "suggestions": [] }))
+        }
+        "suggest_lifecycle" => {
+            let uri = str_arg("uri")?;
+            Ok(json!({
+                "uri": uri,
+                "current_status": null,
+                "suggested_status": null,
+                "rationale": "stub: lifecycle inference not yet implemented",
+                "proposal_id": null,
+            }))
+        }
         other => Err(McpError::UnknownTool(other.to_owned())),
     }
 }
@@ -1439,12 +1610,59 @@ mod tests {
     use super::*;
 
     #[test]
-    fn handshake_advertises_all_four_tiers() {
+    fn handshake_covers_every_tier() {
+        // 6 tiers exist now: the original four (ReadOnly / Capture /
+        // AgentContext / Proposal) plus Deploy (M9 gated) and Evolve
+        // (E1 gated). Every tier must have at least one tool in the
+        // closed set — drift here would be a milestone-table mismatch
+        // with 17 §17.2 / GOAL §5.
         let tiers: std::collections::BTreeSet<_> = tool_specs()
             .into_iter()
             .map(|tool| tool.tier as u8)
             .collect();
-        assert_eq!(tiers.len(), 4);
+        assert_eq!(tiers.len(), 6, "expected 6 tiers, got {}", tiers.len());
+    }
+
+    /// Closed-set count is the M9-plus-E1 superset: 17 §17.2 pins M9=18
+    /// (10 read + 4 ctx/reflect + capture + 2 proposal + deploy) and
+    /// E1=21 (+suggest_relations/parts/lifecycle). The default `tool_specs`
+    /// returns all 21 because it's the *closed set*; the server's gate
+    /// filters down to what's actually surfaced.
+    #[test]
+    fn closed_set_is_21_through_e1() {
+        let names: Vec<&'static str> = tool_specs().iter().map(|t| t.name).collect();
+        assert_eq!(names.len(), 21, "tool count = {}, want 21", names.len());
+        for required in [
+            "deploy",
+            "suggest_relations",
+            "suggest_parts",
+            "suggest_lifecycle",
+        ] {
+            assert!(
+                names.contains(&required),
+                "closed set missing `{required}`"
+            );
+        }
+    }
+
+    /// Default gate hides Deploy + Evolve tools — the M9 default surface
+    /// is the 17 non-gated tools. This is the 17 §17.2 "M9 advertise"
+    /// surface, distinct from the closed set tested above.
+    #[test]
+    fn default_gate_advertises_17_tools() {
+        let surface = advertised_tool_specs(ToolGate::default());
+        assert_eq!(surface.len(), 17, "default surface = {}", surface.len());
+        for hidden in [
+            "deploy",
+            "suggest_relations",
+            "suggest_parts",
+            "suggest_lifecycle",
+        ] {
+            assert!(
+                !surface.iter().any(|t| t.name == hidden),
+                "`{hidden}` must be hidden by default"
+            );
+        }
     }
 
     #[test]

@@ -14,7 +14,7 @@
 //! It is enough for an MCP host and keeps the server testable by feeding it
 //! lines and reading lines back ([`handle_line`]).
 
-use crate::{tool_specs, McpError, ToolSpec};
+use crate::{advertised_tool_specs, McpError, ToolGate, ToolSpec};
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
@@ -27,6 +27,9 @@ pub struct McpServer {
     db_path: PathBuf,
     /// The project name reported by `initialize`.
     project: String,
+    /// Which gated tool tiers to advertise. Defaults to "none gated open",
+    /// matching the M9 default surface of 17 tools (`17` §17.2).
+    gate: ToolGate,
 }
 
 impl McpServer {
@@ -40,7 +43,16 @@ impl McpServer {
             content_root: content_root.as_ref().to_path_buf(),
             db_path: db_path.as_ref().to_path_buf(),
             project: project.into(),
+            gate: ToolGate::default(),
         }
+    }
+
+    /// Replace the tool gate. The CLI passes `ToolGate { deploy: true, .. }`
+    /// when launched with `--enable-deploy`, etc. The gate controls which
+    /// tools `tools/list` exposes; the closed set itself is unchanged.
+    pub fn with_gate(mut self, gate: ToolGate) -> Self {
+        self.gate = gate;
+        self
     }
 
     /// Run the stdio loop: read JSON-RPC requests from `input` line by line,
@@ -130,9 +142,14 @@ impl McpServer {
         })
     }
 
-    /// The `tools/list` result — the advertised tool surface.
+    /// The `tools/list` result — the advertised tool surface. Filtered
+    /// by the server's gate so deploy / E-stage tools stay hidden until
+    /// explicitly enabled (`17` §17.2).
     fn tools_list(&self) -> Value {
-        let tools: Vec<Value> = tool_specs().iter().map(tool_to_json).collect();
+        let tools: Vec<Value> = advertised_tool_specs(self.gate)
+            .iter()
+            .map(tool_to_json)
+            .collect();
         json!({ "tools": tools })
     }
 

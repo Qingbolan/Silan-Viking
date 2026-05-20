@@ -316,7 +316,7 @@ fn propose_creates_a_multi_part_item_as_one_proposal() {
             ),
         ],
     );
-    assert!(body.contains("kind: project") && body.contains("the goals") == false);
+    assert!(body.contains("kind: project") && !body.contains("the goals"));
 
     let _ = std::fs::remove_dir_all(&root);
 }
