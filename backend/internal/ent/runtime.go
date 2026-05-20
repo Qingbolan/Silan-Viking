@@ -9,9 +9,7 @@ import (
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogcategorytranslation"
 	"silan-backend/internal/ent/blogpost"
-	"silan-backend/internal/ent/blogposttag"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
 	"silan-backend/internal/ent/contentinteraction"
@@ -27,7 +25,6 @@ import (
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideadetailtranslation"
-	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
@@ -57,6 +54,10 @@ import (
 	"silan-backend/internal/ent/researchprojecttranslation"
 	"silan-backend/internal/ent/schema"
 	"silan-backend/internal/ent/sociallink"
+	"silan-backend/internal/ent/statscachecrawler"
+	"silan-backend/internal/ent/statscacheitem"
+	"silan-backend/internal/ent/statscachesource"
+	"silan-backend/internal/ent/statscachevisitor"
 	"silan-backend/internal/ent/user"
 	"silan-backend/internal/ent/useridentity"
 	"silan-backend/internal/ent/workexperience"
@@ -312,12 +313,6 @@ func init() {
 	blogpostDescID := blogpostFields[0].Descriptor()
 	// blogpost.DefaultID holds the default value on creation for the id field.
 	blogpost.DefaultID = blogpostDescID.Default.(func() string)
-	blogposttagFields := schema.BlogPostTag{}.Fields()
-	_ = blogposttagFields
-	// blogposttagDescCreatedAt is the schema descriptor for created_at field.
-	blogposttagDescCreatedAt := blogposttagFields[2].Descriptor()
-	// blogposttag.DefaultCreatedAt holds the default value on creation for the created_at field.
-	blogposttag.DefaultCreatedAt = blogposttagDescCreatedAt.Default.(func() time.Time)
 	blogposttranslationFields := schema.BlogPostTranslation{}.Fields()
 	_ = blogposttranslationFields
 	// blogposttranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -336,56 +331,6 @@ func init() {
 	blogposttranslationDescID := blogposttranslationFields[0].Descriptor()
 	// blogposttranslation.DefaultID holds the default value on creation for the id field.
 	blogposttranslation.DefaultID = blogposttranslationDescID.Default.(func() string)
-	blogtagFields := schema.BlogTag{}.Fields()
-	_ = blogtagFields
-	// blogtagDescName is the schema descriptor for name field.
-	blogtagDescName := blogtagFields[1].Descriptor()
-	// blogtag.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	blogtag.NameValidator = func() func(string) error {
-		validators := blogtagDescName.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(name string) error {
-			for _, fn := range fns {
-				if err := fn(name); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// blogtagDescSlug is the schema descriptor for slug field.
-	blogtagDescSlug := blogtagFields[2].Descriptor()
-	// blogtag.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
-	blogtag.SlugValidator = func() func(string) error {
-		validators := blogtagDescSlug.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(slug string) error {
-			for _, fn := range fns {
-				if err := fn(slug); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// blogtagDescUsageCount is the schema descriptor for usage_count field.
-	blogtagDescUsageCount := blogtagFields[3].Descriptor()
-	// blogtag.DefaultUsageCount holds the default value on creation for the usage_count field.
-	blogtag.DefaultUsageCount = blogtagDescUsageCount.Default.(int)
-	// blogtagDescCreatedAt is the schema descriptor for created_at field.
-	blogtagDescCreatedAt := blogtagFields[4].Descriptor()
-	// blogtag.DefaultCreatedAt holds the default value on creation for the created_at field.
-	blogtag.DefaultCreatedAt = blogtagDescCreatedAt.Default.(func() time.Time)
-	// blogtagDescID is the schema descriptor for id field.
-	blogtagDescID := blogtagFields[0].Descriptor()
-	// blogtag.DefaultID holds the default value on creation for the id field.
-	blogtag.DefaultID = blogtagDescID.Default.(func() string)
 	commentFields := schema.Comment{}.Fields()
 	_ = commentFields
 	// commentDescAuthorName is the schema descriptor for author_name field.
@@ -896,58 +841,6 @@ func init() {
 	ideadetailtranslationDescID := ideadetailtranslationFields[0].Descriptor()
 	// ideadetailtranslation.DefaultID holds the default value on creation for the id field.
 	ideadetailtranslation.DefaultID = ideadetailtranslationDescID.Default.(func() string)
-	ideatagFields := schema.IdeaTag{}.Fields()
-	_ = ideatagFields
-	// ideatagDescName is the schema descriptor for name field.
-	ideatagDescName := ideatagFields[1].Descriptor()
-	// ideatag.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	ideatag.NameValidator = func() func(string) error {
-		validators := ideatagDescName.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(name string) error {
-			for _, fn := range fns {
-				if err := fn(name); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// ideatagDescSlug is the schema descriptor for slug field.
-	ideatagDescSlug := ideatagFields[2].Descriptor()
-	// ideatag.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
-	ideatag.SlugValidator = func() func(string) error {
-		validators := ideatagDescSlug.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(slug string) error {
-			for _, fn := range fns {
-				if err := fn(slug); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// ideatagDescCreatedAt is the schema descriptor for created_at field.
-	ideatagDescCreatedAt := ideatagFields[3].Descriptor()
-	// ideatag.DefaultCreatedAt holds the default value on creation for the created_at field.
-	ideatag.DefaultCreatedAt = ideatagDescCreatedAt.Default.(func() time.Time)
-	// ideatagDescUpdatedAt is the schema descriptor for updated_at field.
-	ideatagDescUpdatedAt := ideatagFields[4].Descriptor()
-	// ideatag.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	ideatag.DefaultUpdatedAt = ideatagDescUpdatedAt.Default.(func() time.Time)
-	// ideatag.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	ideatag.UpdateDefaultUpdatedAt = ideatagDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// ideatagDescID is the schema descriptor for id field.
-	ideatagDescID := ideatagFields[0].Descriptor()
-	// ideatag.DefaultID holds the default value on creation for the id field.
-	ideatag.DefaultID = ideatagDescID.Default.(func() string)
 	ideatranslationFields := schema.IdeaTranslation{}.Fields()
 	_ = ideatranslationFields
 	// ideatranslationDescLanguageCode is the schema descriptor for language_code field.
@@ -1934,6 +1827,50 @@ func init() {
 	sociallinkDescID := sociallinkFields[0].Descriptor()
 	// sociallink.DefaultID holds the default value on creation for the id field.
 	sociallink.DefaultID = sociallinkDescID.Default.(func() string)
+	statscachecrawlerFields := schema.StatsCacheCrawler{}.Fields()
+	_ = statscachecrawlerFields
+	// statscachecrawlerDescCount is the schema descriptor for count field.
+	statscachecrawlerDescCount := statscachecrawlerFields[3].Descriptor()
+	// statscachecrawler.DefaultCount holds the default value on creation for the count field.
+	statscachecrawler.DefaultCount = statscachecrawlerDescCount.Default.(int)
+	// statscachecrawlerDescSyncedAt is the schema descriptor for synced_at field.
+	statscachecrawlerDescSyncedAt := statscachecrawlerFields[4].Descriptor()
+	// statscachecrawler.DefaultSyncedAt holds the default value on creation for the synced_at field.
+	statscachecrawler.DefaultSyncedAt = statscachecrawlerDescSyncedAt.Default.(func() time.Time)
+	statscacheitemFields := schema.StatsCacheItem{}.Fields()
+	_ = statscacheitemFields
+	// statscacheitemDescViews is the schema descriptor for views field.
+	statscacheitemDescViews := statscacheitemFields[2].Descriptor()
+	// statscacheitem.DefaultViews holds the default value on creation for the views field.
+	statscacheitem.DefaultViews = statscacheitemDescViews.Default.(int)
+	// statscacheitemDescLikes is the schema descriptor for likes field.
+	statscacheitemDescLikes := statscacheitemFields[3].Descriptor()
+	// statscacheitem.DefaultLikes holds the default value on creation for the likes field.
+	statscacheitem.DefaultLikes = statscacheitemDescLikes.Default.(int)
+	// statscacheitemDescComments is the schema descriptor for comments field.
+	statscacheitemDescComments := statscacheitemFields[4].Descriptor()
+	// statscacheitem.DefaultComments holds the default value on creation for the comments field.
+	statscacheitem.DefaultComments = statscacheitemDescComments.Default.(int)
+	// statscacheitemDescSyncedAt is the schema descriptor for synced_at field.
+	statscacheitemDescSyncedAt := statscacheitemFields[5].Descriptor()
+	// statscacheitem.DefaultSyncedAt holds the default value on creation for the synced_at field.
+	statscacheitem.DefaultSyncedAt = statscacheitemDescSyncedAt.Default.(func() time.Time)
+	statscachesourceFields := schema.StatsCacheSource{}.Fields()
+	_ = statscachesourceFields
+	// statscachesourceDescCount is the schema descriptor for count field.
+	statscachesourceDescCount := statscachesourceFields[3].Descriptor()
+	// statscachesource.DefaultCount holds the default value on creation for the count field.
+	statscachesource.DefaultCount = statscachesourceDescCount.Default.(int)
+	// statscachesourceDescSyncedAt is the schema descriptor for synced_at field.
+	statscachesourceDescSyncedAt := statscachesourceFields[4].Descriptor()
+	// statscachesource.DefaultSyncedAt holds the default value on creation for the synced_at field.
+	statscachesource.DefaultSyncedAt = statscachesourceDescSyncedAt.Default.(func() time.Time)
+	statscachevisitorFields := schema.StatsCacheVisitor{}.Fields()
+	_ = statscachevisitorFields
+	// statscachevisitorDescSyncedAt is the schema descriptor for synced_at field.
+	statscachevisitorDescSyncedAt := statscachevisitorFields[7].Descriptor()
+	// statscachevisitor.DefaultSyncedAt holds the default value on creation for the synced_at field.
+	statscachevisitor.DefaultSyncedAt = statscachevisitorDescSyncedAt.Default.(func() time.Time)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescUsername is the schema descriptor for username field.

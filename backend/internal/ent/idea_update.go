@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
-	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/predicate"
 	"time"
@@ -261,21 +260,6 @@ func (iu *IdeaUpdate) SetDetails(i *IdeaDetail) *IdeaUpdate {
 	return iu.SetDetailsID(i.ID)
 }
 
-// AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
-func (iu *IdeaUpdate) AddTagIDs(ids ...string) *IdeaUpdate {
-	iu.mutation.AddTagIDs(ids...)
-	return iu
-}
-
-// AddTags adds the "tags" edges to the IdeaTag entity.
-func (iu *IdeaUpdate) AddTags(i ...*IdeaTag) *IdeaUpdate {
-	ids := make([]string, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return iu.AddTagIDs(ids...)
-}
-
 // Mutation returns the IdeaMutation object of the builder.
 func (iu *IdeaUpdate) Mutation() *IdeaMutation {
 	return iu.mutation
@@ -306,27 +290,6 @@ func (iu *IdeaUpdate) RemoveTranslations(i ...*IdeaTranslation) *IdeaUpdate {
 func (iu *IdeaUpdate) ClearDetails() *IdeaUpdate {
 	iu.mutation.ClearDetails()
 	return iu
-}
-
-// ClearTags clears all "tags" edges to the IdeaTag entity.
-func (iu *IdeaUpdate) ClearTags() *IdeaUpdate {
-	iu.mutation.ClearTags()
-	return iu
-}
-
-// RemoveTagIDs removes the "tags" edge to IdeaTag entities by IDs.
-func (iu *IdeaUpdate) RemoveTagIDs(ids ...string) *IdeaUpdate {
-	iu.mutation.RemoveTagIDs(ids...)
-	return iu
-}
-
-// RemoveTags removes "tags" edges to IdeaTag entities.
-func (iu *IdeaUpdate) RemoveTags(i ...*IdeaTag) *IdeaUpdate {
-	ids := make([]string, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return iu.RemoveTagIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -534,51 +497,6 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if iu.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   idea.TagsTable,
-			Columns: idea.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iu.mutation.RemovedTagsIDs(); len(nodes) > 0 && !iu.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   idea.TagsTable,
-			Columns: idea.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iu.mutation.TagsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   idea.TagsTable,
-			Columns: idea.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -836,21 +754,6 @@ func (iuo *IdeaUpdateOne) SetDetails(i *IdeaDetail) *IdeaUpdateOne {
 	return iuo.SetDetailsID(i.ID)
 }
 
-// AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
-func (iuo *IdeaUpdateOne) AddTagIDs(ids ...string) *IdeaUpdateOne {
-	iuo.mutation.AddTagIDs(ids...)
-	return iuo
-}
-
-// AddTags adds the "tags" edges to the IdeaTag entity.
-func (iuo *IdeaUpdateOne) AddTags(i ...*IdeaTag) *IdeaUpdateOne {
-	ids := make([]string, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return iuo.AddTagIDs(ids...)
-}
-
 // Mutation returns the IdeaMutation object of the builder.
 func (iuo *IdeaUpdateOne) Mutation() *IdeaMutation {
 	return iuo.mutation
@@ -881,27 +784,6 @@ func (iuo *IdeaUpdateOne) RemoveTranslations(i ...*IdeaTranslation) *IdeaUpdateO
 func (iuo *IdeaUpdateOne) ClearDetails() *IdeaUpdateOne {
 	iuo.mutation.ClearDetails()
 	return iuo
-}
-
-// ClearTags clears all "tags" edges to the IdeaTag entity.
-func (iuo *IdeaUpdateOne) ClearTags() *IdeaUpdateOne {
-	iuo.mutation.ClearTags()
-	return iuo
-}
-
-// RemoveTagIDs removes the "tags" edge to IdeaTag entities by IDs.
-func (iuo *IdeaUpdateOne) RemoveTagIDs(ids ...string) *IdeaUpdateOne {
-	iuo.mutation.RemoveTagIDs(ids...)
-	return iuo
-}
-
-// RemoveTags removes "tags" edges to IdeaTag entities.
-func (iuo *IdeaUpdateOne) RemoveTags(i ...*IdeaTag) *IdeaUpdateOne {
-	ids := make([]string, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return iuo.RemoveTagIDs(ids...)
 }
 
 // Where appends a list predicates to the IdeaUpdate builder.
@@ -1139,51 +1021,6 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if iuo.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   idea.TagsTable,
-			Columns: idea.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iuo.mutation.RemovedTagsIDs(); len(nodes) > 0 && !iuo.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   idea.TagsTable,
-			Columns: idea.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := iuo.mutation.TagsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   idea.TagsTable,
-			Columns: idea.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

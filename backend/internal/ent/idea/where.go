@@ -821,29 +821,6 @@ func HasDetailsWith(preds ...predicate.IdeaDetail) predicate.Idea {
 	})
 }
 
-// HasTags applies the HasEdge predicate on the "tags" edge.
-func HasTags() predicate.Idea {
-	return predicate.Idea(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, TagsTable, TagsPrimaryKey...),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasTagsWith applies the HasEdge predicate on the "tags" edge with a given conditions (other predicates).
-func HasTagsWith(preds ...predicate.IdeaTag) predicate.Idea {
-	return predicate.Idea(func(s *sql.Selector) {
-		step := newTagsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Idea) predicate.Idea {
 	return predicate.Idea(sql.AndPredicates(predicates...))

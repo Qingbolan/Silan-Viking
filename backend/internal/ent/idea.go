@@ -54,11 +54,9 @@ type IdeaEdges struct {
 	Translations []*IdeaTranslation `json:"translations,omitempty"`
 	// Details holds the value of the details edge.
 	Details *IdeaDetail `json:"details,omitempty"`
-	// Tags holds the value of the tags edge.
-	Tags []*IdeaTag `json:"tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
@@ -79,15 +77,6 @@ func (e IdeaEdges) DetailsOrErr() (*IdeaDetail, error) {
 		return nil, &NotFoundError{label: ideadetail.Label}
 	}
 	return nil, &NotLoadedError{edge: "details"}
-}
-
-// TagsOrErr returns the Tags value or an error if the edge
-// was not loaded in eager-loading.
-func (e IdeaEdges) TagsOrErr() ([]*IdeaTag, error) {
-	if e.loadedTypes[2] {
-		return e.Tags, nil
-	}
-	return nil, &NotLoadedError{edge: "tags"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -215,11 +204,6 @@ func (i *Idea) QueryTranslations() *IdeaTranslationQuery {
 // QueryDetails queries the "details" edge of the Idea entity.
 func (i *Idea) QueryDetails() *IdeaDetailQuery {
 	return NewIdeaClient(i.config).QueryDetails(i)
-}
-
-// QueryTags queries the "tags" edge of the Idea entity.
-func (i *Idea) QueryTags() *IdeaTagQuery {
-	return NewIdeaClient(i.config).QueryTags(i)
 }
 
 // Update returns a builder for updating this Idea.

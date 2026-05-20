@@ -24,12 +24,8 @@ type Tx struct {
 	BlogCategoryTranslation *BlogCategoryTranslationClient
 	// BlogPost is the client for interacting with the BlogPost builders.
 	BlogPost *BlogPostClient
-	// BlogPostTag is the client for interacting with the BlogPostTag builders.
-	BlogPostTag *BlogPostTagClient
 	// BlogPostTranslation is the client for interacting with the BlogPostTranslation builders.
 	BlogPostTranslation *BlogPostTranslationClient
-	// BlogTag is the client for interacting with the BlogTag builders.
-	BlogTag *BlogTagClient
 	// Comment is the client for interacting with the Comment builders.
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
@@ -38,6 +34,8 @@ type Tx struct {
 	ContentInteraction *ContentInteractionClient
 	// ContentRelation is the client for interacting with the ContentRelation builders.
 	ContentRelation *ContentRelationClient
+	// ContentTag is the client for interacting with the ContentTag builders.
+	ContentTag *ContentTagClient
 	// Education is the client for interacting with the Education builders.
 	Education *EducationClient
 	// EducationDetail is the client for interacting with the EducationDetail builders.
@@ -60,8 +58,6 @@ type Tx struct {
 	IdeaDetail *IdeaDetailClient
 	// IdeaDetailTranslation is the client for interacting with the IdeaDetailTranslation builders.
 	IdeaDetailTranslation *IdeaDetailTranslationClient
-	// IdeaTag is the client for interacting with the IdeaTag builders.
-	IdeaTag *IdeaTagClient
 	// IdeaTranslation is the client for interacting with the IdeaTranslation builders.
 	IdeaTranslation *IdeaTranslationClient
 	// ItemPart is the client for interacting with the ItemPart builders.
@@ -118,6 +114,16 @@ type Tx struct {
 	ResearchProjectTranslation *ResearchProjectTranslationClient
 	// SocialLink is the client for interacting with the SocialLink builders.
 	SocialLink *SocialLinkClient
+	// StatsCacheCrawler is the client for interacting with the StatsCacheCrawler builders.
+	StatsCacheCrawler *StatsCacheCrawlerClient
+	// StatsCacheItem is the client for interacting with the StatsCacheItem builders.
+	StatsCacheItem *StatsCacheItemClient
+	// StatsCacheSource is the client for interacting with the StatsCacheSource builders.
+	StatsCacheSource *StatsCacheSourceClient
+	// StatsCacheVisitor is the client for interacting with the StatsCacheVisitor builders.
+	StatsCacheVisitor *StatsCacheVisitorClient
+	// Tag is the client for interacting with the Tag builders.
+	Tag *TagClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserIdentity is the client for interacting with the UserIdentity builders.
@@ -267,13 +273,12 @@ func (tx *Tx) init() {
 	tx.BlogCategory = NewBlogCategoryClient(tx.config)
 	tx.BlogCategoryTranslation = NewBlogCategoryTranslationClient(tx.config)
 	tx.BlogPost = NewBlogPostClient(tx.config)
-	tx.BlogPostTag = NewBlogPostTagClient(tx.config)
 	tx.BlogPostTranslation = NewBlogPostTranslationClient(tx.config)
-	tx.BlogTag = NewBlogTagClient(tx.config)
 	tx.Comment = NewCommentClient(tx.config)
 	tx.CommentLike = NewCommentLikeClient(tx.config)
 	tx.ContentInteraction = NewContentInteractionClient(tx.config)
 	tx.ContentRelation = NewContentRelationClient(tx.config)
+	tx.ContentTag = NewContentTagClient(tx.config)
 	tx.Education = NewEducationClient(tx.config)
 	tx.EducationDetail = NewEducationDetailClient(tx.config)
 	tx.EducationDetailTranslation = NewEducationDetailTranslationClient(tx.config)
@@ -285,7 +290,6 @@ func (tx *Tx) init() {
 	tx.Idea = NewIdeaClient(tx.config)
 	tx.IdeaDetail = NewIdeaDetailClient(tx.config)
 	tx.IdeaDetailTranslation = NewIdeaDetailTranslationClient(tx.config)
-	tx.IdeaTag = NewIdeaTagClient(tx.config)
 	tx.IdeaTranslation = NewIdeaTranslationClient(tx.config)
 	tx.ItemPart = NewItemPartClient(tx.config)
 	tx.ItemPartTranslation = NewItemPartTranslationClient(tx.config)
@@ -314,6 +318,11 @@ func (tx *Tx) init() {
 	tx.ResearchProjectDetailTranslation = NewResearchProjectDetailTranslationClient(tx.config)
 	tx.ResearchProjectTranslation = NewResearchProjectTranslationClient(tx.config)
 	tx.SocialLink = NewSocialLinkClient(tx.config)
+	tx.StatsCacheCrawler = NewStatsCacheCrawlerClient(tx.config)
+	tx.StatsCacheItem = NewStatsCacheItemClient(tx.config)
+	tx.StatsCacheSource = NewStatsCacheSourceClient(tx.config)
+	tx.StatsCacheVisitor = NewStatsCacheVisitorClient(tx.config)
+	tx.Tag = NewTagClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserIdentity = NewUserIdentityClient(tx.config)
 	tx.WorkExperience = NewWorkExperienceClient(tx.config)

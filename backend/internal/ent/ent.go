@@ -13,13 +13,12 @@ import (
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogcategorytranslation"
 	"silan-backend/internal/ent/blogpost"
-	"silan-backend/internal/ent/blogposttag"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/contentrelation"
+	"silan-backend/internal/ent/contenttag"
 	"silan-backend/internal/ent/education"
 	"silan-backend/internal/ent/educationdetail"
 	"silan-backend/internal/ent/educationdetailtranslation"
@@ -31,7 +30,6 @@ import (
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideadetailtranslation"
-	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
@@ -60,6 +58,11 @@ import (
 	"silan-backend/internal/ent/researchprojectdetailtranslation"
 	"silan-backend/internal/ent/researchprojecttranslation"
 	"silan-backend/internal/ent/sociallink"
+	"silan-backend/internal/ent/statscachecrawler"
+	"silan-backend/internal/ent/statscacheitem"
+	"silan-backend/internal/ent/statscachesource"
+	"silan-backend/internal/ent/statscachevisitor"
+	"silan-backend/internal/ent/tag"
 	"silan-backend/internal/ent/user"
 	"silan-backend/internal/ent/useridentity"
 	"silan-backend/internal/ent/workexperience"
@@ -137,13 +140,12 @@ func checkColumn(table, column string) error {
 			blogcategory.Table:                     blogcategory.ValidColumn,
 			blogcategorytranslation.Table:          blogcategorytranslation.ValidColumn,
 			blogpost.Table:                         blogpost.ValidColumn,
-			blogposttag.Table:                      blogposttag.ValidColumn,
 			blogposttranslation.Table:              blogposttranslation.ValidColumn,
-			blogtag.Table:                          blogtag.ValidColumn,
 			comment.Table:                          comment.ValidColumn,
 			commentlike.Table:                      commentlike.ValidColumn,
 			contentinteraction.Table:               contentinteraction.ValidColumn,
 			contentrelation.Table:                  contentrelation.ValidColumn,
+			contenttag.Table:                       contenttag.ValidColumn,
 			education.Table:                        education.ValidColumn,
 			educationdetail.Table:                  educationdetail.ValidColumn,
 			educationdetailtranslation.Table:       educationdetailtranslation.ValidColumn,
@@ -155,7 +157,6 @@ func checkColumn(table, column string) error {
 			idea.Table:                             idea.ValidColumn,
 			ideadetail.Table:                       ideadetail.ValidColumn,
 			ideadetailtranslation.Table:            ideadetailtranslation.ValidColumn,
-			ideatag.Table:                          ideatag.ValidColumn,
 			ideatranslation.Table:                  ideatranslation.ValidColumn,
 			itempart.Table:                         itempart.ValidColumn,
 			itemparttranslation.Table:              itemparttranslation.ValidColumn,
@@ -184,6 +185,11 @@ func checkColumn(table, column string) error {
 			researchprojectdetailtranslation.Table: researchprojectdetailtranslation.ValidColumn,
 			researchprojecttranslation.Table:       researchprojecttranslation.ValidColumn,
 			sociallink.Table:                       sociallink.ValidColumn,
+			statscachecrawler.Table:                statscachecrawler.ValidColumn,
+			statscacheitem.Table:                   statscacheitem.ValidColumn,
+			statscachesource.Table:                 statscachesource.ValidColumn,
+			statscachevisitor.Table:                statscachevisitor.ValidColumn,
+			tag.Table:                              tag.ValidColumn,
 			user.Table:                             user.ValidColumn,
 			useridentity.Table:                     useridentity.ValidColumn,
 			workexperience.Table:                   workexperience.ValidColumn,

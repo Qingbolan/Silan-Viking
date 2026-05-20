@@ -9,7 +9,6 @@ import (
 	"math"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
-	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/predicate"
 
@@ -28,7 +27,6 @@ type IdeaQuery struct {
 	predicates       []predicate.Idea
 	withTranslations *IdeaTranslationQuery
 	withDetails      *IdeaDetailQuery
-	withTags         *IdeaTagQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -102,28 +100,6 @@ func (iq *IdeaQuery) QueryDetails() *IdeaDetailQuery {
 			sqlgraph.From(idea.Table, idea.FieldID, selector),
 			sqlgraph.To(ideadetail.Table, ideadetail.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, false, idea.DetailsTable, idea.DetailsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryTags chains the current query on the "tags" edge.
-func (iq *IdeaQuery) QueryTags() *IdeaTagQuery {
-	query := (&IdeaTagClient{config: iq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := iq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := iq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(idea.Table, idea.FieldID, selector),
-			sqlgraph.To(ideatag.Table, ideatag.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, idea.TagsTable, idea.TagsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(iq.driver.Dialect(), step)
 		return fromU, nil
@@ -325,7 +301,6 @@ func (iq *IdeaQuery) Clone() *IdeaQuery {
 		predicates:       append([]predicate.Idea{}, iq.predicates...),
 		withTranslations: iq.withTranslations.Clone(),
 		withDetails:      iq.withDetails.Clone(),
-		withTags:         iq.withTags.Clone(),
 		// clone intermediate query.
 		sql:  iq.sql.Clone(),
 		path: iq.path,
@@ -351,17 +326,6 @@ func (iq *IdeaQuery) WithDetails(opts ...func(*IdeaDetailQuery)) *IdeaQuery {
 		opt(query)
 	}
 	iq.withDetails = query
-	return iq
-}
-
-// WithTags tells the query-builder to eager-load the nodes that are connected to
-// the "tags" edge. The optional arguments are used to configure the query builder of the edge.
-func (iq *IdeaQuery) WithTags(opts ...func(*IdeaTagQuery)) *IdeaQuery {
-	query := (&IdeaTagClient{config: iq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	iq.withTags = query
 	return iq
 }
 
@@ -443,10 +407,9 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	var (
 		nodes       = []*Idea{}
 		_spec       = iq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [2]bool{
 			iq.withTranslations != nil,
 			iq.withDetails != nil,
-			iq.withTags != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -477,13 +440,6 @@ func (iq *IdeaQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Idea, e
 	if query := iq.withDetails; query != nil {
 		if err := iq.loadDetails(ctx, query, nodes, nil,
 			func(n *Idea, e *IdeaDetail) { n.Edges.Details = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := iq.withTags; query != nil {
-		if err := iq.loadTags(ctx, query, nodes,
-			func(n *Idea) { n.Edges.Tags = []*IdeaTag{} },
-			func(n *Idea, e *IdeaTag) { n.Edges.Tags = append(n.Edges.Tags, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -544,67 +500,6 @@ func (iq *IdeaQuery) loadDetails(ctx context.Context, query *IdeaDetailQuery, no
 			return fmt.Errorf(`unexpected referenced foreign-key "idea_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
-	}
-	return nil
-}
-func (iq *IdeaQuery) loadTags(ctx context.Context, query *IdeaTagQuery, nodes []*Idea, init func(*Idea), assign func(*Idea, *IdeaTag)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[string]*Idea)
-	nids := make(map[string]map[*Idea]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
-		}
-	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(idea.TagsTable)
-		s.Join(joinT).On(s.C(ideatag.FieldID), joinT.C(idea.TagsPrimaryKey[1]))
-		s.Where(sql.InValues(joinT.C(idea.TagsPrimaryKey[0]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(idea.TagsPrimaryKey[0]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(sql.NullString)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := values[0].(*sql.NullString).String
-				inValue := values[1].(*sql.NullString).String
-				if nids[inValue] == nil {
-					nids[inValue] = map[*Idea]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*IdeaTag](ctx, query, qr, query.inters)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected "tags" node returned %v`, n.ID)
-		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
 	}
 	return nil
 }

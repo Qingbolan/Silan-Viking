@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
-	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"time"
 
@@ -231,21 +230,6 @@ func (ic *IdeaCreate) SetDetails(i *IdeaDetail) *IdeaCreate {
 	return ic.SetDetailsID(i.ID)
 }
 
-// AddTagIDs adds the "tags" edge to the IdeaTag entity by IDs.
-func (ic *IdeaCreate) AddTagIDs(ids ...string) *IdeaCreate {
-	ic.mutation.AddTagIDs(ids...)
-	return ic
-}
-
-// AddTags adds the "tags" edges to the IdeaTag entity.
-func (ic *IdeaCreate) AddTags(i ...*IdeaTag) *IdeaCreate {
-	ids := make([]string, len(i))
-	for j := range i {
-		ids[j] = i[j].ID
-	}
-	return ic.AddTagIDs(ids...)
-}
-
 // Mutation returns the IdeaMutation object of the builder.
 func (ic *IdeaCreate) Mutation() *IdeaMutation {
 	return ic.mutation
@@ -465,22 +449,6 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(ideadetail.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := ic.mutation.TagsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   idea.TagsTable,
-			Columns: idea.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(ideatag.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

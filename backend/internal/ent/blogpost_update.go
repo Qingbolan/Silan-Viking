@@ -9,7 +9,6 @@ import (
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/predicate"
 	"time"
 
@@ -395,21 +394,6 @@ func (bpu *BlogPostUpdate) SetCategory(b *BlogCategory) *BlogPostUpdate {
 	return bpu.SetCategoryID(b.ID)
 }
 
-// AddTagIDs adds the "tags" edge to the BlogTag entity by IDs.
-func (bpu *BlogPostUpdate) AddTagIDs(ids ...string) *BlogPostUpdate {
-	bpu.mutation.AddTagIDs(ids...)
-	return bpu
-}
-
-// AddTags adds the "tags" edges to the BlogTag entity.
-func (bpu *BlogPostUpdate) AddTags(b ...*BlogTag) *BlogPostUpdate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bpu.AddTagIDs(ids...)
-}
-
 // AddTranslationIDs adds the "translations" edge to the BlogPostTranslation entity by IDs.
 func (bpu *BlogPostUpdate) AddTranslationIDs(ids ...string) *BlogPostUpdate {
 	bpu.mutation.AddTranslationIDs(ids...)
@@ -434,27 +418,6 @@ func (bpu *BlogPostUpdate) Mutation() *BlogPostMutation {
 func (bpu *BlogPostUpdate) ClearCategory() *BlogPostUpdate {
 	bpu.mutation.ClearCategory()
 	return bpu
-}
-
-// ClearTags clears all "tags" edges to the BlogTag entity.
-func (bpu *BlogPostUpdate) ClearTags() *BlogPostUpdate {
-	bpu.mutation.ClearTags()
-	return bpu
-}
-
-// RemoveTagIDs removes the "tags" edge to BlogTag entities by IDs.
-func (bpu *BlogPostUpdate) RemoveTagIDs(ids ...string) *BlogPostUpdate {
-	bpu.mutation.RemoveTagIDs(ids...)
-	return bpu
-}
-
-// RemoveTags removes "tags" edges to BlogTag entities.
-func (bpu *BlogPostUpdate) RemoveTags(b ...*BlogTag) *BlogPostUpdate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bpu.RemoveTagIDs(ids...)
 }
 
 // ClearTranslations clears all "translations" edges to the BlogPostTranslation entity.
@@ -690,63 +653,6 @@ func (bpu *BlogPostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if bpu.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   blogpost.TagsTable,
-			Columns: blogpost.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
-			},
-		}
-		createE := &BlogPostTagCreate{config: bpu.config, mutation: newBlogPostTagMutation(bpu.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpu.mutation.RemovedTagsIDs(); len(nodes) > 0 && !bpu.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   blogpost.TagsTable,
-			Columns: blogpost.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		createE := &BlogPostTagCreate{config: bpu.config, mutation: newBlogPostTagMutation(bpu.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpu.mutation.TagsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   blogpost.TagsTable,
-			Columns: blogpost.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		createE := &BlogPostTagCreate{config: bpu.config, mutation: newBlogPostTagMutation(bpu.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if bpu.mutation.TranslationsCleared() {
@@ -1178,21 +1084,6 @@ func (bpuo *BlogPostUpdateOne) SetCategory(b *BlogCategory) *BlogPostUpdateOne {
 	return bpuo.SetCategoryID(b.ID)
 }
 
-// AddTagIDs adds the "tags" edge to the BlogTag entity by IDs.
-func (bpuo *BlogPostUpdateOne) AddTagIDs(ids ...string) *BlogPostUpdateOne {
-	bpuo.mutation.AddTagIDs(ids...)
-	return bpuo
-}
-
-// AddTags adds the "tags" edges to the BlogTag entity.
-func (bpuo *BlogPostUpdateOne) AddTags(b ...*BlogTag) *BlogPostUpdateOne {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bpuo.AddTagIDs(ids...)
-}
-
 // AddTranslationIDs adds the "translations" edge to the BlogPostTranslation entity by IDs.
 func (bpuo *BlogPostUpdateOne) AddTranslationIDs(ids ...string) *BlogPostUpdateOne {
 	bpuo.mutation.AddTranslationIDs(ids...)
@@ -1217,27 +1108,6 @@ func (bpuo *BlogPostUpdateOne) Mutation() *BlogPostMutation {
 func (bpuo *BlogPostUpdateOne) ClearCategory() *BlogPostUpdateOne {
 	bpuo.mutation.ClearCategory()
 	return bpuo
-}
-
-// ClearTags clears all "tags" edges to the BlogTag entity.
-func (bpuo *BlogPostUpdateOne) ClearTags() *BlogPostUpdateOne {
-	bpuo.mutation.ClearTags()
-	return bpuo
-}
-
-// RemoveTagIDs removes the "tags" edge to BlogTag entities by IDs.
-func (bpuo *BlogPostUpdateOne) RemoveTagIDs(ids ...string) *BlogPostUpdateOne {
-	bpuo.mutation.RemoveTagIDs(ids...)
-	return bpuo
-}
-
-// RemoveTags removes "tags" edges to BlogTag entities.
-func (bpuo *BlogPostUpdateOne) RemoveTags(b ...*BlogTag) *BlogPostUpdateOne {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bpuo.RemoveTagIDs(ids...)
 }
 
 // ClearTranslations clears all "translations" edges to the BlogPostTranslation entity.
@@ -1503,63 +1373,6 @@ func (bpuo *BlogPostUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost, er
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if bpuo.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   blogpost.TagsTable,
-			Columns: blogpost.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
-			},
-		}
-		createE := &BlogPostTagCreate{config: bpuo.config, mutation: newBlogPostTagMutation(bpuo.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpuo.mutation.RemovedTagsIDs(); len(nodes) > 0 && !bpuo.mutation.TagsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   blogpost.TagsTable,
-			Columns: blogpost.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		createE := &BlogPostTagCreate{config: bpuo.config, mutation: newBlogPostTagMutation(bpuo.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpuo.mutation.TagsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   blogpost.TagsTable,
-			Columns: blogpost.TagsPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogtag.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		createE := &BlogPostTagCreate{config: bpuo.config, mutation: newBlogPostTagMutation(bpuo.config, OpCreate)}
-		createE.defaults()
-		_, specE := createE.createSpec()
-		edge.Target.Fields = specE.Fields
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if bpuo.mutation.TranslationsCleared() {
