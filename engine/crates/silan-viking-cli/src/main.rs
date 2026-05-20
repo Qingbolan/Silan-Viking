@@ -381,8 +381,31 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["stats", "visitors", uri] => stats_visitors(&opts.db_path, uri),
         ["stats", "crawlers", uri] => stats_crawlers(&opts.db_path, uri),
         ["stats", "sources", uri] => stats_sources(&opts.db_path, uri),
-        ["mcp", "serve", "--stdio"] => mcp_stdio(&opts.content_root, &opts.db_path),
-        ["mcp", "serve"] => mcp_handshake(&opts.content_root),
+        // `mcp serve [--stdio]` accepts gate flags in any order after the
+        // verb. The gates surface deploy / E-stage tools that are kept out
+        // of the default 17-tool surface (17 §17.2 / GOAL §5).
+        ["mcp", "serve", rest @ ..] => {
+            let mut stdio = false;
+            let mut gate = silan_viking_mcp::ToolGate::default();
+            for flag in rest {
+                match *flag {
+                    "--stdio" => stdio = true,
+                    "--enable-deploy" => gate.deploy = true,
+                    "--enable-evolve" => gate.evolve = true,
+                    other => {
+                        return Err(format!(
+                            "unknown `mcp serve` flag `{other}` \
+                             (accepts --stdio / --enable-deploy / --enable-evolve)"
+                        ));
+                    }
+                }
+            }
+            if stdio {
+                mcp_stdio(&opts.content_root, &opts.db_path, gate)
+            } else {
+                mcp_handshake(&opts.content_root, gate)
+            }
+        }
         ["mcp", "status"] => mcp_status(&opts.content_root),
         ["site", "build"] | ["site", "preview"] => site_build(&opts.content_root, &opts.out_dir),
         ["site", "check"] => site_check(&opts.content_root),
@@ -1771,9 +1794,14 @@ fn stats_sources(db_path: &Path, uri: &str) -> Result<(), String> {
 
 // ── mcp / site groups — M9 adapters (`02` §二) ──────────────────────────────
 
-fn mcp_handshake(content_root: &Path) -> Result<(), String> {
+fn mcp_handshake(
+    content_root: &Path,
+    gate: silan_viking_mcp::ToolGate,
+) -> Result<(), String> {
     // `silan mcp serve` without a stdio transport: print the §8.6 handshake
     // so an operator can confirm the tool surface and SCHEMA the agent sees.
+    // The advertised tool list honours `gate` so `--enable-deploy` /
+    // `--enable-evolve` previews exactly what a host would see.
     let instructions = silan_viking_mcp::server_instructions(content_root, "silan-viking");
     println!("project={}", instructions.project);
     println!("schema_version={}", instructions.schema_version);
@@ -1784,7 +1812,7 @@ fn mcp_handshake(content_root: &Path) -> Result<(), String> {
     for resource in &instructions.key_resources {
         println!("resource={resource}");
     }
-    for tool in silan_viking_mcp::tool_specs() {
+    for tool in silan_viking_mcp::advertised_tool_specs(gate) {
         println!("tool={}\t{:?}", tool.name, tool.tier);
     }
     Ok(())
@@ -1792,8 +1820,14 @@ fn mcp_handshake(content_root: &Path) -> Result<(), String> {
 
 /// `silan mcp serve --stdio` — run the real JSON-RPC MCP server over stdio
 /// (`03` §3.2, `08` §8.6). An MCP host drives it; the loop ends at EOF.
-fn mcp_stdio(content_root: &Path, db_path: &Path) -> Result<(), String> {
-    let server = silan_viking_mcp::McpServer::new(content_root, db_path, "silan-viking");
+/// `gate` controls which gated tool tiers (deploy / Evolve) are advertised.
+fn mcp_stdio(
+    content_root: &Path,
+    db_path: &Path,
+    gate: silan_viking_mcp::ToolGate,
+) -> Result<(), String> {
+    let server = silan_viking_mcp::McpServer::new(content_root, db_path, "silan-viking")
+        .with_gate(gate);
     server
         .serve(io::stdin().lock(), io::stdout().lock())
         .map_err(|e| e.to_string())
