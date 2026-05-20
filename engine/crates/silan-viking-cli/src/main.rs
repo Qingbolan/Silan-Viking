@@ -2191,7 +2191,12 @@ fn site_deploy(
     // the same thing. Pre-format both as strings the closures can pass.
     let ssh_port = cfg.ssh_port.to_string();
     let ssh = |remote_cmd: &str| -> Result<(), String> {
-        let status = Command::new("ssh")
+        // Capture stderr so the wrapper can recognise common failure
+        // modes (Permission denied on the deploy dir is the one users
+        // hit most) and translate the raw OS error into something
+        // actionable. `.status()` would inherit stderr to the terminal
+        // and leave nothing for us to inspect.
+        let out = Command::new("ssh")
             .args([
                 "-i",
                 &key,
@@ -2207,9 +2212,30 @@ fn site_deploy(
                 &target,
                 remote_cmd,
             ])
-            .status()
+            .output()
             .map_err(|e| format!("ssh: {e}"))?;
-        if !status.success() {
+        // Mirror the captured streams to the terminal so verbose
+        // output (docker load progress, etc.) is still visible.
+        if !out.stdout.is_empty() {
+            let _ = std::io::Write::write_all(&mut std::io::stdout(), &out.stdout);
+        }
+        if !out.stderr.is_empty() {
+            let _ = std::io::Write::write_all(&mut std::io::stderr(), &out.stderr);
+        }
+        if !out.status.success() {
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            if stderr.contains("Permission denied")
+                && (remote_cmd.contains("mkdir") || stderr.contains(cfg.remote_dir.as_str()))
+            {
+                return Err(format!(
+                    "remote_dir `{}` is not writable by the deploy user. \
+                     Either pre-create it with `sudo mkdir -p {dir} && sudo chown $USER {dir}` \
+                     on the target, or pick a path under the deploy user's home (e.g. `~/silan-viking`) \
+                     in [deploy] of silan-viking.toml.",
+                    cfg.remote_dir,
+                    dir = cfg.remote_dir,
+                ));
+            }
             return Err(format!("remote command failed: {remote_cmd}"));
         }
         Ok(())
@@ -2258,6 +2284,18 @@ fn site_deploy(
 
     println!("[4/6] ship");
     ssh(&format!("mkdir -p {}", cfg.remote_dir))?;
+    // Clean up stale ship artefacts from a previous (possibly failed)
+    // deploy. The hazard: if a previous run died after `mkdir -p` but
+    // before scp, Docker may have created any of the bind-mount sources
+    // below as an empty directory; the next scp would then fail with a
+    // confusing "Is a directory" or silently produce wrong contents.
+    // We delete only the four paths this command actually ships into,
+    // not the whole remote_dir — the operator may keep other files
+    // (logs, manual backups) alongside.
+    ssh(&format!(
+        "cd {dir} && rm -rf images.tar snapshot.db docker-compose.yml proxy.conf",
+        dir = cfg.remote_dir,
+    ))?;
     // Save the built images to a tarball and ship them.
     let images_tar = project_root.join("_deploy/images.tar");
     let save = Command::new("docker")
