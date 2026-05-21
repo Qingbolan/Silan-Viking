@@ -1,10 +1,10 @@
-# silan-viking — the content engine for Silan's personal website
+# Silan Personal Website
 
-`silan-viking` is a single self-contained CLI that scaffolds, indexes, previews,
-and deploys a Silan-style personal website. It is the public face of the
-[Silan-Personal-Website](https://github.com/Qingbolan/Silan-Personal-Website)
-project: a Rust engine that turns a directory of Markdown into a runnable site
-backed by a Go API and a React frontend.
+A modern, interactive, and SEO-optimized personal resume website for AI
+professionals and full-stack developers — the kind of site that doubles as
+your résumé, your blog, your project gallery, your research notebook, and
+your public timeline, without forcing you to maintain six tools to keep
+them in sync.
 
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
@@ -15,37 +15,85 @@ backed by a Go API and a React frontend.
 
 ![alt text](image.png)
 
-## Install
+---
+
+## What you get
+
+A single deployable that turns a folder of Markdown into a polished,
+multi-section personal site:
+
+- **Interactive résumé** — parts-based, multi-language, generated from a
+  truth-source file you edit by hand
+- **Project gallery** — README / Quickstart / Releases / Dependencies tabs,
+  view counts, likes, public issue threads
+- **Blog & series** — long-form posts and multi-episode tutorial series
+- **Research ideas** — abstracts, progress notes, references, results
+- **Public timeline** — `update/` entries for what you're shipping this week
+- **Contact + public message wall** — visitors can leave notes without auth
+
+Powered by:
+
+- **React 18 + TypeScript + Vite + Tailwind + Framer Motion + Three.js** —
+  fast, animated, mobile-first
+- **Go-Zero + Ent ORM** — typed API backed by SQLite (default), MySQL, or
+  PostgreSQL
+- **silan-viking** — the Rust engine that ties content, database, frontend,
+  and deploy into one CLI
+- **i18n** (English / 中文) baked in across every content type
+- **SEO-ready** — server-rendered routes, OpenGraph, structured data,
+  sitemap
+- **Prometheus metrics + visitor analytics** — view tracking without
+  third-party scripts
+
+---
+
+## The idea
+
+Most personal sites force a trade-off: a static-site generator gives you
+clean Markdown but no database for view counts, likes, search, or comments;
+a CMS gives you those features but locks your content behind a UI. This
+project picks both.
+
+**Your content lives in `content/` as plain Markdown.** You edit it in your
+editor of choice, version it with git, diff it like code.
+
+**Your site runs against a real database.** A Rust engine
+(`silan-viking`) reads `content/`, validates the cross-references, and
+writes a derived SQLite database. The Go API serves it; the React frontend
+consumes it. View counts, likes, public messages, and comments all
+persist normally.
+
+**One command ships the whole stack.** `silan-viking site deploy` packs the
+engine binary, derived DB, Go service, built frontend, and Docker assets
+into a bundle and rolls it onto your host. The host only needs Docker — no
+Node, no Go, no Rust toolchain.
+
+**An AI assistant can edit content with you, not for you.** The engine
+exposes itself over [MCP](https://modelcontextprotocol.io) so Claude / any
+MCP-capable agent can draft a blog post, propose a project update, or
+extend your résumé — and every change goes through a `proposal` queue you
+review and accept by hand.
+
+---
+
+## How to use it
+
+### 1. Install the CLI
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Qingbolan/Silan-Personal-Website/main/engine/install.sh | sh
 ```
 
-The installer detects your OS and CPU, downloads the matching prebuilt binary
-from GitHub Releases, and drops it into `~/.local/bin/silan-viking`. If no
-prebuilt asset exists for your platform it falls back to building from source
-with `cargo` (needs the [Rust toolchain](https://rustup.rs)).
+The installer detects your platform (macOS arm64 / x86_64, Linux glibc
+arm64 / x86_64), pulls the matching binary from
+[Releases](https://github.com/Qingbolan/Silan-Personal-Website/releases),
+and drops it into `~/.local/bin/silan-viking`. If no prebuilt asset exists
+for your platform, it falls back to `cargo install` from source.
 
-Prebuilt binaries are shipped for:
+See [`engine/INSTALL.md`](engine/INSTALL.md) for the install-dir override,
+version pinning, SHA256 verification, and uninstall.
 
-| Platform                  | Triple                          |
-| ------------------------- | ------------------------------- |
-| macOS, Apple Silicon      | `aarch64-apple-darwin`          |
-| macOS, Intel              | `x86_64-apple-darwin`           |
-| Linux x86_64 (glibc)      | `x86_64-unknown-linux-gnu`      |
-| Linux arm64 (glibc)       | `aarch64-unknown-linux-gnu`     |
-
-Verify with `SHA256SUMS` published alongside each release. See
-[`engine/INSTALL.md`](engine/INSTALL.md) for environment variables
-(`SILAN_INSTALL_DIR`, `SILAN_VERSION`) and uninstall instructions.
-
-> **Note on Linux binaries.** The CLI's embedded deploy artifacts (`frontend/`,
-> `backend/`, `deploy/` tarballs used by `silan site deploy`) are empty
-> placeholders in cross-compiled Linux releases. Every other command — `init`,
-> `index sync`, `guide`, `site preview`, content CRUD, MCP server — works
-> normally. For full `site deploy` on Linux, build from a local checkout.
-
-## From zero to a running site
+### 2. From zero to a running site
 
 ```sh
 mkdir my-site && cd my-site
@@ -56,90 +104,128 @@ silan-viking index sync      # build the derived database from content/
 silan-viking site preview    # build the site and open a local preview
 ```
 
-`init` lays down `content/` with six content types and three seed items.
-After that, `guide` reads project state and tells you the next step — before
-`index sync` it points at sync; after syncing it points at preview and deploy.
+`init` lays down a `content/` tree with six content types and three seed
+items. From there, `guide` reads project state and tells you the next
+step — before `index sync` it points at sync; after syncing it points at
+preview and deploy. You never have to memorize the command surface.
 
-Add content with the per-type verbs:
+### 3. Add content
 
 ```sh
-silan-viking blog new <slug>
-silan-viking project new <slug>
-silan-viking idea new <slug>
-silan-viking index sync
+silan-viking blog new my-first-post
+silan-viking project new my-cool-project
+silan-viking idea new what-if-we-tried-this
+silan-viking episode series new my-tutorial-series
+silan-viking update new shipped-the-thing
+
+silan-viking index sync      # re-derive the database
+silan-viking site preview    # see it
 ```
 
-Run `silan-viking --help` for the full surface (content, workflow, publish,
-integration, maintenance).
+Multi-language? Each item can carry `en.md` + `zh.md` + any other locale —
+the engine wires them into the same record. The résumé works the same way,
+just one-of: edit `content/resources/resume/parts/*/en.md`.
+
+### 4. Inspect & link
+
+```sh
+silan-viking content tree                       # entire content layout
+silan-viking content show silan://blog/foo      # one item, resolved
+silan-viking relation graph silan://project/x   # cross-item links
+silan-viking relation link silan://blog/foo \
+                          silan://project/x --type references
+```
+
+Everything is addressable by a `silan://` URI. Relations are first-class:
+a blog post that references a project, a project that grew out of an idea,
+a résumé bullet that points at a publication.
+
+### 5. Ship it
+
+```sh
+silan-viking site deploy --dry-run    # preview the bundle
+silan-viking site deploy --confirm    # roll to the host in silan-viking.toml
+```
+
+Configure `[deploy]` in `silan-viking.toml` once (host, SSH key path,
+remote dir, compose file) and every deploy after that is one command. The
+target host only needs Docker.
+
+### 6. Let an agent help
+
+```sh
+silan-viking skill emit            # write a Claude Code skill descriptor
+silan-viking mcp                   # start the MCP server (port 7700)
+silan-viking proposal list         # see what the agent suggested
+silan-viking proposal accept <id>  # merge the proposal into content/
+```
+
+The agent never writes to `content/` directly — it submits proposals you
+accept, reject, or rebase. Your editorial voice stays yours.
+
+---
+
+## Architecture
+
+```
+                       ┌─────────────────────────────────────┐
+                       │  content/ (Markdown + YAML + i18n)  │  ← you edit this
+                       └──────────────────┬──────────────────┘
+                                          │ silan-viking index sync
+                                          ▼
+       ┌──────────────────────────────────────────────────────────────┐
+       │                  silan-viking — Rust engine                  │
+       │  cli · mcp · site          (L4 outward-facing adapters)      │
+       │  app  (parser → mapper → sink)              (L3 behavior)    │
+       │  content · entities  (sea-orm)              (L2 domain)      │
+       │  base                                       (L1 utilities)   │
+       └──────────────────┬───────────────────────────────────────────┘
+                          │ writes _deploy/api/portfolio.db
+                          ▼
+                       ┌─────────────────────────────────────┐
+                       │  Go-Zero API  +  Ent ORM            │
+                       │  serves: résumé, projects, blog,    │
+                       │  ideas, updates, metrics, messages  │
+                       └──────────────────┬──────────────────┘
+                                          │ HTTP / JSON
+                                          ▼
+                       ┌─────────────────────────────────────┐
+                       │  React 18 + Vite + Tailwind +       │
+                       │  Framer Motion + Three.js + i18next │
+                       └─────────────────────────────────────┘
+```
+
+Crate dependencies are strictly one-way (`cli/mcp/site → app →
+entities/content → base`); cargo enforces no back-edges at compile time.
+The L1 → L4 layering keeps the engine testable end-to-end without spinning
+up the Go service or the React app.
+
+---
 
 ## Repository layout
 
 ```
 Silan-Personal-Website/
 ├── engine/                       # silan-viking Rust workspace
-│   ├── crates/
-│   │   ├── silan-viking-base     # L1: utilities
-│   │   ├── silan-viking-content  # L2: domain data
-│   │   ├── silan-viking-entities # L2.5: sea-orm entities
-│   │   ├── silan-viking-app      # L3: parser / mapper / sink
-│   │   ├── silan-viking-cli      # L4: CLI adapter (binary: silan-viking)
-│   │   ├── silan-viking-mcp      # L4: MCP server adapter
-│   │   └── silan-viking-site     # L4: site build / preview / deploy
+│   ├── crates/                   # base / content / entities / app / cli / mcp / site
 │   ├── install.sh                # one-line installer
 │   └── INSTALL.md                # install reference
 │
 ├── content/                      # the Markdown truth source
-│   ├── blog/  project/  idea/    # content types
+│   ├── blog/  project/  ideas/   # long-form & gallery content
 │   ├── episode/  update/         # series and timeline
-│   ├── resources/resume/         # parts-based resume
-│   └── moment/                   # short updates
+│   ├── resources/resume/         # parts-based résumé
+│   └── agent/                    # MCP / skill scratchpad
 ├── silan-viking.toml             # project config (paths, identity, deploy)
 │
 ├── frontend/                     # React 18 + Vite + TypeScript app
 ├── backend/                      # Go-Zero API + Ent ORM
 ├── deploy/                       # docker-compose, nginx, entrypoints
 │
-└── docs/                         # design docs (silan-viking architecture)
+└── docs/                         # silan-viking design docs (01..N)
 ```
 
-The Rust engine writes a derived SQLite database under `_deploy/api/` that the
-Go backend serves; the React frontend reads from the Go API. `site deploy`
-ships the whole bundle — engine binary, derived DB, Go service, built
-frontend, Docker assets — to a target host so the only host-side dependency is
-Docker.
-
-## Architecture
-
-```
-                       ┌─────────────────────────────────┐
-                       │  content/ (Markdown + YAML)     │
-                       └──────────────┬──────────────────┘
-                                      │ silan-viking index sync
-                                      ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│                        silan-viking (Rust)                           │
-│  L4  cli  ·  mcp  ·  site                                            │
-│  L3  app  (parser → mapper → sink)                                   │
-│  L2  content   ·   L2.5  entities  (sea-orm)                         │
-│  L1  base                                                            │
-└──────────────────────────────────────────────────────────────────────┘
-                                      │ writes _deploy/api/portfolio.db
-                                      ▼
-                       ┌─────────────────────────────────┐
-                       │  Go-Zero API   +   Ent ORM      │
-                       │  (backend/, reads SQLite)       │
-                       └──────────────┬──────────────────┘
-                                      │ HTTP / JSON
-                                      ▼
-                       ┌─────────────────────────────────┐
-                       │  React 18 + Vite + Tailwind     │
-                       │  (frontend/)                    │
-                       └─────────────────────────────────┘
-```
-
-Crate dependency direction is strictly one-way (`cli/mcp/site → app →
-entities/content → base`); cargo enforces no back-edges at compile time. See
-[`docs/silan-viking/01-oop结构.md`](docs/silan-viking) for the full design.
+---
 
 ## Building from source
 
@@ -151,44 +237,34 @@ cargo build --release -p silan-viking-cli
 # binary: engine/target/release/silan-viking
 ```
 
-For developer builds with the install script's layout, use
-`engine/install-dev.sh`.
-
-### Cross-compiling release binaries
+The frontend and backend are bundled into `silan-viking site deploy` and
+rebuilt inside Docker on the deploy host, so you don't need Node or Go
+locally to ship. If you do want to work on them directly:
 
 ```sh
-# macOS host, native build
+cd frontend && npm install && npm run dev   # http://localhost:5173
+cd backend  && go mod download && go run backend.go   # http://localhost:8080
+```
+
+### Cross-compiling releases
+
+```sh
+# native
 cargo build --release -p silan-viking-cli --target aarch64-apple-darwin
 
-# Linux via cross (needs Docker + cross from git main on Apple Silicon)
+# Linux via cross (needs Docker; on Apple Silicon, install cross from git main)
 cargo install cross --git https://github.com/cross-rs/cross
 cross build --config 'build.rustc-wrapper=""' \
             --release -p silan-viking-cli \
             --target x86_64-unknown-linux-gnu
 ```
 
-The `build.rustc-wrapper=""` override is only needed if your global
-`~/.cargo/config.toml` sets `rustc-wrapper = sccache` — cross containers don't
-ship sccache.
+> Linux release binaries ship with **empty** deploy-artifact placeholders
+> (the cross container can't see `frontend/` / `backend/` / `deploy/`
+> outside the cargo workspace). Everything except `site deploy` works
+> normally; for full deploy support on Linux, build from a local checkout.
 
-## Frontend & backend (optional, for full-stack development)
-
-The engine is the only piece a user needs to publish a site. The frontend and
-backend are bundled into `silan-viking site deploy` and rebuilt inside Docker
-on the deploy host, so you do **not** need Node or Go locally to ship.
-
-If you do want to work on them directly:
-
-```sh
-# Frontend
-cd frontend && npm install && npm run dev   # http://localhost:5173
-
-# Backend
-cd backend && go mod download && go run backend.go   # http://localhost:8080
-```
-
-See [`frontend/README.md`](frontend/README.md) and the
-[`backend/`](backend/) tree for service-specific details.
+---
 
 ## Contributing
 
@@ -197,10 +273,12 @@ See [`frontend/README.md`](frontend/README.md) and the
 3. Conventional commits (`feat`, `fix`, `chore`, `docs`)
 4. Open a PR — include a `## Test plan` checklist
 
-Engine work happens under `engine/`. Each layer has its own README/design
-doc under `docs/silan-viking/`. Bug fixes that pay off a sharp edge should
-mention the cost they paid for in the PR description so the next person
+Engine work happens under `engine/`. Each layer has its own design doc
+under `docs/silan-viking/`. Bug fixes that pay off a sharp edge should
+mention the cost they paid for in the PR description, so the next person
 knows why the rule exists.
+
+---
 
 ## License
 
@@ -216,5 +294,6 @@ Apache License 2.0 — see [`License`](License).
 
 ---
 
-If you find this project helpful, please give it a star ★. Questions or
-suggestions? [Open an issue](https://github.com/Qingbolan/Silan-Personal-Website/issues).
+If this project helps you build your own site, please give it a star ★.
+Questions or suggestions?
+[Open an issue](https://github.com/Qingbolan/Silan-Personal-Website/issues).
