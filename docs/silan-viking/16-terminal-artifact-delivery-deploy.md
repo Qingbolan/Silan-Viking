@@ -1,197 +1,180 @@
-# 16 · 终局制品交付部署 —— deploy 管线第一性原理重构
+# 16 · Terminal-state artefact delivery + deploy — first-principles rebuild of the deploy pipeline
 
-> 决策人:CTO Silan.Hu(终局拍板) · 架构:凉冰 · 状态:实施中
-> 日期:2026-05-17
+> Decision owner: CTO Silan.Hu (final call) · Architect: 凉冰 · Status: in flight
+> Date: 2026-05-17
 
-## 16.1 问题
+## 16.1 The problem
 
-`silan site deploy` 当前是**源码部署**,不是**制品部署**。整条管线
-和两个 Dockerfile 都隐含假设「目标机器上有完整的源码仓库」:
+`silan site deploy` is currently a **source-code deploy**, not an
+**artefact deploy**. The whole pipeline and the two Dockerfiles
+implicitly assume "the target machine has the full source repo":
 
-- `run_vite_build` 要求 `frontend/package.json`,现场 `npm ci && npm run build`
-- `web.Dockerfile` `COPY frontend/ ./` 后现场构建 Vite bundle
-- `backend.Dockerfile` `COPY backend/ ./` 后现场 `go build`
-- `docker-compose.yml` 的 `build.context: ..` 把整个仓库当构建上下文
+- `run_vite_build` requires `frontend/package.json`, runs `npm ci && npm run build` on the spot
+- `web.Dockerfile` does `COPY frontend/ ./` and builds the Vite bundle on the spot
+- `backend.Dockerfile` does `COPY backend/ ./` and runs `go build` on the spot
+- `docker-compose.yml` uses `build.context: ..` and treats the whole repo as build context
 
-而真实用户 `cargo install silan-viking` / `pip install silan` 之后,
-手上**没有 `frontend/`、没有 `backend/`、没有 Dockerfile、没有
-compose.yml** —— 这些只在产品仓库里。`silan site deploy` 对他直接
-报错 `front-end not found`。
+But after a real user runs `cargo install silan-viking` /
+`pip install silan`, they have **no `frontend/`, no `backend/`, no
+Dockerfile, no compose.yml** — those live only in the product repo.
+`silan site deploy` fails out of the gate with `front-end not found`.
 
-## 16.2 第一性原理推演
+## 16.2 First-principles derivation
 
-**产品是什么:** AI 驱动的个人作品集平台。**用户是谁:** 想要个人
-网站的人,不是 clone 仓库的贡献者。**他的资产只有** `content/` 里的
-markdown 和 `silan-viking.toml`。前端 / 后端是**产品**,不是用户资产。
+**What is the product**: an AI-driven personal portfolio platform.
+**Who is the user**: someone who wants a personal website, not a
+contributor cloning the repo. **Their only asset** is markdown under
+`content/` plus `silan-viking.toml`. Frontend / backend are the
+**product**, not user assets.
 
-这与 Hugo / Zola 同构:用户从不碰主题源码,主题随引擎走。
+This mirrors Hugo / Zola: the user never touches theme source; the
+theme ships with the engine.
 
-**因此终局形态唯一解:**
+**The unique terminal-state shape:**
 
-> `cargo install silan-viking` → `silan init` 铺项目 → 写 markdown
-> → `silan site deploy` 一条命令上线。全程零前端源码、零 Node、零 Go。
+> `cargo install silan-viking` → `silan init` lays the project →
+> write markdown → `silan site deploy`, one command goes live.
+> End-to-end zero frontend source, zero Node, zero Go.
 
-**这把所有"选择题"锁死成唯一解:**
+**This locks every "choice" into a single answer:**
 
-1. **后端必须预构建。** 用户机器上没有 Go 源码,现场 `go build`
-   逻辑上不成立。
-2. **前端必须是引擎自带的制品。** 与 `silan init` 内嵌 `SCHEMA.md`
-   完全同构 —— 引擎自带 canonical schema,就该自带 canonical 前端
-   bundle 和 Docker 资产。
-3. **registry vs 内嵌:** registry 需要维护 Docker Hub / CI 推送 /
-   用户能访问 registry —— 是托管服务的运维负担。终局可以有 registry,
-   但**当前唯一正确解是 CLI 二进制自带预构建制品**:把"用户能部署"
-   的依赖收敛到零 —— 只要有 Docker。
+1. **The backend must be pre-built.** The user's machine has no Go source; a `go build` on the spot is logically impossible.
+2. **The frontend must ship with the engine.** Isomorphic to `silan init` embedding `SCHEMA.md` — the engine carries the canonical schema, so it should carry the canonical frontend bundle and Docker assets too.
+3. **registry vs embedded**: a registry requires maintaining Docker Hub / CI publishing / users being able to reach the registry — that is a hosted-service operations burden. The terminal state may have a registry later, but **the current single correct answer is "the CLI binary carries its own pre-built artefacts"**: collapse the "can the user deploy" dependency to zero — only Docker is required.
 
-**结论:`run_vite_build` 这个函数在终局形态里是伪命题,应当删除。**
+**Conclusion: `run_vite_build` is a false function in the terminal state and should be deleted.**
 
-## 16.3 终局架构 —— 内嵌源码 tar + Docker 隔离构建
+## 16.3 Terminal-state architecture — embedded source tars + Docker isolated build
 
-**核心判断:不变量是「用户机器无需源码仓库」,不是「绝不编译」。**
-Docker 多阶段构建是封闭、可重现、与用户宿主环境隔离的 —— 在容器里
-`npm run build` / `go build` 完全正当。`run_vite_build` 之所以错,
-是它在**用户的宿主机、用用户的 npm** 编,这才是要消除的。
+**Core judgement: the invariant is "the user's machine doesn't need
+the source repo", not "never compile".** A Docker multi-stage build
+is closed, reproducible, isolated from the user's host environment —
+`npm run build` / `go build` inside the container is entirely
+legitimate. `run_vite_build` is wrong because it compiles **on the
+user's host with the user's npm** — that is what must be eliminated.
 
-引擎构建期(`build.rs`)把以下打包,`include_bytes!` 进二进制:
+At engine build time (`build.rs`), package the following and
+`include_bytes!` them into the binary:
 
-| 制品 | 来源 | 排除 |
+| Artefact | Source | Excluded |
 |---|---|---|
-| `frontend.tar.gz` | `frontend/` 源码(~4.9M) | `node_modules`、`dist`、`.git` |
-| `backend.tar.gz` | `backend/` 源码(~11.3M) | 编译二进制、`*.db`、`*.log` |
-| `deploy.tar.gz` | `deploy/`:compose、两个 Dockerfile、nginx/proxy 配置、entrypoint | — |
+| `frontend.tar.gz` | `frontend/` source (~4.9M) | `node_modules`, `dist`, `.git` |
+| `backend.tar.gz` | `backend/` source (~11.3M) | compiled binaries, `*.db`, `*.log` |
+| `deploy.tar.gz` | `deploy/`: compose, the two Dockerfiles, nginx/proxy config, entrypoint | — |
 
-总计约 16M 源码,压缩后更小;内嵌后 `silan-viking` 约 25M,可接受
-(Hugo 量级)。**为什么内嵌源码 tar 而非 `frontend/dist` 构建产物:**
-`dist/` 是 git-ignored 的产物,提交进 `assets/` 等于把构建产物塞进
-版本控制,且每次前端改动要手动同步。`build.rs` 在编译期打 tar,
-保证制品与当前源码一致,不污染 git。
+~16M total source, smaller after compression; with these embedded,
+`silan-viking` is about 25MB — acceptable (Hugo-class).
+**Why embed source tars rather than the `frontend/dist` build
+output**: `dist/` is a git-ignored artefact; checking it into
+`assets/` would stuff build output into version control and force a
+manual sync after every frontend change. `build.rs` tars at compile
+time, guaranteeing the artefact matches the current source without
+polluting git.
 
-**为什么用 `build.rs` 打 tar 而非 `npm run build`:** 若 `build.rs`
-跑 npm,每次 `cargo build` 都被迫装 Node —— 违反「开发者 build CLI
-不该依赖 Node」。`build.rs` 只做 `tar` 打包(纯 Rust / 系统 tar),
-真正的 npm/go 构建推迟到 Docker 多阶段里。
+**Why use `build.rs` to tar, not `npm run build`**: if `build.rs`
+ran npm, every `cargo build` would force a Node install — violating
+"a developer building the CLI should not depend on Node". `build.rs`
+only does `tar` packaging (pure Rust / system tar); the actual
+npm/go build is deferred to the Docker multi-stage.
 
-`silan site deploy`:把三个内嵌 tar 解到临时 staging 目录 → docker
-compose 在那里多阶段构建(node 阶段编前端、golang 阶段编后端,全在
-容器隔离环境)→ 启动。用户侧依赖收敛到只剩一个:**有 Docker**。
+`silan site deploy`: extract the three embedded tars into a temporary
+staging directory → docker compose multi-stage build there (node
+stage builds the frontend, golang stage builds the backend, all in
+the container's isolated environment) → boot. User-side dependency
+collapses to one thing: **have Docker.**
 
-## 16.4 后端镜像策略
+## 16.4 Backend image policy
 
-后端用 `mattn/go-sqlite3`(CGO)。`backend.Dockerfile` 保留
-`golang:1.24-bookworm` 构建阶段(已装 gcc + libc6-dev),从 staging
-目录里解出的 `backend/` 源码构建。与前端 `node:20` 构建阶段对称 ——
-两者都是「引擎内嵌源码 tar → Docker 多阶段隔离构建」,架构一致。
-不预编译跨架构二进制:Go/Node 容器构建快、可重现,免去多架构分发。
+The backend uses `mattn/go-sqlite3` (CGO). `backend.Dockerfile`
+keeps the `golang:1.24-bookworm` build stage (gcc + libc6-dev
+pre-installed), building from the `backend/` source extracted in the
+staging directory. Symmetric to the frontend's `node:20` build
+stage — both follow "engine-embedded source tar → Docker multi-stage
+isolated build"; the architecture is consistent. We do not
+pre-compile cross-arch binaries: Go/Node container builds are fast
+and reproducible, sparing us multi-arch distribution.
 
-## 16.5 已发现的真实 bug(终局跑通的阻塞项)
+## 16.5 Real bugs uncovered (blockers to running the terminal state end-to-end)
 
-实施 + 端到端验证过程中抓到并修复的 4 个 bug:
+Ten bugs caught and fixed during implementation + end-to-end
+verification:
 
-1. **healthcheck 端点曾走旁路:** `/api/v1/health` 之前是手写
-   `server.AddRoute` 注册在 `backend.go`,绕过了 goctl。`.api` 文件
-   是后端 HTTP 契约的唯一真相源。**已修:** 在 `backend.api` 加
-   `health` group + `Health` handler,`goctl api go` 重新生成,移除
-   `backend.go` 的旁路 `AddRoute`。
-2. **仓库卫生债:** 4 个编译二进制(含一个误生成在 `internal/ent/`
-   的 99M ar-archive)被 git 跟踪,污染将要内嵌的 backend 源码 tar。
-   **已修:** `git rm --cached` + 补 `.gitignore`,删除垃圾文件。
-3. **`build.rs` 排除规则误伤源码:** `tar --exclude=migrate` 用裸
-   basename,把源码包 `backend/internal/ent/migrate/` 也一起排除,
-   导致镜像内 `go build` 报 `package ... migrate is not in std`。
-   **已修:** 排除模式改为路径锚定(`backend/migrate`)。
-4. **healthcheck 探针工具缺失:** `debian:bookworm-slim` runtime 镜像
-   既无 `wget` 也无 `curl`,compose healthcheck 用 `wget` → `exit
-   127` → 容器永久 unhealthy。**已修:** runtime stage 装 `curl`,
-   healthcheck 改用 `curl -fsS`。
+1. **The healthcheck endpoint bypassed the contract**: `/api/v1/health` was previously a hand-written `server.AddRoute` in `backend.go`, bypassing goctl. The `.api` file is the single source of truth for the backend's HTTP contract. **Fixed**: added the `health` group + `Health` handler in `backend.api`, ran `goctl api go` to regenerate, and removed the bypass `AddRoute` from `backend.go`.
+2. **Repo hygiene debt**: four compiled binaries (including a 99M ar-archive mistakenly emitted into `internal/ent/`) were tracked by git, polluting the to-be-embedded backend source tar. **Fixed**: `git rm --cached` + `.gitignore`, removed the junk files.
+3. **`build.rs` exclusion rule clobbered source**: `tar --exclude=migrate` used a bare basename, so the source bundle's `backend/internal/ent/migrate/` got excluded too — `go build` inside the image then failed with `package ... migrate is not in std`. **Fixed**: changed the exclusion pattern to be path-anchored (`backend/migrate`).
+4. **Missing healthcheck probe tool**: the `debian:bookworm-slim` runtime image has neither `wget` nor `curl`, so the compose healthcheck running `wget` → `exit 127` → the container is permanently unhealthy. **Fixed**: install `curl` in the runtime stage, switch the healthcheck to `curl -fsS`.
 
-5. **跨机 ship 漏传 `proxy.conf`:** `proxy` 服务 bind-mount
-   `./proxy.conf` 进 nginx 容器,但跨机 ship 阶段只 scp 了 compose
-   文件,没传 `proxy.conf`。Docker 见源路径不存在 → 把它创建成同名
-   目录 → 挂载到容器内文件路径失败。**已修:** ship 阶段补 scp
-   `proxy.conf`(与 compose 同放 remote_dir 根)。
-6. **跨机传二进制是错的:** 旧跨机路径把控制机的 `silan-viking`
-   二进制 scp 到目标机执行 `site promote`。控制机二进制按控制机
-   OS/架构编译,目标机可能跑不了(macOS→Linux,glibc↔musl)。
-   **已修:** promote 是纯 SQLite 操作 —— 改为在控制机本地做:从
-   目标机 scp 出 live db、本地 promote、再 scp 回去。不再传二进制。
-7. **SSH host-key 策略缺失:** `ssh`/`scp` 未设 `StrictHostKeyChecking`,
-   首次连一台新服务器会交互式卡死。**已修:** 4 个 ssh/scp 调用点
-   统一加 `StrictHostKeyChecking=accept-new`(首次接受+记录、之后
-   严格验证,比 `=no` 安全)。
-8. **`[deploy]` 不支持自定义 SSH 端口:** 真实服务器常把 sshd 移出
-   22 端口。**已修:** `[deploy]` 加可选 `ssh_port`(默认 22),
-   `ssh -p` / `scp -P` 全部带上。
-9. **`index sync` 漏写 `episode_series` → promote 撞 FK:** 扫描
-   `episode/<series>/<episode>/` 时,`scan_episode_type` 完全忽略了
-   series 目录里的 `series.toml`,从不产生 `episode_series` 行;但
-   `ProseMapper` 给每条 `episodes` 行写了 `series_id`(= series slug)。
-   live 库(Go ent migration)的 `episodes.series_id` 是指向
-   `episode_series.id` 的外键 —— 父行不存在,promote 在 COMMIT 报
-   裸 `FOREIGN KEY constraint failed`。**已修:** `scan` 读
-   `series.toml` 进新结构 `ScannedSeries`(slug 取目录名,即 FK 目标);
-   `run.rs` 在 `build_batch` 末尾按 series 产出 `episode_series` 行 ——
-   放在批次层而非 per-Item mapper,因为 series 是多个 episode 共享的
-   父行,从 mapper 产出会每集重复一次、sink 的裸 INSERT 撞主键。
-10. **backend 容器重建后 proxy 缓存了旧 IP → 502:** deploy 第 5 步
-    `compose up -d` 用新镜像**重建** backend 容器(新网络 IP),但
-    第 6 步只 `restart backend`。nginx 在 worker 启动时解析一次
-    `backend` upstream 并缓存 IP,旧 proxy 指向已死的旧容器,持续
-    返回 502。**已修:** 第 6 步改为 `restart backend proxy`,单机
-    与跨机两条路径都刷新 proxy 的 upstream。
+5. **Cross-host ship missed `proxy.conf`**: the `proxy` service bind-mounts `./proxy.conf` into the nginx container, but the cross-host ship step only scp'd the compose file, not `proxy.conf`. Docker, seeing the source path missing, **created** it as a same-named directory → the mount onto a file path inside the container failed. **Fixed**: ship step now also `scp`s `proxy.conf` (alongside the compose file in the root of `remote_dir`).
+6. **Shipping the binary cross-host was wrong**: the old cross-host path `scp`d the control machine's `silan-viking` binary to the target to execute `site promote`. The control binary is compiled for the control machine's OS/arch and may not run on the target (macOS → Linux, glibc ↔ musl). **Fixed**: promote is a pure SQLite operation — changed to "do it locally on the control machine": `scp` the live db down from the target, promote locally, `scp` back. No more shipping the binary.
+7. **Missing SSH host-key policy**: `ssh` / `scp` had no `StrictHostKeyChecking` set, so a first connection to a new server would hang interactively. **Fixed**: all four `ssh`/`scp` callsites use `StrictHostKeyChecking=accept-new` (accept and record on first contact, strict thereafter — safer than `=no`).
+8. **`[deploy]` didn't support a custom SSH port**: real servers often move sshd off port 22. **Fixed**: added an optional `ssh_port` (default 22) under `[deploy]`; `ssh -p` / `scp -P` everywhere.
+9. **`index sync` didn't write `episode_series` → promote hit an FK violation**: when scanning `episode/<series>/<episode>/`, `scan_episode_type` completely ignored `series.toml` in the series directory and never produced an `episode_series` row; yet `ProseMapper` wrote `series_id` (= series slug) onto every `episodes` row. The live db (post-Go-ent migration) has `episodes.series_id` as a foreign key to `episode_series.id` — with the parent row missing, promote raised a bare `FOREIGN KEY constraint failed` at COMMIT. **Fixed**: `scan` now reads `series.toml` into a new `ScannedSeries` struct (slug = the directory name, the FK target); `run.rs` produces `episode_series` rows at the end of `build_batch`, per series — at the batch layer rather than the per-Item mapper, because a series is a parent row shared by multiple episodes; producing it from the mapper would duplicate it per episode and crash the sink's bare INSERT on a primary-key collision.
+10. **After backend container rebuild, proxy cached the old IP → 502**: step 5 of deploy `compose up -d` **rebuilds** the backend container (new network IP), but step 6 only `restart backend`. nginx resolves the `backend` upstream once at worker start and caches the IP — the old proxy points at the dead old container and returns 502 forever. **Fixed**: step 6 is now `restart backend proxy`, refreshing the proxy upstream on both single-machine and cross-host paths.
 
-## 16.6 验收结果 —— 终局已跑通(2026-05-17)
+## 16.6 Acceptance — the terminal state runs end-to-end (2026-05-17)
 
-**单机模式** —— 在一个完全无源码的全新目录用 `silan-viking` 二进制:
-`init` → `[deploy] host=localhost` → `deploy --confirm` → 六步管线
-全过、站点在本机 Docker 上线。
+**Single-machine mode** — in a brand-new directory with no source,
+using only the `silan-viking` binary: `init` →
+`[deploy] host=localhost` → `deploy --confirm` → all six pipeline
+steps pass, the site is live on local Docker.
 
-**跨机模式** —— 两个隔离的 Docker 容器,字面意义的「两台电脑」:
-- 控制机 `sv-control`:只有 `silan-viking` 二进制 + Docker + SSH
-  client,**零源码**(模拟 `cargo install` 后的操作员机器)。
-- 目标机 `sv-target`:DinD + sshd,只有 Docker + SSH(模拟真实
-  远程服务器)。
-- 控制机 `init` 全新项目 → 配 `[deploy]` 指向 `sv-target` →
-  `deploy --confirm` → 镜像构建/打包/`docker save`/scp 跨 SSH 传到
-  目标机 → 目标机 `docker load`/`up` → promote → 站点上线。
+**Cross-host mode** — two isolated Docker containers, literally
+"two machines":
 
-两种模式验收全绿:
+- Control machine `sv-control`: only the `silan-viking` binary + Docker + SSH client, **no source** (simulates an operator's machine post `cargo install`).
+- Target machine `sv-target`: DinD + sshd, only Docker + SSH (simulates a real remote server).
+- Control: `init` a fresh project → configure `[deploy]` at `sv-target` → `deploy --confirm` → image build / pack / `docker save` / scp over SSH to the target → target `docker load` / `up` → promote → site live.
 
-| 检查 | 结果 |
+Both modes accepted green:
+
+| Check | Result |
 |---|---|
 | `/api/v1/health` | `{"status":"ok"}` |
-| 前端首页 | HTTP 200 |
-| `/api/v1/resume` | 返回真实数据 |
+| Frontend home | HTTP 200 |
+| `/api/v1/resume` | returns real data |
 | `/api/v1/blog/posts` | HTTP 200 |
-| backend 容器健康 | `healthy` |
-| promote | `tables=11 rows=17`,运行时表保留 |
+| backend container health | `healthy` |
+| promote | `tables=11 rows=17`; runtime tables preserved |
 
-CTO 最初的问题 —— 「一台机器安装配置,部署到另一台(Docker)」——
-答案:**能,且已端到端实测。** 引擎二进制自带全套制品,目标侧只
-需 Docker + SSH。单机与跨机两条路径都跑通。
+CTO's original question — "install and configure on one machine,
+deploy to another (Docker)" — answer: **yes, and end-to-end tested
+live**. The engine binary carries the full artefact set; the target
+side needs only Docker + SSH. Both single-machine and cross-host
+paths run.
 
-CTO 指令:**按终局一步到位,要真正跑通的结果。** 已达成。
+CTO directive: **go to the terminal state in one step; require a
+real working result**. Achieved.
 
-## 16.7 待优化(不阻塞终局,记录备查)
+## 16.7 Optimisations / known traps (not blocking; on the books)
 
-- ✅ **已修(GOAL §8 deploy #1)**:`remote_dir` 若指向 `deploy` 用户无
-  写权限的路径(如 `/srv` 下),`ssh` 闭包捕获 `Permission denied` 后
-  抛出指引消息,提示管理员预先 `sudo chown $USER <dir>` 或把
-  `remote_dir` 选在用户家目录下。落点
-  `engine/crates/silan-viking-cli/src/main.rs` 的 `ssh` 闭包。
-- ✅ **已修(GOAL §8 deploy #2)**:跨机 ship 前清空 `remote_dir` 的旧
-  文件 —— `[4/6] ship` 步在 `mkdir -p` 之后插入
-  `rm -rf images.tar snapshot.db docker-compose.yml proxy.conf`,清掉
-  上次失败留下的同名目录,避免后续 scp 被卡(`rm -f` 删不掉目录)。
-- ⚠️ **已知陷阱(开发者自留)**:跨平台容器构建(macOS 主机 + Linux
-  容器共享挂载卷)**不能信 cargo 增量缓存** —— host 写入的 fingerprint
-  与容器内 glibc/libc 版本不匹配,增量复用错的 `.rmeta` 会出现
-  「symbol not found」一类的离奇错误。
-  - **症状**:从 macOS host 跑 `cargo build` 成功;立刻 `docker run`
-    挂载 host `target/` 进 Linux 容器再 build,链接失败或运行时崩。
-  - **规避**:容器构建用**独立的** `CARGO_TARGET_DIR`(例:
-    `CARGO_TARGET_DIR=/tmp/target-linux cargo build`),不和 host
-    `target/` 共享;Docker 多阶段构建本来就是隔离卷,这条主要针对
-    开发者自己在 host 与容器之间手动来回切的场景。
-  - **不变量**:`build.rs` 的 tar 打包(`silan-viking-cli/build.rs`)
-    在 host 上跑 —— 它只 tar 源码、不调 cargo,因此免疫此陷阱
-    (符合 GOAL §9 不变量 #9)。
+- ✅ **Fixed (GOAL §8 deploy #1)**: when `remote_dir` points to a
+  path the deploy user can't write (e.g. somewhere under `/srv`),
+  the `ssh` closure catches `Permission denied` and surfaces a
+  guidance message, telling the operator to either pre-`sudo chown
+  $USER <dir>` or move `remote_dir` under the user's home. Site:
+  the `ssh` closure in `engine/crates/silan-viking-cli/src/main.rs`.
+- ✅ **Fixed (GOAL §8 deploy #2)**: clear stale files in
+  `remote_dir` before cross-host ship — the `[4/6] ship` step now
+  runs `rm -rf images.tar snapshot.db docker-compose.yml
+  proxy.conf` right after `mkdir -p`, clearing same-named
+  directories left behind by a previous failure (so a subsequent
+  `scp` doesn't get stuck because `rm -f` can't remove a directory).
+- ⚠️ **Known trap (developer-side note)**: cross-platform container
+  builds (macOS host + Linux container sharing the mounted volume)
+  **cannot trust the cargo incremental cache** — the fingerprint
+  the host writes does not match the container's glibc/libc, and
+  re-using the wrong `.rmeta` produces bizarre "symbol not found"
+  failures.
+  - **Symptom**: `cargo build` succeeds on the macOS host; immediately
+    `docker run` mounting the host `target/` into a Linux container
+    and rebuilding fails at link time or crashes at runtime.
+  - **Mitigation**: container builds use an **independent**
+    `CARGO_TARGET_DIR` (e.g. `CARGO_TARGET_DIR=/tmp/target-linux
+    cargo build`), never sharing the host `target/`. Docker
+    multi-stage builds use isolated volumes by default, so this
+    note mainly applies to developers manually switching back and
+    forth between host and container.
+  - **Invariant**: the `build.rs` tar packaging
+    (`silan-viking-cli/build.rs`) runs on the host — it only tars
+    sources and never calls cargo, so it is immune to this trap
+    (consistent with GOAL §9 invariant #9).
