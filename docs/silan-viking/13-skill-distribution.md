@@ -1,132 +1,161 @@
-# 13 · skill 分发 —— 让协作 agent「装一下就懂 silan」
+# 13 · Skill distribution — let a collaborating agent "install once, understand silan"
 
-> 服务需求 `#10 #11 #12`。
-> 前 12 章把 agent 的能力做全了 —— 但能力的**承载方式**是 MCP server。
-> 本章补的是最后一层:让一个 Claude agent **不手动配 MCP、装一个 skill 就能
-> 自动发现 silan-viking 并在对的时机调用它**。
+> Serves requirements `#10 #11 #12`.
+> The previous twelve chapters complete the agent's abilities — but the
+> **carrier** for those abilities is the MCP server. This chapter
+> covers the final layer: letting a Claude agent **auto-discover
+> silan-viking and call it at the right moment without manually
+> configuring MCP, just by installing one skill**.
 >
-> 这一章存在的理由,是 `00-终局` §0.1 那句承诺 ——「与一个**带这个 skill
-> 的 agent** 说话」。在 `00`–`12` 里这句没有实现支撑:agent 接入靠 MCP,
-> 不靠 skill。本章把这句话兑现。
+> The reason this chapter exists is the promise in `00` §0.1 —
+> "speaking to an agent **that carries this skill**". In `00`–`12`
+> that promise had no implementation backing: agents connect via
+> MCP, not via a skill. This chapter cashes that promise.
 
 ---
 
-## §13.1 终局倒推 —— skill 解决的到底是什么
+## §13.1 Back-cast from the terminal state — what does the skill actually solve
 
-先把一件事讲死,免得 `03-mcp服务.md` 和本章被读成两套能力:
+First, kill a misreading so `03-mcp-service.md` and this chapter don't
+end up looking like two parallel ability sets:
 
-> **skill 不重新实现任何能力。silan-viking 的全部 agent 能力(recall /
-> capture / propose / ctx_* / reflect …)永远只活在 MCP 一处(`03` 四档
-> 工具)。skill 是这套能力的「分发包 + 自动触发说明书」,不是第二套逻辑。**
+> **The skill re-implements no ability. Every silan-viking agent
+> ability (recall / capture / propose / ctx_* / reflect …) lives
+> only inside MCP (the four-tier tool set in `03`). The skill is
+> a "distribution package + auto-trigger manual" for that ability
+> set, not a second logic path.**
 
-第一性地拆,一个 Claude agent 要「装一下就懂 silan」,中间隔着三道坎,
-MCP 只跨过了第一道:
+First-principles split — for a Claude agent to "install once and
+understand silan", three hurdles lie between today and the terminal
+state, and MCP only crosses the first:
 
-| 坎 | 问题 | 谁解决 |
+| Hurdle | Question | Solved by |
 |---|---|---|
-| ① 能力 | agent 有没有 recall/capture/propose 这些动作可调 | **MCP**(`03`)|
-| ② 发现 | agent 怎么知道这台机器上有 silan-viking、何时该用它 | **skill**(本章)|
-| ③ 触发 | silan 只是「说出一个念头」,agent 怎么自动想到去 capture | **skill 的 description + 正文**(本章 §13.4)|
+| ① Capability | Does the agent have callable actions like recall / capture / propose | **MCP** (`03`) |
+| ② Discovery | How does the agent know silan-viking exists on this machine, and when to use it | **The skill** (this chapter) |
+| ③ Trigger | silan only "voices a thought" — how does the agent automatically think of calling `capture` | **The skill's description + body** (this chapter §13.4) |
 
-坎 ② ③ 就是 `00-终局` 那个画面 ——「他不录入内容,他只是想」—— 真正落地
-的地方。silan 不该手动配 MCP server 地址、不该说「请调用 capture 工具」;
-他说一句半成形的念头,agent 自己想到该把它收进 context。**skill 是让 agent
-「自己想到」的那份说明书。**
+Hurdles ② and ③ are where the picture from `00` — "he doesn't enter
+content, he just thinks" — actually lands. silan should not manually
+configure an MCP server address or say "please call the capture
+tool"; he says a half-formed thought, and the agent thinks of folding
+it into context on its own. **The skill is the manual that makes the
+agent "think of it on its own".**
 
-### 终局画面(本章版本)
+### Terminal-state picture (this chapter's version)
 
-silan 在任意一台装了 silan-viking 的机器上,对 Claude agent 说话:
+silan talks to a Claude agent on any machine that has silan-viking
+installed:
 
-- agent 启动时,Claude 扫 `~/.claude/skills/`,发现 `silan-viking` skill。
-- silan 说出一个半成形的念头 → skill 的 description 命中 → Claude 挂载
-  skill 正文 → 正文告诉它「先 `context_brief` 再决定」→ 它调 MCP。
-- 全程 silan 没说过「MCP」「capture」「工具」任何一个词。
+- At agent startup, Claude scans `~/.claude/skills/` and discovers the `silan-viking` skill.
+- silan voices a half-formed thought → the skill's description matches → Claude mounts the skill body → the body tells it "call `context_brief` first, then decide" → it calls MCP.
+- silan never said the words "MCP", "capture", or "tool".
 
 ---
 
-## §13.2 skill 包长什么样 —— 磁盘产物
+## §13.2 What a skill bundle looks like — disk artefacts
 
-一个 silan-viking skill 是 `~/.claude/skills/silan-viking/` 下的一棵小树。
-**它是 `silan` 生成的产物,不是手写、不是真相源** —— 与 `portfolio.db` 同
-性质:可随时由 `silan skill emit` 重建。
+A silan-viking skill is a small tree under
+`~/.claude/skills/silan-viking/`. **It is a `silan`-generated
+artefact, not hand-written, not the source of truth** — same nature
+as `portfolio.db`: rebuildable at any time by `silan skill emit`.
 
 ```
 ~/.claude/skills/silan-viking/
-├── SKILL.md            # ★ 唯一必需:frontmatter(name/description)+ 正文
+├── SKILL.md            # ★ the only required file: frontmatter (name/description) + body
 └── reference/
-    └── mcp-tools.md    # 四档 MCP 工具速查(从 03 派生,供 skill 正文引用)
+    └── mcp-tools.md    # quick reference for the four-tier MCP tools (derived from 03, cited by the SKILL body)
 ```
 
-`SKILL.md` 的 frontmatter 形态(description 是坎 ③ 的核心,§13.4 详述):
+`SKILL.md` frontmatter shape (description is the core of hurdle ③, detailed in §13.4):
 
 ```markdown
 ---
 name: silan-viking
-description: silan 的个人 context 系统。当 silan 说出一个想法、灵感、半成形
-  的念头,或想写文章 / 推进项目 / 查看网站内容与访客数据时使用 —— 帮他把想法
-  捕捉进 context、协助写作、维护项目、选择性发布。
+description: silan's personal context system. Use when silan voices a thought,
+  a spark, a half-formed idea, or wants to write an article / push a project
+  forward / view site content and visitor data — help him capture the thought
+  into context, assist with writing, maintain projects, and selectively publish.
 ---
 
-（正文见 §13.4）
+(body — see §13.4)
 ```
 
-> **为什么 skill 包是派生物**:skill 正文里要嵌入「MCP 本机解析规则」
-> 「当前 6 个 content type 的清单」「SCHEMA 摘要」—— 这些都随 `silan-viking.toml`
-> 和 `SCHEMA.md` 变。手写必然漂移。让 `silan skill emit` 每次从真相源重新
-> 生成,skill 与项目状态强一致 —— 同 `00` §0.4 的载重纪律:真相源唯一,
-> 派生物可重建。
+> **Why the skill bundle is a derived artefact**: the skill body has
+> to embed "MCP local resolution rules", "the current list of 6
+> content types", and "a SCHEMA summary" — all of which move with
+> `silan-viking.toml` and `SCHEMA.md`. Hand-writing inevitably
+> drifts. Letting `silan skill emit` regenerate from the source of
+> truth keeps the skill consistent with the project state — same
+> load-bearing discipline as `00` §0.4: one source of truth, every
+> derived artefact rebuildable.
 
 ---
 
-## §13.3 怎么生成、怎么装 —— `silan skill` 命令组
+## §13.3 How to generate it, how to install it — the `silan skill` command group
 
-新增一个工具命令组,挂在 `02-cli服务.md` 的「跨类型 / 工具组」一类(与
-`mcp`/`site`/`proposal` 并列)。命名遵 `#8` noun-first:
+A new tool group is added, alongside `mcp` / `site` / `proposal` in
+the "cross-type / tool groups" of `02-cli-service.md`. Naming follows
+`#8` noun-first:
 
 ```
-silan skill emit            生成 skill 包到 ~/.claude/skills/silan-viking/
-                            （--path 改输出位置；从 silan-viking.toml + SCHEMA.md 派生）
-silan skill status          检查 skill 是否已装、与当前项目状态是否一致（hash 比对）
-silan skill rm              移除已装的 skill 包
+silan skill emit            emit the skill bundle to ~/.claude/skills/silan-viking/
+                            (--path overrides output; derived from silan-viking.toml + SCHEMA.md)
+silan skill status          check whether the skill is installed and matches project state (hash comparison)
+silan skill rm              remove the installed skill bundle
 ```
 
-`silan skill emit` 做三件事,全部纯生成、无副作用到真相源:
+`silan skill emit` does three things, all pure-generative with no side effects on the source of truth:
 
-1. 读 `silan-viking.toml`(项目 identity、MCP 传输偏好)+ `content/SCHEMA.md`
-   (6 个 type 当前定义)。
-2. 渲染 `SKILL.md` —— frontmatter 的 description 用固定模板(§13.4),正文
-   嵌入当前 type 清单与 **MCP 本机解析规则**。
-3. 写出 `~/.claude/skills/silan-viking/` 整棵树。已存在则覆盖(它是派生物,
-   覆盖无损失)。
+1. Read `silan-viking.toml` (project identity, MCP transport
+   preference) + `content/SCHEMA.md` (the current definitions of
+   the 6 types).
+2. Render `SKILL.md` — the frontmatter description uses a fixed
+   template (§13.4); the body embeds the current type list and the
+   **MCP local resolution rules**.
+3. Write the whole `~/.claude/skills/silan-viking/` tree. Overwrites
+   if present (it is a derived artefact; overwriting loses nothing).
 
-> **装** = `silan skill emit` 一条命令。没有「下载 / 注册」额外步骤 —— skill
-> 的发现机制是 Claude 自己扫 `~/.claude/skills/`,文件到位即被发现。
-> **`silan init` 时是否自动 emit**:不。`init` 只建内容项目(`00` §0.4 的
-> ③);skill 是「让协作 agent 用」的可选层,由 silan 显式 `silan skill emit`
-> 决定 —— 与「`deploy` 默认关闭」(`03` 档 4)同一种纪律:对外暴露面默认不开。
+> **Install** = one command: `silan skill emit`. No extra "download
+> / register" steps — Claude's discovery mechanism is its own scan
+> of `~/.claude/skills/`; once the files are in place, it discovers
+> them.
+> **Does `silan init` auto-emit**: no. `init` builds only the
+> content project (`00` §0.4 pile ③); the skill is an optional layer
+> for "let a collaborating agent use it" and is opted-in explicitly
+> by silan with `silan skill emit` — same discipline as "`deploy`
+> off by default" (`03` tier 4): externally-facing surfaces are off
+> by default.
 
-### 跨机器分发渠道
+### Cross-machine distribution channels
 
-`silan-viking` 不自造 skill 分发协议。skill 包是派生物,真相源仍是
-`silan-viking.toml` + `content/SCHEMA.md`;跨机器只解决“把派生物放到那台
-机器的 Claude skills 目录”这件事。支持三种落点:
+silan-viking does not invent a skill-distribution protocol. The
+skill bundle is a derived artefact; the source of truth remains
+`silan-viking.toml` + `content/SCHEMA.md`. The only problem
+cross-machine distribution solves is "put the derived artefact in
+the target machine's Claude skills directory". Three landing
+places:
 
-| 场景 | 做法 | 约束 |
+| Scenario | How | Constraint |
 |---|---|---|
-| 本机个人使用 | `silan skill emit` 写 `~/.claude/skills/silan-viking/` | 默认路径,覆盖安全 |
-| 多台个人机器 | `silan skill emit --path <dotfiles>/skills/silan-viking/`,再由 dotfiles / 云盘 / git 同步到各机 `~/.claude/skills/` | 同步机制外包给现成工具;每台机器用本机 `silan mcp status` 解析接入状态,`silan skill status` 用 hash 检查漂移 |
-| 团队/项目共享 | `silan skill emit --path .claude/skills/silan-viking/` 后随 repo 分发 | 只能提交不含私人端口/绝对路径的包;MCP 接入必须写成 `silan mcp serve --stdio` 这类相对约定 |
+| Local personal use | `silan skill emit` writes `~/.claude/skills/silan-viking/` | Default path; overwriting is safe |
+| Multiple personal machines | `silan skill emit --path <dotfiles>/skills/silan-viking/`, then dotfiles / cloud drive / git syncs into each machine's `~/.claude/skills/` | Sync is outsourced to existing tools; each machine uses its own `silan mcp status` for connection status, `silan skill status` uses hash comparison to detect drift |
+| Team / project share | `silan skill emit --path .claude/skills/silan-viking/` and distribute alongside the repo | Only bundles without private ports / absolute paths may be committed; the MCP integration must be written as a relative convention like `silan mcp serve --stdio` |
 
-这条边界很重要:skill 包不是通用 marketplace 包,也不是本机端口/绝对路径的
-同步载体。跨机分发默认借 dotfiles/git/云盘,但每台机器仍必须有可执行的
-`silan-viking` 与对应 MCP server 配置;否则 skill 只能提示“本环境能力不可用”。
+This boundary matters: the skill bundle is not a general marketplace
+package, and it is not the sync vehicle for local ports / absolute
+paths. Cross-machine distribution defaults to dotfiles / git / cloud
+drive, but each machine must still have an executable `silan-viking`
+and the corresponding MCP server configured; otherwise the skill can
+only say "abilities not available in this environment".
 
-### MCP 坐标的机器本地解析合同
+### The local-resolution contract for MCP coordinates
 
-skill 包可以被同步,但 **MCP 坐标不能当同步真相**。`silan skill emit`
-生成 `reference/mcp-tools.md` 时遵守以下规则:
+The skill bundle can be synced, but **MCP coordinates cannot be
+treated as syncable truth**. When `silan skill emit` generates
+`reference/mcp-tools.md`, it follows these rules:
 
-1. **默认写相对启动约定**,不写绝对路径和固定端口:
+1. **Default writes are relative startup conventions**, not absolute paths or fixed ports:
 
    ```text
    transport: stdio
@@ -134,181 +163,205 @@ skill 包可以被同步,但 **MCP 坐标不能当同步真相**。`silan skill 
    project: resolve from current workspace or SILAN_VIKING_PROJECT
    ```
 
-   也就是说,agent 连接前按本机 `PATH` 找 `silan`,由 `silan mcp serve`
-   在本机读取 `silan-viking.toml`。这份 skill 包同步到第二台机器后,
-   仍由第二台机器自己的 `silan` 解析项目与传输。
+   In other words, the agent finds `silan` via the local `PATH`
+   before connecting; `silan mcp serve` reads `silan-viking.toml`
+   on the local machine. After this skill bundle is synced to a
+   second machine, the second machine's own `silan` resolves the
+   project and the transport.
 
-2. **本机状态先探测**。skill 正文必须写明:连接 MCP 前先执行或请求宿主执行
-   `silan mcp status --json`。只有 status 返回 `available=true` 且
-   `schema_hash` / `skill_hash` 与当前包一致,才宣称“可用”;否则提示重跑
-   `silan skill emit` 或 `silan mcp serve --stdio`。
+2. **Probe local state first**. The skill body must state: before
+   connecting MCP, execute (or ask the host to execute)
+   `silan mcp status --json` first. Only when status returns
+   `available=true` and the `schema_hash` / `skill_hash` matches
+   the current bundle do we declare "available"; otherwise prompt
+   the operator to re-run `silan skill emit` or `silan mcp serve --stdio`.
 
-3. **TCP/端口只作为本机 hint**。如果 `[mcp]` 配了 `transport=tcp`,
-   `emit` 可以在 `reference/mcp-tools.local.md` 写入
-   `127.0.0.1:<port>` 供本机使用,但该文件默认进 `.gitignore`/不同步;
-   同步包里的 `reference/mcp-tools.md` 仍写 stdio 约定。
+3. **TCP / port only as a local hint**. If `[mcp]` is configured
+   with `transport=tcp`, `emit` may write
+   `127.0.0.1:<port>` into `reference/mcp-tools.local.md` for
+   local use, but that file is `.gitignore`-d by default / not
+   synced; the synced bundle's `reference/mcp-tools.md` still
+   writes the stdio convention.
 
-4. **`status` 负责暴露漂移原因**。`silan skill status` 除了 ContentHash,
-   还要显示 `binary_found`、`mcp_available`、`transport_resolved`、
-   `schema_hash_match`、`skill_hash_match`。这样第二台机器的失败是可诊断的,
-   不会把“skill 已发现”误报成“MCP 已接通”。
+4. **`status` surfaces drift causes**. Beyond ContentHash,
+   `silan skill status` shows `binary_found`, `mcp_available`,
+   `transport_resolved`, `schema_hash_match`, `skill_hash_match`.
+   That way a second machine's failure is diagnosable; "skill
+   discovered" is never misreported as "MCP connected".
 
-### skill 与 MCP server 怎么对接
+### How the skill and the MCP server hook up
 
-skill 正文不内含能力,它**指挥 Claude 去连 MCP**。两者的接线:
+The skill body carries no abilities; it **instructs Claude to
+connect to MCP**. The wiring:
 
-- skill 正文写明:「silan-viking 的能力经 MCP 提供。若本会话尚未接入,
-  先按 `reference/mcp-tools.md` 跑 `silan mcp status --json`;可用后再按
-  `silan mcp serve --stdio` 接入。」
-- MCP server 仍由 silan(或其环境)以 `silan mcp serve` 启动 —— skill **不
-  负责拉起进程**(skill 是声明式说明书,不是 supervisor)。
-- 接入坐标由本机 `silan mcp status --json` / `silan mcp serve --stdio`
-  解析。`silan-viking.toml` 的 `[mcp]` 段只提供传输偏好,不能把本机绝对
-  坐标写成跨机器真相。
+- The skill body states: "silan-viking's abilities come through MCP. If this session has not connected, follow `reference/mcp-tools.md` to run `silan mcp status --json`; once available, connect with `silan mcp serve --stdio`."
+- The MCP server is still started by silan (or the environment) via `silan mcp serve` — the skill **does not start processes** (the skill is a declarative manual, not a supervisor).
+- Connection coordinates are resolved on the local machine via `silan mcp status --json` / `silan mcp serve --stdio`. `silan-viking.toml`'s `[mcp]` section only provides transport preferences; it must not write a local absolute coordinate as cross-machine truth.
 
-> **边界**:skill 能让 Claude「知道该连 MCP、连哪、连上后调什么」,但起
-> server 这一下仍是 silan 环境的事。若某 agent 运行环境根本没有 silan-viking
-> 二进制 —— skill 正文明确告知「此环境无 silan-viking,能力不可用」,不伪装。
+> **Boundary**: the skill can let Claude "know it should connect to
+> MCP, where to connect, and what to call after connecting", but
+> starting the server is still silan's environment's job. If a
+> particular agent's environment has no silan-viking binary at all
+> — the skill body explicitly says "no silan-viking in this
+> environment; abilities unavailable", and does not pretend.
 
-### “装了 skill”与“agent 能用”的判定
+### "Skill installed" vs "agent can use it"
 
-`silan skill emit` 只兑现**发现层**。一个 agent 真正能调用 silan-viking,
-必须三件事同时成立:
+`silan skill emit` only fulfils the **discovery layer**. For an
+agent to actually call silan-viking, three things must hold at once:
 
-1. `~/.claude/skills/silan-viking/` 下有当前 hash 的 skill 包。
-2. 当前机器有可执行的 `silan-viking` / `silan` 二进制,且能读到
-   `silan-viking.toml` 指向的 content 仓。
-3. `silan mcp status --json` 显示本机 MCP 可用,或宿主能按
-   `silan mcp serve --stdio` 的相对约定启动/连接它。
+1. `~/.claude/skills/silan-viking/` contains the current-hash skill bundle.
+2. An executable `silan-viking` / `silan` binary exists on this machine and can read the content repo `silan-viking.toml` points to.
+3. `silan mcp status --json` reports MCP available on this machine, or the host can start / connect to it via the relative convention `silan mcp serve --stdio`.
 
-缺 ② 或 ③ 时,skill 仍可被 Claude 发现,但只能提示「本环境能力不可用」,
-不能伪装成已经接入。这个限制是安全边界:skill 包不是安装器,不会把私人
-content 仓、MCP server 或本机二进制复制到协作者机器。
+When ② or ③ is missing, the skill can still be discovered by
+Claude, but it can only say "abilities not available in this
+environment"; it must not pretend to be connected. This limitation
+is a safety boundary: the skill bundle is not an installer; it does
+not copy the private content repo, the MCP server, or the local
+binary onto a collaborator's machine.
 
 ---
 
-## §13.4 description 与正文 —— 让 agent「自己想到」(坎 ③)
+## §13.4 description and body — make the agent "think of it on its own" (hurdle ③)
 
-这是本章的载重段。skill 能不能兑现 `00-终局`,全看 description 写得准不准 ——
-Claude 是靠 description 判断「现在该不该挂载这个 skill」的。
+This is the load-bearing section of the chapter. Whether the skill
+cashes the `00` terminal-state picture comes down to how well the
+description is written — Claude uses the description to decide
+"should this skill be mounted right now".
 
-### description 的写法纪律
+### Discipline for writing the description
 
-description 必须覆盖 silan 的**自然语言触发面**,而不是工具名:
+The description must cover silan's **natural-language trigger
+surface**, not tool names:
 
-- ✅ 覆盖「silan 说出一个想法 / 灵感 / 半成形的念头」—— 对应 `capture`。
-- ✅ 覆盖「想写文章 / 推进项目 / 整理某个 idea」—— 对应 `propose` / `summarize_updates`。
-- ✅ 覆盖「查看网站内容、访客数据、某篇的浏览/评论」—— 对应 `stats` / `visitors`。
-- ❌ 不写「调用 capture 工具时使用」—— 那是工具名,silan 永远不会那样说话。
+- ✅ Cover "silan voices a thought / a spark / a half-formed idea" — maps to `capture`.
+- ✅ Cover "wants to write an article / push a project forward / tidy up some idea" — maps to `propose` / `summarize_updates`.
+- ✅ Cover "view the site content, visitor data, the views/comments of a piece" — maps to `stats` / `visitors`.
+- ❌ Do not write "use when calling the capture tool" — that is a tool name; silan never speaks that way.
 
-description 命中的判据是**「silan 像在做什么」**,不是「该调哪个函数」。
-agent 先被 skill 正文接住,再由正文把「像在做什么」翻译成「调哪一档 MCP」。
+The description-match criterion is **"what does silan look like he's
+doing"**, not "which function to call". The agent is first caught
+by the skill body, and the body translates "what he's doing" into
+"which MCP tier".
 
-### 正文骨架(`SKILL.md` 正文应包含的段)
+### Body skeleton (the sections `SKILL.md`'s body should contain)
 
 ```
-## 这是什么
-  silan 的个人 context 系统。真相源是 markdown，能力经 MCP 提供。
-  一句话定位 + 指向 silan://（00-终局）。
+## What this is
+  silan's personal context system. Source of truth is markdown;
+  abilities come through MCP. One-sentence positioning + a pointer
+  to silan:// (00 terminal-state).
 
-## 接入（坎 ②）
-  能力来自 MCP。若本会话未接入，按 reference/mcp-tools.md 连接。
-  连上后第一件事：调 context_brief() —— 先懂 silan 当前在想什么，再做事。
+## Connect (hurdle ②)
+  Abilities come from MCP. If this session has not connected,
+  follow reference/mcp-tools.md to connect. First action after
+  connecting: call context_brief() — understand what silan is
+  thinking about now, before doing anything.
 
-## 何时做什么（坎 ③ —— 自然语言 → MCP 档位的翻译表）
-  | silan 像在…… | 你该做 |
+## When to do what (hurdle ③ — the natural-language → MCP-tier translation table)
+  | silan looks like he's… | What you do |
   |---|---|
-  | 盘点已有内容（「我有哪些进行中的 project」）| list(type, filter) —— 结构化清单，带 status |
-  | 找「写过没写过某主题」 | recall(query) —— 语义检索 |
-  | 说出一个半成形的念头 | capture(note, type) —— 起一个提案，不直接落库 |
-  | 想把某个想法想深、写成文 | recall 先看有没有相关旧 Item；再 propose |
-  | 想推进某个 project / idea | propose 锚到对应 Part（progress 等）|
-  | 问「这篇有多少人看」 | stats / visitors / crawler_breakdown / source_breakdown（读 sync 过的本地缓存）|
-  | 让你记住关于他/项目的事 | ctx_write 到 silan://agent/ —— 直接写，不走提案 |
-  | 会话结束 | reflect(session) —— 沉淀进 agent/sessions/ 与 agent/owner/ |
+  | Surveying existing content ("what projects do I have in progress") | list(type, filter) — structured listing with status |
+  | Searching "have I written about this topic" | recall(query) — semantic search |
+  | Voicing a half-formed thought | capture(note, type) — start a proposal; do not land directly |
+  | Wanting to think one idea deeper, into an article | recall first for related old Items; then propose |
+  | Wanting to push some project / idea forward | propose anchored to the matching Part (progress etc.) |
+  | Asking "how many people read this" | stats / visitors / crawler_breakdown / source_breakdown (read the synced local cache) |
+  | Asking you to remember something about him / the project | ctx_write to silan://agent/ — direct write, no proposal |
+  | End of session | reflect(session) — settle into agent/sessions/ and agent/owner/ |
 
-## 三条不可破的红线（重述 03 安全总则，不新增）
-  1. resources/（发布内容）只能 capture/propose，永不 ctx_write、永不直接合。
-  2. accept / reject / publish / deploy 不是 agent 能做的 —— 那是 silan 的 CLI 动作。
-  3. agent/ 命名空间永不发布。
+## Three non-negotiable red lines (restating 03's safety rules; not new)
+  1. resources/ (published content): capture / propose only — never ctx_write, never merge directly.
+  2. accept / reject / publish / deploy are not for the agent — those are silan's CLI actions.
+  3. The agent/ namespace is never published.
 
-## 参考
-  reference/mcp-tools.md —— 四档工具完整签名（派生自 03-mcp服务.md）。
+## Reference
+  reference/mcp-tools.md — full signatures of the four-tier tools (derived from 03-mcp-service.md).
 ```
 
-> **正文为什么要重述 `03` 的安全红线**:skill 正文是 agent 实际读到、据以
-> 行动的文本。`03` 的安全总则若只活在文档里、不进 skill 正文,agent 运行
-> 时看不到 —— 红线必须出现在 agent 真正读的地方。这不是「两套规则」,是
-> **同一套规则投影到 agent 的视野里**;`03` 是源,skill 正文是派生投影,
-> `silan skill emit` 保证两者不漂移。
+> **Why the body restates `03`'s safety red lines**: the skill body
+> is the text the agent actually reads and acts on. If `03`'s
+> safety rules live only in the doc tree and not in the skill body,
+> the agent does not see them at runtime — the red lines must
+> appear where the agent actually reads. This is not "two rule
+> sets"; it is **the same rules projected into the agent's view**;
+> `03` is the source, the skill body is the derived projection, and
+> `silan skill emit` keeps them drift-free.
 
 ---
 
-## §13.5 与既有设计的一致性自查
+## §13.5 Consistency self-check with the existing design
 
-| 既有约束 | 本章是否一寸不破 |
+| Existing constraint | Does this chapter break it? |
 |---|---|
-| `#1` markdown 为真相源 | ✅ skill 包是 `~/.claude/` 下的派生物,不碰 `content/` |
-| `#10` agent 经提案改发布内容 | ✅ skill 正文红线①明令 resources/ 只能走提案 |
-| `#13` 单租户、选择性发布权在 silan | ✅ skill 正文红线②:accept/publish/deploy 不给 agent |
-| `03` MCP 是能力唯一来源 | ✅ skill 零能力,只做发现+触发,全部转指 MCP |
-| `00` §0.4「真相源唯一、派生可重建」 | ✅ skill 包由 `silan skill emit` 从真相源重建 |
-| `#8` CLI noun-first | ✅ `silan skill emit/status/rm`,noun-first |
-| `deploy` 默认关闭的纪律 | ✅ `init` 不自动 emit skill,需 silan 显式调 |
+| `#1` markdown as source of truth | ✅ The skill bundle is a derived artefact under `~/.claude/`; does not touch `content/` |
+| `#10` agent updates published content via proposal | ✅ Red line ① in the skill body forbids resources/ direct writes |
+| `#13` single-tenant; selective-publish authority belongs to silan | ✅ Red line ②: accept / publish / deploy are not exposed to the agent |
+| `03` MCP is the only ability source | ✅ The skill carries zero abilities; only discovery + trigger; everything turns into an MCP call |
+| `00` §0.4 "one source of truth, derived artefacts rebuildable" | ✅ The skill bundle is rebuilt by `silan skill emit` from the source of truth |
+| `#8` noun-first CLI | ✅ `silan skill emit / status / rm`, noun-first |
+| Discipline of "`deploy` off by default" | ✅ `init` doesn't auto-emit; silan explicitly opts in |
 
-> **设计纪律自查(`00` §0.2)**:本章新增的对象 = `silan skill` 命令组 +
-> skill 包产物。两者指回 **`#16`**(协作 agent 经 skill 零配置接入)——
-> 该需求已于审查中正式补入 `00` §0.2 需求基线。指得回 —— 不删。
-
----
-
-## §13.6 既有文档的同步回改 —— 状态
-
-本章落地需四处既有文档同步,**前三处已在本章引入时完成**:
-
-1. ✅ **`00-终局与需求.md` §0.2** —— 已补入 `#16`(协作 agent 经 skill
-   零配置接入),并在该节加裁决说明:#16 不是 #12 的细节,是独立分发面。
-   §0.1「带这个 skill 的 agent」由此获得需求支撑。
-2. ✅ **`02-cli服务.md`「跨类型 / 工具组」** —— 已新增 `silan skill` 命令组
-   (`emit`/`status`/`rm`),与 `mcp`/`site`/`proposal` 并列。
-3. ✅ **`03-mcp服务.md` 档 1** —— `#15` 的 MCP 工具已与 CLI `silan stats`
-   逐一同构:`traffic_breakdown` 拆为 `crawler_breakdown` + `source_breakdown`,
-   对齐 CLI 的 `crawlers`/`sources`。两面不再错位。
-4. ✅ **`04-里程碑.md`** —— 已回改。`silan skill` **拆成 M8 结构验收 +
-   M9 端到端验收**:M8 在 `silan-viking-cli` 中交付 `emit/status/rm`,
-   先验证 skill 包可生成、可被 Claude 发现、hash 漂移可检测;M9 等 MCP
-   server 就绪后,再验收「skill 包经 MCP 完成一次 capture」(`07` 剧本 K)。
-
-> 四处回改全部完成 —— skill 这条线在 `00`(需求 #16)/ `02`(命令组)/
-> `03`(stats 对齐)/ `04`(里程碑)/ `05`(测试场景)/ `07`(剧本 K)/
-> `13`(本章)七份文档之间已闭环,无悬空引用。
+> **Design-discipline self-check (`00` §0.2)**: the new objects in
+> this chapter = the `silan skill` command group + the skill-bundle
+> artefact. Both point back to **`#16`** (collaborating agent
+> connects through a skill with zero configuration) — the
+> requirement was officially added to `00` §0.2 during review.
+> Pointers back exist; nothing to delete.
 
 ---
 
-## §13.7 代码落点
+## §13.6 Sync-back to existing docs — status
 
-skill 生成逻辑放在 **`silan-viking-cli` crate**,不新建 crate ——
-理由:skill 包是「渲染几个 markdown 文件到磁盘」,无领域能力,够不上一个
-L4 adapter(对比 `silan-viking-mcp` 是一个真的 server 进程)。
+Landing this chapter requires syncing four existing docs;
+**the first three were completed when this chapter was introduced**:
+
+1. ✅ **`00-end-state-and-requirements.md` §0.2** — `#16` (collaborating agent connects through a skill with zero configuration) is in the baseline, with a footnote explaining that `#16` is not a detail of `#12` but an independent distribution face. The `00` §0.1 phrase "an agent that carries this skill" thereby has requirement support.
+2. ✅ **`02-cli-service.md` "cross-type / tool groups"** — the `silan skill` command group (`emit` / `status` / `rm`) is added alongside `mcp` / `site` / `proposal`.
+3. ✅ **`03-mcp-service.md` tier 1** — the `#15` MCP tools are now one-to-one with CLI `silan stats`: `traffic_breakdown` was split into `crawler_breakdown` + `source_breakdown` to match CLI `crawlers` / `sources`. The two sides no longer diverge.
+4. ✅ **`04-milestones.md`** — synced. `silan skill` **splits into M8 structural acceptance + M9 end-to-end acceptance**: M8 ships `emit / status / rm` in `silan-viking-cli`, verifying that the skill bundle generates, is discoverable by Claude, and that hash drift can be detected; M9 (after the MCP server is ready) verifies "the skill bundle completes one capture through MCP" (playbook K in `07`).
+
+> All four sync-backs are complete — the skill line forms a closed
+> loop across `00` (requirement #16) / `02` (command group) / `03`
+> (stats alignment) / `04` (milestones) / `05` (test scenarios) /
+> `07` (playbook K) / `13` (this chapter); no dangling reference.
+
+---
+
+## §13.7 Code site
+
+The skill generation logic sits in **the `silan-viking-cli` crate**;
+no new crate is added — reason: the skill bundle is "render a few
+markdown files to disk", which has no domain ability and doesn't
+warrant an L4 adapter (compare `silan-viking-mcp`, which is an
+actual server process).
 
 ```
-silan-viking-cli/src/skill.rs   # silan skill emit/status/rm 三个子命令
-                                # 读 silan-viking.toml + SCHEMA.md,
-                                # 渲染 SKILL.md + reference/ 到 ~/.claude/skills/
+silan-viking-cli/src/skill.rs   # the three silan skill emit/status/rm sub-commands
+                                # reads silan-viking.toml + SCHEMA.md
+                                # renders SKILL.md + reference/ into ~/.claude/skills/
 ```
 
-- `SKILL.md` 的 frontmatter description 用**固定模板字符串**(§13.4 的写法
-  纪律已定死),只有正文里的 type 清单 / MCP 坐标是变量插值。
-- `silan skill status` 的「一致性比对」:对 `SKILL.md` 与「当前 `silan-viking.toml`
-  + `SCHEMA.md` 重新渲染的结果」做逐字节比对 —— 不一致提示 `silan skill
-  emit` 重生成。除此之外它输出 §13.3 规则 4 的诊断字段:`binary_found`、
-  `mcp_available`、`transport_resolved`、`schema_hash_match`、
-  `skill_hash_match`、`status`(`not_installed`/`up_to_date`/`stale`)。
-- `silan skill emit` 在 `[mcp].transport = "tcp"` 时额外写
-  `reference/mcp-tools.local.md`(`127.0.0.1:<port>` 本机 hint)并把它加进
-  skill 包的 `.gitignore` —— 同步包里只留 stdio 约定的 `mcp-tools.md`。
-  stdio(默认)不生成 local 文件。
+- The `SKILL.md` frontmatter description uses a **fixed template
+  string** (the discipline in §13.4 is pinned); only the type list
+  and the MCP coordinates in the body are variable interpolations.
+- `silan skill status`'s "consistency comparison": a byte-by-byte
+  compare between `SKILL.md` and "the result of re-rendering with
+  the current `silan-viking.toml` + `SCHEMA.md`" — mismatch prompts
+  `silan skill emit` to regenerate. Beyond that, it outputs the
+  §13.3 rule-4 diagnostic fields: `binary_found`, `mcp_available`,
+  `transport_resolved`, `schema_hash_match`, `skill_hash_match`,
+  `status` (`not_installed` / `up_to_date` / `stale`).
+- `silan skill emit`, when `[mcp].transport = "tcp"`, additionally
+  writes `reference/mcp-tools.local.md` (`127.0.0.1:<port>` local
+  hint) and adds it to the skill bundle's `.gitignore` — the
+  synced bundle keeps only `mcp-tools.md` with the stdio convention.
+  stdio (the default) does not produce a local file.
 
-> 这一章不动 L1–L3,不动 `silan-viking-mcp`。它纯粹是 `silan-viking-cli`
-> 多一个工具命令组 —— 与 `01` §1.1「加一个新对外接口才加 L4 crate」自洽:
-> skill 不是新接口,是把既有 MCP 接口「打包让 agent 易于发现」,留在 CLI。
+> This chapter touches none of L1–L3; touches none of
+> `silan-viking-mcp`. It is purely "one more tool group in
+> `silan-viking-cli`" — consistent with `01` §1.1 "add a new L4
+> crate only for a new outward interface": the skill is not a new
+> interface but "packaging an existing MCP interface for easy
+> discovery by an agent", and stays in the CLI.
