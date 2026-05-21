@@ -131,11 +131,17 @@ fn accept_advances_main_to_validated_merge() {
 }
 
 #[test]
-fn accept_refuses_a_dirty_working_tree() {
-    // Regression for P14: `accept` ends by `reset --hard`-ing the working
-    // tree onto the merge commit. If the tree has uncommitted edits, that
-    // would silently discard them — so `accept` must refuse up front and
-    // leave `main` untouched.
+fn accept_preserves_a_dirty_working_tree_via_stash() {
+    // Updated for V2-4 (2026-05-22 e2e): `accept` used to refuse a dirty
+    // working tree because step 6.5 `reset --hard`s the tree and would
+    // discard any uncommitted edit. Refusing blocked the most common owner
+    // flow ("I scaffolded a side idea via `silan idea new`; now accept the
+    // agent's proposal") because `idea new` doesn't auto-commit.
+    //
+    // New behaviour mirrors `create_proposal` (the V2 capture fix): accept
+    // stashes the WIP, runs the merge against a clean tree, then pops the
+    // stash on the way out — so main advances cleanly and the owner's
+    // working tree looks exactly the same as before accept.
     let root = fresh_content_repo("dirty");
     let ws = Workspace::open(&root).expect("workspace opens");
 
@@ -159,13 +165,20 @@ fn accept_refuses_a_dirty_working_tree() {
     let result = ws.accept_proposal(&id);
     let main_after = git(&root, &["rev-parse", "refs/heads/main"]);
 
-    assert!(result.is_err(), "accept must refuse a dirty working tree");
-    assert_eq!(main_before, main_after, "main must not move when refused");
-    // The uncommitted edit survives untouched.
+    assert!(
+        result.is_ok(),
+        "accept must succeed with a dirty tree (stash + pop): {:?}",
+        result.err()
+    );
+    assert_ne!(
+        main_before, main_after,
+        "main must advance to the merge commit"
+    );
+    // The uncommitted edit survives — popped back after accept.
     let preserved = std::fs::read_to_string(&dirtied).expect("read SCHEMA.md");
     assert!(
         preserved.contains("<!-- uncommitted -->"),
-        "the uncommitted edit must be preserved"
+        "the uncommitted edit must be preserved across accept"
     );
 
     let _ = std::fs::remove_dir_all(&root);
@@ -210,6 +223,53 @@ fn accept_of_unknown_proposal_is_rejected() {
         result.is_err(),
         "accepting a non-existent proposal must fail"
     );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn accept_refuses_create_proposal_whose_slug_already_exists_on_main() {
+    // V2-11: a `Create`-kind proposal claims to introduce a brand-new Item.
+    // If main already has an Item at the touched URI, the merge would
+    // silently overwrite it — a quiet data-loss bug. accept must refuse.
+    let root = fresh_content_repo("collision");
+    let ws = Workspace::open(&root).expect("workspace opens");
+
+    let id = ProposalId::new("01HCOLLIDE").expect("valid id");
+    // Register as Create touching an Item that fixture/content already has.
+    ws.register_proposal(
+        &id,
+        ProposalKind::Create,
+        vec!["silan://resources/blog/hello-world".to_owned()],
+    )
+    .expect("register proposal");
+    // Scaffold a branch that "creates" the conflicting Item; the body file
+    // already exists on main, so we overwrite it on the branch to make a
+    // commit that diverges from main.
+    make_proposal_branch(
+        &root,
+        "01HCOLLIDE",
+        "resources/blog/hello-world/parts/body/en.md",
+        "An overwrite from a collision proposal.",
+    );
+
+    let main_before = git(&root, &["rev-parse", "refs/heads/main"]);
+    let result = ws.accept_proposal(&id);
+    let main_after = git(&root, &["rev-parse", "refs/heads/main"]);
+
+    assert!(
+        result.is_err(),
+        "accept must refuse a Create proposal whose URI exists on main"
+    );
+    let err = format!("{:?}", result.err().unwrap());
+    assert!(
+        err.contains("already exists on main"),
+        "error should explain the collision: got {err}"
+    );
+    assert_eq!(
+        main_before, main_after,
+        "main must not move on slug collision"
+    );
+
     let _ = std::fs::remove_dir_all(&root);
 }
 

@@ -221,6 +221,53 @@ pub fn table_columns(table: &str) -> Option<Vec<String>> {
     None
 }
 
+/// Every generated Entity's table name + its authoritative column set. This
+/// is what `SqliteSink::write_batch` uses to ensure entity-backed tables
+/// exist on disk *even when zero rows of that table flow through the sync*
+/// — the V2-7 fix. Before this list, `silan index rebuild` would silently
+/// drop e.g. `content_relation` when the content tree had no relations,
+/// and any downstream `SELECT count(*) FROM content_relation` would crash
+/// on "no such table". After the fix, the table always exists; it just
+/// holds zero rows.
+pub fn all_entity_tables() -> Vec<(String, Vec<String>)> {
+    use sea_orm::{IdenStatic, Iterable};
+
+    fn entry<E: sea_orm::EntityTrait>(entity: E) -> (String, Vec<String>) {
+        let columns = <E::Column as Iterable>::iter()
+            .map(|c| IdenStatic::as_str(&c).to_owned())
+            .collect();
+        (entity.table_name().to_owned(), columns)
+    }
+
+    vec![
+        entry(crate::blog_posts::Entity),
+        entry(crate::blog_post_translations::Entity),
+        entry(crate::projects::Entity),
+        entry(crate::project_translations::Entity),
+        entry(crate::project_details::Entity),
+        entry(crate::ideas::Entity),
+        entry(crate::idea_translations::Entity),
+        entry(crate::idea_details::Entity),
+        entry(crate::personal_info::Entity),
+        entry(crate::personal_info_translations::Entity),
+        entry(crate::item_part::Entity),
+        entry(crate::item_part_translation::Entity),
+        entry(crate::part_entry::Entity),
+        entry(crate::part_entry_translation::Entity),
+        entry(crate::recent_updates::Entity),
+        entry(crate::recent_update_translations::Entity),
+        entry(crate::episodes::Entity),
+        entry(crate::episode_translations::Entity),
+        entry(crate::episode_series::Entity),
+        entry(crate::episode_series_translations::Entity),
+        entry(crate::content_relation::Entity),
+        entry(crate::content_interaction::Entity),
+        entry(crate::comments::Entity),
+        entry(crate::request_logs::Entity),
+        entry(crate::social_links::Entity),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

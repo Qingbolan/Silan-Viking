@@ -81,16 +81,18 @@ def check_six_content_types() -> list[str]:
 def check_mcp_tool_counts() -> list[str]:
     """MCP tool counts per milestone — §17.2 is the single source of truth.
 
-    The pinned values: M9=18, E1=21, E2=22. Drift shows up as a different
-    number in 03 §3.2 or 04 milestone acceptance. We detect this by
-    grepping every doc for "tools/工具" near a count, and flagging any
-    count that contradicts the pinned table.
+    The pinned values: M9=19, E1=22, E2=23. (Updated 2026-05-22 when
+    `list_tags` was added to fill the tag-enumeration gap surfaced by the
+    deep e2e pass.) Drift shows up as a different number in 03 §3.2 or 04
+    milestone acceptance. We detect this by grepping every doc for
+    "tools/工具" near a count, and flagging any count that contradicts the
+    pinned table.
 
     Pragmatic scope: this enforces only one direction — counts that
     explicitly contradict the table. Detecting "the doc forgot to mention
     the count at all" is the human review's job.
     """
-    pinned = {"M9": 18, "E1": 21, "E2": 22}
+    pinned = {"M9": 19, "E1": 22, "E2": 23}
     errors: list[str] = []
 
     # Drifted patterns we have seen historically: "17 个工具", "20 工具",

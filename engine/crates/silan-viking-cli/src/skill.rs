@@ -79,7 +79,8 @@ fn render_skill_md(content_root: &Path) -> String {
          | silan seems to be… | what you do |\n\
          |---|---|\n\
          | taking stock of existing work (\"which projects are in flight\") | `list(type, filter)` — a structured list with status |\n\
-         | finding whether a topic was written about | `recall(query)` — semantic search |\n\
+         | wanting to see by tag (\"all the rust posts\", \"every ML idea\") | `list(type, filter.tag)` to filter; `list_tags(type?)` to see what tags exist |\n\
+         | finding whether a topic was written about | `recall(query)` — semantic search; tags are folded in, so a tagged Item ranks high for its tag word |\n\
          | voicing a half-formed thought | `capture(note, type)` — open a proposal, do not commit |\n\
          | wanting a *new* idea / blog / project written | `propose` to a fresh `silan://resources/<kind>/<slug>` — see the note below |\n\
          | wanting to think an idea through, write it up | `recall` for related Items first, then `propose` |\n\

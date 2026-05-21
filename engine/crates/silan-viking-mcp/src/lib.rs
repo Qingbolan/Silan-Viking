@@ -136,6 +136,16 @@ pub fn tool_specs() -> Vec<ToolSpec> {
             }),
         },
         ToolSpec {
+            name: "list_tags",
+            tier: ReadOnly,
+            description: "enumerate every tag used across the workspace, with the number of Items each tag appears on. Optional `type` scopes to one content kind. Answer for the owner / agent question \"what tags am I using\".",
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {"type": {"type":"string","description":"optional content type: idea/blog/project/episode/update"}},
+                "required": [],
+            }),
+        },
+        ToolSpec {
             name: "browse",
             tier: ReadOnly,
             description: "browse content tree",
@@ -436,6 +446,33 @@ pub fn list(
     Ok(index.list(kind, status, tag))
 }
 
+/// Enumerate every tag used in the workspace with a count of Items per tag.
+/// Optional `kind` scopes to one content type. Returns `(tag, count)` pairs
+/// sorted by count desc, then alpha — the order the owner usually wants.
+pub fn list_tags(
+    content_root: &Path,
+    kind: Option<ContentKind>,
+) -> Result<Vec<(String, usize)>, McpError> {
+    let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
+    let index = ws
+        .query_index()
+        .map_err(|e| McpError::Workspace(e.to_string()))?;
+    let mut counts: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for doc in index.documents() {
+        if let Some(k) = kind {
+            if doc.kind != k {
+                continue;
+            }
+        }
+        for tag in &doc.tags {
+            *counts.entry(tag.clone()).or_insert(0) += 1;
+        }
+    }
+    let mut rows: Vec<(String, usize)> = counts.into_iter().collect();
+    rows.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    Ok(rows)
+}
+
 /// Read one URI by using the query index metadata.
 pub fn read(content_root: &Path, uri: &str) -> Result<Option<ReadResult>, McpError> {
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
@@ -659,7 +696,15 @@ pub fn propose(
     if let Some(draft) = draft {
         let primary = resolve_draft_location(&ws, &target, lang)?;
         let primary_meta = render_part_meta(&primary.role, primary.shape, lang);
-        writes.push((primary, draft.to_owned(), primary_meta));
+        // V3-I: if the draft is the primary Part of a brand-new Item and the
+        // caller forgot a frontmatter block, scaffold one from the URI so
+        // post-merge validation (`accept` step 5) doesn't reject the proposal
+        // for `missing_required_frontmatter`. An existing Item already has
+        // the Part on disk; we don't touch the body in that case beyond
+        // what the caller wrote.
+        let final_draft =
+            maybe_inject_frontmatter(content_root, &target, &primary, draft).into_owned();
+        writes.push((primary, final_draft, primary_meta));
     }
     for part in extra_parts {
         let part_uri = format!("{item_uri}/{}", part.role);
@@ -899,9 +944,22 @@ pub fn capture(
     }
 
     // Content-kind route: scaffold a real Item under resources/<type>/<slug>/.
+    //
+    // resume is intentionally excluded — it is a single Item scaffolded by
+    // `silan init`, and capturing a second one would violate the single-
+    // resume contract. Point the agent at the right command instead.
+    // (V2-9 from the 2026-05-22 e2e pass.)
+    if kind == "resume" {
+        return Err(McpError::InvalidRequest(
+            "capture cannot create a resume — resume is a single Item scaffolded by \
+             `silan init`. Use `silan resume edit <part>` (e.g. `summary` / `education`) \
+             or `propose` to `silan://resources/resume/resume/<part>` to modify it."
+                .to_owned(),
+        ));
+    }
     let content_kind = parse_kind(kind).ok_or_else(|| {
         McpError::InvalidRequest(format!(
-            "capture `type` must be one of note / idea / blog / project / episode / resume / update; got `{kind}`"
+            "capture `type` must be one of note / idea / blog / project / episode / update; got `{kind}`"
         ))
     })?;
 
@@ -946,14 +1004,43 @@ pub fn capture(
     let meta_rel = format!("{}/meta.toml", part_dir_rel);
     let item_uri = format!("silan://resources/{}/{}", type_dir, chosen_slug);
 
-    // The body file: frontmatter with the SCHEMA-required fields, default
-    // `status: draft` and `visibility: private`. The owner publishes
-    // explicitly with `silan blog publish` (or equivalent), which flips both.
+    // The body file: frontmatter with the SCHEMA-required fields. Each
+    // content type has its own `status` enum (`10` §10.4) — idea/blog/episode
+    // use `draft` as the initial value, project and update don't have a
+    // `draft` state and start at `active`. update additionally requires
+    // `update_type` and `date` (per `10` §10.4.6). resume has no `status`.
+    let initial_status = match content_kind {
+        silan_viking_app::ContentKind::Project | silan_viking_app::ContentKind::Update => "active",
+        silan_viking_app::ContentKind::Resume => "", // no status field
+        _ => "draft",
+    };
+
+    // Extra frontmatter lines specific to certain kinds — kept minimal so a
+    // capture stays a single-call proposal, but still SCHEMA-valid.
+    let extra_lines = match content_kind {
+        silan_viking_app::ContentKind::Update => {
+            // SCHEMA requires update_type + date for an update; without these,
+            // sync's post-merge validation rejects the proposal. Pick safe
+            // defaults the owner can refine after `proposal accept`.
+            let today = today_iso_date();
+            format!("update_type: progress\ndate: {today}\n")
+        }
+        _ => String::new(),
+    };
+
+    let status_line = if initial_status.is_empty() {
+        String::new()
+    } else {
+        format!("status: {initial_status}\n")
+    };
+
     let body = format!(
-        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\nstatus: draft\nvisibility: private\n---\n\n# {title}\n\n{note}\n",
+        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\n{status}visibility: private\n{extra}---\n\n# {title}\n\n{note}\n",
         slug = chosen_slug,
         title = derived_title,
         kind = kind,
+        status = status_line,
+        extra = extra_lines,
         note = note,
     );
 
@@ -992,20 +1079,49 @@ pub fn capture(
 }
 
 /// Take the first sentence-ish span of `note` to use as a derived title /
-/// slug seed. Stops at the first `.` / `\n` / `!` / `?`; falls back to the
-/// whole string trimmed.
+/// slug seed. Stops at the first `\n` / `!` / `?` — but **not** at `.`,
+/// because version strings ("v0.2") and acronyms ("e.g.") deserve to live
+/// in the title. The whole-note fallback caps at 80 chars so a paragraph
+/// blob still produces a usable title.
 fn first_sentence(note: &str) -> String {
     let trimmed = note.trim();
     let end = trimmed
-        .find(['\n', '.', '!', '?'])
-        .unwrap_or(trimmed.len());
+        .find(['\n', '!', '?'])
+        .unwrap_or(trimmed.len())
+        .min(80);
     let s = trimmed[..end].trim().to_owned();
     if s.is_empty() {
-        trimmed.chars().take(60).collect()
+        trimmed.chars().take(80).collect()
     } else {
         s
     }
 }
+
+/// Today's date as `YYYY-MM-DD` UTC — used by `capture(type=update)` to
+/// satisfy the SCHEMA `date` requirement without dragging in chrono.
+fn today_iso_date() -> String {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    // Civil date from a UNIX timestamp via the Howard Hinnant algorithm;
+    // good for any reasonable date this century. Avoiding the chrono crate
+    // keeps capture cheap.
+    let days = now.div_euclid(86_400);
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    format!("{y:04}-{m:02}-{d:02}")
+}
+
+// (deduplicated)
 
 /// Slugify a free-form title into a `10` §10.4-compatible slug:
 /// lowercase, ASCII alphanumeric, `-` between runs of non-alphanumeric,
@@ -1032,6 +1148,122 @@ fn slugify(input: &str) -> String {
         }
     }
     out
+}
+
+/// If `draft` is missing a `---` frontmatter block AND it is the primary Part
+/// of an Item the caller is creating (the Item file does not exist on disk
+/// yet), prepend reasonable default frontmatter derived from the URI. Mirrors
+/// `capture()`'s defaults so the two creation paths produce equivalent shape.
+///
+/// Returns a `Cow::Borrowed` when no injection is needed (most calls — an
+/// Item that already exists, a Part-anchored modify, or a draft that already
+/// carries `---`), and a `Cow::Owned` when defaults are prepended. (V3-I.)
+fn maybe_inject_frontmatter<'a>(
+    content_root: &Path,
+    target: &ProposalTarget,
+    primary: &DraftLocation,
+    draft: &'a str,
+) -> std::borrow::Cow<'a, str> {
+    // Already has a frontmatter block — leave the caller's draft alone.
+    if has_frontmatter_block(draft) {
+        return std::borrow::Cow::Borrowed(draft);
+    }
+
+    // Only the primary Part of a *prose*-shape new Item gets defaults — an
+    // `entry_list` Part is TOML, not markdown, and frontmatter doesn't apply.
+    if !matches!(primary.shape, silan_viking_app::PartShape::Prose) {
+        return std::borrow::Cow::Borrowed(draft);
+    }
+
+    // Only inject when the Item's primary file doesn't yet exist on disk;
+    // otherwise the caller is modifying an existing Item and we trust them
+    // to know whether their body has frontmatter or is a body-only revision.
+    let primary_path = content_root.join(&primary.draft_file);
+    if primary_path.exists() {
+        return std::borrow::Cow::Borrowed(draft);
+    }
+
+    // Derive defaults from the URI. Item URI: silan://resources/<kind>/<slug>;
+    // Part URI: .../<role>. We only synthesize for the primary Part of a new
+    // Item, so the slug + kind are always on the target.
+    let (kind, slug) = match target {
+        ProposalTarget::Item(uri) => uri_to_kind_slug(&uri.to_string()),
+        ProposalTarget::Part { item, .. } => uri_to_kind_slug(&item.to_string()),
+    };
+    let Some((kind, slug)) = kind.zip(slug) else {
+        return std::borrow::Cow::Borrowed(draft);
+    };
+
+    let title = humanize_slug(&slug);
+    let status_line = match kind.as_str() {
+        "project" | "update" => "status: active\n",
+        "resume" => "",
+        _ => "status: draft\n",
+    };
+    let extra = if kind == "update" {
+        let today = today_iso_date();
+        format!("update_type: progress\ndate: {today}\n")
+    } else {
+        String::new()
+    };
+
+    let fm = format!(
+        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\n{status}visibility: private\n{extra}---\n\n",
+        slug = slug,
+        title = title,
+        kind = kind,
+        status = status_line,
+        extra = extra,
+    );
+    std::borrow::Cow::Owned(format!("{fm}{}", draft.trim_start()))
+}
+
+/// `true` iff `text` starts (after whitespace) with a closed `---` frontmatter
+/// block. The check is structural — `---\n…\n---` on its own lines — so a
+/// `---` only inside the body (e.g. a horizontal rule mid-prose) doesn't
+/// fake a frontmatter for the auto-inject heuristic.
+fn has_frontmatter_block(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    if !trimmed.starts_with("---") {
+        return false;
+    }
+    // Need a second `---` on a line by itself after the first.
+    let rest = &trimmed[3..];
+    rest.lines().any(|l| l.trim() == "---")
+}
+
+/// Extract `(kind, slug)` from a `silan://resources/<kind>/<slug>` URI.
+fn uri_to_kind_slug(uri: &str) -> (Option<String>, Option<String>) {
+    let Some(rest) = uri.strip_prefix("silan://resources/") else {
+        return (None, None);
+    };
+    let mut parts = rest.splitn(3, '/');
+    let kind_dir = parts.next();
+    let slug = parts.next();
+    // Map the directory back to the SCHEMA kind name (singular vs plural).
+    let kind = kind_dir.map(|d| match d {
+        "ideas" => "idea".to_owned(),
+        "projects" => "project".to_owned(),
+        other => other.to_owned(),
+    });
+    (kind, slug.map(str::to_owned))
+}
+
+/// Turn a kebab-case slug into a Title Case display string. "my-first-idea"
+/// → "My First Idea". Used as the auto-injected default `title:` when the
+/// caller didn't write a frontmatter block (V3-I).
+fn humanize_slug(slug: &str) -> String {
+    slug.split('-')
+        .filter(|w| !w.is_empty())
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                Some(c) => c.to_ascii_uppercase().to_string() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Write a proposal draft file, creating parent directories. The
@@ -1618,6 +1850,19 @@ pub fn call(
                 })).collect::<Vec<_>>()
             }))
         }
+        "list_tags" => {
+            let kind = opt_str("type")
+                .map(|t| {
+                    parse_kind(&t)
+                        .ok_or_else(|| McpError::InvalidRequest(format!("unknown type `{t}`")))
+                })
+                .transpose()?;
+            let tags = list_tags(content_root, kind)?;
+            Ok(json!({
+                "tags": tags.iter().map(|(t, n)| json!({"tag": t, "count": n}))
+                    .collect::<Vec<_>>()
+            }))
+        }
         "browse" => {
             let uri = opt_str("uri").unwrap_or_else(|| "silan://resources".to_owned());
             Ok(json!({ "entries": browse(content_root, &uri)? }))
@@ -1816,19 +2061,25 @@ mod tests {
     }
 
     /// Closed-set count is the M9-plus-E1 superset: 17 §17.2 pins M9=18
-    /// (10 read + 4 ctx/reflect + capture + 2 proposal + deploy) and
-    /// E1=21 (+suggest_relations/parts/lifecycle). The default `tool_specs`
-    /// returns all 21 because it's the *closed set*; the server's gate
+    /// (11 read + 4 ctx/reflect + capture + 2 proposal + deploy) and
+    /// E1=22 (+suggest_relations/parts/lifecycle). The default `tool_specs`
+    /// returns all 22 because it's the *closed set*; the server's gate
     /// filters down to what's actually surfaced.
+    ///
+    /// The count went from 21 → 22 when `list_tags` was added in the
+    /// 2026-05-22 audit follow-up — tag enumeration was a gap the e2e
+    /// surfaced. Tag count is now ReadOnly tier, so the default surface
+    /// also bumped from 17 → 18.
     #[test]
-    fn closed_set_is_21_through_e1() {
+    fn closed_set_is_22_through_e1() {
         let names: Vec<&'static str> = tool_specs().iter().map(|t| t.name).collect();
-        assert_eq!(names.len(), 21, "tool count = {}, want 21", names.len());
+        assert_eq!(names.len(), 22, "tool count = {}, want 22", names.len());
         for required in [
             "deploy",
             "suggest_relations",
             "suggest_parts",
             "suggest_lifecycle",
+            "list_tags",
         ] {
             assert!(
                 names.contains(&required),
@@ -1838,12 +2089,13 @@ mod tests {
     }
 
     /// Default gate hides Deploy + Evolve tools — the M9 default surface
-    /// is the 17 non-gated tools. This is the 17 §17.2 "M9 advertise"
-    /// surface, distinct from the closed set tested above.
+    /// is the 18 non-gated tools (11 ReadOnly + 4 AgentContext +
+    /// capture + propose + summarize_updates). Counts include `list_tags`
+    /// added by the 2026-05-22 audit follow-up.
     #[test]
-    fn default_gate_advertises_17_tools() {
+    fn default_gate_advertises_18_tools() {
         let surface = advertised_tool_specs(ToolGate::default());
-        assert_eq!(surface.len(), 17, "default surface = {}", surface.len());
+        assert_eq!(surface.len(), 18, "default surface = {}", surface.len());
         for hidden in [
             "deploy",
             "suggest_relations",

@@ -89,11 +89,20 @@ fn main() {
 /// given glob patterns. Re-runs whenever the source directory changes.
 fn pack(repo_root: &Path, dir: &str, dest: &Path, excludes: &[&str]) {
     let src = repo_root.join(dir);
-    assert!(
-        src.is_dir(),
-        "deploy artifact source missing: {}",
-        src.display()
-    );
+    // Cross-compilation environments (e.g. `cross` containers) only mount
+    // the cargo workspace, so `repo_root/<dir>` is unreachable. Emit a
+    // zero-byte placeholder tarball so the build succeeds; `silan site
+    // deploy` will detect the empty archive at runtime and tell the user
+    // to rebuild on a full checkout.
+    if !src.is_dir() {
+        println!(
+            "cargo:warning=deploy artifact source missing ({}); writing empty {}",
+            src.display(),
+            dest.display()
+        );
+        std::fs::write(dest, b"").expect("write empty placeholder tarball");
+        return;
+    }
     // Cargo must re-run this script — and re-pack the tarball — whenever any
     // source file changes. A single `rerun-if-changed` on the *directory*
     // only reacts to the directory's own mtime (an entry added or removed at

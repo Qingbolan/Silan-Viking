@@ -156,6 +156,9 @@ impl Workspace {
     pub fn lint(&self, uri: Option<&str>) -> Result<Vec<LintIssue>, ScanError> {
         let scan = self.scan()?;
         let mut issues = Vec::new();
+        // Collect every Item's URI for the dangling-relation pass below.
+        let known_uris: std::collections::HashSet<String> =
+            scan.items().iter().map(|i| i.uri().to_string()).collect();
         for item in scan.items() {
             let item_uri = item.uri().to_string();
             if uri.is_some_and(|u| u != item_uri) {
@@ -189,6 +192,26 @@ impl Workspace {
                     uri: item_uri.clone(),
                     message: issue.message().to_owned(),
                 });
+            }
+
+            // V2-6: dangling-relation detection. A relation declared in this
+            // Item's frontmatter must point at another Item that actually
+            // exists. Without this rule, deleting the target leaves a silent
+            // orphan in `content_relation`, and `silan content lint` (which
+            // is supposed to surface graph integrity per `01` §1.8.2 / `02`
+            // §`silan index lint`) said nothing about it.
+            for relation in parsed.relations() {
+                let to_uri = relation.to().to_string();
+                if !known_uris.contains(&to_uri) {
+                    issues.push(LintIssue {
+                        level: "warn".to_owned(),
+                        uri: item_uri.clone(),
+                        message: format!(
+                            "dangling relation `{rel:?}` -> `{to_uri}` (target Item not found)",
+                            rel = relation.relation_type(),
+                        ),
+                    });
+                }
             }
         }
         Ok(issues)
