@@ -1,48 +1,50 @@
-# silan-viking 使用手册（普通人版）
+# silan-viking usage manual (for non-developers)
 
-> 你只需要写 markdown。silan-viking 把它变成可部署的个人网站，并让任何
-> 协作 agent 都能读懂你的 context。**单租户、单设备、内容驱动。**
+> You only need to write markdown. silan-viking turns it into a deployable
+> personal website and lets any collaborating agent read your context.
+> **Single-tenant, single-device, content-driven.**
 
-要安装的东西就一样：**Docker**。
+The only thing you need installed: **Docker**.
 
-下面所有命令都能直接复制粘贴。
+Every command below is copy-paste runnable.
 
 ---
 
-## 0. 一次性安装
+## 0. One-time install
 
 ```bash
-# 选一种：
+# Pick one:
 
-# 方案 A：从 crates.io 装（推荐 — 全自动）
+# Option A: cargo install (recommended — fully automatic)
 cargo install silan-viking
 
-# 方案 B：从源码装（开发者）
+# Option B: from source (developers)
 git clone https://github.com/Silan-Hu/Silan-Personal-Website.git
 cd Silan-Personal-Website/engine
 cargo install --path crates/silan-viking-cli
 
-# 方案 C：脚本一键（最简）
+# Option C: one-shot script (simplest)
 curl -fsSL https://raw.githubusercontent.com/Silan-Hu/Silan-Personal-Website/main/engine/install.sh | sh
 ```
 
-装完后 `silan-viking` 二进制以 `silan` 之名进 PATH（如果脚本/cargo 没自动挂，你可以加一个 alias）。
+Once installed, the `silan-viking` binary appears on PATH as `silan` (add an
+alias yourself if your installer didn't).
 
-验证：
+Verify:
 
 ```bash
-silan-viking --version    # 应该打印版本号
+silan-viking --version    # should print the version
 ```
 
 ---
 
-## 1. 新建一个项目
+## 1. Create a new project
 
 ```bash
 silan-viking init
 ```
 
-默认在 `~/.silan-viking/` 铺好整个项目。要换地方：
+By default this lays the project under `~/.silan-viking/`. To pick a different location:
 
 ```bash
 silan-viking --content /path/to/project/content \
@@ -50,143 +52,143 @@ silan-viking --content /path/to/project/content \
              init
 ```
 
-跑完之后，你的项目长这样：
+After it runs, your project looks like this:
 
 ```
 ~/.silan-viking/
-├── silan-viking.toml           # 项目配置（identity / database / deploy）
-├── content/                    # ← 你写 markdown 的地方（git 仓）
-│   ├── SCHEMA.md               # 6 个 content type 的定义（别动）
+├── silan-viking.toml           # project config (identity / database / deploy)
+├── content/                    # ← where you write markdown (a git repo)
+│   ├── SCHEMA.md               # the 6 content type definitions (don't touch)
 │   ├── resources/
 │   │   ├── blog/      ideas/      projects/
 │   │   ├── episode/   resume/     update/
-│   └── agent/                  # agent 自己的 context 记忆
+│   └── agent/                  # the agent's own context memory
 └── _deploy/
-    └── portfolio.db            # 派生缓存（可重建）
+    └── portfolio.db            # derived cache (rebuildable)
 ```
 
 ---
 
-## 2. 写第一篇内容
+## 2. Write your first piece of content
 
-### 写一篇 blog
+### Write a blog post
 
 ```bash
 silan-viking blog new my-first-post
 ```
 
-它会生成：
+This generates:
 ```
 content/resources/blog/my-first-post/
 └── parts/
     └── body/
         ├── meta.toml
-        └── en.md             # ← 编辑这个
+        └── en.md             # ← edit this
 ```
 
-打开 `en.md`，写 markdown，保存。同步进数据库：
+Open `en.md`, write markdown, save. Sync into the database:
 
 ```bash
 silan-viking index sync
 ```
 
-### 写一个 idea（半成形的想法）
+### Write an idea (a half-formed thought)
 
 ```bash
 silan-viking idea new kv-store-on-iouring
-# 编辑 content/resources/ideas/kv-store-on-iouring/parts/overview/en.md
+# edit content/resources/ideas/kv-store-on-iouring/parts/overview/en.md
 silan-viking index sync
 ```
 
-### 维护一个 project
+### Maintain a project
 
 ```bash
 silan-viking project new silan-viking
-# 编辑 content/resources/projects/silan-viking/parts/overview/en.md
+# edit content/resources/projects/silan-viking/parts/overview/en.md
 silan-viking index sync
 ```
 
 ---
 
-## 3. 内容生命周期 — 6 个 status
+## 3. Content lifecycle — six statuses
 
-| status | 用在 | 含义 |
+| status | applies to | meaning |
 |---|---|---|
-| `draft` | blog/idea/project | 草稿，不公开 |
-| `hypothesis` | idea | 已有假设 |
-| `experimenting` | idea | 在做实验 |
-| `validating` | idea | 在验证 |
-| `published` | blog/idea | 公开 |
-| `concluded` | idea | 结束 |
+| `draft` | blog / idea / project | draft, not public |
+| `hypothesis` | idea | a hypothesis has formed |
+| `experimenting` | idea | running experiments |
+| `validating` | idea | validating findings |
+| `published` | blog / idea | public |
+| `concluded` | idea | wrapped up |
 
-直接编辑 `parts/<role>/en.md` 顶部 frontmatter：
+Edit the frontmatter at the top of `parts/<role>/en.md`:
 
 ```yaml
 ---
 slug: my-first-post
 title: My First Post
 kind: blog
-status: published        # ← 改这里
-visibility: public       # ← 改这里
+status: published        # ← change here
+visibility: public       # ← change here
 ---
 ```
 
-然后 `silan-viking index sync`。**只有 `visibility: public` 的内容会上线。**
+Then `silan-viking index sync`. **Only content with `visibility: public` goes live.**
 
 ---
 
-## 4. 查看 / 列出 / 检查
+## 4. Inspect / list / check
 
 ```bash
-# 列出所有 ideas
+# List every idea
 silan-viking idea list
 
-# 看一个具体内容
+# Show one specific item
 silan-viking content show silan://resources/blog/my-first-post
 
-# 浏览整个内容树
+# Browse the whole content tree
 silan-viking content tree
 
-# 跑健康检查（content 一致性 + 文档漂移）
+# Run health checks (content consistency + doc drift)
 silan-viking content lint
-silan-viking content lint --drift    # 只在源码仓内有效
+silan-viking content lint --drift    # only meaningful inside a source checkout
 ```
 
 ---
 
-## 5. 部署上线
+## 5. Deploy to the web
 
-### 5.1 配置部署目标
+### 5.1 Configure the deploy target
 
-编辑 `silan-viking.toml`：
+Edit `silan-viking.toml`:
 
 ```toml
 [deploy]
-mode      = "ssh"                 # 或 "local" 自托管
+mode      = "ssh"                 # or "local" for self-hosting
 host      = "your-server.com"
 ssh_user  = "deploy"
 ssh_key_path = "~/.ssh/id_ed25519"
-ssh_port  = 22                    # 自定义端口在这改
-remote_dir = "~/silan-viking"     # 推荐选用户家目录的子路径
+ssh_port  = 22                    # change here for a custom port
+remote_dir = "~/silan-viking"     # prefer a path under the deploy user's home
 ```
 
-### 5.2 一条命令上线
+### 5.2 One command to ship
 
 ```bash
 silan-viking site deploy --confirm
 ```
 
-会做：
-1. 解出引擎自带的 frontend/backend/deploy tar
-2. `docker compose` 多阶段构建（容器里跑 npm/go，主机不需要装）
-3. `docker save` 镜像 → SSH `scp` 到目标机
-4. 目标机 `docker load` + `compose up`
-5. promote 派生表（运行时数据不动）
-6. 重启 backend + proxy
+What it does:
+1. Extract the bundled frontend/backend/deploy tars
+2. `docker compose` multi-stage build (npm/go run inside containers, never on your host)
+3. `docker save` the images → SSH `scp` them to the target
+4. On the target: `docker load` + `compose up`
+5. Promote derived tables (runtime data untouched)
+6. Restart backend + proxy
 
-**对目标机的要求：Docker + sshd。** 不需要 Node / Go / 源码。
+**Target host needs only: Docker + sshd.** No Node / Go / source.
 
-### 5.3 单机模式（在你自己电脑上跑）
+### 5.3 Local mode (run on your own machine)
 
 ```toml
 [deploy]
@@ -194,144 +196,146 @@ mode = "local"
 host = "localhost"
 ```
 
-然后 `silan-viking site deploy --confirm`。本地起 docker compose。访问 `http://localhost:8080`。
+Then `silan-viking site deploy --confirm`. It boots docker compose locally; visit `http://localhost:8080`.
 
-### 5.4 部署排查
+### 5.4 Deploy troubleshooting
 
-如果失败：
+If it fails:
 
-| 报错 | 解决 |
+| Error | Fix |
 |---|---|
-| `remote_dir 'xxx' is not writable by the deploy user` | 提示已经告诉你了：要么 `sudo chown $USER xxx`，要么把 `remote_dir` 改到用户家目录 |
-| `ssh: connection refused` | 检查 `ssh_port`、目标机 sshd、防火墙 |
-| `docker save failed` | 本地 Docker daemon 没起 |
-| backend 起来但前端打不开 | 等约 30 秒，proxy 需要时间识别新 backend |
+| `remote_dir 'xxx' is not writable by the deploy user` | The message already tells you: either `sudo chown $USER xxx`, or pick a `remote_dir` under the user's home |
+| `ssh: connection refused` | Check `ssh_port`, the target's sshd, the firewall |
+| `docker save failed` | The local Docker daemon isn't running |
+| Backend up but the frontend won't load | Wait about 30 seconds — the proxy needs time to pick up the new backend |
 
 ---
 
-## 6. 让 AI agent 读懂你的 context
+## 6. Let an AI agent read your context
 
-### 6.1 给 Claude 装 silan-viking skill
+### 6.1 Install the silan-viking skill into Claude
 
 ```bash
 silan-viking skill install
 ```
 
-这会在 `~/.claude/skills/silan-viking/` 铺一个 skill 包。打开 Claude，它就能自动发现并接入 MCP。
+This lays a skill bundle under `~/.claude/skills/silan-viking/`. Open Claude and it auto-discovers the skill and connects to MCP.
 
-### 6.2 自己起 MCP server
+### 6.2 Start your own MCP server
 
 ```bash
-# 给本地脚本/工具调
+# For a local script / tool to call
 silan-viking mcp serve --stdio
 
-# 让 agent 维护网站（默认不开）
+# Let the agent maintain the website (off by default)
 silan-viking mcp serve --stdio --enable-deploy
 
-# 让 agent 帮你演化 SCHEMA（默认不开）
+# Let the agent help evolve the SCHEMA (off by default)
 silan-viking mcp serve --stdio --enable-evolve
 ```
 
-工具数：默认 17 / `--enable-deploy` 18 / `--enable-evolve` +3 = 21。
+Tool count: default 17 / `--enable-deploy` 18 / `--enable-evolve` adds 3 = 21.
 
-### 6.3 验证 MCP 起来了
+### 6.3 Verify the MCP server is up
 
 ```bash
-silan-viking mcp serve | grep '^tool=' | wc -l   # 应该 17
-silan-viking mcp status                          # 自检
+silan-viking mcp serve | grep '^tool=' | wc -l   # should print 17
+silan-viking mcp status                          # self-check
 ```
 
-### 6.4 审阅 agent 写的提案
+### 6.4 Review proposals the agent wrote
 
-agent 通过 MCP 写内容时，是先建一个 git 分支 `proposal/<ulid>`，不直接合并主仓。你审：
+When an agent writes content through MCP, it first creates a `proposal/<ulid>` git branch — it never merges directly. You review:
 
 ```bash
-silan-viking proposal list           # 看待审提案
-silan-viking proposal show <id>      # 看 diff
-silan-viking proposal accept <id>    # 接受 → 合并 → 触发 sync
-silan-viking proposal reject <id>    # 丢弃
+silan-viking proposal list           # pending proposals
+silan-viking proposal show <id>      # see the diff
+silan-viking proposal accept <id>    # accept → merge → triggers a sync
+silan-viking proposal reject <id>    # discard
 ```
 
 ---
 
-## 7. 看访客数据（部署之后）
+## 7. Read visitor data (after deploy)
 
-服务器才有访客 / 评论数据。本地拉下来缓存查：
+Visitor / comment data live only on the server. Pull a cache locally and query:
 
 ```bash
-# 同步一次（拉服务器统计到本地缓存）
+# Sync once (pull server stats into the local cache)
 silan-viking stats sync silan://resources/blog/my-first-post
 
-# 看
+# Query
 silan-viking stats show     silan://resources/blog/my-first-post
 silan-viking stats visitors silan://resources/blog/my-first-post
 silan-viking stats crawlers silan://resources/blog/my-first-post
 silan-viking stats sources  silan://resources/blog/my-first-post
 ```
 
-会告诉你访客类型（human / search_bot / ai_bot / unknown）和来源（search / social / ai_chat / direct / internal）。
+You get visitor kind (human / search_bot / ai_bot / unknown) and source (search / social / ai_chat / direct / internal).
 
 ---
 
-## 8. 在新机器上恢复
+## 8. Restore on a new machine
 
 ```bash
 git clone <your-content-repo>  ~/.silan-viking/content
 cd ~/.silan-viking
-silan-viking init --here       # 只生成 silan-viking.toml + _deploy/
-silan-viking index sync        # 重建本地数据库
+silan-viking init --here       # only generate silan-viking.toml + _deploy/
+silan-viking index sync        # rebuild the local database
 ```
 
-**注意**：评论 / 访客统计是服务器原生的，本地数据库不会自动有它们。要看就用 `silan-viking stats sync`。
+**Note**: comments / visitor stats are server-native; the local database
+won't automatically have them. Use `silan-viking stats sync` when you
+want to see them.
 
 ---
 
-## 9. 常见操作对照表
+## 9. Cheat sheet
 
-| 你想做 | 命令 |
+| What you want | Command |
 |---|---|
-| 写新 blog | `silan-viking blog new <slug>` |
-| 写新 idea | `silan-viking idea new <slug>` |
-| 同步进数据库 | `silan-viking index sync` |
-| 完整重建 db | `rm _deploy/portfolio.db && silan-viking index sync` |
-| 上线 | `silan-viking site deploy --confirm` |
-| 本地预览 | `silan-viking site preview` |
-| 健康检查 | `silan-viking content lint` |
-| 看下一步该干啥 | `silan-viking guide` |
-| 起 MCP | `silan-viking mcp serve --stdio` |
-| 装 Claude skill | `silan-viking skill install` |
-| 看访客 | `silan-viking stats sync <uri> && silan-viking stats show <uri>` |
-| 看版本 | `silan-viking --version` |
-| 看帮助 | `silan-viking --help` 或 `silan-viking <noun> --help` |
+| Write a new blog | `silan-viking blog new <slug>` |
+| Write a new idea | `silan-viking idea new <slug>` |
+| Sync into the database | `silan-viking index sync` |
+| Fully rebuild the db | `rm _deploy/portfolio.db && silan-viking index sync` |
+| Go live | `silan-viking site deploy --confirm` |
+| Local preview | `silan-viking site preview` |
+| Health check | `silan-viking content lint` |
+| What should I do next? | `silan-viking guide` |
+| Start MCP | `silan-viking mcp serve --stdio` |
+| Install the Claude skill | `silan-viking skill install` |
+| Read visitor data | `silan-viking stats sync <uri> && silan-viking stats show <uri>` |
+| Version | `silan-viking --version` |
+| Help | `silan-viking --help` or `silan-viking <noun> --help` |
 
 ---
 
-## 10. 不要做的事
+## 10. Don't do these
 
-1. **不要手动改 `_deploy/portfolio.db`** — 它是派生的，任何一次 `silan-viking index sync` 都会覆盖你的改动。改 markdown，让 sync 自己做事。
-2. **不要把 `content/` 文件夹放在 git 仓库外** — content 就是你的真相源，没 git 等于没历史。
-3. **不要在服务器上手改 `portfolio.db`** — 它的内容表是 promote 时覆盖的；要改内容，改本地 markdown，sync，部署。
-4. **不要用本地 `portfolio.db` 直接覆盖服务器的** — 服务器的运行时表（评论、访客）只在那一份；覆盖 = 丢评论。`silan site promote` 已经帮你处理这件事。
-5. **不要给 `silan` 加 sudo** — 它不需要 root。需要 root 的只有目标机的 `chown remote_dir`（一次性）。
+1. **Don't edit `_deploy/portfolio.db` by hand** — it's derived; any `silan-viking index sync` overwrites your changes. Edit markdown and let sync do its job.
+2. **Don't put `content/` outside a git repo** — content is your source of truth; no git means no history.
+3. **Don't hand-edit `portfolio.db` on the server** — its content tables are replaced by promote. To change content, edit local markdown, sync, deploy.
+4. **Don't overwrite the server's `portfolio.db` with your local one directly** — the server's runtime tables (comments, visitors) live only there; overwriting = lost comments. `silan site promote` already handles this correctly.
+5. **Don't `sudo silan`** — it doesn't need root. The only thing that needs root is `chown remote_dir` on the target once.
 
 ---
 
-## 11. 当你陷入麻烦
+## 11. When you're stuck
 
 ```bash
-# 第一步：让 silan 告诉你它觉得下一步该干啥
+# Step 1: ask silan what it thinks you should do next
 silan-viking guide
 
-# 第二步：跑健康检查
+# Step 2: run a health check
 silan-viking content lint
 
-# 第三步：看自检
+# Step 3: self-check
 silan-viking mcp status
 silan-viking site status
 
-# 第四步：完全重建本地 db（不影响真相源）
+# Step 4: fully rebuild the local db (doesn't touch your source of truth)
 rm _deploy/portfolio.db
 silan-viking index sync
 ```
 
-如果还不行，去看 `docs/silan-viking/GOAL.md`（终局图）和 `docs/silan-viking/OVERVIEW.md`（总览）。
+If you're still stuck, see `docs/silan-viking/GOAL.md` (the terminal-state picture) and `docs/silan-viking/OVERVIEW.md` (the index).
