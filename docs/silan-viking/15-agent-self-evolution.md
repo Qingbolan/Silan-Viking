@@ -1,270 +1,324 @@
-# 15 · agent 自我演化 —— 三层设计与闸门
+# 15 · Agent self-evolution — three-layer design and gates
 
-> 需求延伸自 `#10`（agent 经提案更新内容）/ `#11`（agent 维护网站）/
-> `#12`（context 增强）。本章回答一个新问题：**让协作 agent 不只是"按指令
-> 改一个文件"，而是能主动演化项目的内容、结构、乃至界面 —— 边界在哪、
-> 闸门是什么。**
+> A requirement extension from `#10` (agents update content through
+> proposals) / `#11` (agents maintain the website) / `#12` (context
+> enrichment). This chapter answers a new question: **let a
+> collaborating agent be more than "edit one file on command" — let
+> it actively evolve the project's content, structure, and even UI;
+> what is the boundary, what is the gate.**
 >
-> 一句话先钉死全章：**「自我演化」不是「agent 自动改完上线」。它是
-> 「agent 主动发现 + 提案 + 分级闸门 + 人在关键节点拍板」。** 演化的
-> 自主程度,随「改错的代价」升高而递减。
+> One sentence to pin the whole chapter: **"self-evolution" is not
+> "the agent edits and ships on its own". It is "the agent actively
+> discovers + proposes + tiered gates + the human decides at key
+> nodes".** The level of agent autonomy decreases as the cost of
+> a wrong change rises.
 
 ---
 
-## §15.0 三层模型 —— 按「改错代价」分层
+## §15.0 Three-layer model — layered by "cost of getting it wrong"
 
-silan-viking 里能被演化的东西分三层,**自主程度与代价反相关**:
+The things that can be evolved inside silan-viking fall into three
+layers; **autonomy is inversely correlated with cost**:
 
-| 层 | 演化对象 | 改错的代价 | 自主程度 | 闸门 |
+| Layer | Object | Cost of error | Autonomy | Gate |
 |---|---|---|---|---|
-| L-内容 | `content/resources/**` 的 markdown | 低 —— 数据,Git 可回滚 | **高**:agent 主动提案 | 校验① + 人 `accept`（已有）|
-| L-结构 | `content/SCHEMA.md` + 派生 DB schema | 中 —— 错了会让 sync/promote 失败 | **中**:agent 提案,机器闸门 + 人双签 | 三方一致性校验 + 人 `accept` |
-| L-界面 | `frontend/` 前端代码 + 部署 | 高 —— 运行时、用户可见、难自测 | **低**:agent 起草 PR,人审 | CI + 预览 + 人 merge |
+| L-content | markdown under `content/resources/**` | low — data; git-revertible | **high**: agent proactively proposes | validation ① + human `accept` (already in place) |
+| L-structure | `content/SCHEMA.md` + derived DB schema | medium — wrong causes sync/promote failures | **medium**: agent proposes; machine gate + human double-sign | three-way consistency check + human `accept` |
+| L-UI | `frontend/` code + deployment | high — runtime, user-visible, hard to self-test | **low**: agent drafts a PR; human reviews | CI + preview + human merge |
 
-> 为什么不是「一套机制通吃」:内容错了改一行 markdown；schema 错了
-> `portfolio.db` 重建不出来;UI 错了线上白屏。**代价不同,闸门必须不同。**
-> 把三层塞进同一条 `accept` 链路,等于用「改 markdown 的松紧度」去管
-> 「改数据库」—— 这正是 M4 契约漂移那类事故的温床。
+> Why not "one mechanism for everything": a wrong content edit is
+> one line of markdown; a wrong schema means `portfolio.db` cannot
+> rebuild; a wrong UI is a blank screen in production. **Different
+> costs require different gates.** Cramming all three into the same
+> `accept` chain means "the looseness fit for editing markdown" is
+> applied to "editing the database" — exactly the breeding ground
+> for the M4 contract-drift class of incident.
 
 ---
 
-## §15.1 L-内容演化 —— 已有机制 + 主动性增强
+## §15.1 L-content evolution — existing mechanism + proactivity boost
 
-### 现状（已实现）
+### Today (already implemented)
 
-`03` 档 2 的 `capture` + `§3.1` 提案链路：agent 起草内容 → `proposal/<ulid>`
-Git 分支 → 校验① → 人 `silan proposal accept`。idea→blog→project 的演化边
-（`content_relation`）也在。**这层不用新做,它已经能演化内容。**
+The `03` tier 2 `capture` + `§3.1` proposal chain: the agent drafts
+content → `proposal/<ulid>` git branch → validation ① → human
+`silan proposal accept`. The idea→blog→project evolution edges
+(`content_relation`) are also in. **This layer needs no new work;
+it can already evolve content.**
 
-### 增强 —— 从「被动捕捉」到「主动发现」
+### The boost — from "passive capture" to "active discovery"
 
-今天的 agent 是 owner 说一句它 `capture` 一句。演化增强是给它**主动性**:
+Today the agent captures one thing when the owner voices one thing.
+The evolution boost gives it **initiative**:
 
-| 新 MCP tool（档 2 扩展） | 作用 |
+| New MCP tool (tier-2 extension) | Purpose |
 |---|---|
-| `suggest_relations()` | 扫全部 Item,找出**应该存在但缺失的演化边** —— 如一篇 blog 明显在讲某个 idea 却没 `documents` 边。返回候选边清单,owner 一条条 `accept`。|
-| `suggest_parts(uri)` | 看一个 Item 的现有 Part,提议**缺失的可选 Part** —— 如一个 `experimenting` 状态的 idea 没有 `progress` Part。|
-| `suggest_lifecycle(uri)` | 基于内容成熟度,提议 `status` 推进 —— 如一个 idea 的 overview 已写得像项目方案,提议 `idea promote --to project`。|
+| `suggest_relations()` | Scan every Item and find **evolution edges that should exist but are missing** — e.g. a blog clearly talks about an idea but has no `documents` edge. Returns the candidate-edge list; the owner `accept`s one by one. |
+| `suggest_parts(uri)` | Look at an Item's existing Parts and propose **missing optional Parts** — e.g. an `experimenting`-status idea has no `progress` Part. |
+| `suggest_lifecycle(uri)` | Based on content maturity, propose a `status` advance — e.g. an idea's overview already reads like a project plan; propose `idea promote --to project`. |
 
-**闸门**：与现有提案完全一致 —— 这些 `suggest_*` 只**产出提案**，
-不自动 apply。它们的产物进 `silan proposal list`，owner 逐条 `accept`/
-`reject`。风险低是因为：错的建议 = 一条被 reject 的提案，零副作用。
+**Gate**: identical to the existing proposal mechanism — these
+`suggest_*` **only produce proposals**, they never auto-apply.
+Their outputs enter `silan proposal list`; the owner `accept` /
+`reject` each one. The risk is low because: a wrong suggestion =
+one rejected proposal, zero side effect.
 
-**实现落点**：`silan-viking-mcp`，纯读 + 产出提案，无新 crate。
+**Code site**: `silan-viking-mcp`, pure read + proposal output; no new crate.
 
 ---
 
-## §15.2 L-结构演化 —— agent 改 SCHEMA,机器闸门把关
+## §15.2 L-structure evolution — agents edit SCHEMA; the machine gate stands guard
 
-### 为什么这层可行
+### Why this layer is feasible
 
-silan-viking 的 parser 是**配置驱动**的（`OVERVIEW.md` Q5）：「加一个内容
-tab = 改 `SCHEMA.md` 的 type 定义，不改 Rust」。所以 agent 修改 `SCHEMA.md`
-在原理上和修改一篇 markdown 没区别 —— 都是改 `content/` 仓里的一个文件，
-都能走提案分支。
+silan-viking's parser is **config-driven** (`OVERVIEW.md` Q5):
+"adding a content tab = edit the type definition in `SCHEMA.md`, no
+Rust change". So an agent editing `SCHEMA.md` is, in principle, no
+different from editing a markdown file — both change a file in
+`content/`, and both can go through a proposal branch.
 
-### 为什么这层不能照搬 L-内容的松紧度
+### Why this layer cannot copy L-content's looseness
 
-`SCHEMA.md` 一改,**连锁三个下游**:
-1. **引擎 parser** —— 新 Part role / frontmatter 字段,parser 要能解析。
-2. **派生 DB schema** —— 新字段可能要新列；ent schema 与引擎 mapper 必须一致
-   （这正是 M4 契约漂移的战场）。
-3. **promote** —— `DERIVED_TABLES` 白名单、列映射要跟上。
+A `SCHEMA.md` edit **cascades into three downstream consumers**:
+1. **Engine parser** — new Part role / frontmatter field, the parser must be able to parse it.
+2. **Derived DB schema** — new fields may need new columns; ent schema and the engine mapper must stay consistent (this is exactly the M4 contract-drift battlefield).
+3. **promote** — the `DERIVED_TABLES` allowlist and column mappings must follow.
 
-一个 agent 随手给 `SCHEMA.md` 加个字段，如果没有校验，下一次 `sync` 或
-`deploy` 就会像我们调试 e2e 那天一样：`NOT NULL constraint failed`、
-`schema drift`、`FOREIGN KEY constraint failed` 逐个炸。
+When an agent casually adds a field to `SCHEMA.md` without a check,
+the next `sync` or `deploy` will blow up just like e2e debugging day:
+`NOT NULL constraint failed`, `schema drift`, `FOREIGN KEY constraint
+failed` — one by one.
 
-### 闸门 —— 「结构提案」必须过三方一致性校验
+### The gate — "structure proposals" must pass a three-way consistency check
 
-L-结构演化引入一个**新的提案子类**：`schema-proposal`。它走提案分支，但
-`accept` 前多一道**机器闸门** `silan schema check`：
+L-structure evolution introduces a **new proposal sub-kind**:
+`schema-proposal`. It uses the proposal branch path, but before
+`accept` there is one extra **machine gate** `silan schema check`:
 
 ```
-agent 调 propose_schema(change)
-   ↓  起 proposal/<ulid> 分支,改的是 SCHEMA.md
+agent calls propose_schema(change)
+   ↓  opens proposal/<ulid> branch; touches SCHEMA.md
    ↓
-校验①  —— SCHEMA.md 自身语法 / type 定义合法性
+validation ①  —— SCHEMA.md's own syntax / type-definition validity
    ↓
-silan schema check  —— ★新增的三方一致性闸门★
-   ├─ 引擎侧:用新 SCHEMA 跑一遍 parser,fixture 内容能解析
-   ├─ DB 侧:推演新 SCHEMA → 派生表 DDL diff,检测是否需要 ent 变更
-   └─ promote 侧:检测 DERIVED_TABLES / 列映射是否仍自洽
-   ↓  三项全绿才进入可 accept 状态
-人 accept  —— owner 看 diff + 看 schema check 报告,双签
+silan schema check  —— ★ the new three-way consistency gate ★
+   ├─ engine side: run the parser with the new SCHEMA; fixture content parses
+   ├─ DB side: derive the new SCHEMA → derived-table DDL diff; detect whether ent changes are needed
+   └─ promote side: detect whether DERIVED_TABLES / column mappings are still self-consistent
+   ↓  all three green → enters acceptable state
+human accept  —— owner reviews the diff + the schema-check report; double-sign
    ↓
-若 check 报告「需要 ent 变更」 —— accept 不直接放行,
-   生成一个 backend 侧的 ent 变更工单(进 L-界面层处理)
+if the check report says "ent change needed" — accept does not pass through;
+   it produces a backend ent-change ticket (handled in the L-UI layer)
 ```
 
-**关键裁决**：
-- agent **能提案** schema 变更，**不能**让它自动落到 `portfolio.db`。
-- `silan schema check` 不过 → 提案标红，不可 `accept`（同校验①的纪律）。
-- 凡是 check 判定「连带 ent / Go 代码变更」的 schema 提案 —— `accept` 只
-  合 `SCHEMA.md`，**同时产出一个 L-界面层的工单**，因为改 Go 代码是 L-界面
-  层的事。schema 与代码分两层、两个节奏落地（M0.5a/M0.5b 已是这个思路）。
+**Key rulings**:
+- The agent **can propose** schema changes; it **cannot** auto-land them into `portfolio.db`.
+- If `silan schema check` fails → the proposal is marked red; cannot `accept` (same discipline as validation ①).
+- Any schema proposal whose check determines "ent / Go code changes are also required" — `accept` only merges `SCHEMA.md`, and **simultaneously produces an L-UI-layer ticket**, because Go code edits belong to L-UI. Schema and code land in two layers, at two cadences (M0.5a/M0.5b already follows this idea).
 
-### 安全裁决 —— agent 绝不能做的结构操作
+### Safety ruling — structural operations the agent must never do
 
-| 操作 | 准许? | 理由 |
+| Operation | Allowed? | Reason |
 |---|---|---|
-| 加可选 Part role / 加 frontmatter 字段 | ✅ 提案 | 加法,向后兼容 |
-| 加一个新 content type | ⚠️ 提案 + 强人审 | 连带 parser/mapper/ent 大改,等于 L-界面工单 |
-| 删 Part / 删字段 / 删 type | ❌ 永不 | 破坏性、丢数据,只能 owner 手动 |
-| 改派生 DB 的运行时表 | ❌ 永不 | `08`§8.3 硬约束,运行时数据 agent 不碰 |
+| Add an optional Part role / add a frontmatter field | ✅ propose | additive; backward-compatible |
+| Add a new content type | ⚠️ propose + strict human review | cascading parser / mapper / ent edits; equivalent to an L-UI ticket |
+| Delete a Part / delete a field / delete a type | ❌ never | destructive; data loss; only the owner manually |
+| Edit a derived-DB runtime table | ❌ never | hard constraint in `08` §8.3; runtime data is off-limits to the agent |
 
-**实现落点**：`silan-viking-cli` 加 `schema` 命令组（`check`/`diff`），
-`silan-viking-mcp` 加 `propose_schema` 工具。无新 crate。
+**Code site**: `silan-viking-cli` adds a `schema` command group (`check` / `diff`); `silan-viking-mcp` adds the `propose_schema` tool. No new crate.
 
-> **fixture 同步**:一个改 `SCHEMA.md` 的 `schema-proposal`,**必须在同一
-> 提案分支里同步升级 `engine/tests/fixtures/content/`** —— `schema check`
-> 的引擎侧校验跑的就是升级后的 fixture,没同步就过不了闸门。完整规则见
-> `08` §8.7.1。
+> **Fixture sync**: a `schema-proposal` editing `SCHEMA.md` **must
+> sync-upgrade `engine/tests/fixtures/content/` in the same
+> proposal branch** — `schema check`'s engine-side validation runs
+> against the upgraded fixture; if it isn't synced, the gate fails.
+> Full rules in `08` §8.7.1.
 
-### §15.2.1 `schema check` 的 DB 侧推演算法(E2 实现级 spec)
+### §15.2.1 The DB-side derivation algorithm of `schema check` (E2 implementation-grade spec)
 
-> 红队审查补:§15.2 的流程图把「DB 侧:推演 DDL diff」当一步黑箱。
-> 本节给出可实现级算法 —— E2 实现 `schema check` 时以此为依据。
+> Red-team audit addition: §15.2's diagram treats "DB side: derive
+> the DDL diff" as a black box. This section gives an
+> implementation-grade algorithm — when E2 implements `schema check`,
+> use this as the basis.
 
-**输入**:提案分支的 `SCHEMA.md`(新)+ 主分支的 `SCHEMA.md`(旧)。
-**输出**:一个 `DdlDiff` 报告 —— 每个 type 的派生表需要哪些 `ADD COLUMN` /
-类型变更 / 无变更,以及是否触碰编译期闭集。
+**Input**: the `SCHEMA.md` on the proposal branch (new) + the main-branch `SCHEMA.md` (old).
+**Output**: a `DdlDiff` report — for each type's derived table, which `ADD COLUMN` / type change / no-op is needed, and whether the compile-time closed set is touched.
 
-**算法(纯推演,不连真实 DB)**:
+**Algorithm (pure derivation; no real DB needed)**:
 
 ```
-1. 解析新旧 SCHEMA.md,各得一个 { type -> [FieldDef] } 映射。
-   FieldDef = { name, kind(见下表), required, enum_values? }
-2. 对 6 个 type 逐一 diff 字段集合,每条变更归一个 verdict:
-   - 新增非 enum 字段        → ADD_COLUMN
-   - 新增 enum 字段          → ADD_COLUMN(列自带 CHECK,SQLite 的 ADD COLUMN
-                               支持带 CHECK 的新列 —— 安全)
-   - 已有 enum 扩值/减值      → REBUILD ★关键:SQLite 无法原地改 CHECK 约束,
-                               只能「建新表+迁数据+换名」12 步重建。这是
-                               破坏性迁移,不是 ADD,但 ent migration 能做。
-   - 删除字段 / 字段 kind 变更 → FATAL(§15.2 安全表禁止;列类型变更破坏性)
-3. 对每个 ADD_COLUMN,用「字段 kind → SQLite 列类型」映射表(下)算出列定义。
-4. 新增 Part role:若 shape 已知 → 仅 item_part 表多几行数据,无 DDL,verdict
-   = NO_OP;若 shape 未知(新 shape)→ verdict = ENGINE(触碰编译期闭集)。
-5. 汇总成四态 schema_check 结果(与 §15.5.1 propose_schema 的枚举一致):
-   - 全部 NO_OP                          → passed
-   - 含 ADD_COLUMN / REBUILD,无 FATAL/ENGINE → needs_ent
-       (REBUILD 在 ddl_diff 里 action 标 `rebuild_table`,工单注明
-        「破坏性迁移、ent 走 12 步重建、需停服窗口或影子表」)
-   - 含 ENGINE                            → needs_engine
-   - 含 FATAL                             → failed(提案标红,不可 accept)
+1. Parse new and old SCHEMA.md; obtain a { type -> [FieldDef] } map for each.
+   FieldDef = { name, kind (see table), required, enum_values? }
+2. Diff field sets per the 6 types; each change gets one verdict:
+   - Added non-enum field        → ADD_COLUMN
+   - Added enum field            → ADD_COLUMN (the column ships with CHECK;
+                                   SQLite's ADD COLUMN supports a new column
+                                   with CHECK — safe)
+   - Existing enum extended/reduced → REBUILD ★ key point: SQLite cannot edit
+                                   CHECK constraints in place; the 12-step
+                                   "create new table + migrate data + rename"
+                                   is required. This is a destructive
+                                   migration, not an ADD — but ent migration
+                                   can do it.
+   - Field deletion / kind change → FATAL (forbidden in the §15.2 safety
+                                   table; column type changes are destructive)
+3. For every ADD_COLUMN, use the "field kind → SQLite column type" map (below)
+   to compute the column definition.
+4. New Part role: if the shape is known → only item_part gains a few extra
+   rows; no DDL; verdict = NO_OP. If the shape is unknown (a new shape) →
+   verdict = ENGINE (the compile-time closed set is touched).
+5. Aggregate into a four-state schema_check result (matches the propose_schema
+   enum in §15.5.1):
+   - All NO_OP                                  → passed
+   - Contains ADD_COLUMN / REBUILD, no FATAL/ENGINE → needs_ent
+       (REBUILD is recorded in ddl_diff with action `rebuild_table`; ticket
+        notes "destructive migration, ent runs the 12-step rebuild, requires
+        a downtime window or a shadow table")
+   - Contains ENGINE                            → needs_engine
+   - Contains FATAL                             → failed (proposal marked red, no accept)
 ```
 
-**字段 kind → SQLite 列类型映射表**(推演 DDL 的唯一依据):
+**Field kind → SQLite column type mapping table** (the sole basis for derived DDL):
 
-| SCHEMA `kind` | SQLite 列类型 | 可空性 | 备注 |
+| SCHEMA `kind` | SQLite column type | Nullability | Notes |
 |---|---|---|---|
 | `string` / `slug` / `uri` | `TEXT` | `required` → `NOT NULL` | — |
-| `text`(长文)| `TEXT` | 同上 | 正文类一般走 `item_part`,不进主表 |
-| `int` | `INTEGER` | 同上 | — |
-| `bool` | `INTEGER`(0/1)| `NOT NULL DEFAULT 0` | — |
-| `date` / `datetime` | `TEXT`(ISO-8601)| 同上 | 与现有 ent `field.Time` 一致 |
-| `enum` | `TEXT` + `CHECK(col IN (...))` | 同上 | **新增 enum 字段**=安全 ADD;**改已有 enum 的值集**=REBUILD(见算法第 2 步)|
-| `string_list` / `tag_list` | 不进主表 | — | 走关系表或 JSON,verdict = ENGINE |
+| `text` (long text) | `TEXT` | same | body-like text usually flows through `item_part`, not the main table |
+| `int` | `INTEGER` | same | — |
+| `bool` | `INTEGER` (0/1) | `NOT NULL DEFAULT 0` | — |
+| `date` / `datetime` | `TEXT` (ISO-8601) | same | matches the existing ent `field.Time` |
+| `enum` | `TEXT` + `CHECK(col IN (...))` | same | **Adding a new enum field** = safe ADD; **changing an existing enum's value set** = REBUILD (see algorithm step 2) |
+| `string_list` / `tag_list` | does not enter the main table | — | goes through a join table or JSON; verdict = ENGINE |
 
-> **三种非 passed verdict 的区别**:
-> - `needs_ent` —— Go ent 改表即可,引擎 Rust 不动(`silan-viking-entities`
->   反向重新生成)。其中 `ADD_COLUMN` 是轻量迁移,`REBUILD`(enum 改值集)
->   是**破坏性迁移** —— ent 仍能做(SQLite 12 步重建表),但 `ddl_diff` 必须
->   把它标 `rebuild_table`,工单注明需停服窗口/影子表,owner `accept` 时知情。
-> - `needs_engine` —— 触碰编译期闭集(新 shape / 新 type / list 类字段),
->   引擎 Rust 要改。`accept` 仍只合 `SCHEMA.md`,工单标「需引擎改代码」。
-> - `failed` —— 删字段/改 kind 等破坏性或禁止操作,提案不可 `accept`。
+> **Difference between the three non-passed verdicts**:
+> - `needs_ent` — Go ent edits suffice; the Rust engine is untouched
+>   (`silan-viking-entities` is reverse-regenerated). Within this,
+>   `ADD_COLUMN` is a lightweight migration; `REBUILD` (changing an
+>   enum's value set) is a **destructive migration** — ent can
+>   still do it (SQLite 12-step rebuild), but `ddl_diff` must mark
+>   it `rebuild_table` and the ticket must note "downtime window /
+>   shadow table required" so the owner is informed at `accept`.
+> - `needs_engine` — the compile-time closed set is touched (new
+>   shape / new type / list-class field); the Rust engine needs
+>   edits. `accept` still merges only `SCHEMA.md`; the ticket is
+>   tagged "engine code change required".
+> - `failed` — destructive or forbidden operations like field
+>   deletion / kind change; the proposal cannot be `accept`-ed.
 >
-> 这把 §15.2 流程图「检测是否需要 ent 变更」落成**可判定的四态**,且对
-> 「SQLite 改 enum 值集是破坏性操作」这一真实约束不再含糊(早期初稿误把
-> enum 增值当安全 ADD —— 红队审查纠正,此处定死)。
+> This pins §15.2's "detect whether ent changes are needed" into
+> a **decidable four-state**, and it no longer hand-waves the real
+> SQLite constraint that "changing an enum value set is a
+> destructive operation" (early drafts treated "adding to an enum"
+> as a safe ADD — the red-team audit corrected this; pinned here).
 
 ---
 
-## §15.3 L-界面演化 —— agent 起草,人审 PR,不做「自动上线」
+## §15.3 L-UI evolution — agent drafts, human reviews the PR; no "auto-ship"
 
-### 裁决:UI「自我演化」= agent 辅助开发 + 人审,不是自动化
+### Ruling: UI "self-evolution" = agent-assisted development + human review, not automation
 
-让 agent 自动改 `frontend/` 组件并 `site deploy` 上线 —— **本设计明确否决**。
-理由是代价层级：
+Letting the agent auto-edit `frontend/` components and
+`site deploy` them — **this design explicitly vetoes that**. The
+reason is cost-layering:
 
-- 内容错了：owner 看一眼 diff 就发现，回滚一行 markdown。
-- schema 错了：`silan schema check` 机器闸门当场拦下。
-- **UI 错了：agent 没有「看到渲染结果」的能力。** 一个组件改崩、一个
-  样式回归、一个交互坏掉 —— 机器闸门测不出「丑」和「难用」，agent 自己
-  也测不出。这类错误的发现者只能是人,发现的时机是「已经上线、用户看到了」。
+- Content wrong: the owner sees the diff and notices; revert one markdown line.
+- Schema wrong: `silan schema check`'s machine gate catches it on the spot.
+- **UI wrong: the agent has no "see the rendering result" ability.** A broken component, a style regression, a broken interaction — the machine gate cannot measure "ugly" or "unusable", and the agent cannot self-measure either. These errors can only be discovered by humans, and the time of discovery is "after it's shipped and a user sees it".
 
-所以 UI 层的「演化」正确形态是**你现在和我协作的这个模式本身**：agent
-（在 Claude Code / IDE 里）改代码 → 跑 lint/build/测试 → **起一个 PR** →
-**人审 + 看预览 → 人 merge**。这不需要 silan-viking 内置什么新机制 ——
-它就是常规的 agent 辅助开发。
+So the correct shape of "evolution" at the UI layer is **the
+collaboration mode you and I are using right now**: the agent (in
+Claude Code / IDE) edits code → runs lint/build/tests → **opens a
+PR** → **human reviews + checks preview → human merges**. This
+needs no new mechanism inside silan-viking — it is standard
+agent-assisted development.
 
-### silan-viking 能为 UI 演化做的有限的事
+### What silan-viking can do for UI evolution — within limits
 
-不是「让 agent 自动改 UI」，而是**给 agent 改 UI 时更好的输入**：
+Not "let the agent auto-edit UI", but **give the agent better input
+when it edits UI**:
 
-| 能力 | 作用 |
+| Capability | Purpose |
 |---|---|
-| `site check` 扩展 | 发布前体检加上：死链、缺图、组件 props 契约、设计系统 token 一致性 —— 给改 UI 的 agent 一个自检清单。|
-| schema → 前端类型联动检查 | L-结构演化产出的 ent 变更工单,附带「前端哪些组件/类型要跟着改」的清单（承 `docs/backend-frontend-migration/` 的 endpoint↔组件矩阵）。|
-| 部署预览 | `site preview` 已有 —— agent 改完 UI,人通过 preview 看效果再决定。|
+| `site check` extension | Add to the pre-publish health check: broken links, missing images, component prop contracts, design-system token consistency — gives the UI-editing agent a self-check list. |
+| schema → frontend type-linkage check | Each ent-change ticket produced by L-structure evolution carries a "which frontend components / types must follow" list (continuing `docs/backend-frontend-migration/`'s endpoint↔component matrix). |
+| Deploy preview | `site preview` already exists — after the agent edits UI, the human eyes the preview before deciding. |
 
-**裁决**：`site deploy` 的 agent 准入维持 `03` 档 4 的现状 ——
-`deploy()` 默认关闭、强制 dry-run + owner 确认。**UI 变更上线权永远在人。**
-
----
-
-## §15.4 三层串起来 —— 一次「完整演化」长什么样
-
-owner 说："我那个 AI content optimizer 的想法，最近想得挺深了。"
-
-```
-[L-内容] agent recall 命中那个 idea,suggest_lifecycle 提议:
-         "它的 overview 已经写得像项目方案,建议 promote 成 project。"
-         → owner accept → idea→project 演化边 + 新 project Item 落地。
-
-[L-内容] agent suggest_parts:"新 project 缺 progress Part。"
-         → owner accept → progress Part 起好。
-
-[L-结构] agent 注意到 project 需要一个"实验指标"字段,SCHEMA 里没有。
-         propose_schema: 给 project 的 frontmatter 加 metrics 字段。
-         → silan schema check:引擎 parser ✅,DB 推演出"需要 ent 加列"⚠️。
-         → owner 看报告 accept → SCHEMA.md 合入 + 产出一个 ent 变更工单。
-
-[L-界面] ent 变更工单进开发流:agent(在 IDE 里)按工单改 ent schema、
-         regenerate、改 Go handler、改前端组件读新字段 → 跑测试 → 起 PR。
-         → owner 审 PR + 看 site preview → merge → site deploy(人确认)。
-```
-
-每一层的自主度都不同:L-内容 agent 几乎全自动产出提案、owner 一路
-`accept`;L-结构 agent 提案但卡机器闸门 + 人双签;L-界面 agent 只是
-辅助写代码,人审 PR、人上线。**演化是真的,但代价越高的层、人越在场。**
+**Ruling**: the agent's admission to `site deploy` stays at the
+status quo in `03` tier 4 — `deploy()` is off by default, with
+mandatory dry-run + owner confirmation. **UI shipping authority
+always belongs to the human.**
 
 ---
 
-## §15.5 实施分期
+## §15.4 The three layers strung together — what one "complete evolution" looks like
 
-| 阶段 | 交付 | 依赖 |
+The owner says: "That AI content optimizer idea — I've been thinking about it more deeply lately."
+
+```
+[L-content] agent recall hits that idea; suggest_lifecycle proposes:
+            "its overview already reads like a project plan — propose
+             promoting to project."
+            → owner accepts → idea→project evolution edge + a new project
+              Item is created.
+
+[L-content] agent suggest_parts: "the new project is missing a progress Part."
+            → owner accepts → progress Part scaffolded.
+
+[L-structure] agent notices project needs an "experimental metric" field
+              that SCHEMA does not define.
+              propose_schema: add a metrics field to project's frontmatter.
+              → silan schema check: engine parser ✅, DB derivation says
+                "ent column needed" ⚠️.
+              → owner reviews the report and accepts → SCHEMA.md is merged
+                + an ent-change ticket is produced.
+
+[L-UI] The ent-change ticket enters the dev flow: the agent (inside IDE)
+       follows the ticket, edits the ent schema, regenerates, edits the Go
+       handler, edits the frontend component to read the new field → runs
+       tests → opens a PR.
+       → owner reviews the PR + checks site preview → merges → site deploy
+         (with human confirmation).
+```
+
+The autonomy at each layer differs: at L-content the agent produces
+proposals nearly fully automatically and the owner `accept`s along;
+at L-structure the agent proposes but is held by the machine gate +
+human double-sign; at L-UI the agent only assists writing code,
+human reviews the PR, human ships. **Evolution is real, but the
+higher the cost the more the human is present.**
+
+---
+
+## §15.5 Staging
+
+| Stage | Deliverable | Depends on |
 |---|---|---|
-| **E1** | L-内容增强:`suggest_relations` / `suggest_parts` / `suggest_lifecycle` 三个 MCP 工具,产出提案 | 现有提案机制(M7)|
-| **E2** | L-结构:`silan schema check` 三方一致性闸门 + `propose_schema` MCP 工具 + `schema-proposal` 子类 | E1、稳定的 ent↔引擎契约 |
-| **E3** | L-界面辅助:`site check` 扩展 + schema→前端联动清单 | E2 |
+| **E1** | L-content boost: the three MCP tools `suggest_relations` / `suggest_parts` / `suggest_lifecycle`, producing proposals | the existing proposal mechanism (M7) |
+| **E2** | L-structure: the `silan schema check` three-way consistency gate + the `propose_schema` MCP tool + the `schema-proposal` sub-kind | E1, a stable ent↔engine contract |
+| **E3** | L-UI assist: `site check` extension + the schema→frontend linkage list | E2 |
 
-> E1 低风险、纯增量,可立即排。E2 是这章的核心工程量 —— `schema check`
-> 的三方校验是关键,它把「agent 改结构」从一件危险的事变成一件有闸门的事。
-> E3 不引入「UI 自动演化」,只是把 agent 改 UI 时的输入做厚。
+> E1 is low-risk and purely additive; can be scheduled immediately.
+> E2 is the chapter's main engineering load — the three-way check
+> in `schema check` is the key, turning "the agent edits structure"
+> from a dangerous thing into a gated thing. E3 introduces no "UI
+> auto-evolution"; it only thickens the input for an agent editing
+> UI.
 
-> **接入主干**:E1/E2/E3 已正式排入 `04-里程碑.md` 的「E1–E3」节(排在
-> M9 之后)。本章新增的 MCP 工具(`suggest_*`/`propose_schema`)是 M9
-> 的 18 工具闭集之外的增量 —— E1 后闭集为 21、E2 后为 22,`03` §3.2
-> 闭集说明已注明;`silan schema` 命令组在 E2 加入 `02`。
+> **Wired into the backbone**: E1 / E2 / E3 are officially scheduled
+> in the "E1–E3" section of `04-milestones.md` (after M9). The new
+> MCP tools (`suggest_*` / `propose_schema`) are increments outside
+> the M9 closed set of 18 tools. The closed set grows to 21 after
+> E1 lands, then to 22 after E2; `03` §3.2 closed-set notes state
+> this; the `silan schema` command group enters `02` at E2.
 
-### §15.5.1 E 阶段工具的 JSON schema 合同
+### §15.5.1 JSON-schema contract for the E-stage tools
 
-> 红队审查补:E1/E2 的 4 个 MCP 工具此前只有行为语义,缺 `03` §3.2 风格的
-> 输入/输出 JSON schema。本节补齐 —— E1/E2 实现 `silan-viking-mcp` 时以此
-> 为工具签名来源。错误返回沿用 `03` §3.2 的统一 `{ "error": {...} }` 形态。
+> Red-team audit addition: the four E1/E2 MCP tools previously had
+> only behavioural semantics, no `03` §3.2-style input/output JSON
+> schema. This section fills that in — when E1/E2 implements
+> `silan-viking-mcp`, use this as the source of tool signatures.
+> Error returns follow the unified `{ "error": {...} }` shape from
+> `03` §3.2.
 
 ```json
 {
@@ -314,32 +368,46 @@ owner 说："我那个 AI content optimizer 的想法，最近想得挺深了。
 }
 ```
 
-> `propose_schema.input.change` 是**结构化**对象,不是自由文本 —— 它必须能
-> 直接驱动 §15.2.1 的推演算法,所以字段与算法的 `FieldDef` 同构。`op` 三选一:
-> `add_field`(用 `field_def`)、`extend_enum`(用 `field_def.name` +
-> `field_def.enum_values` 给新值集)、`add_part_role`(用 `part_role`)。
-> 与 `op` 无关的子对象传 `null`。删字段/删 type 等破坏性操作**没有对应
-> `op`** —— agent 在合同层就无法发起(§15.2 安全表「agent 永不」的落地)。
+> `propose_schema.input.change` is a **structured** object, not
+> free text — it must directly drive §15.2.1's derivation
+> algorithm, so the fields are isomorphic to the algorithm's
+> `FieldDef`. `op` is one of three: `add_field` (uses
+> `field_def`), `extend_enum` (uses `field_def.name` +
+> `field_def.enum_values` for the new value set), `add_part_role`
+> (uses `part_role`). Sub-objects unrelated to `op` are `null`.
+> Destructive operations like field deletion / type deletion
+> **have no corresponding `op`** — the agent cannot initiate them
+> at the contract layer (the §15.2 safety table's "agent never"
+> is enforced here).
 
-合同要点(与现有机制一致,不另起一套):
+Contract notes (consistent with the existing mechanism; no parallel rules):
 
-- 三个 `suggest_*` **永远只产出提案** —— `output` 里每条 `suggestion` 都带
-  `proposal_id`,产物进 `silan proposal list`,owner 逐条 `accept`/`reject`。
-  `suggest_*` 自身不 apply、无副作用(§15.2「闸门」)。
-- `propose_schema` 的 `schema_check` 字段是 §15.2.1 推演算法的四态结果
-  (`passed`/`needs_ent`/`needs_engine`/`failed`);`ddl_diff` 是该算法的
-  `DdlDiff` 报告,`action` 三态 `no_op`/`add_column`/`rebuild_table` 与
-  算法 verdict 对应,`destructive=true` 即 `rebuild_table`(SQLite 改 enum
-  值集那类破坏性迁移)。`failed` 时提案标红不可 `accept`。
-- 这 4 个工具的错误码复用 `03` §3.2 的 `McpError` 变体:参数错 →
-  `InvalidRequest`,目标 Item 不存在 → `Workspace`,提案/校验失败 →
-  `Proposal`。E 阶段不新增错误变体。
+- The three `suggest_*` **only ever produce proposals** — each
+  `suggestion` in the output carries a `proposal_id`; outputs enter
+  `silan proposal list`; the owner `accept` / `reject` per
+  suggestion. `suggest_*` themselves do not apply and have no side
+  effect (the §15.2 "gate").
+- `propose_schema`'s `schema_check` field is the four-state result
+  of the §15.2.1 derivation algorithm
+  (`passed` / `needs_ent` / `needs_engine` / `failed`); `ddl_diff`
+  is the algorithm's `DdlDiff` report; the three `action` states
+  `no_op` / `add_column` / `rebuild_table` map to algorithm
+  verdicts, with `destructive=true` ≡ `rebuild_table` (destructive
+  migrations like changing an enum's value set in SQLite). When
+  `failed`, the proposal is marked red and cannot `accept`.
+- These 4 tools reuse the `McpError` variants from `03` §3.2:
+  argument errors → `InvalidRequest`; target Item does not exist →
+  `Workspace`; proposal / validation failed → `Proposal`. The E
+  stages introduce no new error variants.
 
 ---
 
-## §15.6 一句话总结
+## §15.6 One sentence
 
-**让 agent 自我演化,不是放手让它自动改完上线 —— 是给它「主动发现 +
-提案」的能力,再用「代价越高、闸门越硬、人越在场」的三层闸门兜住。**
-L-内容已经能演化(增强主动性即可);L-结构能演化(必须先建 `schema check`
-机器闸门);L-界面不做「自动演化」,做「agent 辅助 + 人审 PR」。
+**Agent self-evolution isn't "let it auto-edit and auto-ship" — it
+is "give it active-discovery + proposal ability, and constrain it
+with the three-layer gate: the higher the cost, the harder the
+gate, the more present the human".** L-content can already evolve
+(boost proactivity); L-structure can evolve (build the
+`schema check` machine gate first); L-UI does not "self-evolve" —
+it is "agent-assisted + human-reviewed PR".
