@@ -1,202 +1,239 @@
-# 14 · 漂移诊断与逐里程碑收敛
+# 14 · Drift diagnosis and per-milestone convergence
 
-> 本章不是新设计。它回答一个被 e2e 暴露出来的、比任何单个 bug 更重的
-> 问题:**为什么一个号称从 `11` 定稿、经多轮第一性审查收敛出来的项目,
-> 实现里到处是 schema / 行为漂移?修完一条,下一条还会冒出来吗?**
+> This chapter is not new design. It answers a question that an e2e
+> run surfaced — heavier than any single bug:
+> **why does a project that claims to be settled from `11`, after
+> multiple rounds of first-principles review and convergence, have
+> schema / behaviour drift everywhere in the implementation? If we
+> fix one, will the next still appear?**
 >
-> 这一章给出第一性诊断、漂移的三类接缝、缺失的收敛机制,以及「重走逐
-> 里程碑收敛」的施工图。
+> This chapter gives the first-principles diagnosis, the three seam
+> classes where drift hides, the convergence mechanism that was
+> missing, and the construction plan for "re-running per-milestone
+> convergence".
 
 ---
 
-## 14.1 症状 —— 一次 e2e 撞出的 11 处漂移
+## 14.1 Symptoms — 11 drift sites surfaced by one e2e run
 
-2026-05-17 的一次 e2e(`silan init` → `index sync` → 查更新)没有
-止于「CLI 不能用」——`init`/`new`/`sync`/`content`/`relation` 实跑都对。
-它撞出的是一条**连环实现缺陷**,合计 11 处漂移:
+The 2026-05-17 e2e run (`silan init` → `index sync` → query for
+updates) did not stop at "the CLI doesn't work" — `init` / `new` /
+`sync` / `content` / `relation` all run correctly in practice.
+What it surfaced is a **chain of implementation defects**, totalling
+11 drift sites:
 
-| # | 漂移 | 在哪两方之间 |
+| # | Drift | Between which two sides |
 |---|---|---|
-| 1 | `content_relation` 写 `from_uri` ≠ entities 的 `from_type/from_id` | 实现↔实现 |
-| 2 | `item_part` 只写 `item_id/role` ≠ entities 的 7 列 | 实现↔实现 |
-| 3 | translation 表外键 `item_id` ≠ entities 的 `blog_post_id` 等 | 实现↔实现 |
-| 4 | `part_entry` 平铺列 ≠ entities 的 `shared_payload` JSON 列 | 实现↔实现 |
-| 5 | `main_row` 写 `kind` 列,entities 无此列 | 实现↔实现 |
-| 6 | `episodes.series` ≠ entities 的 `series_id` | 实现↔实现 |
-| 7 | `priority`/`tech_stack` 老 frontmatter 字段无处落 —— *初判文档↔文档,实为新设计有意不收(见 §14.3 类 C 更正)* | (非漂移)|
-| 8 | `scroll_progress`/`recent_updates` media 字段 —— Go ent 有、`11` 初稿漏写(已补) | 文档↔文档 |
-| 9 | `init` 不产 6 type 目录 + 示例条目 —— 实现 ≠ `06` §6.2.1 | 实现↔文档 |
-| 10 | `scaffold` 不写 `part_id` —— 实现 ≠ `01` §1.4 | 实现↔文档 |
-| 11 | `content tree/ls` 的 `--help` 写了 `<uri>` 参数、实现没接 | 实现↔文档 |
+| 1 | `content_relation` writes `from_uri` ≠ entities' `from_type/from_id` | impl ↔ impl |
+| 2 | `item_part` writes only `item_id/role` ≠ entities' 7 columns | impl ↔ impl |
+| 3 | The translation table's FK `item_id` ≠ entities' `blog_post_id` etc. | impl ↔ impl |
+| 4 | `part_entry` flat columns ≠ entities' `shared_payload` JSON column | impl ↔ impl |
+| 5 | `main_row` writes a `kind` column; entities have no such column | impl ↔ impl |
+| 6 | `episodes.series` ≠ entities' `series_id` | impl ↔ impl |
+| 7 | `priority` / `tech_stack` legacy frontmatter fields had no landing place — *first judged doc ↔ doc, actually the new design intentionally drops them (see §14.3 class-C correction)* | (not drift) |
+| 8 | `scroll_progress` / `recent_updates` media fields — Go ent has them; `11` first draft missed them (now back-filled) | doc ↔ doc |
+| 9 | `init` doesn't lay 6 type directories + sample items — impl ≠ `06` §6.2.1 | impl ↔ doc |
+| 10 | `scaffold` doesn't write `part_id` — impl ≠ `01` §1.4 | impl ↔ doc |
+| 11 | `content tree/ls`'s `--help` advertises a `<uri>` argument the impl doesn't accept | impl ↔ doc |
 
-> 11 处**不是同一种错** —— 这本身是线索。它们分三类(末列),三类各有
-> 不同的成因,但**同一个根**。
+> 11 sites are **not all the same kind of error** — that itself is
+> a clue. They fall into three classes (last column); each class
+> has different causes, but **shares one root**.
 
 ---
 
-## 14.2 根因 —— 引擎被「一次性照文档全量生成」,跳过了 `04` 的收敛机制
+## 14.2 Root cause — the engine was "fully generated in one shot from the docs", skipping `04`'s convergence mechanism
 
-`04` 里程碑把实施切成 M1→M9:每个里程碑「独立可验收」、有依赖顺序、
-有验收门。**这个设计是对的。** 但 git 史显示引擎是这样落地的:
+The `04` milestones split implementation into M1 → M9: each is
+"independently acceptable", with an ordering and a gate.
+**That design is correct.** But git history shows how the engine
+actually landed:
 
 ```
 39491f7  feat(engine): silan-viking Rust content engine (M1-M9)
 ```
 
-**M1 到 M9,九个里程碑,一个 commit。** 引擎是「读文档 → 一次性写出
-全部 7 个 crate」生成的,不是「M1 做完验收 → M2 基于 M1 真实产物做」
-逐里程碑长出来的。
+**M1 to M9, nine milestones, one commit.** The engine was "read the
+docs → write out all 7 crates in one shot", not "M1 finishes
+acceptance → M2 builds on M1's real artefact", growing milestone by
+milestone.
 
-「照文档一次性写全部」和「逐里程碑收敛」是本质不同的两件事:
+"Generate everything at once from the docs" and "converge milestone
+by milestone" are fundamentally different:
 
-- **逐里程碑收敛**:M4 生成 `entities` 后,M5/M6 写 `mapper` 时,手边
-  **就是 M4 的真实产物**。mapper 天然按 `entities` 的真实列名写 ——
-  前一个里程碑的产物是后一个里程碑的**事实地基**。
-- **一次性全量生成**:写 `mapper` 时,`entities` 可能还没生成、或在
-  另一个文件里没去核。写 `mapper` 的人按**文档的描述**(甚至按自己
-  对 schema 的理解)写列名。
+- **Per-milestone convergence**: after M4 generates `entities`, when M5 / M6 write the `mapper`, **M4's real artefact** is right there. The mapper naturally writes columns matching `entities`' real column names — the previous milestone's artefact is the next milestone's **factual foundation**.
+- **One-shot full generation**: when writing the `mapper`, `entities` might not be generated yet, or sits in a different file that the author didn't check. The mapper author writes column names **based on the doc description** (or even their own understanding of the schema).
 
-`sync/rows.rs` 的文件头注释是铁证:
+The header comment of `sync/rows.rs` is the smoking gun:
 
-> 「Until the sea-orm Entities are reverse-generated (milestone M4),
-> a `Row` is represented generically...」
+> "Until the sea-orm Entities are reverse-generated (milestone M4),
+> a `Row` is represented generically..."
 
-—— **`mapper` 是在「`entities` 还不存在」的假设下写的。** M4 后来确实
-生成了 `entities`,但**没有任何步骤、没有任何测试**强制 `mapper` 回去
-对齐它。`sink` 又是 row-driven 动态建表(mapper 写什么列就建什么表),
-所以漂移可以一直存在、`cargo test` 还全绿。
+—— **The `mapper` was written under the assumption that `entities`
+doesn't exist yet.** M4 did generate `entities` later, but **no
+step, no test** forced the `mapper` to go back and align with it.
+And `sink` is row-driven dynamic table creation (whatever columns
+the mapper writes is what the table gets), so drift can persist
+silently and `cargo test` still goes green.
 
-**结论**:漂移不是 11 个偶然的 bug,是「跳过逐里程碑收敛、让 7 个
-crate 同时对着一份『打算』(文档)各写各的」这个生成方式的**必然产物**。
-文档是「打算做成什么」;`04` 的里程碑链本意是让「打算」逐步**凝固成
-事实**,后一步踩前一步的事实。跳过这个链,等于让漂移成为默认状态。
+**Conclusion**: drift is not 11 incidental bugs, it is the
+**inevitable product** of "skipping per-milestone convergence and
+letting 7 crates each write to a 'plan' (the docs) in parallel".
+The docs are "what we plan to build"; the `04` milestone chain is
+meant to make "the plan" **solidify into facts** step by step, with
+each step standing on the previous step's facts. Skip the chain and
+drift becomes the default state.
 
 ---
 
-## 14.3 三类接缝 —— 漂移藏在里程碑与里程碑之间
+## 14.3 Three seam classes — drift hides between milestones
 
-把 11 处漂移按「发生在哪两方之间」归类,得到**三类接缝**。每一类是
-一道「前方产物 → 后方消费」的缝,漂移就藏在缝里:
+Classifying the 11 sites by "between which two sides", we get
+**three seam classes**. Each is a "upstream artefact → downstream
+consumer" seam; drift hides in the seam:
 
-### 类 A —— 实现 ↔ 实现(同一次生成里,两个 crate 各写各的)
+### Class A — impl ↔ impl (two crates in the same generation, each writing independently)
 
-漂移 #1–#6。典型缝:**M4 `entities` ↔ M5/M6 `mapper`**。
-`entities` 从 Go ent 反向生成(对的);`mapper` 凭文档描述写(漂的)。
-同一个 commit 里两个模块各写各的,**没有一个环节让它们对齐**。
+Drift #1–#6. Typical seam: **M4 `entities` ↔ M5/M6 `mapper`**.
+`entities` is reverse-generated from Go ent (correct); `mapper`
+writes columns from the doc description (drifted). Two modules in
+the same commit go their own way; **no step exists to align them**.
 
-### 类 B —— 实现 ↔ 文档(实现没逐字对定稿,或文档后改实现没跟)
+### Class B — impl ↔ doc (impl didn't track the settled docs verbatim, or docs changed afterwards and impl didn't follow)
 
-漂移 #9–#11。典型缝:**`06`/`01`/`02` 定稿 ↔ 各 crate 实现**。
-`init` 该产 6 type(`06`§6.2.1)实际只产 1;`scaffold` 该写 `part_id`
-(`01`§1.4)实际不写;`content tree` 的 `--help` 承诺 `<uri>` 参数,
-实现没接。
+Drift #9–#11. Typical seam: **`06` / `01` / `02` settled docs ↔
+each crate's impl**. `init` was supposed to produce 6 types (`06`
+§6.2.1) but produced 1; `scaffold` was supposed to write `part_id`
+(`01` §1.4) but didn't; `content tree`'s `--help` promised a `<uri>`
+argument the impl never wired in.
 
-### 类 C —— 文档 ↔ 文档(两份文档本身没对齐过)
+### Class C — doc ↔ doc (two docs never aligned with each other)
 
-典型缝:**`11` 定稿 ↔ Go ent schema**。
+Typical seam: **`11` settled doc ↔ Go ent schema**.
 
-> **2026-05-17 收敛核对结果 —— 类 C 这道缝其实基本不漂(>99% 一致)。**
-> 本章初稿曾把 #7/#8 归为类 C 漂移,经逐表核对 `11` ↔
-> `backend/internal/ent/schema/`,那是诊断时的误判,更正如下:
-> - `priority`(idea)/`tech_stack`(project):Go ent **没有**这些列,
->   `10`/`11` 也**没有真把它们定为列** —— 它们是 Python 老 parser
->   frontmatter 里的字段,新设计**有意不收**。不是漂移。
-> - `scroll_progress` + `recent_updates` 的 media 字段:Go ent 有、`11`
->   初稿漏写 —— 已于 §11.3 / §11.7.1 补进 `11`。已对齐。
-> - 唯一遗留:`personal_info.visibility` —— `10`§10.4.5 给 resume 一个
->   `visibility`,Go ent `personal_info` 无此列。一处小缺口,归 M0.5a。
+> **2026-05-17 convergence cross-check — this seam class barely
+> drifts (>99% consistent).** The first draft of this chapter put
+> #7 / #8 in class C; after a per-table cross-check of `11` ↔
+> `backend/internal/ent/schema/`, that turned out to be a diagnostic
+> misjudgement. Corrections:
+> - `priority` (idea) / `tech_stack` (project): Go ent **does not
+>   have** these columns, and `10` / `11` **never actually pinned
+>   them as columns** either — they are Python old-parser frontmatter
+>   fields that the new design **intentionally drops**. Not drift.
+> - `scroll_progress` + `recent_updates` media fields: Go ent has
+>   them; `11`'s first draft missed them — back-filled into `11`
+>   §11.3 / §11.7.1. Aligned.
+> - The only leftover: `personal_info.visibility` — `10` §10.4.5
+>   gave resume a `visibility`; Go ent's `personal_info` lacks the
+>   column. A small gap; goes to M0.5a.
 >
-> **结论**:类 C 不需要专门的校验闸 —— Go ent 与 `11` 已高度一致。
-> 收敛重心在类 A(已建闸)与类 B(待建闸)。
+> **Conclusion**: class C does not need a dedicated gate — Go ent
+> and `11` are already highly consistent. Convergence focus stays
+> on class A (gate built) and class B (gate to build).
 
 ---
 
-## 14.4 缺失的收敛机制 —— 每道缝都该有一个「闸」
+## 14.4 The missing convergence mechanism — every seam needs a "gate"
 
-漂移能长期潜伏,是因为**没有任何机制在持续检查每道缝两边是否一致**。
-治本不是「这次把 11 处修掉」(那是治标),是**给每一类接缝建一个
-自动校验闸**,让漂移**结构性地不可能再沉默**。
+Drift can hide long-term because **no mechanism continuously checks
+both sides of every seam for consistency**. The cure is not "fix
+the 11 sites this time" (that's symptomatic), it is **build an
+automatic validation gate for every seam class**, so drift is
+**structurally impossible to stay silent**.
 
-| 接缝类 | 该有的校验闸 | 状态 |
+| Seam class | The gate it needs | Status |
 |---|---|---|
-| A 实现↔实现(mapper↔entities)| `sink` 写库前校验:mapper 产的列必须 ⊆ `silan-viking-entities` 的实体列,不符报 `SchemaDrift` | ✅ **已建**(2026-05-17,`sync/sink.rs` Phase 0)—— 见 §14.6 |
-| B 实现↔文档 | 一组「契约测试」把文档契约写成可执行断言:`init` 产物 == `06`§6.2.1(6 type 目录 + 3 示例 + SCHEMA/config/git);`scaffold` 的 meta.toml == `01`§1.3.1/§1.4(part_id 稳定);`--help` == 实际命令集 | ✅ **已建**(2026-05-17,`silan-viking-cli/tests/doc_contract.rs`,7 测试)|
-| C 文档↔文档(`11`↔Go ent)| 经 2026-05-17 逐表核对,这道缝 >99% 一致(见 §14.3 类 C 更正)—— **不需要专门闸**;唯一遗留 `personal_info.visibility` 归 M0.5a | ✅ 已核对,无需建闸 |
+| A impl ↔ impl (mapper ↔ entities) | Pre-write validation in `sink`: the columns the mapper produces must ⊆ the entity columns of `silan-viking-entities`; mismatch raises `SchemaDrift` | ✅ **Built** (2026-05-17, `sync/sink.rs` Phase 0) — see §14.6 |
+| B impl ↔ doc | A set of "contract tests" that turn doc contracts into executable assertions: `init` output == `06` §6.2.1 (6 type directories + 3 samples + SCHEMA/config/git); `scaffold`'s meta.toml == `01` §1.3.1/§1.4 (`part_id` stable); `--help` == the actual command set | ✅ **Built** (2026-05-17, `silan-viking-cli/tests/doc_contract.rs`, 7 tests) |
+| C doc ↔ doc (`11` ↔ Go ent) | After the 2026-05-17 per-table cross-check this seam is >99% consistent (see §14.3 class-C correction) — **no dedicated gate needed**; the only leftover, `personal_info.visibility`, goes to M0.5a | ✅ Cross-checked; no gate needed |
 
-> **mapper↔entities 闸是示范**:它把类 A 的漂移从「沉默」变成「sync 时
-> 报错」。它一开,一次 sync 把所有漂移列一次报全 —— 6 处类 A 漂移就是
-> 被它逼出来、然后逐一对齐的。类 B / 类 C 还没有对应的闸,所以「还在
-> 漂」的感觉是真的:没有机制在盯那两道缝。
+> **The mapper ↔ entities gate is the model**: it changes class-A
+> drift from "silent" to "errors at sync time". When opened, one
+> sync reports every drifted column in one pass — the six class-A
+> drifts were exactly what it forced out, and they were then
+> aligned one by one. Classes B / C don't yet have equivalent
+> gates, so "drift still feels alive" is real: nothing is watching
+> those two seams.
 
 ---
 
-## 14.5 「重走逐里程碑收敛」—— 施工图
+## 14.5 "Re-run per-milestone convergence" — construction plan
 
-silan 裁决:**重走逐里程碑收敛**。这不是「从 M1 把 7 个 crate 重写
-一遍」(那是又一次一次性大动作,只是换了方向)。精确含义是:
+silan's ruling: **re-run per-milestone convergence**. This does
+not mean "rewrite all 7 crates from M1" (that is another one-shot
+big move, just in a new direction). It precisely means:
 
-> 让 `04` 设计的收敛机制 —— 后一个里程碑踩前一个里程碑的真实产物、
-> 每道缝有验收 —— **真正运行一遍**。现有 ~17500 行引擎代码大部分是对
-> 的(171 测试全绿),它是**草稿**。重走收敛 = **逐道接缝核对前后里程
-> 碑产物、把缝里的漂移挤出来对齐、给能自动校验的缝建闸** —— 不重写
-> 已对的东西。
+> Let the convergence mechanism `04` designed — later milestones
+> stand on earlier milestones' real artefacts; every seam has
+> acceptance — **actually run once**. The current ~17500 lines of
+> engine code are largely correct (171 tests green); it is a
+> **draft**. Re-running convergence = **walk seam by seam, compare
+> the upstream and downstream artefacts, squeeze the drift in the
+> seam out and align it, build automatic gates where automatable**
+> — not rewrite what is already correct.
 
-### M1–M9 接缝清单(逐道核对的施工顺序)
+### M1–M9 seam list (construction order for seam-by-seam cross-check)
 
-| 缝 | 前方产物(里程碑)| 后方消费(里程碑)| 漂移风险 | 校验闸 |
+| Seam | Upstream artefact (milestone) | Downstream consumer (milestone) | Drift risk | Gate |
 |---|---|---|---|---|
-| 1 | M0.5a Go ent schema | M4 `entities`(sea-orm-cli 反生)| `11` ↔ Go ent(类 C)| 🔲 建类 C 闸 |
-| 2 | M3 `content`(Item/Part/PartId)| M5 `parser` 建 `Parsed` | Part.id 链(已接通,2026-05-17)| 间接(parser 测试)|
-| 3 | M4 `entities` | M5/M6 `mapper` 产 RowSet | mapper 列名(类 A,6 处已对齐)| ✅ §14.6 闸 |
-| 4 | M6 `sync` 行为 | M8 `cli` 命令实际行为 | init/content tree(类 B,已修)| 🔲 建类 B 闸 |
-| 5 | `00`–`12` 文档定稿 | 各 crate 实现 | 实现 ≠ 定稿(类 B,普遍)| 🔲 建类 B 闸 |
-| 6 | M7 `proposal`/`accept` | M8 CLI `proposal` 命令组 | ✅ 干净 —— CLI `proposal_accept` 是 `ws.accept_proposal` 的薄包装,未重写逻辑 | 不需(已薄包装)|
-| 7 | M8 `cli` / M7 `app` | M9 `mcp`/`site` | ✅ 已收敛 —— 发现「创建提案」逻辑只在 mcp(`accept` 在 app 却 `create` 在 mcp,职责不对称),已上提 `Workspace::create_proposal`,mcp `propose`/`capture` 改薄包装(2026-05-17)| 结构性(create 与 accept 同在 app)|
+| 1 | M0.5a Go ent schema | M4 `entities` (sea-orm-cli reverse-gen) | `11` ↔ Go ent (class C) | 🔲 build class-C gate |
+| 2 | M3 `content` (Item/Part/PartId) | M5 `parser` building `Parsed` | The Part.id chain (now wired, 2026-05-17) | indirect (parser tests) |
+| 3 | M4 `entities` | M5/M6 `mapper` producing RowSet | mapper column names (class A, 6 sites aligned) | ✅ §14.6 gate |
+| 4 | M6 `sync` behaviour | M8 `cli` actual command behaviour | init / content tree (class B, fixed) | 🔲 build class-B gate |
+| 5 | `00`–`12` settled docs | each crate's impl | impl ≠ settled (class B, widespread) | 🔲 build class-B gate |
+| 6 | M7 `proposal` / `accept` | M8 CLI `proposal` group | ✅ clean — CLI `proposal_accept` is a thin wrapper over `ws.accept_proposal`; logic not duplicated | not needed (thin wrapper) |
+| 7 | M8 `cli` / M7 `app` | M9 `mcp` / `site` | ✅ converged — discovered the "create proposal" logic lived only in mcp (`accept` in app but `create` in mcp — asymmetric), lifted to `Workspace::create_proposal`; mcp `propose` / `capture` are now thin wrappers (2026-05-17) | structural (create and accept both in app) |
 
-> 每道缝的收敛动作:① 拿前方真实产物,核后方是否照它消费;② 漂移挤出
-> 来对齐(改后方,或若前方错则改前方,以 `11`/定稿为最优基准);
-> ③ 能自动校验的缝,建闸,让漂移以后结构性不可能。
-
----
-
-## 14.6 已建的示范闸 —— mapper ↔ entities schema gate
-
-类 A 的闸已经建好,是后续类 B / 类 C 闸的模板。
-
-**位置**:`engine/crates/silan-viking-app/src/sync/sink.rs`,`write_batch`
-的 Phase 0。
-
-**机制**:
-- `silan-viking-entities` 新增 pub `table_columns(table) -> Option<Vec<String>>`
-  —— 用 sea-orm 的 `Iterable` 反射实体列名,是「schema 真相源」的查询入口。
-- `sink` 写库前,对每张表:若它是 `entities` 的实体,mapper 产的列必须
-  ⊆ 实体列;不符则收集进 `SyncError::SchemaDrift`。
-- 一次 sync 把**所有**漂移列一次报全(不是撞一个停一个),mapper 可
-  一轮对齐。
-- Entity-backed 表按**实体列集**建表(不再按 mapper 给的列动态建)——
-  on-disk schema 永远跟实体一致。
-
-**收益**:`entities` 从「死代码」变成「被强制执行的 schema 真相源」。
-mapper 再想停在旧理解上,sync 直接 `SchemaDrift` 报错 —— 类 A 漂移
-结构性不可能再沉默。
-
-> 类 B 闸(实现↔文档)和类 C 闸(`11`↔Go ent)按这个模板建:找到
-> 「真相源的可查询入口」+「在某个必经路径上校验」。详细设计在「重走
-> 逐里程碑收敛」逐缝施工时给出。
+> The convergence action for each seam: ① take the upstream's real
+> artefact, check whether the downstream consumes it correctly;
+> ② squeeze the drift out and align it (change the downstream, or
+> change the upstream if it is wrong, with `11` / settled docs as
+> the optimal baseline); ③ for seams that can be auto-validated,
+> build a gate so drift is structurally impossible later.
 
 ---
 
-## 14.7 给将来的纪律 —— 不要再「一次性全量生成」
+## 14.6 The model gate already built — mapper ↔ entities schema gate
 
-这一章最该被记住的一句:
+The class-A gate is built; it is the template for later class-B / class-C gates.
 
-> **跨多个里程碑、多个模块的实现,不能一次性照文档全量生成。** 文档是
-> 「打算」,会过时、会有多份、会互相矛盾。必须逐里程碑落地:前一个里
-> 程碑交付**活的、可执行的事实**(代码 + 测试),后一个里程碑踩这个
-> 事实,而不是踩文档的描述。每道里程碑接缝要有验收;能自动校验的,
-> 建闸。
+**Location**: `engine/crates/silan-viking-app/src/sync/sink.rs`, the Phase 0 of `write_batch`.
 
-漂移不是手滑,是「让 N 个模块同时对着一份『打算』各写各的」的必然
-产物。收敛机制(逐里程碑 + 接缝闸)就是把「打算」逼成「事实」、再让
-「事实」约束下一步的装置。`04` 设计了这个装置,这一次没有运行它 ——
-`13` 章的存在,就是为了让它被运行。
+**Mechanism**:
+- `silan-viking-entities` adds a public `table_columns(table) -> Option<Vec<String>>` — uses sea-orm's `Iterable` to reflect entity column names; the query entry point of the "schema source of truth".
+- Before `sink` writes the DB, for every table: if it is an `entities` entity, the columns the mapper produced must ⊆ the entity columns; mismatch is collected into `SyncError::SchemaDrift`.
+- One sync reports **every** drifted column in one pass (not "trip one, stop"); the mapper aligns in one round.
+- Entity-backed tables are created using the **entity column set** (no longer the columns the mapper happened to give) — the on-disk schema stays consistent with the entities.
+
+**Payoff**: `entities` goes from "dead code" to "the enforced schema
+source of truth". If the mapper stays on the old understanding,
+sync errors with `SchemaDrift` directly — class-A drift cannot stay
+silent any more.
+
+> Class-B gates (impl ↔ doc) and class-C gates (`11` ↔ Go ent) are
+> built on the same template: find "the queryable entry point of
+> the source of truth" + "validate on a mandatory path". Detailed
+> design is given seam by seam when "re-running per-milestone
+> convergence" is executed.
+
+---
+
+## 14.7 Discipline going forward — no more "one-shot full generation"
+
+The one line from this chapter most worth remembering:
+
+> **Implementation that spans multiple milestones and multiple
+> modules must not be generated all at once from the docs.** Docs
+> are "the plan" — they go stale, they exist in multiple copies,
+> they sometimes contradict each other. Implementation must land
+> per-milestone: the previous milestone delivers **live, executable
+> facts** (code + tests); the next milestone stands on those facts,
+> not on the docs' description. Every milestone seam has
+> acceptance; where auto-validatable, build a gate.
+
+Drift is not slips; it is the **inevitable product** of "letting N
+modules each write to a single 'plan' in parallel". The convergence
+mechanism (per-milestone + seam gates) is the apparatus that forces
+"plans" to become "facts" and then lets "facts" constrain the next
+step. `04` designed this apparatus; this round did not run it —
+this chapter exists so that next time it gets run.
