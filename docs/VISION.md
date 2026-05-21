@@ -1,115 +1,149 @@
-# VISION — 终局愿景
+# VISION — terminal-state polestar
 
-> 这是 Silan Personal Website 的北极星文档。
-> 所有架构决策、所有 PR、所有取舍,都回答同一个问题:**它让我们离这个终局更近,还是更远?**
+> This is Silan Personal Website's polestar document.
+> Every architectural decision, every PR, every trade-off answers the
+> same question: **does it bring us closer to this terminal state, or
+> further from it?**
 >
-> 本文档是"做成什么"和"为什么";`docs/silan-viking/` 那套编号文档是"怎么做"
-> ——从 `OVERVIEW.md` 入口,到对象模型、CLI/MCP、里程碑。冲突时,以本文档为准。
+> This document is "what we are building" and "why"; the numbered
+> documents under `docs/silan-viking/` are "how" — start at
+> `OVERVIEW.md`, then object model, CLI/MCP, milestones. When they
+> conflict, this document wins.
 
 ---
 
-## 1. 一句话
+## 1. One sentence
 
-> **一个人和一个 agent,共同维护一个会自己生长的知识体。**
-> 对外,它是个人网站;对内,它是第二大脑。
+> **One person and one agent, jointly tending a knowledge body that
+> grows by itself.**
+> Outward, it is a personal website; inward, it is a second brain.
 
-这不是一个"个人网站项目",也不是一个"CMS"。它是一个**知识体(knowledge organism)**——
-有生命周期、会演化、能被检索、能自我整理。网站只是它面向公众的那一个切面。
-
----
-
-## 2. 三年后的样子
-
-想象 2029 年的某个晚上:
-
-- 你冒出一个想法,在 `content/resources/ideas/` 写下三行 markdown。
-- 几个月后它长成一篇 blog;一年后长成一个 project;期间你录了一个 vlog 系列。
-  这些不是四份孤立的内容——它们之间有**有向的演化边**:`project --evolved-from--> idea`。
-  网站上,访客能顺着这条链看到一个想法如何成型。
-- 你从不手写网站的摘要、翻译、目录、changelog。一个 agent 做这些——
-  它是这个知识体的**园丁**:检索、体检、起草、把你的工作会话沉淀成记忆。
-- agent 想改你的发布内容,只能**提案**;你 review 后才合并,你始终是作者。
-- agent 自己的记忆会**自我进化**:每次会话结束,它把学到的东西写进 `silan://agent/`。
-- 整个知识体的真相是**纯文本、进 Git**。任何一天的任何一篇,都能回溯、diff、回滚。
-- 这一切跑在一个 Rust 引擎 `silan-viking` 上,寻址语言是 `silan://`。
-  对外它驱动网站,对内它是一个 agent 可挂载的 skill。
-
-**那个晚上,你不"管理"这个系统。你和它一起生活。**
+This is not a "personal website project" and not a "CMS". It is a
+**knowledge organism** — it has a lifecycle, evolves, can be searched,
+can tidy itself. The website is just the public-facing cross-section.
 
 ---
 
-## 3. 什么叫"优美"——终局的判据
+## 2. What it looks like in three years
 
-优美不是 UI 好看。优美 = **整个知识体遵循同一套本体论(ontology)**,
-没有特例、没有补丁、没有"历史原因"。具体是五条:
+Imagine an evening in 2029:
 
-### 3.1 内容是对象,不是表的行
+- An idea pops up; you write three lines of markdown into
+  `content/resources/ideas/`.
+- A few months later it has grown into a blog post; a year later into
+  a project; you also recorded a vlog series in between. These are not
+  four orphaned pieces of content — there are **directed evolution
+  edges** between them: `project --evolved-from--> idea`. On the site,
+  visitors can follow the chain and see how an idea took shape.
+- You never hand-write the site's summaries, translations, indexes,
+  or changelogs. An agent does that — it is the **gardener** of this
+  knowledge body: it searches, lints, drafts, settles your working
+  sessions into memory.
+- The agent can only **propose** changes to your published content;
+  you review and merge — you are always the author.
+- The agent's own memory **self-evolves**: at the end of each session
+  it writes what it learned into `silan://agent/`.
+- The truth of the whole organism is **plain text, in Git**. Any post
+  on any day can be diffed, rolled back, replayed.
+- All of this runs on one Rust engine, `silan-viking`; the addressing
+  language is `silan://`. Outward it drives the website; inward it is
+  a skill an agent can mount.
 
-blog / idea / project / series 不是数据库里四张表,而是**领域对象**:
-有身份、有方法、有封装边界。它们共享一个抽象 `ContextNode`。
-新增一种内容类型 = 实现一个 trait,不是加一张表 + 改十处代码。
-
-### 3.2 关系是一等公民,有方向、有类型
-
-"这篇 blog 记录了那个 idea""这个 project 由那个 idea 演化而来"——
-这些是**有向、有类型的边**,和内容本身一样重要(Karpathy:"连接和文档一样有价值")。
-不是一个无意义的 `links: [...]` 列表。
-
-### 3.3 记忆和发布,共享一套引擎、分属两个世界
-
-对外的发布内容(`silan://resources/`)和对内的 agent 记忆(`silan://agent/`)
-是**两棵树,一个引擎**。同一套检索、同一套分层、同一套 ability。
-区别只在一个属性:`is_mutable` —— 发布内容只读,记忆可自我更新。
-
-### 3.4 人和 agent,通过同一组 ability 协作
-
-agent 不是外挂脚本。它和你用**完全相同的能力面**:检索、体检、起草、提案。
-区别只在**权限边界**:有些动词(`accept`/`reject`/`deploy`)是人专属,
-通过封装挡住,不是靠提示词约束。
-
-### 3.5 真相是纯文本,派生物可重建
-
-`content/*.md` 是唯一真相源。数据库、摘要、索引、网站——全是派生物,
-任何一个删掉都能从 markdown 重建。这保证:Git 是版本管理,
-回滚是确定的,没有任何状态只活在某个数据库里。
-
-> **一句话验收"优美":** 给这个系统加一个新东西时,如果你发现自己在打补丁、
-> 加特例、写"历史原因"——那它就还不优美。优美 = 新东西天然落进已有的本体论。
+**That evening, you do not "manage" this system. You live alongside it.**
 
 ---
 
-## 4. 三个不可动摇的原则
+## 3. What "elegant" means — the terminal-state rubric
 
-无论实现怎么变,这三条不退让:
+Elegant is not pretty UI. Elegant = **the whole knowledge body follows
+one ontology** — no special cases, no patches, no "for historical
+reasons". Five concrete tests:
 
-1. **Markdown 为真相源。** 你写 markdown,其余一切是派生。agent 不能绕过它。
-2. **你是作者,agent 是园丁。** agent 能检索、整理、起草、提案;
-   能不能进入真相源,永远是你按下确认。
-3. **从终局倒推,不从现状外推。** 每个决策先问"终局需要什么",再问"今天怎么落地"。
-   不允许"先这样凑合"——凑合就是在背离终局。
+### 3.1 Content is an object, not a row in a table
+
+blog / idea / project / series are not four tables in a database, they
+are **domain objects** — with identity, methods, and encapsulation
+boundaries. They share an abstract `ContextNode`. Adding a new content
+type = implement a trait, not "add a table and edit ten places".
+
+### 3.2 Relations are first-class, directed, typed
+
+"This blog documents that idea" or "this project evolved from that
+idea" — these are **directed, typed edges**, as important as the
+content itself (Karpathy: "the links are as valuable as the documents").
+Not a meaningless `links: [...]` list.
+
+### 3.3 Memory and publication, one engine, two worlds
+
+Outward-facing content (`silan://resources/`) and the agent's inward
+memory (`silan://agent/`) are **two trees, one engine**. Same search,
+same layering, same abilities. The only difference is one property:
+`is_mutable` — published content is read-only, memory updates itself.
+
+### 3.4 Human and agent collaborate through the same abilities
+
+The agent is not a side-script. It uses **exactly the same ability
+surface** as you do: search, lint, draft, propose. The difference is
+the **authority boundary**: certain verbs (`accept` / `reject` /
+`deploy`) belong to the human, enforced by encapsulation, not by
+prompt wording.
+
+### 3.5 Truth is plain text; derived artefacts are rebuildable
+
+`content/*.md` is the only source of truth. The database, summaries,
+indexes, the website — all derived. Any of them can be deleted and
+rebuilt from markdown. This guarantees: Git is the version control,
+rollback is deterministic, no state hides in a database somewhere.
+
+> **One-sentence test for "elegant":** when adding something new to
+> this system, if you find yourself patching, special-casing, or
+> writing "for historical reasons", it is not elegant yet. Elegant =
+> the new thing falls naturally into the existing ontology.
 
 ---
 
-## 5. 当前在哪、要去哪
+## 4. Three non-negotiable principles
 
-| | 今天 | 终局 |
+No matter how the implementation changes, these three do not give way:
+
+1. **Markdown is the source of truth.** You write markdown; everything
+   else is derived. The agent cannot bypass it.
+2. **You are the author, the agent is the gardener.** The agent can
+   search, organise, draft, propose; whether something enters the
+   source of truth is always your `accept`.
+3. **Back-cast from the terminal state; don't forecast from today.**
+   Every decision asks "what does the terminal state need?" first,
+   then "how do we land that today?" "We'll just make do for now" is
+   forbidden — making do is drifting from the terminal state.
+
+---
+
+## 5. Where we are, where we are going
+
+| | Today | Terminal state |
 |---|---|---|
-| 内容 | 散落的 markdown + Python `silan` 手动同步 | `silan://` 知识体,对象化、有关系 |
-| 后端 | Go API(已修安全)读 SQLite | 不变 —— SQLite 是引擎产出的只读派生物 |
-| 引擎 | Python `silan`(过程式、约定藏在代码里)| Rust `silan-viking`(OOP、SCHEMA 是契约)|
-| agent | 无 | 经 MCP / EasyNet skill,做园丁 |
-| 记忆 | 无 | `silan://agent/` 自进化 |
-| 版本 | 普通 Git | content 单独仓 + 发布 tag + 可回滚 |
+| Content | scattered markdown + manual sync via Python `silan` | `silan://` knowledge body, object-shaped, with relations |
+| Backend | Go API (security-fixed) reading SQLite | unchanged — SQLite is a read-only derived artefact emitted by the engine |
+| Engine | Python `silan` (procedural, conventions buried in code) | Rust `silan-viking` (OOP, SCHEMA is the contract) |
+| Agent | none | through MCP / EasyNet skill, gardener role |
+| Memory | none | `silan://agent/` self-evolving |
+| Versioning | plain Git | content in its own repo + release tags + deterministic rollback |
 
-**路线**:`docs/silan-viking/` 是权威设计——`OVERVIEW.md` 一图看全,`00`–`09`
-逐章展开(对象模型 / CLI / MCP / 测试 / 端到端 / 可观测性),`04-里程碑.md`
-给实施路线。每个里程碑独立可交付,且每一步都朝本文档第 2 节的那个晚上走。
+**Route**: `docs/silan-viking/` is the authoritative design —
+`OVERVIEW.md` gives the one-glance picture; `00`–`09` expand each
+piece (object model / CLI / MCP / tests / end-to-end / observability);
+`04-milestones.md` lays out the implementation track. Every milestone
+is independently shippable, and every step moves toward that 2029
+evening in §2.
 
 ---
 
-## 6. 这份文档怎么用
+## 6. How to use this document
 
-- 写新 PR / 新设计前,读第 3 节五条判据,确认你在让系统更优美。
-- 遇到取舍拿不准,读第 4 节三原则。
-- 觉得"这个功能要不要做"——问它服不服务第 2 节那个晚上。
-- 本文档应随理解加深而更新,但第 1、4 节是地基,改它们需要非常充分的理由。
+- Before a new PR or new design, re-read the five tests in §3 and
+  check that you are making the system more elegant.
+- When a trade-off feels unclear, re-read the three principles in §4.
+- Wondering "should we build this feature?" — ask whether it serves
+  the evening in §2.
+- This document should evolve as understanding deepens, but §1 and §4
+  are the foundation; changing them needs a very strong reason.
