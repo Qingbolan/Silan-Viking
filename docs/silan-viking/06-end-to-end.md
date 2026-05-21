@@ -1,188 +1,209 @@
-# 06 · 端到端主线 —— 从安装到部署
+# 06 · End-to-end main path — from install to deploy
 
-> 前面 `00`–`05` 把零件抠到了显微镜级别(对象、parser、accept 原子性)。
-> 本章退一步,把零件**串成用户真实走的那条路**:安装 → 开项目 → agent 接入
-> → 更新内容 → 部署到服务器。串的过程里,凡是缺的环节(安装方式、`silan init`、
-> agent 握手、部署链路)在此一一填上。
+> Chapters `00`–`05` zoom into the parts under a microscope
+> (objects, parser, accept atomicity). This chapter steps back and
+> **strings the parts into the path a real user walks**: install →
+> open project → agent connects → update content → deploy to server.
+> Wherever a step is missing (install method, `silan init`, agent
+> handshake, deploy pipeline), it gets filled in here.
 >
-> 这一章是「这辆车从车库到目的地能不能开」的检验。
+> This chapter is the check on whether "this car can drive from the
+> garage to its destination".
 
-## §6.0 主线全景
+## §6.0 Main-path overview
 
 ```
-[1] 安装          [2] 开项目         [3] agent 接入      [4] 更新内容        [5] 部署
-装 silan 二进制   →  silan init       →   silan mcp serve   →   agent capture/  →  silan site deploy
-(cargo / 脚本     (scaffold +       (握手推 SCHEMA)     propose          (sync→build→
- / pip 安装器)    git init)                            → silan proposal      Docker→服务器)
-                                                          accept
+[1] Install          [2] Open project    [3] Agent connect  [4] Update content   [5] Deploy
+Install the silan    →  silan init       →  silan mcp serve →  agent capture/   →  silan site deploy
+binary (cargo /         (scaffold +        (handshake pushes    propose          (sync → build →
+ script / pip           git init)          SCHEMA)            → silan proposal     Docker → server)
+ installer)                                                     accept
 ```
 
-每一步对应一节。每节末标注它依赖 `00`–`05` 的哪一节。
+Each step has its own section. Each section ends with the `00`–`05` sections it depends on.
 
 ---
 
-## §6.1 安装
+## §6.1 Install
 
-> silan-viking 是 **Rust 从头重写的全新项目**(需求 `#6`)。**命令名 `silan`
-> 归属新引擎**,取代旧 Python 包对此命令的占用。命名分三层(批量替换易混,钉死):
-> 用户命令 = `silan`,binary 产物 = `silan-viking`,crate = `silan-viking-*`。
-> 命令名与 binary 名不同是常规做法(crate `ripgrep` / 命令 `rg`)。
+> silan-viking is a **brand-new project rewritten from scratch in
+> Rust** (requirement `#6`). **The command name `silan` belongs to
+> the new engine**, replacing the legacy Python package's use of
+> that command. Naming has three layers (easy to confuse on a bulk
+> replace, so pinned): user command = `silan`; binary artefact =
+> `silan-viking`; crates = `silan-viking-*`. A command name
+> differing from the binary name is a normal practice (crate
+> `ripgrep` / command `rg`).
 
-### 三种装法,任选其一
+### Three install routes, pick one
 
 ```
-# 方式 A —— 安装脚本(推荐,免 Rust 工具链)
+# Route A — install script (recommended; no Rust toolchain needed)
 curl -fsSL https://silan-viking.dev/install.sh | sh
 
-# 方式 B —— cargo(有 Rust 工具链时)
+# Route B — cargo (when you have a Rust toolchain)
 cargo install silan-viking
 
-# 方式 C —— pip(惯用 pip 的用户;silan-viking 是个纯二进制安装器包)
+# Route C — pip (for users used to pip; silan-viking on PyPI is a thin binary installer package)
 pip install silan-viking
 ```
 
-三种装法**结果完全一样**:把 `silan-viking` 二进制以 `silan` 之名放进 `PATH`。
-方式 C 的 `pip install silan-viking` 与旧 `pip install silan` 是**两个不同的
-PyPI 包**,装完 `silan` 命令指向新 Rust 引擎 —— 这是取代,不是并存。
+The three routes **produce identical results**: the `silan-viking`
+binary appears on `PATH` as `silan`. Route C's
+`pip install silan-viking` is a **different PyPI package** from the
+legacy `pip install silan`; after install, the `silan` command
+points at the new Rust engine — this is replacement, not
+coexistence.
 
-### 装完,屏幕上看到的
+### What you see on screen after install
 
 ```
 $ curl -fsSL https://silan-viking.dev/install.sh | sh
   silan-viking 1.0.0
-  ✓ 下载 silan-viking (x86_64-apple-darwin, 8.2 MB)
-  ✓ 安装到 /usr/local/bin/silan
-  ✓ 生成全局配置 ~/.config/silan/config.toml
+  ✓ downloaded silan-viking (x86_64-apple-darwin, 8.2 MB)
+  ✓ installed to /usr/local/bin/silan
+  ✓ generated global config ~/.config/silan/config.toml
 
-  下一步:silan init        # 初始化你的内容项目
+  Next: silan init        # initialise your content project
 
 $ silan --version
 silan 1.0.0
 ```
 
-### 全局配置 —— `~/.config/silan/config.toml`(XDG 标准位置)
+### Global config — `~/.config/silan/config.toml` (XDG standard location)
 
-安装时生成,**跨项目共享**的配置(单租户只一个项目,但全局配置仍独立于
-项目,便于换项目地址)。完整内容,逐字段:
+Generated at install time; the **cross-project shared** config (the
+project is single-tenant, but global config stays independent of
+the project so you can re-point the project path). Full content,
+field by field:
 
 ```toml
-# ~/.config/silan/config.toml —— silan 全局配置(安装时生成)
+# ~/.config/silan/config.toml — silan global config (generated at install)
 
 [project]
-# 当前内容项目的位置。默认 ~/.silan-viking;silan init --path 可改。
+# Location of the current content project. Default ~/.silan-viking; silan init --path overrides.
 path = "~/.silan-viking"
 
 [llm]
-# 引擎生成 L0 摘要、agent context_brief 等用到的 LLM。
-# 留空 = 用规则法(取首句),不调 LLM、不需要网络(01 §1.8 embedding 设计)。
+# The LLM used by the engine to generate L0 summaries / agent context_brief / etc.
+# Empty = use the rule-based fallback (first sentence); no LLM, no network needed (01 §1.8 embedding design).
 provider = ""                 # "" | "openai" | "anthropic" | ...
-api_key  = ""                 # 留空即纯本地;填了才联网
+api_key  = ""                 # empty = pure local; non-empty = network calls
 
 [mcp]
-default_port = 7700           # silan mcp serve 默认端口(项目级可覆盖)
+default_port = 7700           # default port for silan mcp serve (project-level can override)
 
 [identity]
-# 可选:只作 silan init 播种 resume 的默认值;初始化后 markdown 才是真相源。
+# Optional: only used by silan init to seed the resume defaults; after init, markdown is the source of truth.
 full_name = "Example User"
 title     = "AI Researcher / Engineer"
 email     = "example@example.com"
 ```
 
-> `[llm].api_key` 是敏感信息:它在 `~/.config/silan/`(用户配置目录),
-> **不在任何项目目录里、不进任何 Git 仓**。XDG 位置天然隔离。
+> `[llm].api_key` is sensitive: it lives under
+> `~/.config/silan/` (the user config directory), **not in any
+> project directory, never in any git repo**. The XDG location is a
+> natural isolation.
 
-依赖:`01` §1.9 crate 结构、需求 `#6`。
+Depends on: `01` §1.9 crate layout; requirement `#6`.
 
 ---
 
-## §6.2 开项目 —— `silan init`
+## §6.2 Open the project — `silan init`
 
 ```
 silan init
 ```
 
-不带参数 —— silan-viking 是单租户(`#13`),一个用户一个项目。`silan init`
-在**默认项目地址 `~/.silan-viking/`** 初始化;想放别处用 `silan init --path <dir>`
-(会同时更新全局配置 `[project].path`)。
+No positional arguments — silan-viking is single-tenant (`#13`):
+one user, one project. `silan init` initialises at **the default
+project path `~/.silan-viking/`**; pick a different location with
+`silan init --path <dir>` (also updates the global config's
+`[project].path`).
 
-### `silan init` 屏幕输出 —— 用户照着走,不会愣住
+### `silan init` screen output — the user follows it; never stuck
 
 ```
 $ silan init
-  silan init —— 初始化内容项目于 ~/.silan-viking/
+  silan init — initialising the content project at ~/.silan-viking/
 
-  ✓ content/                       内容真相源目录
-  ✓ content/SCHEMA.md              type 定义 / frontmatter 约定
-  ✓ content/resources/blog/welcome/          第一篇 blog(示例)
-  ✓ content/resources/ideas/ai-content-optimizer/   第一个 idea(示例)
-  ✓ content/resources/projects/sample-project/      第一个 project(示例)
-  ✓ content/resources/resume/parts/summary/  简历 summary Part(由全局 [identity] 播种)
-  ✓ silan-viking.toml              项目配置
+  ✓ content/                       content source-of-truth directory
+  ✓ content/SCHEMA.md              type definitions / frontmatter conventions
+  ✓ content/resources/blog/welcome/          the first blog (sample)
+  ✓ content/resources/ideas/ai-content-optimizer/   the first idea (sample)
+  ✓ content/resources/projects/sample-project/      the first project (sample)
+  ✓ content/resources/resume/parts/summary/  resume's summary Part (seeded from global [identity])
+  ✓ silan-viking.toml              project config
   ✓ .gitignore
-  ✓ git init + 首次 commit
+  ✓ git init + initial commit
 
-  下一步:
-    1. silan content show silan://resources/blog/welcome   # 看第一篇示例
-    2. 编辑 content/ 里的 markdown,或 silan blog new <slug> 起新的
-    3. silan mcp serve                                     # 让协作 agent 接入
-    4. silan site preview                                  # 本地预览整站
+  Next:
+    1. silan content show silan://resources/blog/welcome   # view the first sample
+    2. Edit markdown under content/, or silan blog new <slug> to start something new
+    3. silan mcp serve                                     # let the collaborating agent connect
+    4. silan site preview                                  # locally preview the whole site
 ```
 
-`silan init` 做的事:scaffold `content/`(六 type + 三示例条目)、写 `SCHEMA.md`、
-写 `silan-viking.toml`、`git init` + 首次 commit。退出码:`0` 成功;`1` 目录
-非空(`--here` 模式则只补缺失项);`2` `git` 不可用。
+What `silan init` does: scaffold `content/` (six types + three
+sample items), write `SCHEMA.md`, write `silan-viking.toml`,
+`git init` + initial commit. Exit codes: `0` success; `1` directory
+is non-empty (with `--here`, only the missing pieces are filled
+in); `2` `git` is unavailable.
 
-### §6.2.1 `silan init` 后的项目结构
+### §6.2.1 Project structure after `silan init`
 
-`~/.silan-viking/` 跑完 `silan init` 后(示例条目是 `silan` **内置模板**,
-设计参考 Python `silan init` 已验证样例、由 Rust 重新实现):
+After `silan init` runs against `~/.silan-viking/` (sample items
+are silan's **built-in templates**, designed from Python `silan
+init`'s validated samples and re-implemented in Rust):
 
 ```
 ~/.silan-viking/
-├── silan-viking.toml               # 项目配置(§6.2.2)
+├── silan-viking.toml               # project config (§6.2.2)
 ├── .gitignore
-└── content/                        # = silan:// 真相源,git 仓
+└── content/                        # = silan:// source of truth; a git repo
     ├── SCHEMA.md
-    ├── .silan-cache                 # 根注册表
+    ├── .silan-cache                 # root registry
     ├── blog/
     │   ├── .silan-cache
-    │   └── welcome/                 # ── 第一篇 blog ──
+    │   └── welcome/                 # ── the first blog ──
     │       ├── .silan-cache
     │       └── parts/
-    │           └── body/            # blog 单 Part(role=body)
-    │               ├── meta.toml    # ★ part_id(ULID)/ type / canonical_lang
-    │               └── en.md        # 主语言 representation
+    │           └── body/            # blog single Part (role=body)
+    │               ├── meta.toml    # ★ part_id (ULID) / type / canonical_lang
+    │               └── en.md        # primary-language representation
     ├── ideas/
     │   ├── .silan-cache
-    │   └── ai-content-optimizer/    # ── 第一个 idea ──
+    │   └── ai-content-optimizer/    # ── the first idea ──
     │       ├── .silan-cache
     │       └── parts/
-    │           └── overview/        # overview Part(必需)。progress/reference/
-    │               ├── meta.toml    #   result 是可选 Part,首例不建,按需加
-    │               └── en.md
+    │           └── overview/        # overview Part (required); progress/reference/
+    │               ├── meta.toml    #   result are optional Parts; first sample
+    │               └── en.md        #   has only overview; add others on demand
     ├── projects/
     │   ├── .silan-cache
-    │   └── sample-project/          # ── 第一个 project ──
+    │   └── sample-project/          # ── the first project ──
     │       ├── .silan-cache
     │       └── parts/
     │           └── overview/
     │               ├── meta.toml
     │               └── en.md
-    ├── episode/  └── .silan-cache    # 空集合,无首例(episode 是独立 type)
-    ├── update/   └── .silan-cache    # 空集合,无首例(update = 第 6 种 type)
+    ├── episode/  └── .silan-cache    # empty collection, no first sample (episode is an independent type)
+    ├── update/   └── .silan-cache    # empty collection, no first sample (update = the 6th type)
     └── resume/
         ├── .silan-cache
-        └── parts/                   # resume 多 Part:summary/education/...
-            └── summary/             # summary Part;frontmatter 由全局 [identity] 播种
+        └── parts/                   # resume multi-Part: summary/education/...
+            └── summary/             # summary Part; frontmatter seeded from global [identity]
                 ├── meta.toml
                 └── en.md
 ```
 
-> 每个 Part 是 `parts/<role>/` 目录:`meta.toml` 持 `PartID`(identity),
-> `<lang>.<ext>` 是语言 representation(§1.3 / §1.3.1)。rename 语言文件不影响
-> identity —— identity 在 `meta.toml` 的 `part_id`,不在文件名。
+> Each Part is a `parts/<role>/` directory: `meta.toml` carries the
+> `PartID` (identity); `<lang>.<ext>` is the language representation
+> (§1.3 / §1.3.1). Renaming a language file does not affect
+> identity — identity lives in `meta.toml`'s `part_id`, not in the
+> filename.
 
-**第一篇 blog —— `content/resources/blog/welcome/parts/body/en.md`**:
+**The first blog — `content/resources/blog/welcome/parts/body/en.md`**:
 
 ```markdown
 ---
@@ -193,502 +214,563 @@ content_type: article          # article | vlog | tutorial | podcast
 date: 2026-05-16
 status: published
 tags: [welcome, getting-started]
-tldr: "上手第一篇 —— silan-viking 是什么、怎么用"
+tldr: "Getting started — what silan-viking is and how to use it"
 ---
 
 # Welcome 🎉
 
-这是你的第一篇 blog。改它,或 `silan blog new <slug>` 起新的一篇。
+This is your first blog. Edit it, or `silan blog new <slug>` to start a new one.
 ```
 
-**第一个 idea —— `content/resources/ideas/ai-content-optimizer/parts/overview/en.md`**:
+**The first idea — `content/resources/ideas/ai-content-optimizer/parts/overview/en.md`**:
 
 ```markdown
 ---
 slug: ai-content-optimizer
 title: "AI Content Optimizer"
 kind: idea
-status: hypothesis              # idea 生命周期:draft | hypothesis | experimenting | validating | published | concluded
+status: hypothesis              # idea lifecycle: draft | hypothesis | experimenting | validating | published | concluded
 category: "AI/ML"
 tags: [AI, content, optimization]
 open_for_collaboration: true
-tldr: "一个自动优化内容可读性与 SEO 的设想"
+tldr: "An idea about automatically optimising content readability and SEO"
 ---
 
 # AI Content Optimizer
 
 ## Motivation
-为什么做、谁受益。
+Why this, who benefits.
 
 ## Approach
-方法 / 思路。
+Method / approach.
 ```
 
-> idea 首例只建 `parts/overview/`(必需 Part)。`progress` / `reference` /
-> `result` 是可选 Part —— 想加进度/参考/结果时 `silan idea add-part` 建,
-> 或让 agent `propose` 锚到对应 Part(§3.1)。tab 按需生长,不强制一开始全建。
+> The first sample idea has only `parts/overview/` (the required
+> Part). `progress` / `reference` / `result` are optional Parts —
+> add them with `silan idea add-part` when you want a progress /
+> reference / result section, or have the agent `propose` anchored
+> to the matching Part (§3.1). Tabs grow on demand; you do not have
+> to create them all up front.
 
-**第一个 project —— `content/resources/projects/sample-project/parts/overview/en.md`**:
+**The first project — `content/resources/projects/sample-project/parts/overview/en.md`**:
 
 ```markdown
 ---
 slug: sample-project
 title: "Sample Project"
 kind: project
-status: active                 # project 生命周期:active | completed | paused | cancelled
+status: active                 # project lifecycle: active | completed | paused | cancelled
 start_date: 2026-05-16
 technologies: [Markdown, Rust]
 github_url: ""
-tldr: "示例项目 —— 演示 project 的结构"
+tldr: "Sample project — demonstrating the project structure"
 ---
 
 # Sample Project
 
-项目总览。`progress` / `reference` 是可选 Part,按需 `silan project add-part` 加。
+Project overview. `progress` / `reference` are optional Parts; add via `silan project add-part` on demand.
 ```
 
-**三个 `.silan-cache` 的关系**(§1.4 Manifest):
-- `content/resources/blog/.silan-cache` = `CollectionManifest`,注册 `welcome` 这个 Item。
-- `content/resources/blog/welcome/.silan-cache` = `ItemManifest`,注册 `en.md` 这个 File。
-- 根 `content/.silan-cache` 注册六个 Collection(blog/projects/ideas/episode/resume/update)。
+**The relationship among the three `.silan-cache` files** (§1.4 Manifest):
+- `content/resources/blog/.silan-cache` = `CollectionManifest`, registering the `welcome` Item.
+- `content/resources/blog/welcome/.silan-cache` = `ItemManifest`, registering the `en.md` File.
+- The root `content/.silan-cache` registers the six Collections (blog/projects/ideas/episode/resume/update).
 
-> 旧结构内容处理:本设计不做兼容读取。已有旧 `content/{type}/...` 若要进入
-> silan-viking,必须先执行一次性重排到 `content/resources/{type}/{item}/parts/<role>/`
-> 最新结构;重排脚本是 M0 的离线工具,不进入运行时 parser。
+> Handling legacy structure: this design does not do compat reads.
+> Legacy `content/{type}/...` that wants to enter silan-viking
+> must first be one-shot rearranged into the latest layout
+> `content/resources/{type}/{item}/parts/<role>/`; the rearrange
+> script is an M0 offline tool and does not enter the runtime
+> parser.
 
-### §6.2.2 项目配置 —— `silan-viking.toml`(逐字段)
+### §6.2.2 Project config — `silan-viking.toml` (field by field)
 
-`silan init` 在项目根(`~/.silan-viking/`)生成。完整内容:
+Generated by `silan init` in the project root (`~/.silan-viking/`). Full content:
 
 ```toml
-# silan-viking.toml —— 项目配置(全局配置见 ~/.config/silan/config.toml)
+# silan-viking.toml — project config (global config in ~/.config/silan/config.toml)
 
 [project]
-name        = "silan-site"            # 项目名
-content_dir = "content"               # 真相源目录(相对项目根)
+name        = "silan-site"            # project name
+content_dir = "content"               # source-of-truth directory (relative to project root)
 
 [identity]
-# 个人信息。这是「初始化来源」,不是真相源 —— silan init 用本段播种
-# content/resources/resume/parts/summary/en.md 的 frontmatter;之后改个人信息改该文件。
-# silan init 首次从全局 [identity](若有)或交互提示填入,写到此处。
+# Personal info. This is "initialisation source", not source of truth —
+# silan init uses this section to seed
+# content/resources/resume/parts/summary/en.md's frontmatter; afterwards,
+# edit that file to change personal info.
+# silan init reads from global [identity] (if any) or asks interactively, and writes here.
 full_name = "Example User"
 title     = "AI Researcher / Engineer"
 email     = "example@example.com"
-avatar    = "content/resources/resume/assets/avatar.jpg"   # 头像图片(随 content 进 Git)
+avatar    = "content/resources/resume/assets/avatar.jpg"   # avatar image (travels with content into git)
 location  = "Singapore"
 social    = { github = "https://github.com/...", x = "" }
 
 [database]
-path = "_deploy/portfolio.db"          # content/ 的只读派生缓存(01 §1.8)
+path = "_deploy/portfolio.db"          # read-only derived cache of content/ (01 §1.8)
 
 [mcp]
-port          = 7700                   # 覆盖全局 [mcp].default_port
-enable_deploy = false                  # deploy() ability 默认关(03 档 4)
+port          = 7700                   # overrides the global [mcp].default_port
+enable_deploy = false                  # the deploy() ability is off by default (03 tier 4)
 
 [deploy]
-# 部署目标服务器。silan site deploy 读本段(§6.5)
+# Deploy target server. silan site deploy reads this section (§6.5)
 host         = "silan.tech"
 user         = "deploy"
-ssh_key_path = "~/.ssh/silan_deploy_ed25519"   # ★ 只存路径,不存 key 本体
+ssh_key_path = "~/.ssh/silan_deploy_ed25519"   # ★ only stores the path; never the key body
 remote_dir   = "/srv/silan-viking"
 compose_file = "deploy/docker-compose.yml"
 ```
 
-**必填段**:`[project]` / `[database]`。`[deploy]` 仅 `silan site deploy`
-时必需。`[identity]` / `[mcp]` 可缺省(缺省用全局配置 / 内置默认)。
-`silan` 启动时校验必填段,缺 → 退出码 `1` 报错指明缺哪段。
+**Required sections**: `[project]` / `[database]`. `[deploy]` is
+required only for `silan site deploy`. `[identity]` / `[mcp]` are
+optional (default to the global config / built-in defaults).
+`silan` validates required sections at startup; on a missing
+section → exit code `1`, naming what is missing.
 
-**SSH key 安全约定**:`ssh_key_path` 只是路径,私钥本体永不进 `toml`、永不进
-Git。`silan-viking.toml` 本身可进 Git(只含路径)。`silan site deploy` 启动
-校验该文件存在、权限 `600`,不满足 → 退出码 `1` 提示生成 key 或 `chmod`。
+**SSH-key safety convention**: `ssh_key_path` is only a path; the
+private key body never enters `toml`, never enters git.
+`silan-viking.toml` itself can enter git (it only stores the path).
+At deploy time `silan site deploy` checks the file exists and has
+permission `600`; otherwise → exit code `1`, prompting to generate
+the key or `chmod`.
 
-**`[identity]` 与「markdown 真相源」**:`[identity]` 是配置,作用是**初始化**
-—— `silan init` 用它播种 `content/resources/resume/parts/summary/en.md` 的
-frontmatter。之后改个人信息改这个 markdown(走 sync 链路进
-`personal_info` 表)。`toml` 的 `[identity]` 仅
-`silan init` 时被读。头像图片放 `content/resources/resume/assets/`,随 content 进 Git。
-这样「个人信息在 toml 配」与「markdown 真相源」两不冲突 —— toml 是播种器,
-`parts/summary/<lang>.md` 是真相源。resume 是多 Part(summary/education/…),
-结构化 Part(如 education)用 `entry_list` 的 `.toml` 文件(裁决:resume 多 Part)。
+**`[identity]` and "markdown as source of truth"**: `[identity]` is
+config; its role is **initialisation** — `silan init` uses it to
+seed `content/resources/resume/parts/summary/en.md`'s frontmatter.
+Edit that markdown to change personal info afterwards (which flows
+through sync into the `personal_info` table). The `toml`
+`[identity]` is read only at `silan init` time. Avatar images sit
+under `content/resources/resume/assets/` and travel with content
+into git. This makes "personal info configured in toml" and
+"markdown is the source of truth" non-conflicting — toml is the
+seeder; `parts/summary/<lang>.md` is the source. resume is
+multi-Part (summary / education / …); structured Parts (e.g.
+education) use `entry_list` `.toml` files (ruling: resume is
+multi-Part).
 
 ---
 
-### §6.2.3 项目成熟后的完整文件系统(终极全貌)
+### §6.2.3 The full filesystem when the project has matured (the terminal picture)
 
-> §6.2.1 是 `silan init` **刚跑完**的快照(只有三个首例)。本节是项目**用了
-> 一阵、内容长起来后**的样子 —— 多 Part、多语言、多条目、提案区、派生缓存
-> 全在。这是「文件系统最终长什么样」的权威全图,每个文件标了作用。
+> §6.2.1 is the snapshot **right after `silan init`** (only three
+> first samples). This section is the project's appearance **after
+> some use, with content grown** — multi-Part, multilingual, many
+> items, the proposal area, the derived cache, all there. This is
+> the authoritative full picture "what the filesystem ultimately
+> looks like", each file annotated.
 
 ```
 ~/.silan-viking/
-├── silan-viking.toml              # 项目配置([identity]/[database]/[deploy])
-├── .gitignore                     # 忽略 _deploy/、*.db
+├── silan-viking.toml              # project config ([identity] / [database] / [deploy])
+├── .gitignore                     # ignores _deploy/, *.db
 │
-├── content/                       # ★★ 唯一真相源,一个 Git 仓 ★★
-│   ├── SCHEMA.md                  # type 定义 / frontmatter 约定 / Part 配置(人 + agent 都读)
-│   ├── index.md                   # 引擎维护:全站目录,每条一行 L0
-│   ├── log.md                     # 引擎维护:append-only 操作日志
-│   ├── .silan-cache               # 根注册表
+├── content/                       # ★★ the only source of truth; one git repo ★★
+│   ├── SCHEMA.md                  # type definitions / frontmatter conventions / Part config (read by humans + agents)
+│   ├── index.md                   # engine-maintained: global index, one line per L0
+│   ├── log.md                     # engine-maintained: append-only operation log
+│   ├── .silan-cache               # root registry
 │   │
-│   ├── resources/                 # ── 命名空间①:发布内容(可投影到网站)──
+│   ├── resources/                 # ── namespace ①: published content (can be projected to the site) ──
 │   │   ├── blog/
 │   │   │   ├── .silan-cache       # CollectionManifest
-│   │   │   └── <slug>/            # 一篇 blog = 一个 Item
+│   │   │   └── <slug>/            # one blog = one Item
 │   │   │       ├── .silan-cache   # ItemManifest
-│   │   │       └── parts/body/    # blog 单 Part
+│   │   │       └── parts/body/    # blog single Part
 │   │   │           ├── meta.toml  # ★ part_id / type / canonical_lang +
-│   │   │           ├── en.md      #   (留位)translation_of/source_hash/stale
+│   │   │           ├── en.md      #   (reserved) translation_of/source_hash/stale
 │   │   │           └── zh.md
 │   │   │
 │   │   ├── ideas/
-│   │   │   └── <slug>/            # idea = 一个 Item(多 Part)
+│   │   │   └── <slug>/            # idea = one Item (multi-Part)
 │   │   │       ├── .silan-cache
 │   │   │       └── parts/
-│   │   │           ├── overview/{meta.toml, en.md, zh.md}   # 必需
-│   │   │           ├── progress/{meta.toml, en.md}          # 可选
-│   │   │           ├── reference/{meta.toml, en.md}         # 可选
-│   │   │           └── result/{meta.toml, en.md}            # 可选
+│   │   │           ├── overview/{meta.toml, en.md, zh.md}   # required
+│   │   │           ├── progress/{meta.toml, en.md}          # optional
+│   │   │           ├── reference/{meta.toml, en.md}         # optional
+│   │   │           └── result/{meta.toml, en.md}            # optional
 │   │   │
 │   │   ├── projects/
 │   │   │   └── <slug>/
 │   │   │       ├── .silan-cache
-│   │   │       └── parts/{overview, progress, reference}/   # 各 {meta.toml, en.md}
+│   │   │       └── parts/{overview, progress, reference}/   # each with {meta.toml, en.md}
 │   │   │
-│   │   ├── episode/                # episode = 独立 content type
-│   │   │   └── <series-slug>/      # 容器系列 = 目录层级
-│   │   │       ├── .silan-cache    # CollectionManifest(系列下的 episode 集)
-│   │   │       └── <episode-slug>/ # 每个 episode = 一个 Item,走 parts/body/
+│   │   ├── episode/                # episode = an independent content type
+│   │   │   └── <series-slug>/      # container series = directory layer
+│   │   │       ├── .silan-cache    # CollectionManifest (the series's episode set)
+│   │   │       └── <episode-slug>/ # each episode = one Item; uses parts/body/
 │   │   │           ├── .silan-cache
 │   │   │           └── parts/body/{meta.toml, en.md, zh.md}
 │   │   │
 │   │   ├── resume/
-│   │   │   └── <slug>/             # resume = 一个 Item(多 Part)
+│   │   │   └── <slug>/             # resume = one Item (multi-Part)
 │   │   │       ├── .silan-cache
 │   │   │       ├── parts/
-│   │   │       │   ├── summary/{meta.toml, en.md, zh.md}     # 散文 Part
-│   │   │       │   ├── education/{meta.toml, en.toml}        # 结构化 Part:entry_list .toml
-│   │   │       │   ├── experience/{meta.toml, en.toml}       # 结构化 Part:entry_list .toml
-│   │   │       │   └── .../                                 # awards/publications…
+│   │   │       │   ├── summary/{meta.toml, en.md, zh.md}     # prose Part
+│   │   │       │   ├── education/{meta.toml, en.toml}        # structured Part: entry_list .toml
+│   │   │       │   ├── experience/{meta.toml, en.toml}       # structured Part: entry_list .toml
+│   │   │       │   └── .../                                 # awards / publications …
 │   │   │       └── assets/avatar.jpg
 │   │   │
-│   │   └── update/                 # update = 第 6 种 content type
-│   │       └── <slug>/             # 一条 update = 一个 Item
+│   │   └── update/                 # update = the 6th content type
+│   │       └── <slug>/             # one update = one Item
 │   │           ├── .silan-cache
 │   │           └── parts/body/{meta.toml, en.md}
 │   │
-│   ├── agent/                     # ── 命名空间②:agent context,★永不发布★ ──
+│   ├── agent/                     # ── namespace ②: agent context, ★ never published ★ ──
 │   │   ├── .silan-cache
-│   │   ├── project/               # agent 对本项目的理解(读 resources/ 后沉淀)
-│   │   ├── notes/                 # agent 的工作笔记 / 任务记忆
-│   │   ├── owner/                 # agent 对 owner 的理解(偏好/风格/判断)
-│   │   └── sessions/              # agent 与 silan 历次对话的摘要(会话末沉淀)
-│   │                              #   SiteProjector 绝不碰 agent/(01 §1.2.1)
+│   │   ├── project/               # the agent's understanding of this project (settled from reading resources/)
+│   │   ├── notes/                 # the agent's working notes / task memory
+│   │   ├── owner/                 # the agent's understanding of the owner (preferences / style / judgement)
+│   │   └── sessions/              # summaries of the agent's past dialogues with silan (settled at session end)
+│   │                              #   SiteProjector never touches agent/ (01 §1.2.1)
 │
 └── _deploy/
-    └── portfolio.db               # 派生缓存:silan index sync 从 content/resources/ 生成,
-                                    #   Go API 只读消费它,删了能重建
+    └── portfolio.db               # derived cache: silan index sync produces from content/resources/;
+                                    #   the Go API consumes it read-only; deletable and rebuildable
 ```
 
-**全局配置在另一处**(不在项目目录里):
+**Global config lives elsewhere** (not in the project directory):
 
 ```
-~/.config/silan/config.toml         # 跨项目全局配置:[project].path / [llm] / [mcp]
+~/.config/silan/config.toml         # cross-project global config: [project].path / [llm] / [mcp]
 ```
 
-**一句话定位整个文件系统**:`content/` 是真相源(markdown + Git 仓);
-`portfolio.db` 是它的派生缓存(`silan index sync` 重建);配置两层(全局
-`~/.config/silan/` + 项目 `silan-viking.toml`);agent 提案区不是磁盘目录,
-是 `content/` 仓里的一组 Git 分支(`proposal/<ulid>`),不进主分支。
-最终用户磁盘上只有这些 —— 引擎源码(`engine/crates/`)
-是开发引擎的人才有的另一摊(`00` §0.4 摊 ④)。
+**One-sentence positioning of the whole filesystem**: `content/` is
+the source of truth (markdown + git repo); `portfolio.db` is its
+derived cache (rebuildable by `silan index sync`); config is two
+layers (global `~/.config/silan/` + project `silan-viking.toml`);
+the agent proposal area is not a disk directory — it is a set of
+git branches inside the `content/` repo (`proposal/<ulid>`) that
+never enter main. An end user's disk has only these — the engine
+source code (`engine/crates/`) is a separate pile only engine
+developers have (`00` §0.4 pile ④).
 
-## §6.3 agent 接入 —— MCP 握手推 SCHEMA
+## §6.3 Agent connects — the MCP handshake pushes SCHEMA
 
 ```
 silan mcp serve
 ```
 
-起一个 MCP server(`03` 的 `silan-viking-mcp`)。协作 agent(协作 agent)连上来。
-**关键:agent 一接入,server 在握手阶段主动推两样东西**,让 agent 立刻"明白"
-这个项目,不靠 agent 自己摸索:
+Starts an MCP server (`silan-viking-mcp` from `03`). The
+collaborating agent connects. **Key: the instant the agent
+connects, the server proactively pushes two things at the
+handshake stage**, so the agent "understands" this project
+immediately, not by guessing on its own:
 
-1. **SCHEMA** —— `content/SCHEMA.md` 的内容:有哪些 type、每种 type 的 Part
-   构成、frontmatter 字段约定。agent 据此知道"新建一个 idea 该建哪些文件、
-   每个 frontmatter 要什么字段"。
-2. **项目概览** —— 当前 `content/` 里有哪些 Item(各 type 的条目清单 + 各自
-   L0 摘要)。agent 据此知道"owner 已经有什么",不会重复造、能正确引用。
+1. **SCHEMA** — the content of `content/SCHEMA.md`: which types exist, what Parts each type has, the frontmatter conventions. The agent uses this to know "to create a new idea, build these files; each frontmatter needs these fields".
+2. **Project overview** — what Items currently exist in `content/` (per-type Item listing + each Item's L0 summary). The agent uses this to know "what the owner already has", so it won't duplicate and can reference correctly.
 
-握手后,agent 的认知是完整的:它知道**结构规则**(SCHEMA)+ **现有内容**
-(概览)。这才是 `00` 终局「让协作 agent 理解 silan」的入口动作。
+After the handshake, the agent's mental model is complete: it
+knows the **structural rules** (SCHEMA) and the **existing
+content** (overview). This is the entry action for the `00`
+terminal-state "let a collaborating agent understand silan".
 
-> 之前文档只有一句"SCHEMA 是给 agent 读的"——那是口号。这里把它变成机制:
-> **握手即推送**,不是等 agent 自己 `read`。agent 漏读 SCHEMA 就会写歪,
-> 握手推送从源头杜绝。
+> The earlier docs only had "SCHEMA is for the agent to read" — a
+> slogan. Here it is turned into a mechanism: **the handshake
+> pushes**, not "wait for the agent to `read` it on its own". If
+> the agent misses the SCHEMA, it writes wrongly; the handshake
+> push removes that at the source.
 
-依赖:`03` MCP 服务、§6.2 的 `SCHEMA.md`。
+Depends on: `03` MCP service; the `SCHEMA.md` from §6.2.
 
 ---
 
-## §6.4 更新逻辑全链 —— 内容怎么从「改一个文件」走到「进数据库」
+## §6.4 The full update chain — how content goes from "edit one file" to "land in the database"
 
-> 内容更新有**两条路径**:owner 直接改、agent 经提案改。本节把这两条**从头
-> 到尾并排讲一遍** —— 之前这条链散在 `01` §1.8、`03` §3.1、`07` 各处,读者
-> 得自己拼。这一节是主干,细节引到对应章节。
+> Content updates have **two paths**: owner edits directly, or
+> agent edits via proposal. This section walks them **side by side
+> end to end** — earlier this chain was scattered across `01`
+> §1.8, `03` §3.1, `07`; readers had to assemble it. This section
+> is the main backbone; details point to the corresponding
+> chapters.
 
-两条路径的**共同终点**都是 `portfolio.db`,但前半段不同:
+The two paths **end at the same destination** — `portfolio.db` — but the front halves differ:
 
 ```
-路径①  owner 直接改                   路径②  agent 经提案改
-────────────────────────           ──────────────────────────────
-1. 编辑 content/resources/<type>/<item>/parts/<role>/<lang>.<ext>
-                                      1. agent 调 propose / capture
-   (直接动真相源,内容 owner 是作者)   ↓
-        ↓                          2. 引擎切提案 Git 分支 proposal/<ulid>
-   (无中间步,真相源已变)               agent 草稿写进该分支(不碰主分支)
-        ↓                                ↓
-                                   3. 校验①(提交时,早反馈)
-                                        ↓
-                                   4. silan: silan proposal accept <id>
-                                        ↓ 临时区 merge + 校验② + 推进主分支指针
-                                   5. 草稿合入主分支 = 真相源已变
-        │                                │
-        └────────────┬───────────────────┘
-                      ▼  两条路径在此汇合 —— 真相源(content/)已是最新
+Path ①  owner edits directly                Path ②  agent edits via proposal
+────────────────────────                  ─────────────────────────────────
+1. Edit content/resources/<type>/<item>/parts/<role>/<lang>.<ext>
+                                            1. The agent calls propose / capture
+   (touches the source of truth directly;    ↓
+   the content owner is the author)        2. The engine cuts a proposal git branch proposal/<ulid>
+        ↓                                       The agent's draft is written into that branch (main untouched)
+   (no intermediate step; source of truth      ↓
+   has changed)                            3. Validation ① (at submit; early feedback)
+        ↓                                       ↓
+                                          4. silan: silan proposal accept <id>
+                                               ↓ staging-area merge + validation ② + advance main pointer
+                                          5. The draft is merged into main = source of truth has changed
+        │                                       │
+        └────────────────┬───────────────────────┘
+                          ▼  The two paths converge here — content/ source of truth is now the latest
             6. silan index sync
-                 扫 content/ → Parser 解析 → Parsed(主体+多语言)
+                 scan content/ → Parser parses → Parsed (main + multilingual)
                  → Mapper → RowSet → Sink → portfolio.db
-                      ▼
-            7. portfolio.db 刷新;Go API 读它供网站
+                          ▼
+            7. portfolio.db refreshed; the Go API reads it and serves the website
 ```
 
-### 路径① —— owner 直接改(最短路径)
+### Path ① — owner edits directly (the shortest path)
 
-owner 是内容作者,直接编辑 `content/` 下的源文件 —— **没有提案、没有
-审核**,因为他改的是自己的真相源。改完一步:
+The owner is the content author and edits the source file under
+`content/` directly — **no proposal, no review**, because he is
+editing his own source of truth. After editing, one step:
 
 ```
 $ silan index sync
 ```
 
-`sync` 内部就是 `01` §1.8 的持久化链:`Parser` 解析每个 Item 的每个 Part
-的每个语言 File → `Parsed`(语言无关 `main` + 多语言 `langs`,§1.8.0)→
-`Mapper` 拆成 `RowSet` → `Sink` 事务写 `portfolio.db`。`content_relation`
-(演化边)在收集阶段做 canonicalization(§1.8.2)。
+`sync` internally is the persistence chain in `01` §1.8: `Parser`
+parses every Item's every Part's every language `File` → `Parsed`
+(language-agnostic `main` + multilingual `langs`, §1.8.0) →
+`Mapper` splits into a `RowSet` → `Sink` writes `portfolio.db`
+inside a transaction. `content_relation` (evolution edges) is
+canonicalised during the collection phase (§1.8.2).
 
-> 路径①的"更新逻辑"= **编辑 markdown + `silan index sync`**。就这两步。
-> 真相源是 silan 直接掌的,引擎不挡他。
+> Path ①'s "update logic" = **edit markdown + `silan index sync`**.
+> Two steps. silan holds the source of truth directly; the engine
+> doesn't stand in his way.
 
-### 路径② —— agent 经提案改(带审核关卡)
+### Path ② — agent edits via proposal (with review gates)
 
-agent **不是作者**,它不能直接动真相源。它的每次 `capture`/`propose`:
+The agent **is not the author**; it cannot touch the source of truth directly. Each `capture` / `propose`:
 
-1. 引擎从 `content/` 主分支切一个**提案分支** `proposal/<ulid>`(`03` §3.1)。
-2. agent 草稿按 `content/` 同结构写进**提案分支**,主分支一字不动。
-3. **校验①**:提交时跑 `Parser::validate` + SCHEMA 校验,`silan proposal list`
-   里不过的标红 —— 早反馈,让 agent 当场知道写歪了。
-4. silan 审:`silan proposal show <id>` 看 diff,`silan proposal accept <id>`。
-5. `accept` 不是一句 merge —— 它在**临时 worktree** 上 merge + 跑**校验②**
-   (基于 merge 结果),过了才把主分支指针**原子推进**到已验证 commit;
-   任何失败,主分支从头没动过(`03` §3.1 accept 流程,经三轮评审收口)。
+1. The engine cuts a **proposal branch** `proposal/<ulid>` off `content/`'s main (`03` §3.1).
+2. The agent's draft is written into the **proposal branch** in the same `content/` layout; main is untouched.
+3. **Validation ①**: at submit time, run `Parser::validate` + SCHEMA validation; failures are marked red in `silan proposal list` — early feedback so the agent learns it wrote wrongly on the spot.
+4. silan reviews: `silan proposal show <id>` for the diff; `silan proposal accept <id>`.
+5. `accept` is not a merge one-liner — it merges in a **temporary worktree** + runs **validation ②** (on the merge result); on pass, it **atomically advances** main to the verified commit; on any failure, main is byte-for-byte unchanged (`03` §3.1 accept flow, settled across three review rounds).
 
-提案合入主分支后,真相源已变 —— 接下来和路径①汇合:`silan index sync`。
+After the proposal is merged into main, the source of truth has
+changed — from here it converges with path ①: `silan index sync`.
 
-> 路径②的"更新逻辑"= **agent propose → 提案分支 → owner accept(临时区
-> merge+校验)→ 真相源变 → sync**。审核关卡(校验①②、人 accept)是路径②
-> 比路径①多出来的部分 —— 因为改真相源的是 agent,不是作者。
+> Path ②'s "update logic" = **agent propose → proposal branch →
+> owner accept (staging merge + validation) → source of truth
+> changes → sync**. The review gates (validation ① / ②, human
+> accept) are what path ② has extra over path ① — because what
+> edits the source of truth is the agent, not the author.
 
-### 两条路径的边界(一句话钉死)
+### The boundary between the two paths (pinned in one line)
 
-| | 路径① silan 改 | 路径② agent 改 |
+| | Path ① silan edits | Path ② agent edits |
 |---|---|---|
-| 谁改真相源 | silan 直接改 | agent **不能直接改**,经提案 |
-| 有无审核 | 无(内容 owner 是作者)| 有:校验① + 校验② + owner `accept` |
-| 中间载体 | 无,直接改 `content/` | 提案 Git 分支 `proposal/<ulid>` |
-| 汇合点 | —— `silan index sync` 把 `content/` 写进 `portfolio.db` —— | |
+| Who edits the source of truth | silan, directly | the agent, **cannot edit directly**, must go through a proposal |
+| Review? | None (the content owner is the author) | Yes: validation ① + validation ② + owner `accept` |
+| Intermediate carrier | None; edits `content/` directly | The proposal git branch `proposal/<ulid>` |
+| Convergence | —— `silan index sync` writes `content/` into `portfolio.db` —— | |
 
-> agent 改**记忆**(agent 命名空间)是例外:那是 agent 自己的可变区,直接写、
-> 不走提案(`03` §3.1)。本节两条路径说的是改**发布内容**(六 type:blog/
-> projects/ideas/episode/resume/update)—— 那一律走路径②。
+> The agent editing **memory** (the agent namespace) is the
+> exception: that is the agent's own mutable area; direct writes,
+> no proposal (`03` §3.1). The two paths in this section are about
+> editing **published content** (the 6 types: blog / projects /
+> ideas / episode / resume / update) — that is always path ②.
 
-具体操作的逐行剧本(owner 直接开 idea、agent 改简历…)见 `07-操作手册.md`;
-持久化链的对象细节见 `01` §1.8;提案机制的完整设计见 `03` §3.1。本节是
-把它们串成一条主干的**总览**。
+For per-line playbooks (owner opens an idea, agent edits the
+resume, …) see `07-playbooks.md`; the object-level details of the
+persistence chain are in `01` §1.8; the full proposal-mechanism
+design is in `03` §3.1. This section is the **overview** that
+strings them into one backbone.
 
-依赖:`01` §1.8 持久化映射、`03` §3.1 agent 更新链路、`07` 操作剧本。
+Depends on: `01` §1.8 persistence mapping; `03` §3.1 agent update chain; `07` playbooks.
 
-## §6.5 部署 —— 从内容到线上服务器
+## §6.5 Deploy — from content to live server
 
-部署是把 `content/` 真相源变成线上网站的完整链路。`02` 的 `silan site` 各 verb
-在此**串成一条流程**(之前只有孤立的 verb 名,没有流程)。
+Deploy is the full chain that turns the `content/` source of truth
+into a live website. The `silan site` verbs from `02` are **strung
+into a flow** here (earlier they were isolated verb names with no
+flow).
 
-### 部署链路六步
+### The six steps of the deploy pipeline
 
 ```
-silan site deploy   触发以下流水线(--dry-run 默认开,--confirm 才真执行):
+silan site deploy   triggers the following pipeline (--dry-run is on by default; --confirm executes for real):
 
-1. sync     silan index sync —— 扫 content/ → 解析 → 写 portfolio.db
-            (只内容表;打点/批注等运行时数据不动,见 01 §1.8 边界)
-2. build    构建前端(Vite)→ 静态产物;并跑 SeoEmitter 生成爬虫产物
-            (sitemap/robots/JSON-LD/预渲染 HTML/meta,见 01 §1.6.1)
-3. package  打包成 Docker 镜像:Go 后端 + 前端静态产物 + 派生库快照
-4. ship     推镜像/快照到服务器(镜像仓库 或 直接 scp + docker load)
-5. promote  服务器事务性替换派生表;运行时表(comment/interaction/annotation)不动
-6. up       服务器上 docker compose up —— 起 Go 后端 + 前端服务
+1. sync     silan index sync — scan content/ → parse → write portfolio.db
+            (content tables only; pings / annotations etc. runtime data untouched, see 01 §1.8 boundary)
+2. build    build the frontend (Vite) → static artefact; and run SeoEmitter for crawler artefacts
+            (sitemap/robots/JSON-LD/pre-rendered HTML/meta, see 01 §1.6.1)
+3. package  package into Docker images: Go backend + frontend static artefact + derived-db snapshot
+4. ship     push the images / snapshot to the server (image registry or direct scp + docker load)
+5. promote  the server transactionally replaces derived tables; runtime tables (comment/interaction/annotation) untouched
+6. up       docker compose up on the server — starts the Go backend + frontend service
 ```
 
-`silan site` 的各 verb 是这条流水线的**可单独调用的环节**:
-- `silan site build` = 第 1-2 步(本地生成产物,不部署)。
-- `silan site deploy` = 第 1-6 步全程。
-- `silan site preview` = 第 1-2 步 + 本地起服务(不推服务器)。
-- `silan site rollback` = 服务器切回上一个镜像 tag。
-- `silan site status` = 查线上服务健康 + 当前部署对应的 content commit。
+The `silan site` verbs are **individually-callable stages** of this pipeline:
+- `silan site build` = steps 1–2 (produce artefacts locally; don't deploy).
+- `silan site deploy` = the full steps 1–6.
+- `silan site preview` = steps 1–2 + start a local instance (don't push to the server).
+- `silan site rollback` = on the server, switch to the previous image tag.
+- `silan site status` = check live-service health + the content commit currently deployed.
 
-### 部署配置 —— `silan-viking.toml`
+### Deploy config — `silan-viking.toml`
 
-部署目标(服务器地址、SSH/镜像仓库凭据、Docker compose 文件)写在
-§6.2 `silan init` 生成的 `silan-viking.toml` 里。`silan site deploy` 读它,
-不在命令行传一堆参数。
+The deploy target (server address, SSH / image-registry creds,
+docker compose file) lives in the `silan-viking.toml` generated by
+`silan init` in §6.2. `silan site deploy` reads it; it does not
+take a wall of command-line parameters.
 
-### Docker 编排
+### Docker orchestration
 
-服务器侧三个服务(承 archive `ARCHITECTURE.md` 的 Docker Compose 思路,
-但本章是新设计、那份已作废):
+Three services on the server (continuing the Docker Compose idea
+in archive `ARCHITECTURE.md`, but this chapter is the new design;
+that one is obsolete):
 
-| 服务 | 内容 | 说明 |
+| Service | Contents | Notes |
 |---|---|---|
-| `backend` | Go API + 持久 `portfolio.db` | 读派生内容表;写运行时表(comment/interaction/annotation)|
-| `web` | 前端静态产物 + 爬虫产物 | nginx/caddy 托管,含 sitemap 等 |
-| `proxy` | 反向代理 + TLS | 对外入口 |
+| `backend` | Go API + the persistent `portfolio.db` | reads derived content tables; writes runtime tables (comment / interaction / annotation) |
+| `web` | frontend static artefact + crawler artefacts | hosted by nginx / caddy; includes sitemap etc. |
+| `proxy` | reverse proxy + TLS | the external entry point |
 
-本地 `_deploy/portfolio.db` 每次 deploy 由第 1 步重新 sync 生成,它只是
-**派生库快照**。线上服务器的 `portfolio.db` 是持久 volume:deploy promote
-只替换派生表,不覆盖运行时表。这个边界是硬约束,否则一次部署就会丢评论和
-访问打点。完整策略见 `08-工程审查补充.md` §8.3。
+The local `_deploy/portfolio.db` is regenerated by step 1 each
+deploy; it is only a **derived-db snapshot**. The live server's
+`portfolio.db` is a persistent volume: deploy promote only
+replaces derived tables; it never overwrites runtime tables. This
+boundary is a hard constraint; otherwise one deploy would lose
+comments and visit pings. The full policy is in
+`08-engineering-review.md` §8.3.
 
-### agent 能不能部署
+### Can the agent deploy
 
-`03` 档 4:`deploy()` ability **默认关闭**,需 `silan mcp serve --enable-deploy`
-显式开启,且强制 dry-run + owner 确认。`publish`(把 Item 设 public)
-**永不**给 agent。「选择性部署」的选择权在 silan(#13)。
+`03` tier 4: the `deploy()` ability is **off by default**; it
+requires `silan mcp serve --enable-deploy` to surface, and forces
+dry-run + owner confirmation. `publish` (setting an Item to
+public) is **never** given to the agent. The "selective deploy"
+choice is silan's (`#13`).
 
-依赖:`02` `silan site` 命令组、`01` §1.6.1 SeoEmitter、§1.8 内容/运行时数据边界、`03` 档 4。
+Depends on: `02` `silan site` command group; `01` §1.6.1 SeoEmitter; `01` §1.8 content / runtime-data boundary; `03` tier 4.
 
 ---
 
-## §6.5.1 换机器 —— 新机器从服务器接手
+## §6.5.1 Switching machines — taking over from the server on a new machine
 
-> silan 换了台电脑,要在新机器上继续这个项目。这一步要分清「拿什么」和
-> 「不拿什么」。
+> silan switched laptops and wants to continue this project on the
+> new machine. Distinguish "what to bring" from "what not to bring".
 
-新机器上:
-
-```
-$ pip install silan-viking          # 或 cargo / 脚本,装 silan(§6.1)
-$ git clone <content 仓地址> ~/.silan-viking/content
-$ silan init --here ~/.silan-viking  # 对已有 content/ 补 silan-viking.toml 等
-$ silan index sync                   # 从 markdown 重建本地 portfolio.db
-```
-
-**新机器拿到的**:`content/` 的全部 markdown —— 六 type 的全部条目
-(blog/projects/ideas/episode/resume/update)、所有历史(Git 史)。这是真相源,
-完整。本地 `sync` 出一份 `portfolio.db`。
-
-**新机器「不拿」的 —— 运行时数据**:评论(`comment`)、访问打点
-(`content_interaction`)是访客在**生产网站上**产生的,只存在于**服务器**的
-`portfolio.db`。新机器本地 `sync` 出的 `portfolio.db`,运行时表是**空的**
-—— 这是设计预期(`01` §1.8「运行时数据只在服务器」)。
-
-要在新机器上看评论 / 访问数据 —— 先 `sync` 拉进本地缓存,再查:
+On the new machine:
 
 ```
-$ silan stats sync silan://resources/blog/welcome   # 从服务器拉进本地 stats 缓存
-$ silan stats show silan://resources/blog/welcome   # 读本地缓存
+$ pip install silan-viking          # or cargo / script — install silan (§6.1)
+$ git clone <content-repo>  ~/.silan-viking/content
+$ silan init --here ~/.silan-viking  # for an existing content/, fill in silan-viking.toml etc.
+$ silan index sync                   # rebuild the local portfolio.db from markdown
 ```
 
-> `stats` 是 sync-then-query(`02` §`silan stats`):`sync` 把服务器上的
-> 运行时统计拉进本地 `portfolio.db` 的 `stats_cache_*` 表,读命令查这份
-> 缓存。运行时表本身(`comment`/`content_interaction` 明细)不下载 ——
-> 它有唯一的家(服务器),本地只管内容创作。这样换机器永远只是
-> 「`git clone` content + `sync`」两步,不存在「哪台机器的评论最新」的
-> 同步难题。换机器、多机器,内容靠 Git 天然一致;运行时数据压根不参与
-> 本地内容同步,只在需要时按 Item 拉一份只读缓存。
+**What the new machine gets**: every markdown file under
+`content/` — every Item across the six types
+(blog/projects/ideas/episode/resume/update), all history (the git
+log). This is the source of truth and is complete. A local `sync`
+produces a fresh `portfolio.db`.
 
-## §6.6 主线缺口 —— 本章填了什么
+**What the new machine does not get — runtime data**: comments
+(`comment`), visit pings (`content_interaction`) are produced by
+visitors on the **live website** and live only in the server's
+`portfolio.db`. The `portfolio.db` produced by the new machine's
+local `sync` has **empty runtime tables** — this is by design
+(`01` §1.8 "runtime data lives only on the server").
 
-| 缺口(本章之前)| 本章的填法 |
+To see comments / visit data on the new machine — sync into the local cache first, then query:
+
+```
+$ silan stats sync silan://resources/blog/welcome   # pull from the server into the local stats cache
+$ silan stats show silan://resources/blog/welcome   # read the local cache
+```
+
+> `stats` is sync-then-query (`02` §`silan stats`): `sync` pulls
+> server-side runtime stats into the local `portfolio.db`'s
+> `stats_cache_*` tables; read commands query that cache. The
+> runtime tables themselves (`comment` / `content_interaction`
+> rows) are not downloaded — they have one home (the server); the
+> local machine deals only with content creation. This way,
+> switching machines is always "git clone content + sync" — there
+> is no "whose comments are newest" sync headache. Cross-machine
+> content is naturally consistent via git; runtime data never
+> participates in local content sync; you pull a read-only cache
+> per Item when needed.
+
+## §6.6 Main-path gaps — what this chapter filled
+
+| Gap (before this chapter) | How this chapter fills it |
 |---|---|
-| 「pip 下载」与 Rust 引擎对不上 | §6.1 改 Rust 标准分发;新旧包零运行时关系;pip 仅作独立二进制安装器 |
-| CLI 清单无 `init`,空目录怎么开项目没定义 | §6.2 新增 `silan init` |
-| `content/` 是 Git 仓,但 `git init` 谁做没说 | §6.2 `silan init` 第 3 步 |
-| 「SCHEMA 给 agent 读」只是口号,无机制 | §6.3 MCP 握手主动推送 |
-| `silan site` 六个 verb 孤立,无完整部署流程 | §6.5 串成六步流水线 |
-| 部署的 Docker 编排,新文档未继承 | §6.5 重新设计三服务 |
+| "pip download" doesn't match the Rust engine | §6.1 Rust standard distribution; new/old packages have zero runtime relation; pip is only an independent binary installer |
+| The CLI inventory had no `init`; "how to open a project from an empty directory" was undefined | §6.2 added `silan init` |
+| `content/` is a git repo, but who runs `git init` was unsaid | §6.2 `silan init` step 3 |
+| "SCHEMA is for the agent to read" was a slogan with no mechanism | §6.3 the MCP handshake actively pushes it |
+| `silan site`'s six verbs were isolated; no complete deploy flow | §6.5 strings them into the six-step pipeline |
+| The Docker orchestration of deploy was not inherited by the new docs | §6.5 redesigned the three services |
 
-> 进 M0 的待定项(本章引出):
-> - `silan init` 对已有项目的「补缺失项」具体规则。
-> - 第 3 步 `portfolio.db` 进镜像 还是 作 volume 挂载。
-> - 部署凭据在 `silan-viking.toml` 怎么存(明文 / 引用环境变量)。
-
----
-
-## §6.7 一句话验收
-
-一个新用户:装 `silan`(`cargo install silan-viking` / 安装脚本 / `pip install
-silan-viking` 三选一)→ `silan init` → 写两篇 markdown → `silan mcp serve`
-让 agent 接入帮忙改 → `silan proposal accept` 收下 → `silan site deploy` 推上线。
-**这条路,本章每一步都有对应命令、对应机制 —— 车能从车库开到目的地。**
+> Open items going into M0 (raised by this chapter):
+> - `silan init`'s exact rule for "filling in missing pieces" on an existing project.
+> - Step 3: does `portfolio.db` go into the image or get volume-mounted.
+> - How deploy credentials are stored in `silan-viking.toml` (plaintext / environment-variable reference).
 
 ---
 
-## §6.8 主线指令 —— 输入 / 输出 / 退出码
+## §6.7 One-sentence acceptance
 
-> 每条主线指令的精确契约。不是口号:输入是什么、跑完产出什么、成功失败各
-> 返回什么退出码。`silan` 的退出码约定:`0` 成功、`1` 用户可修复的错(配置缺、
-> 校验不过)、`2` 环境错(Git 缺、网络断)。
+A new user: install `silan` (`cargo install silan-viking` / install
+script / `pip install silan-viking` — pick one) → `silan init` →
+write two markdowns → `silan mcp serve` to let the agent connect
+and help edit → `silan proposal accept` to take in the changes →
+`silan site deploy` pushes live.
+**Every step on this path has a corresponding command and
+mechanism in this chapter — the car can drive from the garage to
+its destination.**
 
-### `silan init`(可选 `--path <dir>` / `--here`)
+---
+
+## §6.8 Main-path commands — input / output / exit code
+
+> The precise contract of every main-path command. Not a slogan:
+> what the input is, what it produces, which exit code it returns
+> on success or failure. `silan`'s exit-code convention: `0`
+> success; `1` user-fixable error (missing config, validation
+> failure); `2` environment error (git missing, network down).
+
+### `silan init` (optional `--path <dir>` / `--here`)
 
 | | |
 |---|---|
-| 输入 | 无位置参数;默认在 `~/.silan-viking/` 初始化,`--path <dir>` 指定别处,`--here` 对已有项目补缺 |
-| 产出 | `~/.silan-viking/content/`(六 type + 三示例条目 §6.2.1)、`SCHEMA.md`、`silan-viking.toml`(§6.2.2)、`git init` + 首次 commit;更新全局配置 `[project].path` |
-| stdout | 创建的文件树 + 编号下一步指引(§6.2 屏幕输出)|
-| 退出码 | `0` 成功;`1` 目录非空(非 `--here`);`2` `git` 不可用 |
+| Input | No positional args; defaults to initialising at `~/.silan-viking/`. `--path <dir>` overrides; `--here` fills in missing pieces of an existing project |
+| Output | `~/.silan-viking/content/` (six types + three sample items §6.2.1), `SCHEMA.md`, `silan-viking.toml` (§6.2.2), `git init` + initial commit; updates the global `[project].path` |
+| stdout | The created file tree + numbered next steps (§6.2 screen output) |
+| Exit code | `0` success; `1` directory non-empty (without `--here`); `2` `git` unavailable |
 
 ### `silan index sync`
 
 | | |
 |---|---|
-| 输入 | `content/` 真相源;`silan-viking.toml` 的 `[database].path` |
-| 产出 | `portfolio.db`(内容表 + translation + `item_part` + `content_relation`);各 `.silan-cache` 刷新;`content/log.md` 追加一条 |
-| stdout | 各 Collection 同步条目数;新增/更新/跳过计数 |
-| 退出码 | `0` 全部合规;`1` 有 Item 校验不过(SCHEMA 违规,指明文件:行);`2` db 不可写 |
+| Input | The `content/` source of truth; `silan-viking.toml`'s `[database].path` |
+| Output | `portfolio.db` (content tables + translation + `item_part` + `content_relation`); refreshed `.silan-cache` files; one new line in `content/log.md` |
+| stdout | Per-Collection counts; added / updated / skipped tallies |
+| Exit code | `0` all valid; `1` some Items fail validation (SCHEMA violation; names file:line); `2` db not writable |
 
 ### `silan mcp serve`
 
 | | |
 |---|---|
-| 输入 | `silan-viking.toml` 的 `[mcp]`;`--enable-deploy` 可选(覆盖配置)|
-| 产出 | 一个常驻 MCP server;agent 接入时握手推送 SCHEMA + 项目概览(§6.3)|
-| stdout | 监听端口;每个 agent 接入/断开一行日志 |
-| 退出码 | `0` 正常退出(Ctrl-C);`2` 端口被占 |
+| Input | `silan-viking.toml`'s `[mcp]`; optional `--enable-deploy` (overrides config) |
+| Output | A long-lived MCP server; on agent connect, the handshake pushes SCHEMA + project overview (§6.3) |
+| stdout | Listening port; one log line per agent connect / disconnect |
+| Exit code | `0` normal exit (Ctrl-C); `2` port in use |
 
 ### `silan proposal accept <id>`
 
 | | |
 |---|---|
-| 输入 | `<id>` 提案 ULID;对应 `proposal/<id>` 分支存在 |
-| 产出 | 成功:主分支指针推进到已验证 merge commit(§3.1);失败:主分支一字未动 |
-| stdout | merge 结果;校验②报告;成功/冲突/校验失败三种结局之一 |
-| 退出码 | `0` 已合入;`1` merge 冲突 或 校验②不过(都附下一步提示);`2` 提案不存在 |
+| Input | `<id>` the proposal ULID; the corresponding `proposal/<id>` branch exists |
+| Output | On success: main pointer advances to the verified merge commit (§3.1); on failure: main is byte-for-byte unchanged |
+| stdout | Merge result; validation ② report; one of three outcomes: success / conflict / validation failure |
+| Exit code | `0` merged; `1` merge conflict or validation ② failed (each with a next-step hint); `2` proposal does not exist |
 
 ### `silan site deploy`
 
 | | |
 |---|---|
-| 输入 | `silan-viking.toml` 的 `[deploy]`;`--dry-run`(默认)/ `--confirm` |
-| 产出 | dry-run:打印「将执行的六步」不动服务器;`--confirm`:执行 sync→build→package→ship→promote→up(§6.5),线上服务更新 |
-| stdout | 六步逐步进度;部署的 content commit;线上 URL |
-| 退出码 | `0` 部署成功(或 dry-run 完成);`1` 配置缺/校验不过/SSH key 文件不存在;`2` 服务器不可达 |
+| Input | `silan-viking.toml`'s `[deploy]`; `--dry-run` (default) / `--confirm` |
+| Output | dry-run: prints "the six steps it will execute"; does not touch the server. `--confirm`: executes sync→build→package→ship→promote→up (§6.5); live service updates |
+| stdout | Step-by-step progress for the six steps; the deployed content_commit; the live URL |
+| Exit code | `0` deploy succeeded (or dry-run completed); `1` config missing / validation failure / SSH key file missing; `2` server unreachable |
 
-> 完整命令清单见 `02-cli服务.md`;此处只列主线五条的精确 IO 契约。
+> The complete command inventory is in `02-cli-service.md`; this section lists only the precise IO contracts of the five main-path commands.
