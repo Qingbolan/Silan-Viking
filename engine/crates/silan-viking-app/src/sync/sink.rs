@@ -149,14 +149,33 @@ impl Sink for SqliteSink {
             return Err(SyncError::SchemaDrift(drift));
         }
 
-        // Phase 1: ensure every table exists. An Entity-backed table is
-        // built from the *authoritative* column set (so its on-disk schema
-        // always matches the Entity, even for columns no row used this
-        // sync); a non-Entity table is built from the observed columns.
+        // Phase 1a: ensure every Entity-backed table exists, even ones the
+        // batch carries zero rows for. Before this step, an entity-backed
+        // table whose mapper produced no rows (e.g. `content_relation` when
+        // the workspace has no relations) was never CREATE'd; after a
+        // `silan index rebuild` (which starts from an empty db) that table
+        // didn't exist at all, and a downstream `SELECT count(*) FROM
+        // content_relation` crashed with "no such table". The fix
+        // pre-creates every entity table from its authoritative column
+        // set, so the on-disk schema always matches the Entity layer
+        // regardless of which kinds happen to have rows this sync.
+        // (V2-7 from 2026-05-22 e2e.)
+        for (table, columns) in silan_viking_entities::all_entity_tables() {
+            create_table(&tx, &table, &columns)?;
+            tx.execute(&format!("DELETE FROM \"{table}\""), [])?;
+        }
+
+        // Phase 1b: ensure every table the batch references exists. An
+        // Entity-backed table that *also* shows up in the batch was already
+        // created above with its authoritative columns; a non-Entity table
+        // (`sync_meta`, the engine-internal join tables) is built from the
+        // observed columns here.
         for (table, columns) in &table_columns {
-            let create_columns =
-                silan_viking_entities::table_columns(table).unwrap_or_else(|| columns.clone());
-            create_table(&tx, table, &create_columns)?;
+            if silan_viking_entities::table_columns(table).is_some() {
+                // Already created from authoritative columns in Phase 1a.
+                continue;
+            }
+            create_table(&tx, table, columns)?;
             // Replace, not append: a sync derives the whole table afresh.
             tx.execute(&format!("DELETE FROM \"{table}\""), [])?;
         }

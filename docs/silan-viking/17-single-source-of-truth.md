@@ -26,7 +26,7 @@
 | `visibility` (every type) | `10` §10.3 | `private / unlisted / public`; only `public` is projected to the website | `02`, `08` §8.2 |
 | The 6 content types — closed set | `10` §10.4 | `idea / blog / project / episode / resume / update` | global; `01` §1.9 compile-time closed set |
 | Part `shape` closed set | `01` §1.3.1 | `prose / entry_list / key_value_list` (3 values, compile-time closed set) | `01`, `10` §10.4.5 |
-| MCP tool closed set | `03` §3.2 | M9 is **18**; E1 reaches 21; E2 reaches 22 (see §17.2) | `03`, `04` E-stage |
+| MCP tool closed set | `03` §3.2 | M9 is **19**; E1 reaches 22; E2 reaches 23 (see §17.2) | `03`, `04` E-stage |
 | `silan` CLI command groups | `02` design notes | M8 ships **8 tool groups** (`content`/`index`/`relation`/`site`/`stats`/`proposal`/`mcp`/`skill`) + 6 type groups; E2 adds a `schema` group | `02`, `04`, `OVERVIEW`, `README` |
 | ent table list | `11` §11.1 | see `11`; includes `stats_cache_*` (`11` §11.3.1) | `11`, `08` §8.3 |
 | `referrer_kind` / `source` enum | `11` §11.3 | `search / social / ai_chat / direct / internal` (+ `unknown`) | `03`, `05` |
@@ -48,9 +48,16 @@ stages**:
 
 | Stage | Tools | Increment |
 |---|---|---|
-| M9 | **18** | tier 1 read-only 10 (`recall` `list` `browse` `read` `context_brief` `lint` `stats` `visitors` `crawler_breakdown` `source_breakdown`) + tier 2 `capture` + tier 2.5 `ctx_read` `ctx_write` `ctx_brief` `reflect` + tier 3 `propose` `summarize_updates` + tier 4 `deploy` |
-| E1 | **21** | +`suggest_relations` `suggest_parts` `suggest_lifecycle` (`15` §15.2; JSON schema §15.5.1) |
-| E2 | **22** | +`propose_schema` (`15` §15.2 L-structure; DDL algorithm §15.2.1; JSON schema §15.5.1) |
+| M9 | **19** | tier 1 read-only 11 (`recall` `list` `list_tags` `browse` `read` `context_brief` `lint` `stats` `visitors` `crawler_breakdown` `source_breakdown`) + tier 2 `capture` + tier 2.5 `ctx_read` `ctx_write` `ctx_brief` `reflect` + tier 3 `propose` `summarize_updates` + tier 4 `deploy` |
+| E1 | **22** | +`suggest_relations` `suggest_parts` `suggest_lifecycle` (`15` §15.2; JSON schema §15.5.1) |
+| E2 | **23** | +`propose_schema` (`15` §15.2 L-structure; DDL algorithm §15.2.1; JSON schema §15.5.1) |
+
+> `list_tags` was added in the 2026-05-22 audit follow-up: tag enumeration
+> (USAGE §6 / `02`) was an owner / agent question with no MCP tool answer
+> before this — both `list` and `recall` could filter *by* a tag, but
+> neither could enumerate "what tags exist". `list_tags` returns
+> `[{tag, count}]` rows so a tag cloud can be rendered without scanning
+> every Item.
 
 > `context_brief` (tier 1, reads the current published-content state)
 > and `ctx_brief` (tier 2.5, reads agent memory) are two different

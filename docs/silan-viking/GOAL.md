@@ -174,7 +174,7 @@ server `portfolio.db` tables `comment / content_interaction / request_logs / sta
 - [x] **deploy #2**: the `[4/6] ship` step now runs `rm -rf images.tar snapshot.db docker-compose.yml proxy.conf` right after `mkdir -p`, clearing any same-name directories left behind by a failed previous deploy
 
 ### 🟡 E-stage (self-evolution)
-> **Outside the current GOAL scope**: GOAL §5 nails M9=18 tools as the current terminal state; E1/E2/E3 are scheduled by `04` to land after M9. The docs (`15`) and JSON schemas (`15` §15.5.1) are ready, but **implementation belongs to the next stage, not GOAL closure**. Scope estimate in §11.
+> **Outside the current GOAL scope**: GOAL §5 nails M9=19 tools as the current terminal state (was 18 before `list_tags` was added in the 2026-05-22 audit follow-up); E1/E2/E3 are scheduled by `04` to land after M9. The docs (`15`) and JSON schemas (`15` §15.5.1) are ready, but **implementation belongs to the next stage, not GOAL closure**. Scope estimate in §11.
 - [x] **Close M9 with `deploy`** ← real GOAL §5 gap: the original `tool_specs()` had only 17 entries, not the documented 18. Added `ToolTier::Deploy` + the `deploy` ToolSpec + dispatch arm (refuses the call by default, points the user at the CLI `silan site deploy`); added `ToolGate { deploy, evolve }` + `advertised_tool_specs(gate)`; the server filters deploy/evolve out of `tools/list` by default
 - [x] **E1 three-tool stubs**: `suggest_{relations,parts,lifecycle}` ToolSpec + dispatch landed per the `15` §15.5.1 JSON schema; returns empty `suggestions[]` (schema-legal); gated the same way (`evolve: true` required to advertise); brings the code-side closed-set to 21
 - [x] **MCP gate test pinning**: closed_set=21, default surface=17, 6 tiers covered (ReadOnly / Capture / AgentContext / Proposal / Deploy / Evolve) — matches the `17` §17.2 table
@@ -196,7 +196,7 @@ server `portfolio.db` tables `comment / content_interaction / request_logs / sta
 4. **User-side dependency is only Docker** (plus SSH for remote) — never assume "the user installs Node/Go"
 5. **Agents must write content through proposals** (git branch + `expected_head` + `agent-write.lock`) — no direct writes to the main branch
 6. **Single-device assumption** — every "cross-device consistency" promise must explicitly note "relies on manual git sync"
-7. **CLI is noun-first; MCP tool count is a closed set** (M9=18) — adding a tool must synchronously update `17` §17.2 + `03` §3.2 + `04` E-stage acceptance
+7. **CLI is noun-first; MCP tool count is a closed set** (M9=19) — adding a tool must synchronously update `17` §17.2 + `03` §3.2 + `04` E-stage acceptance
 8. **Promote replaces derived tables only**, runtime tables are preserved — fail this and you lose live comments
 9. **`build.rs` only tars sources**, it never runs npm/go — the real compilation happens in Docker multi-stage
 10. **Cross-host ship never transfers the binary** (the architecture may not match) — `promote` does the local scp pull/swap/push from the control machine

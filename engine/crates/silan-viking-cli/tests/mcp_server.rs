@@ -99,7 +99,10 @@ fn initialize_returns_protocol_and_instructions() {
 }
 
 #[test]
-fn tools_list_advertises_all_seventeen_tools() {
+fn tools_list_advertises_all_eighteen_tools() {
+    // Updated 2026-05-22: `list_tags` added to the ReadOnly tier (filling
+    // the tag-enumeration gap the deep e2e pass surfaced); the default
+    // surface went from 17 → 18 (gated `deploy` + Evolve tier stay hidden).
     let content = fresh_content();
     let responses = drive_server(
         &content,
@@ -108,11 +111,12 @@ fn tools_list_advertises_all_seventeen_tools() {
     let tools = responses[0]["result"]["tools"]
         .as_array()
         .expect("tools array");
-    assert_eq!(tools.len(), 17, "all 17 §3.2 tools must be advertised");
+    assert_eq!(tools.len(), 18, "all 18 §3.2 tools must be advertised");
     let names: Vec<&str> = tools
         .iter()
         .map(|t| t["name"].as_str().expect("name"))
         .collect();
+    assert!(names.contains(&"list_tags"), "list_tags must be advertised");
     for required in [
         "recall",
         "list",

@@ -360,13 +360,27 @@ fn run(args: Vec<String>) -> Result<(), String> {
         [kind, "archive", slug] if is_flat_kind(kind) => {
             type_archive(&opts.content_root, kind, slug)
         }
-        [kind, "rm", slug] if parse_kind(kind).is_some() => type_rm(&opts.content_root, kind, slug),
+        [kind, "rm", slug] if parse_kind(kind).is_some() => {
+            type_rm(&opts.content_root, kind, slug, false)
+        }
+        [kind, "rm", slug, "--force"] if parse_kind(kind).is_some() => {
+            type_rm(&opts.content_root, kind, slug, true)
+        }
 
         [kind, "list"] if parse_kind(kind).is_some() => {
             type_list(&opts.content_root, kind, None, None)
         }
         [kind, "list", "--status", status] if parse_kind(kind).is_some() => {
             type_list(&opts.content_root, kind, Some(status), None)
+        }
+        // `silan tags` — enumerate every tag used across the workspace, with
+        // counts. `--type <kind>` scopes to one content kind. Backs the
+        // owner question "what tags am I using" that USAGE §6 / `02` flag
+        // but the round-two audit found neither CLI nor MCP answered. The
+        // MCP companion is the `list_tags` tool added alongside.
+        ["tags"] => tags_list(&opts.content_root, None),
+        ["tags", "--type", kind] if parse_kind(kind).is_some() => {
+            tags_list(&opts.content_root, Some(kind))
         }
         [kind, "list", "--tag", tag] if parse_kind(kind).is_some() => {
             type_list(&opts.content_root, kind, None, Some(tag))
@@ -1326,6 +1340,43 @@ fn type_list(
             doc.status.unwrap_or_default(),
             doc.title
         );
+    }
+    Ok(())
+}
+
+/// `silan tags [--type <kind>]` — enumerate every tag used across the
+/// workspace with its Item count. Backs the owner question "what tags am I
+/// using" and lets the agent (via the matching MCP `list_tags` tool) build
+/// a tag cloud or pick a known tag for `list --tag <t>`. Counts are derived
+/// from `QueryDocument.tags`, which already folds each Item's frontmatter
+/// `tags:` list into the index (`silan-viking-app/src/query.rs` §208).
+fn tags_list(content_root: &Path, kind: Option<&str>) -> Result<(), String> {
+    let kind_filter = kind
+        .map(|k| parse_kind(k).ok_or_else(|| format!("unknown type `{k}`")))
+        .transpose()?;
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    let index = ws.query_index().map_err(|e| e.to_string())?;
+    let mut counts: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for doc in index.documents() {
+        if let Some(k) = kind_filter {
+            if doc.kind != k {
+                continue;
+            }
+        }
+        for tag in &doc.tags {
+            *counts.entry(tag.clone()).or_insert(0) += 1;
+        }
+    }
+    if counts.is_empty() {
+        println!("no tags");
+        return Ok(());
+    }
+    // Sort by count desc, then alpha — most-used tags first is what the
+    // owner usually wants when scanning the cloud.
+    let mut rows: Vec<(String, usize)> = counts.into_iter().collect();
+    rows.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
+    for (tag, n) in rows {
+        println!("{n}\t{tag}");
     }
     Ok(())
 }
@@ -3068,15 +3119,192 @@ fn type_archive(content_root: &Path, kind: &str, slug: &str) -> Result<(), Strin
     }
 }
 
-fn type_rm(content_root: &Path, kind: &str, slug: &str) -> Result<(), String> {
+/// `silan <type> rm <slug>` — delete an Item. Before this fix, rm was an
+/// unconditional `fs::remove_dir_all` — no warning when other Items pointed
+/// at the doomed one through a `content_relation` edge, no confirmation
+/// prompt at all. After deletion the relations became silently dangling
+/// (V2-5/V2-6 from the 2026-05-22 e2e pass; USAGE §9 / `07` §7.9 require a
+/// warning + confirm).
+///
+/// New behaviour: scan every Item's `relations` frontmatter for declarations
+/// pointing at this slug. If any are found, refuse unless `--force` is set,
+/// listing the incoming edges so the owner can fix them first. The owner can
+/// either rewrite the source Item's frontmatter (drop the obsolete edge) or
+/// run `silan <type> rm <slug> --force` to delete and leave the upstream
+/// `relations:` block to be cleaned up by `silan content lint` next time.
+fn type_rm(content_root: &Path, kind: &str, slug: &str, force: bool) -> Result<(), String> {
     let type_dir = scaffold::type_dir_name(kind).map_err(|e| e.to_string())?;
     let dir = content_root.join("resources").join(type_dir).join(slug);
     if !dir.exists() {
         return Err(format!("{kind} `{slug}` not found"));
     }
+
+    // Find incoming relations pointing at this Item. The target form mirrors
+    // the URI the source frontmatter uses: `silan://resources/<type-dir>/<slug>`.
+    let target_uri = format!("silan://resources/{type_dir}/{slug}");
+    let incoming = find_incoming_relations(content_root, &target_uri);
+    if !incoming.is_empty() && !force {
+        let mut msg = format!(
+            "{kind} `{slug}` has {n} incoming relation(s):\n",
+            n = incoming.len()
+        );
+        for (src_uri, rel_type) in &incoming {
+            msg.push_str(&format!("  {src_uri} --{rel_type}--> this {kind}\n"));
+        }
+        msg.push_str(
+            "  Deleting now would leave those edges dangling.\n  \
+             Edit the source frontmatter to drop the edge first, or pass `--force` to delete anyway.",
+        );
+        return Err(msg);
+    }
+    if !incoming.is_empty() && force {
+        println!(
+            "⚠ deleting {kind} `{slug}` with {n} incoming relation(s) — they will become dangling",
+            n = incoming.len()
+        );
+        for (src_uri, rel_type) in &incoming {
+            println!("    {src_uri} --{rel_type}--> this {kind}");
+        }
+    }
+
     fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
     println!("removed {}", dir.display());
     Ok(())
+}
+
+/// Walk every Item's primary Part frontmatter and collect relation edges
+/// that point at `target_uri`. Returns `(source_uri, relation_type)` pairs.
+/// This is the rm-time safety check (V2-5); it parses frontmatter directly
+/// rather than going through `Workspace::query_index` because rm needs to
+/// work on a not-yet-synced tree (no `portfolio.db` required).
+fn find_incoming_relations(content_root: &Path, target_uri: &str) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let resources = content_root.join("resources");
+    if !resources.exists() {
+        return out;
+    }
+    let kinds = ["ideas", "blog", "projects", "episode", "resume", "update"];
+    for kind_dir in kinds {
+        let dir = resources.join(kind_dir);
+        if !dir.exists() {
+            continue;
+        }
+        let Ok(entries) = fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let item_dir = entry.path();
+            if !item_dir.is_dir() {
+                continue;
+            }
+            let item_slug = entry.file_name().to_string_lossy().into_owned();
+            let source_uri = format!("silan://resources/{kind_dir}/{item_slug}");
+            // The relations declaration lives in the primary Part's en.md
+            // frontmatter (`01` §1.10 modifies the source Item's frontmatter
+            // when `silan idea promote` runs).
+            for role in ["overview", "body", "summary"] {
+                let path = item_dir.join("parts").join(role).join("en.md");
+                if !path.exists() {
+                    continue;
+                }
+                let Ok(text) = fs::read_to_string(&path) else {
+                    continue;
+                };
+                for (rel_type, to) in parse_relation_block(&text) {
+                    if to == target_uri && source_uri != target_uri {
+                        out.push((source_uri.clone(), rel_type));
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Extract `(type, to)` pairs from a `relations:` YAML block in the
+/// frontmatter. Tolerates both compact (`{ type: t, to: "..." }`) and
+/// block-style (`- type: t\n    to: "..."`) forms. Returns an empty Vec
+/// when there's no relations block. This is a deliberately small
+/// hand-parser — pulling YAML for this would over-engineer the rm path.
+fn parse_relation_block(text: &str) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    // Find the frontmatter `relations:` section.
+    let mut in_fm = false;
+    let mut in_relations = false;
+    let mut current_type: Option<String> = None;
+    for line in text.lines() {
+        let trimmed = line.trim_end();
+        if trimmed == "---" {
+            if in_fm {
+                break;
+            }
+            in_fm = true;
+            continue;
+        }
+        if !in_fm {
+            continue;
+        }
+        if !line.starts_with(' ') && !line.starts_with('-') && line.contains(':') {
+            in_relations = line.trim_start().starts_with("relations:");
+            current_type = None;
+            continue;
+        }
+        if !in_relations {
+            continue;
+        }
+        // Compact inline: - { type: foo, to: "silan://..." }
+        if let Some((t, to)) = parse_compact_relation(line) {
+            out.push((t, to));
+            continue;
+        }
+        // Block: - type: foo
+        //          to: "silan://..."
+        if let Some(t) = parse_block_field(line, "type") {
+            current_type = Some(t);
+        }
+        if let Some(to) = parse_block_field(line, "to") {
+            if let Some(t) = current_type.take() {
+                out.push((t, to));
+            }
+        }
+    }
+    out
+}
+
+fn parse_compact_relation(line: &str) -> Option<(String, String)> {
+    let l = line.trim();
+    if !l.starts_with("- {") {
+        return None;
+    }
+    let inside = l.trim_start_matches("- {").trim_end_matches('}');
+    let mut t = None;
+    let mut to = None;
+    for kv in inside.split(',') {
+        let mut it = kv.splitn(2, ':');
+        let key = it.next()?.trim();
+        let val = it.next()?.trim().trim_matches('"').trim_matches('\'');
+        if key == "type" {
+            t = Some(val.to_owned());
+        } else if key == "to" {
+            to = Some(val.to_owned());
+        }
+    }
+    Some((t?, to?))
+}
+
+fn parse_block_field(line: &str, key: &str) -> Option<String> {
+    let l = line.trim_start_matches('-').trim();
+    let prefix = format!("{key}:");
+    if !l.starts_with(&prefix) {
+        return None;
+    }
+    Some(
+        l[prefix.len()..]
+            .trim()
+            .trim_matches('"')
+            .trim_matches('\'')
+            .to_owned(),
+    )
 }
 
 /// The primary (frontmatter-carrying) Part role of a flat content type.

@@ -22,7 +22,7 @@
 
 use super::git::GitRepo;
 use super::lock::ProposalLock;
-use super::store::ProposalRecord;
+use super::store::{ProposalKind, ProposalRecord};
 use super::{ProposalError, ProposalId, ProposalState};
 use crate::parser::Severity;
 use crate::Workspace;
@@ -54,6 +54,38 @@ pub struct AcceptReport {
 struct ScopedWorktree<'a> {
     repo: &'a GitRepo,
     path: PathBuf,
+}
+
+/// A `git stash` entry that gets popped on drop. Mirrors `ScopedWorktree` so
+/// every exit path of `accept` (success, conflict, validation failure, panic)
+/// puts the owner's WIP back where it was. Pop failure (e.g. a conflict
+/// against the freshly-merged main) is logged but not unwound — the stash
+/// stays on the stack so the owner can resolve manually; `main` has already
+/// advanced and the proposal is real.
+struct ScopedStash<'a> {
+    repo: &'a GitRepo,
+    active: bool,
+}
+
+impl<'a> ScopedStash<'a> {
+    fn arm(repo: &'a GitRepo) -> Self {
+        Self { repo, active: true }
+    }
+}
+
+impl Drop for ScopedStash<'_> {
+    fn drop(&mut self) {
+        if !self.active {
+            return;
+        }
+        if let Err(e) = self.repo.run(["stash", "pop"]) {
+            tracing::warn!(
+                error = %e,
+                "stash pop after accept failed; WIP remains on the stash stack — \
+                 run `git stash list` to inspect"
+            );
+        }
+    }
 }
 
 impl<'a> ScopedWorktree<'a> {
@@ -124,18 +156,77 @@ pub fn accept(
     // (2) The expected-old OID for the step-6 compare-and-set.
     let expected_old = repo.rev_parse(&format!("refs/heads/{main_branch}"))?;
 
-    // (2.5) The main working tree must be clean before accepting. Step 6.5
-    //     `reset --hard`s it onto the merge commit; an uncommitted edit there
-    //     would be lost. Fail here — before `main` is touched — so a dirty
-    //     tree leaves the proposal and `main` exactly as they were.
-    let working_tree_dirty = repo
+    // (2.5) Move any uncommitted edits out of the way before accepting.
+    //
+    // History: this step used to *reject* a dirty working tree because step
+    // 6.5 (`reset --hard`) would have lost it. But the owner's normal flow
+    // leaves the working tree dirty after `silan idea new <slug>` — the
+    // scaffold doesn't auto-commit. Refusing accept there blocked the most
+    // common workflow ("I scaffolded a side idea; now accept the agent's
+    // proposal") for no real safety win.
+    //
+    // The cure mirrors `create_proposal` (the V2 capture/propose fix): stash
+    // the WIP with `git stash push -u` (untracked files included), run the
+    // accept against a clean tree, then pop the stash at the end so the
+    // owner's working tree looks exactly as it did before accept. If pop
+    // hits a conflict against the freshly-merged main, the stash stays on
+    // the stack and the owner can resolve it manually — but `main` has
+    // already advanced cleanly, so the proposal isn't lost.
+    let dirty_status = repo
         .run(["status", "--porcelain"])
-        .map(|out| !out.stdout.trim().is_empty())
-        .unwrap_or(true);
-    if working_tree_dirty {
-        return Err(ProposalError::WorkingTreeDirty {
-            id: id.as_str().to_owned(),
-        });
+        .map(|out| out.stdout)
+        .unwrap_or_default();
+    let had_wip = !dirty_status.trim().is_empty();
+    let _stash_guard = if had_wip {
+        repo.run([
+            "stash",
+            "push",
+            "-u",
+            "-m",
+            &format!("silan-viking: pre-accept WIP for {}", id.as_str()),
+        ])?;
+        Some(ScopedStash::arm(&repo))
+    } else {
+        None
+    };
+
+    // (2.6) Pre-merge slug-collision check (V2-11).
+    //
+    // A `Create`-kind proposal claims to be introducing a brand-new Item at
+    // each touched URI. If main already has an Item at that URI, accepting
+    // the merge silently overwrites the existing Item — pure data loss, no
+    // in-band signal to the owner. Worse, the merge succeeds because Git
+    // sees two diverged versions of the same paths and just takes the
+    // proposal's.
+    //
+    // Catch this before touching any worktree: for each URI in
+    // `record.touched`, if the proposal was kind=Create AND the path
+    // already exists on main, refuse. The owner can either rename the
+    // proposal's Item or explicitly modify the existing one via `propose`
+    // to its Part URI.
+    if matches!(record.kind, ProposalKind::Create) {
+        // Clone the touched URIs so the immutable borrow of `record.touched`
+        // doesn't conflict with the mutable `record.set_state` below.
+        let touched_uris: Vec<String> = record.touched.clone();
+        for uri in &touched_uris {
+            if let Some(path) = item_path_for_uri(uri) {
+                let on_main = repo.run(["cat-file", "-e", &format!("{expected_old}:{path}")]);
+                if on_main.is_ok() {
+                    record.set_state(ProposalState::Blocked);
+                    record.validation =
+                        format!("failed:slug collision: {uri} already exists on main");
+                    let _ = record.save(&git_dir);
+                    return Err(ProposalError::ValidationFailed {
+                        id: id.as_str().to_owned(),
+                        detail: format!(
+                            "{uri} already exists on main — \
+                             a Create proposal cannot overwrite it; \
+                             use a different slug or `propose` to its Part URI to modify"
+                        ),
+                    });
+                }
+            }
+        }
     }
 
     // (3) Throwaway worktree at main HEAD. `_worktree` removes it on every
@@ -260,6 +351,26 @@ fn validate_worktree(worktree: &Path) -> Result<(), String> {
     } else {
         Err(fatals.join("; "))
     }
+}
+
+/// Map a `silan://resources/<type>/<slug>` URI to the disk path of its Item
+/// directory, relative to the content root. Used by the pre-merge slug-
+/// collision check to ask Git whether main already has that directory.
+/// Returns `None` for URIs that aren't a published-resource Item (e.g.
+/// `silan://agent/notes/<id>`, `silan://resources/<type>/<slug>/<role>` —
+/// Part URIs don't need this check because the parent Item must exist).
+fn item_path_for_uri(uri: &str) -> Option<String> {
+    let rest = uri.strip_prefix("silan://resources/")?;
+    let mut parts = rest.splitn(3, '/');
+    let kind = parts.next()?;
+    let slug = parts.next()?;
+    // A Part URI has three segments; we only need to dedup on Item URIs
+    // (two segments). For three-segment Part URIs the parent Item is what
+    // the proposal is supposed to be modifying — Modify-kind, not Create.
+    if parts.next().is_some() {
+        return None;
+    }
+    Some(format!("resources/{kind}/{slug}"))
 }
 
 /// Canonicalize a relation direction (`08` §8.5 / `01` §1.10 revision A,
