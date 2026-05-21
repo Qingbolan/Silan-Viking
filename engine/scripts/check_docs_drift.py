@@ -143,8 +143,8 @@ def check_idea_status_enum() -> list[str]:
     # both partly-translated and fully-translated trees pass cleanly.
     legacy_markers = re.compile(
         r"legacy|deprecated|reject|rejected|legacy[- ]?value|"
-        r"old[- ]?value|earlier[- ]?draft|adopted|chose|chosen|"
-        r"not adopted|superseded|previous(?:ly)?|"
+        r"old[- ]?value|old[- ]draft|earlier[- ]?draft|invented|"
+        r"adopted|chose|chosen|not adopted|superseded|previous(?:ly)?|"
         # Chinese (kept for transition period):
         r"旧稿|旧值|早期|裁决|不采用|不采|采"
     )
