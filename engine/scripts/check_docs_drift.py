@@ -36,6 +36,27 @@ def read(name: str) -> str:
     return (DOCS / name).read_text(encoding="utf-8")
 
 
+def read_by_prefix(prefix: str) -> tuple[str, str]:
+    """Locate a chapter by its numeric prefix (e.g. "10-" or "02-") so
+    the checker survives the Chinese→English filename rename. Returns
+    (filename, contents). Raises if zero or multiple matches.
+
+    Rationale: the doc tree was originally `10-M0-SCHEMA定稿.md` etc.
+    The rename to `10-m0-schema-finalisation.md` would silently bypass
+    a hard-coded filename lookup. Prefix matching keeps the contract
+    "the chapter numbered 10 is the SCHEMA authority" intact across
+    the rename — the number is the load-bearing identifier, the slug
+    after it is documentation.
+    """
+    matches = sorted(p for p in DOCS.glob(f"{prefix}*.md"))
+    if not matches:
+        raise FileNotFoundError(f"no chapter found with prefix `{prefix}` in {DOCS}")
+    if len(matches) > 1:
+        names = ", ".join(p.name for p in matches)
+        raise RuntimeError(f"ambiguous prefix `{prefix}` matches: {names}")
+    return matches[0].name, matches[0].read_text(encoding="utf-8")
+
+
 def find_lines(name: str, pattern: re.Pattern[str]) -> list[tuple[int, str]]:
     """Return (line_no, line) pairs in `name` matching `pattern`."""
     out: list[tuple[int, str]] = []
@@ -49,11 +70,11 @@ def check_six_content_types() -> list[str]:
     """The 6 content types are a compile-time closed set per GOAL §4."""
     errors: list[str] = []
     expected = {"idea", "blog", "project", "episode", "resume", "update"}
-    # The authoritative listing is in 10-M0-SCHEMA定稿; 17 §17.1 also names it.
-    schema_doc = read("10-M0-SCHEMA定稿.md")
+    # The authoritative listing is in chapter 10; 17 §17.1 also names it.
+    name, schema_doc = read_by_prefix("10-")
     for t in expected:
         if t not in schema_doc:
-            errors.append(f"10-M0-SCHEMA定稿.md: missing content type `{t}`")
+            errors.append(f"{name}: missing content type `{t}`")
     return errors
 
 
@@ -117,9 +138,15 @@ def check_idea_status_enum() -> list[str]:
     # Legacy values seen in earlier drafts; finding them now = drift.
     forbidden = {"active", "exploring", "evolved"}
     # Skip lines that explicitly frame a forbidden value as "old" / "legacy"
-    # / "rejected" / "旧稿" — those are teaching text, not the live enum.
+    # / "rejected" — those are teaching text, not the live enum. Markers
+    # are kept bilingual through the Chinese→English doc translation so
+    # both partly-translated and fully-translated trees pass cleanly.
     legacy_markers = re.compile(
-        r"旧稿|legacy|旧值|deprecated|早期|裁决|reject|采|不采用|不采"
+        r"legacy|deprecated|reject|rejected|legacy[- ]?value|"
+        r"old[- ]?value|earlier[- ]?draft|adopted|chose|chosen|"
+        r"not adopted|superseded|previous(?:ly)?|"
+        # Chinese (kept for transition period):
+        r"旧稿|旧值|早期|裁决|不采用|不采|采"
     )
     for path in DOCS.glob("*.md"):
         text = path.read_text(encoding="utf-8")
@@ -179,16 +206,17 @@ def check_part_shape_closed_set() -> list[str]:
 
 def check_cli_command_groups() -> list[str]:
     """The 8 CLI tool groups per §17.1: content/index/relation/site/stats/
-    proposal/mcp/skill. We just verify they all appear in 02 (the
-    authoritative chapter)."""
+    proposal/mcp/skill. We just verify they all appear in chapter 02
+    (the authoritative chapter), located via prefix to survive the
+    Chinese→English filename rename."""
     errors: list[str] = []
     expected = ["content", "index", "relation", "site", "stats", "proposal", "mcp", "skill"]
-    cli_doc = read("02-cli服务.md")
+    name, cli_doc = read_by_prefix("02-")
     for grp in expected:
         # `silan <noun>` pattern, the canonical invocation form.
         if not re.search(rf"silan\s+{grp}\b", cli_doc):
             errors.append(
-                f"02-cli服务.md: missing `silan {grp}` invocation — "
+                f"{name}: missing `silan {grp}` invocation — "
                 f"§17.1 names {grp} as one of the 8 tool groups"
             )
     return errors
