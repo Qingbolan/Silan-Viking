@@ -1693,7 +1693,7 @@ dependencies = [
 
 [[package]]
 name = "silan-viking-app"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1711,7 +1711,7 @@ dependencies = [
 
 [[package]]
 name = "silan-viking-base"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
  "thiserror",
@@ -1721,7 +1721,7 @@ dependencies = [
 
 [[package]]
 name = "silan-viking-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "rusqlite",
  "serde_json",
@@ -1735,7 +1735,7 @@ dependencies = [
 
 [[package]]
 name = "silan-viking-content"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "silan-viking-base",
  "thiserror",
@@ -1744,7 +1744,7 @@ dependencies = [
 
 [[package]]
 name = "silan-viking-entities"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "rust_decimal",
  "sea-orm",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "silan-viking-mcp"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "rusqlite",
  "serde",
@@ -1766,7 +1766,7 @@ dependencies = [
 
 [[package]]
 name = "silan-viking-site"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "rusqlite",
  "serde",
