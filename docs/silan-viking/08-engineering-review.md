@@ -1,26 +1,28 @@
-# 08 · 工程审查补充 —— 未落地问题与必须补齐的设计
+# 08 · Engineering review — unfinished items and design gates that must be filled
 
-> 本章是对 上一轮文档的工程审查补丁。结论先说清:
-> 当前 `docs/silan-viking/` 已经把终局、对象、CLI、MCP、测试写得很满,
-> 但仓库里还没有 Rust `engine/`,Go ent schema 也还没按文档修订。
-> 所以下一步不能直接开 M1 写 parser;必须先把下面这些不可省的设计门槛补完。
+> This chapter is an engineering-review patch on the previous doc round. Conclusion up front:
+> The current `docs/silan-viking/` already covers terminal state, objects, CLI, MCP, and testing densely,
+> but there is no Rust `engine/` in the repo yet, and Go ent schema has not been revised per the docs.
+> So the next step is not "start M1 and write the parser" directly; the design gates below must be cleared first.
 
-## 8.1 当前没有落地的硬事实
+## 8.1 Hard facts that have not landed yet
 
-| 文档承诺 | 仓库现状 | 工程判断 |
+| Doc promise | Repo reality | Engineering judgement |
 |---|---|---|
-| Rust `engine/` workspace + 7 个成员 crate | 仓库根目录没有 `engine/` | M1 之前只能算设计,不能算实现 |
-| 最新内容结构 `content/resources/.../parts/...` | 旧 Python 仍是 `content/{type}/{item}/{file}` 语义 | 不做兼容;M0 只写最新 SCHEMA,旧内容离线重排 |
-| `content_relation` / `content_interaction` / `annotation` / `item_part` | `backend/internal/ent/schema/` 仍是旧表;`project_relationships`、`project_views`、`project_likes`、`comment_likes` 仍在 | M0.5 必须先改 Go ent,否则 Rust entity 无真相源 |
-| 运行时数据只在服务器 | `06` 原 deploy 流程有“本地 db 打进镜像/或 volume 待定” | 若直接覆盖线上 `portfolio.db`,会丢评论/打点;必须改成“只替换派生表” |
-| `silan stats` 远程查访客 IP/指纹 | 只写了命令,没写远程鉴权、脱敏、访问边界 | #15 是高敏数据,必须有 owner-only 鉴权和默认脱敏 |
-| MCP 握手推 SCHEMA | 已补实现形态(`03` §3.2) | M8 需按最终 SCHEMA 回扫 instructions/resources/tool schema,不能在代码里另写隐式合同 |
-| `proposal accept` 原子性 | 流程正确,但缺锁和 expected HEAD 检查细节 | 单机内多进程/写交错下必须有锁 + `update-ref <new> <old>`;跨设备不在保证内(单设备假设,`17` §17.3) |
+| The Rust `engine/` workspace + 7 member crates | No `engine/` at the repo root | Before M1, "design" — not "implementation" |
+| The latest content layout `content/resources/.../parts/...` | The legacy Python is still on `content/{type}/{item}/{file}` semantics | No compatibility; M0 writes only the latest SCHEMA; legacy content is rearranged offline |
+| `content_relation` / `content_interaction` / `annotation` / `item_part` | `backend/internal/ent/schema/` is still the old tables; `project_relationships`, `project_views`, `project_likes`, `comment_likes` remain | M0.5 must edit Go ent first, otherwise Rust entities have no source of truth |
+| Runtime data lives only on the server | The original `06` deploy flow had "local db packed into the image / or volume TBD" | If the live `portfolio.db` is overwritten directly, comments / pings are lost; must change to "replace derived tables only" |
+| `silan stats` queries visitor IPs / fingerprints remotely | Commands are listed but remote auth, masking, and access boundaries aren't written | `#15` is high-sensitivity data; must have owner-only auth and default masking |
+| MCP handshake pushes SCHEMA | Implementation shape is filled in (`03` §3.2) | M8 must rescan instructions / resources / tool schema against the final SCHEMA; do not start a parallel implicit contract in code |
+| `proposal accept` atomicity | The flow is correct, but locking and expected-HEAD details are missing | On the same machine, concurrent processes / interleaved writes need a lock + `update-ref <new> <old>`; cross-device is not guaranteed (single-device assumption, `17` §17.3) |
 
-## 8.2 M0 的 SCHEMA 最小契约
+## 8.2 The minimum SCHEMA contract for M0
 
-M0 的 `content/SCHEMA.md` 不能只是字段说明。它必须足够让 CLI、MCP、parser、
-测试 fixture 都按同一个契约生成和校验内容。最小字段如下:
+The `content/SCHEMA.md` in M0 cannot just be field descriptions. It
+must be enough that the CLI, MCP, parser, and test fixtures can all
+generate and validate content against the same contract. Minimum
+fields:
 
 ```yaml
 version: 1
@@ -46,7 +48,7 @@ types:
       - { role: progress, required: false, order: 20 }
       - { role: reference, required: false, order: 30 }
       - { role: result, required: false, order: 40 }
-    # idea.status — 唯一事实源是 10-M0-SCHEMA定稿.md §10.4(本骨架仅引用)
+    # idea.status — the source of truth is 10-m0-schema-finalisation.md §10.4 (this skeleton only cites)
     statuses: [draft, hypothesis, experimenting, validating, published, concluded]
     publish_statuses: [published]
     frontmatter_required: [slug, title, kind, status]
@@ -62,88 +64,75 @@ relations:
     part_of: part_of
 ```
 
-**硬规则**:
+**Hard rules**:
 
-- Runtime parser 只接受 `content/resources/{type}/{item}/parts/<role>/meta.toml`
-  + `<lang>.<ext>`(`prose` 用 `.md`,结构化 Part 用 `.toml`)。旧 `README.md`、
-  `NOTES.md`、`resume.md` 不作为运行时输入。
-- `PartID` 必须在 `meta.toml`;缺失时由 `silan init` / `add-part` / 离线重排脚本补,
-  `index sync` 不偷偷生成并写回,否则 sync 从只读操作变成隐式修改真相源。
-- **`index sync` / `index rebuild` 遇到 `meta.toml` 缺 `PartID` 时:报错退出,
-  不静默生成**。错误信息指明缺 ID 的 Part 路径,并提示「跑 `silan index repair`
-  补 ID」。`silan index repair` 是**唯一**被允许向 `meta.toml` 写回 `PartID`
-  的命令(`02` §`silan index`)—— 它是显式的写真相源动作,人知情。理由:
-  `PartID` 是 `item_part` 表外键的稳定锚,`sync` 若自动生成新 ID 会让旧表行
-  变孤记录 —— 把一次只读 sync 变成破坏性操作。
-  这条让 `rebuild` 真正是「全量重建派生物」而非「重建真相源」—— `rebuild`
-  只重建 `.silan-cache` 与派生表,`meta.toml` 是它的**只读输入**。
-- `.silan-cache` 由引擎写,人不手写。SCHEMA/frontmatter/meta.toml 是人和 agent
-  可编辑契约;`.silan-cache` 是派生注册表。`.silan-cache` 丢失时 `rebuild`
-  从 `meta.toml` 全量重建它(`meta.toml` 在 → 重建无副作用);`meta.toml`
-  丢失 PartID 时按上一条报错 —— 两者的处置不同,因为前者是派生物、后者是真相源。
-- `status` 与 `visibility` 必须分开:`status` 是内容生命周期;`visibility=public`
-  才允许网站投影。`blog publish` 可以同时把 `status=published` 和
-  `visibility=public` 写入,但 schema 里两者不能混成一个字段。
+- The runtime parser only accepts `content/resources/{type}/{item}/parts/<role>/meta.toml` + `<lang>.<ext>` (`prose` uses `.md`, structured Parts use `.toml`). Legacy `README.md`, `NOTES.md`, `resume.md` are not runtime inputs.
+- `PartID` must be present in `meta.toml`; when missing, `silan init` / `add-part` / the offline rearrange script fills it; `index sync` does not silently generate and write it back, or sync turns from a read-only operation into an implicit mutation of the source of truth.
+- **When `index sync` / `index rebuild` encounters a `meta.toml` missing `PartID`: error and exit; do not silently generate**. The error names the Part path with the missing ID and prompts "run `silan index repair` to fill it in". `silan index repair` is the **only** command allowed to write `PartID` back into `meta.toml` (`02` §`silan index`) — it is an explicit, human-knowing source-of-truth write. Rationale: `PartID` is the stable anchor of the `item_part` table's foreign key; if `sync` auto-generates a new ID, old table rows become orphans — turning a read-only sync into a destructive operation.
+  This makes `rebuild` truly "fully rebuild the derived artefacts" rather than "rebuild the source of truth" — `rebuild` only rebuilds `.silan-cache` and derived tables; `meta.toml` is its **read-only input**.
+- `.silan-cache` is engine-written; humans do not hand-write it. SCHEMA / frontmatter / meta.toml are human-and-agent editable contracts; `.silan-cache` is a derived registry. When `.silan-cache` is lost, `rebuild` reconstructs it from `meta.toml` in full (since `meta.toml` is the truth → the rebuild has no side effects); when `meta.toml` loses its PartID, the previous rule errors out — the two cases are handled differently because the former is a derived artefact and the latter is the source of truth.
+- `status` and `visibility` must be separate: `status` is the content lifecycle; only `visibility=public` is projected to the website. `blog publish` can set `status=published` and `visibility=public` at once, but in the schema they cannot be merged into one field.
 
-## 8.3 部署不能覆盖运行时数据
+## 8.3 Deploy must not overwrite runtime data
 
-`01` 已经定了运行时数据(comment / content_interaction / annotation reader 部分)
-只在生产服务器。那 deploy 就不能把本地新生成的 `_deploy/portfolio.db` 直接替换
-服务器正在使用的 `portfolio.db`。
+`01` already pinned that runtime data (comment / content_interaction
+/ the annotation reader part) lives only on the production server.
+So deploy cannot replace the live `portfolio.db` on the server with
+the locally generated `_deploy/portfolio.db`.
 
-**最终策略**:
+**Final policy**:
 
-1. 本地 `silan index sync` 生成的是**派生库快照**:内容主表、translation、
-   `item_part`、`content_relation`、`sync_meta`。
-2. `silan site deploy --confirm` 上传派生库快照和前端产物。
-3. 服务器执行一次 promote job:在同一个持久 `portfolio.db` 里,事务性删除并重建
-   **派生表**;运行时表(`comments`、`content_interaction`、`annotation` reader 行、
-   `user_identities`)不动。
-4. promote 成功后更新 `sync_meta.content_commit`;失败则线上 DB 保持旧状态。
+1. Local `silan index sync` produces a **derived-db snapshot**:
+   main content tables, translation, `item_part`,
+   `content_relation`, `sync_meta`.
+2. `silan site deploy --confirm` uploads the derived-db snapshot
+   and the frontend artefact.
+3. The server runs a promote job: inside the same persistent
+   `portfolio.db`, in a transaction, delete and rebuild the
+   **derived tables**; runtime tables (`comments`,
+   `content_interaction`, annotation reader rows, `user_identities`)
+   are untouched.
+4. After promote succeeds, update `sync_meta.content_commit`; on
+   failure, the live DB stays in its old state.
 
-这比“双 DB”简单:Go API 仍读一个 SQLite 文件;但 deploy 的写入边界是表级,
-不是文件级。M0.5 改 Go ent 时必须把“派生表/运行时表”列成白名单。
+This is simpler than a "dual-db" design: the Go API still reads one
+SQLite file; but deploy's write boundary is the table level, not
+the file level. When M0.5 edits Go ent, "derived tables / runtime
+tables" must be listed as a whitelist.
 
-> **promote 的原子性与 promote 期间可用性**,不是文字承诺 —— 完整的
-> 实现级合同在 `11-M0.5-ent-schema-PR.md` §11.11「promote job 实现级合同」:
-> 单个 `BEGIN IMMEDIATE` 事务包住全部 DELETE+INSERT,任一表失败整体
-> rollback(不留半新半旧);Go API 读侧走 WAL 不被阻塞;`busy_timeout`
-> 到期则本次 promote 失败、线上保持旧态。M9 `site deploy` 的验收判据
-> 即「promote 满足 §11.11 合同」—— 不再是空判据。
+> **promote atomicity and availability during promote** are not
+> just text promises — the implementation-grade contract is in
+> `11-m0_5-ent-schema-pr.md` §11.11 "promote job
+> implementation-grade contract": a single `BEGIN IMMEDIATE`
+> transaction wraps every DELETE + INSERT; failure on any one
+> table rolls back the lot (no half-old-half-new state); the Go
+> API read side uses WAL and is not blocked; if `busy_timeout`
+> expires, the promote fails and the live state is preserved.
+> M9's `site deploy` acceptance criterion is "promote satisfies
+> §11.11's contract" — no longer an empty criterion.
 
-## 8.4 stats 远程查询的安全契约
+## 8.4 Security contract for the stats remote query
 
-#15 要查 IP、浏览器指纹、AI 爬虫、来源类型。这是 owner-only 数据,不能走公开 API。
+`#15` queries IPs, browser fingerprints, AI crawlers, and source
+kinds. This is owner-only data; it cannot go through a public API.
 
-最小设计:
+Minimum design:
 
-- `silan stats *` 默认走 SSH tunnel 或带 owner admin token 的 HTTPS endpoint。
-- admin token 存在 `~/.config/silan/config.toml` 或系统 keychain,不进
-  `silan-viking.toml`,不进 content Git。
-- 默认输出脱敏:IP 显示 `/24` 或 hash 前缀,fingerprint 只显示前 8 位。
-- `--raw` 只允许本机 owner 交互式确认后输出完整 IP/fingerprint;MCP 侧不暴露
-  `--raw` 等价能力。
-- Go API 写入时做 `visitor_kind` / `crawler_name` / `referrer_kind` 分类;
-  Rust stats 只查询,不重判。
+- `silan stats *` defaults to an SSH tunnel or an HTTPS endpoint with an owner admin token.
+- The admin token lives in `~/.config/silan/config.toml` or the system keychain — not in `silan-viking.toml`, not in the content git repo.
+- Default output is masked: IPs show `/24` or a hash prefix; fingerprints show only the first 8 chars.
+- `--raw` requires interactive confirmation by the local-machine owner before printing the full IP / fingerprint; the MCP side does not expose a `--raw` equivalent.
+- On write, the Go API classifies `visitor_kind` / `crawler_name` / `referrer_kind`; Rust stats only reads — it does not re-classify.
 
-## 8.5 proposal 的并发与冲突补丁
+## 8.5 proposal concurrency and conflict patches
 
-`03` 的 worktree + 校验②方向是对的,但实现还缺两条硬约束:
+The worktree + validation ② direction in `03` is correct, but the implementation is missing two hard constraints:
 
-- `accept` 必须持有进程锁:`content/.git/silan/locks/proposal-accept.lock`。
-  同一 content 仓一次只能有一个 accept/rebase 写主分支。
-- `proposal-accept.lock` 是提案级互斥;推进主分支前还必须拿
-  `content/.git/silan/locks/agent-write.lock`,与 `ctx_write`/`reflect`
-  共用同一把 HEAD 写锁。否则 agent/ 直接写 commit 可能和 accept 的
-  `update-ref` 竞争。
-- 推进主分支必须使用 expected old OID:
-  `git update-ref refs/heads/main <verified_merge_oid> <expected_main_oid>`。
-  如果主分支在校验期间被**同机的另一个写操作**(`ctx_write`/`reflect`/
-  另一次 `accept`)推进,命令失败,主分支不动。这是单机内的乐观锁;
-  silan-viking 是**单设备假设**,跨设备一致性靠 `content/` 仓手动
-  `git push/pull`,不由本机制保证(`17` §17.3)。
+- `accept` must hold a process lock: `content/.git/silan/locks/proposal-accept.lock`. Only one `accept` / `rebase` can be writing the main branch in the same content repo at a time.
+- `proposal-accept.lock` is the proposal-level mutex; before advancing the main branch, you must also acquire `content/.git/silan/locks/agent-write.lock` — the same HEAD-write lock shared with `ctx_write` / `reflect`. Otherwise agent/ direct commits can race with accept's `update-ref`.
+- Advancing the main branch must use the expected old OID: `git update-ref refs/heads/main <verified_merge_oid> <expected_main_oid>`. If the main branch was advanced **by another write on the same machine** (`ctx_write` / `reflect` / another `accept`) during validation, the command fails and the main branch is untouched. This is the intra-machine optimistic lock; silan-viking is a **single-device assumption**, and cross-device consistency relies on manual `git push/pull` of the `content/` repo — not guaranteed by this mechanism (`17` §17.3).
 
-`propose` 还要在元数据里记录 touched parts:
+`propose` must also record `touched parts` in the metadata:
 
 ```toml
 id = "01H..."
@@ -153,208 +142,228 @@ touched = ["silan://resources/ideas/rust-context-engine/progress"]
 validation = "passed"
 ```
 
-`silan proposal list` 若发现多个待审提案触碰同一个 Part,必须提示冲突风险。
-这不是锁,但能防止 owner 在审阅层面误以为两个提案彼此独立。
+If `silan proposal list` finds multiple pending proposals touching
+the same Part, it must flag conflict risk. This is not a lock, but
+it prevents the owner from reviewing the two proposals as if they
+were independent.
 
-## 8.6 MCP 握手的落地形态
+## 8.6 The implementation shape of the MCP handshake
 
-“握手推 SCHEMA”需要落到 MCP 可实现的形态:
+"Handshake pushes SCHEMA" needs to land in a shape MCP can actually implement:
 
-- server initialize instructions 内包含:项目名、SCHEMA 版本、最新 content commit、
-  关键资源 URI。
-- 暴露只读 resources:
+- The server `initialize` instructions contain: project name, SCHEMA version, the latest content commit, and key resource URIs.
+- Expose read-only resources:
   - `silan://schema`
   - `silan://overview`
   - `silan://agent/brief`
-- 暴露工具:
-  - `context_brief()` 返回浓缩版。
-  - `read(uri)` 读取资源。
-  - `ctx_write(uri, content)` 只允许 `silan://agent/`。
+- Expose tools:
+  - `context_brief()` returns the condensed version.
+  - `read(uri)` reads a resource.
+  - `ctx_write(uri, content)` only on `silan://agent/`.
 
-这样 agent 接入时即使宿主没有展示 resources,也能通过 instructions 知道第一步
-该读什么;不会依赖“模型自觉去翻文档”。
+That way, even if the host doesn't surface resources to the agent,
+the agent learns from instructions what to read first — it doesn't
+have to "spontaneously go read the docs".
 
-## 8.7 M0 / M0.5 的完成定义
+## 8.7 Definition of done for M0 / M0.5
 
-M0 完成必须同时满足:
+M0 is done iff:
 
-- `content/SCHEMA.md` 覆盖 6 个 type(blog/projects/ideas/episode/resume/update)、
-  所有 Part、frontmatter、relation、status、visibility、manifest 归属。
-- `engine/tests/fixtures/content/` 全部是最新结构,没有旧路径样例。
-- 离线重排脚本只用于一次性把旧样例搬到最新结构;运行时 parser 无兼容分支。
+- `content/SCHEMA.md` covers the 6 types (blog / projects / ideas / episode / resume / update), every Part, frontmatter, relation, status, visibility, manifest ownership.
+- `engine/tests/fixtures/content/` is entirely the latest layout — no legacy-path samples.
+- The offline rearrange script is used only to move legacy samples one-shot to the latest layout; the runtime parser has no compat branch.
 
-M0.5 完成必须同时满足:
+M0.5 is done iff:
 
-- Go ent 新增/删除/修改表后重新生成成功。
-- Go API 对派生表读取通过;对运行时表写入通过。
-- deploy promote job 证明只替换派生表,不删除既有 comment / content_interaction。
-- Rust `silan-viking-entities` 从 Go ent 真相源反向生成,不手写漂移实体。
+- Go ent regenerates successfully after the new / dropped / changed tables.
+- Go API reads of the derived tables pass; writes to runtime tables pass.
+- The deploy promote job demonstrates that it replaces only derived tables and never deletes existing comment / content_interaction.
+- Rust `silan-viking-entities` is reverse-generated from the Go ent source of truth — no hand-written drifted entities.
 
-这两关没过,不要开 M1 parser。否则 Rust 代码会围绕一个还在漂移的 schema 返工。
+These two gates must clear before M1 parser. Otherwise the Rust code reworks itself around a still-drifting schema.
 
-### 8.7.1 SCHEMA 变更时 fixture 的同步责任(E2 起,红队审查补)
+### 8.7.1 Fixture sync responsibility on SCHEMA edits (from E2 onward; red-team audit addition)
 
-「运行时 parser 无兼容分支」(上文)意味着 `engine/tests/fixtures/content/`
-**永远只有一套、对应当前 SCHEMA**。那么 E2 的 `propose_schema` 改了
-`SCHEMA.md` 时,fixture 谁升级、何时升级 —— 钉死如下:
+"The runtime parser has no compat branch" (above) means
+`engine/tests/fixtures/content/` **always has only one set, matching
+the current SCHEMA**. So when E2's `propose_schema` edits
+`SCHEMA.md`, who upgrades the fixtures and when — pinned as follows:
 
-- **fixture 升级是 `schema-proposal` 的一部分,不是事后补**。一个
-  `schema-proposal` 提案分支(`15` §15.2)里若改了 `SCHEMA.md`,**同一个
-  提案分支必须同时改 `engine/tests/fixtures/content/`**,使 fixture 与新
-  SCHEMA 自洽。两者在同一分支、同一次 `accept` 合入 —— 不存在「SCHEMA 变了
-  但 fixture 还旧」的中间态。
-- **`silan schema check`(§15.2.1)的引擎侧校验,跑的就是升级后的 fixture**。
-  即:check 用「新 SCHEMA + 新 fixture」一起验,fixture 没同步升级 → 引擎侧
-  解析失败 → `schema check` 不过 → 提案不可 `accept`。这把「fixture 跟不上」
-  从一个无人负责的事,变成 `schema check` 自动拦截的事。
-- **谁来改 fixture**:`propose_schema` 的发起 agent。它改 `SCHEMA.md` 的同时
-  按新结构改 fixture 样例 —— 这是 agent 的提案内容的一部分,owner 在
-  `accept` 时连 fixture diff 一起审。
-- **新增可选 Part / 字段**:fixture 至少加一个用到该新结构的样例(对齐
-  `05` §5.2「每种结构都有一例」)。删除类变更被 `15` §15.2 安全表禁止,
-  不涉及 fixture 删样例。
+- **Fixture upgrade is part of the `schema-proposal`, not an after-the-fact patch**. When a `schema-proposal` proposal branch (`15` §15.2) edits `SCHEMA.md`, **the same proposal branch must also edit `engine/tests/fixtures/content/`** so the fixture is self-consistent with the new SCHEMA. Both land in the same branch, merged in the same `accept` — there is no "SCHEMA changed but the fixture is stale" intermediate state.
+- **`silan schema check`'s engine-side validation (§15.2.1) runs against the upgraded fixture**. That is: the check validates "new SCHEMA + new fixture" together; if the fixture isn't synced, engine-side parsing fails → `schema check` fails → the proposal cannot `accept`. This turns "fixture didn't keep up" from an ownerless thing into something the gate auto-catches.
+- **Who edits the fixture**: the agent that filed the `propose_schema`. It edits `SCHEMA.md` and updates the fixture sample to the new structure at the same time — this is part of the agent's proposal content, and the owner reviews the fixture diff alongside `accept`.
+- **For added optional Parts / fields**: the fixture must add at least one sample that uses the new structure (per `05` §5.2 "one sample per structure"). Deletions are forbidden by the §15.2 safety table, so fixture removal is not part of this rule.
 
-> 一句话:**SCHEMA 与 fixture 绑在同一个提案里同生同死**,`schema check`
-> 是它俩一致性的机器闸门。M0 的「fixture 全是最新结构」这条不变量,在 E2
-> 之后由本规则维持。
+> One sentence: **SCHEMA and the fixture are tied together in the
+> same proposal, live or die together**; `schema check` is the
+> machine gate over their consistency. M0's invariant "the fixture
+> is entirely in the latest layout" is preserved after E2 by this
+> rule.
 
-## 8.8 camera-ready 演练实测 —— CLI / MCP / skill 验收(2026-05-19)
+## 8.8 Camera-ready rehearsal — live CLI / MCP / skill acceptance (2026-05-19)
 
-一轮 camera-ready 演练:`engine/install-dev.sh` 路线重编引擎、`skill emit`
-装 skill、起前后端,逐剧本(`07` A–K)实测。**记录三类东西:已验证可用的、
-真实 gap、以及方法论本身的失败。**
+One round of camera-ready rehearsal: `engine/install-dev.sh` route
+rebuilt the engine, `skill emit` installed the skill, both frontend
+and backend up, then playbook-by-playbook (`07` A–K) live tests.
+**Record three classes: verified working, real gaps, and
+methodology failures.**
 
-#### 方法论失败 —— 验收脚本三次自毁,这本身是一条 camera-ready gap
+#### Methodology failure — the acceptance script self-destructed three times; that is itself a camera-ready gap
 
-演练中**三次**误报 gap,且都不是引擎的错,是验收脚本不可信:
+The rehearsal **mis-reported gaps three times**, none of which were
+the engine's fault — the acceptance script wasn't trustworthy:
 
-- 误报 1:用旧的、损坏的 `silan-viking` 二进制(一律 SIGKILL)测 `project
-  list`,得 `unknown command`,据此断言「`list` 动词全缺」。**实为旧 binary
-  损坏**;重编后 `list` 全通。
-- 误报 2:shell 里写 `for v in "show foo"`,引号让 `show foo` 作为单参数
-  传入,引擎收 argv `["blog","show foo"]` 报 `unknown subcommand`。
-- 误报 3:`for c in "blog --help"` 同病再犯 —— `"blog --help"` 作为单 token
-  传入,引擎报 `unknown command`,据此断言「20 个命令 `--help` 全挂」。
-  **实为同一个分词错误**;数组传参后 20 个命令 `--help` 全通。
+- Mis-report 1: used a stale, broken `silan-viking` binary (SIGKILL across the board) to test `project list`, got `unknown command`, and concluded "every `list` verb is missing". **The reality was a broken old binary**; after a rebuild, every `list` worked.
+- Mis-report 2: shell-style `for v in "show foo"` — the quoting passed `show foo` as a single argument; the engine received argv `["blog","show foo"]` and reported `unknown subcommand`.
+- Mis-report 3: `for c in "blog --help"` — same bug again; `"blog --help"` passed as one token; the engine reported `unknown command`, leading to the false claim "all 20 commands have broken `--help`". **Reality: the same tokenisation bug**; once arguments were passed as an array, all 20 `--help` invocations passed.
 
-> 三次同源(变量未控制 / shell 分词)说明:**这次演练没有一套可信的验收
-> 脚本** —— 每条结论都靠人肉回头复核才没写进文档。在一个产出会变成验收
-> 依据的演练里,**验收脚本的可信度 = 结论的可信度**。这条本身要进 backlog:
-> 见 §8.8.2 A2 —— 引擎需要一套 CLI/MCP 表面的 contract 测试,演练才不必
-> 每次靠临时拼的、易碎的 shell 脚本。教训钉死:矩阵测试用数组逐 token 传、
-> MCP 输出落盘后用 `jq` 解析、绝不用带空格字符串或脆弱的 inline 脚本。
+> Three failures from the same source (uncontrolled variables /
+> shell tokenisation) say one thing: **this rehearsal had no
+> trustworthy acceptance script** — every conclusion only avoided
+> entering the docs because a human re-verified. In a rehearsal
+> whose output becomes an acceptance basis, **the trustworthiness
+> of the acceptance script = the trustworthiness of the
+> conclusions**. This itself enters the backlog as §8.8.2 A2 —
+> the engine needs a contract-test layer over the CLI/MCP
+> surface so future rehearsals don't depend on ad-hoc fragile
+> shell scripts. Lesson pinned: pass matrix tests as arrays
+> token by token; land MCP output to disk and parse with `jq`;
+> never use a string with whitespace or a brittle inline script.
 
-### 8.8.1 已验证可用(新 binary,正确分词)
+### 8.8.1 Verified working (new binary, correct tokenisation)
 
-| 面 | 命令 / 工具 | 结果 |
+| Surface | Command / tool | Result |
 |---|---|---|
-| CLI 列举 | `idea/blog/project/update list` | ✅ 四类全通 |
-| CLI 查看 | `<type> show <slug>` | ✅;缺失 slug 报 `not found` 且 `exit=1` |
-| CLI 列举 | `content ls`、`episode series list`、`episode list <series>` | ✅ |
-| CLI 简历 | `resume show`、`resume list`(列 research/experience/publications 等段) | ✅ |
-| CLI 提案 | `proposal list` | ✅ |
-| CLI 关系 | `relation graph`(无参)、`relation show <uri>` | ✅(`graph` 不接 URI) |
-| 引擎 | `doctor`、`guide`、`index sync`、`skill emit/status` | ✅;`skill status=up_to_date` |
-| MCP | `mcp status` → `tools_advertised=17`、`mcp_available=true` | ✅ |
-| MCP | `tools/list` 经 stdio JSON-RPC → 17 个工具全枚举 | ✅ |
-| MCP | `list`(按 type / 全量)、`read`(Item 摘要 / Part 全文)、`context_brief` | ✅ 返回真实数据 |
+| CLI list | `idea/blog/project/update list` | ✅ all four pass |
+| CLI show | `<type> show <slug>` | ✅; missing slug returns `not found` with `exit=1` |
+| CLI list | `content ls`, `episode series list`, `episode list <series>` | ✅ |
+| CLI resume | `resume show`, `resume list` (lists sections research / experience / publications etc.) | ✅ |
+| CLI proposal | `proposal list` | ✅ |
+| CLI relation | `relation graph` (no args), `relation show <uri>` | ✅ (`graph` takes no URI) |
+| Engine | `doctor`, `guide`, `index sync`, `skill emit/status` | ✅; `skill status=up_to_date` |
+| MCP | `mcp status` → `tools_advertised=17`, `mcp_available=true` | ✅ |
+| MCP | `tools/list` via stdio JSON-RPC → all 17 tools enumerated | ✅ |
+| MCP | `list` (by type / full), `read` (Item summary / Part full), `context_brief` | ✅ returns real data |
 
-> MCP `read` 在 Item URI 上返回 `body:null` + 标题/语言,在 Part URI
-> (`…/<slug>/<role>`)上返回全文 —— **这是设计如此**(工具描述已写明),不是 gap。
+> MCP `read` on an Item URI returns `body:null` + title / languages;
+> on a Part URI (`…/<slug>/<role>`) it returns the full body —
+> **this is by design** (the tool description says so), not a gap.
 
-### 8.8.2 真实 gap —— 架构师定级(凉冰)
+### 8.8.2 Real gaps — architect-graded (凉冰)
 
-> 工程师按「命令坏没坏」定级;架构师按「离终局差哪一步」定级。下表是后者。
-> 本轮最有价值的产出不是「前后端起通了」,是**确认了 M9 并未真正完成**。
+> Engineers grade by "is the command broken"; the architect grades
+> by "how far from the terminal state". The table below is the
+> latter. The most valuable output of this round is not "frontend
+> and backend are wired", it is **confirming that M9 is not
+> actually done**.
 
-#### A1 — `site preview` 名不副实,根因是 M9 验收标准漏了一条(原 G1+G4)
+#### A1 — `site preview` doesn't do what its name says; the root cause is one missing line in M9 acceptance (formerly G1+G4)
 
-`["site","build"] | ["site","preview"]` 同指 `site_build`,只产
-sitemap/robots/jsonld 三个 SEO artifact,不起服务器、不渲染 HTML。
+`["site","build"] | ["site","preview"]` both point to `site_build`,
+which produces only the three SEO artefacts (sitemap / robots /
+jsonld); it does not start a server and does not render HTML.
 
-**这不是「代码没跟上规格」,是规格本身漏了。** `04` §M9 出口写的是
-「`05` MCP + 端到端 + 网站场景全绿;deploy promote 只替换派生表」——
-**通篇没有一条要求 `site preview` 在浏览器里呈现一个可看的站点**。在 M9
-当前的验收口径下,`SiteProjector` 只产 SEO artifact 是「通过」的。而
-`guide`/`--help` 的文案「preview the site locally」承诺了一件 M9 验收
-从未要求过的事 —— 文案与验收标准互相打架,代码站在了验收标准那边。
+**This is not "code didn't follow the spec"; the spec itself is
+missing a line.** `04` §M9's exit reads "the MCP + end-to-end +
+website scenarios in `05` all green; deploy promote replaces only
+derived tables" — **nothing requires `site preview` to render a
+viewable site in the browser**. Under M9's current acceptance,
+`SiteProjector` producing only SEO artefacts is "passing". And
+`guide` / `--help` text "preview the site locally" promised
+something the M9 acceptance never required — the text and the
+acceptance criterion fight each other; the code stands with the
+acceptance criterion.
 
-终局判断:引擎已内嵌 frontend/backend/deploy 三个 tarball,这个事实本身
-就是规格声明 —— **引擎承诺自己能把站点跑起来,camera-ready 那天的用户
-只有 `curl|sh` 装来的一个二进制,`site preview` 是他看到自己站点的唯一
-入口**。这个入口现在是空的。
+Terminal-state judgement: the engine embeds frontend / backend /
+deploy tarballs; that fact itself is a spec declaration — **the
+engine promises to be able to run the site itself; on
+camera-ready day the user only has a binary from `curl|sh`, and
+`site preview` is his single entry point to see his own site**.
+That entry point is empty today.
 
-**处置(不在本轮「编译安装」职责内,须走正经 PR):**
-1. `04-里程碑.md` §M9 验收标准回补一条:`site preview` 解包内嵌
-   frontend/backend tarball、起本地实例连 `_deploy/api/portfolio.db`、
-   在浏览器呈现站点;并配套 `site stop` 收回实例、`site status` 报实例
-   存活。修复路径可复用 `site_deploy` 已有的 tarball 解包逻辑,做本地版、
-   不推远端。
-2. M9 按补全后的标准**重新走验收**。在此之前 M9 不算完成。
+**Action (outside this round's "compile + install" responsibility; must go through a proper PR):**
+1. `04-milestones.md` §M9 acceptance gets one more line: `site preview` unpacks the embedded frontend / backend tarballs, starts a local instance against `_deploy/api/portfolio.db`, and renders the site in the browser; companion commands `site stop` retire the instance, `site status` reports instance liveness. The fix path can reuse the tarball-unpacking logic in `site_deploy`, as a local version that does not push to a remote.
+2. After the new acceptance is added, M9 is **re-accepted**. Until then, M9 is not done.
 
-> 原 G4(无进程管理 / 无 `site stop`、反复起累积端口僵尸)与 A1 同源:
-> 引擎根本没有「本地实例」这个概念。`site preview` 一旦从「构建」变成
-> 「起实例」,preview/status/stop 三件套必须一起做 —— 故合并入 A1。
+> Former G4 (no process management / no `site stop`, repeated starts accumulate port-zombies) is the same source as A1: the engine has no notion of a "local instance". Once `site preview` shifts from "build" to "start an instance", the preview / status / stop triad must land together — so it's merged into A1.
 
-#### A2 — CLI 命令表面缺 contract 测试(原 G3)
+#### A2 — CLI command surface lacks contract tests (formerly G3)
 
-`--version` 缺失已修(`main.rs` 加 `--version`/`-V`/`version` 分支,
-parse 前拦截)。但**真正的 gap 不是缺这十行,是 `engine/crates/silan-viking-cli/tests/`
-没有一层覆盖命令表面的 contract 测试**。`silan-viking` 是会自我演化的引擎
-(`15` 章),agent 会不断改 CLI 表面 —— 没有表面 contract 测试,`--version`
-这类回归 CI 永远拦不住,今天撞见的只是其中一个。
+`--version` missing is fixed (`main.rs` adds `--version` / `-V` /
+`version` branches, intercepted before parse). But **the real gap
+is not the ten missing lines; it is that
+`engine/crates/silan-viking-cli/tests/` has no layer covering the
+command surface as a contract test**. `silan-viking` is a
+self-evolving engine (chapter `15`); the agent will keep editing
+the CLI surface — without surface contract tests, regressions like
+the missing `--version` can never be caught by CI; what we hit
+today is just one of them.
 
-**处置:** backlog 加一条 —— CLI 命令/动词表面的 contract 测试(每个
-公开命令、每个 `--help` 承诺的动词,至少一条「能被识别、不报 unknown」
-的断言)。
+**Action:** backlog gains one item — contract tests over the CLI
+command/verb surface (for every public command, for every verb
+promised by `--help`, at least one "is recognised, does not return
+unknown" assertion).
 
-#### A3 — `site status` 错误文案错位(原 G2,维持 P3)
+#### A3 — `site status` error text is mis-placed (formerly G2; stays P3)
 
-`silan-viking site status` 报 `silan site deploy needs a [deploy]
-section` —— 文案抄了 deploy 的,且 `status` 不应硬依赖 `[deploy]` 段。
-小事,但属同一类「命令表面未被测试覆盖」,与 A2 一并修。
+`silan-viking site status` reports `silan site deploy needs a [deploy]
+section` — the text was copied from deploy, and `status` should not
+hard-depend on the `[deploy]` section. Small but in the same
+"command surface not covered by tests" class as A2; fix together.
 
-#### A4 — `init` 种子内容全为 draft/private,新用户首屏是空站(已决)
+#### A4 — `init`'s seed content is all draft/private; a new user's first screen is an empty site (decided)
 
-后端 `/api/v1/blog/posts`、`/api/v1/projects` 正确过滤草稿(publish 是
-person-only 动词,`02` §设计要点)—— 行为是对的。但 `init` 铺下的示例
-内容全是 `draft/private`,于是 camera-ready 那天 silan 装好引擎、init、
-sync、打开站点 —— **看到的是空壳**。对的行为遇上了错的初始状态。
+The backend's `/api/v1/blog/posts`, `/api/v1/projects` correctly
+filter drafts (publish is a person-only verb, `02` design notes) —
+the behaviour is correct. But the sample content `init` lays is
+all `draft/private`, so on camera-ready day silan installs, inits,
+syncs, opens the site — **he sees an empty shell**. Correct
+behaviour meeting wrong initial state.
 
-**架构裁决(凉冰,2026-05-19):`init` 不预置 published 内容。**
-`silan-viking` 的灵魂是「silan voice 想法 → 内容长出来」,`init` 就该是
-一张干净白纸 —— 预置假样例内容反而背叛这个气质,也会让新用户的站点一上来
-就带着不是他的东西。**用引导补空,不用假数据补空:** 真正的修法是让
-`guide` 在「已 init、内容未 publish」这个状态识别出来,把下一步明确指成
-`blog publish <slug>` / `site publish`,而不是泛泛说「preview/deploy」。
-此项归入 A1 同一个 PR(同属 guide/preview 的 onboarding 收尾)。
+**Architect ruling (凉冰, 2026-05-19): `init` does not preload
+published content.** silan-viking's soul is "silan voices a thought
+→ content grows out"; `init` should be a blank sheet — preloading
+fake samples would betray that voice, and would put content the new
+user didn't write into his site from day one. **Fill the void with
+guidance, not fake data**: the real fix is for `guide` to recognise
+the "post-init, content not published" state and point next-step
+clearly at `blog publish <slug>` / `site publish`, rather than
+gesturing at "preview/deploy" generically. This item folds into the
+same PR as A1 (both are guide / preview onboarding wrap-up).
 
-#### A5 — CLI 适配器与 MCP 适配器对同一引擎能力给出不等价结果(本轮新增)
+#### A5 — The CLI adapter and the MCP adapter give non-equivalent results for the same engine capability (new this round)
 
-`08` 之前的验收只问「CLI 能跑吗 / MCP 能跑吗」,**没问「同一能力两个
-适配器是否等价」**。逐剧本实测后,这是覆盖面最大的一类漏验,实例:
+`08`'s previous acceptance asked only "does CLI run / does MCP
+run"; **it never asked "do the two adapters of the same capability
+return equivalent results"**. After per-playbook live tests this
+is the broadest miss; examples:
 
-| 能力 | CLI 出口 | MCP 出口 | 问题 |
+| Capability | CLI exit | MCP exit | Problem |
 |---|---|---|---|
-| `lint` 体检 | `index lint` → `ok documents=12`,**0 issue** | `lint` → **15 条 info issue**(缺翻译) | CLI 把全部 issue 吞成一句 `ok` |
-| `lint` 体检 | `doctor` → `ok ... items=12`,**0 issue** | 同上 15 条 | `doctor` 同样不报逐条 issue |
-| `stats` 空缓存 | `silan stats sync` | `silan stats sync <uri>` | 错误文案漂移,MCP 那条带 URI 更可用 |
+| `lint` health check | `index lint` → `ok documents=12`, **0 issue** | `lint` → **15 `info` issues** (missing translations) | CLI swallows every issue into one `ok` |
+| `lint` health check | `doctor` → `ok ... items=12`, **0 issue** | Same 15 issues | `doctor` also fails to report per-issue |
+| `stats` empty cache | `silan stats sync` | `silan stats sync <uri>` | Error text drifts; the MCP message with URI is more usable |
 
-**为何严重:** `07` 剧本 J 明写 agent 调 `lint` 要拿到一份**带逐条 issue
-的体检报告**。MCP 端做到了;CLI 的 `index lint` / `doctor` 只报 `ok N`,
-**把 15 条「缺翻译」issue 全吞掉**。一个纯用 CLI 的人,永远不知道自己内容
-缺 15 处翻译 —— 而 camera-ready 的用户既会用 CLI、也会经 skill 用 MCP,
-两套结论打架,他不知该信哪个。这违背 `02`/`03` 的隐含契约:CLI 与 MCP
-是同一引擎的两个适配器,**同名能力必须给等价结论**,差异只应在呈现形态
-(人读 vs JSON),不应在结论内容。
+**Why this matters:** `07` playbook J explicitly says the agent's
+`lint` call should return **a health report with per-issue rows**.
+The MCP side does that; the CLI's `index lint` / `doctor` only
+report `ok N`, **swallowing all 15 "missing translation" issues**.
+Someone using only the CLI will never know their content has 15
+missing translations — and a camera-ready user uses both the CLI
+and MCP (via skill); the two sides contradict, and he can't tell
+which to trust. This violates the implicit contract from `02` /
+`03`: the CLI and MCP are two adapters of the same engine —
+**identical capability names must return equivalent conclusions**;
+differences belong only to presentation (human-readable vs JSON),
+not content.
 
-**处置(走正经 PR,不在本轮职责内):**
-1. `index lint` / `doctor` 必须输出与 MCP `lint` 同一份 issue 列表
-   (人读形态),不得把 issue 静默吞成 `ok`。
-2. CLI 与 MCP 的错误文案统一到带 URI 的那一版。
-3. 根治靠 A2 的 contract 测试 —— 测试矩阵须含一条「CLI 出口与 MCP 出口
-   对同一输入给出等价结论」的断言,否则此类漂移会持续发生。
+**Action (proper PR, outside this round's responsibility):**
+1. `index lint` / `doctor` must output the same issue list as MCP `lint` (in human-readable form), not silently swallow issues into `ok`.
+2. CLI and MCP error text are unified to the URI-bearing variant.
+3. The root cure is the A2 contract tests — the test matrix must include "the CLI exit and the MCP exit for the same input return equivalent conclusions", or this kind of drift will keep happening.
 
-> A5 是本轮「逐剧本验」相对「逐命令验」多挖出来的东西。教训:验收的单位
-> 是**剧本**(一条用户路径从头到尾),不是孤立命令 —— 孤立命令各自 `ok`,
-> 不代表串起来的路径对用户讲得通。
+> A5 is what this round's "per-playbook" approach mined that
+> "per-command" never would. Lesson: the unit of acceptance is the
+> **playbook** (one user path end-to-end), not the isolated command
+> — isolated commands each saying `ok` does not mean the strung-up
+> path makes sense to the user.
