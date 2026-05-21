@@ -1,310 +1,367 @@
-# 02 · CLI 服务清单(`silan …`)
+# 02 · CLI service surface (`silan …`)
 
-> 服务需求 `#8`(noun-first,对齐 EasyNet-Cli `<binary> <noun> <verb>`)。
-> CLI 是 owner 的操作面。每个命令标注它服务哪条需求。
+> Serves requirement `#8` (noun-first, matches EasyNet-Cli's `<binary>
+> <noun> <verb>`). The CLI is the owner's operation surface. Each
+> command is annotated with the requirement it serves.
 >
-> **命令组分两类**:① 每种内容 type 一个**专属命令组**(`idea`/`blog`/
-> `project`/`episode`/`resume`/`update`,共 6 个)—— 各带完整增删改查 +
-> 类型专属操作;② **跨类型 / 工具组**(`content`/`index`/`relation`/
-> `site`/`stats`/`proposal`/`mcp`/`skill`)。
+> **The command groups split in two**: ① one **type-specific command
+> group** per content type (`idea` / `blog` / `project` / `episode` /
+> `resume` / `update`, six in total) — each carries full CRUD + the
+> type-specific operations; ② **cross-type / tool groups**
+> (`content` / `index` / `relation` / `site` / `stats` / `proposal` /
+> `mcp` / `skill`).
 
 ---
 
-## 一、内容 type 专属命令组(对应 #2 #3 #4 #5)
+## I. Type-specific command groups (serve #2 #3 #4 #5)
 
-6 种 type 各一个名词组(`idea`/`blog`/`project`/`episode`/`resume`/
-`update`)。**增删改查的六动词统一**(`new`/`list`/`show`/`edit`/`rm`/
-`archive`),**类型专属操作各组不同**。
+One noun group per type (`idea` / `blog` / `project` / `episode` /
+`resume` / `update`). **The six CRUD verbs are unified**
+(`new` / `list` / `show` / `edit` / `rm` / `archive`); the
+**type-specific operations differ per group**.
 
-### `silan idea <verb>` —— 想法
+### `silan idea <verb>` — ideas
 
 ```
-silan idea new <slug>            新建一个 idea(scaffold 目录 + parts/overview/{meta.toml,en.md})
-silan idea list                  列出所有 idea(可 --status hypothesis 等筛选)
-silan idea show <slug>           显示一个 idea(各 Part + 元数据 + 演化关系)
-silan idea edit <slug> [part]    打开 idea 某 Part 的 .md(默认 overview)
-silan idea rm <slug>             ★真删:删整个目录,删前检查悬空演化边并确认
-silan idea archive <slug>        下线:idea 无 archived 值,此命令把 status
-                                 改为 concluded(收束)—— 见类型专属说明
-# ── idea 类型专属 ──
-silan idea status <slug> <state> 推进生命周期。<state> ∈ idea.status 的 6 值
-                                 (draft/hypothesis/experimenting/validating/
-                                  published/concluded)—— 见 10-M0-SCHEMA定稿.md
-                                 §10.4。典型路径:draft→hypothesis→
-                                 experimenting→validating→published→concluded
+silan idea new <slug>            create a new idea (scaffold the directory + parts/overview/{meta.toml,en.md})
+silan idea list                  list every idea (filter with --status hypothesis etc.)
+silan idea show <slug>           show one idea (each Part + metadata + evolution relations)
+silan idea edit <slug> [part]    open the .md of a Part of the idea (default overview)
+silan idea rm <slug>             ★ real delete: drops the whole directory; checks for dangling evolution edges and confirms first
+silan idea archive <slug>        offline: idea has no `archived` value, so this command sets status to
+                                 concluded (closure) — see the type-specific notes below
+# ── idea-specific ──
+silan idea status <slug> <state> advance the lifecycle. <state> ∈ the 6 idea.status values
+                                 (draft / hypothesis / experimenting / validating /
+                                  published / concluded) — see 10-m0-schema-finalisation.md
+                                 §10.4. Typical path: draft → hypothesis →
+                                 experimenting → validating → published → concluded
 silan idea promote <slug> --to blog|project
-                                 一键演化:从 idea 起草 blog 或 project,
-                                 并自动建演化边(blog→documents、project→evolved-from)
-silan idea add-part <slug> <role>   加一个可选 Part(progress/reference/result)
-silan idea add-lang <slug> <lang>   给 idea 加一个语言变体
+                                 one-shot evolution: draft a blog or project from this idea
+                                 and create the evolution edge automatically (blog→documents, project→evolved-from)
+silan idea add-part <slug> <role>   add an optional Part (progress / reference / result)
+silan idea add-lang <slug> <lang>   add a language variant to the idea
 ```
 
-### `silan blog <verb>` —— 博文 / vlog
+### `silan blog <verb>` — blog post / vlog
 
 ```
-silan blog new <slug>            新建一篇 blog(scaffold + parts/body/{meta.toml,en.md})
-silan blog list                  列出所有 blog(可 --status / --content-type vlog 筛选)
-silan blog show <slug>           显示一篇 blog
-silan blog edit <slug> [lang]    打开 blog 某语言的 .md(默认主语言)
-silan blog rm <slug>             ★真删:删前检查悬空演化边并确认
-silan blog archive <slug>        归档
-# ── blog 类型专属 ──
-silan blog publish <slug>        发布:status 改 published(可被投影到网站)
-silan blog unpublish <slug>      撤回发布:status 改回 draft
-silan blog add-lang <slug> <lang>   加语言变体(en.md → zh.md…)
+silan blog new <slug>            create a new blog (scaffold + parts/body/{meta.toml,en.md})
+silan blog list                  list every blog (filter with --status / --content-type vlog)
+silan blog show <slug>           show one blog
+silan blog edit <slug> [lang]    open the .md of one language of the blog (default primary language)
+silan blog rm <slug>             ★ real delete: check for dangling evolution edges and confirm first
+silan blog archive <slug>        archive
+# ── blog-specific ──
+silan blog publish <slug>        publish: set status to published (eligible for projection to the website)
+silan blog unpublish <slug>      retract: set status back to draft
+silan blog add-lang <slug> <lang>   add a language variant (en.md → zh.md …)
 ```
 
-### `silan project <verb>` —— 项目
+### `silan project <verb>` — projects
 
 ```
-silan project new <slug>         新建一个 project(scaffold + parts/overview/{meta.toml,en.md})
-silan project list               列出所有 project(可 --status active 等筛选)
-silan project show <slug>         显示一个 project(各 Part + 演化关系 + 进展)
-silan project edit <slug> [part] 打开 project 某 Part 的 .md(默认 overview)
-silan project rm <slug>           ★真删:删前检查悬空演化边并确认
-silan project archive <slug>      归档
-# ── project 类型专属 ──
-silan project progress <slug>    往 project 的 progress Part 追加一条进展
-                                 (progress Part 不存在则自动建,见 07 §7.4)
-silan project add-part <slug> <role>   加一个可选 Part(progress/reference)
-silan project add-lang <slug> <lang>   加语言变体
+silan project new <slug>         create a new project (scaffold + parts/overview/{meta.toml,en.md})
+silan project list               list every project (filter with --status active etc.)
+silan project show <slug>        show one project (each Part + evolution relations + progress)
+silan project edit <slug> [part] open the .md of a Part of the project (default overview)
+silan project rm <slug>          ★ real delete: check for dangling evolution edges and confirm first
+silan project archive <slug>     archive
+# ── project-specific ──
+silan project progress <slug>    append a progress entry to the project's progress Part
+                                 (auto-creates the progress Part if it doesn't exist, see 07 §7.4)
+silan project add-part <slug> <role>   add an optional Part (progress / reference)
+silan project add-lang <slug> <lang>   add a language variant
 ```
 
-### `silan episode <verb>` —— 独立 type:容器系列 + 系列下的剧集
+### `silan episode <verb>` — independent type: container series + episodes within a series
 
-> episode 是**独立 content type、独立容器系列**(`#5`、10 §10.4.4 裁决
-> #1)—— 不依附 blog。磁盘形态:`content/resources/episode/<series>/`
-> 下 `series.toml` + 各 `<episode-slug>/parts/body/`。每个 episode 是
-> 一个独立 Item,落 `episodes` 表(不进 `blog_posts`)。命令组同时表达
-> 「系列」与「系列下的单集」两层:`series` 子动词管系列,其余动词管单集。
-
-```
-# ── 系列层(容器系列)──
-silan episode series new <series>     新建一个容器系列(scaffold + series.toml)
-silan episode series list             列出所有系列
-silan episode series show <series>    显示系列(系列总览 + 有序 episode 清单)
-silan episode series reorder <series> 调整系列下各集的顺序(episode_number)
-silan episode series rm <series>      ★真删整个系列(连同其下所有 episode)
-silan episode series archive <series> 归档系列(status 改 archived)
-# ── 单集层(每集是一个独立 Item)──
-silan episode new <series> <slug>     往系列加一集(scaffold + parts/body/{meta.toml,en.md};episode_number 自动定序)
-silan episode list [<series>]         列出 episode(给 <series> 则只列该系列下的)
-silan episode show <series> <slug>    显示一集(frontmatter + body)
-silan episode edit <series> <slug> [lang]  打开该集 parts/body/<lang>.md(默认主语言)
-silan episode rm <series> <slug>      ★真删一集
-silan episode archive <series> <slug> 归档一集
-silan episode add-lang <series> <slug> <lang>   给该集加语言变体
-# ── episode 类型专属 ──
-silan episode publish <series> <slug>    发布一集:status 改 published
-silan episode unpublish <series> <slug>  撤回:status 改回 draft
-```
-
-### `silan resume <verb>` —— 简历(单 Item · 多 Part)
-
-> resume 是**单 Item**,但**不是单 body Part** —— 它有多个 Part:
-> `summary`/`education`/`experience`/`publications`/`awards`/`research`/
-> `skills`,每个 Part 各有自己的 `shape`(`prose` / `entry_list` /
-> `key_value_list`,见 10 §10.4.5 裁决 #2)。因此 `edit` 必须指到具体
-> Part,不能像旧设计那样只开一个 `parts/body/<lang>.md`。
+> episode is an **independent content type and an independent
+> container series** (`#5`, 10 §10.4.4 decision #1) — it does not
+> depend on blog. On disk:
+> `content/resources/episode/<series>/` contains `series.toml` plus
+> per-episode `<episode-slug>/parts/body/`. Each episode is an
+> independent Item that lands in the `episodes` table (not
+> `blog_posts`). The command group expresses two layers at once: the
+> `series` sub-verbs manage the series; the rest manage individual
+> episodes.
 
 ```
-silan resume show [part]         显示简历(不给 part:各 Part 总览;给 part:只显示该 Part)
-silan resume edit <part> [lang]  打开 parts/<part>/<lang>.<ext>(<part> ∈ summary/education/
-                                 experience/publications/awards/research/skills;默认 part=summary)
-                                 # <ext> 由 Part 的 shape 决定:prose→.md,entry_list/key_value_list→.toml
-silan resume list                列出 resume 当前已建的各 Part 及其 shape
-silan resume add-part <role>     加一个 Part(role 取 SCHEMA.md resume.parts 配置的可选项)
-silan resume add-lang <part> <lang>  给某 Part 加语言变体(parts/<part>/ 下加 <lang>.md 或 .toml,按 shape)
-# resume 是单 Item,无 new/rm —— silan init 时已建,不增不删整个 Item
-# Part 粒度可增(add-part);Part 删除走 SCHEMA 配置,不在此命令组
+# ── series layer (container series) ──
+silan episode series new <series>     create a new container series (scaffold + series.toml)
+silan episode series list             list every series
+silan episode series show <series>    show one series (series overview + ordered episode list)
+silan episode series reorder <series> reorder the episodes in a series (episode_number)
+silan episode series rm <series>      ★ real delete: removes the entire series (and every episode in it)
+silan episode series archive <series> archive a series (status → archived)
+# ── episode layer (each episode is its own Item) ──
+silan episode new <series> <slug>     add one episode to a series (scaffold + parts/body/{meta.toml,en.md}; episode_number is auto-assigned)
+silan episode list [<series>]         list episodes (with <series> given, only list that series')
+silan episode show <series> <slug>    show one episode (frontmatter + body)
+silan episode edit <series> <slug> [lang]  open this episode's parts/body/<lang>.md (default primary language)
+silan episode rm <series> <slug>      ★ real delete: remove one episode
+silan episode archive <series> <slug> archive one episode
+silan episode add-lang <series> <slug> <lang>   add a language variant to one episode
+# ── episode-specific ──
+silan episode publish <series> <slug>    publish an episode: status → published
+silan episode unpublish <series> <slug>  retract: status → draft
 ```
 
-> resume 的 `show`/`edit`/`add-lang` 都带 `<part>` 维度 —— 旧设计假设
-> resume 是单 body Part(`silan resume edit [lang]`),与 10 §10.4.5
-> 「resume 多 Part」裁决冲突,已修正。`add-part` 用于把 SCHEMA.md 里
-> 声明为可选(非 required)的 Part 真正落到磁盘。
+### `silan resume <verb>` — resume (single Item · many Parts)
 
-### `silan update <verb>` —— 动态更新(第 6 个 type)
-
-> `update` 是**第 6 种 content type**(10 §10.4.6 裁决 #3)—— 有独立
-> parser、独立 `ContentKind::Update`、独立 mapper,`recent_updates` 是
-> 它的内容主表。它带生命周期(`status` ∈ active/ongoing/completed),
-> 所以专属操作参考 `idea` 组的 `status` 推进式动词。
+> resume is **a single Item**, but **not a single body Part** — it
+> has multiple Parts: `summary` / `education` / `experience` /
+> `publications` / `awards` / `research` / `skills`, each with its
+> own `shape` (`prose` / `entry_list` / `key_value_list`, see 10
+> §10.4.5 decision #2). Therefore `edit` must point at a specific
+> Part — it cannot, as in the older design, just open
+> `parts/body/<lang>.md`.
 
 ```
-silan update new <slug>          新建一条 update(scaffold + parts/body/{meta.toml,en.md})
-silan update list                列出所有 update(可 --status active / --update-type release 等筛选)
-silan update show <slug>         显示一条 update(frontmatter + body + 演化关系)
-silan update edit <slug> [lang]  打开 update 某语言的 .md(默认主语言;update 仅 body 一个 Part)
-silan update rm <slug>           ★真删:删前检查悬空演化边并确认
-silan update archive <slug>      归档:status 不变,visibility 不再投影到网站
-# ── update 类型专属 ──
-silan update status <slug> <state>  推进生命周期:active→ongoing→completed
+silan resume show [part]         show the resume (no part: overview of every Part; with part: only that Part)
+silan resume edit <part> [lang]  open parts/<part>/<lang>.<ext> (<part> ∈ summary/education/
+                                 experience/publications/awards/research/skills; default part = summary)
+                                 # <ext> is decided by the Part's shape: prose→.md, entry_list/key_value_list→.toml
+silan resume list                list every Part of the resume that exists today and its shape
+silan resume add-part <role>     add a Part (role must be one of the optional roles in SCHEMA.md's resume.parts config)
+silan resume add-lang <part> <lang>  add a language variant to a Part (drops <lang>.md or .toml under parts/<part>/ per shape)
+# resume is a single Item — no new/rm here; silan init already created it; the whole Item is neither created nor removed
+# Part granularity is editable (add-part); Part deletion happens via SCHEMA config, not in this command group
+```
+
+> The resume `show` / `edit` / `add-lang` all carry a `<part>`
+> dimension — the older design assumed resume was a single body Part
+> (`silan resume edit [lang]`), which conflicts with the 10 §10.4.5
+> "resume is multi-Part" ruling; fixed. `add-part` is for taking a
+> Part declared optional (non-required) in SCHEMA.md and actually
+> instantiating it on disk.
+
+### `silan update <verb>` — live updates (the 6th type)
+
+> `update` is **the 6th content type** (10 §10.4.6 decision #3) —
+> it has its own parser, its own `ContentKind::Update`, its own
+> mapper; `recent_updates` is its main content table. It carries a
+> lifecycle (`status` ∈ active / ongoing / completed), so the
+> type-specific operations mirror the `status`-advance verbs of the
+> `idea` group.
+
+```
+silan update new <slug>          create a new update (scaffold + parts/body/{meta.toml,en.md})
+silan update list                list every update (filter with --status active / --update-type release etc.)
+silan update show <slug>         show one update (frontmatter + body + evolution relations)
+silan update edit <slug> [lang]  open the .md of one language of the update (default primary language; update has only a body Part)
+silan update rm <slug>           ★ real delete: check for dangling evolution edges and confirm first
+silan update archive <slug>      archive: status unchanged; visibility no longer projected to the website
+# ── update-specific ──
+silan update status <slug> <state>  advance the lifecycle: active → ongoing → completed
 silan update set-type <slug> <update_type>
-                                 设 update_type ∈ milestone/achievement/progress/release/
-                                 announcement/insight/learning/reflection(8 值,见 10 §10.4.6)
-silan update add-lang <slug> <lang> 加语言变体
+                                 set update_type ∈ milestone/achievement/progress/release/
+                                 announcement/insight/learning/reflection (8 values, see 10 §10.4.6)
+silan update add-lang <slug> <lang> add a language variant
 ```
 
-> 增删改查的统一性:`new`/`list`/`show`/`edit`/`rm`/`archive` 六个动词在
-> idea/blog/project/update 四组**完全同名同义**(resume/episode 因形态特殊
-> 有删减或扩维)—— 用户学一组就会其余组。专属操作(`status`/`publish`/
-> `progress`/`promote`/`set-type`)才是各 type 的差异,各组单列。
+> CRUD uniformity: the six verbs `new` / `list` / `show` / `edit` /
+> `rm` / `archive` carry **the same name and the same meaning**
+> across idea / blog / project / update (resume / episode trim or
+> extend dimensions because of their shapes) — learn one group and
+> you have the rest. The type-specific operations (`status` /
+> `publish` / `progress` / `promote` / `set-type`) are the per-type
+> differences, listed separately for each group.
 >
-> `rm` vs `archive`:`archive` 是日常用的"下线"(只改 status,内容留着);
-> `rm` 是彻底删除文件,**删前必检查悬空演化边 + 二次确认**(`#4`、见 07 §7.9)。
+> `rm` vs `archive`: `archive` is the day-to-day "take offline"
+> (only changes status, content stays); `rm` truly deletes files,
+> and **before deletion it always checks for dangling evolution
+> edges and asks for a second confirmation** (`#4`, see 07 §7.9).
 >
-> `archive` 把 status 改成哪个值,由各 type 的 `status` enum 决定
-> (`10-M0-SCHEMA定稿.md` §10.4 是唯一事实源):blog / project / episode
-> 改为 `archived`;**idea 无 `archived` 值,改为 `concluded`**。动词同名,
-> 落值随 type —— 引擎按 SCHEMA 的 enum 映射,不硬编码 `archived`。
+> Which value `archive` sets `status` to is decided by each type's
+> `status` enum (`10-m0-schema-finalisation.md` §10.4 is the only
+> source of truth): blog / project / episode go to `archived`;
+> **idea has no `archived` value, it goes to `concluded`**. The verb
+> name is the same; the value mapped depends on the type — the
+> engine reads the SCHEMA enum mapping and never hard-codes
+> `archived`.
 
 ---
 
-## 二、跨类型 / 工具命令组
+## II. Cross-type / tool command groups
 
-### `silan content <verb>` —— 跨类型只读浏览(对应 #2)
-
-```
-silan content ls <uri>     列出某 silan:// 路径下的内容(跨所有 type)
-silan content tree         层级浏览整个 content/
-silan content show <uri>   按 silan:// URI 显示任一条目(不分 type)
-```
-
-> `content` 组**只读、跨类型** —— 它是"鸟瞰整个 content/"。增删改具体内容
-> 走上面的 type 专属组。`content show <uri>` 与 `<type> show <slug>` 的区别:
-> 前者按完整 URI、不需知道 type;后者在已知 type 时更短。
-
-### `silan index <verb>` —— 索引与同步(对应 #1)
+### `silan content <verb>` — read-only cross-type browsing (serves #2)
 
 ```
-silan index sync       扫描 content/ → 解析 → 写 portfolio.db(更新逻辑全链见 06 §6.4)
-silan index rebuild    全量重建(.silan-cache + 派生数据,逐字节幂等)
-silan index repair     ★唯一向 meta.toml 写回缺失 PartID 的命令(显式写真相源)
-silan index lint       体检:悬空演化边、缺字段、孤立 Item、过期内容(对应 #11)
-silan index status     工作区状态:各 Collection 条目数、未同步项
+silan content ls <uri>     list the contents under a silan:// path (across all types)
+silan content tree         hierarchical browse of the whole content/
+silan content show <uri>   show any item by silan:// URI (type-agnostic)
 ```
 
-> `sync` / `rebuild` 是**只读真相源**的(只写派生物):遇到 `meta.toml` 缺
-> `PartID` 一律报错退出,提示跑 `repair`。`repair` 是唯一会改 `meta.toml`
-> 的 index 子命令 —— 把「补 ID」从 sync 的隐式副作用提成一个人显式触发的
-> 动作(`08` §8.2 硬规则)。
+> The `content` group is **read-only and cross-type** — it is the
+> "bird's-eye view of content/". For actual CRUD on a single item,
+> use the type-specific groups above. The difference between
+> `content show <uri>` and `<type> show <slug>`: the former takes a
+> full URI and doesn't need to know the type; the latter is shorter
+> when the type is already known.
 
-### `silan relation <verb>` —— 演化关系(对应 #4)
+### `silan index <verb>` — index and sync (serves #1)
 
 ```
-silan relation link <from> <to> --type <kind>   建有向边(写 content_relation)
-silan relation show <uri>                       打印某条目正/反向关系
-silan relation graph                            导出关系图(网站知识图谱数据源)
+silan index sync       scan content/ → parse → write portfolio.db (full update chain in 06 §6.4)
+silan index rebuild    full rebuild (.silan-cache + derived data, byte-idempotent)
+silan index repair     ★ the only command that writes a missing PartID back into meta.toml (explicit write to the source of truth)
+silan index lint       health check: dangling evolution edges, missing fields, orphan Items, stale content (serves #11)
+silan index status     workspace state: per-Collection item counts, unsynced items
+```
+
+> `sync` / `rebuild` are **read-only to the source of truth** (they
+> only write derived artefacts): when they encounter a `meta.toml`
+> missing a `PartID` they error out and tell you to run `repair`.
+> `repair` is the only `index` sub-command that mutates `meta.toml`
+> — it promotes "fill in missing IDs" from an implicit side effect
+> of sync to an explicit human-triggered action (`08` §8.2 hard
+> rule).
+
+### `silan relation <verb>` — evolution relations (serves #4)
+
+```
+silan relation link <from> <to> --type <kind>   create a directed edge (write to content_relation)
+silan relation show <uri>                       print the forward and reverse relations of one item
+silan relation graph                            export the relation graph (data source for the site's knowledge graph)
 # kind ∈ evolved-from/into · documents · references · supersedes · part-of
 ```
 
-### `silan site <verb>` —— 网站投影与运维(对应 #11 #14)
+### `silan site <verb>` — website projection and operations (serves #11 #14)
 
 ```
-silan site build       构建前端 + 生成爬虫产物(sitemap/robots/JSON-LD/预渲染/meta,#14)
-silan site preview     本地预览整站
-silan site check       发布前体检(死链/缺图/SCHEMA)
-silan site publish <uri>   把一个 Item 的 visibility 置 public(选择性发布)
-silan site deploy      Docker 部署(--dry-run 默认开,--confirm 才真部署);部署即带爬虫产物
-silan site rollback    回退到上一发布
-silan site status      线上服务健康 + 当前部署的 content commit
+silan site build       build the frontend + emit crawler artefacts (sitemap / robots / JSON-LD / pre-render / meta, #14)
+silan site preview     local preview of the whole site
+silan site check       pre-publish health check (broken links / missing images / SCHEMA)
+silan site publish <uri>   set an Item's visibility to public (selective publication)
+silan site deploy      Docker deploy (--dry-run on by default; --confirm to really deploy); deploys also carry crawler artefacts
+silan site rollback    roll back to the previous release
+silan site status      live-service health + the content commit that is currently deployed
 ```
 
-### `silan stats <verb>` —— 内容交互数据查询(对应 #15)
+### `silan stats <verb>` — content-interaction data queries (serves #15)
 
 ```
-silan stats sync <uri>        从生产服务器拉这个 Item 的运行时统计进本地缓存
-silan stats show <uri>        某 Item 的浏览/点赞/评论统计(读本地缓存)
-silan stats visitors <uri>    访客明细:指纹 / IP / visitor_kind / referrer_kind
-silan stats crawlers <uri>    按访客类型聚合:人类 / 搜索引擎 / AI 爬虫;具体爬虫抓取次数
-silan stats sources <uri>     按来源聚合:搜索 / 社交 / AI 对话 / 直接 / 引荐
+silan stats sync <uri>        pull this Item's runtime stats from the production server into the local cache
+silan stats show <uri>        the Item's view / like / comment counts (reads the local cache)
+silan stats visitors <uri>    visitor details: fingerprint / IP / visitor_kind / referrer_kind
+silan stats crawlers <uri>    aggregated by visitor kind: human / search engine / AI crawler; per-crawler scrape count
+silan stats sources <uri>     aggregated by source: search / social / AI chat / direct / referral
 ```
 
-> **`stats` 是 sync-then-query 模型**(owner 裁定的设计变更 —— 早期设计是
-> 「远程实时查询」,实现时改为先同步再本地查)。运行时数据(评论/打点)
-> 只在生产服务器(`01` §1.8)—— 本地 `portfolio.db` 的 `content_interaction`
-> 表**是空的**。链路两步:
-> - `silan stats sync <uri>` 通过 HTTP 调**服务器上 Go API 的 stats
->   endpoint**(`/api/v1/stats/...`),把该 Item 的统计拉进本地
->   `portfolio.db` 的 `stats_cache_*` 表。服务器地址取 `silan-viking.toml`
->   的 `[deploy].api_base`,或由 `[deploy].host` 推导 `https://<host>`。
-> - `stats show/visitors/crawlers/sources <uri>` **读这份本地缓存**,离线可用。
+> **`stats` is a sync-then-query model** (owner-decided design
+> change — the earlier design was "remote live query"; during
+> implementation it was changed to "sync first, then query
+> locally"). Runtime data (comments / pings) lives only on the
+> production server (`01` §1.8) — the local `portfolio.db`'s
+> `content_interaction` table **is empty**. Two-step flow:
+> - `silan stats sync <uri>` calls the **stats endpoint of the
+>   server's Go API** (`/api/v1/stats/...`) over HTTP and pulls
+>   that Item's stats into the local `portfolio.db`'s
+>   `stats_cache_*` tables. The server address is taken from
+>   `silan-viking.toml`'s `[deploy].api_base`, or derived as
+>   `https://<host>` from `[deploy].host`.
+> - `stats show / visitors / crawlers / sources <uri>` **reads
+>   this local cache** and works offline.
 >
-> 未 `sync` 过的缓存,读命令清楚提示「先 run `silan stats sync`」;未部署
-> (无 `[deploy]`)时 `stats sync` 报错提示「运行时数据需先部署」。
-> MCP 的 #15 四工具与 CLI 同源 —— 读同一份本地缓存(见 `03` 档 1)。
+> A cache that hasn't been synced gets a clear prompt from the read
+> commands: "run `silan stats sync` first". With no `[deploy]`
+> configured, `stats sync` errors with "runtime data requires a
+> deploy first". The four MCP `#15` tools share the same source as
+> the CLI — they read the same local cache (see `03` tier 1).
 
-### `silan proposal <verb>` —— agent 提案的人侧审阅(对应 #10,机制见 03 §3.1)
-
-```
-silan proposal list           列待审提案;校验不过的标红
-silan proposal show <id>      看提案 diff(提案分支 vs 主分支)+ 校验报告 + 冲突文件
-silan proposal accept <id>    临时区 merge+校验②→过才把主分支指针推进到已验证结果
-silan proposal reject <id>    删提案分支
-silan proposal rebase <id>    陈旧提案分支重对最新主分支;遇冲突停下,解完 rebase --continue
-# 提案 = content 仓的一个 Git 分支(proposal/<ulid>)。accept/reject/rebase 人专属
-```
-
-### `silan mcp <verb>` —— MCP 服务进程(对应 #10 #12)
+### `silan proposal <verb>` — human-side review of agent proposals (serves #10, mechanism in 03 §3.1)
 
 ```
-silan mcp serve           打印握手信息(SCHEMA 版本、工具清单),供运维核对
-silan mcp serve --stdio   启动 stdio JSON-RPC MCP server,供 MCP host 驱动(06 §6.3)
-silan mcp status          就绪探测:binary / SCHEMA / content 仓 / 工具数
+silan proposal list           list pending proposals; mark failing-validation ones in red
+silan proposal show <id>      show the proposal diff (proposal branch vs main) + validation report + conflicting files
+silan proposal accept <id>    staging-area merge + validation ② → on pass, advance the main branch pointer to the verified result
+silan proposal reject <id>    delete the proposal branch
+silan proposal rebase <id>    rebase a stale proposal branch onto the latest main; stop on conflict; resolve and `rebase --continue`
+# A proposal = a git branch in the content repo (proposal/<ulid>). accept / reject / rebase are human-only.
 ```
 
-> `mcp status` 不是查常驻 server(没有常驻进程可查),是一次本机就绪探测:
-> 报告 `binary_found`、`schema_present`、`content_repo`、`tools_advertised`、
-> `mcp_available` —— 与 `silan skill status` 的诊断字段对齐(`13` §13.3)。
-
-### `silan skill <verb>` —— 协作 agent 的 skill 包分发(对应 #16)
+### `silan mcp <verb>` — the MCP service process (serves #10 #12)
 
 ```
-silan skill emit     生成 skill 包到 ~/.claude/skills/silan-viking/(--path 改输出位置)
-                     从 silan-viking.toml + content/SCHEMA.md 派生,已存在则覆盖
-silan skill status   检查 skill 是否已装、与当前项目状态是否一致(ContentHash 比对)
-silan skill rm       移除已装的 skill 包
+silan mcp serve           print the handshake (SCHEMA version, tool surface) for ops to verify
+silan mcp serve --stdio   start the stdio JSON-RPC MCP server for an MCP host to drive (06 §6.3)
+silan mcp status          readiness probe: binary / SCHEMA / content repo / tool count
 ```
 
-> skill 包是**派生物**,非真相源 —— 同 `portfolio.db`,可由 `silan skill
-> emit` 随时重建。`silan init` **不**自动 emit:skill 是「让协作 agent 用」
-> 的可选层,需 silan 显式开启(同 `site deploy` 默认关闭的纪律)。skill 不
-> 内含能力,它指挥 Claude 去连 `silan mcp serve` 的 server —— 完整机制、
-> SKILL.md 形态、自动触发说明书见 `13-skill-分发.md`。
+> `mcp status` does not query a long-running server (there isn't
+> one); it is a one-shot local readiness probe that reports
+> `binary_found`, `schema_present`, `content_repo`,
+> `tools_advertised`, `mcp_available` — same shape as
+> `silan skill status`'s diagnostic fields (`13` §13.3).
 
-### 顶层命令
+### `silan skill <verb>` — skill-bundle distribution for collaborating agents (serves #16)
 
 ```
-silan init                初始化项目于 ~/.silan-viking/(--path 改址);见 06 §6.2
-silan config edit         编辑项目配置;--global 编辑 ~/.config/silan/config.toml
-silan doctor              跨层健康检查
-silan completion <shell>  shell 补全
-silan uninstall           移除 skill + 派生文件;--purge 连 content/ 与配置一并删
+silan skill emit     emit a skill bundle to ~/.claude/skills/silan-viking/ (--path overrides the output location)
+                     derived from silan-viking.toml + content/SCHEMA.md; overwrites if present
+silan skill status   check whether the skill is installed and whether it matches the current project state (ContentHash comparison)
+silan skill rm       remove the installed skill bundle
 ```
 
-> `uninstall` 默认只删可再生的部分 —— 已装的 skill(`~/.claude/skills/
-> silan-viking`)和 `_deploy/` 派生产物 —— **保留 `content/`**(用户亲手写
-> 的、不可再生的真相源)。`--purge` 才连 `content/` 与 `silan-viking.toml`
-> 一并删。操作前先列出待删路径清单并等待确认:`--dry-run` 只列不删,`--yes`
-> 跳过确认(脚本用),`--purge` 的确认须键入 `purge` 而非裸 `y`。
+> The skill bundle is a **derived artefact**, not the source of
+> truth — like `portfolio.db`, it can be rebuilt at any time by
+> `silan skill emit`. `silan init` does **not** auto-emit: the
+> skill is the optional layer for "let a collaborating agent use
+> it", and silan must opt in explicitly (same discipline as
+> `site deploy` being off by default). The skill carries no
+> abilities itself; it instructs Claude to connect to the
+> `silan mcp serve` server — the full mechanism, the SKILL.md
+> shape, and the auto-trigger manual live in
+> `13-skill-distribution.md`.
+
+### Top-level commands
+
+```
+silan init                initialise a project under ~/.silan-viking/ (--path overrides); see 06 §6.2
+silan config edit         edit the project config; --global edits ~/.config/silan/config.toml
+silan doctor              cross-layer health check
+silan completion <shell>  shell completion
+silan uninstall           remove the skill + derived files; --purge also drops content/ and config
+```
+
+> `uninstall` by default removes only the reproducible parts — the
+> installed skill (`~/.claude/skills/silan-viking`) and the
+> `_deploy/` derived artefacts — **and preserves `content/`** (the
+> source of truth, hand-written by the user, not reproducible).
+> `--purge` extends the removal to `content/` and
+> `silan-viking.toml`. Before deletion, it lists every path queued
+> for removal and waits for confirmation: `--dry-run` lists without
+> deleting, `--yes` skips confirmation (for scripts), and the
+> `--purge` confirmation requires typing `purge` rather than a
+> bare `y`.
 
 ---
 
-## 设计要点
+## Design notes
 
-- **命令组总览**:6 个 type 专属组(`idea`/`blog`/`project`/`episode`/
-  `resume`/`update`)+ 8 个工具组(`content`/`index`/`relation`/`site`/
-  `stats`/`proposal`/`mcp`/`skill`)+ 5 个顶层命令(`init`/`config`/`doctor`/
-  `completion`/`uninstall`)。(6 type 见 10 §10.4 裁决 #3;`skill` 组见 `13`。
-  E2 起再加 `schema` 组,见 `04` E2、`15` §15.2。)
-- **为什么 type 专属组,不用泛型 `content --type`**:idea/update 有生命
-  周期(`status`)、blog/episode 有发布(`publish`)、project 有进展维护
-  (`progress`)、resume 有多 Part 维度的 `edit <part>` —— 这些**类型专属
-  操作泛型动词盖不住**。专属组让命令贴合每种内容的真实操作;增删改查六
-  动词各组同名,学一组通其余组,不增记忆负担。
-- CLI 是 owner 的操作面 —— **不**承担「agent 理解 owner」,那是 MCP 的事
-  (`03-mcp服务.md`)。
-- **人专属动词**:`site publish`、`proposal accept/reject/rebase`、所有
-  `rm` —— 决定内容公开、草稿合入真相源、删除,不暴露给 agent(#13 安全边界)。
-- 代码落点:`silan-viking-cli/groups/` 一个名词一个文件(`01` §1.9)。
+- **Command group overview**: 6 type-specific groups (`idea` /
+  `blog` / `project` / `episode` / `resume` / `update`) + 8 tool
+  groups (`content` / `index` / `relation` / `site` / `stats` /
+  `proposal` / `mcp` / `skill`) + 5 top-level commands (`init` /
+  `config` / `doctor` / `completion` / `uninstall`). (The 6 types
+  come from 10 §10.4 decision #3; the `skill` group is in `13`. A
+  `schema` group joins at E2, see `04` E2 and `15` §15.2.)
+- **Why type-specific groups, not a generic `content --type`**:
+  idea / update carry a lifecycle (`status`); blog / episode have
+  publishing (`publish`); project has progress maintenance
+  (`progress`); resume has a Part dimension on `edit <part>` —
+  **these type-specific operations cannot be covered by a generic
+  verb**. Type-specific groups let commands match each content's
+  real operation; the six CRUD verbs are the same name across
+  groups, so learning one group teaches the rest with no extra
+  memorisation load.
+- The CLI is the owner's operation surface — it does **not** carry
+  "the agent understands the owner"; that is MCP's job
+  (`03-mcp-service.md`).
+- **Human-only verbs**: `site publish`, `proposal accept / reject /
+  rebase`, every `rm` — these decide content publication, draft
+  merges into the source of truth, and deletion; they are not
+  exposed to the agent (#13 safety boundary).
+- Code site: `silan-viking-cli/groups/`, one file per noun (`01`
+  §1.9).
