@@ -260,7 +260,9 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["content", "lint"] => content_lint(&opts.content_root, None),
         ["content", "lint", "--drift"] => content_lint_drift(),
         ["content", "lint", uri] => content_lint(&opts.content_root, Some(uri)),
-        ["relation", "graph"] => relation_graph(&opts.content_root),
+        // `relation list` is the noun-first alias newcomers reach for first
+        // (matches `<type> list` for content); behaves identically to graph.
+        ["relation", "graph"] | ["relation", "list"] => relation_graph(&opts.content_root),
         ["relation", "show", uri] => relation_show(&opts.content_root, uri),
         ["relation", "link", from, to, "--type", kind] => {
             relation_link(&opts.content_root, from, to, kind)
@@ -484,20 +486,21 @@ struct CliOptions {
 impl CliOptions {
     fn parse(args: &[String]) -> Result<Self, String> {
         let cwd = env::current_dir().map_err(|e| e.to_string())?;
-        let mut content_root = cwd.join("content");
+        let mut explicit_content: Option<PathBuf> = None;
         let mut db_path: Option<PathBuf> = None;
-        let mut out_dir = cwd.join("_site");
+        let mut explicit_out: Option<PathBuf> = None;
         let mut command = Vec::new();
         let mut i = 0;
         while i < args.len() {
             match args[i].as_str() {
                 "--content" => {
                     i += 1;
-                    content_root = args
-                        .get(i)
-                        .ok_or("--content requires a path")?
-                        .as_str()
-                        .into();
+                    explicit_content = Some(
+                        args.get(i)
+                            .ok_or("--content requires a path")?
+                            .as_str()
+                            .into(),
+                    );
                 }
                 "--db" => {
                     i += 1;
@@ -505,12 +508,35 @@ impl CliOptions {
                 }
                 "--out" => {
                     i += 1;
-                    out_dir = args.get(i).ok_or("--out requires a path")?.as_str().into();
+                    explicit_out =
+                        Some(args.get(i).ok_or("--out requires a path")?.as_str().into());
                 }
                 other => command.push(other.to_owned()),
             }
             i += 1;
         }
+
+        // V3-H / F5 carry-over: if no `--content` was passed, climb `..`
+        // from cwd looking for a `silan-viking.toml`. That file is the
+        // project root marker (the same role `git rev-parse --show-toplevel`
+        // serves for git). Without this climb, running `silan-viking idea
+        // new <slug>` from a subdir of a project either operated on the
+        // wrong tree or required threading `--content` on every call.
+        let project_root = explicit_content
+            .as_deref()
+            .and_then(|p| p.parent())
+            .map(Path::to_path_buf)
+            .or_else(|| find_project_root_from(&cwd));
+        let content_root = explicit_content.unwrap_or_else(|| match &project_root {
+            Some(root) => root.join("content"),
+            None => cwd.join("content"),
+        });
+
+        let out_dir = explicit_out.unwrap_or_else(|| match &project_root {
+            Some(root) => root.join("_site"),
+            None => cwd.join("_site"),
+        });
+
         // `--db` wins. Otherwise resolve from `silan-viking.toml`'s
         // `[database].path` (relative to the project root) so `index sync` and
         // `site deploy` write where the config says, not a stray cwd file.
@@ -523,6 +549,25 @@ impl CliOptions {
             command,
         })
     }
+}
+
+/// Climb `..` from `start` looking for a directory that contains a
+/// `silan-viking.toml`. Returns the project root (the directory containing
+/// the file) on the first hit, or `None` if no ancestor has one.
+///
+/// This is the `git rev-parse --show-toplevel`-style discovery the V1 e2e
+/// (F2) and V2 e2e (F5) both flagged: without it, every command run from
+/// a subdir of a project either needs explicit `--content` flags or works
+/// against the wrong tree.
+fn find_project_root_from(start: &Path) -> Option<PathBuf> {
+    let mut cur: Option<&Path> = Some(start);
+    while let Some(dir) = cur {
+        if dir.join("silan-viking.toml").is_file() {
+            return Some(dir.to_path_buf());
+        }
+        cur = dir.parent();
+    }
+    None
 }
 
 /// Resolve the derived-database path from `silan-viking.toml`'s
@@ -549,23 +594,33 @@ fn resolve_db_path(content_root: &Path) -> Option<PathBuf> {
 
 /// Resolve the content root for the help/banner path. Mirrors the
 /// `--content` handling in `CliOptions::parse` so the banner's status
-/// block reflects the project the user is pointing at. Defaults to
-/// `<cwd>/content`.
+/// block reflects the project the user is pointing at.
+///
+/// Priority: `--content <path>` (explicit) → `find_project_root_from(cwd)`
+/// climb (V3-H fix) → `<cwd>/content` fallback. The climb means running
+/// `silan-viking --help` from a project subdir prints the right project
+/// status (matching what `silan-viking ... idea new` would actually do).
 fn resolve_content_root(args: &[String]) -> PathBuf {
     let cwd = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let mut content_root = cwd.join("content");
+    let mut explicit: Option<PathBuf> = None;
     let mut i = 0;
     while i < args.len() {
         if args[i] == "--content" {
             if let Some(p) = args.get(i + 1) {
-                content_root = PathBuf::from(p);
+                explicit = Some(PathBuf::from(p));
             }
             i += 2;
             continue;
         }
         i += 1;
     }
-    content_root
+    if let Some(p) = explicit {
+        return p;
+    }
+    if let Some(root) = find_project_root_from(&cwd) {
+        return root.join("content");
+    }
+    cwd.join("content")
 }
 
 /// Top-level `--help`. Aligned with EasyNet-Cli (`src/facade/cli/mod.rs`)

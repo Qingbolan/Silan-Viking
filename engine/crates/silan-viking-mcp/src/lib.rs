@@ -696,7 +696,15 @@ pub fn propose(
     if let Some(draft) = draft {
         let primary = resolve_draft_location(&ws, &target, lang)?;
         let primary_meta = render_part_meta(&primary.role, primary.shape, lang);
-        writes.push((primary, draft.to_owned(), primary_meta));
+        // V3-I: if the draft is the primary Part of a brand-new Item and the
+        // caller forgot a frontmatter block, scaffold one from the URI so
+        // post-merge validation (`accept` step 5) doesn't reject the proposal
+        // for `missing_required_frontmatter`. An existing Item already has
+        // the Part on disk; we don't touch the body in that case beyond
+        // what the caller wrote.
+        let final_draft =
+            maybe_inject_frontmatter(content_root, &target, &primary, draft).into_owned();
+        writes.push((primary, final_draft, primary_meta));
     }
     for part in extra_parts {
         let part_uri = format!("{item_uri}/{}", part.role);
@@ -1140,6 +1148,122 @@ fn slugify(input: &str) -> String {
         }
     }
     out
+}
+
+/// If `draft` is missing a `---` frontmatter block AND it is the primary Part
+/// of an Item the caller is creating (the Item file does not exist on disk
+/// yet), prepend reasonable default frontmatter derived from the URI. Mirrors
+/// `capture()`'s defaults so the two creation paths produce equivalent shape.
+///
+/// Returns a `Cow::Borrowed` when no injection is needed (most calls — an
+/// Item that already exists, a Part-anchored modify, or a draft that already
+/// carries `---`), and a `Cow::Owned` when defaults are prepended. (V3-I.)
+fn maybe_inject_frontmatter<'a>(
+    content_root: &Path,
+    target: &ProposalTarget,
+    primary: &DraftLocation,
+    draft: &'a str,
+) -> std::borrow::Cow<'a, str> {
+    // Already has a frontmatter block — leave the caller's draft alone.
+    if has_frontmatter_block(draft) {
+        return std::borrow::Cow::Borrowed(draft);
+    }
+
+    // Only the primary Part of a *prose*-shape new Item gets defaults — an
+    // `entry_list` Part is TOML, not markdown, and frontmatter doesn't apply.
+    if !matches!(primary.shape, silan_viking_app::PartShape::Prose) {
+        return std::borrow::Cow::Borrowed(draft);
+    }
+
+    // Only inject when the Item's primary file doesn't yet exist on disk;
+    // otherwise the caller is modifying an existing Item and we trust them
+    // to know whether their body has frontmatter or is a body-only revision.
+    let primary_path = content_root.join(&primary.draft_file);
+    if primary_path.exists() {
+        return std::borrow::Cow::Borrowed(draft);
+    }
+
+    // Derive defaults from the URI. Item URI: silan://resources/<kind>/<slug>;
+    // Part URI: .../<role>. We only synthesize for the primary Part of a new
+    // Item, so the slug + kind are always on the target.
+    let (kind, slug) = match target {
+        ProposalTarget::Item(uri) => uri_to_kind_slug(&uri.to_string()),
+        ProposalTarget::Part { item, .. } => uri_to_kind_slug(&item.to_string()),
+    };
+    let Some((kind, slug)) = kind.zip(slug) else {
+        return std::borrow::Cow::Borrowed(draft);
+    };
+
+    let title = humanize_slug(&slug);
+    let status_line = match kind.as_str() {
+        "project" | "update" => "status: active\n",
+        "resume" => "",
+        _ => "status: draft\n",
+    };
+    let extra = if kind == "update" {
+        let today = today_iso_date();
+        format!("update_type: progress\ndate: {today}\n")
+    } else {
+        String::new()
+    };
+
+    let fm = format!(
+        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\n{status}visibility: private\n{extra}---\n\n",
+        slug = slug,
+        title = title,
+        kind = kind,
+        status = status_line,
+        extra = extra,
+    );
+    std::borrow::Cow::Owned(format!("{fm}{}", draft.trim_start()))
+}
+
+/// `true` iff `text` starts (after whitespace) with a closed `---` frontmatter
+/// block. The check is structural — `---\n…\n---` on its own lines — so a
+/// `---` only inside the body (e.g. a horizontal rule mid-prose) doesn't
+/// fake a frontmatter for the auto-inject heuristic.
+fn has_frontmatter_block(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    if !trimmed.starts_with("---") {
+        return false;
+    }
+    // Need a second `---` on a line by itself after the first.
+    let rest = &trimmed[3..];
+    rest.lines().any(|l| l.trim() == "---")
+}
+
+/// Extract `(kind, slug)` from a `silan://resources/<kind>/<slug>` URI.
+fn uri_to_kind_slug(uri: &str) -> (Option<String>, Option<String>) {
+    let Some(rest) = uri.strip_prefix("silan://resources/") else {
+        return (None, None);
+    };
+    let mut parts = rest.splitn(3, '/');
+    let kind_dir = parts.next();
+    let slug = parts.next();
+    // Map the directory back to the SCHEMA kind name (singular vs plural).
+    let kind = kind_dir.map(|d| match d {
+        "ideas" => "idea".to_owned(),
+        "projects" => "project".to_owned(),
+        other => other.to_owned(),
+    });
+    (kind, slug.map(str::to_owned))
+}
+
+/// Turn a kebab-case slug into a Title Case display string. "my-first-idea"
+/// → "My First Idea". Used as the auto-injected default `title:` when the
+/// caller didn't write a frontmatter block (V3-I).
+fn humanize_slug(slug: &str) -> String {
+    slug.split('-')
+        .filter(|w| !w.is_empty())
+        .map(|w| {
+            let mut chars = w.chars();
+            match chars.next() {
+                Some(c) => c.to_ascii_uppercase().to_string() + chars.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Write a proposal draft file, creating parent directories. The
