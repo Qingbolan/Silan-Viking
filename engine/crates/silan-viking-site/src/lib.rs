@@ -61,6 +61,12 @@ impl SiteProjector {
     }
 
     /// Build sitemap, robots, and JSON-LD metadata into `out_dir`.
+    ///
+    /// Only Items with `visibility = "public"` are projected (`01` §1.7
+    /// second layer / `10` §10.3). Drafts and unlisted Items stay in the
+    /// content tree and in the local index — they are just hidden from the
+    /// outward face. Without this filter the sitemap leaks every draft URL
+    /// to crawlers, which is the breach the 2026-05-21 e2e pass surfaced.
     pub fn build(&self, content_root: &Path, out_dir: &Path) -> Result<SiteBuildReport, SiteError> {
         let ws = Workspace::open(content_root).map_err(|e| SiteError::Workspace(e.to_string()))?;
         let index = ws
@@ -69,6 +75,7 @@ impl SiteProjector {
         let pages = index
             .documents()
             .iter()
+            .filter(|doc| doc.visibility.as_deref() == Some("public"))
             .map(page_from_document)
             .collect::<Vec<_>>();
 

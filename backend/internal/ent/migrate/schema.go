@@ -171,32 +171,6 @@ var (
 			},
 		},
 	}
-	// BlogPostTagsColumns holds the columns for the "blog_post_tags" table.
-	BlogPostTagsColumns = []*schema.Column{
-		{Name: "created_at", Type: field.TypeTime, Nullable: true},
-		{Name: "blog_post_id", Type: field.TypeString},
-		{Name: "blog_tag_id", Type: field.TypeString},
-	}
-	// BlogPostTagsTable holds the schema information for the "blog_post_tags" table.
-	BlogPostTagsTable = &schema.Table{
-		Name:       "blog_post_tags",
-		Columns:    BlogPostTagsColumns,
-		PrimaryKey: []*schema.Column{BlogPostTagsColumns[1], BlogPostTagsColumns[2]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "blog_post_tags_blog_posts_blog_post",
-				Columns:    []*schema.Column{BlogPostTagsColumns[1]},
-				RefColumns: []*schema.Column{BlogPostsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "blog_post_tags_blog_tags_blog_tag",
-				Columns:    []*schema.Column{BlogPostTagsColumns[2]},
-				RefColumns: []*schema.Column{BlogTagsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-	}
 	// BlogPostTranslationsColumns holds the columns for the "blog_post_translations" table.
 	BlogPostTranslationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -226,20 +200,6 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
-	}
-	// BlogTagsColumns holds the columns for the "blog_tags" table.
-	BlogTagsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Size: 50},
-		{Name: "slug", Type: field.TypeString, Unique: true, Size: 50},
-		{Name: "usage_count", Type: field.TypeInt, Default: 0},
-		{Name: "created_at", Type: field.TypeTime, Nullable: true},
-	}
-	// BlogTagsTable holds the schema information for the "blog_tags" table.
-	BlogTagsTable = &schema.Table{
-		Name:       "blog_tags",
-		Columns:    BlogTagsColumns,
-		PrimaryKey: []*schema.Column{BlogTagsColumns[0]},
 	}
 	// CommentsColumns holds the columns for the "comments" table.
 	CommentsColumns = []*schema.Column{
@@ -422,6 +382,37 @@ var (
 				Name:    "contentrelation_to_type_to_id",
 				Unique:  false,
 				Columns: []*schema.Column{ContentRelationColumns[3], ContentRelationColumns[4]},
+			},
+		},
+	}
+	// ContentTagColumns holds the columns for the "content_tag" table.
+	ContentTagColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "tag_id", Type: field.TypeString},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeString},
+		{Name: "entity_slug", Type: field.TypeString},
+	}
+	// ContentTagTable holds the schema information for the "content_tag" table.
+	ContentTagTable = &schema.Table{
+		Name:       "content_tag",
+		Columns:    ContentTagColumns,
+		PrimaryKey: []*schema.Column{ContentTagColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "contenttag_tag_id_entity_type_entity_id",
+				Unique:  true,
+				Columns: []*schema.Column{ContentTagColumns[1], ContentTagColumns[2], ContentTagColumns[3]},
+			},
+			{
+				Name:    "contenttag_entity_type_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{ContentTagColumns[2], ContentTagColumns[3]},
+			},
+			{
+				Name:    "contenttag_tag_id",
+				Unique:  false,
+				Columns: []*schema.Column{ContentTagColumns[1]},
 			},
 		},
 	}
@@ -721,20 +712,6 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
-	}
-	// IdeaTagsColumns holds the columns for the "idea_tags" table.
-	IdeaTagsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Size: 100},
-		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
-		{Name: "created_at", Type: field.TypeTime, Nullable: true},
-		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-	}
-	// IdeaTagsTable holds the schema information for the "idea_tags" table.
-	IdeaTagsTable = &schema.Table{
-		Name:       "idea_tags",
-		Columns:    IdeaTagsColumns,
-		PrimaryKey: []*schema.Column{IdeaTagsColumns[0]},
 	}
 	// IdeaTranslationsColumns holds the columns for the "idea_translations" table.
 	IdeaTranslationsColumns = []*schema.Column{
@@ -1593,6 +1570,115 @@ var (
 			},
 		},
 	}
+	// StatsCacheCrawlerColumns holds the columns for the "stats_cache_crawler" table.
+	StatsCacheCrawlerColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeString},
+		{Name: "visitor_kind", Type: field.TypeEnum, Enums: []string{"human", "search_bot", "ai_bot", "unknown"}},
+		{Name: "count", Type: field.TypeInt, Default: 0},
+		{Name: "synced_at", Type: field.TypeTime},
+	}
+	// StatsCacheCrawlerTable holds the schema information for the "stats_cache_crawler" table.
+	StatsCacheCrawlerTable = &schema.Table{
+		Name:       "stats_cache_crawler",
+		Columns:    StatsCacheCrawlerColumns,
+		PrimaryKey: []*schema.Column{StatsCacheCrawlerColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "statscachecrawler_entity_type_entity_id_visitor_kind",
+				Unique:  true,
+				Columns: []*schema.Column{StatsCacheCrawlerColumns[1], StatsCacheCrawlerColumns[2], StatsCacheCrawlerColumns[3]},
+			},
+		},
+	}
+	// StatsCacheItemColumns holds the columns for the "stats_cache_item" table.
+	StatsCacheItemColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeString},
+		{Name: "views", Type: field.TypeInt, Default: 0},
+		{Name: "likes", Type: field.TypeInt, Default: 0},
+		{Name: "comments", Type: field.TypeInt, Default: 0},
+		{Name: "synced_at", Type: field.TypeTime},
+	}
+	// StatsCacheItemTable holds the schema information for the "stats_cache_item" table.
+	StatsCacheItemTable = &schema.Table{
+		Name:       "stats_cache_item",
+		Columns:    StatsCacheItemColumns,
+		PrimaryKey: []*schema.Column{StatsCacheItemColumns[0]},
+	}
+	// StatsCacheSourceColumns holds the columns for the "stats_cache_source" table.
+	StatsCacheSourceColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeString},
+		{Name: "source", Type: field.TypeEnum, Enums: []string{"search", "social", "ai_chat", "direct", "internal", "unknown"}},
+		{Name: "count", Type: field.TypeInt, Default: 0},
+		{Name: "synced_at", Type: field.TypeTime},
+	}
+	// StatsCacheSourceTable holds the schema information for the "stats_cache_source" table.
+	StatsCacheSourceTable = &schema.Table{
+		Name:       "stats_cache_source",
+		Columns:    StatsCacheSourceColumns,
+		PrimaryKey: []*schema.Column{StatsCacheSourceColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "statscachesource_entity_type_entity_id_source",
+				Unique:  true,
+				Columns: []*schema.Column{StatsCacheSourceColumns[1], StatsCacheSourceColumns[2], StatsCacheSourceColumns[3]},
+			},
+		},
+	}
+	// StatsCacheVisitorColumns holds the columns for the "stats_cache_visitor" table.
+	StatsCacheVisitorColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_id", Type: field.TypeString},
+		{Name: "fingerprint", Type: field.TypeString},
+		{Name: "ip_masked", Type: field.TypeString},
+		{Name: "visitor_kind", Type: field.TypeEnum, Enums: []string{"human", "search_bot", "ai_bot", "unknown"}, Default: "unknown"},
+		{Name: "referrer_kind", Type: field.TypeEnum, Enums: []string{"search", "social", "ai_chat", "direct", "internal", "unknown"}, Default: "unknown"},
+		{Name: "last_seen_at", Type: field.TypeTime},
+		{Name: "synced_at", Type: field.TypeTime},
+	}
+	// StatsCacheVisitorTable holds the schema information for the "stats_cache_visitor" table.
+	StatsCacheVisitorTable = &schema.Table{
+		Name:       "stats_cache_visitor",
+		Columns:    StatsCacheVisitorColumns,
+		PrimaryKey: []*schema.Column{StatsCacheVisitorColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "statscachevisitor_entity_type_entity_id",
+				Unique:  false,
+				Columns: []*schema.Column{StatsCacheVisitorColumns[1], StatsCacheVisitorColumns[2]},
+			},
+			{
+				Name:    "statscachevisitor_entity_type_entity_id_visitor_kind",
+				Unique:  false,
+				Columns: []*schema.Column{StatsCacheVisitorColumns[1], StatsCacheVisitorColumns[2], StatsCacheVisitorColumns[5]},
+			},
+		},
+	}
+	// TagColumns holds the columns for the "tag" table.
+	TagColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "slug", Type: field.TypeString},
+		{Name: "label", Type: field.TypeString},
+	}
+	// TagTable holds the schema information for the "tag" table.
+	TagTable = &schema.Table{
+		Name:       "tag",
+		Columns:    TagColumns,
+		PrimaryKey: []*schema.Column{TagColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "tag_slug",
+				Unique:  true,
+				Columns: []*schema.Column{TagColumns[1]},
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -1748,31 +1834,6 @@ var (
 			},
 		},
 	}
-	// IdeaTagsJoinColumns holds the columns for the "idea_tags_join" table.
-	IdeaTagsJoinColumns = []*schema.Column{
-		{Name: "idea_id", Type: field.TypeString},
-		{Name: "idea_tag_id", Type: field.TypeString},
-	}
-	// IdeaTagsJoinTable holds the schema information for the "idea_tags_join" table.
-	IdeaTagsJoinTable = &schema.Table{
-		Name:       "idea_tags_join",
-		Columns:    IdeaTagsJoinColumns,
-		PrimaryKey: []*schema.Column{IdeaTagsJoinColumns[0], IdeaTagsJoinColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "idea_tags_join_idea_id",
-				Columns:    []*schema.Column{IdeaTagsJoinColumns[0]},
-				RefColumns: []*schema.Column{IdeasColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "idea_tags_join_idea_tag_id",
-				Columns:    []*schema.Column{IdeaTagsJoinColumns[1]},
-				RefColumns: []*schema.Column{IdeaTagsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AnnotationTable,
@@ -1781,13 +1842,12 @@ var (
 		BlogCategoriesTable,
 		BlogCategoryTranslationsTable,
 		BlogPostsTable,
-		BlogPostTagsTable,
 		BlogPostTranslationsTable,
-		BlogTagsTable,
 		CommentsTable,
 		CommentLikesTable,
 		ContentInteractionTable,
 		ContentRelationTable,
+		ContentTagTable,
 		EducationTable,
 		EducationDetailsTable,
 		EducationDetailTranslationsTable,
@@ -1799,7 +1859,6 @@ var (
 		IdeasTable,
 		IdeaDetailsTable,
 		IdeaDetailTranslationsTable,
-		IdeaTagsTable,
 		IdeaTranslationsTable,
 		ItemPartTable,
 		ItemPartTranslationTable,
@@ -1828,13 +1887,17 @@ var (
 		ResearchProjectDetailTranslationsTable,
 		ResearchProjectTranslationsTable,
 		SocialLinksTable,
+		StatsCacheCrawlerTable,
+		StatsCacheItemTable,
+		StatsCacheSourceTable,
+		StatsCacheVisitorTable,
+		TagTable,
 		UsersTable,
 		UserIdentitiesTable,
 		WorkExperienceTable,
 		WorkExperienceDetailsTable,
 		WorkExperienceDetailTranslationsTable,
 		WorkExperienceTranslationsTable,
-		IdeaTagsJoinTable,
 	}
 )
 
@@ -1862,18 +1925,10 @@ func init() {
 	BlogPostsTable.Annotation = &entsql.Annotation{
 		Table: "blog_posts",
 	}
-	BlogPostTagsTable.ForeignKeys[0].RefTable = BlogPostsTable
-	BlogPostTagsTable.ForeignKeys[1].RefTable = BlogTagsTable
-	BlogPostTagsTable.Annotation = &entsql.Annotation{
-		Table: "blog_post_tags",
-	}
 	BlogPostTranslationsTable.ForeignKeys[0].RefTable = BlogPostsTable
 	BlogPostTranslationsTable.ForeignKeys[1].RefTable = LanguagesTable
 	BlogPostTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "blog_post_translations",
-	}
-	BlogTagsTable.Annotation = &entsql.Annotation{
-		Table: "blog_tags",
 	}
 	CommentsTable.ForeignKeys[0].RefTable = CommentsTable
 	CommentsTable.ForeignKeys[1].RefTable = UserIdentitiesTable
@@ -1889,6 +1944,9 @@ func init() {
 	}
 	ContentRelationTable.Annotation = &entsql.Annotation{
 		Table: "content_relation",
+	}
+	ContentTagTable.Annotation = &entsql.Annotation{
+		Table: "content_tag",
 	}
 	EducationTable.Annotation = &entsql.Annotation{
 		Table: "education",
@@ -1933,9 +1991,6 @@ func init() {
 	IdeaDetailTranslationsTable.ForeignKeys[1].RefTable = LanguagesTable
 	IdeaDetailTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "idea_detail_translations",
-	}
-	IdeaTagsTable.Annotation = &entsql.Annotation{
-		Table: "idea_tags",
 	}
 	IdeaTranslationsTable.ForeignKeys[0].RefTable = IdeasTable
 	IdeaTranslationsTable.ForeignKeys[1].RefTable = LanguagesTable
@@ -2047,6 +2102,21 @@ func init() {
 	SocialLinksTable.Annotation = &entsql.Annotation{
 		Table: "social_links",
 	}
+	StatsCacheCrawlerTable.Annotation = &entsql.Annotation{
+		Table: "stats_cache_crawler",
+	}
+	StatsCacheItemTable.Annotation = &entsql.Annotation{
+		Table: "stats_cache_item",
+	}
+	StatsCacheSourceTable.Annotation = &entsql.Annotation{
+		Table: "stats_cache_source",
+	}
+	StatsCacheVisitorTable.Annotation = &entsql.Annotation{
+		Table: "stats_cache_visitor",
+	}
+	TagTable.Annotation = &entsql.Annotation{
+		Table: "tag",
+	}
 	UsersTable.Annotation = &entsql.Annotation{
 		Table: "users",
 	}
@@ -2067,6 +2137,4 @@ func init() {
 	WorkExperienceTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "work_experience_translations",
 	}
-	IdeaTagsJoinTable.ForeignKeys[0].RefTable = IdeasTable
-	IdeaTagsJoinTable.ForeignKeys[1].RefTable = IdeaTagsTable
 }

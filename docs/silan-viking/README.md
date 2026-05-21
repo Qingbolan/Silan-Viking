@@ -1,59 +1,63 @@
-# silan-viking — 设计文档
+# silan-viking — design documents
 
-> silan 的个人 context 系统。
+> silan's one-person context system.
 >
-> 本目录是 silan-viking 的权威设计。按章节分文件,每个文件聚焦一章。
-> 旧的单文件设计与早期探索稿在 `archive/`。
+> This directory is the authoritative design for silan-viking. One chapter
+> per file. Older single-file designs and early sketches live in `archive/`.
 
-## 终局一句话
+## One-sentence terminal state
 
-> silan-viking 是 silan 一个人的 context 系统:持续捕捉、结构化他的想法
-> (灵感 → 文章 → 项目),让任何与他协作的 agent 都能理解他;个人网站是这个
-> context 中成熟内容的、可选择性发布的对外投影。
+> silan-viking is silan's one-person context system: it continually captures
+> and structures his ideas (spark → article → project), lets any collaborating
+> agent understand him; the personal website is a selective outward projection
+> of the mature content inside that context.
 
-## 章节导航
+## Chapter index
 
-| 文件 | 内容 | 状态 |
+| File | Contents | Status |
 |---|---|---|
-| [`OVERVIEW.md`](./OVERVIEW.md) | **总入口** —— 一图看全 + owner 关心的每个问题逐条答 | 已定 |
-| [`00-终局与需求.md`](./00-终局与需求.md) | 终局、15 条需求基线、Python 已有抽象、**磁盘全景图** | 已定 |
-| [`01-oop结构.md`](./01-oop结构.md) | 四层分层、领域对象、持久化映射、代码目录、schema 修订 | 已定(经多轮评审)|
-| [`02-cli服务.md`](./02-cli服务.md) | `silan` 命令行清单(noun-first;6 type 组 + 8 工具组)| 已定 |
-| [`03-mcp服务.md`](./03-mcp服务.md) | MCP 工具清单(协作 agent 接入,四档)| 已定 |
-| [`04-里程碑.md`](./04-里程碑.md) | M0 起的实施路线 | 已定(M0–M9 主表;M4/M8 前置契约出口) |
-| [`05-测试.md`](./05-测试.md) | 四层测试结构、场景测试(从需求倒推)、契约测试 | 已定 |
-| [`06-端到端.md`](./06-端到端.md) | 从安装到部署的完整主线,串零件、填缺口 | 已定 |
-| [`07-操作手册.md`](./07-操作手册.md) | 10 条用户操作剧本(配置/开 idea/写 blog/agent 改简历/演化…) | 已定 |
-| [`08-工程审查补充.md`](./08-工程审查补充.md) | 工程审查补丁:未落地问题、M0/M0.5 硬门槛、SCHEMA 最小契约、部署/stats/proposal 硬约束 | 已定 |
-| [`09-可观测性与性能.md`](./09-可观测性与性能.md) | 错误处理分层、tracing span 契约、规模假设、性能预算与基准 | 已定 |
-| [`10-M0-SCHEMA定稿.md`](./10-M0-SCHEMA定稿.md) | **M0 产物规格** —— `content/SCHEMA.md` 6 type 逐字段定稿、enum 裁决、错误分级 | 已定 |
-| [`11-M0.5-ent-schema-PR.md`](./11-M0.5-ent-schema-PR.md) | **M0.5 产物规格** —— Go ent 修订 PR(新表/改表/删表/白名单/迁移步骤)| 已定 |
-| [`12-旧内容离线重排.md`](./12-旧内容离线重排.md) | M0/M0.5 之间的一次性动作 —— 旧布局→新布局重排规则 | 已定 |
-| [`13-skill-分发.md`](./13-skill-分发.md) | 让协作 agent「装一下就懂 silan」—— `silan skill` 命令组、skill 包产物、自动触发说明书 | 已定 |
+| [`OVERVIEW.md`](./OVERVIEW.md) | **Main entry** — one-glance picture + every question the owner cares about, answered in order | settled |
+| [`GOAL.md`](./GOAL.md) | **Single-page nail** of the current terminal state — definition, run tape, disk layout, object model, service surface, data flow, 16-row acceptance matrix, executable checklist, 10 invariants | settled |
+| [`00-end-state-and-requirements.md`](./00-end-state-and-requirements.md) | Terminal state, 16-row requirement baseline, abstractions inherited from Python, **whole-disk picture** | settled |
+| [`01-oop-structure.md`](./01-oop-structure.md) | Four-layer architecture, domain objects, persistence mapping, code layout, schema revisions | settled (reviewed multiple rounds) |
+| [`02-cli-service.md`](./02-cli-service.md) | `silan` command-line surface (noun-first; 6 type groups + 8 tool groups) | settled |
+| [`03-mcp-service.md`](./03-mcp-service.md) | MCP tool surface (how a collaborating agent connects; four tiers) | settled |
+| [`04-milestones.md`](./04-milestones.md) | Implementation route starting at M0 | settled (M0–M9 main table; M4/M8 pre-condition contract exits) |
+| [`05-testing.md`](./05-testing.md) | Four-layer test structure, scenario tests (back-cast from requirements), contract tests | settled |
+| [`06-end-to-end.md`](./06-end-to-end.md) | The full backbone from install to deploy — wires up parts, fills gaps | settled |
+| [`07-playbooks.md`](./07-playbooks.md) | 10 user operation playbooks (configure / open an idea / write a blog / agent edits resume / evolve …) | settled |
+| [`08-engineering-review.md`](./08-engineering-review.md) | Engineering-review patches: unfinished issues, M0/M0.5 hard gates, SCHEMA minimum contract, deploy/stats/proposal hard constraints | settled |
+| [`09-observability-and-performance.md`](./09-observability-and-performance.md) | Layered error handling, tracing span contract, scale assumptions, performance budget and benchmarks | settled |
+| [`10-m0-schema-finalisation.md`](./10-m0-schema-finalisation.md) | **M0 artefact spec** — `content/SCHEMA.md`, the 6 content types field-by-field, enum decisions, error tiers | settled |
+| [`11-m0_5-ent-schema-pr.md`](./11-m0_5-ent-schema-pr.md) | **M0.5 artefact spec** — Go ent revision PR (new tables / changed tables / dropped tables / allowlist / migration steps) | settled |
+| [`12-legacy-content-rearrange.md`](./12-legacy-content-rearrange.md) | One-shot action between M0 and M0.5 — old layout → new layout rearrange rules | settled |
+| [`13-skill-distribution.md`](./13-skill-distribution.md) | Let a collaborating agent "install once, understand silan" — `silan skill` command group, skill bundle, auto-trigger manual | settled |
+| [`14-drift-diagnosis-and-milestone-convergence.md`](./14-drift-diagnosis-and-milestone-convergence.md) | Doc-drift diagnosis flow and per-milestone convergence discipline | settled |
+| [`15-agent-self-evolution.md`](./15-agent-self-evolution.md) | Three-layer design + gates for agents that evolve a project on their own; the E1–E3 stages (wired into `04`) | settled |
+| [`16-terminal-artifact-delivery-deploy.md`](./16-terminal-artifact-delivery-deploy.md) | Delivery and deployment of the terminal-state artefact | settled |
+| [`17-single-source-of-truth.md`](./17-single-source-of-truth.md) | **SSOT** — drift-prone global definitions pinned in one place + the consistency self-check checklist (cures doc drift) | settled |
 
-## 阅读顺序
+## Reading order
 
-新读者:**先读 `OVERVIEW.md`** → `00` → `06`(主线走一遍)→ `07`(具体怎么操作)→ `01` → `02`/`03` → `05` → `08` → `09` → `04`。
-只看某一面:整条主线看 `06`,CLI 看 `02`,agent 接入看 `03`,数据库与对象看
-`01`,测试覆盖看 `05`。
-**准备开工**:读完 `04` 里程碑后,M0/M0.5 的可编码级规格在 `10`(SCHEMA
-定稿)→ `12`(旧内容重排)→ `11`(ent schema PR)—— 这三份是 M0/M0.5 的
-实施依据。
+New readers: **start with `OVERVIEW.md`** → `00` → `06` (walk the main backbone) → `07` (concrete operations) → `01` → `02`/`03` → `05` → `08` → `09` → `04`.
+Focused reads: backbone in `06`; CLI in `02`; agent integration in `03`; database and objects in `01`; test coverage in `05`.
+**Ready to start coding**: after `04`, the coding-grade specs for M0/M0.5 live in `10` (SCHEMA finalisation) → `12` (legacy content rearrange) → `11` (ent schema PR) — those three are the M0/M0.5 implementation basis.
 
-> **实施分界线**(`04` 有完整说明):本目录现在足够支撑 **M0 → M6**
-> (结构层 + Rust core)开工;**M7-M9**(CLI/MCP/site/deploy)已有部分
-> 实现级 contract(MCP JSON schema、Go API 读取矩阵初稿、promote 事务细节),
-> 但 M4/M8 必须用真实 `backend.api`/ent/SCHEMA 再核对一遍。别把「设计文档齐」
-> 误读成「整个系统能一口气写完」。
+> **Implementation boundary** (full explanation in `04`): the current doc set is
+> enough to start **M0 → M6** (structural layer + Rust core); **M7–M9**
+> (CLI/MCP/site/deploy) have partial implementation-grade contracts (MCP JSON
+> schema, draft Go-API read matrix, promote transaction details), but M4/M8
+> must re-verify against the real `backend.api`/ent/SCHEMA. Don't read
+> "the design docs are complete" as "the whole system can be written in one go".
 
-## 设计纪律
+## Design discipline
 
-- 任何对象 / 命令 / 接口,必须能指回 `00-终局与需求.md` 的某一条需求 `#`。指不回 → 删。
-- 表结构真相源是 Go 后端 ent schema(`backend/internal/ent/schema/`),不是本文档。
-- 本目录只做设计,不含实现代码。
+- Every object / command / interface must point back to a numbered `#` requirement in `00-end-state-and-requirements.md`. If it can't, delete it.
+- The source of truth for the table schema is the Go backend ent schema (`backend/internal/ent/schema/`), not this document.
+- This directory holds design only, not implementation code.
 
 ## archive/
 
-- `RUST-ENGINE-DESIGN.md` — 早期单文件设计,重心是「网站」,已偏。**作废,不参考。**
-- `ARCHITECTURE.md` — 更早的 markdown→SQLite→Go 链路设计。内容已被本目录覆盖。
-- `extraction-report.md` — M0 resume 字段事实抽取附录,供 `10` §10.4.5 引用。
+- `RUST-ENGINE-DESIGN.md` — early single-file design, framed around "the website"; biased. **Obsolete; do not reference.**
+- `ARCHITECTURE.md` — earlier markdown → SQLite → Go pipeline design. Superseded by this directory.
+- `extraction-report.md` — M0 resume field fact-extraction appendix, referenced by `10` §10.4.5.

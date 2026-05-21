@@ -68,15 +68,11 @@ type BlogPost struct {
 type BlogPostEdges struct {
 	// Category holds the value of the category edge.
 	Category *BlogCategory `json:"category,omitempty"`
-	// Tags holds the value of the tags edge.
-	Tags []*BlogTag `json:"tags,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*BlogPostTranslation `json:"translations,omitempty"`
-	// BlogPostTags holds the value of the blog_post_tags edge.
-	BlogPostTags []*BlogPostTag `json:"blog_post_tags,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [2]bool
 }
 
 // CategoryOrErr returns the Category value or an error if the edge
@@ -90,31 +86,13 @@ func (e BlogPostEdges) CategoryOrErr() (*BlogCategory, error) {
 	return nil, &NotLoadedError{edge: "category"}
 }
 
-// TagsOrErr returns the Tags value or an error if the edge
-// was not loaded in eager-loading.
-func (e BlogPostEdges) TagsOrErr() ([]*BlogTag, error) {
-	if e.loadedTypes[1] {
-		return e.Tags, nil
-	}
-	return nil, &NotLoadedError{edge: "tags"}
-}
-
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) TranslationsOrErr() ([]*BlogPostTranslation, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
-}
-
-// BlogPostTagsOrErr returns the BlogPostTags value or an error if the edge
-// was not loaded in eager-loading.
-func (e BlogPostEdges) BlogPostTagsOrErr() ([]*BlogPostTag, error) {
-	if e.loadedTypes[3] {
-		return e.BlogPostTags, nil
-	}
-	return nil, &NotLoadedError{edge: "blog_post_tags"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -289,19 +267,9 @@ func (bp *BlogPost) QueryCategory() *BlogCategoryQuery {
 	return NewBlogPostClient(bp.config).QueryCategory(bp)
 }
 
-// QueryTags queries the "tags" edge of the BlogPost entity.
-func (bp *BlogPost) QueryTags() *BlogTagQuery {
-	return NewBlogPostClient(bp.config).QueryTags(bp)
-}
-
 // QueryTranslations queries the "translations" edge of the BlogPost entity.
 func (bp *BlogPost) QueryTranslations() *BlogPostTranslationQuery {
 	return NewBlogPostClient(bp.config).QueryTranslations(bp)
-}
-
-// QueryBlogPostTags queries the "blog_post_tags" edge of the BlogPost entity.
-func (bp *BlogPost) QueryBlogPostTags() *BlogPostTagQuery {
-	return NewBlogPostClient(bp.config).QueryBlogPostTags(bp)
 }
 
 // Update returns a builder for updating this BlogPost.

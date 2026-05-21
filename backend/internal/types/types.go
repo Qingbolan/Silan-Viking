@@ -522,7 +522,7 @@ type IdeaPublicationRef struct {
 }
 
 type IdeaRequest struct {
-	ID       string `path:"id"`
+	Slug     string `path:"slug"`
 	Language string `form:"lang,default=en"`
 }
 

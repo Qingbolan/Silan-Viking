@@ -57,12 +57,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// EdgeCategory holds the string denoting the category edge name in mutations.
 	EdgeCategory = "category"
-	// EdgeTags holds the string denoting the tags edge name in mutations.
-	EdgeTags = "tags"
 	// EdgeTranslations holds the string denoting the translations edge name in mutations.
 	EdgeTranslations = "translations"
-	// EdgeBlogPostTags holds the string denoting the blog_post_tags edge name in mutations.
-	EdgeBlogPostTags = "blog_post_tags"
 	// Table holds the table name of the blogpost in the database.
 	Table = "blog_posts"
 	// CategoryTable is the table that holds the category relation/edge.
@@ -72,11 +68,6 @@ const (
 	CategoryInverseTable = "blog_categories"
 	// CategoryColumn is the table column denoting the category relation/edge.
 	CategoryColumn = "category_id"
-	// TagsTable is the table that holds the tags relation/edge. The primary key declared below.
-	TagsTable = "blog_post_tags"
-	// TagsInverseTable is the table name for the BlogTag entity.
-	// It exists in this package in order to avoid circular dependency with the "blogtag" package.
-	TagsInverseTable = "blog_tags"
 	// TranslationsTable is the table that holds the translations relation/edge.
 	TranslationsTable = "blog_post_translations"
 	// TranslationsInverseTable is the table name for the BlogPostTranslation entity.
@@ -84,13 +75,6 @@ const (
 	TranslationsInverseTable = "blog_post_translations"
 	// TranslationsColumn is the table column denoting the translations relation/edge.
 	TranslationsColumn = "blog_post_id"
-	// BlogPostTagsTable is the table that holds the blog_post_tags relation/edge.
-	BlogPostTagsTable = "blog_post_tags"
-	// BlogPostTagsInverseTable is the table name for the BlogPostTag entity.
-	// It exists in this package in order to avoid circular dependency with the "blogposttag" package.
-	BlogPostTagsInverseTable = "blog_post_tags"
-	// BlogPostTagsColumn is the table column denoting the blog_post_tags relation/edge.
-	BlogPostTagsColumn = "blog_post_id"
 )
 
 // Columns holds all SQL columns for blogpost fields.
@@ -117,12 +101,6 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
-
-var (
-	// TagsPrimaryKey and TagsColumn2 are the table columns denoting the
-	// primary key for the tags relation (M2M).
-	TagsPrimaryKey = []string{"blog_post_id", "blog_tag_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -356,20 +334,6 @@ func ByCategoryField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByTagsCount orders the results by tags count.
-func ByTagsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newTagsStep(), opts...)
-	}
-}
-
-// ByTags orders the results by tags terms.
-func ByTags(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newTagsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByTranslationsCount orders the results by translations count.
 func ByTranslationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -383,20 +347,6 @@ func ByTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newTranslationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByBlogPostTagsCount orders the results by blog_post_tags count.
-func ByBlogPostTagsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newBlogPostTagsStep(), opts...)
-	}
-}
-
-// ByBlogPostTags orders the results by blog_post_tags terms.
-func ByBlogPostTags(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBlogPostTagsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newCategoryStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -404,24 +354,10 @@ func newCategoryStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, true, CategoryTable, CategoryColumn),
 	)
 }
-func newTagsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(TagsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, TagsTable, TagsPrimaryKey...),
-	)
-}
 func newTranslationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TranslationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, TranslationsTable, TranslationsColumn),
-	)
-}
-func newBlogPostTagsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(BlogPostTagsInverseTable, BlogPostTagsColumn),
-		sqlgraph.Edge(sqlgraph.O2M, true, BlogPostTagsTable, BlogPostTagsColumn),
 	)
 }

@@ -83,8 +83,9 @@ func (Idea) Edges() []ent.Edge {
 		// content by `entity_type` / `entity_id` fields. An ent edge would
 		// put a DB-level FK on `comments` -> `ideas`, which promote dangles
 		// when it rebuilds `ideas` (see BlogPost.Edges for the rationale).
-		// Many-to-many: idea <-> tags
-		edge.To("tags", IdeaTag.Type).
-			StorageKey(edge.Table("idea_tags_join")),
+		// No `tags` edge: tags moved to the cross-type `content_tag` table
+		// (M0.5b). See blogpost.go for the rationale — keeping an ent edge
+		// here would keep `idea_tags` alive after migrate even though
+		// nothing writes it.
 	}
 }

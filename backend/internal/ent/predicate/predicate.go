@@ -24,14 +24,8 @@ type BlogCategoryTranslation func(*sql.Selector)
 // BlogPost is the predicate function for blogpost builders.
 type BlogPost func(*sql.Selector)
 
-// BlogPostTag is the predicate function for blogposttag builders.
-type BlogPostTag func(*sql.Selector)
-
 // BlogPostTranslation is the predicate function for blogposttranslation builders.
 type BlogPostTranslation func(*sql.Selector)
-
-// BlogTag is the predicate function for blogtag builders.
-type BlogTag func(*sql.Selector)
 
 // Comment is the predicate function for comment builders.
 type Comment func(*sql.Selector)
@@ -44,6 +38,9 @@ type ContentInteraction func(*sql.Selector)
 
 // ContentRelation is the predicate function for contentrelation builders.
 type ContentRelation func(*sql.Selector)
+
+// ContentTag is the predicate function for contenttag builders.
+type ContentTag func(*sql.Selector)
 
 // Education is the predicate function for education builders.
 type Education func(*sql.Selector)
@@ -77,9 +74,6 @@ type IdeaDetail func(*sql.Selector)
 
 // IdeaDetailTranslation is the predicate function for ideadetailtranslation builders.
 type IdeaDetailTranslation func(*sql.Selector)
-
-// IdeaTag is the predicate function for ideatag builders.
-type IdeaTag func(*sql.Selector)
 
 // IdeaTranslation is the predicate function for ideatranslation builders.
 type IdeaTranslation func(*sql.Selector)
@@ -164,6 +158,21 @@ type ResearchProjectTranslation func(*sql.Selector)
 
 // SocialLink is the predicate function for sociallink builders.
 type SocialLink func(*sql.Selector)
+
+// StatsCacheCrawler is the predicate function for statscachecrawler builders.
+type StatsCacheCrawler func(*sql.Selector)
+
+// StatsCacheItem is the predicate function for statscacheitem builders.
+type StatsCacheItem func(*sql.Selector)
+
+// StatsCacheSource is the predicate function for statscachesource builders.
+type StatsCacheSource func(*sql.Selector)
+
+// StatsCacheVisitor is the predicate function for statscachevisitor builders.
+type StatsCacheVisitor func(*sql.Selector)
+
+// Tag is the predicate function for tag builders.
+type Tag func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

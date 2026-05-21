@@ -1,174 +1,141 @@
-# silan-viking · 总览 —— 一份读完就懂的文档
+# silan-viking · overview — read this once and you understand the system
 
-> 这是 silan-viking 设计的**总入口**。它把"这套系统到底怎么转"的每一个
-> 关键问题,**逐条正面回答**,每条指向详细章节。读完这一份,你不用再翻
-> 七个文件去拼。
+> This is the **main entry** for the silan-viking design. It answers every
+> key question about "how this system actually runs" **point by point**,
+> with pointers to the detailed chapters. After this one document, you
+> shouldn't have to piece things together across seven files.
 >
-> 30 秒定位:silan-viking 是 silan 一个人的 context 系统 —— markdown 为
-> 真相源,Rust 引擎 `silan` 把它同步进 SQLite 喂网站,协作 agent 经 MCP
-> 读写它。详见 `00-终局与需求.md`。
+> 30-second positioning: silan-viking is silan's one-person context system —
+> markdown is the source of truth, the Rust engine `silan` syncs it into
+> SQLite to feed the website, collaborating agents read and write it
+> through MCP. Details in `00-end-state-and-requirements.md`.
 
 ---
 
-## 一图看全:这套系统怎么转
+## One picture: how it runs
 
 ```
-                 ┌─────────────── 本地机器 ───────────────┐
-  silan 写 md ─▶ content/(markdown 真相源,Git 仓)
-                      │  silan index sync
-                      ▼
-                 portfolio.db(派生缓存;本地这份不含运行时数据)
-                      │
-  协作 agent ◀──▶ silan mcp serve(MCP:读内容 / 写 agent context / 提案)
-                      │  silan site deploy
-                 └─────┼──────────────────────────────────┘
-                       ▼
-                 ┌─────────────── 服务器 ─────────────────┐
-                 Go API + portfolio.db + 前端
-                       │
-                 访客浏览 → 评论 / 点赞 / 打点 ── 运行时数据,只在这里产生
-                       │
-  silan stats(远程查询)◀──────────────────────┘
-                 └────────────────────────────────────────┘
+                 ┌─────────────── local machine ──────────────┐
+  silan writes md ─▶ content/ (markdown source of truth, Git repo)
+                          │  silan index sync
+                          ▼
+                     portfolio.db (derived cache; the local copy has no runtime data)
+                          │
+  collaborating agent ◀──▶ silan mcp serve (MCP: read content / write agent context / propose)
+                          │  silan site deploy
+                     └─────┼─────────────────────────────────────┘
+                           ▼
+                     ┌─────────────── server ─────────────────┐
+                     Go API + portfolio.db + frontend
+                           │
+                     visitors browse → comments / likes / pings — runtime data is born only here
+                           │
+  silan stats (remote query) ◀──────────────────────┘
+                     └────────────────────────────────────────┘
 ```
 
 ---
 
-## 你问的每一个问题,逐条回答
+## Every question you'd ask, answered in order
 
-### Q1. e2e —— 怎么下载、初始化?
+### Q1. End-to-end — how do I install and initialise?
 
-**下载**:三种装法任选 —— 安装脚本 / `cargo install silan-viking` / `pip
-install silan-viking`(纯安装器包)。三者结果一样:把 `silan-viking` 二进制
-以 `silan` 之名放进 PATH。**不依赖旧 Python 包。**
+**Install**: any of three forms — install script / `cargo install silan-viking` / `pip install silan-viking` (a thin installer package). All three land in the same place: the `silan-viking` binary appears on PATH as `silan`. **No dependency on the legacy Python package.**
 
-**初始化**:`silan init` —— 在 `~/.silan-viking/` 建好 `content/` 六个 type
-目录 + 三个示例条目(welcome blog / 一个 idea / 一个 project)+ `SCHEMA.md`
-+ `silan-viking.toml` + `git init`。屏幕打印文件树 + 编号下一步。
+**Initialise**: `silan init` — lays the six type directories under `content/` in `~/.silan-viking/` + three sample items (welcome blog / one idea / one project) + `SCHEMA.md` + `silan-viking.toml` + `git init`. The screen prints the file tree and the numbered next step.
 
-→ 完整:`06-端到端.md` §6.1(安装)、§6.2(init,含屏幕实际输出与项目结构)。
+→ Full text: `06-end-to-end.md` §6.1 (install), §6.2 (init — actual screen output and project structure).
 
-### Q2. 提供什么接口,给 agent 和人用?
+### Q2. What interfaces does it offer — for humans and for agents?
 
-**两个面,同一个引擎核心**(`Workspace`):
+**Two surfaces, one engine core** (`Workspace`):
 
-- **给人 —— CLI `silan`**:`idea`/`blog`/`project`/`episode`/`resume`/`update`
-  六个 type 专属命令组(各带 new/list/show/edit/rm/archive + 专属操作)+
-  `content`/`index`/`relation`/`site`/`stats`/`proposal`/`mcp` 工具组。
-- **给 agent —— MCP**:`silan mcp serve` 起 MCP server,agent 接入即握手
-  推送 SCHEMA + 项目概览。agent 能 检索 / 捕捉 / 提案 / 读写自己的 context。
+- **For humans — CLI `silan`**: the six type-specific command groups (`idea`/`blog`/`project`/`episode`/`resume`/`update`), each with `new/list/show/edit/rm/archive` + type-specific operations, plus the eight tool groups `content`/`index`/`relation`/`site`/`stats`/`proposal`/`mcp`/`skill`.
+- **For agents — MCP**: `silan mcp serve` boots an MCP server; once an agent connects, the handshake pushes SCHEMA + the project overview. The agent can search / capture / propose / read and write its own context.
 
-→ 完整:`02-cli服务.md`(CLI 全清单)、`03-mcp服务.md`(MCP 工具四档 + §3.1)。
+→ Full text: `02-cli-service.md` (the complete CLI surface), `03-mcp-service.md` (MCP tools, four tiers + §3.1).
 
-### Q3. 怎么创建一个 idea / project / blog?
+### Q3. How do I create an idea / project / blog?
 
-**两条路**,殊途同归:
-- **自己建**:`silan idea new <slug>` —— scaffold 目录 + `parts/overview/`
-  + 模板 frontmatter。编辑 markdown,`silan index sync`。
-- **对 agent 说**:agent `capture` 起草 → 提案 Git 分支 → `silan proposal
-  accept` 收下。
+**Two paths**, same end:
+- **Build it yourself**: `silan idea new <slug>` — scaffolds the directory + `parts/overview/` + a template frontmatter. Edit markdown, then `silan index sync`.
+- **Tell the agent**: the agent's `capture` drafts → a proposal git branch → `silan proposal accept` takes it in.
 
-blog 是单 Part(`body`),idea/project 多 Part(overview/progress/…)。
+A blog is a single Part (`body`); idea/project carry multiple Parts (overview / progress / …).
 
-→ 完整:`07-操作手册.md` §7.2(开 idea)、§7.3(写 blog)、§7.4(维护 project)
-—— 每条是逐行命令 + 屏幕输出 + 文件变化的剧本。
+→ Full text: `07-playbooks.md` §7.2 (opening an idea), §7.3 (writing a blog), §7.4 (maintaining a project) — each playbook is line-by-line commands + screen output + file diffs.
 
-### Q4. parser 怎么工作?
+### Q4. How does the parser work?
 
-`Parser`(L3 trait,6 个实现 = Python 6 个 parser 的 Rust 版)读 `SCHEMA.md`
-的 type 定义,按 `parts` 列表扫每个 `parts/<role>/` 目录,把每个语言
-`<lang>.<ext>` 解析进 `Parsed`(扩展名由 Part shape 决定;语言无关 `main` +
-多语言 `langs`)。
-`Parser` 只暴露 3 个 public 方法(`content_type`/`parse`/`validate`),
-其余 `extract_*` 全是 struct 私有 fn。
+`Parser` (an L3 trait, six implementations = the Rust counterpart of Python's six parsers) reads the type definition from `SCHEMA.md`, walks each `parts/<role>/` directory along the `parts` list, and parses every `<lang>.<ext>` into `Parsed` (the extension is decided by Part shape; the result is a language-agnostic `main` + multilingual `langs`).
+`Parser` exposes only three public methods (`content_type` / `parse` / `validate`); every `extract_*` is a private struct fn.
 
-→ 完整:`01-oop结构.md` §1.5(Parser trait + 公私可见性)、§1.5.1(ResumeParser
-真实切片,逐方法)、§1.8(Parser→Parsed→Mapper→Sink 持久化链)。
+→ Full text: `01-oop-structure.md` §1.5 (Parser trait + visibility), §1.5.1 (a real ResumeParser slice, method by method), §1.8 (the Parser → Parsed → Mapper → Sink persistence chain).
 
-### Q5. OOP 怎么实现、怎么拓展?
+### Q5. How is the OOP implemented? How do I extend it?
 
-**四层**:L1 base(纯工具)→ L2 content(领域数据:Namespace/Collection/
-Item/Part/File)→ L3 app(行为:Workspace/Parser/Mapper/Sink)→ L4 adapter
-(CLI/MCP/Site)。依赖严格单向向下,crate 边界由 `Cargo.toml` 物理保证。
+**Four layers**: L1 base (pure utilities) → L2 content (domain data: Namespace/Collection/Item/Part/File) → L3 app (behaviour: Workspace/Parser/Mapper/Sink) → L4 adapter (CLI/MCP/Site). Dependencies are strictly downward; crate boundaries are physically enforced by `Cargo.toml`.
 
-**拓展靠两点**:① 加内容 tab = 改 `SCHEMA.md` 的 type 定义,不改 Rust
-(配置驱动的 parser);② 加一个新对外接口 = 加一个 L4 adapter crate,
-不动 L1–L3。
+**Extension hinges on two points**: ① adding a content tab = edit the type definition in `SCHEMA.md`, no Rust change (the parser is config-driven); ② adding a new outward interface = add an L4 adapter crate, no change to L1–L3.
 
-→ 完整:`01-oop结构.md` §1.1(四层)、§1.2(继承机制)、§1.3.1(可配置文件树)。
+→ Full text: `01-oop-structure.md` §1.1 (the four layers), §1.2 (inheritance mechanism), §1.3.1 (the configurable file tree).
 
-### Q6. 有没有 e2e 测试?
+### Q6. Are there end-to-end tests?
 
-有,四层:L1 单元 / L2 `insta` 快照 / **L3 e2e**(`assert_cmd` 跑真实
-`silan` 命令)/ **L4 契约测试**(Rust 产出的 db 与 Go ent schema、前端读取
-契约逐项对齐)。
-测试场景**从 15 条需求逐条倒推**,文末有「需求↔场景」自查表 —— 一条需求
-找不到对应场景 = 测试有缺口。
+Yes — four layers: L1 unit / L2 `insta` snapshots / **L3 e2e** (`assert_cmd` running the real `silan` command) / **L4 contract tests** (the db emitted by Rust is aligned line-by-line against the Go ent schema and the frontend read contract).
+Test scenarios are **back-cast from the 16 requirements one by one**; the end of the doc has a requirement-↔-scenario self-check table — a requirement with no matching scenario = a gap in the tests.
 
-→ 完整:`05-测试.md`(四层结构 + 场景清单 + §5.3.1 ResumeParser 测试切片)。
+→ Full text: `05-testing.md` (the four-layer structure + scenario list + §5.3.1 ResumeParser test slice).
 
-### Q7. 怎么同步?
+### Q7. How does sync work?
 
-`silan index sync` —— 扫 `content/` → `Parser` 解析 → `Mapper` 映射成
-`RowSet` → `Sink` 事务写 `portfolio.db`。增量:对比 hash,只重建变化的 Item。
-内容更新有**两条路径**:owner 直接改(编辑源文件 → sync)、agent 改(propose →
-提案分支 → owner accept → sync)。
+`silan index sync` — walk `content/` → `Parser` parses → `Mapper` maps to a `RowSet` → `Sink` writes `portfolio.db` in a transaction. Incremental: compare hashes, only rebuild changed Items.
+Content updates have **two paths**: the owner edits directly (edit the source file → sync), or the agent edits (propose → proposal branch → owner accept → sync).
 
-→ 完整:`06-端到端.md` §6.4(更新逻辑全链,两条路径并排)、`01` §1.8(持久化)。
+→ Full text: `06-end-to-end.md` §6.4 (the full update chain, two paths in parallel), `01` §1.8 (persistence).
 
-### Q8. 新机器从服务器拉取,能拿到最新评论 / 访问数据吗?
+### Q8. On a new machine pulling from the server, do I get the latest comments / visit data?
 
-**这是个关键的数据流问题,答案要分清两类数据**:
+**This is a key data-flow question; the answer separates two classes of data**:
 
-- **内容**(blog/idea/project…)= markdown,真相源在 `content/` Git 仓。
-  新机器 `git clone` content 仓拿到全部内容,本地 `sync` 重建 `portfolio.db`
-  的内容表。✅ 完整拿到。
-- **运行时数据**(评论 `comment` / 访问打点 `content_interaction`)= 在
-  **生产服务器**上产生(访客在网站上评论、浏览)。**它们只存在于服务器的
-  `portfolio.db`,不进 Git、不在 markdown 里。**
+- **Content** (blog/idea/project…) = markdown, source of truth in the `content/` git repo.
+  A new machine `git clone`s the content repo, getting every item; a local `sync` rebuilds `portfolio.db`'s content tables. ✅ Fully received.
+- **Runtime data** (comments `comment` / view pings `content_interaction`) is born on the **production server** (visitors comment and browse on the website). **It lives only in the server's `portfolio.db`; it does not enter Git, and it is not in any markdown file.**
 
-**架构决策(silan 定)**:运行时数据**只在服务器,本地机器不持有**。
-- 新机器拉取 → 本地 `portfolio.db` 的运行时表(comment/content_interaction)
-  是**空的**,这是**预期行为**,不是 bug。
-- 要看评论 / 访问数据 → `silan stats`(CLI)/ MCP `stats` 工具 **远程查询
-  服务器**,不需要把运行时数据同步到本地。
-- 好处:本地永远只管"内容创作"这一摊,职责干净;运行时数据有唯一的家
-  (服务器),不需要"评论数据在哪台机器最新"这种同步难题。
+**Architectural decision (silan's)**: runtime data **lives only on the server; local machines never hold it.**
+- On a fresh-machine pull → the local `portfolio.db` runtime tables (comment / content_interaction) are **empty**; this is **expected behaviour**, not a bug.
+- To see comment / visit data → use `silan stats` (CLI) / the MCP `stats` tools to **query the server remotely**; no need to sync runtime data locally.
+- Benefit: the local machine only deals with "content creation"; responsibilities are clean. Runtime data has one home (the server); no "whose comment data is newest?" sync headache.
 
-→ 完整:`01-oop结构.md` §1.10「连带影响 §1.8」中「派生 vs 运行时数据
-边界」「运行时数据的物理归属」两段、§1.10 修订 D(`content_interaction`)、
-`02` `silan stats` 命令组。
+→ Full text: `01-oop-structure.md` §1.10 "knock-on effects on §1.8" — the "derived vs runtime data boundary" and "physical home of runtime data" paragraphs — and §1.10 revision D (`content_interaction`); `02` `silan stats` command group.
 
-### Q9. 怎么管理版本?
+### Q9. How is versioning handled?
 
-**靠 Git** —— `content/` 是 Git 仓,markdown 的每次修改就是一个 commit,
-版本史就是 Git 史。`portfolio.db` **不存历史版本**(它是派生缓存,存历史是
-职责错位)。需要看版本 → `git log` / `git diff` content 仓。
-agent 的提案也是 Git 分支(`proposal/<ulid>`),`accept` = merge。
+**Git** — `content/` is a git repo; every markdown edit is a commit; version history is git history. `portfolio.db` **does not store historical versions** (it's a derived cache; storing history would be a role mismatch). To see versions → `git log` / `git diff` on the content repo.
+Agent proposals are also git branches (`proposal/<ulid>`); `accept` = merge.
 
-→ 完整:`01-oop结构.md` §1.10 修订 B(版本控制靠 Git)、`03` §3.1(提案 = Git 分支)。
+→ Full text: `01-oop-structure.md` §1.10 revision B (versioning via git), `03` §3.1 (proposal = git branch).
 
 ---
 
-## 文档地图 —— 按需深入
+## Doc map — drill down by need
 
-| 想知道 | 看 |
+| You want to know | Read |
 |---|---|
-| 这系统到底为什么、要解决什么 | `00-终局与需求.md` |
-| 对象模型 / parser / 数据库 schema / 代码结构 | `01-oop结构.md` |
-| CLI 完整命令 | `02-cli服务.md` |
-| agent 怎么接入、提案机制 | `03-mcp服务.md` |
-| 实施里程碑 | `04-里程碑.md` |
-| 测试怎么做 | `05-测试.md` |
-| 从安装到部署的完整主线 | `06-端到端.md` |
-| 「我想做 X」一步步怎么做 | `07-操作手册.md` |
-| 哪些设计还没落地、M0 必须补什么 | `08-工程审查补充.md` |
-| 错误处理、tracing、规模假设、性能预算 | `09-可观测性与性能.md` |
-| M0 怎么写 SCHEMA(6 type 逐字段定稿)| `10-M0-SCHEMA定稿.md` |
-| M0.5 怎么改 Go ent(修订 PR)| `11-M0.5-ent-schema-PR.md` |
-| 旧内容怎么一次性重排进新结构 | `12-旧内容离线重排.md` |
-| 协作 agent 怎么装 skill、装完怎么自动懂 silan | `13-skill-分发.md` |
+| Why this system exists, what it solves | `00-end-state-and-requirements.md` |
+| Object model / parser / database schema / code layout | `01-oop-structure.md` |
+| The complete CLI surface | `02-cli-service.md` |
+| How an agent connects, the proposal mechanism | `03-mcp-service.md` |
+| Implementation milestones | `04-milestones.md` |
+| How testing is done | `05-testing.md` |
+| The full backbone from install to deploy | `06-end-to-end.md` |
+| "I want to do X" — step-by-step | `07-playbooks.md` |
+| Which design pieces aren't done, what M0 must cover | `08-engineering-review.md` |
+| Error handling, tracing, scale assumptions, performance budget | `09-observability-and-performance.md` |
+| How to write SCHEMA for M0 (6 types, field-by-field) | `10-m0-schema-finalisation.md` |
+| How to revise the Go ent for M0.5 (the PR) | `11-m0_5-ent-schema-pr.md` |
+| How to one-shot rearrange legacy content into the new layout | `12-legacy-content-rearrange.md` |
+| How a collaborating agent installs the skill and auto-understands silan | `13-skill-distribution.md` |
 
-> 阅读顺序:本文档 → `00` → `06`(主线)→ `07`(操作)→ `01`(对象/数据库)
-> → `02`/`03` → `05` → `08` → `09` → `04`。
-> 准备开工 M0/M0.5:`10` → `12` → `11`。
+> Reading order: this doc → `00` → `06` (backbone) → `07` (operations) → `01` (objects / database) → `02`/`03` → `05` → `08` → `09` → `04`.
+> Ready to start M0/M0.5: `10` → `12` → `11`.

@@ -175,9 +175,10 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: ideas.GetIdeasHandler(serverCtx),
 				},
 				{
-					// Get single idea by ID
+					// Get single idea by slug (matches blog/episode/update/project
+					// main detail conventions; M0.5b GOAL #6)
 					Method:  http.MethodGet,
-					Path:    "/:id",
+					Path:    "/:slug",
 					Handler: ideas.GetIdeaHandler(serverCtx),
 				},
 				{

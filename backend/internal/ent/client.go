@@ -17,13 +17,12 @@ import (
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogcategorytranslation"
 	"silan-backend/internal/ent/blogpost"
-	"silan-backend/internal/ent/blogposttag"
 	"silan-backend/internal/ent/blogposttranslation"
-	"silan-backend/internal/ent/blogtag"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/contentrelation"
+	"silan-backend/internal/ent/contenttag"
 	"silan-backend/internal/ent/education"
 	"silan-backend/internal/ent/educationdetail"
 	"silan-backend/internal/ent/educationdetailtranslation"
@@ -35,7 +34,6 @@ import (
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
 	"silan-backend/internal/ent/ideadetailtranslation"
-	"silan-backend/internal/ent/ideatag"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
@@ -64,6 +62,11 @@ import (
 	"silan-backend/internal/ent/researchprojectdetailtranslation"
 	"silan-backend/internal/ent/researchprojecttranslation"
 	"silan-backend/internal/ent/sociallink"
+	"silan-backend/internal/ent/statscachecrawler"
+	"silan-backend/internal/ent/statscacheitem"
+	"silan-backend/internal/ent/statscachesource"
+	"silan-backend/internal/ent/statscachevisitor"
+	"silan-backend/internal/ent/tag"
 	"silan-backend/internal/ent/user"
 	"silan-backend/internal/ent/useridentity"
 	"silan-backend/internal/ent/workexperience"
@@ -94,12 +97,8 @@ type Client struct {
 	BlogCategoryTranslation *BlogCategoryTranslationClient
 	// BlogPost is the client for interacting with the BlogPost builders.
 	BlogPost *BlogPostClient
-	// BlogPostTag is the client for interacting with the BlogPostTag builders.
-	BlogPostTag *BlogPostTagClient
 	// BlogPostTranslation is the client for interacting with the BlogPostTranslation builders.
 	BlogPostTranslation *BlogPostTranslationClient
-	// BlogTag is the client for interacting with the BlogTag builders.
-	BlogTag *BlogTagClient
 	// Comment is the client for interacting with the Comment builders.
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
@@ -108,6 +107,8 @@ type Client struct {
 	ContentInteraction *ContentInteractionClient
 	// ContentRelation is the client for interacting with the ContentRelation builders.
 	ContentRelation *ContentRelationClient
+	// ContentTag is the client for interacting with the ContentTag builders.
+	ContentTag *ContentTagClient
 	// Education is the client for interacting with the Education builders.
 	Education *EducationClient
 	// EducationDetail is the client for interacting with the EducationDetail builders.
@@ -130,8 +131,6 @@ type Client struct {
 	IdeaDetail *IdeaDetailClient
 	// IdeaDetailTranslation is the client for interacting with the IdeaDetailTranslation builders.
 	IdeaDetailTranslation *IdeaDetailTranslationClient
-	// IdeaTag is the client for interacting with the IdeaTag builders.
-	IdeaTag *IdeaTagClient
 	// IdeaTranslation is the client for interacting with the IdeaTranslation builders.
 	IdeaTranslation *IdeaTranslationClient
 	// ItemPart is the client for interacting with the ItemPart builders.
@@ -188,6 +187,16 @@ type Client struct {
 	ResearchProjectTranslation *ResearchProjectTranslationClient
 	// SocialLink is the client for interacting with the SocialLink builders.
 	SocialLink *SocialLinkClient
+	// StatsCacheCrawler is the client for interacting with the StatsCacheCrawler builders.
+	StatsCacheCrawler *StatsCacheCrawlerClient
+	// StatsCacheItem is the client for interacting with the StatsCacheItem builders.
+	StatsCacheItem *StatsCacheItemClient
+	// StatsCacheSource is the client for interacting with the StatsCacheSource builders.
+	StatsCacheSource *StatsCacheSourceClient
+	// StatsCacheVisitor is the client for interacting with the StatsCacheVisitor builders.
+	StatsCacheVisitor *StatsCacheVisitorClient
+	// Tag is the client for interacting with the Tag builders.
+	Tag *TagClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 	// UserIdentity is the client for interacting with the UserIdentity builders.
@@ -217,13 +226,12 @@ func (c *Client) init() {
 	c.BlogCategory = NewBlogCategoryClient(c.config)
 	c.BlogCategoryTranslation = NewBlogCategoryTranslationClient(c.config)
 	c.BlogPost = NewBlogPostClient(c.config)
-	c.BlogPostTag = NewBlogPostTagClient(c.config)
 	c.BlogPostTranslation = NewBlogPostTranslationClient(c.config)
-	c.BlogTag = NewBlogTagClient(c.config)
 	c.Comment = NewCommentClient(c.config)
 	c.CommentLike = NewCommentLikeClient(c.config)
 	c.ContentInteraction = NewContentInteractionClient(c.config)
 	c.ContentRelation = NewContentRelationClient(c.config)
+	c.ContentTag = NewContentTagClient(c.config)
 	c.Education = NewEducationClient(c.config)
 	c.EducationDetail = NewEducationDetailClient(c.config)
 	c.EducationDetailTranslation = NewEducationDetailTranslationClient(c.config)
@@ -235,7 +243,6 @@ func (c *Client) init() {
 	c.Idea = NewIdeaClient(c.config)
 	c.IdeaDetail = NewIdeaDetailClient(c.config)
 	c.IdeaDetailTranslation = NewIdeaDetailTranslationClient(c.config)
-	c.IdeaTag = NewIdeaTagClient(c.config)
 	c.IdeaTranslation = NewIdeaTranslationClient(c.config)
 	c.ItemPart = NewItemPartClient(c.config)
 	c.ItemPartTranslation = NewItemPartTranslationClient(c.config)
@@ -264,6 +271,11 @@ func (c *Client) init() {
 	c.ResearchProjectDetailTranslation = NewResearchProjectDetailTranslationClient(c.config)
 	c.ResearchProjectTranslation = NewResearchProjectTranslationClient(c.config)
 	c.SocialLink = NewSocialLinkClient(c.config)
+	c.StatsCacheCrawler = NewStatsCacheCrawlerClient(c.config)
+	c.StatsCacheItem = NewStatsCacheItemClient(c.config)
+	c.StatsCacheSource = NewStatsCacheSourceClient(c.config)
+	c.StatsCacheVisitor = NewStatsCacheVisitorClient(c.config)
+	c.Tag = NewTagClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserIdentity = NewUserIdentityClient(c.config)
 	c.WorkExperience = NewWorkExperienceClient(c.config)
@@ -368,13 +380,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BlogCategory:                     NewBlogCategoryClient(cfg),
 		BlogCategoryTranslation:          NewBlogCategoryTranslationClient(cfg),
 		BlogPost:                         NewBlogPostClient(cfg),
-		BlogPostTag:                      NewBlogPostTagClient(cfg),
 		BlogPostTranslation:              NewBlogPostTranslationClient(cfg),
-		BlogTag:                          NewBlogTagClient(cfg),
 		Comment:                          NewCommentClient(cfg),
 		CommentLike:                      NewCommentLikeClient(cfg),
 		ContentInteraction:               NewContentInteractionClient(cfg),
 		ContentRelation:                  NewContentRelationClient(cfg),
+		ContentTag:                       NewContentTagClient(cfg),
 		Education:                        NewEducationClient(cfg),
 		EducationDetail:                  NewEducationDetailClient(cfg),
 		EducationDetailTranslation:       NewEducationDetailTranslationClient(cfg),
@@ -386,7 +397,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Idea:                             NewIdeaClient(cfg),
 		IdeaDetail:                       NewIdeaDetailClient(cfg),
 		IdeaDetailTranslation:            NewIdeaDetailTranslationClient(cfg),
-		IdeaTag:                          NewIdeaTagClient(cfg),
 		IdeaTranslation:                  NewIdeaTranslationClient(cfg),
 		ItemPart:                         NewItemPartClient(cfg),
 		ItemPartTranslation:              NewItemPartTranslationClient(cfg),
@@ -415,6 +425,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ResearchProjectDetailTranslation: NewResearchProjectDetailTranslationClient(cfg),
 		ResearchProjectTranslation:       NewResearchProjectTranslationClient(cfg),
 		SocialLink:                       NewSocialLinkClient(cfg),
+		StatsCacheCrawler:                NewStatsCacheCrawlerClient(cfg),
+		StatsCacheItem:                   NewStatsCacheItemClient(cfg),
+		StatsCacheSource:                 NewStatsCacheSourceClient(cfg),
+		StatsCacheVisitor:                NewStatsCacheVisitorClient(cfg),
+		Tag:                              NewTagClient(cfg),
 		User:                             NewUserClient(cfg),
 		UserIdentity:                     NewUserIdentityClient(cfg),
 		WorkExperience:                   NewWorkExperienceClient(cfg),
@@ -446,13 +461,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BlogCategory:                     NewBlogCategoryClient(cfg),
 		BlogCategoryTranslation:          NewBlogCategoryTranslationClient(cfg),
 		BlogPost:                         NewBlogPostClient(cfg),
-		BlogPostTag:                      NewBlogPostTagClient(cfg),
 		BlogPostTranslation:              NewBlogPostTranslationClient(cfg),
-		BlogTag:                          NewBlogTagClient(cfg),
 		Comment:                          NewCommentClient(cfg),
 		CommentLike:                      NewCommentLikeClient(cfg),
 		ContentInteraction:               NewContentInteractionClient(cfg),
 		ContentRelation:                  NewContentRelationClient(cfg),
+		ContentTag:                       NewContentTagClient(cfg),
 		Education:                        NewEducationClient(cfg),
 		EducationDetail:                  NewEducationDetailClient(cfg),
 		EducationDetailTranslation:       NewEducationDetailTranslationClient(cfg),
@@ -464,7 +478,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Idea:                             NewIdeaClient(cfg),
 		IdeaDetail:                       NewIdeaDetailClient(cfg),
 		IdeaDetailTranslation:            NewIdeaDetailTranslationClient(cfg),
-		IdeaTag:                          NewIdeaTagClient(cfg),
 		IdeaTranslation:                  NewIdeaTranslationClient(cfg),
 		ItemPart:                         NewItemPartClient(cfg),
 		ItemPartTranslation:              NewItemPartTranslationClient(cfg),
@@ -493,6 +506,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ResearchProjectDetailTranslation: NewResearchProjectDetailTranslationClient(cfg),
 		ResearchProjectTranslation:       NewResearchProjectTranslationClient(cfg),
 		SocialLink:                       NewSocialLinkClient(cfg),
+		StatsCacheCrawler:                NewStatsCacheCrawlerClient(cfg),
+		StatsCacheItem:                   NewStatsCacheItemClient(cfg),
+		StatsCacheSource:                 NewStatsCacheSourceClient(cfg),
+		StatsCacheVisitor:                NewStatsCacheVisitorClient(cfg),
+		Tag:                              NewTagClient(cfg),
 		User:                             NewUserClient(cfg),
 		UserIdentity:                     NewUserIdentityClient(cfg),
 		WorkExperience:                   NewWorkExperienceClient(cfg),
@@ -529,11 +547,11 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Award, c.AwardTranslation, c.BlogCategory,
-		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTag, c.BlogPostTranslation,
-		c.BlogTag, c.Comment, c.CommentLike, c.ContentInteraction, c.ContentRelation,
+		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTranslation, c.Comment,
+		c.CommentLike, c.ContentInteraction, c.ContentRelation, c.ContentTag,
 		c.Education, c.EducationDetail, c.EducationDetailTranslation,
 		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
-		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation, c.IdeaTag,
+		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation,
 		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
 		c.PartEntryTranslation, c.PersonalInfo, c.PersonalInfoTranslation, c.Project,
 		c.ProjectDetail, c.ProjectDetailTranslation, c.ProjectImage,
@@ -542,7 +560,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.PublicationTranslation, c.RecentUpdate, c.RecentUpdateTranslation,
 		c.RequestLog, c.ResearchProject, c.ResearchProjectDetail,
 		c.ResearchProjectDetailTranslation, c.ResearchProjectTranslation, c.SocialLink,
-		c.User, c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
+		c.StatsCacheCrawler, c.StatsCacheItem, c.StatsCacheSource, c.StatsCacheVisitor,
+		c.Tag, c.User, c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
 		c.WorkExperienceDetailTranslation, c.WorkExperienceTranslation,
 	} {
 		n.Use(hooks...)
@@ -554,11 +573,11 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Award, c.AwardTranslation, c.BlogCategory,
-		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTag, c.BlogPostTranslation,
-		c.BlogTag, c.Comment, c.CommentLike, c.ContentInteraction, c.ContentRelation,
+		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTranslation, c.Comment,
+		c.CommentLike, c.ContentInteraction, c.ContentRelation, c.ContentTag,
 		c.Education, c.EducationDetail, c.EducationDetailTranslation,
 		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
-		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation, c.IdeaTag,
+		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation,
 		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
 		c.PartEntryTranslation, c.PersonalInfo, c.PersonalInfoTranslation, c.Project,
 		c.ProjectDetail, c.ProjectDetailTranslation, c.ProjectImage,
@@ -567,7 +586,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.PublicationTranslation, c.RecentUpdate, c.RecentUpdateTranslation,
 		c.RequestLog, c.ResearchProject, c.ResearchProjectDetail,
 		c.ResearchProjectDetailTranslation, c.ResearchProjectTranslation, c.SocialLink,
-		c.User, c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
+		c.StatsCacheCrawler, c.StatsCacheItem, c.StatsCacheSource, c.StatsCacheVisitor,
+		c.Tag, c.User, c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
 		c.WorkExperienceDetailTranslation, c.WorkExperienceTranslation,
 	} {
 		n.Intercept(interceptors...)
@@ -589,12 +609,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BlogCategoryTranslation.mutate(ctx, m)
 	case *BlogPostMutation:
 		return c.BlogPost.mutate(ctx, m)
-	case *BlogPostTagMutation:
-		return c.BlogPostTag.mutate(ctx, m)
 	case *BlogPostTranslationMutation:
 		return c.BlogPostTranslation.mutate(ctx, m)
-	case *BlogTagMutation:
-		return c.BlogTag.mutate(ctx, m)
 	case *CommentMutation:
 		return c.Comment.mutate(ctx, m)
 	case *CommentLikeMutation:
@@ -603,6 +619,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ContentInteraction.mutate(ctx, m)
 	case *ContentRelationMutation:
 		return c.ContentRelation.mutate(ctx, m)
+	case *ContentTagMutation:
+		return c.ContentTag.mutate(ctx, m)
 	case *EducationMutation:
 		return c.Education.mutate(ctx, m)
 	case *EducationDetailMutation:
@@ -625,8 +643,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.IdeaDetail.mutate(ctx, m)
 	case *IdeaDetailTranslationMutation:
 		return c.IdeaDetailTranslation.mutate(ctx, m)
-	case *IdeaTagMutation:
-		return c.IdeaTag.mutate(ctx, m)
 	case *IdeaTranslationMutation:
 		return c.IdeaTranslation.mutate(ctx, m)
 	case *ItemPartMutation:
@@ -683,6 +699,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ResearchProjectTranslation.mutate(ctx, m)
 	case *SocialLinkMutation:
 		return c.SocialLink.mutate(ctx, m)
+	case *StatsCacheCrawlerMutation:
+		return c.StatsCacheCrawler.mutate(ctx, m)
+	case *StatsCacheItemMutation:
+		return c.StatsCacheItem.mutate(ctx, m)
+	case *StatsCacheSourceMutation:
+		return c.StatsCacheSource.mutate(ctx, m)
+	case *StatsCacheVisitorMutation:
+		return c.StatsCacheVisitor.mutate(ctx, m)
+	case *TagMutation:
+		return c.Tag.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	case *UserIdentityMutation:
@@ -1601,22 +1627,6 @@ func (c *BlogPostClient) QueryCategory(bp *BlogPost) *BlogCategoryQuery {
 	return query
 }
 
-// QueryTags queries the tags edge of a BlogPost.
-func (c *BlogPostClient) QueryTags(bp *BlogPost) *BlogTagQuery {
-	query := (&BlogTagClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
-			sqlgraph.To(blogtag.Table, blogtag.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, blogpost.TagsTable, blogpost.TagsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryTranslations queries the translations edge of a BlogPost.
 func (c *BlogPostClient) QueryTranslations(bp *BlogPost) *BlogPostTranslationQuery {
 	query := (&BlogPostTranslationClient{config: c.config}).Query()
@@ -1626,22 +1636,6 @@ func (c *BlogPostClient) QueryTranslations(bp *BlogPost) *BlogPostTranslationQue
 			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
 			sqlgraph.To(blogposttranslation.Table, blogposttranslation.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, blogpost.TranslationsTable, blogpost.TranslationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryBlogPostTags queries the blog_post_tags edge of a BlogPost.
-func (c *BlogPostClient) QueryBlogPostTags(bp *BlogPost) *BlogPostTagQuery {
-	query := (&BlogPostTagClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
-			sqlgraph.To(blogposttag.Table, blogposttag.BlogPostColumn),
-			sqlgraph.Edge(sqlgraph.O2M, true, blogpost.BlogPostTagsTable, blogpost.BlogPostTagsColumn),
 		)
 		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
 		return fromV, nil
@@ -1671,122 +1665,6 @@ func (c *BlogPostClient) mutate(ctx context.Context, m *BlogPostMutation) (Value
 		return (&BlogPostDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BlogPost mutation op: %q", m.Op())
-	}
-}
-
-// BlogPostTagClient is a client for the BlogPostTag schema.
-type BlogPostTagClient struct {
-	config
-}
-
-// NewBlogPostTagClient returns a client for the BlogPostTag from the given config.
-func NewBlogPostTagClient(c config) *BlogPostTagClient {
-	return &BlogPostTagClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `blogposttag.Hooks(f(g(h())))`.
-func (c *BlogPostTagClient) Use(hooks ...Hook) {
-	c.hooks.BlogPostTag = append(c.hooks.BlogPostTag, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `blogposttag.Intercept(f(g(h())))`.
-func (c *BlogPostTagClient) Intercept(interceptors ...Interceptor) {
-	c.inters.BlogPostTag = append(c.inters.BlogPostTag, interceptors...)
-}
-
-// Create returns a builder for creating a BlogPostTag entity.
-func (c *BlogPostTagClient) Create() *BlogPostTagCreate {
-	mutation := newBlogPostTagMutation(c.config, OpCreate)
-	return &BlogPostTagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of BlogPostTag entities.
-func (c *BlogPostTagClient) CreateBulk(builders ...*BlogPostTagCreate) *BlogPostTagCreateBulk {
-	return &BlogPostTagCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *BlogPostTagClient) MapCreateBulk(slice any, setFunc func(*BlogPostTagCreate, int)) *BlogPostTagCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &BlogPostTagCreateBulk{err: fmt.Errorf("calling to BlogPostTagClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*BlogPostTagCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &BlogPostTagCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for BlogPostTag.
-func (c *BlogPostTagClient) Update() *BlogPostTagUpdate {
-	mutation := newBlogPostTagMutation(c.config, OpUpdate)
-	return &BlogPostTagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *BlogPostTagClient) UpdateOne(bpt *BlogPostTag) *BlogPostTagUpdateOne {
-	mutation := newBlogPostTagMutation(c.config, OpUpdateOne)
-	mutation.blog_post = &bpt.BlogPostID
-	mutation.blog_tag = &bpt.BlogTagID
-	return &BlogPostTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for BlogPostTag.
-func (c *BlogPostTagClient) Delete() *BlogPostTagDelete {
-	mutation := newBlogPostTagMutation(c.config, OpDelete)
-	return &BlogPostTagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Query returns a query builder for BlogPostTag.
-func (c *BlogPostTagClient) Query() *BlogPostTagQuery {
-	return &BlogPostTagQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeBlogPostTag},
-		inters: c.Interceptors(),
-	}
-}
-
-// QueryBlogPost queries the blog_post edge of a BlogPostTag.
-func (c *BlogPostTagClient) QueryBlogPost(bpt *BlogPostTag) *BlogPostQuery {
-	return c.Query().
-		Where(blogposttag.BlogPostID(bpt.BlogPostID), blogposttag.BlogTagID(bpt.BlogTagID)).
-		QueryBlogPost()
-}
-
-// QueryBlogTag queries the blog_tag edge of a BlogPostTag.
-func (c *BlogPostTagClient) QueryBlogTag(bpt *BlogPostTag) *BlogTagQuery {
-	return c.Query().
-		Where(blogposttag.BlogPostID(bpt.BlogPostID), blogposttag.BlogTagID(bpt.BlogTagID)).
-		QueryBlogTag()
-}
-
-// Hooks returns the client hooks.
-func (c *BlogPostTagClient) Hooks() []Hook {
-	return c.hooks.BlogPostTag
-}
-
-// Interceptors returns the client interceptors.
-func (c *BlogPostTagClient) Interceptors() []Interceptor {
-	return c.inters.BlogPostTag
-}
-
-func (c *BlogPostTagClient) mutate(ctx context.Context, m *BlogPostTagMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&BlogPostTagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&BlogPostTagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&BlogPostTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&BlogPostTagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown BlogPostTag mutation op: %q", m.Op())
 	}
 }
 
@@ -1952,171 +1830,6 @@ func (c *BlogPostTranslationClient) mutate(ctx context.Context, m *BlogPostTrans
 		return (&BlogPostTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown BlogPostTranslation mutation op: %q", m.Op())
-	}
-}
-
-// BlogTagClient is a client for the BlogTag schema.
-type BlogTagClient struct {
-	config
-}
-
-// NewBlogTagClient returns a client for the BlogTag from the given config.
-func NewBlogTagClient(c config) *BlogTagClient {
-	return &BlogTagClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `blogtag.Hooks(f(g(h())))`.
-func (c *BlogTagClient) Use(hooks ...Hook) {
-	c.hooks.BlogTag = append(c.hooks.BlogTag, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `blogtag.Intercept(f(g(h())))`.
-func (c *BlogTagClient) Intercept(interceptors ...Interceptor) {
-	c.inters.BlogTag = append(c.inters.BlogTag, interceptors...)
-}
-
-// Create returns a builder for creating a BlogTag entity.
-func (c *BlogTagClient) Create() *BlogTagCreate {
-	mutation := newBlogTagMutation(c.config, OpCreate)
-	return &BlogTagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of BlogTag entities.
-func (c *BlogTagClient) CreateBulk(builders ...*BlogTagCreate) *BlogTagCreateBulk {
-	return &BlogTagCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *BlogTagClient) MapCreateBulk(slice any, setFunc func(*BlogTagCreate, int)) *BlogTagCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &BlogTagCreateBulk{err: fmt.Errorf("calling to BlogTagClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*BlogTagCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &BlogTagCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for BlogTag.
-func (c *BlogTagClient) Update() *BlogTagUpdate {
-	mutation := newBlogTagMutation(c.config, OpUpdate)
-	return &BlogTagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *BlogTagClient) UpdateOne(bt *BlogTag) *BlogTagUpdateOne {
-	mutation := newBlogTagMutation(c.config, OpUpdateOne, withBlogTag(bt))
-	return &BlogTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *BlogTagClient) UpdateOneID(id string) *BlogTagUpdateOne {
-	mutation := newBlogTagMutation(c.config, OpUpdateOne, withBlogTagID(id))
-	return &BlogTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for BlogTag.
-func (c *BlogTagClient) Delete() *BlogTagDelete {
-	mutation := newBlogTagMutation(c.config, OpDelete)
-	return &BlogTagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *BlogTagClient) DeleteOne(bt *BlogTag) *BlogTagDeleteOne {
-	return c.DeleteOneID(bt.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *BlogTagClient) DeleteOneID(id string) *BlogTagDeleteOne {
-	builder := c.Delete().Where(blogtag.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &BlogTagDeleteOne{builder}
-}
-
-// Query returns a query builder for BlogTag.
-func (c *BlogTagClient) Query() *BlogTagQuery {
-	return &BlogTagQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeBlogTag},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a BlogTag entity by its id.
-func (c *BlogTagClient) Get(ctx context.Context, id string) (*BlogTag, error) {
-	return c.Query().Where(blogtag.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *BlogTagClient) GetX(ctx context.Context, id string) *BlogTag {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryBlogPosts queries the blog_posts edge of a BlogTag.
-func (c *BlogTagClient) QueryBlogPosts(bt *BlogTag) *BlogPostQuery {
-	query := (&BlogPostClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bt.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogtag.Table, blogtag.FieldID, id),
-			sqlgraph.To(blogpost.Table, blogpost.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, blogtag.BlogPostsTable, blogtag.BlogPostsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(bt.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryBlogPostTags queries the blog_post_tags edge of a BlogTag.
-func (c *BlogTagClient) QueryBlogPostTags(bt *BlogTag) *BlogPostTagQuery {
-	query := (&BlogPostTagClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bt.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogtag.Table, blogtag.FieldID, id),
-			sqlgraph.To(blogposttag.Table, blogposttag.BlogTagColumn),
-			sqlgraph.Edge(sqlgraph.O2M, true, blogtag.BlogPostTagsTable, blogtag.BlogPostTagsColumn),
-		)
-		fromV = sqlgraph.Neighbors(bt.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *BlogTagClient) Hooks() []Hook {
-	return c.hooks.BlogTag
-}
-
-// Interceptors returns the client interceptors.
-func (c *BlogTagClient) Interceptors() []Interceptor {
-	return c.inters.BlogTag
-}
-
-func (c *BlogTagClient) mutate(ctx context.Context, m *BlogTagMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&BlogTagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&BlogTagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&BlogTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&BlogTagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown BlogTag mutation op: %q", m.Op())
 	}
 }
 
@@ -2713,6 +2426,139 @@ func (c *ContentRelationClient) mutate(ctx context.Context, m *ContentRelationMu
 		return (&ContentRelationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ContentRelation mutation op: %q", m.Op())
+	}
+}
+
+// ContentTagClient is a client for the ContentTag schema.
+type ContentTagClient struct {
+	config
+}
+
+// NewContentTagClient returns a client for the ContentTag from the given config.
+func NewContentTagClient(c config) *ContentTagClient {
+	return &ContentTagClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `contenttag.Hooks(f(g(h())))`.
+func (c *ContentTagClient) Use(hooks ...Hook) {
+	c.hooks.ContentTag = append(c.hooks.ContentTag, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `contenttag.Intercept(f(g(h())))`.
+func (c *ContentTagClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ContentTag = append(c.inters.ContentTag, interceptors...)
+}
+
+// Create returns a builder for creating a ContentTag entity.
+func (c *ContentTagClient) Create() *ContentTagCreate {
+	mutation := newContentTagMutation(c.config, OpCreate)
+	return &ContentTagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ContentTag entities.
+func (c *ContentTagClient) CreateBulk(builders ...*ContentTagCreate) *ContentTagCreateBulk {
+	return &ContentTagCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ContentTagClient) MapCreateBulk(slice any, setFunc func(*ContentTagCreate, int)) *ContentTagCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ContentTagCreateBulk{err: fmt.Errorf("calling to ContentTagClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ContentTagCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ContentTagCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ContentTag.
+func (c *ContentTagClient) Update() *ContentTagUpdate {
+	mutation := newContentTagMutation(c.config, OpUpdate)
+	return &ContentTagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ContentTagClient) UpdateOne(ct *ContentTag) *ContentTagUpdateOne {
+	mutation := newContentTagMutation(c.config, OpUpdateOne, withContentTag(ct))
+	return &ContentTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ContentTagClient) UpdateOneID(id int) *ContentTagUpdateOne {
+	mutation := newContentTagMutation(c.config, OpUpdateOne, withContentTagID(id))
+	return &ContentTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ContentTag.
+func (c *ContentTagClient) Delete() *ContentTagDelete {
+	mutation := newContentTagMutation(c.config, OpDelete)
+	return &ContentTagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ContentTagClient) DeleteOne(ct *ContentTag) *ContentTagDeleteOne {
+	return c.DeleteOneID(ct.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ContentTagClient) DeleteOneID(id int) *ContentTagDeleteOne {
+	builder := c.Delete().Where(contenttag.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ContentTagDeleteOne{builder}
+}
+
+// Query returns a query builder for ContentTag.
+func (c *ContentTagClient) Query() *ContentTagQuery {
+	return &ContentTagQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeContentTag},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ContentTag entity by its id.
+func (c *ContentTagClient) Get(ctx context.Context, id int) (*ContentTag, error) {
+	return c.Query().Where(contenttag.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ContentTagClient) GetX(ctx context.Context, id int) *ContentTag {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ContentTagClient) Hooks() []Hook {
+	return c.hooks.ContentTag
+}
+
+// Interceptors returns the client interceptors.
+func (c *ContentTagClient) Interceptors() []Interceptor {
+	return c.inters.ContentTag
+}
+
+func (c *ContentTagClient) mutate(ctx context.Context, m *ContentTagMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ContentTagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ContentTagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ContentTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ContentTagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ContentTag mutation op: %q", m.Op())
 	}
 }
 
@@ -4144,22 +3990,6 @@ func (c *IdeaClient) QueryDetails(i *Idea) *IdeaDetailQuery {
 	return query
 }
 
-// QueryTags queries the tags edge of a Idea.
-func (c *IdeaClient) QueryTags(i *Idea) *IdeaTagQuery {
-	query := (&IdeaTagClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := i.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(idea.Table, idea.FieldID, id),
-			sqlgraph.To(ideatag.Table, ideatag.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, idea.TagsTable, idea.TagsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *IdeaClient) Hooks() []Hook {
 	return c.hooks.Idea
@@ -4512,155 +4342,6 @@ func (c *IdeaDetailTranslationClient) mutate(ctx context.Context, m *IdeaDetailT
 		return (&IdeaDetailTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown IdeaDetailTranslation mutation op: %q", m.Op())
-	}
-}
-
-// IdeaTagClient is a client for the IdeaTag schema.
-type IdeaTagClient struct {
-	config
-}
-
-// NewIdeaTagClient returns a client for the IdeaTag from the given config.
-func NewIdeaTagClient(c config) *IdeaTagClient {
-	return &IdeaTagClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `ideatag.Hooks(f(g(h())))`.
-func (c *IdeaTagClient) Use(hooks ...Hook) {
-	c.hooks.IdeaTag = append(c.hooks.IdeaTag, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `ideatag.Intercept(f(g(h())))`.
-func (c *IdeaTagClient) Intercept(interceptors ...Interceptor) {
-	c.inters.IdeaTag = append(c.inters.IdeaTag, interceptors...)
-}
-
-// Create returns a builder for creating a IdeaTag entity.
-func (c *IdeaTagClient) Create() *IdeaTagCreate {
-	mutation := newIdeaTagMutation(c.config, OpCreate)
-	return &IdeaTagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of IdeaTag entities.
-func (c *IdeaTagClient) CreateBulk(builders ...*IdeaTagCreate) *IdeaTagCreateBulk {
-	return &IdeaTagCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *IdeaTagClient) MapCreateBulk(slice any, setFunc func(*IdeaTagCreate, int)) *IdeaTagCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &IdeaTagCreateBulk{err: fmt.Errorf("calling to IdeaTagClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*IdeaTagCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &IdeaTagCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for IdeaTag.
-func (c *IdeaTagClient) Update() *IdeaTagUpdate {
-	mutation := newIdeaTagMutation(c.config, OpUpdate)
-	return &IdeaTagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *IdeaTagClient) UpdateOne(it *IdeaTag) *IdeaTagUpdateOne {
-	mutation := newIdeaTagMutation(c.config, OpUpdateOne, withIdeaTag(it))
-	return &IdeaTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *IdeaTagClient) UpdateOneID(id string) *IdeaTagUpdateOne {
-	mutation := newIdeaTagMutation(c.config, OpUpdateOne, withIdeaTagID(id))
-	return &IdeaTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for IdeaTag.
-func (c *IdeaTagClient) Delete() *IdeaTagDelete {
-	mutation := newIdeaTagMutation(c.config, OpDelete)
-	return &IdeaTagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *IdeaTagClient) DeleteOne(it *IdeaTag) *IdeaTagDeleteOne {
-	return c.DeleteOneID(it.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *IdeaTagClient) DeleteOneID(id string) *IdeaTagDeleteOne {
-	builder := c.Delete().Where(ideatag.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &IdeaTagDeleteOne{builder}
-}
-
-// Query returns a query builder for IdeaTag.
-func (c *IdeaTagClient) Query() *IdeaTagQuery {
-	return &IdeaTagQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeIdeaTag},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a IdeaTag entity by its id.
-func (c *IdeaTagClient) Get(ctx context.Context, id string) (*IdeaTag, error) {
-	return c.Query().Where(ideatag.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *IdeaTagClient) GetX(ctx context.Context, id string) *IdeaTag {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryIdeas queries the ideas edge of a IdeaTag.
-func (c *IdeaTagClient) QueryIdeas(it *IdeaTag) *IdeaQuery {
-	query := (&IdeaClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := it.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(ideatag.Table, ideatag.FieldID, id),
-			sqlgraph.To(idea.Table, idea.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, ideatag.IdeasTable, ideatag.IdeasPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(it.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *IdeaTagClient) Hooks() []Hook {
-	return c.hooks.IdeaTag
-}
-
-// Interceptors returns the client interceptors.
-func (c *IdeaTagClient) Interceptors() []Interceptor {
-	return c.inters.IdeaTag
-}
-
-func (c *IdeaTagClient) mutate(ctx context.Context, m *IdeaTagMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&IdeaTagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&IdeaTagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&IdeaTagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&IdeaTagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown IdeaTag mutation op: %q", m.Op())
 	}
 }
 
@@ -9396,6 +9077,671 @@ func (c *SocialLinkClient) mutate(ctx context.Context, m *SocialLinkMutation) (V
 	}
 }
 
+// StatsCacheCrawlerClient is a client for the StatsCacheCrawler schema.
+type StatsCacheCrawlerClient struct {
+	config
+}
+
+// NewStatsCacheCrawlerClient returns a client for the StatsCacheCrawler from the given config.
+func NewStatsCacheCrawlerClient(c config) *StatsCacheCrawlerClient {
+	return &StatsCacheCrawlerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `statscachecrawler.Hooks(f(g(h())))`.
+func (c *StatsCacheCrawlerClient) Use(hooks ...Hook) {
+	c.hooks.StatsCacheCrawler = append(c.hooks.StatsCacheCrawler, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `statscachecrawler.Intercept(f(g(h())))`.
+func (c *StatsCacheCrawlerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.StatsCacheCrawler = append(c.inters.StatsCacheCrawler, interceptors...)
+}
+
+// Create returns a builder for creating a StatsCacheCrawler entity.
+func (c *StatsCacheCrawlerClient) Create() *StatsCacheCrawlerCreate {
+	mutation := newStatsCacheCrawlerMutation(c.config, OpCreate)
+	return &StatsCacheCrawlerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of StatsCacheCrawler entities.
+func (c *StatsCacheCrawlerClient) CreateBulk(builders ...*StatsCacheCrawlerCreate) *StatsCacheCrawlerCreateBulk {
+	return &StatsCacheCrawlerCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *StatsCacheCrawlerClient) MapCreateBulk(slice any, setFunc func(*StatsCacheCrawlerCreate, int)) *StatsCacheCrawlerCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &StatsCacheCrawlerCreateBulk{err: fmt.Errorf("calling to StatsCacheCrawlerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*StatsCacheCrawlerCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &StatsCacheCrawlerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for StatsCacheCrawler.
+func (c *StatsCacheCrawlerClient) Update() *StatsCacheCrawlerUpdate {
+	mutation := newStatsCacheCrawlerMutation(c.config, OpUpdate)
+	return &StatsCacheCrawlerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *StatsCacheCrawlerClient) UpdateOne(scc *StatsCacheCrawler) *StatsCacheCrawlerUpdateOne {
+	mutation := newStatsCacheCrawlerMutation(c.config, OpUpdateOne, withStatsCacheCrawler(scc))
+	return &StatsCacheCrawlerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *StatsCacheCrawlerClient) UpdateOneID(id int) *StatsCacheCrawlerUpdateOne {
+	mutation := newStatsCacheCrawlerMutation(c.config, OpUpdateOne, withStatsCacheCrawlerID(id))
+	return &StatsCacheCrawlerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for StatsCacheCrawler.
+func (c *StatsCacheCrawlerClient) Delete() *StatsCacheCrawlerDelete {
+	mutation := newStatsCacheCrawlerMutation(c.config, OpDelete)
+	return &StatsCacheCrawlerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *StatsCacheCrawlerClient) DeleteOne(scc *StatsCacheCrawler) *StatsCacheCrawlerDeleteOne {
+	return c.DeleteOneID(scc.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *StatsCacheCrawlerClient) DeleteOneID(id int) *StatsCacheCrawlerDeleteOne {
+	builder := c.Delete().Where(statscachecrawler.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &StatsCacheCrawlerDeleteOne{builder}
+}
+
+// Query returns a query builder for StatsCacheCrawler.
+func (c *StatsCacheCrawlerClient) Query() *StatsCacheCrawlerQuery {
+	return &StatsCacheCrawlerQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeStatsCacheCrawler},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a StatsCacheCrawler entity by its id.
+func (c *StatsCacheCrawlerClient) Get(ctx context.Context, id int) (*StatsCacheCrawler, error) {
+	return c.Query().Where(statscachecrawler.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *StatsCacheCrawlerClient) GetX(ctx context.Context, id int) *StatsCacheCrawler {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *StatsCacheCrawlerClient) Hooks() []Hook {
+	return c.hooks.StatsCacheCrawler
+}
+
+// Interceptors returns the client interceptors.
+func (c *StatsCacheCrawlerClient) Interceptors() []Interceptor {
+	return c.inters.StatsCacheCrawler
+}
+
+func (c *StatsCacheCrawlerClient) mutate(ctx context.Context, m *StatsCacheCrawlerMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&StatsCacheCrawlerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&StatsCacheCrawlerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&StatsCacheCrawlerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&StatsCacheCrawlerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown StatsCacheCrawler mutation op: %q", m.Op())
+	}
+}
+
+// StatsCacheItemClient is a client for the StatsCacheItem schema.
+type StatsCacheItemClient struct {
+	config
+}
+
+// NewStatsCacheItemClient returns a client for the StatsCacheItem from the given config.
+func NewStatsCacheItemClient(c config) *StatsCacheItemClient {
+	return &StatsCacheItemClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `statscacheitem.Hooks(f(g(h())))`.
+func (c *StatsCacheItemClient) Use(hooks ...Hook) {
+	c.hooks.StatsCacheItem = append(c.hooks.StatsCacheItem, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `statscacheitem.Intercept(f(g(h())))`.
+func (c *StatsCacheItemClient) Intercept(interceptors ...Interceptor) {
+	c.inters.StatsCacheItem = append(c.inters.StatsCacheItem, interceptors...)
+}
+
+// Create returns a builder for creating a StatsCacheItem entity.
+func (c *StatsCacheItemClient) Create() *StatsCacheItemCreate {
+	mutation := newStatsCacheItemMutation(c.config, OpCreate)
+	return &StatsCacheItemCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of StatsCacheItem entities.
+func (c *StatsCacheItemClient) CreateBulk(builders ...*StatsCacheItemCreate) *StatsCacheItemCreateBulk {
+	return &StatsCacheItemCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *StatsCacheItemClient) MapCreateBulk(slice any, setFunc func(*StatsCacheItemCreate, int)) *StatsCacheItemCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &StatsCacheItemCreateBulk{err: fmt.Errorf("calling to StatsCacheItemClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*StatsCacheItemCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &StatsCacheItemCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for StatsCacheItem.
+func (c *StatsCacheItemClient) Update() *StatsCacheItemUpdate {
+	mutation := newStatsCacheItemMutation(c.config, OpUpdate)
+	return &StatsCacheItemUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *StatsCacheItemClient) UpdateOne(sci *StatsCacheItem) *StatsCacheItemUpdateOne {
+	mutation := newStatsCacheItemMutation(c.config, OpUpdateOne, withStatsCacheItem(sci))
+	return &StatsCacheItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *StatsCacheItemClient) UpdateOneID(id int) *StatsCacheItemUpdateOne {
+	mutation := newStatsCacheItemMutation(c.config, OpUpdateOne, withStatsCacheItemID(id))
+	return &StatsCacheItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for StatsCacheItem.
+func (c *StatsCacheItemClient) Delete() *StatsCacheItemDelete {
+	mutation := newStatsCacheItemMutation(c.config, OpDelete)
+	return &StatsCacheItemDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *StatsCacheItemClient) DeleteOne(sci *StatsCacheItem) *StatsCacheItemDeleteOne {
+	return c.DeleteOneID(sci.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *StatsCacheItemClient) DeleteOneID(id int) *StatsCacheItemDeleteOne {
+	builder := c.Delete().Where(statscacheitem.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &StatsCacheItemDeleteOne{builder}
+}
+
+// Query returns a query builder for StatsCacheItem.
+func (c *StatsCacheItemClient) Query() *StatsCacheItemQuery {
+	return &StatsCacheItemQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeStatsCacheItem},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a StatsCacheItem entity by its id.
+func (c *StatsCacheItemClient) Get(ctx context.Context, id int) (*StatsCacheItem, error) {
+	return c.Query().Where(statscacheitem.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *StatsCacheItemClient) GetX(ctx context.Context, id int) *StatsCacheItem {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *StatsCacheItemClient) Hooks() []Hook {
+	return c.hooks.StatsCacheItem
+}
+
+// Interceptors returns the client interceptors.
+func (c *StatsCacheItemClient) Interceptors() []Interceptor {
+	return c.inters.StatsCacheItem
+}
+
+func (c *StatsCacheItemClient) mutate(ctx context.Context, m *StatsCacheItemMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&StatsCacheItemCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&StatsCacheItemUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&StatsCacheItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&StatsCacheItemDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown StatsCacheItem mutation op: %q", m.Op())
+	}
+}
+
+// StatsCacheSourceClient is a client for the StatsCacheSource schema.
+type StatsCacheSourceClient struct {
+	config
+}
+
+// NewStatsCacheSourceClient returns a client for the StatsCacheSource from the given config.
+func NewStatsCacheSourceClient(c config) *StatsCacheSourceClient {
+	return &StatsCacheSourceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `statscachesource.Hooks(f(g(h())))`.
+func (c *StatsCacheSourceClient) Use(hooks ...Hook) {
+	c.hooks.StatsCacheSource = append(c.hooks.StatsCacheSource, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `statscachesource.Intercept(f(g(h())))`.
+func (c *StatsCacheSourceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.StatsCacheSource = append(c.inters.StatsCacheSource, interceptors...)
+}
+
+// Create returns a builder for creating a StatsCacheSource entity.
+func (c *StatsCacheSourceClient) Create() *StatsCacheSourceCreate {
+	mutation := newStatsCacheSourceMutation(c.config, OpCreate)
+	return &StatsCacheSourceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of StatsCacheSource entities.
+func (c *StatsCacheSourceClient) CreateBulk(builders ...*StatsCacheSourceCreate) *StatsCacheSourceCreateBulk {
+	return &StatsCacheSourceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *StatsCacheSourceClient) MapCreateBulk(slice any, setFunc func(*StatsCacheSourceCreate, int)) *StatsCacheSourceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &StatsCacheSourceCreateBulk{err: fmt.Errorf("calling to StatsCacheSourceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*StatsCacheSourceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &StatsCacheSourceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for StatsCacheSource.
+func (c *StatsCacheSourceClient) Update() *StatsCacheSourceUpdate {
+	mutation := newStatsCacheSourceMutation(c.config, OpUpdate)
+	return &StatsCacheSourceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *StatsCacheSourceClient) UpdateOne(scs *StatsCacheSource) *StatsCacheSourceUpdateOne {
+	mutation := newStatsCacheSourceMutation(c.config, OpUpdateOne, withStatsCacheSource(scs))
+	return &StatsCacheSourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *StatsCacheSourceClient) UpdateOneID(id int) *StatsCacheSourceUpdateOne {
+	mutation := newStatsCacheSourceMutation(c.config, OpUpdateOne, withStatsCacheSourceID(id))
+	return &StatsCacheSourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for StatsCacheSource.
+func (c *StatsCacheSourceClient) Delete() *StatsCacheSourceDelete {
+	mutation := newStatsCacheSourceMutation(c.config, OpDelete)
+	return &StatsCacheSourceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *StatsCacheSourceClient) DeleteOne(scs *StatsCacheSource) *StatsCacheSourceDeleteOne {
+	return c.DeleteOneID(scs.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *StatsCacheSourceClient) DeleteOneID(id int) *StatsCacheSourceDeleteOne {
+	builder := c.Delete().Where(statscachesource.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &StatsCacheSourceDeleteOne{builder}
+}
+
+// Query returns a query builder for StatsCacheSource.
+func (c *StatsCacheSourceClient) Query() *StatsCacheSourceQuery {
+	return &StatsCacheSourceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeStatsCacheSource},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a StatsCacheSource entity by its id.
+func (c *StatsCacheSourceClient) Get(ctx context.Context, id int) (*StatsCacheSource, error) {
+	return c.Query().Where(statscachesource.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *StatsCacheSourceClient) GetX(ctx context.Context, id int) *StatsCacheSource {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *StatsCacheSourceClient) Hooks() []Hook {
+	return c.hooks.StatsCacheSource
+}
+
+// Interceptors returns the client interceptors.
+func (c *StatsCacheSourceClient) Interceptors() []Interceptor {
+	return c.inters.StatsCacheSource
+}
+
+func (c *StatsCacheSourceClient) mutate(ctx context.Context, m *StatsCacheSourceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&StatsCacheSourceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&StatsCacheSourceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&StatsCacheSourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&StatsCacheSourceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown StatsCacheSource mutation op: %q", m.Op())
+	}
+}
+
+// StatsCacheVisitorClient is a client for the StatsCacheVisitor schema.
+type StatsCacheVisitorClient struct {
+	config
+}
+
+// NewStatsCacheVisitorClient returns a client for the StatsCacheVisitor from the given config.
+func NewStatsCacheVisitorClient(c config) *StatsCacheVisitorClient {
+	return &StatsCacheVisitorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `statscachevisitor.Hooks(f(g(h())))`.
+func (c *StatsCacheVisitorClient) Use(hooks ...Hook) {
+	c.hooks.StatsCacheVisitor = append(c.hooks.StatsCacheVisitor, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `statscachevisitor.Intercept(f(g(h())))`.
+func (c *StatsCacheVisitorClient) Intercept(interceptors ...Interceptor) {
+	c.inters.StatsCacheVisitor = append(c.inters.StatsCacheVisitor, interceptors...)
+}
+
+// Create returns a builder for creating a StatsCacheVisitor entity.
+func (c *StatsCacheVisitorClient) Create() *StatsCacheVisitorCreate {
+	mutation := newStatsCacheVisitorMutation(c.config, OpCreate)
+	return &StatsCacheVisitorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of StatsCacheVisitor entities.
+func (c *StatsCacheVisitorClient) CreateBulk(builders ...*StatsCacheVisitorCreate) *StatsCacheVisitorCreateBulk {
+	return &StatsCacheVisitorCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *StatsCacheVisitorClient) MapCreateBulk(slice any, setFunc func(*StatsCacheVisitorCreate, int)) *StatsCacheVisitorCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &StatsCacheVisitorCreateBulk{err: fmt.Errorf("calling to StatsCacheVisitorClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*StatsCacheVisitorCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &StatsCacheVisitorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for StatsCacheVisitor.
+func (c *StatsCacheVisitorClient) Update() *StatsCacheVisitorUpdate {
+	mutation := newStatsCacheVisitorMutation(c.config, OpUpdate)
+	return &StatsCacheVisitorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *StatsCacheVisitorClient) UpdateOne(scv *StatsCacheVisitor) *StatsCacheVisitorUpdateOne {
+	mutation := newStatsCacheVisitorMutation(c.config, OpUpdateOne, withStatsCacheVisitor(scv))
+	return &StatsCacheVisitorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *StatsCacheVisitorClient) UpdateOneID(id int) *StatsCacheVisitorUpdateOne {
+	mutation := newStatsCacheVisitorMutation(c.config, OpUpdateOne, withStatsCacheVisitorID(id))
+	return &StatsCacheVisitorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for StatsCacheVisitor.
+func (c *StatsCacheVisitorClient) Delete() *StatsCacheVisitorDelete {
+	mutation := newStatsCacheVisitorMutation(c.config, OpDelete)
+	return &StatsCacheVisitorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *StatsCacheVisitorClient) DeleteOne(scv *StatsCacheVisitor) *StatsCacheVisitorDeleteOne {
+	return c.DeleteOneID(scv.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *StatsCacheVisitorClient) DeleteOneID(id int) *StatsCacheVisitorDeleteOne {
+	builder := c.Delete().Where(statscachevisitor.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &StatsCacheVisitorDeleteOne{builder}
+}
+
+// Query returns a query builder for StatsCacheVisitor.
+func (c *StatsCacheVisitorClient) Query() *StatsCacheVisitorQuery {
+	return &StatsCacheVisitorQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeStatsCacheVisitor},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a StatsCacheVisitor entity by its id.
+func (c *StatsCacheVisitorClient) Get(ctx context.Context, id int) (*StatsCacheVisitor, error) {
+	return c.Query().Where(statscachevisitor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *StatsCacheVisitorClient) GetX(ctx context.Context, id int) *StatsCacheVisitor {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *StatsCacheVisitorClient) Hooks() []Hook {
+	return c.hooks.StatsCacheVisitor
+}
+
+// Interceptors returns the client interceptors.
+func (c *StatsCacheVisitorClient) Interceptors() []Interceptor {
+	return c.inters.StatsCacheVisitor
+}
+
+func (c *StatsCacheVisitorClient) mutate(ctx context.Context, m *StatsCacheVisitorMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&StatsCacheVisitorCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&StatsCacheVisitorUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&StatsCacheVisitorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&StatsCacheVisitorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown StatsCacheVisitor mutation op: %q", m.Op())
+	}
+}
+
+// TagClient is a client for the Tag schema.
+type TagClient struct {
+	config
+}
+
+// NewTagClient returns a client for the Tag from the given config.
+func NewTagClient(c config) *TagClient {
+	return &TagClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tag.Hooks(f(g(h())))`.
+func (c *TagClient) Use(hooks ...Hook) {
+	c.hooks.Tag = append(c.hooks.Tag, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tag.Intercept(f(g(h())))`.
+func (c *TagClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Tag = append(c.inters.Tag, interceptors...)
+}
+
+// Create returns a builder for creating a Tag entity.
+func (c *TagClient) Create() *TagCreate {
+	mutation := newTagMutation(c.config, OpCreate)
+	return &TagCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Tag entities.
+func (c *TagClient) CreateBulk(builders ...*TagCreate) *TagCreateBulk {
+	return &TagCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TagClient) MapCreateBulk(slice any, setFunc func(*TagCreate, int)) *TagCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TagCreateBulk{err: fmt.Errorf("calling to TagClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TagCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TagCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Tag.
+func (c *TagClient) Update() *TagUpdate {
+	mutation := newTagMutation(c.config, OpUpdate)
+	return &TagUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TagClient) UpdateOne(t *Tag) *TagUpdateOne {
+	mutation := newTagMutation(c.config, OpUpdateOne, withTag(t))
+	return &TagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TagClient) UpdateOneID(id string) *TagUpdateOne {
+	mutation := newTagMutation(c.config, OpUpdateOne, withTagID(id))
+	return &TagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Tag.
+func (c *TagClient) Delete() *TagDelete {
+	mutation := newTagMutation(c.config, OpDelete)
+	return &TagDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TagClient) DeleteOne(t *Tag) *TagDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TagClient) DeleteOneID(id string) *TagDeleteOne {
+	builder := c.Delete().Where(tag.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TagDeleteOne{builder}
+}
+
+// Query returns a query builder for Tag.
+func (c *TagClient) Query() *TagQuery {
+	return &TagQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTag},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Tag entity by its id.
+func (c *TagClient) Get(ctx context.Context, id string) (*Tag, error) {
+	return c.Query().Where(tag.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TagClient) GetX(ctx context.Context, id string) *Tag {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TagClient) Hooks() []Hook {
+	return c.hooks.Tag
+}
+
+// Interceptors returns the client interceptors.
+func (c *TagClient) Interceptors() []Interceptor {
+	return c.inters.Tag
+}
+
+func (c *TagClient) mutate(ctx context.Context, m *TagMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TagCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TagUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TagUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TagDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Tag mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -10326,35 +10672,37 @@ func (c *WorkExperienceTranslationClient) mutate(ctx context.Context, m *WorkExp
 type (
 	hooks struct {
 		Annotation, Award, AwardTranslation, BlogCategory, BlogCategoryTranslation,
-		BlogPost, BlogPostTag, BlogPostTranslation, BlogTag, Comment, CommentLike,
-		ContentInteraction, ContentRelation, Education, EducationDetail,
+		BlogPost, BlogPostTranslation, Comment, CommentLike, ContentInteraction,
+		ContentRelation, ContentTag, Education, EducationDetail,
 		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
 		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
-		IdeaDetailTranslation, IdeaTag, IdeaTranslation, ItemPart, ItemPartTranslation,
+		IdeaDetailTranslation, IdeaTranslation, ItemPart, ItemPartTranslation,
 		Language, PartEntry, PartEntryTranslation, PersonalInfo,
 		PersonalInfoTranslation, Project, ProjectDetail, ProjectDetailTranslation,
 		ProjectImage, ProjectImageTranslation, ProjectLike, ProjectTechnology,
 		ProjectTranslation, ProjectView, Publication, PublicationAuthor,
 		PublicationTranslation, RecentUpdate, RecentUpdateTranslation, RequestLog,
 		ResearchProject, ResearchProjectDetail, ResearchProjectDetailTranslation,
-		ResearchProjectTranslation, SocialLink, User, UserIdentity, WorkExperience,
+		ResearchProjectTranslation, SocialLink, StatsCacheCrawler, StatsCacheItem,
+		StatsCacheSource, StatsCacheVisitor, Tag, User, UserIdentity, WorkExperience,
 		WorkExperienceDetail, WorkExperienceDetailTranslation,
 		WorkExperienceTranslation []ent.Hook
 	}
 	inters struct {
 		Annotation, Award, AwardTranslation, BlogCategory, BlogCategoryTranslation,
-		BlogPost, BlogPostTag, BlogPostTranslation, BlogTag, Comment, CommentLike,
-		ContentInteraction, ContentRelation, Education, EducationDetail,
+		BlogPost, BlogPostTranslation, Comment, CommentLike, ContentInteraction,
+		ContentRelation, ContentTag, Education, EducationDetail,
 		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
 		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
-		IdeaDetailTranslation, IdeaTag, IdeaTranslation, ItemPart, ItemPartTranslation,
+		IdeaDetailTranslation, IdeaTranslation, ItemPart, ItemPartTranslation,
 		Language, PartEntry, PartEntryTranslation, PersonalInfo,
 		PersonalInfoTranslation, Project, ProjectDetail, ProjectDetailTranslation,
 		ProjectImage, ProjectImageTranslation, ProjectLike, ProjectTechnology,
 		ProjectTranslation, ProjectView, Publication, PublicationAuthor,
 		PublicationTranslation, RecentUpdate, RecentUpdateTranslation, RequestLog,
 		ResearchProject, ResearchProjectDetail, ResearchProjectDetailTranslation,
-		ResearchProjectTranslation, SocialLink, User, UserIdentity, WorkExperience,
+		ResearchProjectTranslation, SocialLink, StatsCacheCrawler, StatsCacheItem,
+		StatsCacheSource, StatsCacheVisitor, Tag, User, UserIdentity, WorkExperience,
 		WorkExperienceDetail, WorkExperienceDetailTranslation,
 		WorkExperienceTranslation []ent.Interceptor
 	}

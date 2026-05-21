@@ -43,8 +43,6 @@ const (
 	EdgeTranslations = "translations"
 	// EdgeDetails holds the string denoting the details edge name in mutations.
 	EdgeDetails = "details"
-	// EdgeTags holds the string denoting the tags edge name in mutations.
-	EdgeTags = "tags"
 	// Table holds the table name of the idea in the database.
 	Table = "ideas"
 	// TranslationsTable is the table that holds the translations relation/edge.
@@ -61,11 +59,6 @@ const (
 	DetailsInverseTable = "idea_details"
 	// DetailsColumn is the table column denoting the details relation/edge.
 	DetailsColumn = "idea_id"
-	// TagsTable is the table that holds the tags relation/edge. The primary key declared below.
-	TagsTable = "idea_tags_join"
-	// TagsInverseTable is the table name for the IdeaTag entity.
-	// It exists in this package in order to avoid circular dependency with the "ideatag" package.
-	TagsInverseTable = "idea_tags"
 )
 
 // Columns holds all SQL columns for idea fields.
@@ -84,12 +77,6 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
-
-var (
-	// TagsPrimaryKey and TagsColumn2 are the table columns denoting the
-	// primary key for the tags relation (M2M).
-	TagsPrimaryKey = []string{"idea_id", "idea_tag_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -269,20 +256,6 @@ func ByDetailsField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newDetailsStep(), sql.OrderByField(field, opts...))
 	}
 }
-
-// ByTagsCount orders the results by tags count.
-func ByTagsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newTagsStep(), opts...)
-	}
-}
-
-// ByTags orders the results by tags terms.
-func ByTags(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newTagsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newTranslationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -295,12 +268,5 @@ func newDetailsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DetailsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, false, DetailsTable, DetailsColumn),
-	)
-}
-func newTagsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(TagsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, TagsTable, TagsPrimaryKey...),
 	)
 }

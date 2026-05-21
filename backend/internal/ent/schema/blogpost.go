@@ -104,8 +104,11 @@ func (BlogPost) Edges() []ent.Edge {
 		// `blog_series` table — a blog's series is just the `series_id` /
 		// `series_order` fields on `blog_posts` itself (SCHEMA.md `blog`).
 		// Only `episode` has a real container series (`episode_series`).
-		edge.To("tags", BlogTag.Type).
-			Through("blog_post_tags", BlogPostTag.Type),
+		// No `tags` edge: tags moved to the cross-type `content_tag` table
+		// (M0.5b). The engine writes `tag` + `content_tag` rows directly,
+		// and the Go side reads them via `internal/contenttag` with raw SQL
+		// — no ent edge is needed and keeping one would resurrect the dead
+		// `blog_tags` / `blog_post_tags` tables on every migrate.
 		edge.To("translations", BlogPostTranslation.Type),
 		// No `comments` edge: `comments` is a runtime table that soft-
 		// references content by plain `entity_type` / `entity_id` fields. An

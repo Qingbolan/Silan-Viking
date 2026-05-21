@@ -132,8 +132,15 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		var conferences []string
 		var keywords []string
 
+		// `ID` is the URL key the frontend uses with `/ideas/${id}`.
+		// Since the detail route was unified to /:slug (M0.5b GOAL #6),
+		// hand back the slug here too, not the UUID — otherwise the
+		// frontend builds `/api/v1/ideas/<uuid>` and the detail handler
+		// (which now queries `idea.Slug(...)`) returns 404. The UUID
+		// stays internal to the backend; the frontend's `IdeaData.id`
+		// is a routing key, not a stable identifier.
 		result = append(result, types.IdeaData{
-			ID:                   ideaEntity.ID,
+			ID:                   ideaEntity.Slug,
 			Title:                title,
 			Description:          description,
 			Category:             category,

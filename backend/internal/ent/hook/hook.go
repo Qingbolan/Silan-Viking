@@ -80,18 +80,6 @@ func (f BlogPostFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlogPostMutation", m)
 }
 
-// The BlogPostTagFunc type is an adapter to allow the use of ordinary
-// function as BlogPostTag mutator.
-type BlogPostTagFunc func(context.Context, *ent.BlogPostTagMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f BlogPostTagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BlogPostTagMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlogPostTagMutation", m)
-}
-
 // The BlogPostTranslationFunc type is an adapter to allow the use of ordinary
 // function as BlogPostTranslation mutator.
 type BlogPostTranslationFunc func(context.Context, *ent.BlogPostTranslationMutation) (ent.Value, error)
@@ -102,18 +90,6 @@ func (f BlogPostTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlogPostTranslationMutation", m)
-}
-
-// The BlogTagFunc type is an adapter to allow the use of ordinary
-// function as BlogTag mutator.
-type BlogTagFunc func(context.Context, *ent.BlogTagMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f BlogTagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.BlogTagMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BlogTagMutation", m)
 }
 
 // The CommentFunc type is an adapter to allow the use of ordinary
@@ -162,6 +138,18 @@ func (f ContentRelationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ContentRelationMutation", m)
+}
+
+// The ContentTagFunc type is an adapter to allow the use of ordinary
+// function as ContentTag mutator.
+type ContentTagFunc func(context.Context, *ent.ContentTagMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ContentTagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ContentTagMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ContentTagMutation", m)
 }
 
 // The EducationFunc type is an adapter to allow the use of ordinary
@@ -294,18 +282,6 @@ func (f IdeaDetailTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdeaDetailTranslationMutation", m)
-}
-
-// The IdeaTagFunc type is an adapter to allow the use of ordinary
-// function as IdeaTag mutator.
-type IdeaTagFunc func(context.Context, *ent.IdeaTagMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f IdeaTagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.IdeaTagMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdeaTagMutation", m)
 }
 
 // The IdeaTranslationFunc type is an adapter to allow the use of ordinary
@@ -642,6 +618,66 @@ func (f SocialLinkFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SocialLinkMutation", m)
+}
+
+// The StatsCacheCrawlerFunc type is an adapter to allow the use of ordinary
+// function as StatsCacheCrawler mutator.
+type StatsCacheCrawlerFunc func(context.Context, *ent.StatsCacheCrawlerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f StatsCacheCrawlerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.StatsCacheCrawlerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatsCacheCrawlerMutation", m)
+}
+
+// The StatsCacheItemFunc type is an adapter to allow the use of ordinary
+// function as StatsCacheItem mutator.
+type StatsCacheItemFunc func(context.Context, *ent.StatsCacheItemMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f StatsCacheItemFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.StatsCacheItemMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatsCacheItemMutation", m)
+}
+
+// The StatsCacheSourceFunc type is an adapter to allow the use of ordinary
+// function as StatsCacheSource mutator.
+type StatsCacheSourceFunc func(context.Context, *ent.StatsCacheSourceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f StatsCacheSourceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.StatsCacheSourceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatsCacheSourceMutation", m)
+}
+
+// The StatsCacheVisitorFunc type is an adapter to allow the use of ordinary
+// function as StatsCacheVisitor mutator.
+type StatsCacheVisitorFunc func(context.Context, *ent.StatsCacheVisitorMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f StatsCacheVisitorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.StatsCacheVisitorMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StatsCacheVisitorMutation", m)
+}
+
+// The TagFunc type is an adapter to allow the use of ordinary
+// function as Tag mutator.
+type TagFunc func(context.Context, *ent.TagMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TagFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TagMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TagMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary
