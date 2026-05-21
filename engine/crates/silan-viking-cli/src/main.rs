@@ -300,10 +300,12 @@ fn run(args: Vec<String>) -> Result<(), String> {
             episode_add_lang(&opts.content_root, series, slug, lang)
         }
         ["episode", "publish", series, slug] => {
-            episode_set_status(&opts.content_root, series, slug, "published")
+            // Like blog publish: flip both status and visibility so the
+            // episode actually projects to the site.
+            episode_set_publish(&opts.content_root, series, slug, "published", "public")
         }
         ["episode", "unpublish", series, slug] => {
-            episode_set_status(&opts.content_root, series, slug, "draft")
+            episode_set_publish(&opts.content_root, series, slug, "draft", "private")
         }
         ["episode", "archive", series, slug] => {
             episode_set_status(&opts.content_root, series, slug, "archived")
@@ -324,10 +326,14 @@ fn run(args: Vec<String>) -> Result<(), String> {
         }
         ["idea", "promote", slug, "--to", target] => idea_promote(&opts.content_root, slug, target),
         ["blog", "publish", slug] => {
-            type_set_field(&opts.content_root, "blog", slug, "status", "published")
+            // Publish writes BOTH status=published AND visibility=public so the
+            // post actually reaches the website — `status` alone leaves it
+            // private and unprojected (USAGE §3 table).
+            type_set_publish(&opts.content_root, "blog", slug, "published", "public")
         }
         ["blog", "unpublish", slug] => {
-            type_set_field(&opts.content_root, "blog", slug, "status", "draft")
+            // Reverse: status back to draft AND visibility back to private.
+            type_set_publish(&opts.content_root, "blog", slug, "draft", "private")
         }
         ["project", "progress", slug] => project_progress(&opts.content_root, slug),
         ["update", "status", slug, state] => {
@@ -407,7 +413,16 @@ fn run(args: Vec<String>) -> Result<(), String> {
             }
         }
         ["mcp", "status"] => mcp_status(&opts.content_root),
-        ["site", "build"] | ["site", "preview"] => site_build(&opts.content_root, &opts.out_dir),
+        ["site", "build"] => site_build(&opts.content_root, &opts.out_dir),
+        // `site preview` and `site build` used to be aliases — the 2026-05-21
+        // e2e pass surfaced that `preview` produced only SEO artefacts and
+        // never started anything you could open in a browser. Now `preview`
+        // delegates to a real local-docker stack (single-host deploy, no
+        // [deploy] config required); `build` stays an artefacts-only operation.
+        ["site", "preview"] => site_preview(&opts.content_root, &opts.db_path, &opts.out_dir, false),
+        ["site", "preview", "--confirm"] => {
+            site_preview(&opts.content_root, &opts.db_path, &opts.out_dir, true)
+        }
         ["site", "check"] => site_check(&opts.content_root),
         ["site", "status"] => site_status(&opts.content_root),
         ["site", "promote", live, snapshot, commit] => site_promote(live, snapshot, commit),
@@ -2157,6 +2172,147 @@ fn stage_deploy_artifacts(project_root: &Path) -> Result<PathBuf, String> {
     Ok(staging)
 }
 
+/// Single-host docker bring-up — the steps 4/5/6 of the deploy pipeline when
+/// `host=localhost`. Shared between `site deploy` (local target) and
+/// `site preview` (no `[deploy]` config required). Returns once the stack is
+/// up, the live db is promoted, and the proxy is refreshed.
+///
+/// This is the body of the previous `if is_local { ... }` branch lifted out
+/// so `site preview` can call it without going through `[deploy]` parsing.
+/// `docs/silan-viking/16` §16.5 lists the WAL / proxy / promote ordering
+/// every step here keeps.
+fn run_local_deploy(
+    staging: &Path,
+    compose: &str,
+    project_root: &Path,
+    db_path: &Path,
+    media_root: Option<&Path>,
+    assets: &[silan_viking_app::ScannedAsset],
+    content_commit: &str,
+) -> Result<(), String> {
+    // 4 — ship: images are already in the local docker daemon.
+    println!("[4/6] ship (local — images already loaded)");
+
+    // 5 — up first, so the named volume + live db exist for promote.
+    println!("[5/6] promote — bring stack up, then replace derived tables");
+    docker_compose(staging, compose, &["up", "-d"])?;
+    if let Some(dir) = media_root {
+        sync_media_into_volume(compose, staging, "backend", dir)?;
+        println!("  synced {} media file(s) into /data/media", assets.len());
+    }
+    // The live db lives in the `portfolio-db` named volume. The backend keeps
+    // it in SQLite WAL mode (split state across `.db` + `-wal`); we stop the
+    // backend so the WAL is checkpointed before we touch the file, promote on
+    // a quiescent snapshot, copy it back, then clear stale WAL companions.
+    docker_compose(staging, compose, &["stop", "backend"])?;
+    let live_snapshot = project_root.join("_deploy/live-portfolio.db");
+    docker_cp_from(
+        compose,
+        staging,
+        "backend",
+        "/data/portfolio.db",
+        &live_snapshot,
+    )
+    // First deploy: no live db yet — start from the fresh snapshot.
+    .or_else(|_| {
+        fs::copy(db_path, &live_snapshot)
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    })?;
+    promote_db(&live_snapshot, db_path, content_commit)?;
+    docker_cp_to(
+        compose,
+        staging,
+        "backend",
+        &live_snapshot,
+        "/data/portfolio.db",
+    )?;
+    clear_wal_companions(compose, staging, "backend")?;
+
+    // 6 — back up; refresh the proxy so it picks up the recreated backend's IP.
+    println!("[6/6] up — start backend with the promoted db, refresh proxy");
+    docker_compose(staging, compose, &["up", "-d"])?;
+    docker_compose(staging, compose, &["restart", "proxy"])?;
+    println!("up — open http://localhost:8080");
+    Ok(())
+}
+
+/// `silan site preview` — bring a real local instance up (frontend, backend,
+/// proxy) using Docker, so the owner can open `http://localhost:8080` and
+/// see the site. Unlike `site deploy`, this does not require a `[deploy]`
+/// section in `silan-viking.toml`; localhost is implicit.
+///
+/// Before this fix, `site preview` was aliased to `site build` and only
+/// produced SEO artefacts (sitemap / robots / jsonld) — there was no server,
+/// no rendering, nothing to look at. The 2026-05-21 e2e pass surfaced this as
+/// GOAL §8.8.2 A1; this is the fix.
+fn site_preview(
+    content_root: &Path,
+    db_path: &Path,
+    out_dir: &Path,
+    confirm: bool,
+) -> Result<(), String> {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let compose = "deploy/docker-compose.yml";
+
+    if !confirm {
+        println!("site preview — dry run (pass --confirm to start the local stack)");
+        println!("  Brings up a single-host Docker stack at http://localhost:8080:");
+        println!("  1 sync     content/ -> {}", db_path.display());
+        println!(
+            "  2 build    stage embedded sources + SEO artifacts + media -> {}",
+            out_dir.display()
+        );
+        println!("  3 package  docker compose build (backend/web/proxy images)");
+        println!("  4 ship     images already in the local docker daemon");
+        println!("  5 promote  replace derived tables; runtime tables preserved");
+        println!("  6 up       docker compose up -d  ->  http://localhost:8080");
+        println!();
+        println!("  Requires: Docker. Stop with `docker compose -f \\$staging/{compose} down`.");
+        return Ok(());
+    }
+
+    // 1 — sync: rebuild the derived db snapshot from content/.
+    println!("[1/6] sync");
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    ws.sync(db_path).map_err(|e| e.to_string())?;
+    let content_commit = git_head_commit(content_root).unwrap_or_else(|| "unknown".into());
+    let assets = ws.scan().map_err(|e| e.to_string())?.assets().to_vec();
+
+    // 2 — build: stage embedded artefacts + SEO into the project's staging area.
+    println!("[2/6] build");
+    let staging = stage_deploy_artifacts(project_root)?;
+    let projector = silan_viking_site::SiteProjector::new("http://localhost:8080");
+    let seo_dir = staging.join("deploy/seo");
+    projector
+        .build(content_root, &seo_dir)
+        .map_err(|e| e.to_string())?;
+    let _ = projector.build(content_root, out_dir);
+    let media_root = stage_media(&staging, &assets)?;
+    if let Some(ref dir) = media_root {
+        println!(
+            "        staged {} media file(s) -> {}",
+            assets.len(),
+            dir.display()
+        );
+    }
+
+    // 3 — package: build the docker images from the staged compose file.
+    println!("[3/6] package");
+    docker_compose(&staging, compose, &["build"])?;
+
+    // 4/5/6 — single-host bring-up, shared with `site deploy` localhost.
+    run_local_deploy(
+        &staging,
+        compose,
+        project_root,
+        db_path,
+        media_root.as_deref(),
+        &assets,
+        &content_commit,
+    )
+}
+
 /// `silan site deploy` — the `06` §6.5 six-step pipeline: sync → build →
 /// package → ship → promote → up. Dry-run is the default; only `--confirm`
 /// touches the server.
@@ -2254,64 +2410,15 @@ fn site_deploy(
 
     // 4/5/6 differ between a local and a remote target.
     if is_local {
-        // 4 — ship: images are already in the local docker daemon.
-        println!("[4/6] ship (local — images already loaded)");
-
-        // 6 — up first, so the named volume + live db exist for promote.
-        println!("[5/6] promote — bring stack up, then replace derived tables");
-        docker_compose(&staging, compose, &["up", "-d"])?;
-        // Mirror the media tree while the backend is still up — the media
-        // sync uses `docker compose exec`, which needs a running container.
-        if let Some(ref dir) = media_root {
-            sync_media_into_volume(compose, &staging, "backend", dir)?;
-            println!("  synced {} media file(s) into /data/media", assets.len());
-        }
-        // The live db lives in the `portfolio-db` named volume. The backend
-        // keeps it in SQLite WAL mode, so the durable state is split across
-        // `portfolio.db` + `portfolio.db-wal`. Copying only the `.db` while
-        // the backend holds an uncheckpointed WAL yields a torn snapshot —
-        // and copying a fresh `.db` back next to a stale `-wal` makes SQLite
-        // replay mismatched frames and corrupt the database. So: stop the
-        // backend (its last connection close checkpoints and releases the
-        // WAL), copy / promote / copy-back against a quiescent file, then
-        // delete the now-stale `-wal`/`-shm` before the backend reopens.
-        docker_compose(&staging, compose, &["stop", "backend"])?;
-        let live_snapshot = project_root.join("_deploy/live-portfolio.db");
-        docker_cp_from(
-            compose,
+        return run_local_deploy(
             &staging,
-            "backend",
-            "/data/portfolio.db",
-            &live_snapshot,
-        )
-        // First deploy: no live db yet — start from the fresh snapshot.
-        .or_else(|_| {
-            fs::copy(db_path, &live_snapshot)
-                .map(|_| ())
-                .map_err(|e| e.to_string())
-        })?;
-        promote_db(&live_snapshot, db_path, &content_commit)?;
-        docker_cp_to(
             compose,
-            &staging,
-            "backend",
-            &live_snapshot,
-            "/data/portfolio.db",
-        )?;
-        // Drop the stale WAL companions left from before the stop — the
-        // promoted `.db` is a complete, self-contained file; a leftover
-        // `-wal`/`-shm` keyed to the old db generation would corrupt it.
-        clear_wal_companions(compose, &staging, "backend")?;
-
-        // Bring the backend back up — it reopens the promoted db cleanly —
-        // and refresh the proxy: step 5's `up -d` recreates the backend
-        // container on a new image / IP, and nginx caches the `backend`
-        // upstream IP at worker start, so a proxy left running serves 502.
-        println!("[6/6] up — start backend with the promoted db, refresh proxy");
-        docker_compose(&staging, compose, &["up", "-d"])?;
-        docker_compose(&staging, compose, &["restart", "proxy"])?;
-        println!("deployed locally — http://localhost:8080");
-        return Ok(());
+            project_root,
+            db_path,
+            media_root.as_deref(),
+            &assets,
+            &content_commit,
+        );
     }
 
     // ---- remote target: ship pre-built images + snapshot over SSH ----
@@ -2780,8 +2887,28 @@ fn site_rollback(content_root: &Path) -> Result<(), String> {
 /// `silan site status` — query live service health and the deployed content
 /// commit (`02` §site). Distinct from `site check`, which is the pre-publish
 /// local health check.
+///
+/// Without a `[deploy]` section, status falls back to a local-stack probe
+/// (the 2026-05-21 e2e pass flagged the previous behaviour: a friendly
+/// command was returning a deploy-flavoured error). With `[deploy]`, it
+/// SSHes to the remote host as before.
 fn site_status(content_root: &Path) -> Result<(), String> {
-    let cfg = deploy_config(content_root)?;
+    // Try [deploy] first; if it isn't configured, that is no longer a hard
+    // error — it just means "there is no remote target, only a local stack
+    // might be running".
+    let cfg = match deploy_config(content_root) {
+        Ok(cfg) => cfg,
+        Err(_) => {
+            // No [deploy] — probe the local docker stack instead.
+            return local_site_status();
+        }
+    };
+
+    let is_local = matches!(cfg.host.as_str(), "localhost" | "127.0.0.1" | "local");
+    if is_local {
+        return local_site_status();
+    }
+
     let target = format!("{}@{}", cfg.user, cfg.host);
     let key = cfg.ssh_key_path.to_string_lossy().into_owned();
     let out = Command::new("ssh")
@@ -2806,6 +2933,42 @@ fn site_status(content_root: &Path) -> Result<(), String> {
     println!("site status — {}", cfg.host);
     print!("{}", String::from_utf8_lossy(&out.stdout));
     Ok(())
+}
+
+/// Report the local Docker stack — what `site status` shows when there is no
+/// remote `[deploy]` to ask about. Uses the bundled compose name labels so it
+/// finds the stack even if the staging directory has been cleaned up.
+fn local_site_status() -> Result<(), String> {
+    // `docker compose ls` lists every compose project; we filter to the ones
+    // whose name contains `silan` (the bundled compose file is named
+    // `silan-viking-deploy`). If docker itself is missing, surface a clear
+    // hint pointing at how to actually run a local instance.
+    let out = Command::new("docker")
+        .args(["compose", "ls", "--all", "--format", "json"])
+        .output();
+    match out {
+        Ok(out) if out.status.success() => {
+            let raw = String::from_utf8_lossy(&out.stdout);
+            let trimmed = raw.trim();
+            if trimmed.is_empty() || trimmed == "[]" {
+                println!("site status — no local stack");
+                println!(
+                    "  run `silan site preview --confirm` to start one (needs Docker)"
+                );
+            } else {
+                println!("site status — local docker stacks:");
+                print!("{raw}");
+            }
+            Ok(())
+        }
+        Ok(out) => Err(format!(
+            "docker compose ls failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        )),
+        Err(e) => Err(format!(
+            "docker not available ({e}) — install Docker or configure [deploy] for a remote target"
+        )),
+    }
 }
 
 fn parse_kind(kind: &str) -> Option<ContentKind> {
@@ -2967,6 +3130,58 @@ fn type_set_field(
 
     rewrite_frontmatter_field(&file, field, value)?;
     println!("{kind} `{slug}` {field} -> {value}");
+    Ok(())
+}
+
+/// Type-specific `publish` / `unpublish` for flat-type Items (blog, update,
+/// idea, project). `status` is the lifecycle field; `visibility` is the
+/// website-projection field — `01` §1.7 / `10` §10.3 keep them separate, but
+/// the user-visible `publish` verb (USAGE §3 table; `02` §一) sets BOTH in
+/// one go: published = `status=published` + `visibility=public`. Without
+/// flipping visibility the post is "published" in lifecycle but never
+/// projected — the bug a 2026-05-21 e2e pass surfaced and the contract this
+/// helper restores.
+fn type_set_publish(
+    content_root: &Path,
+    kind: &str,
+    slug: &str,
+    status: &str,
+    visibility: &str,
+) -> Result<(), String> {
+    let content_kind = parse_kind(kind).ok_or_else(|| format!("unknown type `{kind}`"))?;
+    let type_dir = scaffold::type_dir_name(kind).map_err(|e| e.to_string())?;
+    let file = content_root
+        .join("resources")
+        .join(type_dir)
+        .join(slug)
+        .join("parts")
+        .join(primary_role(kind))
+        .join("en.md");
+    if !file.exists() {
+        return Err(format!("{kind} `{slug}` not found"));
+    }
+
+    // Validate both enum values up-front so a bad input fails before any
+    // file write — keeps publish atomic from the owner's view.
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    if let Some(spec) = ws.schema().type_spec(content_kind) {
+        for (field, value) in [("status", status), ("visibility", visibility)] {
+            if let Some(field_spec) = spec.field(field) {
+                if let Some(allowed) = field_spec.enum_values() {
+                    if !allowed.contains(&value) {
+                        return Err(format!(
+                            "`{value}` is not a valid {kind} {field} — allowed: {}",
+                            allowed.join(", ")
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    rewrite_frontmatter_field(&file, "status", status)?;
+    rewrite_frontmatter_field(&file, "visibility", visibility)?;
+    println!("{kind} `{slug}` status -> {status}, visibility -> {visibility}");
     Ok(())
 }
 
@@ -3186,6 +3401,26 @@ fn episode_set_status(
     let dir = scaffold::episode_dir(content_root, series, slug).map_err(|e| e.to_string())?;
     rewrite_frontmatter_field(&dir.join("parts/body/en.md"), "status", status)?;
     println!("episode `{series}/{slug}` status -> {status}");
+    Ok(())
+}
+
+/// Episode counterpart of `type_set_publish` — flip status AND visibility in
+/// the same call so `silan episode publish` actually projects to the site,
+/// not just changes the lifecycle. See `type_set_publish` for the rationale.
+fn episode_set_publish(
+    content_root: &Path,
+    series: &str,
+    slug: &str,
+    status: &str,
+    visibility: &str,
+) -> Result<(), String> {
+    let dir = scaffold::episode_dir(content_root, series, slug).map_err(|e| e.to_string())?;
+    let file = dir.join("parts/body/en.md");
+    rewrite_frontmatter_field(&file, "status", status)?;
+    rewrite_frontmatter_field(&file, "visibility", visibility)?;
+    println!(
+        "episode `{series}/{slug}` status -> {status}, visibility -> {visibility}"
+    );
     Ok(())
 }
 

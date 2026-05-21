@@ -221,10 +221,15 @@ pub fn tool_specs() -> Vec<ToolSpec> {
         ToolSpec {
             name: "capture",
             tier: Capture,
-            description: "capture a note into a proposal",
+            description: "capture a thought into a proposal. With no `type` (or `type=note`) the note lands in agent/notes/ for the agent's scratch space. With `type=idea|blog|project|episode|update` it opens a new Item under silan://resources/<type>/<slug>/ scaffolded with the note as the primary Part's body — this is the path the owner uses to grow a half-formed thought into a real content Item.",
             input_schema: serde_json::json!({
                 "type": "object",
-                "properties": {"note": {"type":"string","description":"the free-text note to capture"}},
+                "properties": {
+                    "note": {"type":"string","description":"the free-text note to capture"},
+                    "type": {"type":"string","description":"optional content type: note (default) / idea / blog / project / episode / update. note → agent/notes/; the others scaffold a real Item under resources/"},
+                    "slug": {"type":"string","description":"optional explicit slug; if omitted, derived from the first sentence of the note. Only used when type is a content kind."},
+                    "title": {"type":"string","description":"optional explicit title; if omitted, derived from the first sentence of the note."}
+                },
                 "required": ["note"],
             }),
         },
@@ -571,6 +576,11 @@ pub struct ProposalCreated {
     /// what this call actually changed (a missing language variant, sibling
     /// Parts not yet written, …). `None` when nothing is worth flagging.
     pub hint: Option<String>,
+    /// The canonical `silan://` URI of the resource this proposal created or
+    /// touched (the Item URI for type-routed `capture`, the touched URI for
+    /// `propose`). `None` only when the proposal is a free-form scratch
+    /// note that has no Item identity (`type=note` capture).
+    pub created_uri: Option<String>,
 }
 
 /// One Part of a `propose` call: the Part `role`, and its draft `content`.
@@ -703,6 +713,9 @@ pub fn propose(
         id: id.as_str().to_owned(),
         branch: id.branch_name(),
         hint,
+        // `propose` already carries the target URI from its arguments — pass
+        // it back as `created_uri` so MCP clients can chain accept→sync.
+        created_uri: Some(uri.to_owned()),
     })
 }
 
@@ -832,33 +845,193 @@ fn propose_hint(
     Some(notes.join("; "))
 }
 
-/// `capture(note)` — the lightweight entry point: drop a free-text note into
-/// `agent/notes/` on a proposal branch. It is `propose` aimed at the agent's
-/// own scratch space, so it always proposes a modification under
-/// `silan://resources` is *not* used — capture stays in `agent/`.
-pub fn capture(content_root: &Path, note: &str) -> Result<ProposalCreated, McpError> {
+/// `capture(note, type?, slug?, title?)` — capture a thought into a proposal.
+///
+/// Two routing paths, decided by `kind`:
+///
+/// * **`kind` is `None` or `"note"`** — the legacy scratch-note path. A free-text
+///   note lands in `agent/notes/<id>.md` on a proposal branch. No Item identity;
+///   the proposal touches `silan://agent/notes/<id>`.
+///
+/// * **`kind` is one of the six content kinds** (`idea` / `blog` / `project` /
+///   `episode` / `resume` / `update`) — open a real Item under
+///   `silan://resources/<type>/<slug>/`. The proposal scaffolds the primary Part
+///   (`overview` for idea/project; `body` for blog/episode/update;
+///   `summary` for resume) with the note as the body, frontmatter pre-filled
+///   with `slug` / `title` / `kind` / `status: draft` / `visibility: private`.
+///   The owner accepts → `silan index sync` and the Item is live in the db.
+///
+/// This is the GOAL §1.2 owner-view tape: silan voices a half-formed thought →
+/// `capture` opens an Item proposal → owner accepts → the thought lives as a
+/// real Item with a stable URI. Before this fix, every `type` value just wrote
+/// `agent/notes/`, so the "voice a thought → it becomes an Item" picture had
+/// no implementation behind it.
+pub fn capture(
+    content_root: &Path,
+    note: &str,
+    kind: Option<&str>,
+    slug: Option<&str>,
+    title: Option<&str>,
+) -> Result<ProposalCreated, McpError> {
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
-
     let id =
         ProposalId::new(Ulid::new().to_string()).map_err(|e| McpError::Proposal(e.to_string()))?;
-    let rel = format!("agent/notes/{}.md", id.as_str());
+
+    // Route by `kind`. The "no kind" and "kind=note" cases keep the legacy
+    // agent/notes/ behaviour so existing callers don't break.
+    let kind = kind.unwrap_or("note");
+    if kind == "note" {
+        let rel = format!("agent/notes/{}.md", id.as_str());
+        ws.create_proposal(
+            &id,
+            ProposalKind::Create,
+            vec![format!("silan://agent/notes/{}", id.as_str())],
+            &format!("capture {}", id.as_str()),
+            |root| write_draft_file(&root.join(&rel), note),
+        )
+        .map_err(|e| McpError::Proposal(e.to_string()))?;
+        return Ok(ProposalCreated {
+            id: id.as_str().to_owned(),
+            branch: id.branch_name(),
+            hint: None,
+            created_uri: Some(format!("silan://agent/notes/{}", id.as_str())),
+        });
+    }
+
+    // Content-kind route: scaffold a real Item under resources/<type>/<slug>/.
+    let content_kind = parse_kind(kind).ok_or_else(|| {
+        McpError::InvalidRequest(format!(
+            "capture `type` must be one of note / idea / blog / project / episode / resume / update; got `{kind}`"
+        ))
+    })?;
+
+    // Derive a slug from `slug` (explicit) → `title` → first sentence of the
+    // note. The result is normalised by `slugify` so trailing punctuation,
+    // unicode, etc. do not produce illegal slugs (`10` §10.4 slug pattern).
+    let derived_title = title
+        .map(str::to_owned)
+        .unwrap_or_else(|| first_sentence(note));
+    let chosen_slug = match slug {
+        Some(s) if !s.is_empty() => slugify(s),
+        _ => slugify(&derived_title),
+    };
+    if chosen_slug.is_empty() {
+        return Err(McpError::InvalidRequest(
+            "capture could not derive a slug from `slug`/`title`/`note`; pass an explicit `slug`"
+                .to_owned(),
+        ));
+    }
+
+    // The primary Part of each content kind — where the note becomes the body.
+    let primary_role = match content_kind {
+        silan_viking_app::ContentKind::Idea | silan_viking_app::ContentKind::Project => "overview",
+        silan_viking_app::ContentKind::Resume => "summary",
+        _ => "body",
+    };
+
+    let type_dir = match content_kind {
+        silan_viking_app::ContentKind::Idea => "ideas",
+        silan_viking_app::ContentKind::Blog => "blog",
+        silan_viking_app::ContentKind::Project => "projects",
+        silan_viking_app::ContentKind::Episode => "episode",
+        silan_viking_app::ContentKind::Resume => "resume",
+        silan_viking_app::ContentKind::Update => "update",
+    };
+
+    let part_dir_rel = format!(
+        "resources/{}/{}/parts/{}",
+        type_dir, chosen_slug, primary_role
+    );
+    let body_rel = format!("{}/en.md", part_dir_rel);
+    let meta_rel = format!("{}/meta.toml", part_dir_rel);
+    let item_uri = format!("silan://resources/{}/{}", type_dir, chosen_slug);
+
+    // The body file: frontmatter with the SCHEMA-required fields, default
+    // `status: draft` and `visibility: private`. The owner publishes
+    // explicitly with `silan blog publish` (or equivalent), which flips both.
+    let body = format!(
+        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\nstatus: draft\nvisibility: private\n---\n\n# {title}\n\n{note}\n",
+        slug = chosen_slug,
+        title = derived_title,
+        kind = kind,
+        note = note,
+    );
+
+    // The meta.toml: PartID + role + canonical_lang.
+    let part_ulid = Ulid::new();
+    let meta = format!(
+        "part_id        = \"p_{part_id}\"\ntype           = \"{role}\"\ncanonical_lang = \"en\"\n",
+        part_id = part_ulid,
+        role = primary_role,
+    );
 
     ws.create_proposal(
         &id,
         ProposalKind::Create,
-        vec![format!("silan://agent/notes/{}", id.as_str())],
-        &format!("capture {}", id.as_str()),
-        |root| write_draft_file(&root.join(&rel), note),
+        vec![item_uri.clone()],
+        &format!("capture {} ({})", id.as_str(), kind),
+        |root| {
+            write_draft_file(&root.join(&body_rel), &body)?;
+            write_draft_file(&root.join(&meta_rel), &meta)?;
+            Ok(())
+        },
     )
     .map_err(|e| McpError::Proposal(e.to_string()))?;
+
+    let hint = Some(format!(
+        "review with `silan proposal show {}`; accept with `silan proposal accept {}`; then `silan index sync` to land it. The new Item is at {}",
+        id.as_str(), id.as_str(), item_uri
+    ));
 
     Ok(ProposalCreated {
         id: id.as_str().to_owned(),
         branch: id.branch_name(),
-        // `capture` drops a scratch note — there is no Part/Item shape to
-        // reason about, so no next-step hint.
-        hint: None,
+        hint,
+        created_uri: Some(item_uri),
     })
+}
+
+/// Take the first sentence-ish span of `note` to use as a derived title /
+/// slug seed. Stops at the first `.` / `\n` / `!` / `?`; falls back to the
+/// whole string trimmed.
+fn first_sentence(note: &str) -> String {
+    let trimmed = note.trim();
+    let end = trimmed
+        .find(['\n', '.', '!', '?'])
+        .unwrap_or(trimmed.len());
+    let s = trimmed[..end].trim().to_owned();
+    if s.is_empty() {
+        trimmed.chars().take(60).collect()
+    } else {
+        s
+    }
+}
+
+/// Slugify a free-form title into a `10` §10.4-compatible slug:
+/// lowercase, ASCII alphanumeric, `-` between runs of non-alphanumeric,
+/// trimmed of leading/trailing `-`, capped at 60 chars.
+fn slugify(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut prev_dash = true; // skip a leading run of separators
+    for ch in input.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+            prev_dash = false;
+        } else if !prev_dash {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    while out.ends_with('-') {
+        out.pop();
+    }
+    if out.len() > 60 {
+        out.truncate(60);
+        while out.ends_with('-') {
+            out.pop();
+        }
+    }
+    out
 }
 
 /// Write a proposal draft file, creating parent directories. The
@@ -1473,8 +1646,27 @@ pub fn call(
         }
         "capture" => {
             let note = str_arg("note")?;
-            let created = capture(content_root, &note)?;
-            Ok(json!({ "proposal_id": created.id, "branch": created.branch, "hint": created.hint }))
+            // `type` / `slug` / `title` are all optional; missing type means
+            // "scratch note" — the legacy behaviour (agent/notes/<ulid>.md).
+            // Any of the six content kinds routes through a different
+            // scaffold path so the proposal opens a real Item under
+            // resources/<type>/<slug>/.
+            let kind = opt_str("type");
+            let slug = opt_str("slug");
+            let title = opt_str("title");
+            let created = capture(
+                content_root,
+                &note,
+                kind.as_deref(),
+                slug.as_deref(),
+                title.as_deref(),
+            )?;
+            Ok(json!({
+                "proposal_id": created.id,
+                "branch": created.branch,
+                "hint": created.hint,
+                "created_uri": created.created_uri,
+            }))
         }
         "ctx_read" => {
             let uri = str_arg("uri")?;

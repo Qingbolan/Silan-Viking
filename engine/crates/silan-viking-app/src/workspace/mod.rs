@@ -233,6 +233,36 @@ impl Workspace {
     {
         let repo = self.content_repo()?;
         let branch = id.branch_name();
+
+        // The original `git add -A` swept everything in the working tree into
+        // the proposal commit, including unrelated WIP files the owner hadn't
+        // committed yet (the 2026-05-21 e2e pass caught this — `touched` said
+        // one path, the actual diff carried three). `03` §3.1 says the
+        // proposal branch must only carry the agent's draft.
+        //
+        // Solution: stash whatever is dirty before branching, run the draft
+        // write + stage + commit on a clean tree, then restore the stash
+        // after returning to main. The proposal commit therefore contains
+        // exactly the files `write_draft` produced — nothing more.
+        let dirty_status = repo
+            .run(["status", "--porcelain"])
+            .map(|out| out.stdout)
+            .unwrap_or_default();
+        let had_wip = !dirty_status.trim().is_empty();
+        if had_wip {
+            // `-u` includes untracked files so they don't leak into the
+            // proposal branch either; the keyword is the commit-message
+            // marker so a human seeing the stash list knows where it came
+            // from.
+            repo.run([
+                "stash",
+                "push",
+                "-u",
+                "-m",
+                "silan-viking: pre-proposal WIP",
+            ])?;
+        }
+
         // Branch off main; the agent/owner never writes to main directly.
         repo.run(["checkout", "-q", "-b", &branch])?;
 
@@ -241,6 +271,9 @@ impl Workspace {
         // back to `main` below.
         let committed: Result<(), ProposalError> = (|| {
             write_draft(&self.content_root)?;
+            // `add -A` is now safe because the working tree was clean before
+            // `write_draft` ran (the stash above moved any WIP out of the
+            // way). Only the files `write_draft` produced are staged.
             repo.run(["add", "-A"])?;
             repo.run(["commit", "-q", "-m", commit_summary])?;
             Ok(())
@@ -250,8 +283,21 @@ impl Workspace {
         // so a failed `create_proposal` does not strand the repo on the
         // proposal branch.
         let back = repo.run(["checkout", "-q", DEFAULT_MAIN_BRANCH]);
+
+        // Restore the WIP last, after we are back on main, so the owner's
+        // working tree looks exactly the same as before the proposal call.
+        // If `pop` fails (e.g. a merge conflict against an unlikely change),
+        // surface it but do not undo the proposal — the commit is real and
+        // recoverable; the stash will still be there for `git stash list`.
+        let restored: Result<(), ProposalError> = if had_wip {
+            repo.run(["stash", "pop"]).map(|_| ()).map_err(Into::into)
+        } else {
+            Ok(())
+        };
+
         committed?;
         back?;
+        restored?;
         self.register_proposal(id, kind, touched)
     }
 

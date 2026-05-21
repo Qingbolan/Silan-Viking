@@ -38,6 +38,11 @@ pub struct QueryDocument {
     pub title: String,
     /// Status, if the type has one.
     pub status: Option<String>,
+    /// Visibility, if the type has one. `Some("public")` is the only value
+    /// `SiteProjector` projects to the website (`01` §1.7 second layer /
+    /// `10` §10.3); `private` / `unlisted` Items remain in the index for
+    /// owner-side queries but never reach the site.
+    pub visibility: Option<String>,
     /// Content tags (the `tags` frontmatter list), as raw labels.
     pub tags: Vec<String>,
     /// Language tags present in the parsed item.
@@ -220,6 +225,7 @@ fn document_from_parsed(item: &Item, parsed: &Parsed) -> QueryDocument {
         slug: item.slug().to_string(),
         title: title.unwrap_or_else(|| item.slug().to_string()),
         status: parsed.main().text("status").map(str::to_owned),
+        visibility: parsed.main().text("visibility").map(str::to_owned),
         tags,
         languages,
         text,

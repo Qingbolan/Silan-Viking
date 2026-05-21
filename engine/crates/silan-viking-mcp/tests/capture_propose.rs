@@ -59,8 +59,14 @@ fn capture_creates_a_proposal_branch_without_touching_main() {
     let root = fresh_repo("capture");
     let main_before = git(&root, &["rev-parse", "main"]);
 
-    let created =
-        silan_viking_mcp::capture(&root, "a quick idea worth keeping").expect("capture succeeds");
+    let created = silan_viking_mcp::capture(
+        &root,
+        "a quick idea worth keeping",
+        None,
+        None,
+        None,
+    )
+    .expect("capture succeeds");
 
     // A proposal branch exists and main is unchanged (#10 invariant).
     let branches = git(&root, &["branch", "--list"]);
@@ -76,6 +82,56 @@ fn capture_creates_a_proposal_branch_without_touching_main() {
     let note_path = format!("agent/notes/{}.md", created.id);
     let on_branch = git(&root, &["show", &format!("{}:{note_path}", created.branch)]);
     assert!(on_branch.contains("a quick idea worth keeping"));
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn capture_with_kind_idea_scaffolds_an_item_under_resources() {
+    // Pins bug #1 from the 2026-05-21 e2e pass: capture(type=idea) used to
+    // dump a raw line into agent/notes/<id>.md regardless of kind. After the
+    // fix it must open a real Item under silan://resources/ideas/<slug>/.
+    let root = fresh_repo("capture-idea");
+
+    let created = silan_viking_mcp::capture(
+        &root,
+        "use io_uring to write a portable embedded KV store",
+        Some("idea"),
+        None,
+        None,
+    )
+    .expect("capture(type=idea) succeeds");
+
+    // The created_uri points at the new Item, not at agent/notes/.
+    let uri = created.created_uri.expect("created_uri is present");
+    assert!(
+        uri.starts_with("silan://resources/ideas/"),
+        "expected an Item URI under resources/ideas/, got {uri}"
+    );
+
+    // The proposal branch carries the scaffolded body + meta, NOT
+    // agent/notes/<id>.md.
+    let body_path = uri
+        .strip_prefix("silan://resources/")
+        .map(|s| format!("resources/{s}/parts/overview/en.md"))
+        .expect("uri has resources prefix");
+    let on_branch = git(&root, &["show", &format!("{}:{body_path}", created.branch)]);
+    assert!(
+        on_branch.contains("io_uring"),
+        "the note body must land in the overview Part of the new Item: {on_branch}"
+    );
+    assert!(
+        on_branch.contains("kind: idea"),
+        "frontmatter must declare kind: idea"
+    );
+    assert!(
+        on_branch.contains("status: draft"),
+        "default status is draft"
+    );
+    assert!(
+        on_branch.contains("visibility: private"),
+        "default visibility is private"
+    );
 
     let _ = std::fs::remove_dir_all(&root);
 }
