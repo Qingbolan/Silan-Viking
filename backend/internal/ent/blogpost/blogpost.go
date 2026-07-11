@@ -55,19 +55,10 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// EdgeCategory holds the string denoting the category edge name in mutations.
-	EdgeCategory = "category"
 	// EdgeTranslations holds the string denoting the translations edge name in mutations.
 	EdgeTranslations = "translations"
 	// Table holds the table name of the blogpost in the database.
 	Table = "blog_posts"
-	// CategoryTable is the table that holds the category relation/edge.
-	CategoryTable = "blog_posts"
-	// CategoryInverseTable is the table name for the BlogCategory entity.
-	// It exists in this package in order to avoid circular dependency with the "blogcategory" package.
-	CategoryInverseTable = "blog_categories"
-	// CategoryColumn is the table column denoting the category relation/edge.
-	CategoryColumn = "category_id"
 	// TranslationsTable is the table that holds the translations relation/edge.
 	TranslationsTable = "blog_post_translations"
 	// TranslationsInverseTable is the table name for the BlogPostTranslation entity.
@@ -327,13 +318,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByCategoryField orders the results by category field.
-func ByCategoryField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newCategoryStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByTranslationsCount orders the results by translations count.
 func ByTranslationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -346,13 +330,6 @@ func ByTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newTranslationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
-}
-func newCategoryStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(CategoryInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, CategoryTable, CategoryColumn),
-	)
 }
 func newTranslationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

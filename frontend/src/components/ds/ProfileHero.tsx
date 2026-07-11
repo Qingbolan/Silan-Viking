@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Globe } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { dsRoot } from './dsAttr';
+import { Avatar } from './Avatar';
 
 export interface ContactItem {
   /** Drives the icon + the link protocol. */
@@ -37,6 +38,12 @@ export interface ProfileHeroProps {
   tagline?: string;
   contacts?: ContactItem[];
   socials?: SocialItem[];
+  /**
+   * Headshot URL. When present, an xl Avatar is rendered above the name
+   * (centred), giving the hero an identity anchor instead of leaving the
+   * name floating in empty space. Falls back to initials on load failure.
+   */
+  avatarSrc?: string;
   className?: string;
 }
 
@@ -66,49 +73,95 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   tagline,
   contacts = [],
   socials = [],
+  avatarSrc,
   className,
 }) => (
   <section
     {...dsRoot}
-    className={cn('mx-auto max-w-3xl px-4 py-16 text-center sm:py-20', className)}
+    className={cn('mx-auto w-full max-w-5xl px-4 py-10 sm:py-14', className)}
   >
-    {/* Name — the focal point. */}
-    {name && (
-      <motion.h1
-        {...fade(0)}
-        className="text-5xl font-bold leading-[1.05] tracking-[-0.025em] text-ds-fg md:text-6xl"
-      >
-        {name}
-      </motion.h1>
-    )}
+    {/* Card — bordered, faint grid backdrop, sits on the page. Replaces
+        the previous centered name-floating-in-space layout (silan,
+        2026-05-22) with a zangwei.dev-style left-text / right-portrait
+        composition. */}
+    <motion.div
+      {...fade(0)}
+      className={cn(
+        'relative overflow-hidden rounded-2xl border border-ds-border bg-ds-surface-1 shadow-sm',
+        'px-6 py-8 sm:px-10 sm:py-12',
+      )}
+    >
+      {/* Faint grid backdrop — pure CSS, no asset. Two crossed linear
+          gradients drawn at 32px intervals, very low contrast so it reads
+          as paper grain not graph paper. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, var(--ds-color-border) 1px, transparent 1px),' +
+            'linear-gradient(to bottom, var(--ds-color-border) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          maskImage:
+            'radial-gradient(ellipse at center, black 40%, transparent 80%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse at center, black 40%, transparent 80%)',
+        }}
+      />
 
-    {/* Role — flowing NUS brand gradient (orange ⇄ lifted blue). Fixed
-        brand hues via `.ds-text-gradient-flow`, so it is identical in
-        light and dark; the gradient pans on a slow loop. */}
-    {role && (
-      <motion.p
-        {...fade(0.08)}
-        className="ds-text-gradient-flow mt-3 text-xl font-semibold sm:text-2xl"
-      >
-        {role}
-      </motion.p>
-    )}
+      <div className="relative flex flex-col items-center gap-8 sm:flex-row sm:items-center sm:justify-between sm:gap-12">
+        {/* Text column */}
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          {name && (
+            <motion.h1
+              {...fade(0.04)}
+              className="text-6xl font-bold leading-[1.02] tracking-[-0.03em] text-ds-fg sm:text-7xl"
+            >
+              {name}
+            </motion.h1>
+          )}
 
-    {/* Tagline — quiet standfirst. */}
-    {tagline && (
-      <motion.p
-        {...fade(0.16)}
-        className="mx-auto mt-4 max-w-xl text-ds-base leading-[1.6] text-ds-fg-muted"
-      >
-        {tagline}
-      </motion.p>
-    )}
+          {/* Role — quiet muted line (was a flowing brand-gradient that
+              competed with the name; zangwei.dev keeps this small + grey). */}
+          {role && (
+            <motion.p
+              {...fade(0.08)}
+              className="mt-4 text-ds-base text-ds-fg-muted sm:text-ds-lg"
+            >
+              {role}
+            </motion.p>
+          )}
 
-    {/* Contact row — inline, hairline-quiet. */}
+          {/* Tagline */}
+          {tagline && (
+            <motion.p
+              {...fade(0.14)}
+              className="mt-3 max-w-xl text-ds-sm leading-[1.65] text-ds-fg-subtle sm:text-ds-base"
+            >
+              {tagline}
+            </motion.p>
+          )}
+        </div>
+
+        {/* Portrait column */}
+        {avatarSrc && (
+          <motion.div {...fade(0.06)} className="shrink-0">
+            <Avatar
+              src={avatarSrc}
+              name={name}
+              size="xl"
+              className="size-36 ring-[6px] ring-ds-bg shadow-lg md:size-40"
+            />
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+
+    {/* Contact row — sits below the card, inline + hairline-quiet. */}
     {contacts.length > 0 && (
       <motion.div
-        {...fade(0.24)}
-        className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+        {...fade(0.2)}
+        className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
       >
         {contacts.map((c, i) => {
           const href = contactHref(c.type, c.value);
@@ -135,11 +188,14 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
       </motion.div>
     )}
 
-    {/* Social links — square hairline buttons; hover lifts to NUS orange. */}
+    {/* Social links — bare icon row (silan, 2026-05-22). zangwei.dev-style:
+        no chip, no border, just a wide-spaced row of muted glyphs that
+        darken on hover. Larger icons (22px) because they're the only mass
+        on this row now. */}
     {socials.length > 0 && (
       <motion.div
-        {...fade(0.32)}
-        className="mt-7 flex justify-center gap-2.5"
+        {...fade(0.28)}
+        className="mt-8 flex justify-center gap-7"
       >
         {socials.map((s, i) => (
           <a
@@ -148,14 +204,15 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             aria-label={s.label}
+            title={s.label}
             className={cn(
-              'flex size-10 items-center justify-center rounded-ds-md border border-ds-border bg-ds-surface-1 text-ds-fg-muted',
+              'inline-flex items-center justify-center text-ds-fg-muted',
               'transition-colors duration-ds-fast ease-ds-standard',
-              'hover:border-ds-primary/30 hover:bg-ds-primary-soft hover:text-ds-primary',
-              '[&_svg]:size-[18px]',
+              'hover:text-ds-fg',
+              '[&_svg]:size-[22px]',
             )}
           >
-            {s.icon ?? <Globe className="size-[18px]" />}
+            {s.icon ?? <Globe className="size-[22px]" />}
           </a>
         ))}
       </motion.div>

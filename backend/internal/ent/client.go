@@ -1297,22 +1297,6 @@ func (c *BlogCategoryClient) QueryTranslations(bc *BlogCategory) *BlogCategoryTr
 	return query
 }
 
-// QueryBlogPosts queries the blog_posts edge of a BlogCategory.
-func (c *BlogCategoryClient) QueryBlogPosts(bc *BlogCategory) *BlogPostQuery {
-	query := (&BlogPostClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bc.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogcategory.Table, blogcategory.FieldID, id),
-			sqlgraph.To(blogpost.Table, blogpost.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, blogcategory.BlogPostsTable, blogcategory.BlogPostsColumn),
-		)
-		fromV = sqlgraph.Neighbors(bc.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *BlogCategoryClient) Hooks() []Hook {
 	return c.hooks.BlogCategory
@@ -1609,22 +1593,6 @@ func (c *BlogPostClient) GetX(ctx context.Context, id string) *BlogPost {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryCategory queries the category edge of a BlogPost.
-func (c *BlogPostClient) QueryCategory(bp *BlogPost) *BlogCategoryQuery {
-	query := (&BlogCategoryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
-			sqlgraph.To(blogcategory.Table, blogcategory.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.CategoryTable, blogpost.CategoryColumn),
-		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a BlogPost.

@@ -21,9 +21,14 @@ path = "_deploy/api/portfolio.db"
 port          = 7700
 enable_deploy = false
 
-# [deploy] — uncomment and fill in for `silan site deploy`.
-# host         = "silan.tech"
-# user         = "deploy"
-# ssh_key_path = "~/.ssh/silan_deploy_ed25519"  # path only, never the key
-# remote_dir   = "/srv/silan-viking"
-# compose_file = "deploy/docker-compose.yml"
+[deploy]
+# mode = "nginx" routes through systemd + a host-managed nginx (BaoTa /
+# 宝塔 here). Use mode = "docker" for the v1.0.0 Docker-Compose path.
+mode         = "nginx"
+host         = "107.174.92.163"
+user         = "root"
+ssh_key_path = "~/.ssh/id_rsa"
+remote_dir   = "/www/wwwroot/silan.tech"
+public_url   = "https://silan.tech"
+backend_port = 5200
+systemd_unit = "silan-backend"

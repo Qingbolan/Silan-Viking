@@ -27,6 +27,10 @@ export interface BlogCardData {
   kind?: 'article' | 'series';
   /** Episode count — shown for `series`. */
   episodeCount?: number;
+  /** Latest episode in a series — surfaced as a dedicated meta row between
+   *  the excerpt and the tags so the reader can see what's freshest without
+   *  opening the series. Rendered only when `kind === 'series'`. */
+  latestEpisode?: { title: string; episodeNumber?: number };
   /** Cover image. Omit for the branded placeholder. */
   coverImage?: string;
 }
@@ -87,7 +91,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
 }) => {
   const {
     id, title, excerpt, tags = [], date, author, readTime,
-    kind = 'article', episodeCount, coverImage,
+    kind = 'article', episodeCount, latestEpisode, coverImage,
   } = post;
 
   const shownTags = tags.slice(0, maxTags);
@@ -191,6 +195,20 @@ export const BlogCard: React.FC<BlogCardProps> = ({
         >
           {excerpt}
         </p>
+      )}
+
+      {isSeries && latestEpisode && (
+        <div className="flex items-baseline gap-1.5 text-ds-xs">
+          <span className="font-medium text-ds-fg-subtle">Latest</span>
+          {latestEpisode.episodeNumber != null && (
+            <span className="font-mono text-[11px] text-ds-fg-subtle">
+              #{latestEpisode.episodeNumber}
+            </span>
+          )}
+          <span className="line-clamp-1 text-ds-fg-muted">
+            {latestEpisode.title}
+          </span>
+        </div>
       )}
 
       {shownTags.length > 0 && (

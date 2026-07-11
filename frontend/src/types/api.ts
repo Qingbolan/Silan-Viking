@@ -235,6 +235,8 @@ export interface Publication {
   tags?: string[];
   /** Optional cover / figure image. */
   image?: string;
+  /** preprint / conference / journal / workshop — drives the badge style. */
+  publication_type?: 'preprint' | 'conference' | 'journal' | 'workshop' | string;
   citation_count: number;
   created_at: string;
   updated_at: string;

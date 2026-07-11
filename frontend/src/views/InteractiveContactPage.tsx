@@ -144,7 +144,7 @@ const InteractiveContactPageContent: React.FC = () => {
         path="/contact"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Hero header — same BlogHeader hero used by blog/ideas/projects,
             but hero-only (no search / filter toolbar). */}
         <BlogHeader

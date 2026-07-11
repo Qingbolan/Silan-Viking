@@ -1,3 +1,18 @@
+// Markdown — the single source of truth for article typography.
+//
+// Spec is measured from the Yuque reference (yuque.com/yuque/careers):
+//   body  15px / 1.8 / 400, font-article  (PingFang SC first)
+//   h1    32px / 1.3 / 700
+//   h2    22px / 1.4 / 600
+//   h3    18px / 1.45 / 600
+//   h4    16px / 1.5 / 600
+//   strong          / 600        (Yuque-style mid-bold, not 700)
+//   inline code 13px / 500, font-article-mono  (Menlo first)
+//   block  code 13px / 400 / 1.6, same family
+//   link  inherits size, primary colour, hover underline
+//
+// Tailwind only — there is no .markdown-body global CSS. Two layers caused
+// races in the past; one layer (this file) is the contract.
 import React from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -10,29 +25,70 @@ interface MarkdownProps {
 
 const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
   return (
-    <div className={`markdown-body ${className || ''}`}>
+    <div
+      // The `data-ds` opt-out unhooks index.css's global heading sizes
+      // (the unlayered `h1:not([data-ds] *)` rules at the bottom of index.css)
+      // so the Tailwind `text-[Npx]` classes below actually win for h1/h2/h3.
+      data-ds
+      className={`font-article text-[15px] leading-[1.8] text-theme-secondary ${className || ''}`}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         unwrapDisallowed={true}
         components={{
           h1: ({ node, ...props }) => (
-            <h1 className="text-theme-primary font-bold mt-6 mb-4 text-3xl" {...props} />
+            <h1
+              className="mt-8 mb-4 text-[32px] font-bold leading-[1.3] tracking-[-0.01em] text-theme-primary scroll-mt-24"
+              {...props}
+            />
           ),
           h2: ({ node, ...props }) => (
-            <h2 className="text-theme-primary font-bold mt-5 mb-3 text-2xl" {...props} />
+            <h2
+              className="mt-7 mb-3 text-[22px] font-semibold leading-[1.4] tracking-[-0.01em] text-theme-primary scroll-mt-24"
+              {...props}
+            />
           ),
           h3: ({ node, ...props }) => (
-            <h3 className="text-theme-primary font-semibold mt-4 mb-2 text-xl" {...props} />
+            <h3
+              className="mt-6 mb-2 text-[18px] font-semibold leading-[1.45] tracking-[-0.01em] text-theme-primary scroll-mt-24"
+              {...props}
+            />
           ),
+          h4: ({ node, ...props }) => (
+            <h4
+              className="mt-5 mb-2 text-[16px] font-semibold leading-[1.5] tracking-[-0.01em] text-theme-primary scroll-mt-24"
+              {...props}
+            />
+          ),
+          h5: ({ node, ...props }) => (
+            <h5
+              className="mt-5 mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-theme-tertiary"
+              {...props}
+            />
+          ),
+          h6: ({ node, ...props }) => (
+            <h6
+              className="mt-5 mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-theme-tertiary"
+              {...props}
+            />
+          ),
+          // Paragraph — same 15/1.8 as the wrapping body, just adds bottom
+          // margin so adjacent paragraphs breathe. We render as <div> to
+          // dodge invalid nesting when remark passes block children through.
           p: ({ node, ...props }) => (
-            <div className="text-theme-secondary my-2 leading-relaxed" {...props} />
+            <div className="my-4 text-[15px] leading-[1.8] text-theme-secondary" {...props} />
           ),
+          strong: ({ node, ...props }) => (
+            <strong className="font-semibold text-theme-primary" {...props} />
+          ),
+          em: ({ node, ...props }) => <em className="italic" {...props} />,
           a: ({ node, href, children, ...props }) => {
             if (!href) {
               return <span {...props}>{children}</span>;
             }
             const isExternal = /^https?:\/\//i.test(href);
-            const commonClass = 'text-theme-accent underline hover:opacity-80 break-all';
+            const commonClass =
+              'text-theme-accent underline underline-offset-2 decoration-theme-accent/40 hover:decoration-theme-accent transition-colors break-all';
             if (href.startsWith('/')) {
               return (
                 <Link to={href} className={commonClass} {...(props as any)}>
@@ -42,7 +98,13 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
             }
             if (isExternal) {
               return (
-                <a href={href} target="_blank" rel="noopener noreferrer" className={commonClass} {...props}>
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={commonClass}
+                  {...props}
+                >
                   {children}
                 </a>
               );
@@ -54,49 +116,66 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
             );
           },
           ul: ({ node, ...props }) => (
-            <ul className="list-disc pl-5 my-3 marker:text-theme-secondary" {...props} />
+            <ul
+              className="my-4 list-disc pl-5 marker:text-theme-tertiary"
+              {...props}
+            />
           ),
           ol: ({ node, ...props }) => (
-            <ol className="list-decimal pl-5 my-3 marker:text-theme-secondary" {...props} />
+            <ol
+              className="my-4 list-decimal pl-5 marker:text-theme-tertiary"
+              {...props}
+            />
           ),
           li: ({ node, ...props }) => (
-            <li className="my-1 text-theme-secondary marker:text-theme-secondary" {...props} />
+            <li
+              className="my-1 text-[15px] leading-[1.8] text-theme-secondary marker:text-theme-tertiary"
+              {...props}
+            />
           ),
           blockquote: ({ node, ...props }) => (
-            <blockquote className="border-l-4 border-theme-primary pl-3 my-3 text-theme-secondary" {...props} />
+            <blockquote
+              className="my-5 rounded-md bg-theme-surface px-4 py-3 italic text-theme-secondary"
+              {...props}
+            />
           ),
-          // react-markdown v9+ no longer passes an `inline` prop, so inline
-          // vs block must not be branched on inside the `code` renderer —
-          // doing so turned every inline `` `code` `` into a block. Structure
-          // decides instead: a fenced block is a `<code>` inside a `<pre>`.
-          // The stylesheet already keys off this — `:not(pre) > code` styles
-          // inline code, `pre` styles the block — so the renderers just pass
-          // the elements through with their block/inline class and let CSS
-          // do the rest. `className` carries `language-xxx` for highlighting.
+          // react-markdown v9+ no longer passes an `inline` prop; structure
+          // decides: inline `code` sits naked, block `code` sits inside `pre`.
           code: ({ node, className, children, ...props }) => (
-            <code className={className} {...props}>
+            <code
+              className={`rounded bg-theme-surface px-[0.36rem] py-[0.12rem] font-article-mono text-[13px] font-medium text-theme-primary ${className || ''}`}
+              {...props}
+            >
               {children}
             </code>
           ),
           pre: ({ node, children, ...props }) => (
-            <pre className="code-block" {...props}>
+            <pre
+              className="my-5 overflow-x-auto rounded-lg bg-theme-surface p-4 font-article-mono text-[13px] leading-[1.6] text-theme-primary [&_code]:bg-transparent [&_code]:p-0 [&_code]:font-normal"
+              {...props}
+            >
               {children}
             </pre>
           ),
-          hr: ({ node, ...props }) => <hr className="my-6 border-theme-card" {...props} />,
+          hr: ({ node, ...props }) => (
+            <hr className="my-8 border-0 bg-theme-card h-px" {...props} />
+          ),
           table: ({ node, ...props }) => (
-            <div className="overflow-x-auto my-4">
-              <table className="w-full border-collapse" {...props} />
+            <div className="my-5 overflow-x-auto">
+              <table className="w-full border-collapse text-[14px]" {...props} />
             </div>
           ),
           th: ({ node, ...props }) => (
-            <th className="text-left p-2 border border-theme-card bg-theme-surface text-theme-primary" {...props} />
+            <th
+              className="border border-theme-card bg-theme-surface px-3 py-2 text-left font-semibold text-theme-primary"
+              {...props}
+            />
           ),
           td: ({ node, ...props }) => (
-            <td className="p-2 border border-theme-card text-theme-secondary" {...props} />
+            <td className="border border-theme-card px-3 py-2 text-theme-secondary" {...props} />
           ),
           img: ({ node, ...props }) => (
-            <img className="rounded-lg my-3" loading="lazy" {...props} />
+            <img className="my-5 rounded-lg" loading="lazy" {...props} />
           ),
         }}
       >
@@ -107,5 +186,3 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
 };
 
 export default Markdown;
-
-

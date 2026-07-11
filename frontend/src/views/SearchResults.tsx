@@ -53,7 +53,7 @@ const SearchResults: React.FC = () => {
         noindex
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center" style={{ color: colors.textPrimary }}>

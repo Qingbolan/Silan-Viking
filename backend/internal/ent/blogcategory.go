@@ -41,11 +41,9 @@ type BlogCategory struct {
 type BlogCategoryEdges struct {
 	// Translations holds the value of the translations edge.
 	Translations []*BlogCategoryTranslation `json:"translations,omitempty"`
-	// BlogPosts holds the value of the blog_posts edge.
-	BlogPosts []*BlogPost `json:"blog_posts,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [1]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
@@ -55,15 +53,6 @@ func (e BlogCategoryEdges) TranslationsOrErr() ([]*BlogCategoryTranslation, erro
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
-}
-
-// BlogPostsOrErr returns the BlogPosts value or an error if the edge
-// was not loaded in eager-loading.
-func (e BlogCategoryEdges) BlogPostsOrErr() ([]*BlogPost, error) {
-	if e.loadedTypes[1] {
-		return e.BlogPosts, nil
-	}
-	return nil, &NotLoadedError{edge: "blog_posts"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -156,11 +145,6 @@ func (bc *BlogCategory) Value(name string) (ent.Value, error) {
 // QueryTranslations queries the "translations" edge of the BlogCategory entity.
 func (bc *BlogCategory) QueryTranslations() *BlogCategoryTranslationQuery {
 	return NewBlogCategoryClient(bc.config).QueryTranslations(bc)
-}
-
-// QueryBlogPosts queries the "blog_posts" edge of the BlogCategory entity.
-func (bc *BlogCategory) QueryBlogPosts() *BlogPostQuery {
-	return NewBlogCategoryClient(bc.config).QueryBlogPosts(bc)
 }
 
 // Update returns a builder for updating this BlogCategory.

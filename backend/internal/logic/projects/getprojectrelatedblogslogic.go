@@ -89,7 +89,6 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
-		WithCategory().
 		All(l.ctx)
 	if err != nil {
 		return nil, err
@@ -97,10 +96,9 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 
 	resp = make([]types.ProjectBlogRef, 0, len(posts))
 	for _, post := range posts {
-		var category string
-		if post.Edges.Category != nil {
-			category = post.Edges.Category.Name
-		}
+		// SCHEMA.md `blog.category` is a free-text label written straight
+		// into `category_id`; see BlogPost.Edges.
+		category := post.CategoryID
 
 		// Tags come from the cross-type `content_tag` table — the engine no
 		// longer populates the legacy ent `Tags` edge.

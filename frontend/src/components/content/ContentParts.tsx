@@ -49,6 +49,25 @@ interface ContentPartsProps {
    */
   extraTabs?: ExtraTab[];
   className?: string;
+  /** Controlled mode — caller decides which tab is active. */
+  value?: string;
+  /** Notify caller of tab changes (works for both controlled & uncontrolled). */
+  onValueChange?: (value: string) => void;
+  /**
+   * `tabs` (default) — left-rail vertical nav + single Part on the right.
+   * `long`            — render every content Part stacked into a long page;
+   *                     each Part gets an id={role} anchor so a sidebar nav
+   *                     can scroll to it. ExtraTabs (e.g. Discussion) still
+   *                     render at the bottom under a heading. Used by the
+   *                     KnowledgeBaseShell layout.
+   */
+  layout?: 'tabs' | 'long';
+  /**
+   * Hide the internal vertical tab nav — when the caller already has its own
+   * chapter nav (e.g. KnowledgeBaseShell.BookNav) and just wants the content
+   * pane. Behaves like `tabs` for everything else.
+   */
+  hideNav?: boolean;
 }
 
 /** Known roles get a curated icon; an unknown role falls back to a generic. */
@@ -144,6 +163,10 @@ const ContentParts: React.FC<ContentPartsProps> = ({
   parts,
   extraTabs = [],
   className,
+  value,
+  onValueChange,
+  layout = 'tabs',
+  hideNav = false,
 }) => {
   const { language } = useLanguage();
 
@@ -172,7 +195,12 @@ const ContentParts: React.FC<ContentPartsProps> = ({
     })),
   ];
 
-  const [active, setActive] = useState<string>(tabItems[0]?.value ?? '');
+  const [internal, setInternal] = useState<string>(tabItems[0]?.value ?? '');
+  const active = value ?? internal;
+  const setActive = (v: string) => {
+    if (value === undefined) setInternal(v);
+    onValueChange?.(v);
+  };
 
   // The active value may vanish on a language switch — fall back to the
   // first tab. It resolves to either a content Part or a runtime tab.
@@ -192,6 +220,74 @@ const ContentParts: React.FC<ContentPartsProps> = ({
     );
   }
 
+  // Long-form layout — every Part stacked top-to-bottom, each in its own
+  // <section id={role}> so a sidebar nav can anchor-link. Extra tabs render
+  // under their own heading at the bottom (e.g. Discussion). The role name
+  // is shown as a section header so the reader knows where they are.
+  if (layout === 'long') {
+    return (
+      <div className={`space-y-12 ${className || ''}`}>
+        {visible.map((p) => (
+          <section key={p.role} id={p.role} className="scroll-mt-24">
+            <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
+              <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
+                {ROLE_ICONS[p.role] ?? <ListTree size={16} />}
+              </span>
+              {roleLabel(p.role, language)}
+            </h2>
+            {p.shape === 'entry_list' ? (
+              <div className="space-y-3">
+                {[...p.entries]
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((e) => (
+                    <EntryCard key={e.id} entry={e} />
+                  ))}
+              </div>
+            ) : (
+              <Markdown>{partBody(p, language)}</Markdown>
+            )}
+          </section>
+        ))}
+        {extraTabs.map((t) => (
+          <section key={t.key} id={`tab-${t.key}`} className="scroll-mt-24">
+            <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
+              <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
+                {t.icon}
+              </span>
+              {t.label}
+            </h2>
+            {t.render()}
+          </section>
+        ))}
+      </div>
+    );
+  }
+
+  // The body for the currently-active Part / extra tab. Wrapped in
+  // <article id="kb-active-part"> so external nav (BookNav sub-headings,
+  // DOMOutline) can scope their DOM scans to "what is currently shown".
+  const body = (
+    <article id="kb-active-part" className="min-w-0">
+      {activeExtra ? (
+        activeExtra.render()
+      ) : activePart && activePart.shape === 'entry_list' ? (
+        <div className="space-y-3">
+          {[...activePart.entries]
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((e) => (
+              <EntryCard key={e.id} entry={e} />
+            ))}
+        </div>
+      ) : activePart ? (
+        <Markdown>{partBody(activePart, language)}</Markdown>
+      ) : null}
+    </article>
+  );
+
+  if (hideNav) {
+    return <div className={className}>{body}</div>;
+  }
+
   return (
     // Two-column docs layout — a left-rail vertical nav and the content
     // panel beside it. On a narrow viewport the rail stacks above.
@@ -206,21 +302,7 @@ const ContentParts: React.FC<ContentPartsProps> = ({
           />
         </div>
       </nav>
-      <div className="min-w-0 flex-1">
-        {activeExtra ? (
-          activeExtra.render()
-        ) : activePart && activePart.shape === 'entry_list' ? (
-          <div className="space-y-3">
-            {[...activePart.entries]
-              .sort((a, b) => a.sortOrder - b.sortOrder)
-              .map((e) => (
-                <EntryCard key={e.id} entry={e} />
-              ))}
-          </div>
-        ) : activePart ? (
-          <Markdown>{partBody(activePart, language)}</Markdown>
-        ) : null}
-      </div>
+      <div className="flex-1">{body}</div>
     </div>
   );
 };

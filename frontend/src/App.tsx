@@ -13,6 +13,7 @@ import IdeaPage from './views/IdeaPage';
 import IdeaDetail from './components/IdeaPage/IdeaDetail';
 import BlogStack from './views/BlogStack';
 import BlogDetail from './components/BlogStack/BlogDetail';
+import EpisodeDetail from './components/Episode/EpisodeDetail';
 import PlansPage from './views/PlansPage';
 import SearchResults from './views/SearchResults';
 import Gallery from './views/Gallery';
@@ -72,6 +73,7 @@ const LocalizedRoutes: React.FC = () => {
       <Route path="/ideas/:id" element={<IdeaDetail />} />
       <Route path="/blog" element={<BlogStack />} />
       <Route path="/blog/:id" element={<BlogDetail />} />
+      <Route path="/episodes/:slug" element={<EpisodeDetail />} />
       <Route path="/search" element={<SearchResults />} />
       {/* Design-system gallery — /design is an alias of /gallery. */}
       <Route path="/gallery" element={<Gallery />} />

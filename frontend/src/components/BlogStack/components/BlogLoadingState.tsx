@@ -1,10 +1,7 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Spin } from 'antd';
-import { useTheme } from '../../ThemeContext';
 import { useLanguage } from '../../LanguageContext';
+import { BrandLoading } from '../../ds/BrandLoading';
 import { NotFoundError } from '../../ds/ErrorState';
 
 interface BlogLoadingStateProps {
@@ -14,28 +11,17 @@ interface BlogLoadingStateProps {
 
 export const BlogLoadingState: React.FC<BlogLoadingStateProps> = ({ loading, error }) => {
   const navigate = useNavigate();
-  const { colors } = useTheme();
   const { language } = useLanguage();
 
   if (loading) {
+    // Match the rest of the site's loading state — the same BrandLoading
+    // shown on /gallery and ProjectDetail. Inline variant so the article
+    // chrome (header/nav) keeps its space instead of a full-screen splash.
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Spin 
-            size="large" 
-            tip={language === 'en' ? 'Loading article...' : '加载文章中...'}
-            indicator={
-              <BookOpen 
-                size={32} 
-                className="animate-pulse" 
-                style={{ color: colors.accent }} 
-              />
-            }
-          >
-            <div style={{ minHeight: '200px' }} />
-          </Spin>
-        </motion.div>
-      </div>
+      <BrandLoading
+        inline
+        message={language === 'en' ? 'Loading article...' : '加载文章中...'}
+      />
     );
   }
 

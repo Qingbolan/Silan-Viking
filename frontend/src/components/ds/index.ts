@@ -11,6 +11,18 @@
 export { Button, buttonVariants } from './Button';
 export type { ButtonProps } from './Button';
 
+export { default as ArticleFooter } from './ArticleFooter';
+export type { ArticleFooterProps } from './ArticleFooter';
+export { mockComments, mockRecentLikers } from './__mocks__/articleFooterMock';
+export type { MockComment, MockLiker, MockReaction } from './__mocks__/articleFooterMock';
+
+export { default as KnowledgeBaseShell } from './knowledge-base/KnowledgeBaseShell';
+export type { KnowledgeBaseShellProps } from './knowledge-base/KnowledgeBaseShell';
+export { default as BookNav } from './knowledge-base/BookNav';
+export type { BookNavChapter } from './knowledge-base/BookNav';
+export { default as DOMOutline } from './knowledge-base/DOMOutline';
+export { default as EngagementFAB } from './knowledge-base/EngagementFAB';
+
 export { IconButton, iconButtonVariants } from './IconButton';
 export type { IconButtonProps } from './IconButton';
 

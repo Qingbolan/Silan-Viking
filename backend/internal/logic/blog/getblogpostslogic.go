@@ -7,7 +7,6 @@ import (
 
 	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
-	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -36,14 +35,13 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
-		WithCategory().
 		WithTranslations()
 
-	// Apply filters
+	// Category filter: the schema's `category_id` column holds a free-text
+	// frontmatter label (see BlogPost.Edges — no FK to blog_categories), so
+	// the filter is a plain equality on that label.
 	if req.Category != "" {
-		query = query.Where(blogpost.HasCategoryWith(
-			blogcategory.Slug(req.Category),
-		))
+		query = query.Where(blogpost.CategoryIDEQ(req.Category))
 	}
 
 	if req.Featured {
@@ -107,10 +105,9 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			readTime = fmt.Sprintf("%d min read", post.ReadingTimeMinutes)
 		}
 
-		var category string
-		if post.Edges.Category != nil {
-			category = post.Edges.Category.Name
-		}
+		// SCHEMA.md `blog.category` is a free-text label written straight
+		// into `category_id`; surface it directly. See BlogPost.Edges.
+		category := post.CategoryID
 
 		// Tags come from the cross-type `content_tag` table — the engine no
 		// longer populates the legacy ent `Tags` edge.

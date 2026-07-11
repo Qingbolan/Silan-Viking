@@ -19,6 +19,8 @@ interface ProjectSectionProps {
   current?: string;
   contacts?: ContactInfo[];
   socialLinks?: SocialLink[];
+  /** Headshot URL — passed straight through to ProfileHero. */
+  avatarSrc?: string;
 }
 
 /**
@@ -31,6 +33,7 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
   current = '',
   contacts = [],
   socialLinks = [],
+  avatarSrc,
 }) => {
   const dsContacts = useMemo<ContactItem[]>(
     () =>
@@ -66,6 +69,7 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
       tagline={current}
       contacts={dsContacts}
       socials={dsSocials}
+      avatarSrc={avatarSrc}
     />
   );
 };

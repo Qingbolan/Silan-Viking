@@ -4,10 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Calendar,
   Clock,
-  ExternalLink,
   ArrowLeft,
-  Share2,
-  Heart,
   MessageSquare,
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
@@ -24,6 +21,11 @@ import {
   Button,
   BrandLoading,
   ErrorState,
+  ArticleFooter,
+  KnowledgeBaseShell,
+  type BookNavChapter,
+  mockComments,
+  mockRecentLikers,
 } from '../../components/ds';
 
 
@@ -34,7 +36,7 @@ const IdeaDetail: React.FC = () => {
 
   const [idea, setIdea] = useState<IdeaData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [liked, setLiked] = useState(false);
+  const [activePart, setActivePart] = useState<string>('');
 
   // Reflect the idea title in the address-bar breadcrumb.
   useSetPageTitle(idea ? idea.title : null);
@@ -125,6 +127,60 @@ const IdeaDetail: React.FC = () => {
   const seoDescription =
     (language === 'en' ? idea.abstract : idea.abstractZh || idea.abstract) || '';
 
+  // The 'Overview' virtual page — id `__overview__` shows the idea's
+  // intro card (status, title, dates, actions); other ids show that Part.
+  const OVERVIEW_ID = '__overview__';
+
+  // Build the BookNav chapter list from the idea's Parts. `role` is the
+  // stable id (matches ContentParts' tab value), so clicking a chapter
+  // switches the active tab inside ContentParts. Default to Overview so
+  // the reader lands on the intro page, not a random Part.
+  const partRoles = (idea.parts ?? [])
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((p) => p.role);
+  if (!activePart) {
+    setActivePart(OVERVIEW_ID);
+  }
+  const roleLabels: Record<string, { en: string; zh: string }> = {
+    overview:   { en: 'Overview',        zh: '概述' },
+    progress:   { en: 'Latest Progress', zh: '最新进展' },
+    abstract:   { en: 'Abstract',        zh: '摘要' },
+    goals:      { en: 'Goals',           zh: '目标' },
+    challenges: { en: 'Challenges',      zh: '挑战' },
+    solutions:  { en: 'Solutions',       zh: '解决方案' },
+  };
+  const chapterFromRole = (role: string): string => {
+    const known = roleLabels[role];
+    if (known) return language === 'en' ? known.en : known.zh;
+    return role.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+  // Switch page — tab semantics; reset scroll so the new page starts at top.
+  const goToPart = (partId: string) => {
+    setActivePart(partId);
+    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
+    if (scrollRoot) scrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const chapters: BookNavChapter[] = [
+    ...partRoles.map((role) => ({
+      id: role,
+      label: chapterFromRole(role),
+      onClick: () => goToPart(role),
+    })),
+    {
+      id: 'tab:discussion',
+      label: language === 'en' ? 'Discussion' : '讨论',
+      onClick: () => goToPart('tab:discussion'),
+    },
+  ];
+
+  // Rough word count from prose Parts in the current language.
+  const wordCount = (idea.parts ?? []).reduce((acc, p) => {
+    const body = p.body?.[language] ?? p.body?.[p.canonicalLang] ?? '';
+    return acc + body.split(/\s+/).filter(Boolean).length;
+  }, 0);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Seo
@@ -139,88 +195,95 @@ const IdeaDetail: React.FC = () => {
           path: `/ideas/${idea.id}`,
         })}
       />
-      <Container width="content">
-        <Section spacing="md">
-          {/* --- Header — status eyebrow + title, then a single meta row
-                 with the dates on the left and the actions on the right. -- */}
-          <div className="space-y-1.5">
-            <div className="text-ds-xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
-              {statusLabel[idea.status] ?? idea.status}
-            </div>
-            <h1 className="text-ds-3xl font-semibold tracking-[-0.02em] text-ds-fg">
-              {idea.title}
-            </h1>
-          </div>
+      <KnowledgeBaseShell
+        overview={{
+          label: idea.title || (language === 'en' ? 'Overview' : '概述'),
+          onClick: () => goToPart(OVERVIEW_ID),
+          isActive: activePart === OVERVIEW_ID,
+        }}
+        chapters={chapters}
+        currentChapterId={activePart}
+        wordCount={wordCount}
+        likes={2047}
+        commentsCount={94}
+      >
+          {activePart === OVERVIEW_ID ? (
+            <>
+              {/* Overview / cover page — status eyebrow, title, dates, abstract.
+                  Stats + actions intentionally absent: this is a book cover,
+                  not a control panel. */}
+              <div className="space-y-2">
+                <div className="text-[12px] font-medium uppercase tracking-[0.1em] text-ds-fg-subtle">
+                  {statusLabel[idea.status] ?? idea.status}
+                </div>
+                <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.02em] text-ds-fg">
+                  {idea.title}
+                </h1>
+              </div>
 
-          {/* Sticky meta bar — dates ↔ actions, pinned to the top of the
-              viewport as the content scrolls beneath it. */}
-          <div className="sticky top-0 z-20 mt-3 -mx-4 flex flex-col gap-3 border-b border-ds-border bg-ds-surface-1/85 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-ds-sm text-ds-fg-muted">
-              <span className="inline-flex items-center gap-1.5">
-                <Calendar className="size-3.5" />
-                {language === 'en' ? 'Created' : '创建于'} {formatDate(idea.createdAt)}
-              </span>
-              {idea.lastUpdated && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-ds-fg-muted">
                 <span className="inline-flex items-center gap-1.5">
-                  <Clock className="size-3.5" />
-                  {language === 'en' ? 'Updated' : '更新于'} {formatDate(idea.lastUpdated)}
+                  <Calendar className="size-3.5" />
+                  {language === 'en' ? 'Created' : '创建于'} {formatDate(idea.createdAt)}
                 </span>
-              )}
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Button
-                variant={liked ? 'subtle' : 'outline'}
-                size="sm"
-                onClick={() => setLiked(!liked)}
-                leadingIcon={<Heart fill={liked ? 'currentColor' : 'none'} />}
-              >
-                {language === 'en' ? 'Like' : '喜欢'}
-              </Button>
-              <Button variant="outline" size="sm" leadingIcon={<Share2 />}>
-                {language === 'en' ? 'Share' : '分享'}
-              </Button>
-              {idea.demoUrl && (
-                <a href={`/projects/${idea.id}/demo`}>
-                  <Button size="sm" leadingIcon={<ExternalLink />}>
-                    {language === 'en' ? 'Project Demo' : '项目演示'}
-                  </Button>
-                </a>
-              )}
-            </div>
-          </div>
+                {idea.lastUpdated && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="size-3.5" />
+                    {language === 'en' ? 'Updated' : '更新于'} {formatDate(idea.lastUpdated)}
+                  </span>
+                )}
+              </div>
 
-          {/* Tag chips. */}
-          {idea.tags && idea.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {idea.tags.map((tag, index) => (
-                <Badge key={index} tone="neutral" appearance="soft" size="md">
-                  {tag}
-                </Badge>
-              ))}
+              {idea.tags && idea.tags.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {idea.tags.map((tag, index) => (
+                    <Badge key={index} tone="neutral" appearance="soft" size="md">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Abstract — the only body content on the cover page */}
+              {(idea.abstract || idea.abstractZh) && (
+                <p className="mt-8 text-[15px] leading-[1.8] text-ds-fg-muted">
+                  {language === 'en'
+                    ? idea.abstract || idea.abstractZh
+                    : idea.abstractZh || idea.abstract}
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="prose-content markdown-body w-full">
+              <ContentParts
+                parts={idea.parts ?? []}
+                value={activePart}
+                onValueChange={setActivePart}
+                hideNav
+                extraTabs={[
+                  {
+                    key: 'discussion',
+                    label: language === 'en' ? 'Discussion' : '讨论',
+                    icon: <MessageSquare size={16} />,
+                    render: () => (
+                      <CommunityFeedback projectId={`idea-${idea.id}`} />
+                    ),
+                  },
+                ]}
+              />
             </div>
           )}
 
-          {/* --- Parts — data-driven content tabs, plus the fixed
-              `discussion` runtime tab. Content Parts are open-set (an
-              undeclared role still becomes a tab); the discussion tab is a
-              registered runtime feature, always present. -- */}
-          <div className="mt-8 w-full">
-            <ContentParts
-              parts={idea.parts ?? []}
-              extraTabs={[
-                {
-                  key: 'discussion',
-                  label: language === 'en' ? 'Discussion' : '讨论',
-                  icon: <MessageSquare size={16} />,
-                  render: () => (
-                    <CommunityFeedback projectId={`idea-${idea.id}`} />
-                  ),
-                },
-              ]}
-            />
-          </div>
-        </Section>
-      </Container>
+          <ArticleFooter
+            likes={2047}
+            recentLikers={mockRecentLikers}
+            contributors={['Silan Hu']}
+            publishedAt="2026-04-15 10:00"
+            viewCount={1296204}
+            ipRegion="Singapore"
+            comments={mockComments}
+          />
+      </KnowledgeBaseShell>
     </motion.div>
   );
 };

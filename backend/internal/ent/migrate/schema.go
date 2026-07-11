@@ -137,6 +137,7 @@ var (
 	BlogPostsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "user_id", Type: field.TypeString, Nullable: true},
+		{Name: "category_id", Type: field.TypeString, Nullable: true},
 		{Name: "series_id", Type: field.TypeString, Nullable: true},
 		{Name: "title", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "slug", Type: field.TypeString, Unique: true, Size: 300},
@@ -155,21 +156,12 @@ var (
 		{Name: "series_order", Type: field.TypeInt, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime, Nullable: true},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-		{Name: "category_id", Type: field.TypeString, Nullable: true},
 	}
 	// BlogPostsTable holds the schema information for the "blog_posts" table.
 	BlogPostsTable = &schema.Table{
 		Name:       "blog_posts",
 		Columns:    BlogPostsColumns,
 		PrimaryKey: []*schema.Column{BlogPostsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "blog_posts_blog_categories_blog_posts",
-				Columns:    []*schema.Column{BlogPostsColumns[20]},
-				RefColumns: []*schema.Column{BlogCategoriesColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 	}
 	// BlogPostTranslationsColumns holds the columns for the "blog_post_translations" table.
 	BlogPostTranslationsColumns = []*schema.Column{
@@ -1921,7 +1913,6 @@ func init() {
 	BlogCategoryTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "blog_category_translations",
 	}
-	BlogPostsTable.ForeignKeys[0].RefTable = BlogCategoriesTable
 	BlogPostsTable.Annotation = &entsql.Annotation{
 		Table: "blog_posts",
 	}

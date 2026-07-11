@@ -65,21 +65,26 @@ pub enum ProposalTarget {
     Item(SilanUri),
     /// One Part under an Item URI.
     Part { item: SilanUri, role: String },
+    /// The container series of an `episode` type — the `series.toml` itself.
+    /// URI form: `silan://resources/episode/<series_slug>` (2 segments).
+    /// Lets the agent propose changes to series metadata (title, description,
+    /// status) without touching any of its episode Items.
+    Series(SilanUri),
 }
 
 impl ProposalTarget {
     /// Parse a proposal target URI.
     ///
-    /// An Item URI's segment count is type-dependent, because `episode` is a
-    /// *container* type — its Items live one level deeper, under a series:
+    /// Segment counts are type-dependent because `episode` is a *container*
+    /// type — its Items live one level deeper, under a series:
     ///
-    /// | type     | Item URI                                  | Part URI                 |
-    /// |----------|-------------------------------------------|--------------------------|
-    /// | flat     | `…/<kind>/<slug>` (2 seg)                  | `…/<slug>/<role>` (3)    |
-    /// | episode  | `…/episode/<series>/<episode>` (3 seg)     | `…/<episode>/<role>` (4) |
+    /// | type     | Series URI            | Item URI                            | Part URI                 |
+    /// |----------|-----------------------|-------------------------------------|--------------------------|
+    /// | flat     | n/a                   | `…/<kind>/<slug>` (2 seg)            | `…/<slug>/<role>` (3)    |
+    /// | episode  | `…/episode/<series>` (2) | `…/episode/<series>/<episode>` (3) | `…/<episode>/<role>` (4) |
     ///
-    /// So the parser branches on the first segment: a 3-segment URI is an
-    /// *episode Item* if it starts with `episode`, otherwise a flat-type Part.
+    /// A 2-segment URI is a Series target when its first segment is `episode`,
+    /// otherwise it's a flat-type Item.
     pub fn parse(raw: &str) -> Result<Self, ProposalError> {
         let uri =
             SilanUri::from_str(raw).map_err(|e| ProposalError::InvalidTarget(e.to_string()))?;
@@ -96,6 +101,8 @@ impl ProposalTarget {
         let item_len = if is_episode { 3 } else { 2 };
 
         match segments.len() {
+            // Series container — only the `episode` type has this shape.
+            2 if is_episode => Ok(ProposalTarget::Series(uri)),
             n if n == item_len => Ok(ProposalTarget::Item(uri)),
             n if n == item_len + 1 => {
                 // The last segment is the Part role; the rest is the Item.
@@ -226,7 +233,21 @@ mod tests {
                 assert_eq!(item.to_string(), "silan://resources/ideas/rce");
                 assert_eq!(role, "progress");
             }
-            ProposalTarget::Item(_) => panic!("expected part target"),
+            ProposalTarget::Item(_) | ProposalTarget::Series(_) => {
+                panic!("expected part target")
+            }
+        }
+    }
+
+    #[test]
+    fn parse_series_target_is_a_two_segment_episode_uri() {
+        let target = ProposalTarget::parse("silan://resources/episode/using-silan-viking")
+            .expect("parse");
+        match target {
+            ProposalTarget::Series(uri) => {
+                assert_eq!(uri.to_string(), "silan://resources/episode/using-silan-viking");
+            }
+            _ => panic!("expected Series target"),
         }
     }
 

@@ -20,6 +20,16 @@ export default {
         'sans': ['Inter', 'system-ui', 'sans-serif'],
         'display': ['Poppins', 'system-ui', 'sans-serif'],
         'mono': ['JetBrains Mono', 'Monaco', 'Consolas', 'monospace'],
+        // Yuque-style article body: system + PingFang SC first for CJK,
+        // graceful fallback through Hiragino / YaHei to Helvetica.
+        'article': [
+          '-apple-system', 'BlinkMacSystemFont',
+          '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"',
+          '"Helvetica Neue"', 'Arial', 'sans-serif',
+        ],
+        // Yuque-style inline code: Menlo first (macOS native, matches the
+        // reference) with Monaco / Courier New fallback.
+        'article-mono': ['Menlo', 'Monaco', '"Courier New"', 'monospace'],
       },
       
       // Theme-aware colors using CSS custom properties

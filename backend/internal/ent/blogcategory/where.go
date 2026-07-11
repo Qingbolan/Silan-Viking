@@ -543,29 +543,6 @@ func HasTranslationsWith(preds ...predicate.BlogCategoryTranslation) predicate.B
 	})
 }
 
-// HasBlogPosts applies the HasEdge predicate on the "blog_posts" edge.
-func HasBlogPosts() predicate.BlogCategory {
-	return predicate.BlogCategory(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, BlogPostsTable, BlogPostsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasBlogPostsWith applies the HasEdge predicate on the "blog_posts" edge with a given conditions (other predicates).
-func HasBlogPostsWith(preds ...predicate.BlogPost) predicate.BlogCategory {
-	return predicate.BlogCategory(func(s *sql.Selector) {
-		step := newBlogPostsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.BlogCategory) predicate.BlogCategory {
 	return predicate.BlogCategory(sql.AndPredicates(predicates...))

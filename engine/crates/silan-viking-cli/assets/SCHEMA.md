@@ -254,6 +254,7 @@ types:
           - { name: url,              type: string,         required: false, translatable: false }
           - { name: pdf_url,          type: string,         required: false, translatable: false }
           - { name: image_url,        type: string,         required: false, translatable: false }
+          - { name: abstract,         type: text,           required: false, translatable: true }
           - { name: citation_count,   type: int,            required: false, translatable: false }
           - { name: is_peer_reviewed, type: bool,           required: false, translatable: false }
           - { name: sort_order,       type: int,            required: false, translatable: false }

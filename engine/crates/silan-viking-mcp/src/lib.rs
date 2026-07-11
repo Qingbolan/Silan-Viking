@@ -389,7 +389,10 @@ impl ToolGate {
     /// Build a gate that surfaces every tool — used by tests and by
     /// callers that need to enumerate the full closed set.
     pub fn all() -> Self {
-        Self { deploy: true, evolve: true }
+        Self {
+            deploy: true,
+            evolve: true,
+        }
     }
 
     /// Decide whether a tool tier is advertised under this gate.
@@ -674,6 +677,10 @@ pub fn propose(
 
     // `extra_parts` name sibling Parts of the same Item, so the anchor must be
     // an Item URI — a Part URI already names its one Part.
+    //
+    // A Series target writes `series.toml` only. It carries no Parts, so
+    // `extra_parts` is meaningless for it, and `draft` (the TOML body) is the
+    // only thing it accepts — handled in a dedicated branch below.
     let item_uri = match (&target, extra_parts.is_empty()) {
         (ProposalTarget::Item(_), _) => uri.to_owned(),
         (ProposalTarget::Part { .. }, true) => uri.to_owned(),
@@ -682,7 +689,54 @@ pub fn propose(
                 "extra_parts is only valid with an Item URI, not a Part URI".to_owned(),
             ));
         }
+        (ProposalTarget::Series(_), true) => uri.to_owned(),
+        (ProposalTarget::Series(_), false) => {
+            return Err(McpError::Proposal(
+                "extra_parts is not valid for a Series target — it carries no Parts".to_owned(),
+            ));
+        }
     };
+
+    // Series target — propose writes `resources/episode/<slug>/series.toml`
+    // and that's it. No Part shape, no meta.toml, no frontmatter injection.
+    // The draft must be the full TOML body the agent wants to land.
+    if let ProposalTarget::Series(series_uri) = &target {
+        let series_slug = series_uri.segments().get(1).cloned().ok_or_else(|| {
+            McpError::Proposal(
+                "Series URI must be silan://resources/episode/<series_slug>".to_owned(),
+            )
+        })?;
+        let toml_body = draft.ok_or_else(|| {
+            McpError::Proposal(
+                "Series target needs a `draft` TOML body — the full series.toml content".to_owned(),
+            )
+        })?;
+        let rel = format!("resources/episode/{series_slug}/series.toml");
+        let id = ProposalId::new(Ulid::new().to_string())
+            .map_err(|e| McpError::Proposal(e.to_string()))?;
+        let draft_owned = toml_body.to_owned();
+        ws.create_proposal(
+            &id,
+            ProposalKind::Modify,
+            vec![item_uri.clone()],
+            &format!("propose {}", id.as_str()),
+            |root| {
+                write_draft_file(&root.join(&rel), &draft_owned)?;
+                Ok(())
+            },
+        )
+        .map_err(|e| McpError::Proposal(e.to_string()))?;
+        let _ = lang; // Series TOML has no language variants — accepted for API parity.
+        return Ok(ProposalCreated {
+            id: id.as_str().to_owned(),
+            branch: id.branch_name(),
+            hint: Some(format!(
+                "Series `{series_slug}` series.toml updated. Owner reviews with \
+                 `proposal show`, accepts with the CLI, then `index sync` — the agent never publishes."
+            )),
+            created_uri: Some(uri.to_owned()),
+        });
+    }
 
     // Resolve every draft's path *against the SCHEMA* up front — a Part role
     // the type does not declare is rejected here, before any branch or file
@@ -779,9 +833,13 @@ fn propose_hint(
 ) -> Option<String> {
     let mut notes: Vec<String> = Vec::new();
 
+    // Series targets have no Item / Part shape to inspect; the hint logic
+    // below is built around Item-vs-Part decisions, so a Series proposal
+    // returns no extra hint (the generic next-step text is enough).
     let item_uri = match target {
         ProposalTarget::Item(uri) => uri,
         ProposalTarget::Part { item, .. } => item,
+        ProposalTarget::Series(_) => return None,
     };
     let kind = item_kind(item_uri).ok()?;
     let item_str = item_uri.to_string();
@@ -1186,9 +1244,13 @@ fn maybe_inject_frontmatter<'a>(
     // Derive defaults from the URI. Item URI: silan://resources/<kind>/<slug>;
     // Part URI: .../<role>. We only synthesize for the primary Part of a new
     // Item, so the slug + kind are always on the target.
+    //
+    // A Series target writes a `series.toml` (TOML, not markdown with
+    // frontmatter) — frontmatter injection is meaningless; bail out.
     let (kind, slug) = match target {
         ProposalTarget::Item(uri) => uri_to_kind_slug(&uri.to_string()),
         ProposalTarget::Part { item, .. } => uri_to_kind_slug(&item.to_string()),
+        ProposalTarget::Series(_) => return std::borrow::Cow::Borrowed(draft),
     };
     let Some((kind, slug)) = kind.zip(slug) else {
         return std::borrow::Cow::Borrowed(draft);
@@ -1310,9 +1372,17 @@ fn resolve_draft_location(
     target: &ProposalTarget,
     lang: &str,
 ) -> Result<DraftLocation, McpError> {
+    // Series targets do not have a Part location — their draft is the
+    // series.toml itself, written from the propose() series branch. Reaching
+    // here with a Series target is a wiring bug; report it explicitly.
     let (item_uri, kind, role) = match target {
         ProposalTarget::Item(uri) => (uri, item_kind(uri)?, None),
         ProposalTarget::Part { item, role } => (item, item_kind(item)?, Some(role.as_str())),
+        ProposalTarget::Series(_) => {
+            return Err(McpError::Proposal(
+                "internal: resolve_draft_location was called for a Series target".to_owned(),
+            ));
+        }
     };
 
     // Every Item-identifying segment after the type (`<slug>`, and the
@@ -1424,6 +1494,10 @@ fn episode_series_file(target: &ProposalTarget) -> Option<(String, String)> {
     let item_uri = match target {
         ProposalTarget::Item(uri) => uri,
         ProposalTarget::Part { item, .. } => item,
+        // A Series target writes its own series.toml directly (see the series
+        // branch in propose()); the bootstrap path here is only for new
+        // episodes that need a parent series scaffolded.
+        ProposalTarget::Series(_) => return None,
     };
     let segments = item_uri.segments();
     // An episode Item URI is `episode/<series>/<episode>`.
@@ -1976,7 +2050,10 @@ pub fn call(
         // understands the gate, instead of `UnknownTool` which would be
         // a coverage drift.
         "deploy" => {
-            let confirm = args.get("confirm").and_then(|v| v.as_bool()).unwrap_or(false);
+            let confirm = args
+                .get("confirm")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             if !confirm {
                 return Err(McpError::InvalidRequest(
                     "deploy requires `confirm: true` to run the pipeline".to_owned(),
@@ -1991,7 +2068,8 @@ pub fn call(
             Err(McpError::BackendUnavailable(
                 "deploy via MCP is gated — invoke `silan site deploy` from \
                  the CLI, or start the MCP server with `--enable-deploy` \
-                 once the deploy hook is wired".to_owned(),
+                 once the deploy hook is wired"
+                    .to_owned(),
             ))
         }
         // ── E1 stubs (`15` §15.2) — return empty suggestion lists. The
@@ -2081,10 +2159,7 @@ mod tests {
             "suggest_lifecycle",
             "list_tags",
         ] {
-            assert!(
-                names.contains(&required),
-                "closed set missing `{required}`"
-            );
+            assert!(names.contains(&required), "closed set missing `{required}`");
         }
     }
 

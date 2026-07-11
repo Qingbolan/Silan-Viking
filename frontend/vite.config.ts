@@ -14,9 +14,9 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5200',
+        target: 'https://silan.tech',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       },
     },
   },

@@ -59,14 +59,8 @@ fn capture_creates_a_proposal_branch_without_touching_main() {
     let root = fresh_repo("capture");
     let main_before = git(&root, &["rev-parse", "main"]);
 
-    let created = silan_viking_mcp::capture(
-        &root,
-        "a quick idea worth keeping",
-        None,
-        None,
-        None,
-    )
-    .expect("capture succeeds");
+    let created = silan_viking_mcp::capture(&root, "a quick idea worth keeping", None, None, None)
+        .expect("capture succeeds");
 
     // A proposal branch exists and main is unchanged (#10 invariant).
     let branches = git(&root, &["branch", "--list"]);

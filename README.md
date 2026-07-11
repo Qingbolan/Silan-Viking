@@ -1,5 +1,16 @@
 # Silan Personal Website
 
+> **This isn't a website. It's an agent-first personal context system — and the
+> site is just one of its renderings.**
+>
+> My ideas, work and writing live as a typed, agent-maintainable context graph.
+> AI agents **read** it, **reason over** it, and **help maintain** it through a
+> `propose → review → publish` pipeline. Content is never hand-edited; it flows
+> through that pipeline. The website (React) is one render target, the MCP
+> server is another.
+>
+> Rust engine · Go-Zero API · React render · MCP server.
+
 A modern, interactive, and SEO-optimized personal resume website for AI
 professionals and full-stack developers — the kind of site that doubles as
 your résumé, your blog, your project gallery, your research notebook, and

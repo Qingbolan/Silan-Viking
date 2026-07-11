@@ -34,6 +34,9 @@ import {
   Divider,
   BrandLoading,
   ErrorState,
+  ArticleFooter,
+  mockComments,
+  mockRecentLikers,
 } from '../../components/ds';
 
 const ProjectDetail: React.FC = () => {
@@ -398,6 +401,16 @@ const ProjectDetail: React.FC = () => {
           >
             <ProjectTabs projectData={project} />
           </motion.div>
+
+          <ArticleFooter
+            likes={2047}
+            recentLikers={mockRecentLikers}
+            contributors={['Silan Hu']}
+            publishedAt="2026-02-01"
+            viewCount={1296204}
+            ipRegion="Singapore"
+            comments={mockComments}
+          />
         </Section>
       </Container>
     </motion.div>

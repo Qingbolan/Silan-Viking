@@ -36,7 +36,6 @@ func (l *GetBlogPostByIdLogic) GetBlogPostById(req *types.BlogByIdRequest) (resp
 			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
-		WithCategory().
 		WithTranslations().
 		First(l.ctx)
 	if err != nil {
@@ -51,10 +50,9 @@ func (l *GetBlogPostByIdLogic) GetBlogPostById(req *types.BlogByIdRequest) (resp
 		readTime = fmt.Sprintf("%d min read", post.ReadingTimeMinutes)
 	}
 
-	var category string
-	if post.Edges.Category != nil {
-		category = post.Edges.Category.Name
-	}
+	// SCHEMA.md `blog.category` is a free-text label written straight into
+	// `category_id`; see BlogPost.Edges.
+	category := post.CategoryID
 
 	// Tags come from the cross-type `content_tag` table — the engine no
 	// longer populates the legacy ent `Tags` edge.

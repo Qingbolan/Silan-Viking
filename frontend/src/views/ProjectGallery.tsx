@@ -284,7 +284,7 @@ const ProjectGallery: React.FC = () => {
         path="/projects"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Header — title + search + plan Segmented + tag chips. */}
         <motion.div
           className="mb-12"

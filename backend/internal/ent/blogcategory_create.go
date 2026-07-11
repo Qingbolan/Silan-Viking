@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogcategorytranslation"
-	"silan-backend/internal/ent/blogpost"
 	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -131,21 +130,6 @@ func (bcc *BlogCategoryCreate) AddTranslations(b ...*BlogCategoryTranslation) *B
 		ids[i] = b[i].ID
 	}
 	return bcc.AddTranslationIDs(ids...)
-}
-
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (bcc *BlogCategoryCreate) AddBlogPostIDs(ids ...string) *BlogCategoryCreate {
-	bcc.mutation.AddBlogPostIDs(ids...)
-	return bcc
-}
-
-// AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
-func (bcc *BlogCategoryCreate) AddBlogPosts(b ...*BlogPost) *BlogCategoryCreate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bcc.AddBlogPostIDs(ids...)
 }
 
 // Mutation returns the BlogCategoryMutation object of the builder.
@@ -299,22 +283,6 @@ func (bcc *BlogCategoryCreate) createSpec() (*BlogCategory, *sqlgraph.CreateSpec
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := bcc.mutation.BlogPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogcategory.BlogPostsTable,
-			Columns: []string{blogcategory.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

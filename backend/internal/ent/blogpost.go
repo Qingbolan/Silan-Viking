@@ -4,7 +4,6 @@ package ent
 
 import (
 	"fmt"
-	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"strings"
 	"time"
@@ -66,30 +65,17 @@ type BlogPost struct {
 
 // BlogPostEdges holds the relations/edges for other nodes in the graph.
 type BlogPostEdges struct {
-	// Category holds the value of the category edge.
-	Category *BlogCategory `json:"category,omitempty"`
 	// Translations holds the value of the translations edge.
 	Translations []*BlogPostTranslation `json:"translations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
-}
-
-// CategoryOrErr returns the Category value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e BlogPostEdges) CategoryOrErr() (*BlogCategory, error) {
-	if e.Category != nil {
-		return e.Category, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: blogcategory.Label}
-	}
-	return nil, &NotLoadedError{edge: "category"}
+	loadedTypes [1]bool
 }
 
 // TranslationsOrErr returns the Translations value or an error if the edge
 // was not loaded in eager-loading.
 func (e BlogPostEdges) TranslationsOrErr() ([]*BlogPostTranslation, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Translations, nil
 	}
 	return nil, &NotLoadedError{edge: "translations"}
@@ -260,11 +246,6 @@ func (bp *BlogPost) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (bp *BlogPost) Value(name string) (ent.Value, error) {
 	return bp.selectValues.Get(name)
-}
-
-// QueryCategory queries the "category" edge of the BlogPost entity.
-func (bp *BlogPost) QueryCategory() *BlogCategoryQuery {
-	return NewBlogPostClient(bp.config).QueryCategory(bp)
 }
 
 // QueryTranslations queries the "translations" edge of the BlogPost entity.

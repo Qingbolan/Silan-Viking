@@ -19,6 +19,7 @@ silan-viking-site = { workspace = true }
 rusqlite          = { workspace = true }
 time              = { workspace = true }
 toml              = { workspace = true }
+md5               = { workspace = true }
 
 [dev-dependencies]
 # The CLI integration tests parse the binary's JSON output.

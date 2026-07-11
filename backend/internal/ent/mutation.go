@@ -3067,9 +3067,6 @@ type BlogCategoryMutation struct {
 	translations        map[string]struct{}
 	removedtranslations map[string]struct{}
 	clearedtranslations bool
-	blog_posts          map[string]struct{}
-	removedblog_posts   map[string]struct{}
-	clearedblog_posts   bool
 	done                bool
 	oldValue            func(context.Context) (*BlogCategory, error)
 	predicates          []predicate.BlogCategory
@@ -3557,60 +3554,6 @@ func (m *BlogCategoryMutation) ResetTranslations() {
 	m.removedtranslations = nil
 }
 
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by ids.
-func (m *BlogCategoryMutation) AddBlogPostIDs(ids ...string) {
-	if m.blog_posts == nil {
-		m.blog_posts = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.blog_posts[ids[i]] = struct{}{}
-	}
-}
-
-// ClearBlogPosts clears the "blog_posts" edge to the BlogPost entity.
-func (m *BlogCategoryMutation) ClearBlogPosts() {
-	m.clearedblog_posts = true
-}
-
-// BlogPostsCleared reports if the "blog_posts" edge to the BlogPost entity was cleared.
-func (m *BlogCategoryMutation) BlogPostsCleared() bool {
-	return m.clearedblog_posts
-}
-
-// RemoveBlogPostIDs removes the "blog_posts" edge to the BlogPost entity by IDs.
-func (m *BlogCategoryMutation) RemoveBlogPostIDs(ids ...string) {
-	if m.removedblog_posts == nil {
-		m.removedblog_posts = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.blog_posts, ids[i])
-		m.removedblog_posts[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedBlogPosts returns the removed IDs of the "blog_posts" edge to the BlogPost entity.
-func (m *BlogCategoryMutation) RemovedBlogPostsIDs() (ids []string) {
-	for id := range m.removedblog_posts {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// BlogPostsIDs returns the "blog_posts" edge IDs in the mutation.
-func (m *BlogCategoryMutation) BlogPostsIDs() (ids []string) {
-	for id := range m.blog_posts {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetBlogPosts resets all changes to the "blog_posts" edge.
-func (m *BlogCategoryMutation) ResetBlogPosts() {
-	m.blog_posts = nil
-	m.clearedblog_posts = false
-	m.removedblog_posts = nil
-}
-
 // Where appends a list predicates to the BlogCategoryMutation builder.
 func (m *BlogCategoryMutation) Where(ps ...predicate.BlogCategory) {
 	m.predicates = append(m.predicates, ps...)
@@ -3888,12 +3831,9 @@ func (m *BlogCategoryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BlogCategoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.translations != nil {
 		edges = append(edges, blogcategory.EdgeTranslations)
-	}
-	if m.blog_posts != nil {
-		edges = append(edges, blogcategory.EdgeBlogPosts)
 	}
 	return edges
 }
@@ -3908,24 +3848,15 @@ func (m *BlogCategoryMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case blogcategory.EdgeBlogPosts:
-		ids := make([]ent.Value, 0, len(m.blog_posts))
-		for id := range m.blog_posts {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BlogCategoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.removedtranslations != nil {
 		edges = append(edges, blogcategory.EdgeTranslations)
-	}
-	if m.removedblog_posts != nil {
-		edges = append(edges, blogcategory.EdgeBlogPosts)
 	}
 	return edges
 }
@@ -3940,24 +3871,15 @@ func (m *BlogCategoryMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case blogcategory.EdgeBlogPosts:
-		ids := make([]ent.Value, 0, len(m.removedblog_posts))
-		for id := range m.removedblog_posts {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BlogCategoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.clearedtranslations {
 		edges = append(edges, blogcategory.EdgeTranslations)
-	}
-	if m.clearedblog_posts {
-		edges = append(edges, blogcategory.EdgeBlogPosts)
 	}
 	return edges
 }
@@ -3968,8 +3890,6 @@ func (m *BlogCategoryMutation) EdgeCleared(name string) bool {
 	switch name {
 	case blogcategory.EdgeTranslations:
 		return m.clearedtranslations
-	case blogcategory.EdgeBlogPosts:
-		return m.clearedblog_posts
 	}
 	return false
 }
@@ -3988,9 +3908,6 @@ func (m *BlogCategoryMutation) ResetEdge(name string) error {
 	switch name {
 	case blogcategory.EdgeTranslations:
 		m.ResetTranslations()
-		return nil
-	case blogcategory.EdgeBlogPosts:
-		m.ResetBlogPosts()
 		return nil
 	}
 	return fmt.Errorf("unknown BlogCategory edge %s", name)
@@ -4724,6 +4641,7 @@ type BlogPostMutation struct {
 	typ                     string
 	id                      *string
 	user_id                 *string
+	category_id             *string
 	series_id               *string
 	title                   *string
 	slug                    *string
@@ -4748,8 +4666,6 @@ type BlogPostMutation struct {
 	created_at              *time.Time
 	updated_at              *time.Time
 	clearedFields           map[string]struct{}
-	category                *string
-	clearedcategory         bool
 	translations            map[string]struct{}
 	removedtranslations     map[string]struct{}
 	clearedtranslations     bool
@@ -4913,12 +4829,12 @@ func (m *BlogPostMutation) ResetUserID() {
 
 // SetCategoryID sets the "category_id" field.
 func (m *BlogPostMutation) SetCategoryID(s string) {
-	m.category = &s
+	m.category_id = &s
 }
 
 // CategoryID returns the value of the "category_id" field in the mutation.
 func (m *BlogPostMutation) CategoryID() (r string, exists bool) {
-	v := m.category
+	v := m.category_id
 	if v == nil {
 		return
 	}
@@ -4944,7 +4860,7 @@ func (m *BlogPostMutation) OldCategoryID(ctx context.Context) (v string, err err
 
 // ClearCategoryID clears the value of the "category_id" field.
 func (m *BlogPostMutation) ClearCategoryID() {
-	m.category = nil
+	m.category_id = nil
 	m.clearedFields[blogpost.FieldCategoryID] = struct{}{}
 }
 
@@ -4956,7 +4872,7 @@ func (m *BlogPostMutation) CategoryIDCleared() bool {
 
 // ResetCategoryID resets all changes to the "category_id" field.
 func (m *BlogPostMutation) ResetCategoryID() {
-	m.category = nil
+	m.category_id = nil
 	delete(m.clearedFields, blogpost.FieldCategoryID)
 }
 
@@ -5840,33 +5756,6 @@ func (m *BlogPostMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, blogpost.FieldUpdatedAt)
 }
 
-// ClearCategory clears the "category" edge to the BlogCategory entity.
-func (m *BlogPostMutation) ClearCategory() {
-	m.clearedcategory = true
-	m.clearedFields[blogpost.FieldCategoryID] = struct{}{}
-}
-
-// CategoryCleared reports if the "category" edge to the BlogCategory entity was cleared.
-func (m *BlogPostMutation) CategoryCleared() bool {
-	return m.CategoryIDCleared() || m.clearedcategory
-}
-
-// CategoryIDs returns the "category" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// CategoryID instead. It exists only for internal usage by the builders.
-func (m *BlogPostMutation) CategoryIDs() (ids []string) {
-	if id := m.category; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetCategory resets all changes to the "category" edge.
-func (m *BlogPostMutation) ResetCategory() {
-	m.category = nil
-	m.clearedcategory = false
-}
-
 // AddTranslationIDs adds the "translations" edge to the BlogPostTranslation entity by ids.
 func (m *BlogPostMutation) AddTranslationIDs(ids ...string) {
 	if m.translations == nil {
@@ -5959,7 +5848,7 @@ func (m *BlogPostMutation) Fields() []string {
 	if m.user_id != nil {
 		fields = append(fields, blogpost.FieldUserID)
 	}
-	if m.category != nil {
+	if m.category_id != nil {
 		fields = append(fields, blogpost.FieldCategoryID)
 	}
 	if m.series_id != nil {
@@ -6515,10 +6404,7 @@ func (m *BlogPostMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *BlogPostMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.category != nil {
-		edges = append(edges, blogpost.EdgeCategory)
-	}
+	edges := make([]string, 0, 1)
 	if m.translations != nil {
 		edges = append(edges, blogpost.EdgeTranslations)
 	}
@@ -6529,10 +6415,6 @@ func (m *BlogPostMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *BlogPostMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case blogpost.EdgeCategory:
-		if id := m.category; id != nil {
-			return []ent.Value{*id}
-		}
 	case blogpost.EdgeTranslations:
 		ids := make([]ent.Value, 0, len(m.translations))
 		for id := range m.translations {
@@ -6545,7 +6427,7 @@ func (m *BlogPostMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *BlogPostMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.removedtranslations != nil {
 		edges = append(edges, blogpost.EdgeTranslations)
 	}
@@ -6568,10 +6450,7 @@ func (m *BlogPostMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *BlogPostMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedcategory {
-		edges = append(edges, blogpost.EdgeCategory)
-	}
+	edges := make([]string, 0, 1)
 	if m.clearedtranslations {
 		edges = append(edges, blogpost.EdgeTranslations)
 	}
@@ -6582,8 +6461,6 @@ func (m *BlogPostMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *BlogPostMutation) EdgeCleared(name string) bool {
 	switch name {
-	case blogpost.EdgeCategory:
-		return m.clearedcategory
 	case blogpost.EdgeTranslations:
 		return m.clearedtranslations
 	}
@@ -6594,9 +6471,6 @@ func (m *BlogPostMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *BlogPostMutation) ClearEdge(name string) error {
 	switch name {
-	case blogpost.EdgeCategory:
-		m.ClearCategory()
-		return nil
 	}
 	return fmt.Errorf("unknown BlogPost unique edge %s", name)
 }
@@ -6605,9 +6479,6 @@ func (m *BlogPostMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *BlogPostMutation) ResetEdge(name string) error {
 	switch name {
-	case blogpost.EdgeCategory:
-		m.ResetCategory()
-		return nil
 	case blogpost.EdgeTranslations:
 		m.ResetTranslations()
 		return nil

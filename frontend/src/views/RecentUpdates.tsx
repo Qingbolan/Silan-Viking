@@ -309,7 +309,7 @@ const RecentUpdates: React.FC = () => {
         path="/recent-updates"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-7xl mx-auto px-3 xs:px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto px-3 xs:px-4 sm:px-6">
         {/* Header */}
         <motion.div
           className="mb-6 xs:mb-8"

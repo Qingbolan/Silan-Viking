@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { FileText, Github, Newspaper } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
+import Markdown from '../ui/Markdown';
 
 export interface PublicationCardData {
   id: string;
@@ -35,6 +36,8 @@ export interface PublicationCardData {
   blogUrl?: string;
   /** Optional figure / cover image. */
   image?: string;
+  /** preprint / conference / journal / workshop — drives the type badge. */
+  publicationType?: string;
 }
 
 interface PublicationCardProps {
@@ -66,6 +69,37 @@ const renderAuthors = (authors: string, highlight?: string): React.ReactNode => 
 const venueAcronym = (venue?: string): string | undefined =>
   venue?.trim().split(/\s+/)[0];
 
+/** Trim a date / datetime to YYYY-MM. Accepts "2025-09-01", "2025-09", or any
+ * ISO-ish prefix; returns the empty string when nothing parseable is at the
+ * head. We avoid `new Date(...)` so a missing day doesn't drift across the
+ * month boundary in non-UTC locales. */
+const formatYearMonth = (raw?: string): string => {
+  if (!raw) return '';
+  const m = raw.match(/^(\d{4})(?:-(\d{2}))?/);
+  if (!m) return raw;
+  return m[2] ? `${m[1]}-${m[2]}` : m[1];
+};
+
+/** Per-type visual treatment for the publication_type badge.
+ *  - conference / journal / workshop: peer-reviewed venues → primary tone
+ *  - preprint: not peer-reviewed → neutral, quieter
+ *  - unknown / missing: skipped */
+const typeBadgeClass = (type?: string): string | null => {
+  if (!type) return null;
+  switch (type.toLowerCase()) {
+    case 'conference':
+      return 'border-ds-primary/40 bg-ds-primary-soft text-ds-primary';
+    case 'journal':
+      return 'border-ds-success/40 bg-ds-success-soft text-ds-success';
+    case 'workshop':
+      return 'border-ds-warning/40 bg-ds-warning-soft text-ds-warning';
+    case 'preprint':
+      return 'border-ds-border bg-ds-surface-2 text-ds-fg-subtle';
+    default:
+      return 'border-ds-border bg-ds-surface-2 text-ds-fg-muted';
+  }
+};
+
 /** An outlined pill link — Paper / PDF / Code / Blog. */
 const LinkPill: React.FC<{ href: string; icon: React.ReactNode; label: string }> = ({
   href,
@@ -77,11 +111,11 @@ const LinkPill: React.FC<{ href: string; icon: React.ReactNode; label: string }>
     target="_blank"
     rel="noopener noreferrer"
     className={cn(
-      'inline-flex items-center gap-1.5 rounded-ds-md border border-ds-border px-3 py-1.5',
-      'text-ds-xs font-medium uppercase tracking-[0.04em] text-ds-fg-muted',
+      'inline-flex items-center gap-1 rounded-ds-sm border border-ds-border px-2 py-0.5',
+      'text-ds-2xs font-medium uppercase tracking-[0.06em] text-ds-fg-muted',
       'transition-colors duration-ds-fast ease-ds-standard',
       'hover:border-ds-primary/40 hover:bg-ds-primary-soft hover:text-ds-primary',
-      '[&_svg]:size-3.5',
+      '[&_svg]:size-3',
     )}
   >
     {icon}
@@ -97,8 +131,10 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
   const { t } = useTranslation();
   const {
     title, authors, venue, year, abstract, award, tags = [],
-    url, pdfUrl, githubUrl, blogUrl, image,
+    url, pdfUrl, githubUrl, blogUrl, image, publicationType,
   } = publication;
+  const yearMonth = formatYearMonth(year);
+  const typeClass = typeBadgeClass(publicationType);
 
   return (
     <motion.div
@@ -126,40 +162,70 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
         </div>
       )}
 
-      {/* Body. */}
-      <div className="flex flex-1 flex-col gap-3 p-5 pt-2">
+      {/* Body. Tightened type scale (silan, 2026-05-22): a publications
+          card is a list item, not a hero — drop every level by one step.
+          Title md (was xl), abstract sm (was base), authors xs (was sm),
+          meta line stays xs but loses its block-shouting all-caps look. */}
+      <div className="flex flex-1 flex-col gap-2.5 p-5 pt-2">
         {/* Title. */}
-        <h3 className="text-ds-xl font-semibold leading-snug tracking-[-0.015em] text-ds-fg">
+        <h3 className="text-ds-md font-semibold leading-snug tracking-[-0.01em] text-ds-fg">
           {title}
         </h3>
 
         {/* Award badge — split pill: dark venue acronym + red award name. */}
         {award && (
-          <div className="inline-flex w-fit overflow-hidden rounded-ds-sm text-ds-xs font-semibold">
+          <div className="inline-flex w-fit overflow-hidden rounded-ds-sm text-ds-2xs font-semibold">
             {venueAcronym(venue) && (
-              <span className="bg-ds-fg px-2.5 py-1 uppercase tracking-[0.04em] text-ds-surface-1">
+              <span className="bg-ds-fg px-2 py-0.5 uppercase tracking-[0.04em] text-ds-surface-1">
                 {venueAcronym(venue)}
               </span>
             )}
-            <span className="bg-ds-error px-2.5 py-1 text-white">{award}</span>
+            <span className="bg-ds-error px-2 py-0.5 text-white">{award}</span>
           </div>
         )}
 
-        {/* Venue · year. */}
-        {(venue || year) && (
-          <p className="text-ds-xs font-medium uppercase tracking-[0.1em] text-ds-fg-subtle">
-            {[venue, year].filter(Boolean).join(' ')}
-          </p>
+        {/* Meta row — type badge · venue · year-month.
+            Type badge is colour-coded so a peer-reviewed conference reads
+            differently from a preprint at a glance. Venue is rendered as
+            an emphasised foreground line (not the muted all-caps it was)
+            so KDD 2026 / Springer CCIS is the second thing the eye lands
+            on after the title. Date is trimmed to YYYY-MM. */}
+        {(publicationType || venue || yearMonth) && (
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            {publicationType && typeClass && (
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-ds-sm border px-2 py-0.5',
+                  'text-[0.65rem] font-semibold uppercase tracking-[0.08em]',
+                  typeClass,
+                )}
+              >
+                {publicationType}
+              </span>
+            )}
+            {venue && (
+              <span className="text-ds-xs font-semibold text-ds-fg">
+                {venue}
+              </span>
+            )}
+            {yearMonth && (
+              <span className="text-ds-2xs font-mono text-ds-fg-subtle">
+                {yearMonth}
+              </span>
+            )}
+          </div>
         )}
 
-        {/* Abstract — short summary. */}
+        {/* Abstract — short summary. Markdown so links / emphasis render. */}
         {abstract && (
-          <p className="text-ds-base leading-relaxed text-ds-fg">{abstract}</p>
+          <Markdown className="text-ds-sm leading-relaxed text-ds-fg-muted [&>div]:my-0">
+            {abstract}
+          </Markdown>
         )}
 
         {/* Authors — owner emphasised. */}
         {authors && (
-          <p className="text-ds-sm leading-relaxed text-ds-fg-muted">
+          <p className="text-ds-xs leading-relaxed text-ds-fg-subtle">
             <span className="font-semibold text-ds-fg-muted">
               {t('resume.authors', { defaultValue: 'Authors' })}:{' '}
             </span>
@@ -169,11 +235,11 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
 
         {/* Tags. */}
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-ds-md border border-ds-border px-2.5 py-1 text-ds-2xs font-medium uppercase tracking-[0.05em] text-ds-fg-muted"
+                className="rounded-ds-sm border border-ds-border px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-[0.06em] text-ds-fg-subtle"
               >
                 {tag}
               </span>

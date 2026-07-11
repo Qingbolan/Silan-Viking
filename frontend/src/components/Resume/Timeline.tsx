@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink, MapPin } from 'lucide-react';
+import Markdown from '../ui/Markdown';
 
 interface TimelineItem {
   title: string;
@@ -98,9 +99,9 @@ const Timeline: React.FC<TimelineProps> = ({ items }) => {
                       >
                         –
                       </span>
-                      <span className="text-sm leading-relaxed text-theme-secondary">
+                      <Markdown className="flex-1 text-sm leading-relaxed text-theme-secondary [&>div]:my-0">
                         {detail}
-                      </span>
+                      </Markdown>
                     </li>
                   ))}
                 </ul>

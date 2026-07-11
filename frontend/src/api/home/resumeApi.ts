@@ -191,6 +191,7 @@ const mapPublications = (part?: ResumePartResponse): Publication[] =>
       award: payload.award || payload.award_name || '',
       tags: payload.tags || payload.keywords || [],
       image: payload.image_url || payload.image || '',
+      publication_type: payload.publication_type || undefined,
       citation_count: Number(payload.citation_count || 0),
       created_at: '',
       updated_at: '',
@@ -311,6 +312,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           githubUrl: item.github_url || undefined,
           blogUrl: item.blog_url || undefined,
           image: item.image || undefined,
+          publicationType: item.publication_type || undefined,
         })),
       },
       awards: {

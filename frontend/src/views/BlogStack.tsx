@@ -6,6 +6,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Seo } from '../components/Seo';
 import { BlogData } from '../components/BlogStack/types/blog';
 import { fetchBlogPosts } from '../api';
+import { fetchEpisodeSeriesList } from '../api/episodes/episodeApi';
+import type { EpisodeSeriesData } from '../types/episode';
 import {
   BlogHeader,
   BrandLoading,
@@ -17,6 +19,54 @@ import {
 } from '../components/ds';
 
 const isSeriesPost = (post: BlogData): boolean => post.type === 'episode' || post.type === 'series';
+
+/**
+ * Episode series live in a separate `episode_series` table that the blog list
+ * endpoint does not join. To make a series surface alongside blog posts in
+ * /blog, we fetch the series list separately and synthesise one BlogData
+ * record per series — the card it produces opens the first episode, which
+ * BlogDetail dispatches to SeriesDetailLayout (the knowledge-base shell).
+ */
+function seriesToBlogData(series: EpisodeSeriesData): BlogData | null {
+  const firstEpisode = series.episodes?.[0];
+  if (!firstEpisode) return null;
+  // Latest episode = highest episode_number; surfaced as a discrete card
+  // field (BlogCard.latestEpisode), NOT folded into the description.
+  const latest = [...series.episodes].sort(
+    (a, b) => (b.episode_number || 0) - (a.episode_number || 0),
+  )[0];
+  const description = series.description || '';
+  return {
+    id: firstEpisode.id,             // open the first episode on card click
+    slug: firstEpisode.slug,
+    title: series.title,
+    titleZh: '',
+    summary: description,
+    summaryZh: '',
+    content: [],
+    author: '',
+    publishDate: '',
+    readTime: '',
+    category: '',
+    tags: [],
+    type: 'series',
+    likes: 0,
+    views: 0,
+    seriesId: series.id,
+    seriesSlug: series.slug,
+    seriesTitle: series.title,
+    seriesTitleZh: '',
+    seriesDescription: description,
+    seriesDescriptionZh: '',
+    seriesImage: '',
+    episodeNumber: 1,
+    totalEpisodes: series.episodes.length,
+    // Stash the latest episode on the record so toBlogCardData can pass it
+    // through as a typed field — strings on BlogData don't accommodate it.
+    latestEpisodeTitle: latest?.title,
+    latestEpisodeNumber: latest?.episode_number,
+  } as unknown as BlogData;
+}
 
 /**
  * Map a BlogData record to the ds BlogCard's data shape, honouring the
@@ -39,6 +89,20 @@ function toBlogCardData(post: BlogData, language: string): BlogCardData {
     ? post.seriesImage
     : (post.vlogCover || post.videoThumbnail);
 
+  // Series cards may carry a latest-episode pointer (stashed by
+  // seriesToBlogData); BlogCard renders it as a dedicated meta row.
+  const seriesPost = post as unknown as {
+    latestEpisodeTitle?: string;
+    latestEpisodeNumber?: number;
+  };
+  const latestEpisode =
+    series && seriesPost.latestEpisodeTitle
+      ? {
+          title: seriesPost.latestEpisodeTitle,
+          episodeNumber: seriesPost.latestEpisodeNumber,
+        }
+      : undefined;
+
   return {
     id: post.id,
     title,
@@ -51,6 +115,7 @@ function toBlogCardData(post: BlogData, language: string): BlogCardData {
     readTime: post.videoDuration || post.readTime,
     kind: series ? 'series' : 'article',
     episodeCount: series ? post.totalEpisodes : undefined,
+    latestEpisode,
     coverImage,
   };
 }
@@ -125,12 +190,21 @@ const BlogStack: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch blog posts from API with language support
-        const fetchedPosts = await fetchBlogPosts({}, language as 'en' | 'zh');
+        // Fetch blog posts and episode series in parallel — the backend
+        // doesn't merge them server-side, so we surface series here.
+        const [fetchedPosts, fetchedSeries] = await Promise.all([
+          fetchBlogPosts({}, language as 'en' | 'zh'),
+          fetchEpisodeSeriesList(language as 'en' | 'zh').catch(() => []),
+        ]);
+
+        const seriesCards = fetchedSeries
+          .map(seriesToBlogData)
+          .filter((p): p is BlogData => p !== null);
+        const merged = [...seriesCards, ...fetchedPosts];
 
         if (isMounted) {
-          setPosts(fetchedPosts);
-          setFilteredPosts(fetchedPosts);
+          setPosts(merged);
+          setFilteredPosts(merged);
           setLoading(false);
         }
       } catch (err) {
@@ -201,7 +275,12 @@ const BlogStack: React.FC = () => {
   );
 
   const handlePostClick = useCallback((post: BlogData) => {
-    // Navigate to blog detail page
+    // Series cards (synthesised from episode_series) route to the dedicated
+    // episode detail page; regular blog posts go to BlogDetail.
+    if (post.type === 'series' || post.type === 'episode') {
+      navigate(`/episodes/${post.slug}`);
+      return;
+    }
     navigate(`/blog/${post.id}`);
   }, [navigate]);
 
@@ -241,7 +320,7 @@ const BlogStack: React.FC = () => {
         path="/blog"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Header — title + search + content-type + topic filters. */}
         <motion.div
           className="mb-12"

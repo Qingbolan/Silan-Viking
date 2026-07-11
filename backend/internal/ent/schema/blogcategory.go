@@ -58,6 +58,9 @@ func (BlogCategory) Fields() []ent.Field {
 func (BlogCategory) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("translations", BlogCategoryTranslation.Type),
-		edge.To("blog_posts", BlogPost.Type),
+		// No reverse `blog_posts` edge: see BlogPost.Edges — the
+		// `blog_posts.category_id` column holds a free-text frontmatter
+		// label, not a `blog_categories.id`, so the relationship is not
+		// representable as a real FK.
 	}
 }

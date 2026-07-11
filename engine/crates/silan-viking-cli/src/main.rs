@@ -91,10 +91,12 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
         "proposal" => &[
             "proposal list|show|accept|reject <id>",
             "proposal rebase <id> [--continue]",
+            "proposal create <uri> [--lang en] (--from-file <path> | --from-stdin)",
         ],
         "site" => &[
             "site build|preview|check|status [--out PATH]",
             "site publish <uri> · site deploy [--dry-run|--confirm]",
+            "site update-content [--dry-run|--confirm]",
             "site rollback · site promote <live-db> <snapshot-db> <content-commit>",
         ],
         "stats" => &[
@@ -398,6 +400,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
             proposal_rebase_continue(&opts.content_root, id)
         }
         ["proposal", "rebase", id] => proposal_rebase(&opts.content_root, id),
+        ["proposal", "create", rest @ ..] => proposal_create(&opts.content_root, rest),
         ["stats", "sync", uri] => stats_sync(&opts.content_root, &opts.db_path, uri),
         ["stats", "show", uri] => stats_show(&opts.db_path, uri),
         ["stats", "visitors", uri] => stats_visitors(&opts.db_path, uri),
@@ -435,7 +438,9 @@ fn run(args: Vec<String>) -> Result<(), String> {
         // never started anything you could open in a browser. Now `preview`
         // delegates to a real local-docker stack (single-host deploy, no
         // [deploy] config required); `build` stays an artefacts-only operation.
-        ["site", "preview"] => site_preview(&opts.content_root, &opts.db_path, &opts.out_dir, false),
+        ["site", "preview"] => {
+            site_preview(&opts.content_root, &opts.db_path, &opts.out_dir, false)
+        }
         ["site", "preview", "--confirm"] => {
             site_preview(&opts.content_root, &opts.db_path, &opts.out_dir, true)
         }
@@ -443,11 +448,60 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["site", "status"] => site_status(&opts.content_root),
         ["site", "promote", live, snapshot, commit] => site_promote(live, snapshot, commit),
         ["site", "publish", uri] => site_publish(&opts.content_root, uri),
-        ["site", "deploy"] | ["site", "deploy", "--dry-run"] => {
-            site_deploy(&opts.content_root, &opts.db_path, &opts.out_dir, false)
+        // `site deploy` accepts an optional `--confirm` / `--dry-run` (mutually
+        // exclusive) and, in nginx mode, an optional `--what=content|frontend|
+        // backend|all` to scope the push. The two flags can appear in any
+        // order.
+        ["site", "deploy", flags @ ..] => {
+            let mut confirm = false;
+            let mut what = DeployWhat::All;
+            for arg in flags {
+                match *arg {
+                    "--confirm" => confirm = true,
+                    "--dry-run" => confirm = false,
+                    s if s.starts_with("--what=") => {
+                        what = DeployWhat::parse(&s["--what=".len()..])?;
+                    }
+                    other => {
+                        return Err(format!(
+                            "site deploy: unknown flag `{other}` · expected --confirm | --dry-run | --what=content|frontend|backend|all"
+                        ));
+                    }
+                }
+            }
+            site_deploy(
+                &opts.content_root,
+                &opts.db_path,
+                &opts.out_dir,
+                confirm,
+                what,
+            )
         }
-        ["site", "deploy", "--confirm"] => {
-            site_deploy(&opts.content_root, &opts.db_path, &opts.out_dir, true)
+        // `site update-content` — the narrow, frequently-needed verb: push
+        // edited content/ to the live backend, nothing else. It is exactly
+        // `site deploy --what=content` with a name that says what it does,
+        // so authors don't have to know that "deploy" is overloaded for
+        // both "ship the whole stack" and "just refresh the DB".
+        ["site", "update-content", flags @ ..] => {
+            let mut confirm = false;
+            for arg in flags {
+                match *arg {
+                    "--confirm" => confirm = true,
+                    "--dry-run" => confirm = false,
+                    other => {
+                        return Err(format!(
+                            "site update-content: unknown flag `{other}` · expected --confirm | --dry-run"
+                        ));
+                    }
+                }
+            }
+            site_deploy(
+                &opts.content_root,
+                &opts.db_path,
+                &opts.out_dir,
+                confirm,
+                DeployWhat::Content,
+            )
         }
         ["site", "rollback"] => site_rollback(&opts.content_root),
         // The first token names a known multi-verb command, but the rest
@@ -776,6 +830,7 @@ fn print_help(content_root: &Path) {
         "  {}",
         d("site publish <uri> · site deploy [--dry-run|--confirm]")
     );
+    println!("  {}", d("site update-content [--dry-run|--confirm]"));
     println!(
         "  {}",
         d("site rollback · site promote <live-db> <snapshot-db> <content-commit>")
@@ -1358,13 +1413,11 @@ fn content_lint_drift() -> Result<(), String> {
             match found {
                 Some(p) => p,
                 None => {
-                    return Err(
-                        "doc-drift check needs the silan-viking source \
+                    return Err("doc-drift check needs the silan-viking source \
                          checkout (it reads docs/silan-viking/). Run this \
                          inside a clone of the repo, or rely on the \
                          engine-ci `docs-drift` job."
-                            .to_owned(),
-                    );
+                        .to_owned());
                 }
             }
         }
@@ -1643,6 +1696,85 @@ fn proposal_show(content_root: &Path, id: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// `silan proposal create <uri> [--lang en] (--from-file <path> | --from-stdin)`
+///
+/// Owner-side entry point to `silan_viking_mcp::propose` — useful when MCP
+/// stdio is not running or the agent surface is unavailable. The draft body
+/// is read from a file (`--from-file <path>`) or stdin (`--from-stdin`); the
+/// URI must be a valid proposal target (Item, Part, or Series).
+fn proposal_create(content_root: &Path, args: &[&str]) -> Result<(), String> {
+    if args.is_empty() {
+        return Err("usage: proposal create <uri> [--lang en] (--from-file <path> | --from-stdin)"
+            .to_owned());
+    }
+    let uri = args[0].to_owned();
+    let mut lang = "en".to_owned();
+    let mut source: Option<String> = None;
+    let mut from_stdin = false;
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i] {
+            "--lang" => {
+                let value = args.get(i + 1).copied().ok_or("--lang needs a value")?;
+                lang = value.to_owned();
+                i += 2;
+            }
+            other if other.starts_with("--lang=") => {
+                lang = other.trim_start_matches("--lang=").to_owned();
+                i += 1;
+            }
+            "--from-file" => {
+                let value = args.get(i + 1).copied().ok_or("--from-file needs a path")?;
+                source = Some(value.to_owned());
+                i += 2;
+            }
+            other if other.starts_with("--from-file=") => {
+                source = Some(other.trim_start_matches("--from-file=").to_owned());
+                i += 1;
+            }
+            "--from-stdin" => {
+                from_stdin = true;
+                i += 1;
+            }
+            other => {
+                return Err(format!(
+                    "proposal create: unknown flag `{other}` · expected --lang | --from-file | --from-stdin"
+                ));
+            }
+        }
+    }
+
+    if from_stdin && source.is_some() {
+        return Err("proposal create: pick either --from-file or --from-stdin, not both".to_owned());
+    }
+    let draft_body = if let Some(path) = source {
+        std::fs::read_to_string(&path).map_err(|e| format!("reading {path}: {e}"))?
+    } else if from_stdin {
+        let mut buf = String::new();
+        use std::io::Read as _;
+        std::io::stdin()
+            .read_to_string(&mut buf)
+            .map_err(|e| format!("reading stdin: {e}"))?;
+        buf
+    } else {
+        return Err(
+            "proposal create: needs a body — pass --from-file <path> or --from-stdin".to_owned(),
+        );
+    };
+
+    let created = silan_viking_mcp::propose(content_root, &uri, Some(&draft_body), &lang, &[])
+        .map_err(|e| e.to_string())?;
+    println!("created {} branch {}", created.id, created.branch);
+    if let Some(uri) = created.created_uri {
+        println!("  uri    {uri}");
+    }
+    if let Some(hint) = created.hint {
+        println!("  hint   {hint}");
+    }
+    Ok(())
+}
+
 fn proposal_accept(content_root: &Path, id: &str) -> Result<(), String> {
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     let proposal_id = ProposalId::new(id).map_err(|e| e.to_string())?;
@@ -1915,10 +2047,7 @@ fn stats_sources(db_path: &Path, uri: &str) -> Result<(), String> {
 
 // ── mcp / site groups — M9 adapters (`02` §二) ──────────────────────────────
 
-fn mcp_handshake(
-    content_root: &Path,
-    gate: silan_viking_mcp::ToolGate,
-) -> Result<(), String> {
+fn mcp_handshake(content_root: &Path, gate: silan_viking_mcp::ToolGate) -> Result<(), String> {
     // `silan mcp serve` without a stdio transport: print the §8.6 handshake
     // so an operator can confirm the tool surface and SCHEMA the agent sees.
     // The advertised tool list honours `gate` so `--enable-deploy` /
@@ -1947,8 +2076,8 @@ fn mcp_stdio(
     db_path: &Path,
     gate: silan_viking_mcp::ToolGate,
 ) -> Result<(), String> {
-    let server = silan_viking_mcp::McpServer::new(content_root, db_path, "silan-viking")
-        .with_gate(gate);
+    let server =
+        silan_viking_mcp::McpServer::new(content_root, db_path, "silan-viking").with_gate(gate);
     server
         .serve(io::stdin().lock(), io::stdout().lock())
         .map_err(|e| e.to_string())
@@ -2131,16 +2260,103 @@ fn site_publish(content_root: &Path, uri: &str) -> Result<(), String> {
 // There is deliberately no `compose_file` field: the Docker compose
 // file and Dockerfiles are embedded in the `silan-viking` binary and
 // staged at deploy time (`docs/silan-viking/16`), not user-supplied.
+/// What to push in an nginx-mode deploy. Docker mode ignores this — it
+/// always ships the whole stack as one image set.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeployWhat {
+    /// Sync `content/`, scp `portfolio.db`, restart the backend. The cheapest
+    /// path — no rebuild, no frontend bundle. Use this when you edited a blog
+    /// post and want it live in ~10 seconds.
+    Content,
+    /// Build the frontend with `npm run build` and ship `dist/`. Run when you
+    /// changed React code; content is not re-synced.
+    Frontend,
+    /// Tar the backend Go source, build remotely (CGO needs the target's
+    /// glibc / SQLite headers), restart. Run when you changed Go code.
+    Backend,
+    /// Everything: content + frontend + backend, in that order so the API
+    /// is restarted with a fresh schema before the new frontend assets load.
+    All,
+}
+
+impl DeployWhat {
+    fn parse(s: &str) -> Result<Self, String> {
+        match s {
+            "content" => Ok(Self::Content),
+            "frontend" => Ok(Self::Frontend),
+            "backend" => Ok(Self::Backend),
+            "all" => Ok(Self::All),
+            other => Err(format!(
+                "--what={other}: must be one of content|frontend|backend|all"
+            )),
+        }
+    }
+    fn does_content(self) -> bool {
+        matches!(self, Self::Content | Self::All)
+    }
+    fn does_frontend(self) -> bool {
+        matches!(self, Self::Frontend | Self::All)
+    }
+    fn does_backend(self) -> bool {
+        matches!(self, Self::Backend | Self::All)
+    }
+    fn label(self) -> &'static str {
+        match self {
+            Self::Content => "content",
+            Self::Frontend => "frontend",
+            Self::Backend => "backend",
+            Self::All => "all",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeployMode {
+    /// v1.0.0 default. Builds Docker images locally (or on remote), ships
+    /// via `docker save | ssh docker load`, runs `docker compose up -d`.
+    /// The host needs only Docker.
+    Docker,
+    /// v1.1.0. Targets a host where Nginx (e.g. BaoTa/宝塔) already fronts
+    /// vhosts and the backend runs under systemd. Pushes the frontend
+    /// `dist/`, the derived `portfolio.db`, and the backend Go source;
+    /// builds the backend remotely (CGO needs the target's glibc); then
+    /// `systemctl restart` and a `/api/v1/health` probe.
+    Nginx,
+}
+
 struct DeployConfig {
+    mode: DeployMode,
     host: String,
     user: String,
     /// SSH key path — only required for a remote `host`.
     ssh_key_path: PathBuf,
-    /// Remote directory — only required for a remote `host`.
+    /// Remote directory — only required for a remote `host`. In Docker
+    /// mode this is the staging dir; in Nginx mode it is the vhost root
+    /// (e.g. `/www/wwwroot/silan.tech`).
     remote_dir: String,
     /// SSH port. Optional in `[deploy]`, defaults to 22 — a hardened
     /// server often moves sshd off the standard port.
     ssh_port: u16,
+
+    // --- Nginx mode only ---
+    /// Public URL of the deployed site (`https://silan.tech`). Optional —
+    /// used only by the health check, which `host` alone can't satisfy when
+    /// `host` is a bare IP (the cert + nginx vhost match the domain). If
+    /// absent, falls back to `https://<host>`.
+    public_url: Option<String>,
+    /// Port the backend binds to on the remote (default 5200, matches
+    /// `backend/etc/backend-api.yaml`). Bound to 127.0.0.1; Nginx
+    /// reverse-proxies `/api/`.
+    backend_port: u16,
+    /// Name of the systemd unit that owns the backend. Default
+    /// `silan-backend`; `systemctl restart <unit>` runs after each push.
+    systemd_unit: String,
+    /// Where to drop the BaoTa-style `extension/<host>/silan-viking.conf`
+    /// snippet. Optional — if absent, the deploy assumes a sysadmin
+    /// wired Nginx by hand. Parsed and held here for the future auto-
+    /// nginx-conf path; clippy's dead-code lint would block CI otherwise.
+    #[allow(dead_code)]
+    nginx_extension_dir: Option<String>,
 }
 
 /// Read and validate `[deploy]` from the project config. A missing section or
@@ -2225,7 +2441,46 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
             .ok_or("[deploy].ssh_port must be a port number (1-65535)")?,
     };
 
+    // mode — optional, defaults to docker (v1.0.0 behaviour). v1.1.0 adds
+    // "nginx" for BaoTa / systemd hosts.
+    let mode = match deploy
+        .get("mode")
+        .and_then(|v| v.as_str())
+        .unwrap_or("docker")
+    {
+        "docker" => DeployMode::Docker,
+        "nginx" => DeployMode::Nginx,
+        other => {
+            return Err(format!(
+                "[deploy].mode = \"{other}\" — must be \"docker\" or \"nginx\""
+            ))
+        }
+    };
+
+    // Nginx-mode fields. All optional with safe defaults so a half-filled
+    // [deploy] still parses; the orchestrator will surface missing values
+    // when it actually needs them.
+    let backend_port: u16 = deploy
+        .get("backend_port")
+        .and_then(|v| v.as_integer())
+        .map(|i| i as u16)
+        .unwrap_or(5200);
+    let systemd_unit = deploy
+        .get("systemd_unit")
+        .and_then(|v| v.as_str())
+        .unwrap_or("silan-backend")
+        .to_owned();
+    let nginx_extension_dir = deploy
+        .get("nginx_extension_dir")
+        .and_then(|v| v.as_str())
+        .map(str::to_owned);
+    let public_url = deploy
+        .get("public_url")
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim_end_matches('/').to_owned());
+
     Ok(DeployConfig {
+        mode,
         host,
         user: if is_local {
             opt("user")
@@ -2235,7 +2490,125 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
         ssh_key_path,
         remote_dir,
         ssh_port,
+        public_url,
+        backend_port,
+        systemd_unit,
+        nginx_extension_dir,
     })
+}
+
+/// Run one ssh command against `cfg.host` and return its stdout. Inherits
+/// stderr to the parent so the user sees real-time progress (helpful for
+/// long-running remote `go build`). Empty `cfg.ssh_key_path` falls back to
+/// the user's ssh-agent / default key — used when invoked from tests or
+/// from a config without an explicit key.
+fn ssh_exec(cfg: &DeployConfig, command: &str) -> Result<String, String> {
+    let mut cmd = Command::new("ssh");
+    if !cfg.ssh_key_path.as_os_str().is_empty() {
+        cmd.arg("-i").arg(&cfg.ssh_key_path);
+    }
+    if cfg.ssh_port != 22 {
+        cmd.arg("-p").arg(cfg.ssh_port.to_string());
+    }
+    // BatchMode=yes refuses interactive prompts — fail fast in CI rather
+    // than hang waiting for a passphrase.
+    cmd.args([
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+    ]);
+    cmd.arg(format!("{}@{}", cfg.user, cfg.host));
+    cmd.arg(command);
+    cmd.stderr(std::process::Stdio::inherit());
+    let out = cmd
+        .output()
+        .map_err(|e| format!("ssh {}@{}: {e}", cfg.user, cfg.host))?;
+    if !out.status.success() {
+        return Err(format!(
+            "ssh {}@{} exited with status {} (command: {command})",
+            cfg.user, cfg.host, out.status,
+        ));
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+/// `scp <src> <user>@<host>:<dst>`. `src` may be a file or directory
+/// (recursive `-r` is always used; scp is silent for single files).
+fn scp_to(cfg: &DeployConfig, src: &Path, dst: &str) -> Result<(), String> {
+    let mut cmd = Command::new("scp");
+    cmd.arg("-r");
+    if !cfg.ssh_key_path.as_os_str().is_empty() {
+        cmd.arg("-i").arg(&cfg.ssh_key_path);
+    }
+    if cfg.ssh_port != 22 {
+        cmd.arg("-P").arg(cfg.ssh_port.to_string());
+    }
+    cmd.args([
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+    ]);
+    cmd.arg(src);
+    cmd.arg(format!("{}@{}:{dst}", cfg.user, cfg.host));
+    let status = cmd.status().map_err(|e| {
+        format!(
+            "scp {} -> {}@{}:{dst}: {e}",
+            src.display(),
+            cfg.user,
+            cfg.host
+        )
+    })?;
+    if !status.success() {
+        return Err(format!(
+            "scp {} -> {}@{}:{dst} exited with status {}",
+            src.display(),
+            cfg.user,
+            cfg.host,
+            status,
+        ));
+    }
+    Ok(())
+}
+
+/// Probe `https://<host>/api/v1/health` over HTTPS. Returns Err when the
+/// status is not 2xx or the body doesn't include `"ok"`. Uses `curl` via
+/// the host shell — Rust's HTTP clients would mean another dependency for
+/// what is a one-line healthcheck.
+fn deploy_health_check(cfg: &DeployConfig) -> Result<(), String> {
+    let base = cfg
+        .public_url
+        .clone()
+        .unwrap_or_else(|| format!("https://{}", cfg.host));
+    let url = format!("{base}/api/v1/health");
+    // `-k` accepts self-signed / hostname-mismatched certs — required when
+    // `host` is a bare IP (no SAN for the IP) but nginx forces 80→443.
+    // The health endpoint returns the same `{"status":"ok"}` either way;
+    // we only need a successful round-trip through the reverse proxy.
+    let out = Command::new("curl")
+        .args([
+            "-sSLk",
+            "--max-time",
+            "10",
+            "-o",
+            "-",
+            "-w",
+            "\n%{http_code}",
+            &url,
+        ])
+        .output()
+        .map_err(|e| format!("curl {url}: {e}"))?;
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let mut lines: Vec<&str> = stdout.lines().collect();
+    let code = lines.pop().unwrap_or("");
+    let body = lines.join("\n");
+    if code.starts_with('2') {
+        println!("        health: HTTP {code} · {}", body.trim());
+        Ok(())
+    } else {
+        Err(format!("health check failed: HTTP {code} · {body}"))
+    }
 }
 
 /// Unpack one embedded gzip tarball into `staging`. The tarball's paths
@@ -2419,22 +2792,568 @@ fn site_preview(
     )
 }
 
-/// `silan site deploy` — the `06` §6.5 six-step pipeline: sync → build →
-/// package → ship → promote → up. Dry-run is the default; only `--confirm`
-/// touches the server.
+// ---------------------------------------------------------------------------
+// `silan site deploy` — the `06` §6.5 six-step pipeline: sync → build →
+// package → ship → promote → up. Dry-run is the default; only `--confirm`
+// touches the server.
+//
+// The Docker build context is materialised from artifacts embedded in this
+// binary (`stage_deploy_artifacts`), not from a source checkout — so the
+// only thing the operator's machine needs is Docker (`docs/silan-viking/16`).
+//
+// Nginx-mode deploy (v1.1.0)
+// ---------------------------------------------------------------------------
+//
+// Targets a host where Nginx already fronts vhosts (e.g. BaoTa / 宝塔) and
+// the backend runs under systemd. The CLI orchestrates a sequence of host
+// tools (npm, go via ssh, scp, ssh, curl); it does not bundle them. A
+// missing tool surfaces as a clear error before anything is shipped.
+//
+// The remote layout follows the README + the manual EasyNet-style deploy:
+//
+//   <remote_dir>/                     (e.g. /www/wwwroot/silan.tech)
+//   ├── index.html  assets/  ...      ← frontend dist root
+//   └── api/
+//       ├── silan-backend             ← compiled Go binary
+//       ├── etc/backend-api.yaml      ← server config
+//       └── _deploy/api/portfolio.db  ← derived database
+
+/// One end-to-end nginx-mode deploy. Walks through each enabled phase, then
+/// restarts the backend and probes `/api/v1/health`. Restart and health check
+/// run unconditionally when *any* phase ran — even content-only — because the
+/// backend caches DB handles and must reopen the file.
+fn run_nginx_deploy(
+    content_root: &Path,
+    db_path: &Path,
+    project_root: &Path,
+    cfg: &DeployConfig,
+    confirm: bool,
+    what: DeployWhat,
+) -> Result<(), String> {
+    if !confirm {
+        println!("site deploy — dry run (pass --confirm to execute)");
+        println!(
+            "  target  {}@{}:{}  (nginx mode)",
+            cfg.user, cfg.host, cfg.remote_dir,
+        );
+        println!("  scope   --what={}", what.label());
+        let mut step = 1;
+        if what.does_content() {
+            println!(
+                "  {step} content  silan-viking index sync → stop {} → cp .prev → \
+                 clear wal/shm → scp portfolio.db → chown → md5-verify → \
+                 (if PG-configured: sqlite2pg) → mirror media/",
+                cfg.systemd_unit,
+            );
+            step += 1;
+        }
+        if what.does_frontend() {
+            println!("  {step} frontend npm run build → scp dist/",);
+            step += 1;
+        }
+        if what.does_backend() {
+            println!("  {step} backend  tar source → scp → CGO_ENABLED=1 go build (remote)");
+            step += 1;
+        }
+        // content always stops the backend itself, so the unconditional
+        // post-step is `start` only when content is the *only* phase.
+        let bring_up_verb = if matches!(what, DeployWhat::Content) {
+            "start"
+        } else {
+            "restart"
+        };
+        println!(
+            "  {step} {bring_up_verb}  systemctl {bring_up_verb} {} → curl /api/v1/health",
+            cfg.systemd_unit
+        );
+        return Ok(());
+    }
+
+    let mut did_work = false;
+    // `deploy_nginx_content` stops the backend itself (to release the
+    // mmap'd DB before scp). If it ran we need `start`, not `restart` —
+    // restart on a stopped unit works but loses one transition's worth of
+    // journal context, and tooling that watches the unit state sees two
+    // active→inactive flips instead of one.
+    let mut backend_stopped = false;
+    if what.does_content() {
+        backend_stopped = deploy_nginx_content(content_root, db_path, cfg)?;
+        did_work = true;
+    }
+    if what.does_frontend() {
+        deploy_nginx_frontend(project_root, cfg)?;
+        did_work = true;
+    }
+    if what.does_backend() {
+        deploy_nginx_backend(project_root, cfg)?;
+        did_work = true;
+    }
+    if !did_work {
+        return Err(format!("--what={} selected nothing", what.label()));
+    }
+
+    let restart_verb = if backend_stopped { "start" } else { "restart" };
+    println!(
+        "[{restart_verb}] systemctl {restart_verb} {}",
+        cfg.systemd_unit
+    );
+    ssh_exec(
+        cfg,
+        &format!("systemctl {restart_verb} {}", cfg.systemd_unit),
+    )?;
+    // Give systemd a beat to flip the unit state before we probe.
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    let health_base = cfg
+        .public_url
+        .clone()
+        .unwrap_or_else(|| format!("https://{}", cfg.host));
+    println!("[health] {health_base}/api/v1/health");
+    deploy_health_check(cfg)?;
+    println!("done.");
+    Ok(())
+}
+
+/// Phase 1 — content. Rebuild the local derived db, ship it, leave the
+/// restart/health check to the caller.
 ///
-/// The Docker build context is materialised from artifacts embedded in
-/// this binary (`stage_deploy_artifacts`), not from a source checkout —
-/// so the only thing the operator's machine needs is Docker
-/// (`docs/silan-viking/16`).
+/// The DB swap is wrapped in stop → backup → scp → clear-wal → chown so the
+/// live backend can never be mid-mmap when scp rewrites the file (which
+/// silently makes scp "succeed" against a stale inode — health returns 200
+/// while the served data is the pre-deploy snapshot). Returns `true` when
+/// the backend was stopped here, so the caller does `start` instead of
+/// `restart`.
+fn deploy_nginx_content(
+    content_root: &Path,
+    db_path: &Path,
+    cfg: &DeployConfig,
+) -> Result<bool, String> {
+    println!("[content] index sync");
+    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
+    ws.sync(db_path).map_err(|e| e.to_string())?;
+
+    let remote_dir = format!("{}/api/_deploy/api", cfg.remote_dir);
+    println!("[content] mkdir -p {remote_dir}");
+    ssh_exec(cfg, &format!("mkdir -p {remote_dir}"))?;
+
+    // Stop the backend BEFORE touching the live DB. Without this, scp races
+    // against silan-backend's mmap'd file handle: on some kernels the
+    // overwrite "succeeds" but the running process keeps serving the old
+    // inode, leaving local md5 ≠ remote md5 even though deploy looks green.
+    println!(
+        "[content] systemctl stop {} (release DB lock)",
+        cfg.systemd_unit
+    );
+    ssh_exec(cfg, &format!("systemctl stop {}", cfg.systemd_unit))?;
+
+    // Take a .prev snapshot so `site rollback` has something to fall back
+    // on. The previous --what=content path skipped this and left rollback
+    // unusable on a bad content deploy.
+    let remote_db = format!("{remote_dir}/portfolio.db");
+    println!("[content] backup → {remote_db}.prev");
+    ssh_exec(
+        cfg,
+        &format!("[ -f {remote_db} ] && cp -f {remote_db} {remote_db}.prev || true"),
+    )?;
+
+    // Clear stale -wal/-shm from the now-stopped backend. If they survive
+    // they will be paired against the new main DB at next open and sqlite
+    // will report "database disk image is malformed" → crashloop → 502.
+    println!("[content] clear stale WAL/SHM on remote");
+    ssh_exec(cfg, &format!("rm -f {remote_db}-wal {remote_db}-shm"))?;
+
+    println!("[content] scp {} → {remote_db}", db_path.display());
+    scp_to(cfg, db_path, &remote_db)?;
+
+    // Backend runs as `User=www` per the silan-backend.service unit; if scp
+    // landed as root the daemon can't open the DB for writes.
+    ssh_exec(cfg, &format!("chown www:www {remote_db}"))?;
+
+    // Trust nothing — verify by content hash, not by exit code or timestamp.
+    // This is the line that catches the silent-mmap failure mode.
+    verify_remote_db_matches(cfg, db_path, &remote_db)?;
+
+    // If the live backend runs against PostgreSQL (the runtime DB is no
+    // longer the shipped SQLite file but a server-resident PG), import the
+    // freshly-scp'd SQLite into PG before the backend comes back up. The
+    // SQLite file remains on disk as the rollback artifact; PG is the read
+    // path. We detect PG mode by the presence of the systemd EnvironmentFile
+    // the installer wrote (/etc/silan-backend/db.env containing DB_SOURCE).
+    // Without it, the deploy stays SQLite-only — no change in behaviour for
+    // installs that never migrated.
+    sync_remote_postgres_if_configured(cfg, &remote_db)?;
+
+    // Mirror media assets to <remote_dir>/api/media. The DB already holds
+    // rewritten `/api/v1/media?f=<rel_path>` URLs from `sync`; the backend
+    // serves them out of `Media.Root` (see deploy_nginx_backend for the yaml
+    // template that points Media.Root here). Mirror semantics: an asset
+    // deleted from content/ disappears from the server on the next deploy.
+    let assets = ws.scan().map_err(|e| e.to_string())?.assets().to_vec();
+    if assets.is_empty() {
+        return Ok(true);
+    }
+    let staging = std::env::temp_dir().join("silan-viking-content-staging");
+    let _ = fs::remove_dir_all(&staging);
+    fs::create_dir_all(&staging)
+        .map_err(|e| format!("[content] staging dir {}: {e}", staging.display()))?;
+    let Some(media_root) = stage_media(&staging, &assets)? else {
+        return Ok(true);
+    };
+    let remote_media = format!("{}/api/media", cfg.remote_dir);
+    println!(
+        "[content] mirror {} media file(s) → {remote_media}",
+        assets.len(),
+    );
+    // Clear the remote dir first so a deleted asset doesn't linger.
+    ssh_exec(
+        cfg,
+        &format!("rm -rf {remote_media} && mkdir -p {remote_media}"),
+    )?;
+    // scp -r the *contents* of the staged tree into the remote media dir
+    // (the trailing `/.` is the "merge contents, don't nest" trick).
+    let mut src = absolutise(&media_root)?.into_os_string();
+    src.push("/.");
+    scp_to(cfg, Path::new(&src), &remote_media)?;
+    let _ = fs::remove_dir_all(&staging);
+    Ok(true)
+}
+
+/// Confirm that the remote DB file is byte-identical to what we shipped.
+/// scp can return success while the backend's mmap'd inode keeps serving
+/// the old bytes, so size+timestamp aren't enough — md5 is the only
+/// honest signal that the swap actually landed.
+fn verify_remote_db_matches(
+    cfg: &DeployConfig,
+    local_db: &Path,
+    remote_db: &str,
+) -> Result<(), String> {
+    let local_hash = md5_file(local_db)?;
+    // `md5sum` is GNU coreutils — present on every Linux target this
+    // deploy supports. Output is `<hash>  <path>\n`; take the first word.
+    let raw = ssh_exec(cfg, &format!("md5sum {remote_db}"))?;
+    let remote_hash = raw
+        .split_whitespace()
+        .next()
+        .ok_or_else(|| format!("[content] empty md5sum output for {remote_db}"))?
+        .to_string();
+    if remote_hash.eq_ignore_ascii_case(&local_hash) {
+        println!("[content] verified md5 {local_hash} (local == remote)");
+        Ok(())
+    } else {
+        Err(format!(
+            "[content] md5 mismatch — local {local_hash} != remote {remote_hash}; \
+             scp did not land. Backend is stopped; investigate before restarting."
+        ))
+    }
+}
+
+/// Path the PG cutover installer writes — a systemd-style env file with
+/// `DB_DRIVER=postgres` and `DB_SOURCE=postgres://...`. Its presence is the
+/// signal that the backend has been switched off SQLite; its absence means
+/// the deploy stays SQLite-only and PG sync is skipped.
+const REMOTE_DB_ENV_PATH: &str = "/etc/silan-backend/db.env";
+
+/// Path the PG cutover installer drops the importer at. A Linux x86_64 build
+/// of `backend/cmd/sqlite2pg` from this same tree.
+const REMOTE_SQLITE2PG_BIN: &str = "/usr/local/bin/silan-sqlite2pg";
+
+/// If the remote backend is configured to read from PostgreSQL (env file
+/// present and `DB_DRIVER=postgres`), import the freshly-scp'd SQLite into
+/// PG so the next backend start reads the new content. Without this, a
+/// content push only refreshes the SQLite file — but the live read path is
+/// PG, so the site would keep serving stale data.
+///
+/// Returns Ok(()) and prints a one-line skip note when PG mode is not
+/// detected, so the same `update-content` flow keeps working for installs
+/// that never migrated off SQLite.
+fn sync_remote_postgres_if_configured(cfg: &DeployConfig, remote_db: &str) -> Result<(), String> {
+    // Decide once whether PG mode is active. Reading the env file's
+    // `DB_DRIVER` and trying `[ -x importer ]` in a single ssh call keeps
+    // the deploy log clean for non-PG installs (one round trip, one note).
+    let probe = format!(
+        "if [ -f {env} ] && grep -q '^DB_DRIVER=postgres' {env} && [ -x {bin} ]; then \
+           echo PG_READY; \
+         elif [ -f {env} ] && grep -q '^DB_DRIVER=postgres' {env}; then \
+           echo PG_NO_BIN; \
+         else \
+           echo NO_PG; \
+         fi",
+        env = REMOTE_DB_ENV_PATH,
+        bin = REMOTE_SQLITE2PG_BIN,
+    );
+    let state = ssh_exec(cfg, &probe)?;
+    let state = state.trim();
+    match state {
+        "NO_PG" => {
+            println!("[pg-sync] skip: remote backend uses SQLite (no {REMOTE_DB_ENV_PATH})");
+            Ok(())
+        }
+        "PG_NO_BIN" => Err(format!(
+            "[pg-sync] {REMOTE_DB_ENV_PATH} says DB_DRIVER=postgres but \
+             {REMOTE_SQLITE2PG_BIN} is missing — install it from \
+             `backend/cmd/sqlite2pg` before running update-content. Backend is \
+             stopped; restart manually after fixing."
+        )),
+        "PG_READY" => {
+            println!("[pg-sync] import SQLite → PG via {REMOTE_SQLITE2PG_BIN}");
+            let cmd = format!(
+                "{bin} --sqlite {db} --env-file {env}",
+                bin = REMOTE_SQLITE2PG_BIN,
+                db = remote_db,
+                env = REMOTE_DB_ENV_PATH,
+            );
+            let out = ssh_exec(cfg, &cmd)?;
+            // The importer logs one "copied <table>: N rows" line per table
+            // and a "done: copied X tables" trailer. Echo just the trailer
+            // to keep the deploy log readable; the full log is available on
+            // the server side if a per-table count is needed.
+            if let Some(done) = out.lines().rev().find(|l| l.contains("done:")) {
+                println!("[pg-sync] {}", done.trim());
+            }
+            Ok(())
+        }
+        other => Err(format!("[pg-sync] unexpected probe state: {other:?}")),
+    }
+}
+
+/// Compute the lowercase hex md5 of a local file. Streams the file so the
+/// 250 KB derived DB doesn't all need to be in memory at once (matters for
+/// the larger media tarballs in the same flow).
+fn md5_file(path: &Path) -> Result<String, String> {
+    use std::io::Read;
+    let mut f =
+        fs::File::open(path).map_err(|e| format!("[content] open {}: {e}", path.display()))?;
+    let mut ctx = md5::Context::new();
+    let mut buf = [0u8; 8192];
+    loop {
+        let n = f
+            .read(&mut buf)
+            .map_err(|e| format!("[content] read {}: {e}", path.display()))?;
+        if n == 0 {
+            break;
+        }
+        ctx.consume(&buf[..n]);
+    }
+    Ok(format!("{:x}", ctx.compute()))
+}
+
+/// Phase 2 — frontend. Run `npm run build` locally; ship `dist/`. macOS-
+/// produced `._*` AppleDouble files are stripped on the remote side
+/// (otherwise nginx serves them as text/plain and search engines index them).
+fn deploy_nginx_frontend(project_root: &Path, cfg: &DeployConfig) -> Result<(), String> {
+    let frontend = project_root.join("frontend");
+    if !frontend.is_dir() {
+        return Err(format!(
+            "[frontend] {} not found — silan-viking expects a frontend/ next to engine/",
+            frontend.display(),
+        ));
+    }
+    // npm must be on PATH on the host. The error mentions the install
+    // hint instead of letting the user decode a node-not-found stack.
+    if which("npm").is_none() {
+        return Err(
+            "[frontend] `npm` not found on PATH · install Node.js to deploy the frontend"
+                .to_owned(),
+        );
+    }
+
+    println!("[frontend] npm run build (in {})", frontend.display());
+    let status = Command::new("npm")
+        .args(["run", "build"])
+        .current_dir(&frontend)
+        .status()
+        .map_err(|e| format!("[frontend] npm run build: {e}"))?;
+    if !status.success() {
+        return Err(format!("[frontend] npm run build failed (status {status})"));
+    }
+
+    let dist = frontend.join("dist");
+    if !dist.is_dir() {
+        return Err(format!(
+            "[frontend] build finished but {} does not exist",
+            dist.display(),
+        ));
+    }
+    let tarball = std::env::temp_dir().join("silan-viking-frontend-dist.tar.gz");
+    println!("[frontend] tar dist → {}", tarball.display());
+    let status = Command::new("tar")
+        .arg("-czf")
+        .arg(&tarball)
+        .arg("-C")
+        .arg(&dist)
+        .arg(".")
+        .status()
+        .map_err(|e| format!("[frontend] tar: {e}"))?;
+    if !status.success() {
+        return Err(format!("[frontend] tar exited with {status}"));
+    }
+    let remote_tar = "/tmp/silan-viking-frontend-dist.tar.gz";
+    println!("[frontend] scp → {}", remote_tar);
+    scp_to(cfg, &tarball, remote_tar)?;
+    // Untar over the vhost root, then drop AppleDouble resource forks
+    // (`._*`) so nginx doesn't serve them.
+    println!("[frontend] untar at {}", cfg.remote_dir);
+    ssh_exec(
+        cfg,
+        &format!(
+            "cd {dir} && tar -xzf {tar} && find . -maxdepth 4 -name '._*' -delete",
+            dir = cfg.remote_dir,
+            tar = remote_tar,
+        ),
+    )?;
+    let _ = std::fs::remove_file(&tarball);
+    Ok(())
+}
+
+/// Phase 3 — backend. Tar the Go source (excluding artefacts), build on the
+/// server (CGO_ENABLED=1 — the SQLite driver needs cgo + libsqlite on the
+/// target's libc), drop the binary at `<remote_dir>/api/silan-backend`. A
+/// `backend-api.yaml` is written if one isn't already there; the caller
+/// restarts systemd to pick it up.
+fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), String> {
+    let backend = project_root.join("backend");
+    if !backend.is_dir() {
+        return Err(format!(
+            "[backend] {} not found — silan-viking expects backend/ next to engine/",
+            backend.display(),
+        ));
+    }
+    let tarball = std::env::temp_dir().join("silan-viking-backend-src.tar.gz");
+    println!("[backend] tar source → {}", tarball.display());
+    let status = Command::new("tar")
+        .args([
+            "--exclude=.git",
+            "--exclude=*.log",
+            "--exclude=silan-backend",
+            "--exclude=silan-backend-mac",
+            "-czf",
+        ])
+        .arg(&tarball)
+        .arg("-C")
+        .arg(&backend)
+        .arg(".")
+        .status()
+        .map_err(|e| format!("[backend] tar: {e}"))?;
+    if !status.success() {
+        return Err(format!("[backend] tar exited with {status}"));
+    }
+    let remote_tar = "/tmp/silan-viking-backend-src.tar.gz";
+    println!("[backend] scp → {}", remote_tar);
+    scp_to(cfg, &tarball, remote_tar)?;
+
+    let api_dir = format!("{}/api", cfg.remote_dir);
+    let etc_dir = format!("{api_dir}/etc");
+    let bin_path = format!("{api_dir}/silan-backend");
+    // Untar + go build. We rebuild every time — Go's incremental cache
+    // makes this fast after the first run, and a fresh build catches any
+    // drift between local source and what is deployed.
+    println!("[backend] remote build (CGO_ENABLED=1 go build)");
+    ssh_exec(
+        cfg,
+        &format!(
+            "set -e && \
+             mkdir -p {api_dir} {etc_dir} && \
+             rm -rf /tmp/silan-backend-build && mkdir -p /tmp/silan-backend-build && \
+             cd /tmp/silan-backend-build && tar -xzf {remote_tar} && \
+             CGO_ENABLED=1 go build -o {bin_path} backend.go"
+        ),
+    )?;
+
+    // Write etc/backend-api.yaml if missing. Don't clobber a hand-edited
+    // file — the operator may have customised auth or database path.
+    let probe = ssh_exec(
+        cfg,
+        &format!("test -f {etc_dir}/backend-api.yaml && echo yes || echo no"),
+    )?;
+    if probe.trim() == "no" {
+        println!("[backend] write {etc_dir}/backend-api.yaml (defaults)");
+        let yaml = format!(
+            "Name: silan-backend\n\
+             Host: 127.0.0.1\n\
+             Port: {port}\n\
+             Database:\n\
+             \x20\x20driver: sqlite3\n\
+             \x20\x20source: {dir}/api/_deploy/api/portfolio.db?_fk=1\n\
+             \x20\x20host: ''\n\x20\x20port: ''\n\x20\x20user: ''\n\
+             \x20\x20password: ''\n\x20\x20name: ''\n\x20\x20ssl_mode: ''\n\
+             Auth:\n\x20\x20google_client_id: ''\n\
+             Media:\n\x20\x20Root: {dir}/api/media\n",
+            port = cfg.backend_port,
+            dir = cfg.remote_dir,
+        );
+        // Use a heredoc-like base64 round-trip so any awkward shell
+        // characters (back-quotes, $ signs) survive intact.
+        let b64 = base64_encode(yaml.as_bytes());
+        ssh_exec(
+            cfg,
+            &format!("echo {b64} | base64 -d > {etc_dir}/backend-api.yaml"),
+        )?;
+    }
+    let _ = std::fs::remove_file(&tarball);
+    Ok(())
+}
+
+/// Minimal base64 encoder — used only for shipping a multi-line YAML
+/// through a single-line ssh command. Avoids a dependency on the
+/// `base64` crate for one call site.
+fn base64_encode(input: &[u8]) -> String {
+    const ALPHA: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
+    for chunk in input.chunks(3) {
+        let b0 = chunk[0];
+        let b1 = if chunk.len() > 1 { chunk[1] } else { 0 };
+        let b2 = if chunk.len() > 2 { chunk[2] } else { 0 };
+        out.push(ALPHA[(b0 >> 2) as usize] as char);
+        out.push(ALPHA[(((b0 & 0b11) << 4) | (b1 >> 4)) as usize] as char);
+        if chunk.len() > 1 {
+            out.push(ALPHA[(((b1 & 0b1111) << 2) | (b2 >> 6)) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        if chunk.len() > 2 {
+            out.push(ALPHA[(b2 & 0b111111) as usize] as char);
+        } else {
+            out.push('=');
+        }
+    }
+    out
+}
+
+/// `which(name)` — return the resolved binary path if it's on PATH.
+/// Equivalent to the shell's `command -v`; used to surface a clear
+/// "install npm" / "install go" message instead of an opaque exec error.
+fn which(name: &str) -> Option<PathBuf> {
+    let path = env::var_os("PATH")?;
+    env::split_paths(&path).find_map(|dir| {
+        let p = dir.join(name);
+        if p.is_file() {
+            Some(p)
+        } else {
+            None
+        }
+    })
+}
+
 fn site_deploy(
     content_root: &Path,
     db_path: &Path,
     out_dir: &Path,
     confirm: bool,
+    what: DeployWhat,
 ) -> Result<(), String> {
     let cfg = deploy_config(content_root)?;
     let project_root = content_root.parent().unwrap_or(content_root);
+    if cfg.mode == DeployMode::Nginx {
+        return run_nginx_deploy(content_root, db_path, project_root, &cfg, confirm, what);
+    }
+    // Below this point: docker mode (v1.0.0 behaviour). `--what` is not
+    // meaningful here — docker ships everything as one image set — so a
+    // non-default selection is a no-op warning.
+    if what != DeployWhat::All {
+        eprintln!(
+            "note: --what={} ignored in docker mode (docker ships the whole stack)",
+            what.label(),
+        );
+    }
     // A `localhost` / `local` host means a single-host deploy: docker runs
     // here, no SSH. This is what the e2e Docker experiment exercises.
     let is_local = matches!(cfg.host.as_str(), "localhost" | "127.0.0.1" | "local");
@@ -2957,19 +3876,45 @@ fn git_head_commit(content_root: &Path) -> Option<String> {
 
 /// `silan site rollback` — restore the previous live db on the server and
 /// restart the stack (`02` §site / `06` §6.5). It relies on the
-/// `portfolio.db.prev` snapshot that `site deploy` step 5 leaves behind.
+/// `portfolio.db.prev` snapshot that `site deploy` and `site update-content`
+/// leave behind.
+///
+/// Branches on `cfg.mode`: in `docker` mode the prev sits at
+/// `<remote_dir>/portfolio.db` alongside the compose file; in `nginx` mode
+/// (systemd + native binary) it sits under `<remote_dir>/api/_deploy/api/`
+/// next to the live DB. The two layouts cannot be unified without breaking
+/// the compose contract, so we pick the right recipe per mode.
 fn site_rollback(content_root: &Path) -> Result<(), String> {
     let cfg = deploy_config(content_root)?;
     let target = format!("{}@{}", cfg.user, cfg.host);
     let key = cfg.ssh_key_path.to_string_lossy().into_owned();
-    // The compose file is shipped flat to the remote dir by `site
-    // deploy` (always named `docker-compose.yml`).
-    let remote = format!(
-        "cd {dir} && test -f portfolio.db.prev && \
-         mv -f portfolio.db.prev portfolio.db && \
-         docker compose -f docker-compose.yml up -d",
-        dir = cfg.remote_dir,
-    );
+    let remote = if cfg.mode == DeployMode::Nginx {
+        // Stop the systemd unit first — same reasoning as in the deploy
+        // path: don't swap a mmap'd file. Then promote .prev. Then start.
+        // Clear any stale -wal/-shm so the restarted backend doesn't try to
+        // pair the rolled-back DB with the failed deploy's WAL.
+        format!(
+            "set -e; \
+             dir={dir}/api/_deploy/api; \
+             test -f $dir/portfolio.db.prev || {{ echo 'no portfolio.db.prev'; exit 1; }}; \
+             systemctl stop {unit}; \
+             mv -f $dir/portfolio.db.prev $dir/portfolio.db; \
+             rm -f $dir/portfolio.db-wal $dir/portfolio.db-shm; \
+             chown www:www $dir/portfolio.db; \
+             systemctl start {unit}",
+            dir = cfg.remote_dir,
+            unit = cfg.systemd_unit,
+        )
+    } else {
+        // docker mode (v1.0.0): the compose file is shipped flat to the
+        // remote dir by `site deploy` (always named `docker-compose.yml`).
+        format!(
+            "cd {dir} && test -f portfolio.db.prev && \
+             mv -f portfolio.db.prev portfolio.db && \
+             docker compose -f docker-compose.yml up -d",
+            dir = cfg.remote_dir,
+        )
+    };
     let status = Command::new("ssh")
         .args([
             "-i",
@@ -3058,9 +4003,7 @@ fn local_site_status() -> Result<(), String> {
             let trimmed = raw.trim();
             if trimmed.is_empty() || trimmed == "[]" {
                 println!("site status — no local stack");
-                println!(
-                    "  run `silan site preview --confirm` to start one (needs Docker)"
-                );
+                println!("  run `silan site preview --confirm` to start one (needs Docker)");
             } else {
                 println!("site status — local docker stacks:");
                 print!("{raw}");
@@ -3701,9 +4644,7 @@ fn episode_set_publish(
     let file = dir.join("parts/body/en.md");
     rewrite_frontmatter_field(&file, "status", status)?;
     rewrite_frontmatter_field(&file, "visibility", visibility)?;
-    println!(
-        "episode `{series}/{slug}` status -> {status}, visibility -> {visibility}"
-    );
+    println!("episode `{series}/{slug}` status -> {status}, visibility -> {visibility}");
     Ok(())
 }
 

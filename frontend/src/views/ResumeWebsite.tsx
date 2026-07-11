@@ -16,7 +16,7 @@ import { BrandLoading } from '../components/ds/BrandLoading';
 import { ErrorState } from '../components/ds/ErrorState';
 import Markdown from '../components/ui/Markdown';
 import { Seo, SITE_URL } from '../components/Seo';
-import { fetchResumeData } from '../api/home/resumeApi';
+import { fetchResumeData, fetchPersonalInfo } from '../api/home/resumeApi';
 import {
   AwardsList,
   ProjectSection,
@@ -125,6 +125,12 @@ const ResumeWebsite: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [resumeData, setResumeData] = useState<ResumeViewData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Stable Latin-script owner name for PublicationCard highlight. authors[]
+  // lists every paper with the Latin-script names ("Silan Hu" etc.), so when
+  // the UI is in zh and resumeData.name becomes "胡思蓝", the includes() match
+  // fails and no name is bolded. Pin highlight to the en personal_info name
+  // so the rule survives language switching.
+  const [highlightAuthor, setHighlightAuthor] = useState<string | undefined>();
   
   const { colors } = useTheme();
   const reduceMotion = useReducedMotion();
@@ -187,10 +193,27 @@ const ResumeWebsite: React.FC = () => {
     });
   }, [colors]);
 
+  // Resolve the stable owner name once (en variant, independent of UI lang)
+  // so PublicationCard can bold it regardless of which language the user
+  // toggled into.
+  useEffect(() => {
+    let cancelled = false;
+    fetchPersonalInfo('en')
+      .then((info) => {
+        if (!cancelled && info?.full_name) setHighlightAuthor(info.full_name);
+      })
+      .catch(() => {
+        // Non-fatal — author highlight just stays off.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Load resume data
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadResumeData = async () => {
       try {
         setLoading(true);
@@ -274,6 +297,7 @@ const ResumeWebsite: React.FC = () => {
           current={resumeData.current || ''}
           contacts={resumeData.contacts || []}
           socialLinks={resumeData.socialLinks || []}
+          avatarSrc="/image.png"
         />
       </div>
 
@@ -345,7 +369,7 @@ const ResumeWebsite: React.FC = () => {
             >
               <PublicationsList
                 publications={resumeData.sections.publications.content}
-                highlightAuthor={resumeData.name}
+                highlightAuthor={highlightAuthor ?? resumeData.name}
               />
             </SectionCard>
           </div>
