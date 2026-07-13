@@ -9,11 +9,7 @@ import {
   HeadingContent,
 } from './BlogContent';
 import TableBlock from './BlogContent/TableBlock';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeHighlight from 'rehype-highlight';
+import Markdown from '../../ui/Markdown';
 
 interface BlogContentRendererProps {
   content: BlogContent[];
@@ -229,7 +225,6 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
   }, [content]);
 
   const renderMarkdown = (item: PreparedItem) => {
-    // 不要误处理 fenced code
     const shouldTweak = item.content && !/```/.test(item.content);
     let md = shouldTweak ? normalizeInlineMarkdownHeuristics(item.content) : (item.content ?? '');
     if (hasGfmTable(md)) {
@@ -238,202 +233,9 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
     }
 
     return (
-      <div key={item.id} className="font-article max-w-none text-theme-text-primary">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
-          components={{
-            h1: ({ node, ...hProps }) => (
-              <h1
-                {...hProps}
-                className="font-display mb-4 mt-0 text-[1.75rem] font-bold leading-[1.2] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
-              />
-            ),
-            h2: ({ node, ...hProps }) => (
-              <h2
-                {...hProps}
-                className="font-display mb-4 mt-14 text-[1.5rem] font-semibold leading-[1.3] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
-              />
-            ),
-            h3: ({ node, ...hProps }) => (
-              <h3
-                {...hProps}
-                className="font-display mb-3 mt-10 text-[1.25rem] font-semibold leading-[1.3] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
-              />
-            ),
-            h4: ({ node, ...hProps }) => (
-              <h4
-                {...hProps}
-                className="font-display mb-2 mt-8 text-[1.125rem] font-medium leading-[1.4] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
-              />
-            ),
-            h5: ({ node, ...hProps }) => (
-              <h5
-                {...hProps}
-                className="font-display mb-2 mt-6 text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-theme-text-tertiary scroll-mt-24"
-              />
-            ),
-            h6: ({ node, ...hProps }) => (
-              <h6
-                {...hProps}
-                className="font-display mb-2 mt-6 text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-theme-text-tertiary scroll-mt-24"
-              />
-            ),
-            p: ({ node, ...pProps }) => (
-              <p
-                {...pProps}
-                className="my-4 text-[15px] leading-[1.8] text-theme-text-primary sm:text-base lg:text-[17px]"
-              />
-            ),
-            strong: ({ node, ...sProps }) => (
-              <strong {...sProps} className="font-semibold text-theme-text-primary" />
-            ),
-            em: ({ node, ...eProps }) => <em {...eProps} className="italic" />,
-            code: ({ node, className, children, ...cProps }) => (
-              <code
-                {...cProps}
-                className={`rounded bg-theme-surface px-[0.36rem] py-[0.12rem] font-article-mono text-[13px] font-medium text-theme-text-primary ${className || ''}`.trim()}
-              >
-                {children}
-              </code>
-            ),
-            pre: ({ node, children, ...preProps }) => (
-              <pre
-                {...preProps}
-                className="my-5 overflow-x-auto rounded-lg bg-theme-surface p-4 font-article-mono text-[13px] leading-[1.6] text-theme-text-primary [&_code]:bg-transparent [&_code]:p-0 [&_code]:font-normal"
-              >
-                {children}
-              </pre>
-            ),
-            blockquote: ({ node, ...bqProps }) => (
-              <blockquote
-                {...bqProps}
-                className="my-5 border-l-2 border-theme-accent/40 pl-4 italic text-theme-secondary"
-              />
-            ),
-            hr: ({ node, ...hrProps }) => (
-              <hr {...hrProps} className="my-8 h-px border-0 bg-theme-card" />
-            ),
-            img: ({ node, ...imgProps }) => (
-              <img {...imgProps} alt={imgProps.alt ?? ''} className="my-5 rounded-lg" loading="lazy" />
-            ),
-            a: ({ node, ...aProps }) => (
-              <a
-                {...aProps}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-theme-accent underline underline-offset-2 decoration-theme-accent/40 transition-colors hover:decoration-theme-accent"
-              />
-            ),
-            ul: ({ node, ...ulProps }) => {
-              const isTask = (ulProps.className || '').includes('contains-task-list');
-              const cls = `my-4 ${isTask ? 'pl-2 list-none' : 'pl-6 list-disc'} ${ulProps.className || ''}`.trim();
-              return <ul {...ulProps} className={cls} />;
-            },
-            ol: ({ node, ...olProps }) => {
-              const isTask = (olProps.className || '').includes('contains-task-list');
-              const cls = `my-4 ${isTask ? 'pl-2 list-none' : 'pl-6 list-decimal'} ${olProps.className || ''}`.trim();
-              return <ol {...olProps} className={cls} />;
-            },
-            li: ({ node, children, ...liProps }) => {
-              const isTaskItem = (liProps.className || '').includes('task-list-item');
-              const cls = `leading-7 mb-1 ${isTaskItem ? 'list-none ml-0' : ''} ${liProps.className || ''}`.trim();
-              return (
-                <li {...liProps} className={cls}>
-                  {children}
-                </li>
-              );
-            },
-            input: ({ node, ...inProps }) => (
-              <input
-                {...inProps}
-                disabled
-                readOnly
-                className={`mr-2 align-middle ${inProps.className || ''}`.trim()}
-                style={{ accentColor: 'var(--color-primary, #0066FF)' }}
-              />
-            ),
-            // Convert Markdown tables to TableBlock for unified styling & inner markdown parsing
-            table: ({ node }) => {
-              try {
-                const elem: any = node as any;
-                const children: any[] = (elem?.children || []) as any[];
-                let header: (string | React.ReactNode)[] = [];
-                const rows: (Array<string | React.ReactNode>)[] = [];
-
-                // Rebuild inline markdown from HAST so cells keep formatting like `code`, **bold**, links, etc.
-                const getMdText = (n: any): string => {
-                  if (!n) return '';
-                  if (typeof n.value === 'string') return n.value;
-                  const tag = n.tagName;
-                  const inner = Array.isArray(n.children) ? n.children.map(getMdText).join('') : '';
-                  switch (tag) {
-                    case 'code':
-                      return '`' + inner + '`';
-                    case 'strong':
-                      return '**' + inner + '**';
-                    case 'em':
-                      return '*' + inner + '*';
-                    case 'del':
-                      return '~~' + inner + '~~';
-                    case 'a': {
-                      const href = n.properties?.href || '';
-                      return '[' + inner + '](' + href + ')';
-                    }
-                    case 'br':
-                      return '\n';
-                    case 'p':
-                    case 'span':
-                    case 'div':
-                      return inner;
-                    case 'img': {
-                      const src = n.properties?.src || '';
-                      const alt = n.properties?.alt || '';
-                      return '![' + alt + '](' + src + ')';
-                    }
-                    default:
-                      return inner;
-                  }
-                };
-
-                const thead = children.find((c) => c.tagName === 'thead');
-                if (thead) {
-                  const tr = (thead.children || []).find((c: any) => c.tagName === 'tr');
-                  if (tr) {
-                    header = (tr.children || [])
-                      .filter((c: any) => c.tagName === 'th' || c.tagName === 'td')
-                      .map((c: any) => getMdText(c).trim());
-                  }
-                }
-
-                const tbody = children.find((c) => c.tagName === 'tbody') || children.find((c) => c.tagName === 'thead' ? null : c);
-                if (tbody) {
-                  (tbody.children || [])
-                    .filter((c: any) => c && c.tagName === 'tr')
-                    .forEach((tr: any) => {
-                      const row = (tr.children || [])
-                        .filter((c: any) => c.tagName === 'td' || c.tagName === 'th')
-                        .map((c: any) => getMdText(c).trim());
-                      if (row.length) rows.push(row);
-                    });
-                }
-
-                return <TableBlock header={header as any} rows={rows as any} />;
-              } catch (e) {
-                // Fallback: simple wrapper if parsing fails
-                console.warn('[Markdown->TableBlock] Failed to convert table, falling back.', e);
-                return (
-                  <div className="my-6 overflow-x-auto">
-                    <table className="w-full text-sm" />
-                  </div>
-                );
-              }
-            },
-          }}
-        >
-          {md}
-        </ReactMarkdown>
-      </div>
+      <Markdown key={item.id} className="max-w-none text-theme-text-primary">
+        {md}
+      </Markdown>
     );
   };
 

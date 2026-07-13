@@ -132,7 +132,7 @@ export const parseAcademicMarkdown = (markdownText: string): BlogContent[] => {
 
     // A Markdown list is one structural block. Keep its original line
     // boundaries—including indented continuation and nested-list lines—so
-    // react-markdown receives valid Markdown instead of a reconstructed
+    // the renderer receives valid Markdown instead of a reconstructed
     // single-line approximation.
     const isListItem = /^\s*(?:[-*+]\s+|\d+[.)]\s+)/.test(line);
     const isListContinuation = Boolean(listContent) && /^\s{2,}\S/.test(line);

@@ -1344,3 +1344,101 @@ code[class*="language-"] .token.italic { font-style: italic; }
 }
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 600; }
+
+/* Vditor-rendered Markdown. Parsing/rendering lives in
+   src/components/ui/Markdown.tsx; this block only maps generated HTML onto
+   the site's design tokens. */
+.vditor-markdown .vditor-reset {
+  color: var(--color-textSecondary, #525252);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.vditor-markdown .vditor-reset h1,
+.vditor-markdown .vditor-reset h2,
+.vditor-markdown .vditor-reset h3,
+.vditor-markdown .vditor-reset h4,
+.vditor-markdown .vditor-reset h5,
+.vditor-markdown .vditor-reset h6 {
+  color: var(--color-textPrimary, #171717);
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.35;
+  scroll-margin-top: 6rem;
+}
+
+.vditor-markdown .vditor-reset h1 { margin: 2rem 0 1rem; font-size: 2rem; font-weight: 750; }
+.vditor-markdown .vditor-reset h2 { margin: 1.75rem 0 0.75rem; font-size: 1.375rem; }
+.vditor-markdown .vditor-reset h3 { margin: 1.5rem 0 0.625rem; font-size: 1.125rem; }
+.vditor-markdown .vditor-reset h4 { margin: 1.25rem 0 0.5rem; font-size: 1rem; }
+.vditor-markdown .vditor-reset h5,
+.vditor-markdown .vditor-reset h6 {
+  margin: 1.25rem 0 0.5rem;
+  color: var(--color-textTertiary, #737373);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.vditor-markdown .vditor-reset p,
+.vditor-markdown .vditor-reset ul,
+.vditor-markdown .vditor-reset ol,
+.vditor-markdown .vditor-reset blockquote,
+.vditor-markdown .vditor-reset pre,
+.vditor-markdown .vditor-reset table {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.vditor-markdown .vditor-reset p { color: var(--color-textSecondary, #525252); }
+.vditor-markdown .vditor-reset strong { color: var(--color-textPrimary, #171717); font-weight: 650; }
+.vditor-markdown .vditor-reset a {
+  color: var(--color-accent, #f97316);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-accent, #f97316) 40%, transparent);
+  text-underline-offset: 0.18em;
+}
+.vditor-markdown .vditor-reset ul,
+.vditor-markdown .vditor-reset ol { padding-left: 1.4rem; }
+.vditor-markdown .vditor-reset li { margin: 0.25rem 0; }
+.vditor-markdown .vditor-reset blockquote {
+  border-left: 2px solid color-mix(in srgb, var(--color-accent, #f97316) 45%, transparent);
+  color: var(--color-textSecondary, #525252);
+  font-style: italic;
+  padding: 0.25rem 0 0.25rem 1rem;
+}
+.vditor-markdown .vditor-reset code {
+  background: var(--color-surface, #f5f5f5);
+  border-radius: 0.25rem;
+  color: var(--color-textPrimary, #171717);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  padding: 0.12rem 0.36rem;
+}
+.vditor-markdown .vditor-reset pre {
+  background: var(--color-surface, #f5f5f5);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  padding: 1rem;
+}
+.vditor-markdown .vditor-reset pre code { background: transparent; padding: 0; }
+.vditor-markdown .vditor-reset table { border-collapse: collapse; display: table; width: 100%; }
+.vditor-markdown .vditor-reset th,
+.vditor-markdown .vditor-reset td {
+  border: 1px solid var(--color-cardBorder, #e5e7eb) !important;
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+}
+.vditor-markdown .vditor-reset th {
+  background: var(--color-surface, #f5f5f5);
+  color: var(--color-textPrimary, #171717);
+  font-weight: 650;
+}
+.vditor-markdown .vditor-reset img { border-radius: 0.5rem; margin: 1.25rem 0; }
+.vditor-markdown--inline .vditor-reset,
+.vditor-markdown--inline .vditor-reset p { display: inline; margin: 0; }
+.vditor-markdown--inline .vditor-reset ul,
+.vditor-markdown--inline .vditor-reset ol { display: inline; margin: 0; padding-left: 1rem; }

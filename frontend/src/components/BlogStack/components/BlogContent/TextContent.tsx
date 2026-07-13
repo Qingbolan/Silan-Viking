@@ -4,12 +4,8 @@ import { Quote, X, MessageCircle } from 'lucide-react';
 import { BlogContent, UserAnnotation, SelectedText } from '../../types/blog';
 import { useTheme } from '../../../ThemeContext';
 import { useLanguage } from '../../../LanguageContext';
-import { renderInlineMarkdown, hasCompleteMarkdownFormatting, processPlainTextWithBreaks, isFileTreeStructure, FileTreeRenderer } from '../../../../utils/fullMarkdownRenderer';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import rehypeHighlight from 'rehype-highlight';
+import { processPlainTextWithBreaks, isFileTreeStructure, FileTreeRenderer } from '../../../../utils/fullMarkdownRenderer';
+import Markdown from '../../../ui/Markdown';
 
 interface TextContentProps {
   item: BlogContent;
@@ -73,7 +69,7 @@ export const TextContent: React.FC<TextContentProps> = ({
     // Process markdown formatting first
     let processedText = processMarkdownText(text);
     
-    // Treat any React element (including react-markdown output) as block content
+    // Treat any React element (including Vditor output) as block content
     const hasBlockElements = React.isValidElement(processedText);
 
     if (relevantAnnotations.length === 0) {
@@ -288,242 +284,85 @@ export const TextContent: React.FC<TextContentProps> = ({
     return content;
   };
 
-  // Function to process markdown text into JSX
+  const hasMarkdownFormatting = (text: string): boolean => {
+    const patterns = [
+      /\*\*.*?\*\*/,
+      /\*.*?\*/,
+      /`[^`]+`/,
+      /\[[^\]]+\]\([^)]+\)/,
+      /^#{1,6}\s+/m,
+      /^[-*+]\s+/m,
+      /^\d+\.\s+/m,
+      /^>\s+/m,
+      /^(-{3,}|\*{3,}|_{3,})$/m,
+      /~~.*?~~/,
+      /\|.*\|/,
+    ];
+    return patterns.some((pattern) => pattern.test(text));
+  };
+
+  const renderMarkdownText = (markdown: string, inline = false) => (
+    <Markdown
+      inline={inline}
+      className="text-theme-text-primary selection:bg-theme-accent/20"
+    >
+      {markdown}
+    </Markdown>
+  );
+
   const processMarkdownText = (text: string): React.ReactNode => {
     if (!text) return text;
 
-    // Check for file tree structure first
     if (isFileTreeStructure(text)) {
       return <FileTreeRenderer content={text} />;
     }
 
-    // Normalize inline task lists written on one line into proper multiline lists
-    // Example: "Item 1 - [ ] Item 2 - [x] Item 3" -> "- Item 1\n- [ ] Item 2\n- [x] Item 3"
     if (!text.includes('\n') && /\s-\s(?=\[[ xX]\]\s)/.test(text)) {
       let normalized = text.replace(/\s-\s(?=\[[ xX]\]\s)/g, '\n- ');
       if (!/^\s*[-*+]\s/.test(normalized)) {
         normalized = `- ${normalized}`;
       }
-      text = normalized;
+      return renderMarkdownText(normalized);
     }
 
-    // Convert visual bullets '• ' at start of lines into markdown '- '
     if (text.includes('\n') && /(\n|^)\s*•\s+/.test(text)) {
       text = text.replace(/(^|\n)\s*•\s+/g, '$1- ');
     }
 
-    // Normalize inline unordered list: "A - B - C" -> "- A\n- B\n- C"
     if (!text.includes('\n')) {
-      const parts = text.split(/\s-\s(?!\[[ xX]\]\s)/); // exclude task-list markers
+      const parts = text.split(/\s-\s(?!\[[ xX]\]\s)/);
       if (parts.length >= 3) {
-        const listText = parts
-          .map((s) => `- ${s.trim().replace(/^[•*+-]\s*/, '')}`)
-          .join('\n');
-        return (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
-            components={{
-              a: ({ node, ...props }) => (
-                <a
-                  {...props}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`text-theme-accent underline underline-offset-2 decoration-theme-accent/40 hover:decoration-theme-accent transition-colors ${props.className || ''}`.trim()}
-                />
-              ),
-              ul: ({ node, ...props }) => {
-                const isTaskList = (props.className || '').includes('contains-task-list');
-                const cls = `my-4 ${isTaskList ? 'pl-2 list-none' : 'pl-6 list-disc'} ${props.className || ''}`.trim();
-                return <ul {...props} className={cls} />;
-              },
-              li: ({ node, children, ...props }) => (
-                <li {...props} className={`leading-7 mb-1 ${props.className || ''}`.trim()}>
-                  {children}
-                </li>
-              ),
-            }}
-          >
-            {listText}
-          </ReactMarkdown>
-        );
+        return renderMarkdownText(parts.map((s) => `- ${s.trim().replace(/^[•*+-]\s*/, '')}`).join('\n'));
       }
     }
 
-    // Normalize inline ordered list: supports "1. A - 2. B", "1) A 2) B", "1、A 2、B"
     if (!text.includes('\n') && /^\s*\d+[.)、]\s/.test(text) && /\s(?=\d+[.)、]\s)/.test(text)) {
-      const listText = text.replace(/\s(?:-\s)?(?=\d+[.)、]\s)/g, '\n');
-      return (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
-          components={{
-            a: ({ node, ...props }) => (
-              <a {...props} target="_blank" rel="noopener noreferrer" />
-            ),
-            ol: ({ node, ...props }) => (
-              <ol {...props} className={`my-4 pl-6 list-decimal ${props.className || ''}`.trim()} />
-            ),
-            li: ({ node, children, ...props }) => (
-              <li {...props} className={`leading-7 mb-1 ${props.className || ''}`.trim()}>
-                {children}
-              </li>
-            ),
-          }}
-        >
-          {listText}
-        </ReactMarkdown>
-      );
+      return renderMarkdownText(text.replace(/\s(?:-\s)?(?=\d+[.)、]\s)/g, '\n'));
     }
 
-    // Enhanced list detection: check for various list patterns
-    const listPatterns = [
-      /^[-*+]\s+/m,           // Standard markdown lists
-      /^\d+\.\s+/m,           // Numbered lists
-      /^•\s+/m,               // Bullet points
-      /^\s*[-*+]\s+/m,        // Indented lists
-    ];
+    const listPatterns = [/^[-*+]\s+/m, /^\d+\.\s+/m, /^•\s+/m, /^\s*[-*+]\s+/m];
+    const hasListPattern = listPatterns.some((pattern) => pattern.test(text));
 
-    const hasListPattern = listPatterns.some(pattern => pattern.test(text));
-
-    // If text contains line breaks OR has list patterns, render with react-markdown
     if (text.includes('\n') || hasListPattern || text.match(/^[#>]/m) || text.includes('---')) {
-      return (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
-          components={{
-            a: ({ node, ...props }) => (
-              <a
-                {...props}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`text-theme-accent underline underline-offset-2 decoration-theme-accent/40 hover:decoration-theme-accent transition-colors ${props.className || ''}`.trim()}
-              />
-            ),
-            strong: ({ node, ...props }) => (
-              <strong {...props} className={`font-semibold text-theme-text-primary ${props.className || ''}`.trim()} />
-            ),
-            code: ({ node, className, children, ...props }) => (
-              <code
-                {...props}
-                className={`rounded bg-theme-surface px-[0.36rem] py-[0.12rem] font-article-mono text-[13px] font-medium text-theme-text-primary ${className || ''}`.trim()}
-              >
-                {children}
-              </code>
-            ),
-            blockquote: ({ node, ...props }) => (
-              <blockquote
-                {...props}
-                className={`my-5 border-l-2 border-theme-accent/40 pl-4 italic text-theme-secondary ${props.className || ''}`.trim()}
-              />
-            ),
-            // duplicate table overrides removed
-            table: ({ node, children, ...tblProps }) => (
-              <div className="my-4 overflow-x-auto">
-                <table
-                  {...tblProps}
-                  className={`w-full border border-theme-card-border text-left rounded-lg ${tblProps.className || ''}`.trim()}
-                >
-                  {children}
-                </table>
-              </div>
-            ),
-            thead: ({ node, children, ...theadProps }) => (
-              <thead {...theadProps} className={`bg-theme-surface-secondary ${theadProps.className || ''}`.trim()}>
-                {children}
-              </thead>
-            ),
-            tbody: ({ node, children, ...tbodyProps }) => <tbody {...tbodyProps}>{children}</tbody>,
-            tr: ({ node, children, ...trProps }) => (
-              <tr {...trProps} className={`even:bg-theme-surface-tertiary/40 ${trProps.className || ''}`.trim()}>
-                {children}
-              </tr>
-            ),
-            th: ({ node, children, ...thProps }) => (
-              <th
-                {...thProps}
-                className={`px-4 py-2 border-b border-theme-card-border font-semibold ${thProps.className || ''}`.trim()}
-              >
-                {children}
-              </th>
-            ),
-            td: ({ node, children, ...tdProps }) => (
-              <td
-                {...tdProps}
-                className={`px-4 py-2 border-b border-theme-card-border align-top ${tdProps.className || ''}`.trim()}
-              >
-                {children}
-              </td>
-            ),
-            ul: ({ node, ...props }) => {
-              const isTaskList = (props.className || '').includes('contains-task-list');
-              const cls = `my-4 ${isTaskList ? 'pl-2 list-none' : 'pl-6 list-disc'} ${props.className || ''}`.trim();
-              return <ul {...props} className={cls} />;
-            },
-            ol: ({ node, ...props }) => {
-              const isTaskList = (props.className || '').includes('contains-task-list');
-              const cls = `my-4 ${isTaskList ? 'pl-2 list-none' : 'pl-6 list-decimal'} ${props.className || ''}`.trim();
-              return <ol {...props} className={cls} />;
-            },
-            li: ({ node, children, ...props }) => {
-              const isTaskItem = (props.className || '').includes('task-list-item');
-              const cls = `leading-7 mb-1 ${isTaskItem ? 'list-none ml-0' : ''} ${props.className || ''}`.trim();
-              return <li {...props} className={cls}>{children}</li>;
-            },
-            input: ({ node, ...props }) => (
-              <input
-                {...props}
-                disabled
-                readOnly
-                className={`mr-2 align-middle ${props.className || ''}`.trim()}
-                style={{ accentColor: 'var(--color-primary, #0066FF)' }}
-              />
-            ),
-          }}
-        >
-          {text}
-        </ReactMarkdown>
-      );
+      return renderMarkdownText(text);
     }
 
-    // Check if text has markdown formatting for inline elements
-    if (hasCompleteMarkdownFormatting(text)) {
-      return renderInlineMarkdown(text);
+    if (hasMarkdownFormatting(text)) {
+      return renderMarkdownText(text, true);
     }
 
-
-    // Avoid over-aggressive inline list conversion: if text already looks like a single bullet
-    // or contains URLs/code-like patterns, do not rewrite it.
     const hasUrl = /https?:\/\//i.test(text) || /\[[^\]]+\]\([^)]+\)/.test(text);
     const looksLikeSingleBullet = /^[-•]\s+.+$/.test(text) && !/\n/.test(text);
     if (!hasUrl && !looksLikeSingleBullet) {
-      // Pattern: many inline segments like " - Title: desc - Title: desc - Title: desc"
       const inlineListPattern = / - [A-Z][^-:]*:/g;
       const matches = text.match(inlineListPattern);
-      // Require at least 3 items to treat as a list to reduce false positives
       if (matches && matches.length >= 3) {
         const parts = text.split(/ - (?=[A-Z][^-:]*:)/);
-        const items = parts.map(part => part.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
-        const listText = items.map(item => `- ${item}`).join('\n');
-        return (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
-            components={{
-              a: ({ node, ...props }) => (
-                <a {...props} target="_blank" rel="noopener noreferrer" />
-              ),
-            }}
-          >
-            {listText}
-          </ReactMarkdown>
-        );
+        const items = parts.map((part) => part.replace(/^[-•]\s*/, '').trim()).filter(Boolean);
+        return renderMarkdownText(items.map((item) => `- ${item}`).join('\n'));
       }
     }
 
-
-    // For plain text with line breaks, process line breaks
     if (text.includes('\n')) {
       return processPlainTextWithBreaks(text);
     }

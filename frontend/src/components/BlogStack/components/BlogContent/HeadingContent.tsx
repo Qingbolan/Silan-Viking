@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link2 } from 'lucide-react';
 import { BlogContent } from '../../types/blog';
-import { renderInlineMarkdown } from '../../../../utils/fullMarkdownRenderer';
+import Markdown from '../../../ui/Markdown';
 import { useLanguage } from '../../../LanguageContext';
 import { useToast } from '../../../ds';
 
@@ -65,7 +65,7 @@ export const HeadingContent: React.FC<HeadingContentProps> = ({
       }}
     >
       <Tag className={`font-display pr-9 text-theme-text-primary tracking-[-0.01em] ${sizeClass} ${weightClass} ${leadingClass}`}>
-        {renderInlineMarkdown(item.content)}
+        <Markdown inline>{item.content}</Markdown>
       </Tag>
       <a
         href={`#${anchorId}`}
