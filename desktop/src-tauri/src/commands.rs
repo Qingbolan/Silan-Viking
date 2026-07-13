@@ -26,3 +26,18 @@ pub(crate) fn save_document(
 ) -> Result<EditorDocument, String> {
     DesktopWorkspace::from_environment()?.save_document(&id, &content, &expected_revision)
 }
+
+#[tauri::command]
+pub(crate) fn capture_idea(note: String, category: String) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.capture_idea(&note, &category)
+}
+
+#[tauri::command]
+pub(crate) fn capture_blog(draft: String, category: String) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.capture_blog(&draft, &category)
+}
+
+#[tauri::command]
+pub(crate) fn create_project(title: String) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.create_project(&title)
+}

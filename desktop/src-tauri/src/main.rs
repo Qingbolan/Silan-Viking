@@ -9,6 +9,9 @@ mod projection;
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
+            commands::capture_blog,
+            commands::capture_idea,
+            commands::create_project,
             commands::get_dashboard,
             commands::list_documents,
             commands::get_document,

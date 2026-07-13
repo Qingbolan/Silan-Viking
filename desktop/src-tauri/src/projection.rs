@@ -97,6 +97,30 @@ impl ProjectionRepository {
         Ok(part)
     }
 
+    pub(crate) fn part_by_stable_id(&self, part_id: &str) -> Result<RawPart, String> {
+        let mut part = self
+            .connection
+            .query_row(
+                "
+                SELECT
+                    ip.id,
+                    ip.part_id,
+                    ip.entity_type,
+                    ip.entity_id,
+                    ip.role,
+                    ip.canonical_lang,
+                    COALESCE(CAST(ip.updated_at AS TEXT), '')
+                FROM item_part AS ip
+                WHERE ip.part_id = ?1
+                ",
+                params![part_id],
+                raw_part_from_row,
+            )
+            .map_err(|error| error.to_string())?;
+        part.translations = self.translations(&part.id)?;
+        Ok(part)
+    }
+
     pub(crate) fn part_for_translation(&self, translation_id: &str) -> Result<RawPart, String> {
         let mut part = self
             .connection

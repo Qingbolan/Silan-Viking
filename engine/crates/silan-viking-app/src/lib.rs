@@ -21,15 +21,18 @@
 
 #![forbid(unsafe_code)]
 
+pub mod capture;
 pub mod editor;
 pub mod parser;
 pub mod proposal;
 pub mod query;
 pub mod schema;
+mod source_lock;
 pub mod stats;
 pub mod sync;
 pub mod workspace;
 
+pub use capture::{CaptureError, CapturedContent, ContentCreator, IdeaCategory};
 pub use editor::{ContentEditor, EditorError, SourceDocument, TranslationLocator};
 pub use proposal::store::ProposalKind;
 pub use proposal::{

@@ -5,17 +5,15 @@
 //! projection through [`Workspace::sync`]. No adapter writes projection rows.
 
 use crate::parser::frontmatter;
+use crate::source_lock;
 use crate::workspace::Workspace;
 use silan_viking_base::{ContentHash, Lang, Slug};
 use silan_viking_content::ContentKind;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 use tempfile::NamedTempFile;
 use thiserror::Error;
-
-static SAVE_LOCK: Mutex<()> = Mutex::new(());
 
 /// The stable source coordinates of one Markdown language representation.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -174,9 +172,9 @@ impl ContentEditor {
     ) -> Result<SourceDocument, EditorError> {
         let path = self.source_path(locator);
         let relative_path = self.relative_path(&path);
-        let _save_guard = SAVE_LOCK.lock().map_err(|error| EditorError::Io {
+        let _save_guard = source_lock::acquire().map_err(|detail| EditorError::Io {
             path: relative_path.clone(),
-            detail: format!("source editor lock is poisoned: {error}"),
+            detail,
         })?;
         let original = read_source(&path)?;
         let actual_revision = ContentHash::of(original.as_bytes());

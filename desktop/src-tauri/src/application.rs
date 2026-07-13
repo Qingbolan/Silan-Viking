@@ -4,7 +4,9 @@
 use crate::insights::RuntimeInsightsRepository;
 use crate::model::{DashboardData, EditorDocument, EditorTranslation, RawPart};
 use crate::projection::ProjectionRepository;
-use silan_viking_app::{ContentEditor, ContentKind, TranslationLocator};
+use silan_viking_app::{
+    ContentCreator, ContentEditor, ContentKind, IdeaCategory, TranslationLocator,
+};
 use std::env;
 use std::path::PathBuf;
 
@@ -13,6 +15,7 @@ pub(crate) struct DesktopWorkspace {
     projection: ProjectionRepository,
     insights: RuntimeInsightsRepository,
     content: ContentEditor,
+    creator: ContentCreator,
 }
 
 impl DesktopWorkspace {
@@ -22,13 +25,16 @@ impl DesktopWorkspace {
             .map_err(|_| {
                 "SILAN_DESKTOP_DB is not set; launch through `silan-viking desktop`".to_owned()
             })?;
-        let content_root = env::var("SILAN_DESKTOP_CONTENT").map_err(|_| {
-            "SILAN_DESKTOP_CONTENT is not set; launch through `silan-viking desktop`".to_owned()
-        })?;
+        let content_root = env::var("SILAN_DESKTOP_CONTENT")
+            .map(PathBuf::from)
+            .map_err(|_| {
+                "SILAN_DESKTOP_CONTENT is not set; launch through `silan-viking desktop`".to_owned()
+            })?;
         Ok(Self {
             projection: ProjectionRepository::open(&db_path)?,
             insights: RuntimeInsightsRepository::open(&db_path)?,
-            content: ContentEditor::open(content_root).map_err(|error| error.to_string())?,
+            content: ContentEditor::open(&content_root).map_err(|error| error.to_string())?,
+            creator: ContentCreator::open(&content_root).map_err(|error| error.to_string())?,
             db_path,
         })
     }
@@ -81,6 +87,40 @@ impl DesktopWorkspace {
             .save_markdown_and_sync(&locator, body, expected_revision, &self.db_path)
             .map_err(|error| error.to_string())?;
         self.document(&item_part_id)
+    }
+
+    pub(crate) fn capture_idea(
+        &self,
+        note: &str,
+        category: &str,
+    ) -> Result<EditorDocument, String> {
+        let category = IdeaCategory::parse(category).map_err(|error| error.to_string())?;
+        let captured = self
+            .creator
+            .capture_idea_and_sync(note, category, &self.db_path)
+            .map_err(|error| error.to_string())?;
+        self.hydrate(self.projection.part_by_stable_id(&captured.part_id)?)
+    }
+
+    pub(crate) fn capture_blog(
+        &self,
+        draft: &str,
+        category: &str,
+    ) -> Result<EditorDocument, String> {
+        let category = IdeaCategory::parse(category).map_err(|error| error.to_string())?;
+        let captured = self
+            .creator
+            .capture_blog_and_sync(draft, category, &self.db_path)
+            .map_err(|error| error.to_string())?;
+        self.hydrate(self.projection.part_by_stable_id(&captured.part_id)?)
+    }
+
+    pub(crate) fn create_project(&self, title: &str) -> Result<EditorDocument, String> {
+        let captured = self
+            .creator
+            .capture_project_and_sync(title, &self.db_path)
+            .map_err(|error| error.to_string())?;
+        self.hydrate(self.projection.part_by_stable_id(&captured.part_id)?)
     }
 
     fn hydrate(&self, raw: RawPart) -> Result<EditorDocument, String> {
