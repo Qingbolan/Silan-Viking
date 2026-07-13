@@ -172,9 +172,12 @@ const DefaultType = TypeGeneral
 
 // Type values.
 const (
-	TypeGeneral  Type = "general"
-	TypeQuestion Type = "question"
-	TypeFeedback Type = "feedback"
+	TypeGeneral    Type = "general"
+	TypeQuestion   Type = "question"
+	TypeFeedback   Type = "feedback"
+	TypeSuggestion Type = "suggestion"
+	TypeBugReport  Type = "bug-report"
+	TypeIssue      Type = "issue"
 )
 
 func (_type Type) String() string {
@@ -184,7 +187,7 @@ func (_type Type) String() string {
 // TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
 func TypeValidator(_type Type) error {
 	switch _type {
-	case TypeGeneral, TypeQuestion, TypeFeedback:
+	case TypeGeneral, TypeQuestion, TypeFeedback, TypeSuggestion, TypeBugReport, TypeIssue:
 		return nil
 	default:
 		return fmt.Errorf("comment: invalid enum value for type field: %q", _type)

@@ -56,6 +56,20 @@ func (idc *IdeaDetailCreate) SetNillableRequiredResources(s *string) *IdeaDetail
 	return idc
 }
 
+// SetPriority sets the "priority" field.
+func (idc *IdeaDetailCreate) SetPriority(i ideadetail.Priority) *IdeaDetailCreate {
+	idc.mutation.SetPriority(i)
+	return idc
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (idc *IdeaDetailCreate) SetNillablePriority(i *ideadetail.Priority) *IdeaDetailCreate {
+	if i != nil {
+		idc.SetPriority(*i)
+	}
+	return idc
+}
+
 // SetCollaborationNeeded sets the "collaboration_needed" field.
 func (idc *IdeaDetailCreate) SetCollaborationNeeded(b bool) *IdeaDetailCreate {
 	idc.mutation.SetCollaborationNeeded(b)
@@ -195,6 +209,10 @@ func (idc *IdeaDetailCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (idc *IdeaDetailCreate) defaults() {
+	if _, ok := idc.mutation.Priority(); !ok {
+		v := ideadetail.DefaultPriority
+		idc.mutation.SetPriority(v)
+	}
 	if _, ok := idc.mutation.CollaborationNeeded(); !ok {
 		v := ideadetail.DefaultCollaborationNeeded
 		idc.mutation.SetCollaborationNeeded(v)
@@ -221,6 +239,14 @@ func (idc *IdeaDetailCreate) defaults() {
 func (idc *IdeaDetailCreate) check() error {
 	if _, ok := idc.mutation.IdeaID(); !ok {
 		return &ValidationError{Name: "idea_id", err: errors.New(`ent: missing required field "IdeaDetail.idea_id"`)}
+	}
+	if _, ok := idc.mutation.Priority(); !ok {
+		return &ValidationError{Name: "priority", err: errors.New(`ent: missing required field "IdeaDetail.priority"`)}
+	}
+	if v, ok := idc.mutation.Priority(); ok {
+		if err := ideadetail.PriorityValidator(v); err != nil {
+			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "IdeaDetail.priority": %w`, err)}
+		}
 	}
 	if _, ok := idc.mutation.CollaborationNeeded(); !ok {
 		return &ValidationError{Name: "collaboration_needed", err: errors.New(`ent: missing required field "IdeaDetail.collaboration_needed"`)}
@@ -273,6 +299,10 @@ func (idc *IdeaDetailCreate) createSpec() (*IdeaDetail, *sqlgraph.CreateSpec) {
 	if value, ok := idc.mutation.RequiredResources(); ok {
 		_spec.SetField(ideadetail.FieldRequiredResources, field.TypeString, value)
 		_node.RequiredResources = value
+	}
+	if value, ok := idc.mutation.Priority(); ok {
+		_spec.SetField(ideadetail.FieldPriority, field.TypeEnum, value)
+		_node.Priority = value
 	}
 	if value, ok := idc.mutation.CollaborationNeeded(); ok {
 		_spec.SetField(ideadetail.FieldCollaborationNeeded, field.TypeBool, value)

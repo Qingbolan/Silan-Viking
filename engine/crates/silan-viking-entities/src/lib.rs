@@ -221,7 +221,10 @@ pub fn table_columns(table: &str) -> Option<Vec<String>> {
     None
 }
 
-/// Every generated Entity's table name + its authoritative column set. This
+/// Every projection-owned generated Entity's table name + authoritative
+/// column set. Runtime-owned tables (comments, interactions, request logs)
+/// are deliberately excluded: an index sync may rebuild derived content but
+/// must never erase visitor-created state. This
 /// is what `SqliteSink::write_batch` uses to ensure entity-backed tables
 /// exist on disk *even when zero rows of that table flow through the sync*
 /// — the V2-7 fix. Before this list, `silan index rebuild` would silently
@@ -229,7 +232,7 @@ pub fn table_columns(table: &str) -> Option<Vec<String>> {
 /// and any downstream `SELECT count(*) FROM content_relation` would crash
 /// on "no such table". After the fix, the table always exists; it just
 /// holds zero rows.
-pub fn all_entity_tables() -> Vec<(String, Vec<String>)> {
+pub fn all_projection_tables() -> Vec<(String, Vec<String>)> {
     use sea_orm::{IdenStatic, Iterable};
 
     fn entry<E: sea_orm::EntityTrait>(entity: E) -> (String, Vec<String>) {
@@ -261,9 +264,6 @@ pub fn all_entity_tables() -> Vec<(String, Vec<String>)> {
         entry(crate::episode_series::Entity),
         entry(crate::episode_series_translations::Entity),
         entry(crate::content_relation::Entity),
-        entry(crate::content_interaction::Entity),
-        entry(crate::comments::Entity),
-        entry(crate::request_logs::Entity),
         entry(crate::social_links::Entity),
     ]
 }

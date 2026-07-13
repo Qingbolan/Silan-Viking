@@ -20,6 +20,7 @@ import (
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
+	"silan-backend/internal/ent/contactmessage"
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/contentrelation"
 	"silan-backend/internal/ent/contenttag"
@@ -103,6 +104,8 @@ type Client struct {
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
 	CommentLike *CommentLikeClient
+	// ContactMessage is the client for interacting with the ContactMessage builders.
+	ContactMessage *ContactMessageClient
 	// ContentInteraction is the client for interacting with the ContentInteraction builders.
 	ContentInteraction *ContentInteractionClient
 	// ContentRelation is the client for interacting with the ContentRelation builders.
@@ -229,6 +232,7 @@ func (c *Client) init() {
 	c.BlogPostTranslation = NewBlogPostTranslationClient(c.config)
 	c.Comment = NewCommentClient(c.config)
 	c.CommentLike = NewCommentLikeClient(c.config)
+	c.ContactMessage = NewContactMessageClient(c.config)
 	c.ContentInteraction = NewContentInteractionClient(c.config)
 	c.ContentRelation = NewContentRelationClient(c.config)
 	c.ContentTag = NewContentTagClient(c.config)
@@ -383,6 +387,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		BlogPostTranslation:              NewBlogPostTranslationClient(cfg),
 		Comment:                          NewCommentClient(cfg),
 		CommentLike:                      NewCommentLikeClient(cfg),
+		ContactMessage:                   NewContactMessageClient(cfg),
 		ContentInteraction:               NewContentInteractionClient(cfg),
 		ContentRelation:                  NewContentRelationClient(cfg),
 		ContentTag:                       NewContentTagClient(cfg),
@@ -464,6 +469,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		BlogPostTranslation:              NewBlogPostTranslationClient(cfg),
 		Comment:                          NewCommentClient(cfg),
 		CommentLike:                      NewCommentLikeClient(cfg),
+		ContactMessage:                   NewContactMessageClient(cfg),
 		ContentInteraction:               NewContentInteractionClient(cfg),
 		ContentRelation:                  NewContentRelationClient(cfg),
 		ContentTag:                       NewContentTagClient(cfg),
@@ -548,8 +554,8 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Annotation, c.Award, c.AwardTranslation, c.BlogCategory,
 		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTranslation, c.Comment,
-		c.CommentLike, c.ContentInteraction, c.ContentRelation, c.ContentTag,
-		c.Education, c.EducationDetail, c.EducationDetailTranslation,
+		c.CommentLike, c.ContactMessage, c.ContentInteraction, c.ContentRelation,
+		c.ContentTag, c.Education, c.EducationDetail, c.EducationDetailTranslation,
 		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
 		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation,
 		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
@@ -574,8 +580,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Annotation, c.Award, c.AwardTranslation, c.BlogCategory,
 		c.BlogCategoryTranslation, c.BlogPost, c.BlogPostTranslation, c.Comment,
-		c.CommentLike, c.ContentInteraction, c.ContentRelation, c.ContentTag,
-		c.Education, c.EducationDetail, c.EducationDetailTranslation,
+		c.CommentLike, c.ContactMessage, c.ContentInteraction, c.ContentRelation,
+		c.ContentTag, c.Education, c.EducationDetail, c.EducationDetailTranslation,
 		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
 		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation,
 		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
@@ -615,6 +621,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Comment.mutate(ctx, m)
 	case *CommentLikeMutation:
 		return c.CommentLike.mutate(ctx, m)
+	case *ContactMessageMutation:
+		return c.ContactMessage.mutate(ctx, m)
 	case *ContentInteractionMutation:
 		return c.ContentInteraction.mutate(ctx, m)
 	case *ContentRelationMutation:
@@ -1297,22 +1305,6 @@ func (c *BlogCategoryClient) QueryTranslations(bc *BlogCategory) *BlogCategoryTr
 	return query
 }
 
-// QueryBlogPosts queries the blog_posts edge of a BlogCategory.
-func (c *BlogCategoryClient) QueryBlogPosts(bc *BlogCategory) *BlogPostQuery {
-	query := (&BlogPostClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bc.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogcategory.Table, blogcategory.FieldID, id),
-			sqlgraph.To(blogpost.Table, blogpost.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, blogcategory.BlogPostsTable, blogcategory.BlogPostsColumn),
-		)
-		fromV = sqlgraph.Neighbors(bc.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *BlogCategoryClient) Hooks() []Hook {
 	return c.hooks.BlogCategory
@@ -1609,22 +1601,6 @@ func (c *BlogPostClient) GetX(ctx context.Context, id string) *BlogPost {
 		panic(err)
 	}
 	return obj
-}
-
-// QueryCategory queries the category edge of a BlogPost.
-func (c *BlogPostClient) QueryCategory(bp *BlogPost) *BlogCategoryQuery {
-	query := (&BlogCategoryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := bp.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, id),
-			sqlgraph.To(blogcategory.Table, blogcategory.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.CategoryTable, blogpost.CategoryColumn),
-		)
-		fromV = sqlgraph.Neighbors(bp.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
 }
 
 // QueryTranslations queries the translations edge of a BlogPost.
@@ -2160,6 +2136,139 @@ func (c *CommentLikeClient) mutate(ctx context.Context, m *CommentLikeMutation) 
 		return (&CommentLikeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CommentLike mutation op: %q", m.Op())
+	}
+}
+
+// ContactMessageClient is a client for the ContactMessage schema.
+type ContactMessageClient struct {
+	config
+}
+
+// NewContactMessageClient returns a client for the ContactMessage from the given config.
+func NewContactMessageClient(c config) *ContactMessageClient {
+	return &ContactMessageClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `contactmessage.Hooks(f(g(h())))`.
+func (c *ContactMessageClient) Use(hooks ...Hook) {
+	c.hooks.ContactMessage = append(c.hooks.ContactMessage, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `contactmessage.Intercept(f(g(h())))`.
+func (c *ContactMessageClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ContactMessage = append(c.inters.ContactMessage, interceptors...)
+}
+
+// Create returns a builder for creating a ContactMessage entity.
+func (c *ContactMessageClient) Create() *ContactMessageCreate {
+	mutation := newContactMessageMutation(c.config, OpCreate)
+	return &ContactMessageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ContactMessage entities.
+func (c *ContactMessageClient) CreateBulk(builders ...*ContactMessageCreate) *ContactMessageCreateBulk {
+	return &ContactMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ContactMessageClient) MapCreateBulk(slice any, setFunc func(*ContactMessageCreate, int)) *ContactMessageCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ContactMessageCreateBulk{err: fmt.Errorf("calling to ContactMessageClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ContactMessageCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ContactMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ContactMessage.
+func (c *ContactMessageClient) Update() *ContactMessageUpdate {
+	mutation := newContactMessageMutation(c.config, OpUpdate)
+	return &ContactMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ContactMessageClient) UpdateOne(cm *ContactMessage) *ContactMessageUpdateOne {
+	mutation := newContactMessageMutation(c.config, OpUpdateOne, withContactMessage(cm))
+	return &ContactMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ContactMessageClient) UpdateOneID(id string) *ContactMessageUpdateOne {
+	mutation := newContactMessageMutation(c.config, OpUpdateOne, withContactMessageID(id))
+	return &ContactMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ContactMessage.
+func (c *ContactMessageClient) Delete() *ContactMessageDelete {
+	mutation := newContactMessageMutation(c.config, OpDelete)
+	return &ContactMessageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ContactMessageClient) DeleteOne(cm *ContactMessage) *ContactMessageDeleteOne {
+	return c.DeleteOneID(cm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ContactMessageClient) DeleteOneID(id string) *ContactMessageDeleteOne {
+	builder := c.Delete().Where(contactmessage.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ContactMessageDeleteOne{builder}
+}
+
+// Query returns a query builder for ContactMessage.
+func (c *ContactMessageClient) Query() *ContactMessageQuery {
+	return &ContactMessageQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeContactMessage},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ContactMessage entity by its id.
+func (c *ContactMessageClient) Get(ctx context.Context, id string) (*ContactMessage, error) {
+	return c.Query().Where(contactmessage.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ContactMessageClient) GetX(ctx context.Context, id string) *ContactMessage {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ContactMessageClient) Hooks() []Hook {
+	return c.hooks.ContactMessage
+}
+
+// Interceptors returns the client interceptors.
+func (c *ContactMessageClient) Interceptors() []Interceptor {
+	return c.inters.ContactMessage
+}
+
+func (c *ContactMessageClient) mutate(ctx context.Context, m *ContactMessageMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ContactMessageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ContactMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ContactMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ContactMessageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ContactMessage mutation op: %q", m.Op())
 	}
 }
 
@@ -10672,8 +10781,8 @@ func (c *WorkExperienceTranslationClient) mutate(ctx context.Context, m *WorkExp
 type (
 	hooks struct {
 		Annotation, Award, AwardTranslation, BlogCategory, BlogCategoryTranslation,
-		BlogPost, BlogPostTranslation, Comment, CommentLike, ContentInteraction,
-		ContentRelation, ContentTag, Education, EducationDetail,
+		BlogPost, BlogPostTranslation, Comment, CommentLike, ContactMessage,
+		ContentInteraction, ContentRelation, ContentTag, Education, EducationDetail,
 		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
 		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
 		IdeaDetailTranslation, IdeaTranslation, ItemPart, ItemPartTranslation,
@@ -10690,8 +10799,8 @@ type (
 	}
 	inters struct {
 		Annotation, Award, AwardTranslation, BlogCategory, BlogCategoryTranslation,
-		BlogPost, BlogPostTranslation, Comment, CommentLike, ContentInteraction,
-		ContentRelation, ContentTag, Education, EducationDetail,
+		BlogPost, BlogPostTranslation, Comment, CommentLike, ContactMessage,
+		ContentInteraction, ContentRelation, ContentTag, Education, EducationDetail,
 		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
 		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
 		IdeaDetailTranslation, IdeaTranslation, ItemPart, ItemPartTranslation,

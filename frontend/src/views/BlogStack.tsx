@@ -5,7 +5,9 @@ import { useLanguage } from '../components/LanguageContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Seo } from '../components/Seo';
 import { BlogData } from '../components/BlogStack/types/blog';
-import { fetchBlogPosts } from '../api';
+import { fetchBlogPosts } from '../api/blog/blogApi';
+import { fetchEpisodeSeriesList } from '../api/episodes/episodeApi';
+import type { EpisodeSeriesData } from '../types/episode';
 import {
   BlogHeader,
   BrandLoading,
@@ -13,10 +15,60 @@ import {
   BlogCard,
   EmptyState,
   Masonry,
+  Alert,
+  Button,
   type BlogCardData,
 } from '../components/ds';
 
 const isSeriesPost = (post: BlogData): boolean => post.type === 'episode' || post.type === 'series';
+
+/**
+ * Episode series live in a separate `episode_series` table that the blog list
+ * endpoint does not join. To make a series surface alongside blog posts in
+ * /blog, we fetch the series list separately and synthesise one BlogData
+ * record per series — the card it produces opens the first episode, which
+ * BlogDetail dispatches to SeriesDetailLayout (the knowledge-base shell).
+ */
+function seriesToBlogData(series: EpisodeSeriesData): BlogData | null {
+  const firstEpisode = series.episodes?.[0];
+  if (!firstEpisode) return null;
+  // Latest episode = highest episode_number; surfaced as a discrete card
+  // field (BlogCard.latestEpisode), NOT folded into the description.
+  const latest = [...series.episodes].sort(
+    (a, b) => (b.episode_number || 0) - (a.episode_number || 0),
+  )[0];
+  const description = series.description || '';
+  return {
+    id: firstEpisode.id,             // open the first episode on card click
+    slug: firstEpisode.slug,
+    title: series.title,
+    titleZh: '',
+    summary: description,
+    summaryZh: '',
+    content: [],
+    author: '',
+    publishDate: '',
+    readTime: '',
+    category: '',
+    tags: [],
+    type: 'series',
+    likes: 0,
+    views: 0,
+    seriesId: series.id,
+    seriesSlug: series.slug,
+    seriesTitle: series.title,
+    seriesTitleZh: '',
+    seriesDescription: description,
+    seriesDescriptionZh: '',
+    seriesImage: '',
+    episodeNumber: 1,
+    totalEpisodes: series.episodes.length,
+    // Stash the latest episode on the record so toBlogCardData can pass it
+    // through as a typed field — strings on BlogData don't accommodate it.
+    latestEpisodeTitle: latest?.title,
+    latestEpisodeNumber: latest?.episode_number,
+  } as unknown as BlogData;
+}
 
 /**
  * Map a BlogData record to the ds BlogCard's data shape, honouring the
@@ -39,6 +91,20 @@ function toBlogCardData(post: BlogData, language: string): BlogCardData {
     ? post.seriesImage
     : (post.vlogCover || post.videoThumbnail);
 
+  // Series cards may carry a latest-episode pointer (stashed by
+  // seriesToBlogData); BlogCard renders it as a dedicated meta row.
+  const seriesPost = post as unknown as {
+    latestEpisodeTitle?: string;
+    latestEpisodeNumber?: number;
+  };
+  const latestEpisode =
+    series && seriesPost.latestEpisodeTitle
+      ? {
+          title: seriesPost.latestEpisodeTitle,
+          episodeNumber: seriesPost.latestEpisodeNumber,
+        }
+      : undefined;
+
   return {
     id: post.id,
     title,
@@ -51,6 +117,7 @@ function toBlogCardData(post: BlogData, language: string): BlogCardData {
     readTime: post.videoDuration || post.readTime,
     kind: series ? 'series' : 'article',
     episodeCount: series ? post.totalEpisodes : undefined,
+    latestEpisode,
     coverImage,
   };
 }
@@ -95,7 +162,6 @@ const BlogStack: React.FC = () => {
   const location = useLocation();
 
   const [posts, setPosts] = useState<BlogData[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<BlogData[]>([]);
   // `selectedTag` holds the raw tag string ('all' = the reset chip).
   // `selectedType` holds a stable key: 'all' | 'article' | 'vlog' | 'episode'.
   const [selectedTag, setSelectedTag] = useState<string>('all');
@@ -103,11 +169,8 @@ const BlogStack: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Scroll to top on component mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const [partialError, setPartialError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Handle URL parameters — `?type=` maps directly to a Segmented key.
   useEffect(() => {
@@ -124,13 +187,28 @@ const BlogStack: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        setPartialError(false);
 
-        // Fetch blog posts from API with language support
-        const fetchedPosts = await fetchBlogPosts({}, language as 'en' | 'zh');
+        const [postsResult, seriesResult] = await Promise.allSettled([
+          fetchBlogPosts({}, language as 'en' | 'zh'),
+          fetchEpisodeSeriesList(language as 'en' | 'zh'),
+        ]);
+
+        if (postsResult.status === 'rejected' && seriesResult.status === 'rejected') {
+          throw new Error('Both writing sources are unavailable');
+        }
+
+        const fetchedPosts = postsResult.status === 'fulfilled' ? postsResult.value : [];
+        const fetchedSeries = seriesResult.status === 'fulfilled' ? seriesResult.value : [];
+
+        const seriesCards = fetchedSeries
+          .map(seriesToBlogData)
+          .filter((p): p is BlogData => p !== null);
+        const merged = [...seriesCards, ...fetchedPosts];
 
         if (isMounted) {
-          setPosts(fetchedPosts);
-          setFilteredPosts(fetchedPosts);
+          setPosts(merged);
+          setPartialError(postsResult.status === 'rejected' || seriesResult.status === 'rejected');
           setLoading(false);
         }
       } catch (err) {
@@ -146,7 +224,7 @@ const BlogStack: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [language]);
+  }, [language, retryKey]);
 
   // Filter posts based on tag, type and search term
   const filteredPostsMemo = useMemo(() => {
@@ -174,13 +252,9 @@ const BlogStack: React.FC = () => {
     return filtered;
   }, [posts, selectedTag, selectedType, searchTerm]);
 
-  useEffect(() => {
-    setFilteredPosts(filteredPostsMemo);
-  }, [filteredPostsMemo]);
-
   const arrangedPosts = useMemo(
-    () => arrangePostsForGrid(filteredPosts),
-    [filteredPosts],
+    () => arrangePostsForGrid(filteredPostsMemo),
+    [filteredPostsMemo],
   );
 
   // Topic chips — 'all' is the reset chip, followed by every unique tag.
@@ -201,8 +275,13 @@ const BlogStack: React.FC = () => {
   );
 
   const handlePostClick = useCallback((post: BlogData) => {
-    // Navigate to blog detail page
-    navigate(`/blog/${post.id}`);
+    // Series cards (synthesised from episode_series) route to the dedicated
+    // episode detail page; regular blog posts go to BlogDetail.
+    if (post.type === 'series' || post.type === 'episode') {
+      navigate(`/episodes/${post.slug}`);
+      return;
+    }
+    navigate(`/blog/${post.slug || post.id}`);
   }, [navigate]);
 
   if (loading) {
@@ -220,6 +299,7 @@ const BlogStack: React.FC = () => {
         title={language === 'en' ? 'Error Loading Posts' : '加载文章出错'}
         description={error}
         showHome
+        onRetry={() => setRetryKey((key) => key + 1)}
       />
     );
   }
@@ -241,7 +321,7 @@ const BlogStack: React.FC = () => {
         path="/blog"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Header — title + search + content-type + topic filters. */}
         <motion.div
           className="mb-12"
@@ -274,6 +354,19 @@ const BlogStack: React.FC = () => {
           />
         </motion.div>
 
+        {partialError && (
+          <Alert
+            tone="warning"
+            title={language === 'en' ? 'Some writing could not be loaded' : '部分内容加载失败'}
+            className="mb-8"
+          >
+            <p>{language === 'en' ? 'Available articles and series are shown below.' : '当前可用的文章和系列已显示在下方。'}</p>
+            <Button variant="ghost" size="sm" className="mt-2" onClick={() => setRetryKey((key) => key + 1)}>
+              {language === 'en' ? 'Try again' : '重试'}
+            </Button>
+          </Alert>
+        )}
+
         {/* Blog Posts Grid — masonry / waterfall layout. Series posts
             span 2 columns with the wide `feature` layout. */}
         <AnimatePresence mode="wait">
@@ -300,7 +393,7 @@ const BlogStack: React.FC = () => {
         </AnimatePresence>
 
         {/* Empty State */}
-        {filteredPosts.length === 0 && !loading && (
+        {filteredPostsMemo.length === 0 && !loading && (
           <motion.div
             className="py-20"
             initial={{ opacity: 0, scale: 0.96 }}

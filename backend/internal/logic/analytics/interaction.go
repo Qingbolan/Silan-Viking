@@ -2,13 +2,10 @@ package analytics
 
 import (
 	"context"
-	"database/sql"
 	"strings"
-	"time"
 
-	"silan-backend/internal/svc"
-
-	"github.com/google/uuid"
+	"silan-backend/internal/ent"
+	"silan-backend/internal/ent/contentinteraction"
 )
 
 type InteractionEvent struct {
@@ -24,49 +21,36 @@ type InteractionEvent struct {
 	ScrollProgress  float64
 }
 
-func RecordContentInteraction(ctx context.Context, svcCtx *svc.ServiceContext, event InteractionEvent) error {
-	if svcCtx == nil || svcCtx.RawDB == nil {
-		return nil
-	}
-
-	query := `INSERT INTO content_interaction (
-		id, entity_type, entity_id, section_anchor, kind, user_identity_id, fingerprint,
-		ip_address, user_agent, visitor_kind, referrer_kind, crawler_name,
-		session_duration, scroll_progress, created_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	if svcCtx.Config.Database.Driver == "postgres" || svcCtx.Config.Database.Driver == "postgresql" {
-		query = `INSERT INTO content_interaction (
-			id, entity_type, entity_id, section_anchor, kind, user_identity_id, fingerprint,
-			ip_address, user_agent, visitor_kind, referrer_kind, crawler_name,
-			session_duration, scroll_progress, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
-	}
-
+// RecordContentInteraction inserts through the supplied ent client. Callers
+// can pass tx.Client() so the interaction and its primary runtime record share
+// one transaction instead of drifting after a partial failure.
+func RecordContentInteraction(ctx context.Context, client *ent.Client, event InteractionEvent) error {
 	visitorKind, crawlerName := classifyVisitor(event.UserAgent)
-	_, err := svcCtx.RawDB.ExecContext(
-		ctx,
-		query,
-		uuid.New().String(),
-		event.EntityType,
-		event.EntityID,
-		nil,
-		event.Kind,
-		nullable(event.UserIdentityID),
-		nullable(event.Fingerprint),
-		nullable(event.IPAddress),
-		nullable(event.UserAgent),
-		visitorKind,
-		classifyReferrer(event.Referrer),
-		nullable(crawlerName),
-		event.SessionDuration,
-		event.ScrollProgress,
-		time.Now(),
-	)
+	builder := client.ContentInteraction.Create().
+		SetEntityType(contentinteraction.EntityType(event.EntityType)).
+		SetEntityID(event.EntityID).
+		SetKind(contentinteraction.Kind(event.Kind)).
+		SetVisitorKind(contentinteraction.VisitorKind(visitorKind)).
+		SetReferrerKind(contentinteraction.ReferrerKind(classifyReferrer(event.Referrer))).
+		SetSessionDuration(event.SessionDuration).
+		SetScrollProgress(event.ScrollProgress)
+	if event.UserIdentityID != "" {
+		builder.SetUserIdentityID(event.UserIdentityID)
+	}
+	if event.Fingerprint != "" {
+		builder.SetFingerprint(event.Fingerprint)
+	}
+	if event.IPAddress != "" {
+		builder.SetIPAddress(event.IPAddress)
+	}
+	if event.UserAgent != "" {
+		builder.SetUserAgent(event.UserAgent)
+	}
+	if crawlerName != "" {
+		builder.SetCrawlerName(crawlerName)
+	}
+	_, err := builder.Save(ctx)
 	return err
-}
-
-func nullable(value string) sql.NullString {
-	return sql.NullString{String: value, Valid: value != ""}
 }
 
 func classifyVisitor(userAgent string) (kind string, crawlerName string) {

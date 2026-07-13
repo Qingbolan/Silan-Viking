@@ -55,6 +55,7 @@ export const BlogHeader: React.FC<BlogHeaderProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <button
+                type="button"
                 onClick={() => navigate(-1)}
                 className="flex items-center gap-2 hover:opacity-70 transition-opacity"
                 style={{ 
@@ -82,6 +83,7 @@ export const BlogHeader: React.FC<BlogHeaderProps> = ({
                 </span>
               </div>
               <button 
+                type="button"
                 className="p-2 hover:opacity-70 transition-opacity" 
                 style={{ color: colors.textTertiary }}
                 aria-label={language === 'en' ? 'Share article' : '分享文章'}
@@ -96,4 +98,4 @@ export const BlogHeader: React.FC<BlogHeaderProps> = ({
       </div>
     </>
   );
-}; 
+};

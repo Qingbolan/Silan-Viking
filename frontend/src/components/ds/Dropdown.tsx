@@ -107,6 +107,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 ) : (
                   <button
                     key={item.key}
+                    type="button"
                     {...dsRoot}
                     role="menuitem"
                     disabled={item.disabled}

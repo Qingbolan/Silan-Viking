@@ -11,6 +11,7 @@ import (
 
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/contentinteraction"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -48,25 +49,40 @@ func (l *StatsLogic) Stats(req *types.StatsRequest) (*types.StatsResponse, error
 	if err != nil {
 		return nil, err
 	}
-	entityType := contentinteraction.EntityType(req.EntityType)
-
-	views, err := l.svcCtx.DB.ContentInteraction.Query().
-		Where(
-			contentinteraction.EntityTypeEQ(entityType),
-			contentinteraction.EntityIDEQ(id),
-			contentinteraction.KindEQ(contentinteraction.KindView),
-		).Count(l.ctx)
-	if err != nil {
-		return nil, err
-	}
-	likes, err := l.svcCtx.DB.ContentInteraction.Query().
-		Where(
-			contentinteraction.EntityTypeEQ(entityType),
-			contentinteraction.EntityIDEQ(id),
-			contentinteraction.KindEQ(contentinteraction.KindLike),
-		).Count(l.ctx)
-	if err != nil {
-		return nil, err
+	var views, likes int
+	switch req.EntityType {
+	case "project":
+		counts, countErr := engagement.ProjectCount(l.ctx, l.svcCtx.DB, id)
+		if countErr != nil {
+			return nil, countErr
+		}
+		views, likes = counts.Views, counts.Likes
+	case "blog":
+		counts, countErr := engagement.BlogCount(l.ctx, l.svcCtx.DB, id)
+		if countErr != nil {
+			return nil, countErr
+		}
+		views, likes = counts.Views, counts.Likes
+	default:
+		entityType := contentinteraction.EntityType(req.EntityType)
+		views, err = l.svcCtx.DB.ContentInteraction.Query().
+			Where(
+				contentinteraction.EntityTypeEQ(entityType),
+				contentinteraction.EntityIDEQ(id),
+				contentinteraction.KindEQ(contentinteraction.KindView),
+			).Count(l.ctx)
+		if err != nil {
+			return nil, err
+		}
+		likes, err = l.svcCtx.DB.ContentInteraction.Query().
+			Where(
+				contentinteraction.EntityTypeEQ(entityType),
+				contentinteraction.EntityIDEQ(id),
+				contentinteraction.KindEQ(contentinteraction.KindLike),
+			).Count(l.ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 	comments, err := l.svcCtx.DB.Comment.Query().
 		Where(

@@ -122,6 +122,21 @@ fn write_meta(part_dir: &Path, role: &str) -> Result<PathBuf, ScaffoldError> {
     Ok(path)
 }
 
+/// Persist a fresh Item identity at scaffold time. Indexing is read-only with
+/// respect to the content tree, so it consumes this file and never replaces
+/// the id during a rebuild.
+fn write_item_meta(item_dir: &Path) -> Result<PathBuf, ScaffoldError> {
+    let path = item_dir.join("item.toml");
+    let item_id = silan_viking_base::ItemId::generate();
+    fs::write(
+        &path,
+        format!(
+            "# Stable Item identity. Keep this value across renames and edits.\nitem_id = \"{item_id}\"\n"
+        ),
+    )?;
+    Ok(path)
+}
+
 /// The required-field frontmatter for each content type, given a slug. Values
 /// are SCHEMA defaults; the author edits them after `new`.
 fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
@@ -184,6 +199,7 @@ pub fn new_item(content_root: &Path, kind: &str, slug: &str) -> Result<Scaffolde
     let part_dir = item_dir.join("parts").join(primary_role);
     fs::create_dir_all(&part_dir)?;
 
+    let item_meta = write_item_meta(&item_dir)?;
     let meta = write_meta(&part_dir, primary_role)?;
     let md = part_dir.join("en.md");
     let frontmatter = frontmatter_for(kind, slug, &[]);
@@ -196,7 +212,7 @@ pub fn new_item(content_root: &Path, kind: &str, slug: &str) -> Result<Scaffolde
     )?;
 
     Ok(Scaffolded {
-        files: vec![meta, md],
+        files: vec![item_meta, meta, md],
     })
 }
 
@@ -230,6 +246,7 @@ pub fn new_episode(
 
     let part_dir = episode_dir.join("parts").join("body");
     fs::create_dir_all(&part_dir)?;
+    let item_meta = write_item_meta(&episode_dir)?;
     let meta = write_meta(&part_dir, "body")?;
     let md = part_dir.join("en.md");
     let frontmatter = frontmatter_for(
@@ -248,7 +265,7 @@ pub fn new_episode(
         ),
     )?;
     Ok(Scaffolded {
-        files: vec![meta, md],
+        files: vec![item_meta, meta, md],
     })
 }
 
@@ -284,15 +301,13 @@ pub fn new_resume(
     full_name: &str,
     title: &str,
 ) -> Result<Scaffolded, ScaffoldError> {
-    let summary_dir = content_root
-        .join("resources")
-        .join("resume")
-        .join("parts")
-        .join("summary");
+    let item_dir = content_root.join("resources").join("resume");
+    let summary_dir = item_dir.join("parts").join("summary");
     if summary_dir.exists() {
         return Err(ScaffoldError("resume already exists".to_owned()));
     }
     fs::create_dir_all(&summary_dir)?;
+    let item_meta = write_item_meta(&item_dir)?;
     let meta = write_meta(&summary_dir, "summary")?;
     let md = summary_dir.join("en.md");
     let frontmatter = format!(
@@ -308,7 +323,7 @@ pub fn new_resume(
         ),
     )?;
     Ok(Scaffolded {
-        files: vec![meta, md],
+        files: vec![item_meta, meta, md],
     })
 }
 

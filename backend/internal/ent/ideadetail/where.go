@@ -295,6 +295,26 @@ func RequiredResourcesContainsFold(v string) predicate.IdeaDetail {
 	return predicate.IdeaDetail(sql.FieldContainsFold(FieldRequiredResources, v))
 }
 
+// PriorityEQ applies the EQ predicate on the "priority" field.
+func PriorityEQ(v Priority) predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldEQ(FieldPriority, v))
+}
+
+// PriorityNEQ applies the NEQ predicate on the "priority" field.
+func PriorityNEQ(v Priority) predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldNEQ(FieldPriority, v))
+}
+
+// PriorityIn applies the In predicate on the "priority" field.
+func PriorityIn(vs ...Priority) predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldIn(FieldPriority, vs...))
+}
+
+// PriorityNotIn applies the NotIn predicate on the "priority" field.
+func PriorityNotIn(vs ...Priority) predicate.IdeaDetail {
+	return predicate.IdeaDetail(sql.FieldNotIn(FieldPriority, vs...))
+}
+
 // CollaborationNeededEQ applies the EQ predicate on the "collaboration_needed" field.
 func CollaborationNeededEQ(v bool) predicate.IdeaDetail {
 	return predicate.IdeaDetail(sql.FieldEQ(FieldCollaborationNeeded, v))

@@ -12,19 +12,24 @@ export class ApiError extends Error {
   }
 }
 
-// Build URL that prefers same-origin for '/api' endpoints to leverage dev proxy and avoid CORS
+const runtimeOrigin = (): string =>
+  typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : API_CONFIG.BASE_URL;
+
+export const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN || runtimeOrigin()).replace(/\/+$/, '');
+
+export const apiUrl = (path: string): string => new URL(path, `${API_ORIGIN}/`).toString();
+
+export const mediaUrl = (path: string): string => {
+  if (!path.startsWith('/api/')) return path;
+  return apiUrl(path);
+};
+
+// Build API URLs through one origin resolver. Development remains same-origin
+// for the Vite proxy; the NUS mirror pins this to https://silan.tech.
 const buildUrl = (endpoint: string, params?: Record<string, any>): string => {
-  let url: URL;
-  if (/^https?:\/\//i.test(endpoint)) {
-    url = new URL(endpoint);
-  } else if (endpoint.startsWith('/')) {
-    // Same-origin for dev proxy and production
-    const base = (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin : API_CONFIG.BASE_URL;
-    url = new URL(endpoint, base);
-  } else {
-    // Fallback to configured base
-    url = new URL(endpoint, API_CONFIG.BASE_URL);
-  }
+  const url = new URL(apiUrl(endpoint));
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
@@ -36,20 +41,20 @@ const buildUrl = (endpoint: string, params?: Record<string, any>): string => {
 };
 
 // GET request helper using native fetch to avoid CORS preflight
-export const get = <T = any>(endpoint: string, params?: Record<string, any>): Promise<T> => {
+export const get = <T = any>(
+  endpoint: string,
+  params?: Record<string, any>,
+  options?: { signal?: AbortSignal },
+): Promise<T> => {
   const urlStr = buildUrl(endpoint, params);
-  const urlObj = new URL(urlStr);
-  console.log(`📡 GET Request: ${urlStr}`);
 
   return fetch(urlStr, {
     method: 'GET',
+    signal: options?.signal,
   }).then(async (response) => {
-    console.log(`✅ GET Response: ${response.status} ${urlObj.pathname}`);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ GET Error: ${response.status} ${urlObj.pathname} - ${errorText}`);
-      throw new ApiError(`API request failed: ${response.status}`, response.status);
+      throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
     }
 
     return response.json();
@@ -59,8 +64,6 @@ export const get = <T = any>(endpoint: string, params?: Record<string, any>): Pr
 // POST request helper using native fetch to avoid CORS preflight
 export const post = <T = any>(endpoint: string, data?: any): Promise<T> => {
   const urlStr = buildUrl(endpoint);
-  const urlObj = new URL(urlStr);
-  console.log(`📡 POST Request: ${urlStr}`);
 
   return fetch(urlStr, {
     method: 'POST',
@@ -69,12 +72,9 @@ export const post = <T = any>(endpoint: string, data?: any): Promise<T> => {
     },
     body: data ? JSON.stringify(data) : undefined,
   }).then(async (response) => {
-    console.log(`✅ POST Response: ${response.status} ${urlObj.pathname}`);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ POST Error: ${response.status} ${urlObj.pathname} - ${errorText}`);
-      throw new ApiError(`API request failed: ${response.status}`, response.status);
+      throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
     }
 
     return response.json();
@@ -84,8 +84,6 @@ export const post = <T = any>(endpoint: string, data?: any): Promise<T> => {
 // DELETE request helper using native fetch to avoid CORS preflight
 export const del = <T = any>(endpoint: string, data?: any): Promise<T> => {
   const urlStr = buildUrl(endpoint);
-  const urlObj = new URL(urlStr);
-  console.log(`📡 DELETE Request: ${urlStr}`);
 
   return fetch(urlStr, {
     method: 'DELETE',
@@ -94,12 +92,9 @@ export const del = <T = any>(endpoint: string, data?: any): Promise<T> => {
     },
     body: data ? JSON.stringify(data) : undefined,
   }).then(async (response) => {
-    console.log(`✅ DELETE Response: ${response.status} ${urlObj.pathname}`);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ DELETE Error: ${response.status} ${urlObj.pathname} - ${errorText}`);
-      throw new ApiError(`API request failed: ${response.status}`, response.status);
+      throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
     }
 
     // DELETE might return empty response
@@ -111,8 +106,6 @@ export const del = <T = any>(endpoint: string, data?: any): Promise<T> => {
 // PUT request helper using native fetch to avoid CORS preflight
 export const put = <T = any>(endpoint: string, data?: any): Promise<T> => {
   const urlStr = buildUrl(endpoint);
-  const urlObj = new URL(urlStr);
-  console.log(`📡 PUT Request: ${urlStr}`);
 
   return fetch(urlStr, {
     method: 'PUT',
@@ -121,12 +114,9 @@ export const put = <T = any>(endpoint: string, data?: any): Promise<T> => {
     },
     body: data ? JSON.stringify(data) : undefined,
   }).then(async (response) => {
-    console.log(`✅ PUT Response: ${response.status} ${urlObj.pathname}`);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ PUT Error: ${response.status} ${urlObj.pathname} - ${errorText}`);
-      throw new ApiError(`API request failed: ${response.status}`, response.status);
+      throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
     }
 
     return response.json();
@@ -136,22 +126,4 @@ export const put = <T = any>(endpoint: string, data?: any): Promise<T> => {
 // Language formatting helper
 export const formatLanguage = (lang: Language): string => {
   return lang === 'zh' ? 'zh' : 'en';
-};
-
-// Legacy compatibility - these were the old axios-based functions
-export const apiRequest = async <T = any>(endpoint: string, options: any = {}): Promise<T> => {
-  const method = options.method?.toUpperCase() || 'GET';
-
-  switch (method) {
-    case 'GET':
-      return get<T>(endpoint, options.params);
-    case 'POST':
-      return post<T>(endpoint, options.data);
-    case 'PUT':
-      return put<T>(endpoint, options.data);
-    case 'DELETE':
-      return del<T>(endpoint, options.data);
-    default:
-      throw new ApiError(`Unsupported method: ${method}`);
-  }
 };

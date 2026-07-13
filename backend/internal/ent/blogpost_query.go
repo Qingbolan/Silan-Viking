@@ -7,7 +7,6 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
-	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/predicate"
@@ -25,7 +24,6 @@ type BlogPostQuery struct {
 	order            []blogpost.OrderOption
 	inters           []Interceptor
 	predicates       []predicate.BlogPost
-	withCategory     *BlogCategoryQuery
 	withTranslations *BlogPostTranslationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -61,28 +59,6 @@ func (bpq *BlogPostQuery) Unique(unique bool) *BlogPostQuery {
 func (bpq *BlogPostQuery) Order(o ...blogpost.OrderOption) *BlogPostQuery {
 	bpq.order = append(bpq.order, o...)
 	return bpq
-}
-
-// QueryCategory chains the current query on the "category" edge.
-func (bpq *BlogPostQuery) QueryCategory() *BlogCategoryQuery {
-	query := (&BlogCategoryClient{config: bpq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := bpq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := bpq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(blogpost.Table, blogpost.FieldID, selector),
-			sqlgraph.To(blogcategory.Table, blogcategory.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, blogpost.CategoryTable, blogpost.CategoryColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(bpq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
 }
 
 // QueryTranslations chains the current query on the "translations" edge.
@@ -299,23 +275,11 @@ func (bpq *BlogPostQuery) Clone() *BlogPostQuery {
 		order:            append([]blogpost.OrderOption{}, bpq.order...),
 		inters:           append([]Interceptor{}, bpq.inters...),
 		predicates:       append([]predicate.BlogPost{}, bpq.predicates...),
-		withCategory:     bpq.withCategory.Clone(),
 		withTranslations: bpq.withTranslations.Clone(),
 		// clone intermediate query.
 		sql:  bpq.sql.Clone(),
 		path: bpq.path,
 	}
-}
-
-// WithCategory tells the query-builder to eager-load the nodes that are connected to
-// the "category" edge. The optional arguments are used to configure the query builder of the edge.
-func (bpq *BlogPostQuery) WithCategory(opts ...func(*BlogCategoryQuery)) *BlogPostQuery {
-	query := (&BlogCategoryClient{config: bpq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	bpq.withCategory = query
-	return bpq
 }
 
 // WithTranslations tells the query-builder to eager-load the nodes that are connected to
@@ -407,8 +371,7 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	var (
 		nodes       = []*BlogPost{}
 		_spec       = bpq.querySpec()
-		loadedTypes = [2]bool{
-			bpq.withCategory != nil,
+		loadedTypes = [1]bool{
 			bpq.withTranslations != nil,
 		}
 	)
@@ -430,12 +393,6 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := bpq.withCategory; query != nil {
-		if err := bpq.loadCategory(ctx, query, nodes, nil,
-			func(n *BlogPost, e *BlogCategory) { n.Edges.Category = e }); err != nil {
-			return nil, err
-		}
-	}
 	if query := bpq.withTranslations; query != nil {
 		if err := bpq.loadTranslations(ctx, query, nodes,
 			func(n *BlogPost) { n.Edges.Translations = []*BlogPostTranslation{} },
@@ -446,35 +403,6 @@ func (bpq *BlogPostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bl
 	return nodes, nil
 }
 
-func (bpq *BlogPostQuery) loadCategory(ctx context.Context, query *BlogCategoryQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogCategory)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*BlogPost)
-	for i := range nodes {
-		fk := nodes[i].CategoryID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(blogcategory.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "category_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (bpq *BlogPostQuery) loadTranslations(ctx context.Context, query *BlogPostTranslationQuery, nodes []*BlogPost, init func(*BlogPost), assign func(*BlogPost, *BlogPostTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*BlogPost)
@@ -530,9 +458,6 @@ func (bpq *BlogPostQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != blogpost.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if bpq.withCategory != nil {
-			_spec.Node.AddColumnOnce(blogpost.FieldCategoryID)
 		}
 	}
 	if ps := bpq.predicates; len(ps) > 0 {

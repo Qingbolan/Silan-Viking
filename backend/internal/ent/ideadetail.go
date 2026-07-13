@@ -24,6 +24,8 @@ type IdeaDetail struct {
 	EstimatedDurationMonths int `json:"estimated_duration_months,omitempty"`
 	// RequiredResources holds the value of the "required_resources" field.
 	RequiredResources string `json:"required_resources,omitempty"`
+	// Priority holds the value of the "priority" field.
+	Priority ideadetail.Priority `json:"priority,omitempty"`
 	// CollaborationNeeded holds the value of the "collaboration_needed" field.
 	CollaborationNeeded bool `json:"collaboration_needed,omitempty"`
 	// FundingRequired holds the value of the "funding_required" field.
@@ -82,7 +84,7 @@ func (*IdeaDetail) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case ideadetail.FieldEstimatedDurationMonths:
 			values[i] = new(sql.NullInt64)
-		case ideadetail.FieldID, ideadetail.FieldIdeaID, ideadetail.FieldRequiredResources:
+		case ideadetail.FieldID, ideadetail.FieldIdeaID, ideadetail.FieldRequiredResources, ideadetail.FieldPriority:
 			values[i] = new(sql.NullString)
 		case ideadetail.FieldCreatedAt, ideadetail.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -124,6 +126,12 @@ func (id *IdeaDetail) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field required_resources", values[i])
 			} else if value.Valid {
 				id.RequiredResources = value.String
+			}
+		case ideadetail.FieldPriority:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field priority", values[i])
+			} else if value.Valid {
+				id.Priority = ideadetail.Priority(value.String)
 			}
 		case ideadetail.FieldCollaborationNeeded:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -209,6 +217,9 @@ func (id *IdeaDetail) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("required_resources=")
 	builder.WriteString(id.RequiredResources)
+	builder.WriteString(", ")
+	builder.WriteString("priority=")
+	builder.WriteString(fmt.Sprintf("%v", id.Priority))
 	builder.WriteString(", ")
 	builder.WriteString("collaboration_needed=")
 	builder.WriteString(fmt.Sprintf("%v", id.CollaborationNeeded))

@@ -1,4 +1,4 @@
-//! Rewriting `silan://` resource references into servable media URLs.
+//! Rewriting `silan://` resource references into website URLs.
 //!
 //! A content author refers to a binary resource that lives beside their Item
 //! by a `silan://` URI — in a frontmatter field (`featured_image_url`,
@@ -7,9 +7,9 @@
 //! module rewrites the *reference* so the synced database stores the
 //! `/api/v1/media/…` path the Go backend serves it at.
 //!
-//! The mapping is purely syntactic — strip `silan://resources/` and prepend
-//! the media route. The file's existence is the scan's concern, not this
-//! module's; an author who typos the path gets a 404, not a sync failure.
+//! Asset references become media URLs; Item references become their public
+//! page routes. Treating every `silan://resources/...` URI as a binary asset
+//! produces broken links such as `/api/v1/media?f=ideas/my-idea`.
 
 /// The `silan://` prefix a *resource* reference begins with. Only the
 /// `resources` namespace is rewritten — an `agent`-namespace URI is never a
@@ -33,8 +33,27 @@ const MEDIA_ROUTE: &str = "/api/v1/media?f=";
 /// `silan://resources/` prefix.
 pub fn rewrite_reference(value: &str) -> String {
     match value.strip_prefix(SILAN_RESOURCES_PREFIX) {
-        Some(tail) => format!("{MEDIA_ROUTE}{tail}"),
+        Some(tail) if tail.split('/').any(|segment| segment == "assets") => {
+            format!("{MEDIA_ROUTE}{tail}")
+        }
+        Some(tail) => rewrite_item_reference(tail).unwrap_or_else(|| value.to_owned()),
         None => value.to_owned(),
+    }
+}
+
+fn rewrite_item_reference(tail: &str) -> Option<String> {
+    let segments: Vec<&str> = tail
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .collect();
+    match segments.as_slice() {
+        ["ideas", slug, ..] => Some(format!("/ideas/{slug}")),
+        ["projects", slug, ..] => Some(format!("/projects/{slug}")),
+        ["blog", slug, ..] => Some(format!("/blog/{slug}")),
+        ["episode", _series, slug, ..] => Some(format!("/episodes/{slug}")),
+        ["update", ..] => Some("/recent-updates".to_owned()),
+        ["resume", ..] => Some("/".to_owned()),
+        _ => None,
     }
 }
 
@@ -72,6 +91,22 @@ mod tests {
         assert_eq!(
             rewrite_reference("silan://resources/blog/my-post/assets/figure.png"),
             "/api/v1/media?f=blog/my-post/assets/figure.png"
+        );
+    }
+
+    #[test]
+    fn rewrites_item_references_to_public_routes_not_media() {
+        assert_eq!(
+            rewrite_reference("silan://resources/ideas/silan-viking"),
+            "/ideas/silan-viking"
+        );
+        assert_eq!(
+            rewrite_reference("silan://resources/projects/runtime"),
+            "/projects/runtime"
+        );
+        assert_eq!(
+            rewrite_reference("silan://resources/episode/series/intro"),
+            "/episodes/intro"
         );
     }
 

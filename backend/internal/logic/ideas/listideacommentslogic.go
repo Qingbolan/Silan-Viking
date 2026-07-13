@@ -2,15 +2,15 @@ package ideas
 
 import (
 	"context"
+	"strings"
 	"time"
 
+	"silan-backend/internal/commentruntime"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/useridentity"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
-
-	"strings"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -32,6 +32,7 @@ func NewListIdeaCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clientIP, userAgent, fingerprint, userIdentityID string) (resp *types.IdeaCommentListResponse, err error) {
+	actor := commentruntime.NewActor(userIdentityID, fingerprint)
 	// `req.ID` is the URL key — slug for new clients, UUID for legacy
 	// ones. comment.entity_id stores the idea's UUID, so translate the
 	// slug back here. See helpers.go:resolveIdeaID for the policy.
@@ -89,26 +90,13 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 			Content:         comment.Content,
 			Type:            string(comment.Type),
 			CreatedAt:       comment.CreatedAt.Format(time.RFC3339),
-			UserIdentityID:  comment.UserIdentityID,
+			CanDelete:       actor.CanDelete(comment),
 			LikesCount:      comment.LikesCount,
 			IsLikedByUser:   false,
 			Replies:         []types.IdeaCommentData{},
 		}
 		commentMap[comment.ID] = &commentData
 		order = append(order, comment.ID)
-	}
-
-	// Build tree: parent->children
-	var rootIDs []string
-	for _, id := range order {
-		c := commentMap[id]
-		if c.ParentID == "" {
-			rootIDs = append(rootIDs, id)
-			continue
-		}
-		if parent, ok := commentMap[c.ParentID]; ok {
-			parent.Replies = append(parent.Replies, *c)
-		}
 	}
 
 	// Determine like status for this user using entgo
@@ -159,6 +147,20 @@ func (l *ListCommentsLogic) ListComments(req *types.IdeaCommentListRequest, clie
 					c.IsLikedByUser = liked[c.ID]
 				}
 			}
+		}
+	}
+
+	// Build the tree only after actor-specific state has been resolved; reply
+	// values are copied into their parents below.
+	var rootIDs []string
+	for _, id := range order {
+		c := commentMap[id]
+		if c.ParentID == "" {
+			rootIDs = append(rootIDs, id)
+			continue
+		}
+		if parent, ok := commentMap[c.ParentID]; ok {
+			parent.Replies = append(parent.Replies, *c)
 		}
 	}
 

@@ -114,6 +114,60 @@
   box-shadow: inset 0 1px 0 0 var(--ds-glass-edge);
 }
 
+/* Liquid glass — a stronger, "floating" pane for docks that hover over
+   scrolling content (mobile tab bar, floating action buttons). Goes further
+   than .ds-acrylic: higher blur + saturation so content behind genuinely
+   refracts, a bright rim-light border that reads as a lens edge rather than
+   a flat stroke, and a deeper elevation so the pane clearly separates from
+   the surface under it. Modeled on Apple's Liquid Glass material — an
+   approximation built from backdrop-filter + layered highlights, since
+   there is no public web implementation of the real thing. */
+.ds-liquid-glass {
+  /* No `position` here on purpose — it previously hardcoded `relative`,
+     which (same specificity, later stylesheet) silently overrode Tailwind's
+     `.fixed` utility on any caller and downgraded it to `relative`. Every
+     caller already supplies its own position (fixed docks, sheets) — that
+     position is itself a containing block for the ::before rim below, so
+     this class doesn't need to declare one. */
+  isolation: isolate;
+  background: var(--ds-glass-tint);
+  backdrop-filter: saturate(220%) blur(var(--ds-blur-lg));
+  -webkit-backdrop-filter: saturate(220%) blur(var(--ds-blur-lg));
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  box-shadow:
+    inset 0 1px 0 0 var(--ds-glass-edge),           /* crisp top rim-light   */
+    inset 0 0 0 1px var(--ds-glass-inner),          /* full-perimeter glow   */
+    inset 0 0 32px 0 var(--ds-glass-inner),         /* soft interior glow    */
+    inset 0 -20px 32px -22px var(--ds-glass-shade), /* bottom shading        */
+    var(--ds-elevation-3);
+}
+
+/* The rim itself — a conic-ish gradient border simulating light bending
+   around a curved glass edge, brightest along the top. Sits on ::before so
+   it composites above the blur but under the content. */
+.ds-liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    var(--ds-glass-edge) 0%,
+    transparent 30%,
+    transparent 70%,
+    var(--ds-glass-edge) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 /* Ridge — a bright gradient seam along the top edge of a panel. */
 .ds-ridge::before {
   content: '';

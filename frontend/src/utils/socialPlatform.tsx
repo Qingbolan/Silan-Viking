@@ -9,6 +9,7 @@ import {
   Send,
   Mail,
   Globe,
+  GraduationCap,
 } from 'lucide-react';
 
 /**
@@ -30,6 +31,7 @@ export type SocialPlatform =
   | 'instagram'
   | 'facebook'
   | 'telegram'
+  | 'scholar'
   | 'email'
   | 'website';
 
@@ -47,6 +49,7 @@ const PLATFORMS: {
   { id: 'instagram', label: 'Instagram', hosts: ['instagram.com'], icon: <Instagram /> },
   { id: 'facebook', label: 'Facebook', hosts: ['facebook.com', 'fb.com'], icon: <Facebook /> },
   { id: 'telegram', label: 'Telegram', hosts: ['t.me', 'telegram.me'], icon: <Send /> },
+  { id: 'scholar', label: 'Google Scholar', hosts: ['scholar.google.com', 'scholar.google.'], icon: <GraduationCap /> },
 ];
 
 /**
@@ -72,6 +75,7 @@ export function identifySocialPlatform(url?: string, name?: string): SocialPlatf
       if (n.includes(p.id) || n.includes(p.label.toLowerCase())) return p.id;
     }
     if (n.includes('mail') || n.includes('email')) return 'email';
+    if (n.includes('scholar')) return 'scholar';
   }
   return 'website';
 }

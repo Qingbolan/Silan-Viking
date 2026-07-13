@@ -3,9 +3,9 @@
 // Design-system ProjectCard — a content card for the project gallery.
 //
 // Self-contained: it takes a plain `ProjectCardData` shape (not the app's
-// ProjectWithPlan type) so it stays decoupled from API models. When a real
+// API model) so it stays decoupled from transport details. When a real
 // cover image is given it's used; otherwise a branded NUS-gradient
-// placeholder is generated from the title initial + project id.
+// placeholder shows the title's initial letter.
 import React from 'react';
 import { Github, ExternalLink, ArrowUpRight, Calendar, User } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -75,18 +75,13 @@ const COVER_HEIGHT: Record<Exclude<CoverSize, 'feature'>, string> = {
 
 /* --- Branded placeholder ------------------------------------------------- */
 
-/** A stable reference code from the id + year — e.g. "PROJ · 2025 · 2832". */
-function refCode(id: string, year?: number | string): string {
-  let h = 0;
-  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  const num = (h % 9000) + 1000;
-  return `PROJ · ${year ?? '—'} · ${num}`;
+/** First letter of the title — e.g. "AI-Native Database..." -> "A". */
+function titleInitial(title: string): string {
+  const trimmed = title.trim();
+  return trimmed ? trimmed[0].toUpperCase() : '?';
 }
 
-const ProjectPlaceholder: React.FC<{ id: string; year?: number | string }> = ({
-  id,
-  year,
-}) => (
+const ProjectPlaceholder: React.FC<{ title: string }> = ({ title }) => (
   <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
     {/* NUS-tinted diffusion wash — gentle, orange into blue. */}
     <div
@@ -98,9 +93,9 @@ const ProjectPlaceholder: React.FC<{ id: string; year?: number | string }> = ({
           'var(--ds-color-surface-2)',
       }}
     />
-    {/* The reference code is the placeholder's centred focal element. */}
-    <span className="relative select-none whitespace-nowrap font-mono text-ds-sm uppercase tracking-[0.18em] text-ds-fg-subtle">
-      {refCode(id, year)}
+    {/* The title initial is the placeholder's centred focal element. */}
+    <span className="relative select-none font-display text-5xl font-semibold text-ds-fg-subtle/60">
+      {titleInitial(title)}
     </span>
   </div>
 );
@@ -222,8 +217,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       className={cn(
         'relative overflow-hidden border-ds-border',
         isFeature
-          // Horizontal: cover fills the left ~46%, full height.
-          ? 'w-[46%] shrink-0 border-r'
+          // Feature cards stack on phones and become an editorial split at
+          // larger widths; a one-column gallery must not squeeze a horizontal
+          // card into a handset.
+          ? 'h-40 w-full shrink-0 border-b sm:h-auto sm:w-[46%] sm:border-b-0 sm:border-r'
           // Vertical: cover on top at a fixed height.
           : cn('shrink-0 border-b', COVER_HEIGHT[coverSize]),
       )}
@@ -240,7 +237,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       ) : showLivePreview ? (
         <LivePreview url={demoUrl!} onFail={() => setPreviewFailed(true)} />
       ) : (
-        <ProjectPlaceholder id={id} year={year} />
+        <ProjectPlaceholder title={title} />
       )}
 
       {/* Status pill, top-left. */}
@@ -287,7 +284,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         // The body sizes to its content; `flex-1` fills any slack when the
         // grid stretches this card to a taller sibling.
         'flex flex-1 flex-col gap-2',
-        isFeature ? 'min-w-0 gap-3 p-6' : 'p-3.5',
+        isFeature ? 'min-w-0 gap-3 p-4 sm:p-6' : 'p-3.5',
       )}
     >
       <h3
@@ -334,14 +331,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {githubUrl && (
-            <a href={githubUrl} target="_blank" rel="noreferrer" {...dsRoot}>
+            <a href={githubUrl} target="_blank" rel="noopener noreferrer" {...dsRoot}>
               <IconButton label="View source on GitHub" size="sm" variant="ghost">
                 <Github />
               </IconButton>
             </a>
           )}
           {demoUrl && (
-            <a href={demoUrl} target="_blank" rel="noreferrer" {...dsRoot}>
+            <a href={demoUrl} target="_blank" rel="noopener noreferrer" {...dsRoot}>
               <IconButton label="Open live demo" size="sm" variant="ghost">
                 <ExternalLink />
               </IconButton>
@@ -363,7 +360,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         'group flex overflow-hidden',
         // `h-full` makes the card fill its grid cell; a row of cards stays
         // even via the grid's stretch + the body's flex-1.
-        isFeature ? 'h-72 flex-row' : 'h-full flex-col',
+        isFeature ? 'h-auto flex-col sm:h-72 sm:flex-row' : 'h-full flex-col',
         className,
       )}
     >

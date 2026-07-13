@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
+	"silan-backend/internal/httpapi"
 	"silan-backend/internal/logic/blog"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -17,11 +19,12 @@ func GetBlogPostByIdHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := blog.NewGetBlogPostByIdLogic(r.Context(), svcCtx)
 		resp, err := l.GetBlogPostById(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpapi.Error(r.Context(), w, err)
 		} else {
 			httpx.OkJsonCtx(r.Context(), w, resp)
 		}

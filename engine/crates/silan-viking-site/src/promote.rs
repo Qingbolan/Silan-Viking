@@ -5,7 +5,9 @@
 //! derived tables onto the live `portfolio.db` **table by table, in one
 //! transaction**, leaving the runtime tables (`comments`,
 //! `content_interaction`, `annotation`, `user_identities`, `request_logs`)
-//! untouched.
+//! `comment_likes`, `project_likes`, `project_views`, `contact_messages`,
+//! `content_interaction`, `annotation`, `user_identities`, `users`,
+//! `request_logs` and runtime stats caches) untouched.
 //!
 //! The SQL shape is fixed (`11` §11.11): `PRAGMA journal_mode=WAL` +
 //! `busy_timeout`, `BEGIN IMMEDIATE`, then `DELETE`+`INSERT` for each derived
@@ -65,10 +67,19 @@ pub const DERIVED_TABLES: &[&str] = &[
 /// the invariant is testable.
 pub const RUNTIME_TABLES: &[&str] = &[
     "comments",
+    "comment_likes",
+    "project_likes",
+    "project_views",
+    "contact_messages",
     "content_interaction",
     "annotation",
     "user_identities",
+    "users",
     "request_logs",
+    "stats_cache_crawler",
+    "stats_cache_item",
+    "stats_cache_source",
+    "stats_cache_visitor",
 ];
 
 /// Promote failures. Every variant leaves the live DB in its pre-promote
@@ -366,18 +377,23 @@ mod tests {
         let live = dir.join("live.db");
         let snap = dir.join("snapshot.db");
 
-        // A minimal live DB: one derived table + one runtime table. Like the
+        // A minimal live DB: one derived table plus every runtime table. Like the
         // Go-migrated production DB, it has NO `sync_meta` — promote creates
         // it (the regression behind the M9 e2e schema-drift fix).
         {
             let c = Connection::open(&live).expect("open live");
             c.execute_batch(
                 "CREATE TABLE blog_posts(id TEXT, slug TEXT);
-                 CREATE TABLE comments(id TEXT, body TEXT);
-                 INSERT INTO blog_posts VALUES('old','old-post');
-                 INSERT INTO comments VALUES('c1','a real visitor comment');",
+                 INSERT INTO blog_posts VALUES('old','old-post');",
             )
-            .expect("seed live");
+            .expect("seed derived live row");
+            for table in RUNTIME_TABLES {
+                c.execute_batch(&format!(
+                    "CREATE TABLE {table}(id TEXT, value TEXT); \
+                     INSERT INTO {table} VALUES('runtime-id', 'runtime-value');"
+                ))
+                .unwrap_or_else(|e| panic!("seed runtime table {table}: {e}"));
+            }
         }
         // The snapshot carries the derived tables + the engine's sync_meta
         // (content_hash / items_total / content_commit), as `index sync` writes it.
@@ -406,11 +422,13 @@ mod tests {
             .query_row("SELECT slug FROM blog_posts", [], |r| r.get(0))
             .expect("query blog");
         assert_eq!(slug, "fresh-post");
-        // The runtime comment survived.
-        let comment: String = c
-            .query_row("SELECT body FROM comments", [], |r| r.get(0))
-            .expect("query comment");
-        assert_eq!(comment, "a real visitor comment");
+        // Every runtime fact survived.
+        for table in RUNTIME_TABLES {
+            let value: String = c
+                .query_row(&format!("SELECT value FROM {table}"), [], |r| r.get(0))
+                .unwrap_or_else(|e| panic!("query runtime table {table}: {e}"));
+            assert_eq!(value, "runtime-value", "runtime table {table} changed");
+        }
         // The completion marker is stamped onto the synced sync_meta row,
         // which also carries the snapshot's content_hash.
         let (commit, hash): (String, String) = c

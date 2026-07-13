@@ -8,41 +8,39 @@
 //    fixed tabs, not content Parts: declared here, always present, never
 //    extended by an agent. They sit after the content Parts.
 import React from 'react';
-import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Users, Bug } from 'lucide-react';
+import { Users, MessageSquareText } from 'lucide-react';
 import ContentParts, { type ExtraTab } from '../content/ContentParts';
-import ProjectCommunityFeedback from './ProjectCommunityFeedback';
+import ProjectDiscussion from './ProjectDiscussion';
 import ProjectIssuesList from './ProjectIssuesList';
 import type { ContentPart } from '../../types';
 
 interface ProjectTabsProps {
   projectData: { parts?: ContentPart[] };
+  projectId: string;
+  documentTitle: string;
 }
 
-const ProjectTabs: React.FC<ProjectTabsProps> = ({ projectData }) => {
-  const { id: projectId } = useParams<{ id: string }>();
-  const { t } = useTranslation();
+const ProjectTabs: React.FC<ProjectTabsProps> = ({ projectData, projectId, documentTitle }) => {
+  const { t, i18n } = useTranslation();
 
   // The fixed runtime tabs — always registered, regardless of content.
-  const extraTabs: ExtraTab[] = projectId
-    ? [
+  const extraTabs: ExtraTab[] = [
         {
           key: 'community',
           label: t('projects.community'),
           icon: <Users size={16} />,
-          render: () => <ProjectCommunityFeedback projectId={projectId} />,
+          render: () => <ProjectDiscussion projectId={projectId} />,
         },
         {
           key: 'issues',
-          label: t('projects.issues'),
-          icon: <Bug size={16} />,
+          label: i18n.language.startsWith('zh') ? '反馈' : 'Feedback',
+          icon: <MessageSquareText size={16} />,
           render: () => <ProjectIssuesList projectId={projectId} />,
         },
-      ]
-    : [];
+      ];
 
-  return <ContentParts parts={projectData.parts ?? []} extraTabs={extraTabs} />;
+  return <ContentParts parts={projectData.parts ?? []} extraTabs={extraTabs} documentTitle={documentTitle} />;
 };
 
 export default ProjectTabs;

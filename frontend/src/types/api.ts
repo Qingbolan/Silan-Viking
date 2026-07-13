@@ -218,6 +218,10 @@ export interface Publication {
   authors: string;
   journal?: string;
   conference?: string;
+  conference_full_name?: string;
+  conference_url?: string;
+  conference_location?: string;
+  ccf_rank?: 'A' | 'B' | 'C';
   publisher?: string;
   published_at?: string;
   doi?: string;
@@ -225,6 +229,8 @@ export interface Publication {
   pdf_url?: string;
   /** Code repository link. */
   github_url?: string;
+  /** Public talk or presentation deck. */
+  slides_url?: string;
   /** Related blog post link. */
   blog_url?: string;
   /** One-line abstract / summary. */
@@ -235,6 +241,8 @@ export interface Publication {
   tags?: string[];
   /** Optional cover / figure image. */
   image?: string;
+  /** preprint / conference / journal / workshop — drives the badge style. */
+  publication_type?: 'preprint' | 'conference' | 'journal' | 'workshop' | string;
   citation_count: number;
   created_at: string;
   updated_at: string;
@@ -269,50 +277,21 @@ export interface NewsItem {
   content: string;
 }
 
-export interface PlanGoals {
-  [key: string]: string[];
-}
-
-export interface Plan {
-  id: string;
-  name: string;
-  nameZh: string;
-  description: string;
-  descriptionZh: string;
-  slogan: string;
-  sloganZh: string;
-  goals: string[];
-  goalsZh: string[];
-  image: string;
-  icon: string;
-  startYear: number;
-  endYear: number;
-  status: 'completed' | 'active' | 'planned';
-}
-
-export interface ProjectWithPlan {
-  id: string;
-  title: string;
-  titleZh?: string;
-  description: string;
-  descriptionZh?: string;
-  /** Cover image URL. Absent when the project has no cover — the card then
-   *  renders its built-in branded placeholder. */
-  image?: string;
-  tags: string[];
-  github?: string;
-  demo?: string;
-  planId: string;
-  year: number;
-}
-
 export interface Project {
   id: string;
+  slug: string;
   name: string;
   description: string;
   tags: string[];
   year: number;
-  annualPlan: string;
+  status?: 'active' | 'completed' | 'paused' | 'cancelled';
+  startDate?: string;
+  endDate?: string;
+  githubUrl?: string;
+  demoUrl?: string;
+  documentationUrl?: string;
+  thumbnailUrl?: string;
+  updatedAt?: string;
 }
 
 // Detailed project information for project detail pages
@@ -345,20 +324,21 @@ export interface ProjectDetail {
   relatedBlogs?: ProjectBlogReference[];
 
   // Version management
-  versions: {
+  versions?: {
     latest: string;
     releases: ProjectRelease[];
   };
 
   // Project status
-  status: {
-    buildStatus: 'passing' | 'failing' | 'unknown';
-    coverage: number;
-    vulnerabilities: number;
-    lastUpdated: string;
-    license: string;
-    language: string;
-    size: string;
+  status?: {
+    lifecycle?: 'active' | 'completed' | 'paused' | 'cancelled';
+    buildStatus?: 'passing' | 'failing';
+    coverage?: number;
+    vulnerabilities?: number;
+    lastUpdated?: string;
+    license?: string;
+    language?: string;
+    size?: string;
   };
 
   // License information
@@ -379,7 +359,7 @@ export interface ProjectDetail {
   };
 
   // Quick start guide
-  quickStart: {
+  quickStart?: {
     installation: string[];
     installationZh?: string[];
     basicUsage: string;
@@ -395,7 +375,7 @@ export interface ProjectDetail {
   };
 
   // Community data
-  community: {
+  community?: {
     contributors: number;
     forks: number;
     watchers: number;
@@ -408,13 +388,14 @@ export interface ProjectDetail {
   };
 
   // Dependencies
-  dependencies: {
+  dependencies?: {
     production: ProjectDependency[];
     development: ProjectDependency[];
+    raw?: string;
   };
 
   // Performance metrics
-  performance: {
+  performance?: {
     benchmarks: ProjectBenchmark[];
     analytics: {
       downloads: AnalyticsData[];
@@ -423,17 +404,17 @@ export interface ProjectDetail {
   };
 
   // Basic information
-  features: string[];
+  features?: string[];
   featuresZh?: string[];
-  timeline: {
+  timeline?: {
     start: string;
     end: string;
     duration: string;
   };
-  teamSize: number;
-  myRole: string;
+  teamSize?: number;
+  myRole?: string;
   myRoleZh?: string;
-  metrics: {
+  metrics?: {
     linesOfCode: number;
     commits: number;
     stars: number;
@@ -531,24 +512,6 @@ export interface ProjectBlogReference {
   relevance: 'high' | 'medium' | 'low';
   description?: string;
   descriptionZh?: string;
-}
-
-export interface AnnualPlan {
-  year: number;
-  name: string;
-  nameZh: string;
-  description: string;
-  descriptionZh: string;
-  icon: string;
-  image: string | null;
-  projectCount: number;
-  objectives: string[];
-  objectivesZh: string[];
-  projects: Array<{
-    id: number;
-    name: string;
-    description: string;
-  }>;
 }
 
 export interface GraphNode {

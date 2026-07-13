@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { Image, Card, Tag, Typography, Spin } from 'antd';
-import { ExpandOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Maximize2 } from 'lucide-react';
 import { BlogContent } from '../../types/blog';
 import { useLanguage } from '../../../LanguageContext';
-import FuzzyText from '../../../ui/FuzzyText';
-
-const { Paragraph } = Typography;
+import { Badge, Modal, Skeleton } from '../../../ds';
+import { MediaUnavailable } from './MediaUnavailable';
+import { mediaUrl } from '../../../../api/utils';
 
 interface ImageContentProps {
   item: BlogContent;
@@ -15,111 +14,83 @@ interface ImageContentProps {
 
 export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideScreen }) => {
   const { language } = useLanguage();
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const unpublished = item.content.startsWith('/api/placeholder');
+  const source = unpublished ? item.content : mediaUrl(item.content);
 
-  const imageSrc = item.content.startsWith('/api/placeholder')
-    ? `https://via.placeholder.com/800x400/6366f1/ffffff?text=${encodeURIComponent(item.caption || 'Academic Figure')}`
-    : item.content;
+  useEffect(() => {
+    setLoading(true);
+    setImageError(false);
+    setAttempt(0);
+  }, [item.content]);
 
-  return (
-    <figure className={`my-16 ${isWideScreen ? 'col-span-2' : ''} break-inside-avoid`}>
-      <Card
-        className="overflow-hidden shadow-medium hover:shadow-lg transition-shadow duration-300"
-        bodyStyle={{ padding: 0 }}
-        style={{
-          borderRadius: '12px',
-          backgroundColor: 'var(--color-surfaceElevated)',
-          borderColor: 'var(--color-cardBorder)'
-        }}
-      >
-        {/* Image with Ant Design Image component */}
-        <div className="relative overflow-hidden bg-theme-surface-secondary">
-          {imageError ? (
-            <div className="flex flex-col items-center justify-center h-96 bg-gradient-to-br from-theme-surface to-theme-surface-secondary">
-              <FuzzyText
-                fontSize="3.5rem"
-                fontWeight={800}
-                color="var(--color-textSecondary, #9ca3af)"
-                baseIntensity={0.08}
-                hoverIntensity={0.25}
-              >
-                {language === 'en' ? 'Image Not Found' : '图片加载失败'}
-              </FuzzyText>
-            </div>
+  const retry = () => {
+    setLoading(true);
+    setImageError(false);
+    setAttempt((value) => value + 1);
+  };
+
+  const alt = item.caption || (language === 'zh' ? '文章插图' : 'Article figure');
+
+  return <>
+    <figure className={`my-16 break-inside-avoid ${isWideScreen ? 'col-span-2' : ''}`}>
+      <div className="overflow-hidden rounded-2xl bg-ds-surface-1 ring-1 ring-ds-border-subtle">
+        <div className="relative overflow-hidden bg-ds-surface-2">
+          {unpublished || imageError ? (
+            <MediaUnavailable kind="image" unpublished={unpublished} onRetry={retry} />
           ) : (
-            <Image
-              src={imageSrc}
-              alt={item.caption || 'Academic figure'}
-              onLoad={() => setLoading(false)}
-              onError={() => {
-                setLoading(false);
-                setImageError(true);
-              }}
-              placeholder={
-                <div className="flex items-center justify-center h-96 bg-theme-surface/50">
-                  <Spin size="large" />
-                </div>
-              }
-              preview={{
-                mask: (
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <ExpandOutlined style={{ fontSize: '28px', color: 'white' }} />
-                    <span className="text-white text-sm font-medium">
-                      {language === 'en' ? 'Click to preview' : '点击预览'}
-                    </span>
-                  </div>
-                ),
-                maskClassName: 'backdrop-blur-sm bg-black/30'
-              }}
-              style={{
-                width: '100%',
-                maxHeight: '600px',
-                objectFit: 'contain',
-                backgroundColor: 'var(--color-surfaceSecondary, #f9fafb)'
-              }}
-              className="transition-all duration-500"
-            />
+            <div className="relative min-h-48">
+              {loading && <Skeleton className="absolute inset-0 h-full min-h-64 w-full rounded-none" />}
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                className="group relative block w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ds-focus"
+                aria-label={language === 'zh' ? `查看原图：${alt}` : `Open full-size image: ${alt}`}
+              >
+                <img
+                  key={`${source}-${attempt}`}
+                  src={source}
+                  alt={alt}
+                  onLoad={() => setLoading(false)}
+                  onError={() => {
+                    setLoading(false);
+                    setImageError(true);
+                  }}
+                  className={`mx-auto max-h-[37.5rem] w-full object-contain transition duration-300 group-hover:scale-[1.006] ${loading ? 'opacity-0' : 'opacity-100'}`}
+                />
+                <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-ds-md bg-black/65 px-2.5 py-1.5 text-ds-xs font-medium text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <Maximize2 className="size-3.5" aria-hidden />
+                  {language === 'zh' ? '查看原图' : 'Full size'}
+                </span>
+              </button>
+            </div>
           )}
         </div>
-        
-        {/* Caption */}
+
         {item.caption && (
-          <div className="p-6 bg-theme-surface-elevated">
-            <div className="text-center space-y-2">
-              {/* Figure Number Tag */}
-              <Tag
-                className="mb-2"
-                style={{
-                  borderRadius: '16px',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  color: 'var(--color-primary)',
-                  background: 'var(--color-primaryLight)',
-                  border: 'none',
-                }}
-              >
-                Figure {index + 1}
-              </Tag>
-              
-              {/* Caption Text */}
-              <Paragraph 
-                className="text-center max-w-2xl mx-auto"
-                style={{ 
-                  fontFamily: 'Georgia, "Times New Roman", Charter, serif',
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                  color: 'var(--color-textSecondary, #6b7280)',
-                  marginBottom: 0
-                }}
-              >
+          <figcaption className="space-y-2 bg-ds-surface-1 p-5 text-center sm:p-6">
+              <Badge tone="primary" size="sm">
+                {language === 'zh' ? '图' : 'Figure'} {index + 1}
+              </Badge>
+              <p className="mx-auto max-w-2xl text-pretty font-serif text-ds-sm leading-6 text-ds-fg-muted">
                 {item.caption}
-              </Paragraph>
-            </div>
-          </div>
+              </p>
+          </figcaption>
         )}
-      </Card>
+      </div>
     </figure>
-  );
-}; 
+    <Modal
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      title={item.caption || (language === 'zh' ? '文章插图' : 'Article figure')}
+      size="xl"
+      closeLabel={language === 'zh' ? '关闭原图' : 'Close full-size image'}
+      className="bg-ds-surface-1 p-3 sm:p-5"
+    >
+      <img src={source} alt={alt} className="mx-auto max-h-[82dvh] w-auto max-w-full object-contain" />
+    </Modal>
+  </>;
+};

@@ -16,7 +16,8 @@ import { BrandLoading } from '../components/ds/BrandLoading';
 import { ErrorState } from '../components/ds/ErrorState';
 import Markdown from '../components/ui/Markdown';
 import { Seo, SITE_URL } from '../components/Seo';
-import { fetchResumeData } from '../api/home/resumeApi';
+import { publicAssetUrl } from '../utils/publicAsset';
+import { fetchResumeData, fetchPersonalInfo } from '../api/home/resumeApi';
 import {
   AwardsList,
   ProjectSection,
@@ -92,6 +93,10 @@ interface ResumeViewData {
         title: string;
         authors?: string;
         venue?: string;
+        venueFullName?: string;
+        venueUrl?: string;
+        venueLocation?: string;
+        ccfRank?: 'A' | 'B' | 'C';
         year?: string;
         abstract?: string;
         award?: string;
@@ -100,6 +105,7 @@ interface ResumeViewData {
         url?: string;
         pdfUrl?: string;
         githubUrl?: string;
+        slidesUrl?: string;
         blogUrl?: string;
         image?: string;
       }>;
@@ -125,6 +131,13 @@ const ResumeWebsite: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [resumeData, setResumeData] = useState<ResumeViewData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
+  // Stable Latin-script owner name for PublicationCard highlight. authors[]
+  // lists every paper with the Latin-script names ("Silan Hu" etc.), so when
+  // the UI is in zh and resumeData.name becomes "胡思蓝", the includes() match
+  // fails and no name is bolded. Pin highlight to the en personal_info name
+  // so the rule survives language switching.
+  const [highlightAuthor, setHighlightAuthor] = useState<string | undefined>();
   
   const { colors } = useTheme();
   const reduceMotion = useReducedMotion();
@@ -187,10 +200,27 @@ const ResumeWebsite: React.FC = () => {
     });
   }, [colors]);
 
+  // Resolve the stable owner name once (en variant, independent of UI lang)
+  // so PublicationCard can bold it regardless of which language the user
+  // toggled into.
+  useEffect(() => {
+    let cancelled = false;
+    fetchPersonalInfo('en')
+      .then((info) => {
+        if (!cancelled && info?.full_name) setHighlightAuthor(info.full_name);
+      })
+      .catch(() => {
+        // Non-fatal — author highlight just stays off.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Load resume data
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadResumeData = async () => {
       try {
         setLoading(true);
@@ -216,31 +246,30 @@ const ResumeWebsite: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [language, t]);
+  }, [language, t, retryKey]);
 
   // Removed unused handleDownloadResume function
 
-  if (loading || !resumeData) {
+  if (loading) {
     // The home page boot — the design-system branded splash.
     return <BrandLoading message={t('resume.loading_profile')} />;
   }
 
-  if (error) {
+  if (error || !resumeData) {
     // A failed resume load — the design-system full-page error, with a
     // retry that re-runs the fetch.
     return (
       <ErrorState
         variant="page"
         title={t('resume.error_loading')}
-        description={error}
-        onRetry={() => window.location.reload()}
+        description={error ?? t('resume.failed_to_load')}
+        onRetry={() => setRetryKey((value) => value + 1)}
       />
     );
   }
 
   return (
-    <motion.div
-      role="main"
+    <motion.section
       aria-label={t('resume.page_label', { defaultValue: 'Resume' })}
       className="min-h-screen relative"
       initial={reduceMotion ? false : { opacity: 0 }}
@@ -274,6 +303,7 @@ const ResumeWebsite: React.FC = () => {
           current={resumeData.current || ''}
           contacts={resumeData.contacts || []}
           socialLinks={resumeData.socialLinks || []}
+          avatarSrc={publicAssetUrl('/image.png')}
         />
       </div>
 
@@ -345,7 +375,7 @@ const ResumeWebsite: React.FC = () => {
             >
               <PublicationsList
                 publications={resumeData.sections.publications.content}
-                highlightAuthor={resumeData.name}
+                highlightAuthor={highlightAuthor ?? resumeData.name}
               />
             </SectionCard>
           </div>
@@ -422,7 +452,7 @@ const ResumeWebsite: React.FC = () => {
           </div>
         )}
       </div>
-    </motion.div>
+    </motion.section>
   );
 };
 

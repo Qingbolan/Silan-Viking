@@ -30,8 +30,6 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// EdgeTranslations holds the string denoting the translations edge name in mutations.
 	EdgeTranslations = "translations"
-	// EdgeBlogPosts holds the string denoting the blog_posts edge name in mutations.
-	EdgeBlogPosts = "blog_posts"
 	// Table holds the table name of the blogcategory in the database.
 	Table = "blog_categories"
 	// TranslationsTable is the table that holds the translations relation/edge.
@@ -41,13 +39,6 @@ const (
 	TranslationsInverseTable = "blog_category_translations"
 	// TranslationsColumn is the table column denoting the translations relation/edge.
 	TranslationsColumn = "blog_category_id"
-	// BlogPostsTable is the table that holds the blog_posts relation/edge.
-	BlogPostsTable = "blog_posts"
-	// BlogPostsInverseTable is the table name for the BlogPost entity.
-	// It exists in this package in order to avoid circular dependency with the "blogpost" package.
-	BlogPostsInverseTable = "blog_posts"
-	// BlogPostsColumn is the table column denoting the blog_posts relation/edge.
-	BlogPostsColumn = "category_id"
 )
 
 // Columns holds all SQL columns for blogcategory fields.
@@ -147,31 +138,10 @@ func ByTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newTranslationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-
-// ByBlogPostsCount orders the results by blog_posts count.
-func ByBlogPostsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newBlogPostsStep(), opts...)
-	}
-}
-
-// ByBlogPosts orders the results by blog_posts terms.
-func ByBlogPosts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newBlogPostsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
 func newTranslationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(TranslationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, TranslationsTable, TranslationsColumn),
-	)
-}
-func newBlogPostsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(BlogPostsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, BlogPostsTable, BlogPostsColumn),
 	)
 }

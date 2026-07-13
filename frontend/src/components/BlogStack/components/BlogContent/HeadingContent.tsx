@@ -1,9 +1,9 @@
 import React from 'react';
-import { Typography } from 'antd';
+import { Link2 } from 'lucide-react';
 import { BlogContent } from '../../types/blog';
 import { renderInlineMarkdown } from '../../../../utils/fullMarkdownRenderer';
-
-const { Title } = Typography;
+import { useLanguage } from '../../../LanguageContext';
+import { useToast } from '../../../ds';
 
 interface HeadingContentProps {
   item: BlogContent;
@@ -13,8 +13,11 @@ interface HeadingContentProps {
 
 export const HeadingContent: React.FC<HeadingContentProps> = ({
   item,
+  index,
   isWideScreen
 }) => {
+  const { language } = useLanguage();
+  const toast = useToast();
   // Generate stable, anchor-friendly ID
   const slugify = (s: string) =>
     (s || '')
@@ -23,75 +26,73 @@ export const HeadingContent: React.FC<HeadingContentProps> = ({
       .trim()
       .replace(/#[^\s]*/g, '')
       .replace(/[?]/g, '')
-      .replace(/[^a-z0-9\s\-]/g, '')
+      .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
 
-  const anchorId = item.id || slugify(item.content);
-  
+  const readableSlug = slugify(item.content);
+  const anchorId = readableSlug ? `${readableSlug}-${index + 1}` : item.id;
+
   // Ensure we have a valid level (1-6), default to 2
-  const level = Math.max(1, Math.min(6, item.level || 2)) as 1 | 2 | 3 | 4 | 5;
+  const level = Math.max(1, Math.min(6, item.level || 2)) as 1 | 2 | 3 | 4 | 5 | 6;
+  const Tag = `h${level}` as const;
+
+  // Font scale — wide-screen bumps each level up a notch. Font weight steps
+  // down as level increases (h1 bold, h2 semibold, h3+ medium).
+  const sizeClass = isWideScreen
+    ? ['', 'text-[2rem]', 'text-[1.75rem]', 'text-[1.5rem]', 'text-[1.25rem]', 'text-[1.125rem]', 'text-[1rem]'][level]
+    : ['', 'text-[1.75rem]', 'text-[1.5rem]', 'text-[1.25rem]', 'text-[1.125rem]', 'text-[1rem]', 'text-[0.9rem]'][level];
+  const weightClass = level === 1 ? 'font-bold' : level === 2 ? 'font-semibold' : 'font-medium';
+  const leadingClass = level === 1 ? 'leading-[1.2]' : 'leading-[1.3]';
+
+  // Asymmetric spacing — a section break needs more air above it than
+  // below it, so the heading reads as "new section starts here" rather
+  // than sitting flush with the paragraph that follows. h1 (the article
+  // title) skips the top gap since it has nothing above it to separate
+  // from; deeper levels (h3+) get a smaller break since they're
+  // sub-divisions of the section, not a fresh one.
+  const marginTop = level === 1 ? '0' : level === 2 ? '3.5rem' : '2.5rem';
+  const marginBottom = level === 1 ? '1.5rem' : '1rem';
 
   return (
     <div
       id={anchorId}
-      className={`heading-content group ${isWideScreen ? 'wide-screen' : ''}`}
+      className={`heading-content group relative ${isWideScreen ? 'wide-screen' : ''}`}
       style={{
         scrollMarginTop: '100px',
-        marginTop: level === 1 ? '2.5rem' : '2rem',
-        marginBottom: level === 1 ? '1.5rem' : '1rem'
+        marginTop,
+        marginBottom
       }}
     >
-      <Title
-        level={level}
-        style={{
-          color: 'var(--color-text-primary, #1f2937)',
-          fontFamily: 'var(--font-display, Inter)',
-          fontWeight: level === 1 ? 700 : level === 2 ? 600 : 500,
-          lineHeight: level === 1 ? 1.2 : 1.3,
-          marginBottom: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontSize: isWideScreen ?
-            (level === 1 ? '2rem' : level === 2 ? '1.75rem' : level === 3 ? '1.5rem' : '1.25rem') :
-            (level === 1 ? '1.75rem' : level === 2 ? '1.5rem' : level === 3 ? '1.25rem' : '1.125rem')
+      <Tag className={`font-display pr-9 text-theme-text-primary tracking-[-0.01em] ${sizeClass} ${weightClass} ${leadingClass}`}>
+        {renderInlineMarkdown(item.content)}
+      </Tag>
+      <a
+        href={`#${anchorId}`}
+        onClick={async (event) => {
+          event.preventDefault();
+          const url = new URL(window.location.href);
+          url.hash = anchorId;
+          window.history.replaceState(null, '', url);
+          document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          try {
+            await navigator.clipboard.writeText(url.toString());
+            toast.success(language === 'zh' ? '章节链接已复制' : 'Section link copied');
+          } catch {
+            toast.error(language === 'zh' ? '无法复制章节链接' : 'Section link could not be copied');
+          }
         }}
-        className={`heading-level-${level} ${isWideScreen ? 'wide' : 'normal'}`}
+        aria-label={language === 'zh' ? '复制此章节链接' : 'Copy link to this section'}
+        className="absolute right-0 top-1 inline-flex size-8 items-center justify-center rounded-ds-md text-ds-fg-subtle opacity-0 transition hover:bg-ds-surface-2 hover:text-ds-primary focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-focus group-hover:opacity-100"
       >
-        <span>{renderInlineMarkdown(item.content)}</span>
-        <a
-          href={`#${anchorId}`}
-          onClick={(e) => {
-            e.preventDefault();
-            try {
-              const url = new URL(window.location.href);
-              url.hash = anchorId;
-              window.history.replaceState(null, '', `#${anchorId}`);
-              void navigator.clipboard?.writeText(url.toString());
-            } catch {}
-          }}
-          aria-label="Copy link to this heading"
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[var(--color-secondary,#64748b)] hover:text-[var(--color-primary,#0066FF)]"
-          style={{ textDecoration: 'none' }}
-        >
-          #
-        </a>
-      </Title>
-      
-      {/* Add a subtle divider for h1 and h2 */}
+        <Link2 className="size-4" aria-hidden />
+      </a>
+
+      {/* A quiet accent rule under h1/h2 — single brand color, no gradient. */}
       {(level === 1 || level === 2) && (
-        <div 
-          className="heading-divider"
-          style={{
-            width: level === 1 ? '100%' : '60%',
-            height: '2px',
-            background: level === 1 ? 
-              'linear-gradient(90deg, var(--color-primary, #0066FF), transparent)' :
-              'linear-gradient(90deg, var(--color-secondary, #6366f1), transparent)',
-            marginTop: '0.5rem',
-            borderRadius: '1px'
-          }}
+        <div
+          className="heading-divider mt-2 h-[2px] rounded-full bg-theme-accent/70"
+          style={{ width: level === 1 ? '100%' : '60%' }}
         />
       )}
     </div>

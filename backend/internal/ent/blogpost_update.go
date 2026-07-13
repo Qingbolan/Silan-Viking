@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/predicate"
@@ -389,11 +388,6 @@ func (bpu *BlogPostUpdate) ClearUpdatedAt() *BlogPostUpdate {
 	return bpu
 }
 
-// SetCategory sets the "category" edge to the BlogCategory entity.
-func (bpu *BlogPostUpdate) SetCategory(b *BlogCategory) *BlogPostUpdate {
-	return bpu.SetCategoryID(b.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the BlogPostTranslation entity by IDs.
 func (bpu *BlogPostUpdate) AddTranslationIDs(ids ...string) *BlogPostUpdate {
 	bpu.mutation.AddTranslationIDs(ids...)
@@ -412,12 +406,6 @@ func (bpu *BlogPostUpdate) AddTranslations(b ...*BlogPostTranslation) *BlogPostU
 // Mutation returns the BlogPostMutation object of the builder.
 func (bpu *BlogPostUpdate) Mutation() *BlogPostMutation {
 	return bpu.mutation
-}
-
-// ClearCategory clears the "category" edge to the BlogCategory entity.
-func (bpu *BlogPostUpdate) ClearCategory() *BlogPostUpdate {
-	bpu.mutation.ClearCategory()
-	return bpu
 }
 
 // ClearTranslations clears all "translations" edges to the BlogPostTranslation entity.
@@ -530,6 +518,12 @@ func (bpu *BlogPostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if bpu.mutation.UserIDCleared() {
 		_spec.ClearField(blogpost.FieldUserID, field.TypeString)
 	}
+	if value, ok := bpu.mutation.CategoryID(); ok {
+		_spec.SetField(blogpost.FieldCategoryID, field.TypeString, value)
+	}
+	if bpu.mutation.CategoryIDCleared() {
+		_spec.ClearField(blogpost.FieldCategoryID, field.TypeString)
+	}
 	if value, ok := bpu.mutation.SeriesID(); ok {
 		_spec.SetField(blogpost.FieldSeriesID, field.TypeString, value)
 	}
@@ -625,35 +619,6 @@ func (bpu *BlogPostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if bpu.mutation.UpdatedAtCleared() {
 		_spec.ClearField(blogpost.FieldUpdatedAt, field.TypeTime)
-	}
-	if bpu.mutation.CategoryCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.CategoryTable,
-			Columns: []string{blogpost.CategoryColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpu.mutation.CategoryIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.CategoryTable,
-			Columns: []string{blogpost.CategoryColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if bpu.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1079,11 +1044,6 @@ func (bpuo *BlogPostUpdateOne) ClearUpdatedAt() *BlogPostUpdateOne {
 	return bpuo
 }
 
-// SetCategory sets the "category" edge to the BlogCategory entity.
-func (bpuo *BlogPostUpdateOne) SetCategory(b *BlogCategory) *BlogPostUpdateOne {
-	return bpuo.SetCategoryID(b.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the BlogPostTranslation entity by IDs.
 func (bpuo *BlogPostUpdateOne) AddTranslationIDs(ids ...string) *BlogPostUpdateOne {
 	bpuo.mutation.AddTranslationIDs(ids...)
@@ -1102,12 +1062,6 @@ func (bpuo *BlogPostUpdateOne) AddTranslations(b ...*BlogPostTranslation) *BlogP
 // Mutation returns the BlogPostMutation object of the builder.
 func (bpuo *BlogPostUpdateOne) Mutation() *BlogPostMutation {
 	return bpuo.mutation
-}
-
-// ClearCategory clears the "category" edge to the BlogCategory entity.
-func (bpuo *BlogPostUpdateOne) ClearCategory() *BlogPostUpdateOne {
-	bpuo.mutation.ClearCategory()
-	return bpuo
 }
 
 // ClearTranslations clears all "translations" edges to the BlogPostTranslation entity.
@@ -1250,6 +1204,12 @@ func (bpuo *BlogPostUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost, er
 	if bpuo.mutation.UserIDCleared() {
 		_spec.ClearField(blogpost.FieldUserID, field.TypeString)
 	}
+	if value, ok := bpuo.mutation.CategoryID(); ok {
+		_spec.SetField(blogpost.FieldCategoryID, field.TypeString, value)
+	}
+	if bpuo.mutation.CategoryIDCleared() {
+		_spec.ClearField(blogpost.FieldCategoryID, field.TypeString)
+	}
 	if value, ok := bpuo.mutation.SeriesID(); ok {
 		_spec.SetField(blogpost.FieldSeriesID, field.TypeString, value)
 	}
@@ -1345,35 +1305,6 @@ func (bpuo *BlogPostUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost, er
 	}
 	if bpuo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(blogpost.FieldUpdatedAt, field.TypeTime)
-	}
-	if bpuo.mutation.CategoryCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.CategoryTable,
-			Columns: []string{blogpost.CategoryColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bpuo.mutation.CategoryIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.CategoryTable,
-			Columns: []string{blogpost.CategoryColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if bpuo.mutation.TranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

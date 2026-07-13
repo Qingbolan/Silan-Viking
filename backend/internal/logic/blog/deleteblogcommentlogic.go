@@ -3,8 +3,8 @@ package blog
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"silan-backend/internal/commentruntime"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -35,20 +35,7 @@ func (l *DeleteBlogCommentLogic) DeleteBlogComment(req *types.DeleteBlogCommentR
 		return err
 	}
 
-	// Check authorization
-	authorized := false
-
-	// Method 1: Check user identity ownership (for logged-in users)
-	if req.UserIdentityId != "" && c.UserIdentityID != "" && c.UserIdentityID == req.UserIdentityId {
-		authorized = true
-	}
-
-	// Method 2: Check fingerprint for anonymous users (fallback)
-	if !authorized && req.Fingerprint != "" && strings.Contains(c.UserAgent, "fp:"+req.Fingerprint) {
-		authorized = true
-	}
-
-	if !authorized {
+	if !commentruntime.NewActor(req.AuthenticatedUserID, req.Fingerprint).CanDelete(c) {
 		l.Errorf("Unauthorized delete attempt for comment %s from IP %s, UserAgent: %s",
 			req.CommentID, req.ClientIP, req.UserAgentFull)
 		return fmt.Errorf("forbidden: insufficient permissions to delete this comment")
@@ -56,36 +43,7 @@ func (l *DeleteBlogCommentLogic) DeleteBlogComment(req *types.DeleteBlogCommentR
 
 	// Log the deletion for audit trail
 	l.Infof("User authorized to delete comment %s (userID: %s, ip: %s, fingerprint: %s)",
-		req.CommentID, req.UserIdentityId, req.ClientIP, req.Fingerprint)
+		req.CommentID, req.AuthenticatedUserID, req.ClientIP, req.Fingerprint)
 
-	// Delete the comment and all its replies (cascade delete)
-	return l.deleteCommentWithReplies(cid)
-}
-
-// deleteCommentWithReplies recursively deletes a comment and all its replies
-func (l *DeleteBlogCommentLogic) deleteCommentWithReplies(commentID string) error {
-	// First, find all direct replies to this comment
-	replies, err := l.svcCtx.DB.Comment.
-		Query().
-		Where(comment.ParentIDEQ(commentID), comment.EntityTypeEQ("blog")).
-		All(l.ctx)
-	if err != nil {
-		return fmt.Errorf("failed to find replies: %v", err)
-	}
-
-	// Recursively delete all replies first
-	for _, reply := range replies {
-		if err := l.deleteCommentWithReplies(reply.ID); err != nil {
-			return fmt.Errorf("failed to delete reply %s: %v", reply.ID, err)
-		}
-	}
-
-	// Finally, delete the comment itself
-	err = l.svcCtx.DB.Comment.DeleteOneID(commentID).Exec(l.ctx)
-	if err != nil {
-		return fmt.Errorf("failed to delete comment %s: %v", commentID, err)
-	}
-
-	l.Infof("Deleted comment %s and %d replies", commentID, len(replies))
-	return nil
+	return commentruntime.DeleteTree(l.ctx, l.svcCtx.DB, cid, comment.EntityTypeBlog)
 }

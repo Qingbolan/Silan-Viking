@@ -1,8 +1,8 @@
 // src/components/Resume/RecentSection.tsx
 //
 // Résumé "recent updates" panel — a ds-styled timeline of the latest
-// work / research / publication entries. A ds Card frames the section;
-// a primary-tone Segmented filters by type; each entry is a quiet
+// work / research / publication entries. A primary-tone Segmented filters
+// by type; each entry is a quiet
 // hairline list-row with a Badge status marker. A height-clipped list
 // fades into a ds Button CTA when there is more than fits.
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -11,7 +11,7 @@ import { Clock, Zap, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Markdown from '../ui/Markdown';
-import { Card, CardContent, Segmented, Badge, Button } from '../../components/ds';
+import { Segmented, Badge, Button } from '../../components/ds';
 import type { SegmentedOption } from '../../components/ds';
 
 export interface RecentItem {
@@ -138,8 +138,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
     >
-      <Card variant="flat" padding="lg">
-        <CardContent>
+      <div className="p-7">
           {/* Header — title + a primary-tone Segmented type filter. */}
           <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h3 className="text-xl font-bold tracking-[-0.015em] text-ds-fg sm:text-2xl">
@@ -185,55 +184,50 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
                   }}
                   aria-label={`${t('resume.view_details', { defaultValue: 'View details' })}: ${item.title}`}
                   className={[
-                    'group cursor-pointer rounded-ds-md border border-ds-border bg-ds-surface-1 p-4',
-                    'transition-[border-color,background-color,box-shadow]',
+                    'group flex w-full cursor-pointer items-center gap-3 rounded-ds-md px-3 py-2',
+                    'border border-transparent',
+                    'transition-[border-color,background-color]',
                     'duration-ds-fast ease-ds-standard',
-                    'hover:border-ds-primary/40 hover:bg-ds-surface-2 hover:shadow-ds-1',
+                    'hover:border-ds-border hover:bg-ds-surface-2',
                     'outline-none focus-visible:shadow-ds-focus',
                   ].join(' ')}
                 >
-                  {/* Row header — title + priority + relative time. */}
-                  <div className="mb-1.5 flex items-start justify-between gap-4">
-                    <h4 className="text-ds-base font-semibold text-ds-fg transition-colors duration-ds-fast group-hover:text-ds-primary">
-                      {item.title}
-                    </h4>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {priorityIcon(item.priority)}
-                      <span className="whitespace-nowrap text-ds-xs text-ds-fg-subtle">
-                        {getRelativeTime(item.date)}
-                      </span>
-                    </div>
-                  </div>
+                  {/* Single-row layout (silan, 2026-05-22): title • inline
+                      description (truncated) • status • relative time.
+                      Tags + priority dropped from the row view — they
+                      stayed in the detail view. */}
+                  {priorityIcon(item.priority)}
 
-                  {/* Description — Markdown body. */}
-                  <Markdown className="mb-2 text-ds-sm text-ds-fg-muted">
-                    {item.description}
-                  </Markdown>
+                  <h4 className="shrink-0 text-ds-sm font-semibold text-ds-fg transition-colors duration-ds-fast group-hover:text-ds-primary">
+                    {item.title}
+                  </h4>
 
-                  {/* Footer — tags + status badge. `tags` may be absent in
-                      an API response, so guard before slicing. */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap gap-1">
-                      {(item.tags || []).slice(0, 2).map((tag) => (
-                        <Badge key={tag} tone="neutral" appearance="soft" size="sm">
-                          {tag}
-                        </Badge>
-                      ))}
-                      {(item.tags || []).length > 2 && (
-                        <Badge tone="primary" appearance="soft" size="sm">
-                          +{(item.tags || []).length - 2}
-                        </Badge>
-                      )}
-                    </div>
-                    <Badge
-                      tone={STATUS_TONE[item.status]}
-                      appearance="soft"
-                      size="sm"
-                      dot
+                  {item.description && (
+                    <Markdown
+                      className={[
+                        'min-w-0 flex-1 truncate text-ds-sm text-ds-fg-muted',
+                        // Kill markdown's default block wrappers so the
+                        // description renders inline on a single row.
+                        '[&_p]:m-0 [&_p]:inline [&_div]:m-0 [&_div]:inline',
+                      ].join(' ')}
                     >
-                      {t(`resume.status.${item.status}`)}
-                    </Badge>
-                  </div>
+                      {item.description}
+                    </Markdown>
+                  )}
+
+                  <Badge
+                    tone={STATUS_TONE[item.status]}
+                    appearance="soft"
+                    size="sm"
+                    dot
+                    className="shrink-0"
+                  >
+                    {t(`resume.status.${item.status}`)}
+                  </Badge>
+
+                  <span className="shrink-0 whitespace-nowrap text-ds-xs text-ds-fg-subtle">
+                    {getRelativeTime(item.date)}
+                  </span>
                 </motion.div>
               ))}
             </div>
@@ -243,7 +237,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
               <>
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-ds-surface-1"
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-ds-bg"
                 />
                 <div className="absolute inset-x-0 bottom-2 flex justify-center">
                   <Button
@@ -257,8 +251,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
               </>
             )}
           </div>
-        </CardContent>
-      </Card>
+      </div>
     </motion.section>
   );
 };

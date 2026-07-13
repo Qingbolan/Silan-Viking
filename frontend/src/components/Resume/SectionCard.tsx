@@ -12,52 +12,40 @@ interface SectionCardProps {
   index?: string;
 }
 
-// Borderless editorial section: separated from the page by a tinted
-// surface fill + spacing, never a stroke. The header carries a numbered
-// kicker for an academic, paper-like reading rhythm.
+// Editorial section. The header is a single centred pill — just the
+// section title — replacing the previous icon+kicker+index+heading stack
+// (silan, 2026-05-22: too many decorations stacked over the content).
+// `kicker` and `index` are still accepted for prop-compat with existing
+// callers but no longer rendered.
 const SectionCard: React.FC<SectionCardProps> = ({
   title,
   children,
   delay = 0,
-  icon,
-  kicker,
-  index,
+  icon: _icon,
+  kicker: _kicker,
+  index: _index,
 }) => {
   const sectionId = `section-${title.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
     <motion.section
-      className="bg-theme-surface rounded-xl p-6 shadow-sm transition-shadow duration-300 hover:shadow-md sm:p-8"
+      className="bg-theme-surface rounded-xl p-4 shadow-ds-1 transition-shadow duration-300 hover:shadow-ds-2 sm:p-6"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay }}
       aria-labelledby={sectionId}
     >
-      <header className="mb-6 flex items-start gap-3">
-        {(index || icon) && (
-          <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-theme-primary/10 text-theme-primary">
-            {index ? (
-              <span className="font-mono text-xs font-semibold tracking-wider">
-                {index}
-              </span>
-            ) : (
-              icon
-            )}
-          </div>
-        )}
-        <div className="min-w-0">
-          {kicker && (
-            <span className="block font-mono text-[0.7rem] font-medium uppercase tracking-[0.18em] text-theme-tertiary">
-              {kicker}
-            </span>
-          )}
-          <h3
-            id={sectionId}
-            className="text-xl font-semibold text-theme-primary sm:text-2xl"
-          >
-            {title}
-          </h3>
-        </div>
+      <header className="mb-4 flex justify-center sm:mb-6">
+        <h3
+          id={sectionId}
+          className={
+            'inline-flex items-center rounded-full border border-ds-border ' +
+            'bg-ds-surface-1 px-5 py-1.5 text-ds-sm font-semibold ' +
+            'tracking-wide text-ds-fg sm:text-ds-base'
+          }
+        >
+          {title}
+        </h3>
       </header>
       <div className="relative">{children}</div>
     </motion.section>

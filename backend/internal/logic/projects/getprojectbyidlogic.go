@@ -41,9 +41,9 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 		return nil, fmt.Errorf("project with ID %s not found", req.ID)
 	}
 
-	var technologies []string
-	for _, tech := range proj.Edges.Technologies {
-		technologies = append(technologies, tech.TechnologyName)
+	tags, tagErr := l.svcCtx.ContentTags.Lookup(l.ctx, "project", proj.ID)
+	if tagErr != nil {
+		l.Errorf("content_tag lookup for project %s: %v", proj.ID, tagErr)
 	}
 
 	// Get the year from the start date (a plain `YYYY-MM-DD` string) or,
@@ -54,9 +54,6 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 			year = y
 		}
 	}
-
-	// Generate annual plan name based on year
-	annualPlan := fmt.Sprintf("Annual Plan %d", year)
 
 	// title/description live in project_translations — the content engine
 	// leaves the main projects row's title/description empty.
@@ -72,11 +69,19 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 	}
 
 	return &types.Project{
-		ID:          proj.ID,
-		Name:        name,
-		Description: description,
-		Tags:        technologies,
-		Year:        year,
-		AnnualPlan:  annualPlan,
+		ID:               proj.ID,
+		Slug:             proj.Slug,
+		Name:             name,
+		Description:      description,
+		Tags:             tags,
+		Year:             year,
+		Status:           string(proj.Status),
+		StartDate:        proj.StartDate,
+		EndDate:          proj.EndDate,
+		GithubURL:        proj.GithubURL,
+		DemoURL:          proj.DemoURL,
+		DocumentationURL: proj.DocumentationURL,
+		ThumbnailURL:     proj.ThumbnailURL,
+		UpdatedAt:        formatContentTime(proj.UpdatedAt, "2006-01-02T15:04:05Z07:00"),
 	}, nil
 }

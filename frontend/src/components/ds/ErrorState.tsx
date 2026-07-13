@@ -290,9 +290,9 @@ const PageError: React.FC<ErrorStateProps> = ({
         <div className="mb-1.5 text-ds-xs font-medium uppercase tracking-[0.12em] text-ds-primary">
           {t('ds.error.sorry')}
         </div>
-        <h2 className="text-ds-3xl font-semibold tracking-tight text-ds-fg">
+        <h1 className="text-ds-3xl font-semibold tracking-tight text-ds-fg">
           {title ?? t('ds.error.title')}
-        </h2>
+        </h1>
         <p className="mx-auto mt-3 max-w-sm text-ds-base leading-relaxed text-ds-fg-muted">
           {description ?? t('ds.error.description')}
         </p>

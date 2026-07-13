@@ -30,6 +30,13 @@ interface IdeaSearchRequest extends SearchRequest {
   tags?: string;
 }
 
+const normalizeContentDate = (value?: string): string => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()) || date.getUTCFullYear() <= 1) return '';
+  return value;
+};
+
 
 // API Functions
 
@@ -49,8 +56,8 @@ export const fetchIdeas = async (
   const ideas = (response.ideas || []).map((idea: any) => ({
     ...idea,
     tags: idea.tags || [],
-    createdAt: idea.created_at || idea.createdAt,
-    lastUpdated: idea.last_updated || idea.lastUpdated
+    createdAt: normalizeContentDate(idea.created_at || idea.createdAt),
+    lastUpdated: normalizeContentDate(idea.last_updated || idea.lastUpdated)
   }));
 
   return ideas;
@@ -70,8 +77,8 @@ export const fetchIdeaById = async (id: string, language: 'en' | 'zh' = 'en'): P
   return {
     ...response,
     tags: response.tags || [],
-    createdAt: response.created_at || response.createdAt,
-    lastUpdated: response.last_updated || response.lastUpdated,
+    createdAt: normalizeContentDate(response.created_at || response.createdAt),
+    lastUpdated: normalizeContentDate(response.last_updated || response.lastUpdated),
     abstractZh: response.abstract_zh || response.abstractZh,
     hypothesisZh: response.hypothesis_zh || response.hypothesisZh,
     motivationZh: response.motivation_zh || response.motivationZh,
@@ -108,39 +115,14 @@ export const searchIdeas = async (
   const ideas = (response.ideas || []).map((idea: any) => ({
     ...idea,
     tags: idea.tags || [],
-    createdAt: idea.created_at || idea.createdAt,
-    lastUpdated: idea.last_updated || idea.lastUpdated
+    createdAt: normalizeContentDate(idea.created_at || idea.createdAt),
+    lastUpdated: normalizeContentDate(idea.last_updated || idea.lastUpdated)
   }));
 
   return ideas;
 };
 
-/**
- * Get idea categories
- */
-export const getIdeaCategories = async (language: 'en' | 'zh' = 'en'): Promise<string[]> => {
-  const apiCall = async () => {
-    const response = await get<string[]>('/api/v1/ideas/categories', {
-      lang: formatLanguage(language)
-    });
-    return response;
-  };
-  return apiCall();
-};
-
-/**
- * Get idea tags
- */
-export const getIdeaTags = async (language: 'en' | 'zh' = 'en'): Promise<string[]> => {
-  const response = await get<string[]>('/api/v1/ideas/tags', {
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Get idea statuses (static list)
- */
+/** Domain lifecycle labels in their canonical progression order. */
 export const getIdeaStatuses = (language: 'en' | 'zh' = 'en'): string[] => {
   const statuses = ['draft', 'hypothesis', 'experimenting', 'validating', 'published', 'concluded'];
 
@@ -171,7 +153,7 @@ export interface IdeaCommentData {
   content: string;
   type: string;
   created_at: string;
-  user_identity_id?: string;
+  can_delete: boolean;
   likes_count: number;
   is_liked_by_user: boolean;
   replies?: IdeaCommentData[];
@@ -186,7 +168,6 @@ export const listIdeaComments = async (
   ideaId: string,
   type: string = 'general',
   fingerprint?: string,
-  userIdentityId?: string,
   language: 'en' | 'zh' = 'en'
 ): Promise<IdeaCommentData[]> => {
   const params: any = {
@@ -194,7 +175,6 @@ export const listIdeaComments = async (
     lang: formatLanguage(language)
   };
   if (fingerprint) params.fingerprint = fingerprint;
-  if (userIdentityId) params.user_identity_id = userIdentityId;
   const res = await get<IdeaCommentListResponse>(`/api/v1/ideas/${ideaId}/comments`, params);
   return res?.comments ?? [];
 };
@@ -207,7 +187,6 @@ export const createIdeaComment = async (
     type?: string;
     authorName?: string;
     authorEmail?: string;
-    userIdentityId?: string;
     parentId?: string;
     language?: 'en' | 'zh';
   }
@@ -219,16 +198,14 @@ export const createIdeaComment = async (
   };
   if (options?.authorName && options.authorName.trim()) body.author_name = options.authorName.trim();
   if (options?.authorEmail && options.authorEmail.trim()) body.author_email = options.authorEmail.trim();
-  if (options?.userIdentityId && options.userIdentityId.trim()) body.user_identity_id = options.userIdentityId.trim();
   if (options?.parentId && options.parentId.trim()) body.parent_id = options.parentId.trim();
 
-  // Align with backend model: if no user_identity_id provided, backend requires author_name and author_email
-  if (!body.user_identity_id) {
+  if (body.author_name || body.author_email) {
     if (!body.author_name || typeof body.author_name !== 'string' || !body.author_name.trim()) {
-      body.author_name = 'Anonymous';
+      throw new Error('author_name is required');
     }
     if (!body.author_email || typeof body.author_email !== 'string' || body.author_email.trim().length < 5 || !body.author_email.includes('@')) {
-      body.author_email = 'anonymous@example.com';
+      throw new Error('author_email is required and must be valid');
     }
   }
 
@@ -243,22 +220,19 @@ interface LikeCommentResponse { likes_count: number; is_liked_by_user: boolean }
 export const likeIdeaComment = async (
   commentId: string,
   fingerprint?: string,
-  userIdentityId?: string,
   language: 'en' | 'zh' = 'en'
 ): Promise<LikeCommentResponse> => {
   const data: any = { lang: formatLanguage(language) };
   if (fingerprint) data.fingerprint = fingerprint;
-  if (userIdentityId) data.user_identity_id = userIdentityId;
   const res = await post<LikeCommentResponse>(`/api/v1/ideas/comments/${commentId}/like`, data);
   return res;
 };
 
 export const deleteIdeaComment = async (
   commentId: string,
-  payload: { fingerprint: string; userIdentityId?: string; language?: 'en' | 'zh' }
+  payload: { fingerprint: string; language?: 'en' | 'zh' }
 ): Promise<void> => {
   await del(`/api/v1/ideas/comments/${commentId}`, {
     fingerprint: payload.fingerprint,
-    user_identity_id: payload.userIdentityId || '',
   });
 };

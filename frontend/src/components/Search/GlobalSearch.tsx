@@ -1,285 +1,244 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Loader2, FileText, Lightbulb, Briefcase, ArrowRight } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowRight,
+  BookOpen,
+  Briefcase,
+  FileText,
+  Lightbulb,
+  Search,
+} from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { useTheme } from '../ThemeContext';
-import { globalSearch, type GlobalSearchResponse } from '../../api/search/searchApi';
-import { debounce } from 'lodash';
+import {
+  globalSearch,
+  type GlobalSearchResponse,
+  type SearchResultKind,
+} from '../../api/search/searchApi';
+import { Alert, Button, EmptyState, Input, Modal, Skeleton } from '../ds';
 
 interface GlobalSearchProps {
   isOpen: boolean;
   onClose: () => void;
   initialQuery?: string;
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
-const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQuery = '' }) => {
+type LoadState = 'idle' | 'loading' | 'ready' | 'error';
+
+const KIND_ORDER: SearchResultKind[] = ['blog', 'episode', 'project', 'idea'];
+const KIND_ICONS = {
+  blog: FileText,
+  episode: BookOpen,
+  project: Briefcase,
+  idea: Lightbulb,
+} as const;
+
+const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQuery = '', returnFocusRef }) => {
   const { language } = useLanguage();
-  const { colors } = useTheme();
+  const locale = language as 'en' | 'zh';
   const navigate = useNavigate();
   const [query, setQuery] = useState(initialQuery);
-  const [results, setResults] = useState<GlobalSearchResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [response, setResponse] = useState<GlobalSearchResponse | null>(null);
+  const [loadState, setLoadState] = useState<LoadState>('idle');
   const inputRef = useRef<HTMLInputElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
 
-  // Focus input when modal opens
+  const copy = language === 'en'
+    ? {
+        title: 'Search the knowledge base',
+        description: 'Articles, episodes, projects, and research ideas.',
+        placeholder: 'Search by title, topic, or phrase…',
+        idleTitle: 'Start with a topic or phrase',
+        idleBody: 'Press Enter to open the full result page.',
+        emptyTitle: 'No published content matched',
+        emptyBody: 'Try a shorter phrase or a related term.',
+        errorTitle: 'Search is unavailable',
+        errorBody: 'The content service did not respond. Try again in a moment.',
+        partial: 'Some content types could not be searched. Available results are still shown.',
+        allResults: 'View all results',
+        close: 'Close search',
+      }
+    : {
+        title: '搜索知识库',
+        description: '文章、系列章节、项目与研究想法。',
+        placeholder: '按标题、主题或短语搜索…',
+        idleTitle: '输入主题或短语',
+        idleBody: '按回车可打开完整搜索结果页。',
+        emptyTitle: '没有匹配的已发布内容',
+        emptyBody: '可以尝试更短的短语或相关词。',
+        errorTitle: '搜索暂时不可用',
+        errorBody: '内容服务没有响应，请稍后重试。',
+        partial: '部分内容类型暂时无法搜索，当前可用结果仍已显示。',
+        allResults: '查看全部结果',
+        close: '关闭搜索',
+      };
+
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
+    if (!isOpen) return;
+    const frame = window.requestAnimationFrame(() => inputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
   }, [isOpen]);
 
-  // Close on ESC key
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  // Close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+    if (!isOpen) return;
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResponse(null);
+      setLoadState('idle');
+      return;
     }
-  }, [isOpen, onClose]);
 
-  // Debounced search function
-  const performSearch = useCallback(
-    debounce(async (searchQuery: string) => {
-      if (!searchQuery.trim()) {
-        setResults(null);
-        setIsLoading(false);
-        return;
-      }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setLoadState('loading');
+      void globalSearch({ query: trimmed, type: 'all', limit: 3 }, locale, controller.signal)
+        .then((next) => {
+          if (controller.signal.aborted) return;
+          setResponse(next);
+          setLoadState('ready');
+        })
+        .catch((error) => {
+          if (controller.signal.aborted || error instanceof DOMException && error.name === 'AbortError') return;
+          setResponse(null);
+          setLoadState('error');
+        });
+    }, 240);
 
-      setIsLoading(true);
-      try {
-        const response = await globalSearch({ query: searchQuery, limit: 5 }, language);
-        setResults(response);
-      } catch (error) {
-        console.error('Search error:', error);
-        setResults(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300),
-    [language]
-  );
-
-  // Trigger search when query changes
-  useEffect(() => {
-    performSearch(query);
-  }, [query, performSearch]);
-
-  const handleResultClick = (type: 'blog' | 'project' | 'idea', id: string) => {
-    const paths = {
-      blog: `/blog/${id}`,
-      project: `/projects/${id}`,
-      idea: `/ideas/${id}`
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
     };
-    navigate(paths[type]);
+  }, [isOpen, locale, query]);
+
+  const visibleGroups = useMemo(() => {
+    if (!response) return [];
+    return KIND_ORDER
+      .map((kind) => ({ kind, items: response.groups[kind] }))
+      .filter((group) => group.items.length > 0);
+  }, [response]);
+
+  const openAll = (currentValue: string = query) => {
+    const trimmed = currentValue.trim();
+    if (!trimmed) return;
+    navigate(`/search?q=${encodeURIComponent(trimmed)}`);
     onClose();
   };
 
-  const handleViewAllResults = () => {
-    if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query)}`);
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title={copy.title}
+      description={copy.description}
+      size="lg"
+      closeLabel={copy.close}
+      returnFocusRef={returnFocusRef}
+      className="max-h-[min(44rem,calc(100dvh-2rem))] overflow-hidden"
+    >
+      <form
+        role="search"
+        className="border-b border-ds-border pb-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          // Read the control's current value so an immediate Enter after
+          // typing cannot race React's state update by one render.
+          openAll(inputRef.current?.value ?? query);
+        }}
       >
-        <motion.div
-          ref={modalRef}
-          initial={{ scale: 0.9, y: -20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: -20 }}
-          className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
-          style={{ backgroundColor: colors.background }}
-        >
-          {/* Search Input */}
-          <div className="p-4 border-b" style={{ borderColor: colors.cardBorder }}>
-            <div className="relative">
-              <Search
-                size={20}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2"
-                style={{ color: colors.textTertiary }}
-              />
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={language === 'en' ? 'Search blogs, projects, ideas...' : '搜索博客、项目、想法...'}
-                className="w-full pl-12 pr-12 py-3 rounded-lg text-base focus:outline-none"
-                style={{
-                  backgroundColor: colors.surface,
-                  color: colors.textPrimary,
-                  border: `1px solid ${colors.cardBorder}`
-                }}
-              />
-              {isLoading && (
-                <Loader2
-                  size={20}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 animate-spin"
-                  style={{ color: colors.primary }}
-                />
-              )}
-              {!isLoading && query && (
-                <button
-                  onClick={() => setQuery('')}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                  style={{ color: colors.textTertiary }}
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+        <Input
+          ref={inputRef}
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              openAll(event.currentTarget.value);
+            }
+          }}
+          leadingIcon={<Search />}
+          placeholder={copy.placeholder}
+          aria-label={copy.placeholder}
+          autoComplete="off"
+        />
+      </form>
+
+      <div className="max-h-[min(31rem,calc(100dvh-13rem))] overflow-y-auto py-4" aria-live="polite" aria-busy={loadState === 'loading'}>
+        {loadState === 'idle' && (
+          <EmptyState icon={<Search />} title={copy.idleTitle} description={copy.idleBody} />
+        )}
+
+        {loadState === 'loading' && (
+          <div className="divide-y divide-ds-border" aria-label={language === 'en' ? 'Searching' : '正在搜索'}>
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="grid grid-cols-[2rem_1fr] gap-3 py-3.5">
+                <Skeleton shape="circle" className="size-8" />
+                <div className="space-y-2">
+                  <Skeleton className="w-2/3" />
+                  <Skeleton className="w-full" />
+                </div>
+              </div>
+            ))}
           </div>
+        )}
 
-          {/* Search Results */}
-          <div className="max-h-96 overflow-y-auto p-4">
-            {!query && (
-              <div className="text-center py-12" style={{ color: colors.textSecondary }}>
-                <Search size={48} className="mx-auto mb-4 opacity-30" />
-                <p>{language === 'en' ? 'Start typing to search' : '开始输入以搜索'}</p>
-              </div>
-            )}
+        {loadState === 'error' && (
+          <Alert tone="error" title={copy.errorTitle}>{copy.errorBody}</Alert>
+        )}
 
-            {query && !isLoading && results && results.total === 0 && (
-              <div className="text-center py-12" style={{ color: colors.textSecondary }}>
-                <Search size={48} className="mx-auto mb-4 opacity-30" />
-                <p>{language === 'en' ? 'No results found' : '未找到结果'}</p>
-              </div>
-            )}
+        {loadState === 'ready' && response?.partialFailures.length ? (
+          <Alert tone="warning" className="mb-4">{copy.partial}</Alert>
+        ) : null}
 
-            {results && results.total > 0 && (
-              <div className="space-y-6">
-                {/* Blog Results */}
-                {results.blogs.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2 flex items-center" style={{ color: colors.textSecondary }}>
-                      <FileText size={16} className="mr-2" />
-                      {language === 'en' ? 'Blogs' : '博客'} ({results.blogs.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {results.blogs.map((blog) => (
-                        <motion.div
-                          key={blog.id}
-                          whileHover={{ scale: 1.02 }}
-                          onClick={() => handleResultClick('blog', blog.slug || blog.id)}
-                          className="p-3 rounded-lg cursor-pointer transition-colors"
-                          style={{ backgroundColor: colors.surface }}
+        {loadState === 'ready' && visibleGroups.length === 0 && (
+          <EmptyState icon={<Search />} title={copy.emptyTitle} description={copy.emptyBody} />
+        )}
+
+        {loadState === 'ready' && visibleGroups.length > 0 && (
+          <div className="space-y-5">
+            {visibleGroups.map(({ kind, items }) => {
+              const Icon = KIND_ICONS[kind];
+              return (
+                <section key={kind} aria-labelledby={`quick-search-${kind}`}>
+                  <h3 id={`quick-search-${kind}`} className="mb-1.5 flex items-center gap-1.5 text-ds-xs font-semibold uppercase tracking-[0.08em] text-ds-fg-subtle">
+                    <Icon className="size-3.5" aria-hidden />
+                    {language === 'en'
+                      ? { blog: 'Articles', episode: 'Episodes', project: 'Projects', idea: 'Ideas' }[kind]
+                      : { blog: '文章', episode: '章节', project: '项目', idea: '想法' }[kind]}
+                    <span className="font-normal tracking-normal">{response?.counts[kind] ?? items.length}</span>
+                  </h3>
+                  <ul className="divide-y divide-ds-border border-y border-ds-border">
+                    {items.map((result) => (
+                      <li key={`${kind}-${result.id}`}>
+                        <Link
+                          to={result.path}
+                          onClick={onClose}
+                          className="group flex items-center gap-3 py-3 outline-none focus-visible:rounded-ds-sm focus-visible:shadow-ds-focus"
                         >
-                          <h4 className="font-medium mb-1" style={{ color: colors.textPrimary }}>
-                            {language === 'en' ? blog.title : blog.titleZh || blog.title}
-                          </h4>
-                          <p className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
-                            {language === 'en' ? (blog.summary || '') : (blog.summaryZh || blog.summary || '')}
-                          </p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Project Results */}
-                {results.projects.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2 flex items-center" style={{ color: colors.textSecondary }}>
-                      <Briefcase size={16} className="mr-2" />
-                      {language === 'en' ? 'Projects' : '项目'} ({results.projects.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {results.projects.map((project) => (
-                        <motion.div
-                          key={project.id}
-                          whileHover={{ scale: 1.02 }}
-                          onClick={() => handleResultClick('project', project.id)}
-                          className="p-3 rounded-lg cursor-pointer transition-colors"
-                          style={{ backgroundColor: colors.surface }}
-                        >
-                          <h4 className="font-medium mb-1" style={{ color: colors.textPrimary }}>
-                            {project.title}
-                          </h4>
-                          <p className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
-                            {project.description}
-                          </p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Idea Results */}
-                {results.ideas.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2 flex items-center" style={{ color: colors.textSecondary }}>
-                      <Lightbulb size={16} className="mr-2" />
-                      {language === 'en' ? 'Ideas' : '想法'} ({results.ideas.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {results.ideas.map((idea) => (
-                        <motion.div
-                          key={idea.id}
-                          whileHover={{ scale: 1.02 }}
-                          onClick={() => handleResultClick('idea', idea.id)}
-                          className="p-3 rounded-lg cursor-pointer transition-colors"
-                          style={{ backgroundColor: colors.surface }}
-                        >
-                          <h4 className="font-medium mb-1" style={{ color: colors.textPrimary }}>
-                            {idea.title}
-                          </h4>
-                          <p className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
-                            {idea.description}
-                          </p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* View All Results Button */}
-                <button
-                  onClick={handleViewAllResults}
-                  className="w-full py-3 rounded-lg font-medium flex items-center justify-center space-x-2 transition-colors"
-                  style={{
-                    backgroundColor: colors.primary,
-                    color: '#ffffff'
-                  }}
-                >
-                  <span>{language === 'en' ? 'View All Results' : '查看所有结果'}</span>
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-ds-sm font-medium text-ds-fg group-hover:text-ds-primary">{result.title}</span>
+                            {result.description && <span className="mt-0.5 block truncate text-ds-xs text-ds-fg-muted">{result.description}</span>}
+                          </span>
+                          <ArrowRight className="size-3.5 shrink-0 text-ds-fg-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-ds-primary" aria-hidden />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
           </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        )}
+      </div>
+
+      {query.trim() && loadState === 'ready' && response && response.total > 0 ? (
+        <div className="border-t border-ds-border pt-3">
+          <Button variant="ghost" className="w-full justify-center" onClick={() => openAll()}>
+            {copy.allResults} <span className="tabular-nums">({response.total})</span>
+            <ArrowRight className="size-4" aria-hidden />
+          </Button>
+        </div>
+      ) : null}
+    </Modal>
   );
 };
 

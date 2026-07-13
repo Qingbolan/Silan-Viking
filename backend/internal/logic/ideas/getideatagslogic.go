@@ -3,7 +3,6 @@ package ideas
 import (
 	"context"
 
-	"silan-backend/internal/contenttag"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -29,7 +28,7 @@ func NewGetIdeaTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetId
 // `content_tag` table — the legacy `idea_tags` ent table is no longer
 // populated by `index sync`.
 func (l *GetIdeaTagsLogic) GetIdeaTags(req *types.IdeaTagsRequest) (resp []string, err error) {
-	tags, err := contenttag.ListTags(l.ctx, l.svcCtx.RawDB, "idea")
+	tags, err := l.svcCtx.ContentTags.ListTags(l.ctx, "idea")
 	if err != nil {
 		return nil, err
 	}

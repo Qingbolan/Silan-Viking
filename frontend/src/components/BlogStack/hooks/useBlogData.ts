@@ -1,49 +1,57 @@
 import { useState, useEffect } from 'react';
 import { BlogData } from '../types/blog';
-import { fetchBlogById, updateBlogViews } from '../../../api';
+import { fetchBlogById, updateBlogViews } from '../../../api/blog/blogApi';
+import { ApiError } from '../../../api/utils';
 import { useLanguage } from '../../LanguageContext';
+import { calculateReadingTime } from '../../../utils/readingTime';
 
-export const useBlogData = (id: string | undefined) => {
+export type BlogLoadState = 'loading' | 'ready' | 'not-found' | 'error';
+
+export const useBlogData = (id: string | undefined, retryKey = 0) => {
   const [blog, setBlog] = useState<BlogData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<BlogLoadState>('loading');
   const { language } = useLanguage();
 
   useEffect(() => {
+    let active = true;
     const loadBlog = async () => {
       if (!id) {
-        setLoading(false);
+        setState('not-found');
         return;
       }
 
       try {
-        setLoading(true);
-        setError(null);
+        setState('loading');
         
         // Fetch blog data with language support
         const blogData = await fetchBlogById(id, language as 'en' | 'zh');
-        
+        if (!active) return;
         if (blogData) {
-          setBlog(blogData);
+          const normalized = blogData.readTime
+            ? blogData
+            : { ...blogData, readTime: calculateReadingTime(blogData.content || [], language as 'en' | 'zh') };
+          setBlog(normalized);
+          setState('ready');
           // Try to update view count, but don't fail if it doesn't work
           try {
             await updateBlogViews(blogData.id, language as 'en' | 'zh');
-          } catch (viewError) {
-            console.log('View count update failed (this is non-critical):', viewError);
+          } catch {
+            // View tracking is non-blocking; article rendering remains usable.
           }
         } else {
-          setError(language === 'en' ? 'Blog post not found' : '博客文章未找到');
+          setBlog(null);
+          setState('not-found');
         }
       } catch (err) {
-        console.error('Error loading blog:', err);
-        setError(language === 'en' ? 'Failed to load blog post' : '加载博客文章失败');
-      } finally {
-        setLoading(false);
+        if (!active) return;
+        setBlog(null);
+        setState(err instanceof ApiError && err.status === 404 ? 'not-found' : 'error');
       }
     };
 
-    loadBlog();
-  }, [id, language]);
+    void loadBlog();
+    return () => { active = false; };
+  }, [id, language, retryKey]);
 
-  return { blog, loading, error };
+  return { blog, state };
 }; 

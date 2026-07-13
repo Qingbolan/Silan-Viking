@@ -12,6 +12,7 @@ import (
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
+	"silan-backend/internal/ent/contactmessage"
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/contentrelation"
 	"silan-backend/internal/ent/education"
@@ -435,6 +436,110 @@ func init() {
 	commentlikeDescID := commentlikeFields[0].Descriptor()
 	// commentlike.DefaultID holds the default value on creation for the id field.
 	commentlike.DefaultID = commentlikeDescID.Default.(func() string)
+	contactmessageFields := schema.ContactMessage{}.Fields()
+	_ = contactmessageFields
+	// contactmessageDescAuthorName is the schema descriptor for author_name field.
+	contactmessageDescAuthorName := contactmessageFields[2].Descriptor()
+	// contactmessage.AuthorNameValidator is a validator for the "author_name" field. It is called by the builders before save.
+	contactmessage.AuthorNameValidator = func() func(string) error {
+		validators := contactmessageDescAuthorName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(author_name string) error {
+			for _, fn := range fns {
+				if err := fn(author_name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// contactmessageDescAuthorEmail is the schema descriptor for author_email field.
+	contactmessageDescAuthorEmail := contactmessageFields[3].Descriptor()
+	// contactmessage.AuthorEmailValidator is a validator for the "author_email" field. It is called by the builders before save.
+	contactmessage.AuthorEmailValidator = func() func(string) error {
+		validators := contactmessageDescAuthorEmail.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(author_email string) error {
+			for _, fn := range fns {
+				if err := fn(author_email); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// contactmessageDescAuthorAvatar is the schema descriptor for author_avatar field.
+	contactmessageDescAuthorAvatar := contactmessageFields[4].Descriptor()
+	// contactmessage.AuthorAvatarValidator is a validator for the "author_avatar" field. It is called by the builders before save.
+	contactmessage.AuthorAvatarValidator = contactmessageDescAuthorAvatar.Validators[0].(func(string) error)
+	// contactmessageDescSubject is the schema descriptor for subject field.
+	contactmessageDescSubject := contactmessageFields[5].Descriptor()
+	// contactmessage.SubjectValidator is a validator for the "subject" field. It is called by the builders before save.
+	contactmessage.SubjectValidator = contactmessageDescSubject.Validators[0].(func(string) error)
+	// contactmessageDescMessage is the schema descriptor for message field.
+	contactmessageDescMessage := contactmessageFields[6].Descriptor()
+	// contactmessage.MessageValidator is a validator for the "message" field. It is called by the builders before save.
+	contactmessage.MessageValidator = contactmessageDescMessage.Validators[0].(func(string) error)
+	// contactmessageDescCompany is the schema descriptor for company field.
+	contactmessageDescCompany := contactmessageFields[7].Descriptor()
+	// contactmessage.CompanyValidator is a validator for the "company" field. It is called by the builders before save.
+	contactmessage.CompanyValidator = contactmessageDescCompany.Validators[0].(func(string) error)
+	// contactmessageDescCompanyEmail is the schema descriptor for company_email field.
+	contactmessageDescCompanyEmail := contactmessageFields[8].Descriptor()
+	// contactmessage.CompanyEmailValidator is a validator for the "company_email" field. It is called by the builders before save.
+	contactmessage.CompanyEmailValidator = contactmessageDescCompanyEmail.Validators[0].(func(string) error)
+	// contactmessageDescPosition is the schema descriptor for position field.
+	contactmessageDescPosition := contactmessageFields[9].Descriptor()
+	// contactmessage.PositionValidator is a validator for the "position" field. It is called by the builders before save.
+	contactmessage.PositionValidator = contactmessageDescPosition.Validators[0].(func(string) error)
+	// contactmessageDescRecruiterName is the schema descriptor for recruiter_name field.
+	contactmessageDescRecruiterName := contactmessageFields[10].Descriptor()
+	// contactmessage.RecruiterNameValidator is a validator for the "recruiter_name" field. It is called by the builders before save.
+	contactmessage.RecruiterNameValidator = contactmessageDescRecruiterName.Validators[0].(func(string) error)
+	// contactmessageDescRecruiterTitle is the schema descriptor for recruiter_title field.
+	contactmessageDescRecruiterTitle := contactmessageFields[11].Descriptor()
+	// contactmessage.RecruiterTitleValidator is a validator for the "recruiter_title" field. It is called by the builders before save.
+	contactmessage.RecruiterTitleValidator = contactmessageDescRecruiterTitle.Validators[0].(func(string) error)
+	// contactmessageDescSendResume is the schema descriptor for send_resume field.
+	contactmessageDescSendResume := contactmessageFields[12].Descriptor()
+	// contactmessage.DefaultSendResume holds the default value on creation for the send_resume field.
+	contactmessage.DefaultSendResume = contactmessageDescSendResume.Default.(bool)
+	// contactmessageDescIsPublic is the schema descriptor for is_public field.
+	contactmessageDescIsPublic := contactmessageFields[13].Descriptor()
+	// contactmessage.DefaultIsPublic holds the default value on creation for the is_public field.
+	contactmessage.DefaultIsPublic = contactmessageDescIsPublic.Default.(bool)
+	// contactmessageDescConsentCompanyLogo is the schema descriptor for consent_company_logo field.
+	contactmessageDescConsentCompanyLogo := contactmessageFields[14].Descriptor()
+	// contactmessage.DefaultConsentCompanyLogo holds the default value on creation for the consent_company_logo field.
+	contactmessage.DefaultConsentCompanyLogo = contactmessageDescConsentCompanyLogo.Default.(bool)
+	// contactmessageDescFingerprint is the schema descriptor for fingerprint field.
+	contactmessageDescFingerprint := contactmessageFields[16].Descriptor()
+	// contactmessage.FingerprintValidator is a validator for the "fingerprint" field. It is called by the builders before save.
+	contactmessage.FingerprintValidator = contactmessageDescFingerprint.Validators[0].(func(string) error)
+	// contactmessageDescUserIdentityID is the schema descriptor for user_identity_id field.
+	contactmessageDescUserIdentityID := contactmessageFields[17].Descriptor()
+	// contactmessage.UserIdentityIDValidator is a validator for the "user_identity_id" field. It is called by the builders before save.
+	contactmessage.UserIdentityIDValidator = contactmessageDescUserIdentityID.Validators[0].(func(string) error)
+	// contactmessageDescCreatedAt is the schema descriptor for created_at field.
+	contactmessageDescCreatedAt := contactmessageFields[18].Descriptor()
+	// contactmessage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	contactmessage.DefaultCreatedAt = contactmessageDescCreatedAt.Default.(func() time.Time)
+	// contactmessageDescUpdatedAt is the schema descriptor for updated_at field.
+	contactmessageDescUpdatedAt := contactmessageFields[19].Descriptor()
+	// contactmessage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	contactmessage.DefaultUpdatedAt = contactmessageDescUpdatedAt.Default.(func() time.Time)
+	// contactmessage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	contactmessage.UpdateDefaultUpdatedAt = contactmessageDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// contactmessageDescID is the schema descriptor for id field.
+	contactmessageDescID := contactmessageFields[0].Descriptor()
+	// contactmessage.DefaultID holds the default value on creation for the id field.
+	contactmessage.DefaultID = contactmessageDescID.Default.(func() string)
 	contentinteractionFields := schema.ContentInteraction{}.Fields()
 	_ = contentinteractionFields
 	// contentinteractionDescSessionDuration is the schema descriptor for session_duration field.
@@ -806,19 +911,19 @@ func init() {
 	ideadetailFields := schema.IdeaDetail{}.Fields()
 	_ = ideadetailFields
 	// ideadetailDescCollaborationNeeded is the schema descriptor for collaboration_needed field.
-	ideadetailDescCollaborationNeeded := ideadetailFields[4].Descriptor()
+	ideadetailDescCollaborationNeeded := ideadetailFields[5].Descriptor()
 	// ideadetail.DefaultCollaborationNeeded holds the default value on creation for the collaboration_needed field.
 	ideadetail.DefaultCollaborationNeeded = ideadetailDescCollaborationNeeded.Default.(bool)
 	// ideadetailDescFundingRequired is the schema descriptor for funding_required field.
-	ideadetailDescFundingRequired := ideadetailFields[5].Descriptor()
+	ideadetailDescFundingRequired := ideadetailFields[6].Descriptor()
 	// ideadetail.DefaultFundingRequired holds the default value on creation for the funding_required field.
 	ideadetail.DefaultFundingRequired = ideadetailDescFundingRequired.Default.(bool)
 	// ideadetailDescCreatedAt is the schema descriptor for created_at field.
-	ideadetailDescCreatedAt := ideadetailFields[7].Descriptor()
+	ideadetailDescCreatedAt := ideadetailFields[8].Descriptor()
 	// ideadetail.DefaultCreatedAt holds the default value on creation for the created_at field.
 	ideadetail.DefaultCreatedAt = ideadetailDescCreatedAt.Default.(func() time.Time)
 	// ideadetailDescUpdatedAt is the schema descriptor for updated_at field.
-	ideadetailDescUpdatedAt := ideadetailFields[8].Descriptor()
+	ideadetailDescUpdatedAt := ideadetailFields[9].Descriptor()
 	// ideadetail.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	ideadetail.DefaultUpdatedAt = ideadetailDescUpdatedAt.Default.(func() time.Time)
 	// ideadetail.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

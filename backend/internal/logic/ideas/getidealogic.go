@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/logic/contentpart"
@@ -79,11 +78,13 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	var requiredResources string
 	var collaborationNeeded bool
 	var estimatedDuration string
+	var priority string
 
 	if ideaEntity.Edges.Details != nil {
 		detail := ideaEntity.Edges.Details
 		requiredResources = detail.RequiredResources
 		collaborationNeeded = detail.CollaborationNeeded
+		priority = string(detail.Priority)
 
 		if detail.EstimatedDurationMonths > 0 {
 			estimatedDuration = fmt.Sprintf("%d months", detail.EstimatedDurationMonths)
@@ -93,7 +94,7 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 	// Tags from M2M edge (IdeaTag)
 	// Tags come from the cross-type `content_tag` table — the engine no
 	// longer populates the legacy ent `Tags` edge.
-	tags, err := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "idea", ideaEntity.ID)
+	tags, err := l.svcCtx.ContentTags.Lookup(l.ctx, "idea", ideaEntity.ID)
 	if err != nil {
 		l.Errorf("content_tag lookup for idea %s: %v", ideaEntity.ID, err)
 	}
@@ -131,6 +132,7 @@ func (l *GetIdeaLogic) GetIdea(req *types.IdeaRequest) (resp *types.IdeaData, er
 		Category:             category,
 		Tags:                 tags,
 		Status:               strings.ToLower(string(ideaEntity.Status)),
+		Priority:             priority,
 		CreatedAt:            ideaEntity.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		LastUpdated:          ideaEntity.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 		Abstract:             abstract,

@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MessageSquare, Building2, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 import { ContactMessage } from '../../types/contact';
 import { useLanguage } from '../LanguageContext';
-import { listIdeaComments, IdeaCommentData } from '../../api/ideas/ideaApi';
-import { getClientFingerprint } from '../../utils/fingerprint';
+import { listPublicContactMessages } from '../../api/contact/contactApi';
 import {
   Card,
   CardContent,
@@ -11,11 +10,14 @@ import {
   Badge,
   Button,
   Avatar,
+  Alert,
+  Skeleton,
 } from '../../components/ds';
 
 const PublicMessagesWall: React.FC = () => {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const { language } = useLanguage();
 
   useEffect(() => {
@@ -23,59 +25,13 @@ const PublicMessagesWall: React.FC = () => {
   }, [language]);
 
   const fetchMessages = async () => {
+    setState('loading');
     try {
-      const fingerprint = getClientFingerprint();
-
-      // Fetch both general and job type comments from the unified API
-      const [generalComments, jobComments] = await Promise.all([
-        listIdeaComments('contact-page', 'general', fingerprint, undefined, language as 'en' | 'zh'),
-        listIdeaComments('contact-page', 'job', fingerprint, undefined, language as 'en' | 'zh'),
-      ]);
-
-      // Transform IdeaCommentData to ContactMessage format
-      const transformComment = (comment: IdeaCommentData): ContactMessage => {
-        // Parse metadata from content if it exists (for job type)
-        let content = comment.content;
-        let metadata: any = {};
-        const metadataMatch = content.match(/\n\n__METADATA__(.+)$/);
-        if (metadataMatch) {
-          try {
-            metadata = JSON.parse(metadataMatch[1]);
-            content = content.replace(/\n\n__METADATA__.+$/, '');
-          } catch (e) {
-            // If parsing fails, use content as is
-          }
-        }
-
-        return {
-          id: comment.id,
-          type: comment.type as 'general' | 'job',
-          author_name: comment.author_name,
-          author_avatar: comment.author_avatar_url,
-          author_email: '',
-          message: content,
-          subject: metadata.subject || '',
-          company: metadata.company,
-          position: metadata.position,
-          recruiter_name: metadata.recruiter_name,
-          recruiter_title: metadata.recruiter_title,
-          consentCompanyLogo: metadata.consentCompanyLogo || false,
-          isPublic: metadata.isPublic !== false,
-          status: 'read' as const,
-          createdAt: comment.created_at,
-          updatedAt: comment.created_at,
-          replies: undefined, // Flatten replies for display
-        };
-      };
-
-      const allMessages = [...generalComments, ...jobComments]
-        .map(transformComment)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      setMessages(allMessages);
+      setMessages(await listPublicContactMessages());
+      setState('ready');
     } catch (error) {
       console.error('Failed to fetch messages:', error);
-      setMessages([]);
+      setState('error');
     }
   };
 
@@ -93,54 +49,30 @@ const PublicMessagesWall: React.FC = () => {
         </h3>
       </div>
 
-      <style>{`
-        @media (max-width: 768px) {
-          .masonry-grid {
-            flex-direction: column !important;
-          }
-          .masonry-column:not(:first-child) {
-            display: none;
-          }
-        }
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .masonry-column:nth-child(3) {
-            display: none;
-          }
-        }
-      `}</style>
-
       {/* Messages Grid */}
-      {displayMessages.length === 0 ? (
-        <Card>
-          <CardContent>
-            <EmptyState
-              icon={<MessageSquare />}
-              title={language === 'en' ? 'No public messages yet' : '还没有公开留言'}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="masonry-grid"
-          style={{
-            display: 'flex',
-            marginLeft: '-1rem',
-            width: 'auto',
-          }}
+      {state === 'loading' ? (
+        <div aria-label={language === 'en' ? 'Loading public messages' : '正在加载公开留言'} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((item) => <Skeleton key={item} shape="block" className="h-36" />)}
+        </div>
+      ) : state === 'error' ? (
+        <Alert
+          tone="error"
+          title={language === 'en' ? 'Public messages could not be loaded' : '公开留言加载失败'}
         >
-          {[0, 1, 2].map(columnIndex => (
-            <div
-              key={columnIndex}
-              className="masonry-column"
-              style={{
-                paddingLeft: '1rem',
-                backgroundClip: 'padding-box',
-                flex: 1,
-              }}
-            >
-              {displayMessages
-                .filter((_, index) => index % 3 === columnIndex)
-                .map((msg) => (
-            <Card key={msg.id} className="masonry-card mb-4 w-full">
+          <Button variant="ghost" size="sm" className="mt-2" onClick={fetchMessages}>
+            {language === 'en' ? 'Try again' : '重试'}
+          </Button>
+        </Alert>
+      ) : displayMessages.length === 0 ? (
+        <EmptyState
+          icon={<MessageSquare />}
+          title={language === 'en' ? 'No public messages yet' : '还没有公开留言'}
+          description={language === 'en' ? 'Public messages will appear here after submission.' : '公开留言提交后会显示在这里。'}
+        />
+      ) : (
+        <div className="columns-1 gap-4 md:columns-2 xl:columns-3">
+          {displayMessages.map((msg) => (
+            <Card key={msg.id} className="mb-4 w-full break-inside-avoid">
               <CardContent className="flex items-start gap-3">
                 {/* Author Avatar */}
                 <div className="shrink-0">
@@ -221,8 +153,6 @@ const PublicMessagesWall: React.FC = () => {
                 </div>
             </CardContent>
             </Card>
-                ))}
-            </div>
           ))}
         </div>
       )}

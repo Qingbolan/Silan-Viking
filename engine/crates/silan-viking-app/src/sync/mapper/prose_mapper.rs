@@ -41,6 +41,7 @@ impl ProseMapper {
         let item_id = parsed.item_id().as_str().to_owned();
 
         rows.push(main_row(expected, &item_id, parsed, type_spec));
+        push_side_rows(expected, &item_id, parsed, type_spec, &mut rows);
         push_translation_rows(expected, &item_id, parsed, &mut rows);
         push_item_part_rows(expected, &item_id, parsed, type_spec, &mut rows);
         push_part_rows(parsed, &mut rows);
@@ -48,6 +49,51 @@ impl ProseMapper {
         push_tag_rows(expected, &item_id, parsed, &mut rows);
 
         Ok(rows)
+    }
+}
+
+/// Emit the structured side-table row(s) declared by SCHEMA field routing.
+///
+/// A content type may keep optional structured attributes outside its main
+/// table (`project_details.license`, `idea_details.estimated_budget`, …).
+/// All fields targeting the same side table belong to one owner row. Its id
+/// is the stable Item id and its FK uses the same content-specific owner key
+/// as that type's translation table (`project_id`, `idea_id`). A table is
+/// emitted only when at least one authored field targets it, so an absent
+/// detail object remains distinguishable from a present object with values.
+fn push_side_rows(
+    kind: ContentKind,
+    item_id: &str,
+    parsed: &Parsed,
+    type_spec: &TypeSpec,
+    rows: &mut RowSet,
+) {
+    use std::collections::BTreeMap;
+
+    let mut side_rows: BTreeMap<String, Row> = BTreeMap::new();
+    for name in parsed.main().field_names() {
+        let Some(field_spec) = type_spec.field(name) else {
+            continue;
+        };
+        let FieldColumn::Side { table, column } = &field_spec.column else {
+            continue;
+        };
+        let Some(value) = parsed.main().get(name) else {
+            continue;
+        };
+        let row = side_rows.entry(table.clone()).or_insert_with(|| {
+            Row::new(table)
+                .with("id", SqlValue::Text(item_id.to_owned()))
+                .with(
+                    table_names::translation_fk(kind),
+                    SqlValue::Text(item_id.to_owned()),
+                )
+        });
+        *row = row.clone().with(column.clone(), sql_value(value));
+    }
+
+    for (_, row) in side_rows {
+        rows.push(row);
     }
 }
 
@@ -59,8 +105,8 @@ impl ProseMapper {
 /// - `FieldColumn::Main(col)` — written to the main table under `col` (which
 ///   is why `category` → `category_id` and `series` → `series_id` work
 ///   without a special case);
-/// - `FieldColumn::Side`     — belongs to a `*_details` side table, not the
-///   main row; skipped here (side-table emission is a separate mapper step);
+/// - `FieldColumn::Side`     — belongs to a `*_details` side table and is
+///   emitted by `push_side_rows`, so it is skipped by this main-row builder;
 /// - `FieldColumn::FanOut`   — a list field with its own table (`content_tag`,
 ///   `content_relation`); routed by `push_tag_rows` / `push_relation_rows`;
 /// - `FieldColumn::None`     — type discriminators (`kind`); not a column.

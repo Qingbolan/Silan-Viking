@@ -21,9 +21,12 @@ import {
   CheckCircle,
   ListTree,
 } from 'lucide-react';
-import { Tabs } from '../ds';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Tabs, type TabItem } from '../ds';
 import Markdown from '../ui/Markdown';
 import { useLanguage } from '../LanguageContext';
+import { cn } from '../../lib/utils';
+import { dsRoot } from '../ds/dsAttr';
 import type { ContentPart, ContentEntry } from '../../types';
 
 /**
@@ -49,6 +52,27 @@ interface ContentPartsProps {
    */
   extraTabs?: ExtraTab[];
   className?: string;
+  /** Controlled mode — caller decides which tab is active. */
+  value?: string;
+  /** Notify caller of tab changes (works for both controlled & uncontrolled). */
+  onValueChange?: (value: string) => void;
+  /**
+   * `tabs` (default) — left-rail vertical nav + single Part on the right.
+   * `long`            — render every content Part stacked into a long page;
+   *                     each Part gets an id={role} anchor so a sidebar nav
+   *                     can scroll to it. ExtraTabs (e.g. Discussion) still
+   *                     render at the bottom under a heading. Used by the
+   *                     KnowledgeBaseShell layout.
+   */
+  layout?: 'tabs' | 'long';
+  /**
+   * Hide the internal vertical tab nav — when the caller already has its own
+   * chapter nav (e.g. KnowledgeBaseShell.BookNav) and just wants the content
+   * pane. Behaves like `tabs` for everything else.
+   */
+  hideNav?: boolean;
+  /** Canonical page title used to remove a duplicated leading markdown h1. */
+  documentTitle?: string;
 }
 
 /** Known roles get a curated icon; an unknown role falls back to a generic. */
@@ -140,10 +164,72 @@ const EntryCard: React.FC<{ entry: ContentEntry }> = ({ entry }) => {
  *  Part `role` (a project could legitimately have a `community` Part). */
 const EXTRA_PREFIX = 'tab:';
 
+/**
+ * Mobile-only floating icon dock — replaces the desktop left-rail nav on
+ * sub-desktop viewports, where a full vertical list of full-width rows (one per
+ * tab) would push the actual content off-screen below the fold. Icons only,
+ * no labels, tapped directly (no popover) since staying on one row is the
+ * point. Sits above the site-wide MobileTabBar dock (bottom-3, ~46px tall)
+ * so the two floating docks don't collide; scrolls horizontally on its own
+ * axis if a content Item has enough Parts to overflow the row.
+ */
+const MobileTabDock: React.FC<{
+  items: TabItem[];
+  active: string;
+  onChange: (value: string) => void;
+}> = ({ items, active, onChange }) => {
+  const reduceMotion = useReducedMotion();
+  if (items.length === 0) return null;
+
+  return (
+    <nav
+      {...dsRoot}
+      aria-label="Section navigation"
+      className="ds-liquid-glass fixed bottom-20 right-4 z-30 flex max-w-[calc(100vw-2rem)] items-center gap-0.5 overflow-x-auto rounded-full px-1 py-1 lg:hidden"
+    >
+      {items.map((item) => {
+        const isActive = item.value === active;
+        return (
+          <button
+            key={item.value}
+            type="button"
+            title={typeof item.label === 'string' ? item.label : undefined}
+            aria-label={typeof item.label === 'string' ? item.label : undefined}
+            aria-current={isActive ? 'true' : undefined}
+            onClick={() => onChange(item.value)}
+            className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center transition-transform duration-ds-fast active:scale-[0.94]"
+          >
+            {isActive && (
+              <motion.span
+                layoutId={reduceMotion ? undefined : 'mobile-content-tab-pill'}
+                className="absolute inset-0 rounded-full bg-ds-primary/15"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+              />
+            )}
+            <span
+              className={cn(
+                'relative z-10 [&_svg]:size-[18px]',
+                isActive ? 'text-ds-primary' : 'text-ds-fg-subtle',
+              )}
+            >
+              {item.icon}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+};
+
 const ContentParts: React.FC<ContentPartsProps> = ({
   parts,
   extraTabs = [],
   className,
+  value,
+  onValueChange,
+  layout = 'tabs',
+  hideNav = false,
+  documentTitle,
 }) => {
   const { language } = useLanguage();
 
@@ -172,7 +258,12 @@ const ContentParts: React.FC<ContentPartsProps> = ({
     })),
   ];
 
-  const [active, setActive] = useState<string>(tabItems[0]?.value ?? '');
+  const [internal, setInternal] = useState<string>(tabItems[0]?.value ?? '');
+  const active = value ?? internal;
+  const setActive = (v: string) => {
+    if (value === undefined) setInternal(v);
+    onValueChange?.(v);
+  };
 
   // The active value may vanish on a language switch — fall back to the
   // first tab. It resolves to either a content Part or a runtime tab.
@@ -192,12 +283,86 @@ const ContentParts: React.FC<ContentPartsProps> = ({
     );
   }
 
+  // Long-form layout — every Part stacked top-to-bottom, each in its own
+  // <section id={role}> so a sidebar nav can anchor-link. Extra tabs render
+  // under their own heading at the bottom (e.g. Discussion). The role name
+  // is shown as a section header so the reader knows where they are.
+  if (layout === 'long') {
+    return (
+      <div className={`space-y-12 ${className || ''}`}>
+        {visible.map((p) => (
+          <section key={p.role} id={p.role} className="scroll-mt-24">
+            <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
+              <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
+                {ROLE_ICONS[p.role] ?? <ListTree size={16} />}
+              </span>
+              {roleLabel(p.role, language)}
+            </h2>
+            {p.shape === 'entry_list' ? (
+              <div className="space-y-3">
+                {[...p.entries]
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((e) => (
+                    <EntryCard key={e.id} entry={e} />
+                  ))}
+              </div>
+            ) : (
+              <Markdown documentTitle={documentTitle}>{partBody(p, language)}</Markdown>
+            )}
+          </section>
+        ))}
+        {extraTabs.map((t) => (
+          <section key={t.key} id={`tab-${t.key}`} className="scroll-mt-24">
+            <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
+              <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
+                {t.icon}
+              </span>
+              {t.label}
+            </h2>
+            {t.render()}
+          </section>
+        ))}
+      </div>
+    );
+  }
+
+  // The body for the currently-active Part / extra tab. Wrapped in
+  // <article id="kb-active-part"> so external nav (BookNav sub-headings,
+  // DOMOutline) can scope their DOM scans to "what is currently shown".
+  const body = (
+    <article id="kb-active-part" className="min-w-0">
+      {activeExtra ? (
+        activeExtra.render()
+      ) : activePart && activePart.shape === 'entry_list' ? (
+        <div className="space-y-3">
+          {[...activePart.entries]
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((e) => (
+              <EntryCard key={e.id} entry={e} />
+            ))}
+        </div>
+      ) : activePart ? (
+        <Markdown documentTitle={documentTitle}>{partBody(activePart, language)}</Markdown>
+      ) : null}
+    </article>
+  );
+
+  if (hideNav) {
+    return <div className={className}>{body}</div>;
+  }
+
   return (
-    // Two-column docs layout — a left-rail vertical nav and the content
-    // panel beside it. On a narrow viewport the rail stacks above.
-    <div className={`flex w-full flex-col gap-6 md:flex-row md:gap-8 ${className || ''}`}>
-      <nav className="shrink-0 md:w-56">
-        <div className="md:sticky md:top-16">
+    // Project knowledge layout — the section rail is viewport-pinned like
+    // the Vlog/Idea book navigator. Below `lg` it becomes the compact
+    // bottom-right dock so article content never starts beneath a tall tab
+    // stack on tablets or phones.
+    <div className={`flex w-full flex-col gap-6 pb-32 lg:flex-row lg:gap-8 lg:pb-0 ${className || ''}`}>
+      <nav
+        aria-label={language === 'en' ? 'Project sections' : '项目章节'}
+        className="fixed bottom-0 left-0 top-12 z-30 hidden w-72 overflow-y-auto bg-ds-surface-1 px-4 pt-6 lg:block"
+        style={{ borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)' }}
+      >
+        <div>
           <Tabs
             appearance="vertical"
             value={activeValue}
@@ -206,21 +371,8 @@ const ContentParts: React.FC<ContentPartsProps> = ({
           />
         </div>
       </nav>
-      <div className="min-w-0 flex-1">
-        {activeExtra ? (
-          activeExtra.render()
-        ) : activePart && activePart.shape === 'entry_list' ? (
-          <div className="space-y-3">
-            {[...activePart.entries]
-              .sort((a, b) => a.sortOrder - b.sortOrder)
-              .map((e) => (
-                <EntryCard key={e.id} entry={e} />
-              ))}
-          </div>
-        ) : activePart ? (
-          <Markdown>{partBody(activePart, language)}</Markdown>
-        ) : null}
-      </div>
+      <div className="min-w-0 flex-1">{body}</div>
+      <MobileTabDock items={tabItems} active={activeValue} onChange={setActive} />
     </div>
   );
 };

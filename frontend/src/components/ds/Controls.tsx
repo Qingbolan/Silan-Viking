@@ -13,6 +13,8 @@ export interface SwitchProps {
   checked: boolean;
   onChange: (_checked: boolean) => void;
   label?: React.ReactNode;
+  /** Accessible name when the visual label is rendered outside this component. */
+  ariaLabel?: string;
   disabled?: boolean;
   size?: 'sm' | 'md';
   className?: string;
@@ -22,6 +24,7 @@ export const Switch: React.FC<SwitchProps> = ({
   checked,
   onChange,
   label,
+  ariaLabel,
   disabled,
   size = 'md',
   className,
@@ -33,8 +36,10 @@ export const Switch: React.FC<SwitchProps> = ({
   const control = (
     <button
       {...dsRoot}
+      type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel}
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
@@ -90,6 +95,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   const box = (
     <button
       {...dsRoot}
+      type="button"
       role="checkbox"
       aria-checked={indeterminate ? 'mixed' : checked}
       disabled={disabled}
@@ -162,6 +168,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
         >
           <button
             {...dsRoot}
+            type="button"
             role="radio"
             aria-checked={selected}
             disabled={opt.disabled}

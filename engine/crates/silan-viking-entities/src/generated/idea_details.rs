@@ -11,6 +11,8 @@ pub struct Model {
     pub estimated_duration_months: Option<i32>,
     #[sea_orm(column_type = "Text", nullable)]
     pub required_resources: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub priority: Option<String>,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub collaboration_needed: String,
     #[sea_orm(column_type = "custom(\"bool\")")]

@@ -2,9 +2,10 @@ package projects
 
 import (
 	"context"
+	"fmt"
 
 	"silan-backend/internal/ent"
-	"silan-backend/internal/ent/project"
+	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/logic/analytics"
 	"silan-backend/internal/svc"
@@ -30,59 +31,69 @@ func NewLikeProjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LikeP
 
 func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *types.LikeProjectResponse, err error) {
 	projectID := req.ProjectID
+	if req.AuthenticatedUserID == "" && req.Fingerprint == "" {
+		return nil, fmt.Errorf("fingerprint or user_identity_id is required")
+	}
+	if _, err := l.svcCtx.DB.Project.Get(l.ctx, projectID); err != nil {
+		return nil, err
+	}
 
-	// Get client IP and user agent from context if available
+	tx, err := l.svcCtx.DB.Tx(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	client := tx.Client()
+
 	clientIP := req.ClientIP
 	userAgent := req.UserAgentFull
 
-	// Check if user already liked this project
-	var existingLike *ent.ProjectLike
-
-	if req.UserIdentityId != "" {
-		// For authenticated users
-		existingLike, err = l.svcCtx.DB.ProjectLike.Query().
-			Where(projectlike.ProjectID(projectID)).
-			Where(projectlike.UserIdentityID(req.UserIdentityId)).
-			Only(l.ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return nil, err
-		}
-	} else if req.Fingerprint != "" {
-		// For anonymous users
-		existingLike, err = l.svcCtx.DB.ProjectLike.Query().
-			Where(projectlike.ProjectID(projectID)).
-			Where(projectlike.Fingerprint(req.Fingerprint)).
-			Only(l.ctx)
-		if err != nil && !ent.IsNotFound(err) {
-			return nil, err
-		}
+	actorPredicate := projectlike.Fingerprint(req.Fingerprint)
+	if req.AuthenticatedUserID != "" && req.Fingerprint != "" {
+		actorPredicate = projectlike.Or(
+			projectlike.UserIdentityID(req.AuthenticatedUserID),
+			projectlike.Fingerprint(req.Fingerprint),
+		)
+	} else if req.AuthenticatedUserID != "" {
+		actorPredicate = projectlike.UserIdentityID(req.AuthenticatedUserID)
+	}
+	existingLike, err := client.ProjectLike.Query().
+		Where(projectlike.ProjectID(projectID), actorPredicate).
+		First(l.ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return nil, err
 	}
 
 	isLiked := existingLike != nil
-	var likesCount int
 
 	if isLiked {
-		// Unlike: remove like record and decrement counter
-		err = l.svcCtx.DB.ProjectLike.DeleteOne(existingLike).Exec(l.ctx)
-		if err != nil {
+		if err := client.ProjectLike.DeleteOne(existingLike).Exec(l.ctx); err != nil {
 			return nil, err
 		}
-
-		// Decrement like count
-		err = l.svcCtx.DB.Project.Update().
-			Where(project.ID(projectID)).
-			AddLikeCount(-1).
-			Exec(l.ctx)
-		if err != nil {
+		deleteInteraction := client.ContentInteraction.Delete().Where(
+			contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeProject),
+			contentinteraction.EntityIDEQ(projectID),
+			contentinteraction.KindEQ(contentinteraction.KindLike),
+		)
+		if req.AuthenticatedUserID != "" && req.Fingerprint != "" {
+			deleteInteraction = deleteInteraction.Where(contentinteraction.Or(
+				contentinteraction.UserIdentityIDEQ(req.AuthenticatedUserID),
+				contentinteraction.FingerprintEQ(req.Fingerprint),
+			))
+		} else if req.AuthenticatedUserID != "" {
+			deleteInteraction = deleteInteraction.Where(contentinteraction.UserIdentityIDEQ(req.AuthenticatedUserID))
+		} else {
+			deleteInteraction = deleteInteraction.Where(contentinteraction.FingerprintEQ(req.Fingerprint))
+		}
+		if _, err := deleteInteraction.Exec(l.ctx); err != nil {
 			return nil, err
 		}
 	} else {
-		// Like: create like record and increment counter
-		builder := l.svcCtx.DB.ProjectLike.Create().
+		builder := client.ProjectLike.Create().
 			SetProjectID(projectID)
 
-		if req.UserIdentityId != "" {
-			builder = builder.SetUserIdentityID(req.UserIdentityId)
+		if req.AuthenticatedUserID != "" {
+			builder = builder.SetUserIdentityID(req.AuthenticatedUserID)
 		}
 		if req.Fingerprint != "" {
 			builder = builder.SetFingerprint(req.Fingerprint)
@@ -94,45 +105,36 @@ func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *typ
 			builder = builder.SetUserAgent(userAgent)
 		}
 
-		_, err = builder.Save(l.ctx)
-		if err != nil {
+		if _, err := builder.Save(l.ctx); err != nil {
 			return nil, err
 		}
 
-		err = analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
+		if err := analytics.RecordContentInteraction(l.ctx, client, analytics.InteractionEvent{
 			EntityType:     "project",
 			EntityID:       projectID,
 			Kind:           "like",
-			UserIdentityID: req.UserIdentityId,
+			UserIdentityID: req.AuthenticatedUserID,
 			Fingerprint:    req.Fingerprint,
 			IPAddress:      clientIP,
 			UserAgent:      userAgent,
 			Referrer:       req.Referrer,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		// Increment like count
-		err = l.svcCtx.DB.Project.Update().
-			Where(project.ID(projectID)).
-			AddLikeCount(1).
-			Exec(l.ctx)
-		if err != nil {
+		}); err != nil {
 			return nil, err
 		}
 	}
 
-	// Get updated like count
-	proj, err := l.svcCtx.DB.Project.Get(l.ctx, projectID)
+	likesCount, err := client.ProjectLike.Query().
+		Where(projectlike.ProjectID(projectID)).
+		Count(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	likesCount = proj.LikeCount
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 
 	return &types.LikeProjectResponse{
 		LikesCount:    likesCount,
-		IsLikedByUser: !isLiked, // Toggle the state
+		IsLikedByUser: !isLiked,
 	}, nil
 }

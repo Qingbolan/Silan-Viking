@@ -9,6 +9,7 @@ import (
 	"silan-backend/internal/utils"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 )
 
 // Like/Unlike a comment for idea
@@ -23,6 +24,7 @@ func LikeIdeaCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// Fill optional metadata
 		req.ClientIP = utils.GetClientIP(r)
 		req.UserAgentFull = utils.GetUserAgent(r)
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 		resp, err := l.LikeComment(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)

@@ -3,7 +3,6 @@ package blog
 import (
 	"context"
 
-	"silan-backend/internal/contenttag"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -29,7 +28,7 @@ func NewGetBlogTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetBl
 // `content_tag` table — the legacy `blog_tags` ent table is no longer
 // populated by `index sync`, so its usage counts would all be zero.
 func (l *GetBlogTagsLogic) GetBlogTags(req *types.BlogTagsRequest) (resp []types.BlogTag, err error) {
-	tags, err := contenttag.ListTags(l.ctx, l.svcCtx.RawDB, "blog")
+	tags, err := l.svcCtx.ContentTags.ListTags(l.ctx, "blog")
 	if err != nil {
 		return nil, err
 	}

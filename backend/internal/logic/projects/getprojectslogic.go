@@ -2,16 +2,16 @@ package projects
 
 import (
 	"context"
-	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
 
-	"silan-backend/internal/contenttag"
+	"silan-backend/internal/contentsearch"
 	"silan-backend/internal/ent"
+	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projecttechnology"
+	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -52,10 +52,24 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 		query = query.Where(project.StatusEQ(project.Status(req.Status)))
 	}
 
-	if req.Search != "" {
+	if search := strings.TrimSpace(req.Search); search != "" {
+		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
+			l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, search, req.Language,
+		)
+		if partErr != nil {
+			return nil, partErr
+		}
 		query = query.Where(project.Or(
-			project.TitleContains(req.Search),
-			project.DescriptionContains(req.Search),
+			project.TitleContainsFold(search),
+			project.DescriptionContainsFold(search),
+			project.IDIn(partIDs...),
+			project.HasTranslationsWith(
+				projecttranslation.LanguageCodeIn(contentsearch.Languages(req.Language)...),
+				projecttranslation.Or(
+					projecttranslation.TitleContainsFold(search),
+					projecttranslation.DescriptionContainsFold(search),
+				),
+			),
 		))
 	}
 
@@ -72,14 +86,9 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 		return nil, err
 	}
 
-	yearFilter := req.Year
-	if yearFilter == 0 && req.AnnualPlan != "" {
-		yearFilter, _ = parsePlanYear(req.AnnualPlan)
-	}
-
 	filtered := projects[:0]
 	for _, proj := range projects {
-		if yearFilter > 0 && projectYear(proj) != yearFilter {
+		if req.Year > 0 && projectYear(proj) != req.Year {
 			continue
 		}
 		filtered = append(filtered, proj)
@@ -128,7 +137,7 @@ func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types
 	// `content_tag` table — the same source blog / idea / episode use. (The
 	// `tech_stack` technologies are a separate concept; the engine does not
 	// currently emit them, so `project_technologies` stays empty.)
-	tags, tagErr := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "project", proj.ID)
+	tags, tagErr := l.svcCtx.ContentTags.Lookup(l.ctx, "project", proj.ID)
 	if tagErr != nil {
 		l.Errorf("content_tag lookup for project %s: %v", proj.ID, tagErr)
 	}
@@ -148,12 +157,20 @@ func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types
 
 	year := projectYear(proj)
 	return types.Project{
-		ID:          proj.ID,
-		Name:        name,
-		Description: description,
-		Tags:        tags,
-		Year:        year,
-		AnnualPlan:  fmt.Sprintf("Annual Plan %d", year),
+		ID:               proj.ID,
+		Slug:             proj.Slug,
+		Name:             name,
+		Description:      description,
+		Tags:             tags,
+		Year:             year,
+		Status:           string(proj.Status),
+		StartDate:        proj.StartDate,
+		EndDate:          proj.EndDate,
+		GithubURL:        proj.GithubURL,
+		DemoURL:          proj.DemoURL,
+		DocumentationURL: proj.DocumentationURL,
+		ThumbnailURL:     proj.ThumbnailURL,
+		UpdatedAt:        formatContentTime(proj.UpdatedAt, "2006-01-02T15:04:05Z07:00"),
 	}
 }
 
@@ -165,16 +182,4 @@ func projectYear(proj *ent.Project) int {
 		}
 	}
 	return proj.CreatedAt.Year()
-}
-
-func parsePlanYear(name string) (int, bool) {
-	match := regexp.MustCompile(`\d{4}`).FindString(strings.TrimSpace(name))
-	if match == "" {
-		return 0, false
-	}
-	year, err := strconv.Atoi(match)
-	if err != nil {
-		return 0, false
-	}
-	return year, true
 }

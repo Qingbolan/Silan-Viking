@@ -1,10 +1,9 @@
 // src/components/Resume/PublicationsList.tsx
 //
-// The publications section body — a masonry grid of vertical ds
-// PublicationCards. Each entry carries its full structured metadata
-// (figure, title, award, venue, abstract, authors, tags, links).
+// The publications section body — an editorial reading list. A single column
+// keeps title, venue and authors in a stable scan order; masonry made papers
+// look like unrelated product tiles and created unnecessary horizontal chrome.
 import React from 'react';
-import { Masonry } from '../../components/ds';
 import PublicationCard, { type PublicationCardData } from './PublicationCard';
 
 interface PublicationsListProps {
@@ -17,21 +16,16 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
   publications,
   highlightAuthor,
 }) => (
-  <Masonry
-    items={publications}
-    getKey={(item) => item.id}
-    gap={20}
-    renderItem={(item) => {
-      const index = publications.indexOf(item);
-      return (
-        <PublicationCard
-          publication={item}
-          index={index}
-          highlightAuthor={highlightAuthor}
-        />
-      );
-    }}
-  />
+  <div className="divide-y divide-ds-border">
+    {publications.map((publication, index) => (
+      <PublicationCard
+        key={publication.id}
+        publication={publication}
+        index={index}
+        highlightAuthor={highlightAuthor}
+      />
+    ))}
+  </div>
 );
 
 export default PublicationsList;

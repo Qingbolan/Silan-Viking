@@ -33,6 +33,9 @@ type Comment func(*sql.Selector)
 // CommentLike is the predicate function for commentlike builders.
 type CommentLike func(*sql.Selector)
 
+// ContactMessage is the predicate function for contactmessage builders.
+type ContactMessage func(*sql.Selector)
+
 // ContentInteraction is the predicate function for contentinteraction builders.
 type ContentInteraction func(*sql.Selector)
 

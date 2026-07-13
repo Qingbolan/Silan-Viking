@@ -12,6 +12,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import { publicAssetUrl } from '../../utils/publicAsset';
 
 type LogoSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number;
 type LogoVariant = 'mark' | 'wordmark' | 'full';
@@ -25,7 +26,7 @@ const SIZE_PX: Record<Exclude<LogoSize, number>, number> = {
 };
 
 /** Portrait source — the same circular avatar used in the app chrome. */
-const PORTRAIT_SRC = '/image.png';
+const PORTRAIT_SRC = publicAssetUrl('/image.png');
 
 /* --- LogoMark — the circular portrait + ring ----------------------------- */
 

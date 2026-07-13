@@ -11,8 +11,56 @@ package contenttag
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"strings"
 )
+
+// Repository owns the cross-content tag read model and its SQL dialect.
+// Keeping placeholder binding here prevents every caller from knowing whether
+// the runtime database expects SQLite/MySQL `?` or PostgreSQL `$n` markers.
+type Repository struct {
+	db     *sql.DB
+	driver string
+}
+
+func NewRepository(db *sql.DB, driver string) *Repository {
+	return &Repository{db: db, driver: strings.ToLower(driver)}
+}
+
+// bind converts the package's canonical `?` placeholders to the target
+// driver's syntax. Question marks inside quoted SQL literals/identifiers are
+// preserved. All queries in this repository are static and parameterized.
+func (r *Repository) bind(query string) string {
+	if r == nil || (r.driver != "postgres" && r.driver != "postgresql") {
+		return query
+	}
+
+	var out strings.Builder
+	out.Grow(len(query) + 8)
+	parameter := 1
+	var quote rune
+	for _, current := range query {
+		if quote != 0 {
+			out.WriteRune(current)
+			if current == quote {
+				quote = 0
+			}
+			continue
+		}
+		switch current {
+		case '\'', '"':
+			quote = current
+			out.WriteRune(current)
+		case '?':
+			out.WriteByte('$')
+			out.WriteString(strconv.Itoa(parameter))
+			parameter++
+		default:
+			out.WriteRune(current)
+		}
+	}
+	return out.String()
+}
 
 // Lookup returns the display labels of every tag associated with the Item
 // `(entityType, entityID)`, ordered by label for a stable response.
@@ -21,17 +69,17 @@ import (
 // caller can choose to log-and-continue rather than fail the whole response
 // over a missing tag list. The slice is always non-nil — an Item with no
 // tags returns `[]string{}`, never nil, so a JSON consumer never sees `null`.
-func Lookup(ctx context.Context, db *sql.DB, entityType, entityID string) ([]string, error) {
+func (r *Repository) Lookup(ctx context.Context, entityType, entityID string) ([]string, error) {
 	tags := []string{}
-	if db == nil {
+	if r == nil || r.db == nil {
 		return tags, nil
 	}
-	rows, err := db.QueryContext(ctx,
+	rows, err := r.db.QueryContext(ctx, r.bind(
 		`SELECT t.label
 		   FROM content_tag ct
 		   JOIN tag t ON t.id = ct.tag_id
 		  WHERE ct.entity_type = ? AND ct.entity_id = ?
-		  ORDER BY t.label`,
+		  ORDER BY t.label`),
 		entityType, entityID)
 	if err != nil {
 		return tags, err
@@ -59,7 +107,7 @@ func Lookup(ctx context.Context, db *sql.DB, entityType, entityID string) ([]str
 // reads "no tag filter" and applies none. When the list is non-empty but no
 // Item matches, an empty non-nil slice is returned, so the caller filters to
 // zero results rather than skipping the filter.
-func EntityIDsMatchingTags(ctx context.Context, db *sql.DB, entityType string, tags []string) ([]string, error) {
+func (r *Repository) EntityIDsMatchingTags(ctx context.Context, entityType string, tags []string) ([]string, error) {
 	// Normalise: trim, drop blanks, lower-case for the case-insensitive match.
 	wanted := make([]string, 0, len(tags))
 	for _, t := range tags {
@@ -68,7 +116,7 @@ func EntityIDsMatchingTags(ctx context.Context, db *sql.DB, entityType string, t
 			wanted = append(wanted, t)
 		}
 	}
-	if db == nil || len(wanted) == 0 {
+	if r == nil || r.db == nil || len(wanted) == 0 {
 		return nil, nil
 	}
 
@@ -99,7 +147,7 @@ func EntityIDsMatchingTags(ctx context.Context, db *sql.DB, entityType string, t
 	}
 	args = append(args, len(wanted))
 
-	rows, err := db.QueryContext(ctx, q, args...)
+	rows, err := r.db.QueryContext(ctx, r.bind(q), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -131,18 +179,18 @@ type TagSummary struct {
 // `blog` Item. The legacy per-type tag tables (`blog_tags`, `idea_tags`) are
 // no longer populated by `index sync`, so they would report every count as
 // zero. A nil `db` yields an empty slice.
-func ListTags(ctx context.Context, db *sql.DB, entityType string) ([]TagSummary, error) {
+func (r *Repository) ListTags(ctx context.Context, entityType string) ([]TagSummary, error) {
 	out := []TagSummary{}
-	if db == nil {
+	if r == nil || r.db == nil {
 		return out, nil
 	}
-	rows, err := db.QueryContext(ctx,
+	rows, err := r.db.QueryContext(ctx, r.bind(
 		`SELECT t.id, t.label, t.slug, count(*) AS usage
 		   FROM content_tag ct
 		   JOIN tag t ON t.id = ct.tag_id
 		  WHERE ct.entity_type = ?
 		  GROUP BY t.id, t.label, t.slug
-		  ORDER BY t.label`,
+		  ORDER BY t.label`),
 		entityType)
 	if err != nil {
 		return out, err

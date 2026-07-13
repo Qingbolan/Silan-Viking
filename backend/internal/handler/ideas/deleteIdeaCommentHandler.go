@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	ideaslogic "silan-backend/internal/logic/ideas"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -17,6 +18,7 @@ func DeleteIdeaCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 		l := ideaslogic.NewDeleteIdeaCommentLogic(r.Context(), svcCtx)
 		if err := l.DeleteComment(&req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
@@ -25,4 +27,3 @@ func DeleteIdeaCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		httpx.OkJsonCtx(r.Context(), w, map[string]any{"ok": true})
 	}
 }
-

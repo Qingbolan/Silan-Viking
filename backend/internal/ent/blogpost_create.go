@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttranslation"
 	"time"
@@ -308,11 +307,6 @@ func (bpc *BlogPostCreate) SetNillableID(s *string) *BlogPostCreate {
 	return bpc
 }
 
-// SetCategory sets the "category" edge to the BlogCategory entity.
-func (bpc *BlogPostCreate) SetCategory(b *BlogCategory) *BlogPostCreate {
-	return bpc.SetCategoryID(b.ID)
-}
-
 // AddTranslationIDs adds the "translations" edge to the BlogPostTranslation entity by IDs.
 func (bpc *BlogPostCreate) AddTranslationIDs(ids ...string) *BlogPostCreate {
 	bpc.mutation.AddTranslationIDs(ids...)
@@ -500,6 +494,10 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 		_spec.SetField(blogpost.FieldUserID, field.TypeString, value)
 		_node.UserID = value
 	}
+	if value, ok := bpc.mutation.CategoryID(); ok {
+		_spec.SetField(blogpost.FieldCategoryID, field.TypeString, value)
+		_node.CategoryID = value
+	}
 	if value, ok := bpc.mutation.SeriesID(); ok {
 		_spec.SetField(blogpost.FieldSeriesID, field.TypeString, value)
 		_node.SeriesID = value
@@ -571,23 +569,6 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 	if value, ok := bpc.mutation.UpdatedAt(); ok {
 		_spec.SetField(blogpost.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if nodes := bpc.mutation.CategoryIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   blogpost.CategoryTable,
-			Columns: []string{blogpost.CategoryColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogcategory.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.CategoryID = nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := bpc.mutation.TranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

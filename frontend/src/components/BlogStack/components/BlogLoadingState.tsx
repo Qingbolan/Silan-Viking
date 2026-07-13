@@ -1,50 +1,41 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Spin } from 'antd';
-import { useTheme } from '../../ThemeContext';
 import { useLanguage } from '../../LanguageContext';
-import { NotFoundError } from '../../ds/ErrorState';
+import { BrandLoading } from '../../ds/BrandLoading';
+import { NetworkError, NotFoundError } from '../../ds/ErrorState';
+import type { BlogLoadState } from '../hooks/useBlogData';
 
 interface BlogLoadingStateProps {
-  loading: boolean;
-  error?: boolean;
+  state: BlogLoadState;
+  onRetry?: () => void;
 }
 
-export const BlogLoadingState: React.FC<BlogLoadingStateProps> = ({ loading, error }) => {
+export const BlogLoadingState: React.FC<BlogLoadingStateProps> = ({ state, onRetry }) => {
   const navigate = useNavigate();
-  const { colors } = useTheme();
   const { language } = useLanguage();
 
-  if (loading) {
+  if (state === 'loading') {
+    // Match the rest of the site's loading state — the same BrandLoading
+    // shown on /gallery and ProjectDetail. Inline variant so the article
+    // chrome (header/nav) keeps its space instead of a full-screen splash.
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Spin 
-            size="large" 
-            tip={language === 'en' ? 'Loading article...' : '加载文章中...'}
-            indicator={
-              <BookOpen 
-                size={32} 
-                className="animate-pulse" 
-                style={{ color: colors.accent }} 
-              />
-            }
-          >
-            <div style={{ minHeight: '200px' }} />
-          </Spin>
-        </motion.div>
-      </div>
+      <BrandLoading
+        inline
+        message={language === 'en' ? 'Loading article...' : '加载文章中...'}
+      />
     );
   }
 
-  if (error) {
+  if (state === 'not-found') {
     // A genuine not-found — the blog API resolved with no article. Render
     // the design-system full-page error (brand mark, "Home" + "Go Back"),
     // not a floating antd Alert card.
     return <NotFoundError onBack={() => navigate(-1)} />;
   }
 
+  if (state === 'error') {
+    return <NetworkError onRetry={onRetry} />;
+  }
+
   return null;
-}; 
+};

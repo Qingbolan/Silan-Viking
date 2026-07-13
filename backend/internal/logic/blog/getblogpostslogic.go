@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 
-	"silan-backend/internal/contenttag"
+	"silan-backend/internal/contentsearch"
 	"silan-backend/internal/ent"
-	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogpost"
+	"silan-backend/internal/ent/blogposttranslation"
+	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -36,14 +39,13 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
-		WithCategory().
 		WithTranslations()
 
-	// Apply filters
+	// Category filter: the schema's `category_id` column holds a free-text
+	// frontmatter label (see BlogPost.Edges — no FK to blog_categories), so
+	// the filter is a plain equality on that label.
 	if req.Category != "" {
-		query = query.Where(blogpost.HasCategoryWith(
-			blogcategory.Slug(req.Category),
-		))
+		query = query.Where(blogpost.CategoryIDEQ(req.Category))
 	}
 
 	if req.Featured {
@@ -54,11 +56,26 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		query = query.Where(blogpost.ContentTypeEQ(blogpost.ContentType(req.ContentType)))
 	}
 
-	if req.Search != "" {
+	if search := strings.TrimSpace(req.Search); search != "" {
+		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
+			l.ctx, l.svcCtx.DB, itempart.EntityTypeBlog, search, req.Language,
+		)
+		if partErr != nil {
+			return nil, partErr
+		}
 		query = query.Where(blogpost.Or(
-			blogpost.TitleContains(req.Search),
-			blogpost.ExcerptContains(req.Search),
-			blogpost.ContentContains(req.Search),
+			blogpost.TitleContainsFold(search),
+			blogpost.ExcerptContainsFold(search),
+			blogpost.ContentContainsFold(search),
+			blogpost.IDIn(partIDs...),
+			blogpost.HasTranslationsWith(
+				blogposttranslation.LanguageCodeIn(contentsearch.Languages(req.Language)...),
+				blogposttranslation.Or(
+					blogposttranslation.TitleContainsFold(search),
+					blogposttranslation.ExcerptContainsFold(search),
+					blogposttranslation.ContentContainsFold(search),
+				),
+			),
 		))
 	}
 
@@ -67,7 +84,7 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 	// empty (non-nil) result means nothing matches, so `IDIn` correctly
 	// narrows the query to zero rows rather than skipping the filter.
 	if req.Tag != "" {
-		ids, tagErr := contenttag.EntityIDsMatchingTags(l.ctx, l.svcCtx.RawDB, "blog", []string{req.Tag})
+		ids, tagErr := l.svcCtx.ContentTags.EntityIDsMatchingTags(l.ctx, "blog", []string{req.Tag})
 		if tagErr != nil {
 			return nil, tagErr
 		}
@@ -96,9 +113,18 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 	if offset < len(allFilteredPosts) {
 		posts = allFilteredPosts[offset:end]
 	}
-
-	var result []types.BlogData
+	postIDs := make([]string, 0, len(posts))
 	for _, post := range posts {
+		postIDs = append(postIDs, post.ID)
+	}
+	engagementCounts, err := engagement.BlogCounts(l.ctx, l.svcCtx.DB, postIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]types.BlogData, 0, len(posts))
+	for _, post := range posts {
+		counts := engagementCounts[post.ID]
 		// `published_at` is a plain date string.
 		publishDate := post.PublishedAt
 
@@ -107,14 +133,13 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			readTime = fmt.Sprintf("%d min read", post.ReadingTimeMinutes)
 		}
 
-		var category string
-		if post.Edges.Category != nil {
-			category = post.Edges.Category.Name
-		}
+		// SCHEMA.md `blog.category` is a free-text label written straight
+		// into `category_id`; surface it directly. See BlogPost.Edges.
+		category := post.CategoryID
 
 		// Tags come from the cross-type `content_tag` table — the engine no
 		// longer populates the legacy ent `Tags` edge.
-		tags, err := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "blog", post.ID)
+		tags, err := l.svcCtx.ContentTags.Lookup(l.ctx, "blog", post.ID)
 		if err != nil {
 			l.Errorf("content_tag lookup for blog %s: %v", post.ID, err)
 		}
@@ -182,8 +207,8 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 			ReadTime:            readTime,
 			Category:            category,
 			Tags:                tags,
-			Likes:               int64(post.LikeCount),
-			Views:               int64(post.ViewCount),
+			Likes:               int64(counts.Likes),
+			Views:               int64(counts.Views),
 			Summary:             excerpt,
 			FeaturedImageURL:    post.FeaturedImageURL,
 			Type:                contentType,

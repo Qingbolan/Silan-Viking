@@ -28,6 +28,7 @@ export interface BlogData {
   tags: string[];
   content: BlogContent[];
   likes: number;
+  isLikedByUser?: boolean;
   views: number;
   summary: string;
   summaryZh?: string;
@@ -57,7 +58,7 @@ export interface Comment {
   author_avatar_url?: string;
   content: string;
   created_at: string;
-  user_identity_id?: string;
+  can_delete: boolean;
   replies?: Comment[];
 }
 

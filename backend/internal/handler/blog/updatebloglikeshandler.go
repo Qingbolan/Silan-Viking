@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	"silan-backend/internal/logic/blog"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -26,6 +27,7 @@ func UpdateBlogLikesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if req.Referrer == "" {
 			req.Referrer = r.Referer()
 		}
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := blog.NewUpdateBlogLikesLogic(r.Context(), svcCtx)
 		resp, err := l.UpdateBlogLikes(&req)

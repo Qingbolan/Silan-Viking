@@ -2,7 +2,6 @@ package updates
 
 import (
 	"context"
-	"database/sql"
 
 	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
@@ -25,41 +24,63 @@ func resolveLang(lang string) string {
 // the detail endpoint reads them here. It prefers the requested language, then
 // "en", then any. Returns "" when there is no synced body for that role.
 func updatePartBody(ctx context.Context, svcCtx *svc.ServiceContext, updateID, role, lang string) string {
-	part, err := svcCtx.DB.ItemPart.Query().
+	return updatePartBodies(ctx, svcCtx, []string{updateID}, role, lang)[updateID]
+}
+
+// updatePartBodies resolves one prose Part for a set of updates in a single
+// query. List endpoints must not issue one query per update simply because
+// prose lives in the generic Part model.
+func updatePartBodies(
+	ctx context.Context,
+	svcCtx *svc.ServiceContext,
+	updateIDs []string,
+	role string,
+	lang string,
+) map[string]string {
+	bodies := make(map[string]string, len(updateIDs))
+	if len(updateIDs) == 0 {
+		return bodies
+	}
+	parts, err := svcCtx.DB.ItemPart.Query().
 		Where(
 			itempart.EntityTypeEQ(itempart.EntityTypeUpdate),
-			itempart.EntityIDEQ(updateID),
+			itempart.EntityIDIn(updateIDs...),
 			itempart.Role(role),
 		).
 		WithTranslations().
-		First(ctx)
-	if err != nil || part == nil {
-		return ""
+		All(ctx)
+	if err != nil {
+		return bodies
 	}
-	trs := part.Edges.Translations
-	by := func(code string) string {
-		for _, t := range trs {
-			if t.LanguageCode == code && t.Body != "" {
-				return t.Body
+	for _, part := range parts {
+		trs := part.Edges.Translations
+		by := func(code string) string {
+			for _, translation := range trs {
+				if translation.LanguageCode == code && translation.Body != "" {
+					return translation.Body
+				}
+			}
+			return ""
+		}
+		if body := by(resolveLang(lang)); body != "" {
+			bodies[part.EntityID] = body
+			continue
+		}
+		if body := by("en"); body != "" {
+			bodies[part.EntityID] = body
+			continue
+		}
+		for _, translation := range trs {
+			if translation.Body != "" {
+				bodies[part.EntityID] = translation.Body
+				break
 			}
 		}
-		return ""
 	}
-	if b := by(resolveLang(lang)); b != "" {
-		return b
-	}
-	if b := by("en"); b != "" {
-		return b
-	}
-	for _, t := range trs {
-		if t.Body != "" {
-			return t.Body
-		}
-	}
-	return ""
+	return bodies
 }
 
-func updateToData(ctx context.Context, rawDB *sql.DB, update *ent.RecentUpdate, language string) types.RecentUpdate {
+func updateToData(ctx context.Context, tags *contenttag.Repository, update *ent.RecentUpdate, language string) types.RecentUpdate {
 	title := update.Title
 	description := update.Description
 	for _, translation := range update.Edges.Translations {
@@ -72,7 +93,7 @@ func updateToData(ctx context.Context, rawDB *sql.DB, update *ent.RecentUpdate, 
 
 	// Tags come from the cross-type `content_tag` table — the engine no
 	// longer writes them onto the `recent_updates.tags` column.
-	tags, _ := contenttag.Lookup(ctx, rawDB, "update", update.ID)
+	labels, _ := tags.Lookup(ctx, "update", update.ID)
 
 	return types.RecentUpdate{
 		ID:          update.ID,
@@ -84,7 +105,7 @@ func updateToData(ctx context.Context, rawDB *sql.DB, update *ent.RecentUpdate, 
 		Title:       title,
 		Description: description,
 		Date:        update.Date,
-		Tags:        tags,
+		Tags:        labels,
 		Status:      string(update.Status),
 		Priority:    string(update.Priority),
 		CreatedAt:   update.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),

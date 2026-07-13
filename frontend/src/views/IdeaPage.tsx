@@ -5,29 +5,23 @@ import { Lightbulb, FlaskConical, Microscope, CheckCircle2, Layers } from 'lucid
 import { useLanguage } from '../components/LanguageContext';
 import { Seo } from '../components/Seo';
 import { IdeaData } from '../types';
-import { fetchIdeas } from '../api';
-import { getIdeaCategories, getIdeaStatuses } from '../api/ideas/ideaApi';
+import { fetchIdeas } from '../api/ideas/ideaApi';
+import { getIdeaStatuses } from '../api/ideas/ideaApi';
 import { BlogHeader, BrandLoading, ErrorState, IdeaCard, EmptyState, Masonry } from '../components/ds';
 
 const IdeaPage: React.FC = () => {
   const { language } = useLanguage();
 
   const [ideas, setIdeas] = useState<IdeaData[]>([]);
-  const [filteredIdeas, setFilteredIdeas] = useState<IdeaData[]>([]);
   // `selectedCategory` holds the raw category string ('all' = reset chip).
   // `selectedStatus` holds a stable canonical key ('all' | 'draft' | …).
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [categories, setCategories] = useState<string[]>(['all']);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const navigate = useNavigate();
-
-  // Scroll to top on component mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
 
   // Load ideas
   useEffect(() => {
@@ -43,7 +37,6 @@ const IdeaPage: React.FC = () => {
 
         if (isMounted) {
           setIdeas(fetchedIdeas);
-          setFilteredIdeas(fetchedIdeas);
           setLoading(false);
         }
       } catch (err) {
@@ -59,7 +52,7 @@ const IdeaPage: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [language]);
+  }, [language, reloadKey]);
 
   // Filter ideas based on category, status, and search term
   const filteredIdeasMemo = useMemo(() => {
@@ -85,29 +78,18 @@ const IdeaPage: React.FC = () => {
     return filtered;
   }, [ideas, selectedCategory, selectedStatus, searchTerm]);
 
-  useEffect(() => {
-    setFilteredIdeas(filteredIdeasMemo);
-  }, [filteredIdeasMemo]);
+  // Categories are a projection of the loaded cards, so the filter cannot
+  // disagree with the list or fail independently of it.
+  const categories = useMemo(
+    () => ['all', ...Array.from(new Set(ideas.map((idea) => idea.category).filter(Boolean)))],
+    [ideas],
+  );
 
-  // Load dynamic categories from backend. 'all' is the reset chip.
   useEffect(() => {
-    let mounted = true;
-    const loadCats = async () => {
-      try {
-        const cats = await getIdeaCategories(language as 'en' | 'zh');
-        if (!mounted) return;
-        setCategories(['all', ...cats.filter(Boolean)]);
-        // Keep selectedCategory valid against the new list.
-        if (selectedCategory !== 'all' && !cats.includes(selectedCategory)) {
-          setSelectedCategory('all');
-        }
-      } catch (e) {
-        // keep default
-      }
-    };
-    loadCats();
-    return () => { mounted = false; };
-  }, [language]);
+    if (selectedCategory !== 'all' && !categories.includes(selectedCategory)) {
+      setSelectedCategory('all');
+    }
+  }, [categories, selectedCategory]);
 
   // Status Segmented options — only statuses that actually have ideas.
   // `getIdeaStatuses` gives the canonical order; each option carries a
@@ -160,6 +142,7 @@ const IdeaPage: React.FC = () => {
         title={language === 'en' ? 'Error Loading Ideas' : '加载想法出错'}
         description={error}
         showHome
+        onRetry={() => setReloadKey((value) => value + 1)}
       />
     );
   }
@@ -181,7 +164,7 @@ const IdeaPage: React.FC = () => {
         path="/ideas"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Header — title + search + status Segmented + category chips. */}
         <motion.div
           className="mb-12"
@@ -224,7 +207,7 @@ const IdeaPage: React.FC = () => {
             transition={{ duration: 0.3 }}
           >
             <Masonry
-              items={filteredIdeas}
+              items={filteredIdeasMemo}
               getKey={(idea) => idea.id}
               renderItem={(idea) => (
                 <IdeaCard
@@ -247,7 +230,7 @@ const IdeaPage: React.FC = () => {
         </AnimatePresence>
 
         {/* Empty State */}
-        {filteredIdeas.length === 0 && !loading && (
+        {filteredIdeasMemo.length === 0 && !loading && (
           <motion.div
             className="py-20"
             initial={{ opacity: 0, scale: 0.96 }}

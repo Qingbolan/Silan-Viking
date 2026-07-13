@@ -2,10 +2,11 @@ package blog
 
 import (
 	"context"
+	"fmt"
 
-	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/logic/analytics"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -29,83 +30,76 @@ func NewUpdateBlogLikesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 
 func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest) (resp *types.UpdateBlogLikesResponse, err error) {
 	postID := req.ID
-
-	existingLike := false
-	likeQuery := l.svcCtx.DB.ContentInteraction.Query().
-		Where(contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeBlog)).
-		Where(contentinteraction.EntityIDEQ(postID)).
-		Where(contentinteraction.KindEQ(contentinteraction.KindLike))
-	if req.UserIdentityId != "" {
-		likeQuery = likeQuery.Where(contentinteraction.UserIdentityIDEQ(req.UserIdentityId))
-	} else if req.Fingerprint != "" {
-		likeQuery = likeQuery.Where(contentinteraction.FingerprintEQ(req.Fingerprint))
-	} else {
-		likeQuery = nil
+	if req.AuthenticatedUserID == "" && req.Fingerprint == "" {
+		return nil, fmt.Errorf("fingerprint or user_identity_id is required")
 	}
-	if likeQuery != nil {
-		count, err := likeQuery.Count(l.ctx)
-		if err != nil {
-			return nil, err
-		}
-		existingLike = count > 0
+	if _, err := l.svcCtx.DB.BlogPost.Get(l.ctx, postID); err != nil {
+		return nil, err
+	}
+
+	tx, err := l.svcCtx.DB.Tx(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	client := tx.Client()
+
+	existingLike, err := engagement.IsBlogLiked(
+		l.ctx,
+		client,
+		postID,
+		req.AuthenticatedUserID,
+		req.Fingerprint,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	if req.Increment {
 		if !existingLike {
-			err = analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
+			if err := analytics.RecordContentInteraction(l.ctx, client, analytics.InteractionEvent{
 				EntityType:     "blog",
 				EntityID:       postID,
 				Kind:           "like",
-				UserIdentityID: req.UserIdentityId,
+				UserIdentityID: req.AuthenticatedUserID,
 				Fingerprint:    req.Fingerprint,
 				IPAddress:      req.ClientIP,
 				UserAgent:      req.UserAgentFull,
 				Referrer:       req.Referrer,
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, err
 			}
-			err = l.svcCtx.DB.BlogPost.Update().
-				Where(blogpost.ID(postID)).
-				AddLikeCount(1).
-				Exec(l.ctx)
 		}
-	} else {
-		post, err := l.svcCtx.DB.BlogPost.Get(l.ctx, postID)
-		if err != nil {
+	} else if existingLike {
+		deleteQuery := client.ContentInteraction.Delete().
+			Where(contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeBlog)).
+			Where(contentinteraction.EntityIDEQ(postID)).
+			Where(contentinteraction.KindEQ(contentinteraction.KindLike))
+		if req.AuthenticatedUserID != "" && req.Fingerprint != "" {
+			deleteQuery = deleteQuery.Where(contentinteraction.Or(
+				contentinteraction.UserIdentityIDEQ(req.AuthenticatedUserID),
+				contentinteraction.FingerprintEQ(req.Fingerprint),
+			))
+		} else if req.AuthenticatedUserID != "" {
+			deleteQuery = deleteQuery.Where(contentinteraction.UserIdentityIDEQ(req.AuthenticatedUserID))
+		} else {
+			deleteQuery = deleteQuery.Where(contentinteraction.FingerprintEQ(req.Fingerprint))
+		}
+		if _, err := deleteQuery.Exec(l.ctx); err != nil {
 			return nil, err
 		}
-		if existingLike && post.LikeCount > 0 {
-			deleteQuery := l.svcCtx.DB.ContentInteraction.Delete().
-				Where(contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeBlog)).
-				Where(contentinteraction.EntityIDEQ(postID)).
-				Where(contentinteraction.KindEQ(contentinteraction.KindLike))
-			if req.UserIdentityId != "" {
-				deleteQuery = deleteQuery.Where(contentinteraction.UserIdentityIDEQ(req.UserIdentityId))
-			} else if req.Fingerprint != "" {
-				deleteQuery = deleteQuery.Where(contentinteraction.FingerprintEQ(req.Fingerprint))
-			}
-			_, err = deleteQuery.Exec(l.ctx)
-			if err != nil {
-				return nil, err
-			}
-			err = l.svcCtx.DB.BlogPost.Update().
-				Where(blogpost.ID(postID)).
-				AddLikeCount(-1).
-				Exec(l.ctx)
-		}
 	}
+
+	counts, err := engagement.BlogCount(l.ctx, client, postID)
 	if err != nil {
 		return nil, err
 	}
-
-	// Get updated like count
-	post, err := l.svcCtx.DB.BlogPost.Get(l.ctx, postID)
-	if err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	return &types.UpdateBlogLikesResponse{
-		Likes: int64(post.LikeCount),
+		Likes:         int64(counts.Likes),
+		IsLikedByUser: req.Increment,
 	}, nil
 }

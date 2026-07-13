@@ -80,11 +80,27 @@ const browserGlobals = {
   getComputedStyle: 'readonly',
 }
 
+const nodeGlobals = {
+  console: 'readonly',
+  process: 'readonly',
+  setTimeout: 'readonly',
+  clearTimeout: 'readonly',
+  __dirname: 'readonly',
+}
+
 export default [
   {
     ignores: ['dist', 'node_modules'],
   },
   js.configs.recommended,
+  {
+    files: ['scripts/**/*.mjs', '*.config.{js,mjs,ts}'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: nodeGlobals,
+    },
+  },
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
@@ -106,10 +122,17 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
+      // TypeScript resolves DOM/type globals and understands declarations;
+      // the core JS rules report false positives for both.
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { args: 'none', caughtErrors: 'none', ignoreRestSiblings: true },
       ],
+      // Context and design-system modules intentionally export colocated
+      // hooks/constants; this does not affect runtime refresh correctness.
+      'react-refresh/only-export-components': 'off',
     },
   },
-] 
+]

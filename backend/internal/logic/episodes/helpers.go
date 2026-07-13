@@ -70,15 +70,30 @@ func publicEpisodeQuery(q *ent.EpisodeQuery) {
 }
 
 func episodeToData(ep *ent.Episode, language string) types.EpisodeData {
+	language = resolveLang(language)
 	title := ep.Title
 	description := ""
-	for _, translation := range ep.Edges.Translations {
-		if translation.LanguageCode == language {
-			title = translation.Title
-			if translation.Description != nil {
-				description = *translation.Description
+	pick := func(code string) *ent.EpisodeTranslation {
+		for _, translation := range ep.Edges.Translations {
+			if translation.LanguageCode == code {
+				return translation
 			}
-			break
+		}
+		return nil
+	}
+	translation := pick(language)
+	if translation == nil {
+		translation = pick("en")
+	}
+	if translation == nil && len(ep.Edges.Translations) > 0 {
+		translation = ep.Edges.Translations[0]
+	}
+	if translation != nil {
+		if translation.Title != "" {
+			title = translation.Title
+		}
+		if translation.Description != nil {
+			description = *translation.Description
 		}
 	}
 
@@ -125,18 +140,33 @@ func episodeToData(ep *ent.Episode, language string) types.EpisodeData {
 }
 
 func seriesToData(series *ent.EpisodeSeries, language string) types.EpisodeSeriesData {
+	language = resolveLang(language)
 	title := series.Title
 	description := ""
 	if series.Description != nil {
 		description = *series.Description
 	}
-	for _, translation := range series.Edges.Translations {
-		if translation.LanguageCode == language {
-			title = translation.Title
-			if translation.Description != nil {
-				description = *translation.Description
+	pick := func(code string) *ent.EpisodeSeriesTranslation {
+		for _, translation := range series.Edges.Translations {
+			if translation.LanguageCode == code {
+				return translation
 			}
-			break
+		}
+		return nil
+	}
+	translation := pick(language)
+	if translation == nil {
+		translation = pick("en")
+	}
+	if translation == nil && len(series.Edges.Translations) > 0 {
+		translation = series.Edges.Translations[0]
+	}
+	if translation != nil {
+		if translation.Title != "" {
+			title = translation.Title
+		}
+		if translation.Description != nil {
+			description = *translation.Description
 		}
 	}
 

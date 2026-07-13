@@ -286,7 +286,7 @@ export function deriveManagedModelLabelFromAgentURA(targetURA: string): string |
   if (parsed?.kind !== "agent" || !parsed.agentId) {
     return null;
   }
-  if (/[.\/\\\s]/.test(parsed.agentId)) {
+  if (/[./\\\s]/.test(parsed.agentId)) {
     return null;
   }
   return parsed.agentId;

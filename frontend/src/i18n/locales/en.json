@@ -91,9 +91,9 @@
     "PUBLICATION": "Publication",
     "PROJECT": "Project",
     "status": {
-      "ACTIVE": "Active",
-      "ONGOING": "Ongoing",
-      "COMPLETED": "Completed"
+      "active": "Active",
+      "ongoing": "Ongoing",
+      "completed": "Completed"
     },
     "priority": {
       "high": "High Priority",

@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectview"
 	"silan-backend/internal/logic/analytics"
 	"silan-backend/internal/svc"
@@ -30,6 +29,16 @@ func NewRecordProjectViewLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewRequest) (resp *types.RecordProjectViewResponse, err error) {
 	projectID := req.ProjectID
+	if _, err := l.svcCtx.DB.Project.Get(l.ctx, projectID); err != nil {
+		return nil, err
+	}
+
+	tx, err := l.svcCtx.DB.Tx(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	client := tx.Client()
 
 	// Get client IP and user agent from context if available
 	clientIP := req.ClientIP
@@ -40,23 +49,20 @@ func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewR
 	oneHourAgo := time.Now().Add(-1 * time.Hour)
 
 	var duplicateView bool
-	if req.UserIdentityId != "" {
-		// For authenticated users
-		count, err := l.svcCtx.DB.ProjectView.Query().
-			Where(projectview.ProjectID(projectID)).
-			Where(projectview.UserIdentityID(req.UserIdentityId)).
-			Where(projectview.CreatedAtGT(oneHourAgo)).
-			Count(l.ctx)
-		if err != nil {
-			return nil, err
+	if req.AuthenticatedUserID != "" || req.Fingerprint != "" {
+		query := client.ProjectView.Query().
+			Where(projectview.ProjectID(projectID), projectview.CreatedAtGT(oneHourAgo))
+		if req.AuthenticatedUserID != "" && req.Fingerprint != "" {
+			query = query.Where(projectview.Or(
+				projectview.UserIdentityID(req.AuthenticatedUserID),
+				projectview.Fingerprint(req.Fingerprint),
+			))
+		} else if req.AuthenticatedUserID != "" {
+			query = query.Where(projectview.UserIdentityID(req.AuthenticatedUserID))
+		} else {
+			query = query.Where(projectview.Fingerprint(req.Fingerprint))
 		}
-		duplicateView = count > 0
-	} else if req.Fingerprint != "" {
-		// For anonymous users
-		count, err := l.svcCtx.DB.ProjectView.Query().
-			Where(projectview.ProjectID(projectID)).
-			Where(projectview.Fingerprint(req.Fingerprint)).
-			Where(projectview.CreatedAtGT(oneHourAgo)).
+		count, err := query.
 			Count(l.ctx)
 		if err != nil {
 			return nil, err
@@ -68,11 +74,11 @@ func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewR
 
 	if !duplicateView {
 		// Create view record
-		builder := l.svcCtx.DB.ProjectView.Create().
+		builder := client.ProjectView.Create().
 			SetProjectID(projectID)
 
-		if req.UserIdentityId != "" {
-			builder = builder.SetUserIdentityID(req.UserIdentityId)
+		if req.AuthenticatedUserID != "" {
+			builder = builder.SetUserIdentityID(req.AuthenticatedUserID)
 		}
 		if req.Fingerprint != "" {
 			builder = builder.SetFingerprint(req.Fingerprint)
@@ -87,45 +93,38 @@ func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewR
 			builder = builder.SetReferrer(req.Referrer)
 		}
 
-		_, err = builder.Save(l.ctx)
-		if err != nil {
+		if _, err := builder.Save(l.ctx); err != nil {
 			return nil, err
 		}
 
-		err = analytics.RecordContentInteraction(l.ctx, l.svcCtx, analytics.InteractionEvent{
+		if err := analytics.RecordContentInteraction(l.ctx, client, analytics.InteractionEvent{
 			EntityType:     "project",
 			EntityID:       projectID,
 			Kind:           "view",
-			UserIdentityID: req.UserIdentityId,
+			UserIdentityID: req.AuthenticatedUserID,
 			Fingerprint:    req.Fingerprint,
 			IPAddress:      clientIP,
 			UserAgent:      userAgent,
 			Referrer:       req.Referrer,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		// Increment view count
-		err = l.svcCtx.DB.Project.Update().
-			Where(project.ID(projectID)).
-			AddViewCount(1).
-			Exec(l.ctx)
-		if err != nil {
+		}); err != nil {
 			return nil, err
 		}
 
 		viewRecorded = true
 	}
 
-	// Get updated view count
-	proj, err := l.svcCtx.DB.Project.Get(l.ctx, projectID)
+	viewsCount, err := client.ProjectView.Query().
+		Where(projectview.ProjectID(projectID)).
+		Count(l.ctx)
 	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	return &types.RecordProjectViewResponse{
-		ViewsCount:   proj.ViewCount,
+		ViewsCount:   viewsCount,
 		ViewRecorded: viewRecorded,
 	}, nil
 }

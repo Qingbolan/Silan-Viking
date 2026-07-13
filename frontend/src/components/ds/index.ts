@@ -11,6 +11,21 @@
 export { Button, buttonVariants } from './Button';
 export type { ButtonProps } from './Button';
 
+export { default as ArticleFooter } from './ArticleFooter';
+export type { ArticleFooterProps } from './ArticleFooter';
+export type {
+  ArticleComment,
+  CommentDraft,
+  CommentLoadState,
+} from './article-footer/types';
+
+export { default as KnowledgeBaseShell } from './knowledge-base/KnowledgeBaseShell';
+export type { KnowledgeBaseShellProps } from './knowledge-base/KnowledgeBaseShell';
+export { default as BookNav } from './knowledge-base/BookNav';
+export type { BookNavChapter } from './knowledge-base/BookNav';
+export { default as DOMOutline } from './knowledge-base/DOMOutline';
+export { default as EngagementFAB } from './knowledge-base/EngagementFAB';
+
 export { IconButton, iconButtonVariants } from './IconButton';
 export type { IconButtonProps } from './IconButton';
 
@@ -85,7 +100,7 @@ export { BlogHeader } from './BlogHeader';
 export type { BlogHeaderProps } from './BlogHeader';
 
 export { ProfileHero } from './ProfileHero';
-export type { ProfileHeroProps, ContactItem, SocialItem } from './ProfileHero';
+export type { ProfileHeroProps, ContactItem, HeroAction, SocialItem } from './ProfileHero';
 
 export { EpisodeList } from './EpisodeList';
 export type { EpisodeListProps, EpisodeListItem } from './EpisodeList';
@@ -95,6 +110,8 @@ export type { TableOfContentsProps, TocItem } from './TableOfContents';
 
 export { NoiseBackground } from './NoiseBackground';
 export type { NoiseBackgroundProps } from './NoiseBackground';
+
+export { MobileTabBar } from './MobileTabBar';
 
 export { Masonry } from './Masonry';
 export type { MasonryProps, MasonryBreakpoint } from './Masonry';

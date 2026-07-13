@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Mail, Phone, MapPin, Lightbulb, Briefcase, Contact, ArrowRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../components/LanguageContext';
 import { Seo } from '../components/Seo';
 import {
-  AuthProvider,
   useAuth,
 } from '../components/InteractiveContact';
 import ModernContactForm from '../components/InteractiveContact/ModernContactForm';
 import PublicMessagesWall from '../components/InteractiveContact/PublicMessagesWall';
 import { fetchIdeas } from '../api/ideas/ideaApi';
-import { fetchResumeData, fetchExpectations, type ExpectationItem } from '../api/home/resumeApi';
+import { fetchPersonalInfo, fetchExpectations, type ExpectationItem } from '../api/home/resumeApi';
 import { resolveSocialLink } from '../utils/socialPlatform';
+import { useRemoteResource } from '../hooks/useRemoteResource';
 import {
   BlogHeader,
   Card,
@@ -19,6 +19,9 @@ import {
   Tabs,
   Button,
   Divider,
+  Alert,
+  EmptyState,
+  Skeleton,
 } from '../components/ds';
 
 /** A single tappable list row — title + one-line description. */
@@ -37,6 +40,24 @@ const ListRow: React.FC<{
   </button>
 );
 
+const PanelLoading: React.FC<{ label: string }> = ({ label }) => (
+  <div className="space-y-2 py-1" aria-label={label}>
+    {[0, 1, 2].map((item) => <Skeleton key={item} shape="block" className="h-14" />)}
+  </div>
+);
+
+const PanelError: React.FC<{ title: string; retryLabel: string; onRetry: () => void }> = ({
+  title,
+  retryLabel,
+  onRetry,
+}) => (
+  <Alert tone="error" title={title}>
+    <Button variant="ghost" size="sm" className="mt-2" onClick={onRetry}>
+      {retryLabel}
+    </Button>
+  </Alert>
+);
+
 const InteractiveContactPageContent: React.FC = () => {
   const { language } = useLanguage();
   const { isAuthenticated, user } = useAuth();
@@ -44,93 +65,51 @@ const InteractiveContactPageContent: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
-  // Right-rail content is fetched, not hardcoded: recent thoughts are real
-  // ideas, and Quick Contact / Expected Jobs come from the résumé
-  // (`personal_info` + the `expectations` part). An author — or an agent
-  // editing the résumé via the silan CLI/MCP — updates them at the source.
-  const [recentThoughts, setRecentThoughts] = useState<
-    { id: string; title: string; description: string }[]
-  >([]);
-  const [expectedJobs, setExpectedJobs] = useState<ExpectationItem[]>([]);
-  const [contactInfo, setContactInfo] = useState<
-    { icon: React.ReactNode; title: string; value: string; href: string }[]
-  >([]);
-  const [socialLinks, setSocialLinks] = useState<
-    { icon: React.ReactNode; label: string; href: string }[]
-  >([]);
+  // The three tab bodies are independent resources. A failure in updates,
+  // for example, must not erase the email/social facts from personal_info.
+  const loadThoughts = useCallback(
+    async () => (await fetchIdeas({ page: 1, size: 3 }, language)).slice(0, 3).map((idea) => ({
+      id: idea.id,
+      title: idea.title,
+      description: idea.description || idea.abstract || '',
+    })),
+    [language],
+  );
+  const loadJobs = useCallback(() => fetchExpectations(language), [language]);
+  const loadContactProfile = useCallback(() => fetchPersonalInfo(language), [language]);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const thoughtsResource = useRemoteResource('recent-thoughts', loadThoughts);
+  const jobsResource = useRemoteResource<ExpectationItem[]>('expected-jobs', loadJobs);
+  const contactResource = useRemoteResource('contact-profile', loadContactProfile);
 
-  useEffect(() => {
-    let cancelled = false;
+  const recentThoughts = thoughtsResource.data ?? [];
+  const expectedJobs = jobsResource.data ?? [];
 
-    // Recent Thoughts — the three most recent ideas.
-    fetchIdeas({ page: 1, size: 3 }, language)
-      .then((ideas) => {
-        if (cancelled) return;
-        setRecentThoughts(
-          ideas.slice(0, 3).map((idea) => ({
-            id: idea.id,
-            title: idea.title,
-            description: idea.description || idea.abstract || '',
-          })),
-        );
-      })
-      .catch(() => {/* leave the list empty on failure */});
+  const contactInfo = useMemo(() => {
+    const profile = contactResource.data;
+    if (!profile) return [];
+    return [
+      profile.email && { type: 'email', value: profile.email },
+      profile.phone && { type: 'phone', value: profile.phone },
+      profile.location && { type: 'location', value: profile.location },
+    ].filter(Boolean).map((entry) => {
+      const { type, value } = entry as { type: string; value: string };
+      return {
+        icon: type === 'email' ? <Mail size={18} /> : type === 'phone' ? <Phone size={18} /> : <MapPin size={18} />,
+        title: type === 'email' ? (language === 'en' ? 'Email' : '邮箱') : type === 'phone' ? (language === 'en' ? 'Phone' : '电话') : (language === 'en' ? 'Location' : '位置'),
+        value,
+        href: type === 'email' ? `mailto:${value}` : type === 'phone' ? `tel:${value.replace(/\s+/g, '')}` : `https://maps.google.com/?q=${encodeURIComponent(value)}`,
+      };
+    });
+  }, [contactResource.data, language]);
 
-    // Expected Jobs — the résumé's `expectations` part.
-    fetchExpectations(language)
-      .then((items) => {
-        if (!cancelled) setExpectedJobs(items);
-      })
-      .catch(() => {/* leave the list empty on failure */});
-
-    // Quick Contact — contacts and social links from `personal_info`.
-    fetchResumeData(language)
-      .then((resume) => {
-        if (cancelled) return;
-        const labelFor = (type: string) =>
-          ({ email: language === 'en' ? 'Email' : '邮箱',
-             phone: language === 'en' ? 'Phone' : '电话',
-             location: language === 'en' ? 'Location' : '位置' } as Record<string, string>)[
-            type
-          ] || type;
-        const iconFor = (type: string) =>
-          type === 'email' ? <Mail size={18} />
-          : type === 'phone' ? <Phone size={18} />
-          : <MapPin size={18} />;
-        const hrefFor = (type: string, value: string) =>
-          type === 'email' ? `mailto:${value}`
-          : type === 'phone' ? `tel:${value.replace(/\s+/g, '')}`
-          : `https://maps.google.com/?q=${encodeURIComponent(value)}`;
-        setContactInfo(
-          (resume.contacts || []).map((c) => ({
-            icon: iconFor(c.type),
-            title: labelFor(c.type),
-            value: c.value,
-            href: hrefFor(c.type, c.value),
-          })),
-        );
-        setSocialLinks(
-          (resume.socialLinks || []).map((s) => {
-            // `fetchResumeData` maps each link to `{ type, url }`; tolerate
-            // the `platform` field too in case the shape varies.
-            const name = ((s as any).type || (s as any).platform || '') as string;
-            // Identify the platform from the URL then the label, so the icon
-            // matches GitHub / LinkedIn / … not a generic globe.
-            const { icon, label } = resolveSocialLink(s.url, name);
-            return { icon, label, href: s.url };
-          }),
-        );
-      })
-      .catch(() => {/* leave Quick Contact empty on failure */});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [language]);
+  const socialLinks = useMemo(
+    () => (contactResource.data?.social_links ?? []).map((social) => {
+      const { icon, label } = resolveSocialLink(social.url, social.platform);
+      return { icon, label, href: social.url };
+    }),
+    [contactResource.data],
+  );
 
   return (
     <div className="min-h-screen py-20">
@@ -144,7 +123,7 @@ const InteractiveContactPageContent: React.FC = () => {
         path="/contact"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Hero header — same BlogHeader hero used by blog/ideas/projects,
             but hero-only (no search / filter toolbar). */}
         <BlogHeader
@@ -205,14 +184,30 @@ const InteractiveContactPageContent: React.FC = () => {
               {/* Recent thoughts. */}
               {activeTab === 'thoughts' && (
                 <div className="mt-4 space-y-1.5">
-                  {recentThoughts.map((thought) => (
-                    <ListRow
-                      key={thought.id}
-                      title={thought.title}
-                      description={thought.description}
-                      onClick={() => navigate('/ideas')}
+                  {thoughtsResource.status === 'loading' ? (
+                    <PanelLoading label={language === 'en' ? 'Loading recent thoughts' : '正在加载最新想法'} />
+                  ) : thoughtsResource.status === 'error' ? (
+                    <PanelError
+                      title={language === 'en' ? 'Recent thoughts could not be loaded' : '最新想法加载失败'}
+                      retryLabel={language === 'en' ? 'Try again' : '重试'}
+                      onRetry={thoughtsResource.reload}
                     />
-                  ))}
+                  ) : recentThoughts.length === 0 ? (
+                    <EmptyState
+                      icon={<Lightbulb />}
+                      title={language === 'en' ? 'No public thoughts yet' : '还没有公开想法'}
+                      description={language === 'en' ? 'Published research ideas will appear here.' : '公开后的研究想法会显示在这里。'}
+                    />
+                  ) : (
+                    recentThoughts.map((thought) => (
+                      <ListRow
+                        key={thought.id}
+                        title={thought.title}
+                        description={thought.description}
+                        onClick={() => navigate(`/ideas/${thought.id}`)}
+                      />
+                    ))
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -229,14 +224,30 @@ const InteractiveContactPageContent: React.FC = () => {
               {/* Expected jobs. */}
               {activeTab === 'jobs' && (
                 <div className="mt-4 space-y-1.5">
-                  {expectedJobs.map((job) => (
-                    <ListRow
-                      key={job.id}
-                      title={job.title}
-                      description={job.description}
-                      onClick={() => navigate('/')}
+                  {jobsResource.status === 'loading' ? (
+                    <PanelLoading label={language === 'en' ? 'Loading preferred roles' : '正在加载期待职位'} />
+                  ) : jobsResource.status === 'error' ? (
+                    <PanelError
+                      title={language === 'en' ? 'Preferred roles could not be loaded' : '期待职位加载失败'}
+                      retryLabel={language === 'en' ? 'Try again' : '重试'}
+                      onRetry={jobsResource.reload}
                     />
-                  ))}
+                  ) : expectedJobs.length === 0 ? (
+                    <EmptyState
+                      icon={<Briefcase />}
+                      title={language === 'en' ? 'No role preferences published' : '尚未发布职位偏好'}
+                      description={language === 'en' ? 'Current role preferences are maintained in the résumé.' : '当前职位偏好由简历内容维护。'}
+                    />
+                  ) : (
+                    expectedJobs.map((job) => (
+                      <ListRow
+                        key={job.id}
+                        title={job.title}
+                        description={job.description}
+                        onClick={() => navigate('/')}
+                      />
+                    ))
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -254,6 +265,22 @@ const InteractiveContactPageContent: React.FC = () => {
               {/* Quick contact. */}
               {activeTab === 'contact' && (
                 <div className="mt-4 space-y-3">
+                  {contactResource.status === 'loading' ? (
+                    <PanelLoading label={language === 'en' ? 'Loading contact information' : '正在加载联系信息'} />
+                  ) : contactResource.status === 'error' ? (
+                    <PanelError
+                      title={language === 'en' ? 'Contact information could not be loaded' : '联系信息加载失败'}
+                      retryLabel={language === 'en' ? 'Try again' : '重试'}
+                      onRetry={contactResource.reload}
+                    />
+                  ) : contactInfo.length === 0 && socialLinks.length === 0 ? (
+                    <EmptyState
+                      icon={<Contact />}
+                      title={language === 'en' ? 'No public contact details' : '暂无公开联系信息'}
+                      description={language === 'en' ? 'Use the message form to get in touch.' : '可以使用留言表单与我联系。'}
+                    />
+                  ) : (
+                    <>
                   {/* Contact info rows. */}
                   <div className="space-y-1">
                     {contactInfo.map((item, index) => (
@@ -280,8 +307,8 @@ const InteractiveContactPageContent: React.FC = () => {
                   </div>
 
                   {/* Social links. */}
-                  <Divider />
-                  <div>
+                  {socialLinks.length > 0 && <Divider />}
+                  {socialLinks.length > 0 && <div>
                     <h4 className="mb-2 text-ds-2xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
                       {language === 'en' ? 'Social Media' : '社交媒体'}
                     </h4>
@@ -299,7 +326,9 @@ const InteractiveContactPageContent: React.FC = () => {
                         </a>
                       ))}
                     </div>
-                  </div>
+                  </div>}
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -316,11 +345,7 @@ const InteractiveContactPageContent: React.FC = () => {
 };
 
 const InteractiveContactPage: React.FC = () => {
-  return (
-    <AuthProvider>
-      <InteractiveContactPageContent />
-    </AuthProvider>
-  );
+  return <InteractiveContactPageContent />;
 };
 
 export default InteractiveContactPage;

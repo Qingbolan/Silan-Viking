@@ -1205,29 +1205,6 @@ func UpdatedAtNotNil() predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotNull(FieldUpdatedAt))
 }
 
-// HasCategory applies the HasEdge predicate on the "category" edge.
-func HasCategory() predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, CategoryTable, CategoryColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasCategoryWith applies the HasEdge predicate on the "category" edge with a given conditions (other predicates).
-func HasCategoryWith(preds ...predicate.BlogCategory) predicate.BlogPost {
-	return predicate.BlogPost(func(s *sql.Selector) {
-		step := newCategoryStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasTranslations applies the HasEdge predicate on the "translations" edge.
 func HasTranslations() predicate.BlogPost {
 	return predicate.BlogPost(func(s *sql.Selector) {

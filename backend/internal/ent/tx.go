@@ -30,6 +30,8 @@ type Tx struct {
 	Comment *CommentClient
 	// CommentLike is the client for interacting with the CommentLike builders.
 	CommentLike *CommentLikeClient
+	// ContactMessage is the client for interacting with the ContactMessage builders.
+	ContactMessage *ContactMessageClient
 	// ContentInteraction is the client for interacting with the ContentInteraction builders.
 	ContentInteraction *ContentInteractionClient
 	// ContentRelation is the client for interacting with the ContentRelation builders.
@@ -276,6 +278,7 @@ func (tx *Tx) init() {
 	tx.BlogPostTranslation = NewBlogPostTranslationClient(tx.config)
 	tx.Comment = NewCommentClient(tx.config)
 	tx.CommentLike = NewCommentLikeClient(tx.config)
+	tx.ContactMessage = NewContactMessageClient(tx.config)
 	tx.ContentInteraction = NewContentInteractionClient(tx.config)
 	tx.ContentRelation = NewContentRelationClient(tx.config)
 	tx.ContentTag = NewContentTagClient(tx.config)

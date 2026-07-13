@@ -96,10 +96,17 @@ func (BlogPost) Fields() []ent.Field {
 // Edges of the BlogPost.
 func (BlogPost) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.From("category", BlogCategory.Type).
-			Ref("blog_posts").
-			Field("category_id").
-			Unique(),
+		// No `category` edge: SCHEMA.md `blog.category` is a free-text label
+		// the author types in frontmatter ("Engineering Notes"), not a slug
+		// or id pointing at a `blog_categories` row. The engine writes the
+		// raw string into `blog_posts.category_id` and there is no resolver
+		// that looks up `blog_categories` by name to turn it into an id.
+		// Keeping an ent edge here put a real FK on the column, and PG
+		// (unlike SQLite) enforces it — every blog post with a typed
+		// category became un-insertable after the cutover. The label-style
+		// column stays as a plain field; surfacing curated categories is a
+		// separate feature that would need a `category_slug` column and an
+		// engine-side resolver.
 		// No `series` edge: the silan-viking content model has no separate
 		// `blog_series` table — a blog's series is just the `series_id` /
 		// `series_order` fields on `blog_posts` itself (SCHEMA.md `blog`).

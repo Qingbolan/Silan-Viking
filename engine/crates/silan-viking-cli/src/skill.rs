@@ -131,6 +131,19 @@ fn render_skill_md(content_root: &Path) -> String {
             they are silan's CLI actions.\n\
          3. The `silan://agent/` namespace is never published.\n\
          \n\
+         ## Owner-only CLI actions (for when silan asks \"how do I…\")\n\
+         \n\
+         The agent never runs these — they all touch live state. When silan\n\
+         asks how to ship a change, name the right verb and stop.\n\
+         \n\
+         | silan wants to… | the verb is… |\n\
+         |---|---|\n\
+         | accept an agent proposal into `content/` | `silan-viking proposal accept <id>` (after `proposal show <id>` to review the diff) |\n\
+         | push edited content to the live backend | `silan-viking site update-content --dry-run` then `--confirm` (the narrow path: stops backend, .prev backup, md5-verifies, restarts) |\n\
+         | ship a full stack change (content + frontend + backend) | `silan-viking site deploy --confirm` |\n\
+         | undo the last content push | `silan-viking site rollback` (restores `portfolio.db.prev`) |\n\
+         | flip an Item to public *locally* | `silan-viking site publish <uri>` (this only edits frontmatter; still needs `update-content` to reach prod) |\n\
+         \n\
          ## Reference\n\
          \n\
          `reference/mcp-tools.md` — the full four-tier MCP tool surface.\n"

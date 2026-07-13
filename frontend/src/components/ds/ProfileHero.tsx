@@ -1,20 +1,18 @@
 // src/components/ds/ProfileHero.tsx
 //
-// Design-system ProfileHero — the opening block of a résumé / about page:
-// a centered name, a brand-gradient role line, an optional standfirst,
-// a contact row and social links.
-//
-// The role line uses the NUS brand gradient (orange → blue) clipped to the
-// text — the one place a gradient is on-brand, since it pairs the primary
-// and accent hues directly.
+// Design-system ProfileHero — a full-bleed editorial opening for a résumé /
+// about page. The portrait is a visual anchor; the copy and a small set of
+// explicit actions provide the visitor's next step without turning the hero
+// into a dashboard or a profile card.
 //
 // Self-contained: takes plain `ContactItem[]` / `SocialItem[]`, decoupled
 // from the app's résumé model.
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Globe } from 'lucide-react';
+import { ArrowUpRight, Mail, Phone, MapPin, Globe } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { dsRoot } from './dsAttr';
+import { Avatar } from './Avatar';
 
 export interface ContactItem {
   /** Drives the icon + the link protocol. */
@@ -29,14 +27,29 @@ export interface SocialItem {
   icon?: React.ReactNode;
 }
 
+export interface HeroAction {
+  label: string;
+  href: string;
+  /** The first action is the visual primary action by default. */
+  primary?: boolean;
+}
+
 export interface ProfileHeroProps {
   name: string;
-  /** Role / headline — rendered in the NUS brand gradient. */
+  /** Role / research focus. */
   role?: string;
   /** Standfirst line under the role (e.g. current status). */
   tagline?: string;
   contacts?: ContactItem[];
   socials?: SocialItem[];
+  /** A small, explicit next step — avoids making visitors infer an action from icon-only navigation. */
+  actions?: HeroAction[];
+  /**
+   * Headshot URL. When present, an xl Avatar is rendered above the name
+   * (centred), giving the hero an identity anchor instead of leaving the
+   * name floating in empty space. Falls back to initials on load failure.
+   */
+  avatarSrc?: string;
   className?: string;
 }
 
@@ -66,49 +79,98 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   tagline,
   contacts = [],
   socials = [],
+  actions = [],
+  avatarSrc,
   className,
 }) => (
   <section
     {...dsRoot}
-    className={cn('mx-auto max-w-3xl px-4 py-16 text-center sm:py-20', className)}
+    className={cn('relative -mx-4 isolate overflow-hidden px-6 py-8 sm:mx-auto sm:max-w-5xl sm:px-10 sm:py-14', className)}
   >
-    {/* Name — the focal point. */}
-    {name && (
-      <motion.h1
+    <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-ds-primary/10 blur-3xl" />
+    <div aria-hidden className="pointer-events-none absolute left-6 top-0 h-20 w-px bg-ds-primary/50 sm:left-10" />
+
+    {avatarSrc && (
+      <motion.div
         {...fade(0)}
-        className="text-5xl font-bold leading-[1.05] tracking-[-0.025em] text-ds-fg md:text-6xl"
+        className="absolute right-6 top-8 size-28 rounded-full shadow-[0_16px_36px_-24px_rgba(0,0,0,0.72)] ring-1 ring-black/15 dark:ring-white/25 sm:right-10 sm:top-12 sm:size-36"
+        animate={{ opacity: 1, y: [0, -3, 0] }}
+        transition={{ opacity: { duration: 0.45 }, y: { duration: 5, repeat: Infinity, ease: 'easeInOut' } }}
       >
-        {name}
-      </motion.h1>
+        <Avatar
+          src={avatarSrc}
+          name={name}
+          size="xl"
+          bordered={false}
+          className="size-full rounded-full shadow-none"
+        />
+      </motion.div>
     )}
 
-    {/* Role — flowing NUS brand gradient (orange ⇄ lifted blue). Fixed
-        brand hues via `.ds-text-gradient-flow`, so it is identical in
-        light and dark; the gradient pans on a slow loop. */}
-    {role && (
+    <div className="relative max-w-3xl pt-24 sm:pt-20">
       <motion.p
-        {...fade(0.08)}
-        className="ds-text-gradient-flow mt-3 text-xl font-semibold sm:text-2xl"
+        {...fade(0.03)}
+        className="max-w-[12rem] font-mono text-[0.6875rem] font-medium uppercase leading-5 tracking-[0.18em] text-ds-primary sm:max-w-none"
       >
-        {role}
+        NUS · Computing / AI Systems
       </motion.p>
-    )}
 
-    {/* Tagline — quiet standfirst. */}
-    {tagline && (
-      <motion.p
-        {...fade(0.16)}
-        className="mx-auto mt-4 max-w-xl text-ds-base leading-[1.6] text-ds-fg-muted"
-      >
-        {tagline}
-      </motion.p>
-    )}
+      {name && (
+        <motion.h1
+          {...fade(0.08)}
+          className="mt-4 max-w-[7ch] text-[clamp(3.75rem,16vw,5.5rem)] font-semibold leading-[0.88] tracking-[-0.065em] text-ds-fg sm:max-w-none sm:text-7xl"
+        >
+          {name}
+        </motion.h1>
+      )}
 
-    {/* Contact row — inline, hairline-quiet. */}
+      {role && (
+        <motion.p
+          {...fade(0.15)}
+          className="mt-8 max-w-[19rem] text-xl font-medium leading-[1.24] tracking-[-0.02em] text-ds-fg sm:max-w-2xl sm:text-3xl"
+        >
+          {role}
+        </motion.p>
+      )}
+
+      {tagline && (
+        <motion.p
+          {...fade(0.21)}
+          className="mt-4 max-w-[20rem] text-sm leading-6 text-ds-fg-muted sm:max-w-xl sm:text-ds-base"
+        >
+          {tagline}
+        </motion.p>
+      )}
+
+      {actions.length > 0 && (
+        <motion.nav {...fade(0.27)} aria-label="Profile actions" className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3">
+          {actions.map((action, index) => {
+            const primary = action.primary ?? index === 0;
+            return (
+              <a
+                key={`${action.href}-${action.label}`}
+                href={action.href}
+                className={cn(
+                  'inline-flex min-h-11 items-center gap-2 text-sm font-medium transition-all duration-ds-fast focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ds-ring',
+                  primary
+                    ? 'rounded-full bg-ds-primary px-5 text-ds-primary-fg shadow-sm hover:-translate-y-0.5 hover:bg-ds-primary-hover'
+                    : 'text-ds-fg-muted underline decoration-ds-border-strong underline-offset-4 hover:text-ds-fg hover:decoration-ds-primary',
+                )}
+              >
+                {action.label}
+                {primary && <ArrowUpRight size={16} aria-hidden />}
+              </a>
+            );
+          })}
+        </motion.nav>
+      )}
+    </div>
+
+    {/* Contact information is a quiet proof line, not a second visual block. */}
     {contacts.length > 0 && (
       <motion.div
-        {...fade(0.24)}
-        className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+        {...fade(0.34)}
+        className="relative mt-9 flex flex-col gap-0.5 border-t border-ds-border pt-3 sm:mt-12 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2"
       >
         {contacts.map((c, i) => {
           const href = contactHref(c.type, c.value);
@@ -121,9 +183,16 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
             </>
           );
           const cls =
-            'group inline-flex items-center gap-2 text-ds-sm text-ds-fg-muted transition-colors duration-ds-fast';
+            'group inline-flex min-h-11 items-center gap-2 pr-2 text-ds-sm text-ds-fg-muted transition-colors duration-ds-fast';
           return href ? (
-            <a key={i} href={href} className={cn(cls, 'hover:text-ds-fg')}>
+            <a
+              key={i}
+              href={href}
+              className={cn(
+                cls,
+                'rounded-ds-md hover:text-ds-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-ring',
+              )}
+            >
               {body}
             </a>
           ) : (
@@ -135,11 +204,11 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
       </motion.div>
     )}
 
-    {/* Social links — square hairline buttons; hover lifts to NUS orange. */}
+    {/* Social links remain secondary but have reliable touch targets. */}
     {socials.length > 0 && (
       <motion.div
-        {...fade(0.32)}
-        className="mt-7 flex justify-center gap-2.5"
+        {...fade(0.4)}
+        className="relative mt-2 flex gap-1 sm:mt-3"
       >
         {socials.map((s, i) => (
           <a
@@ -148,14 +217,15 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             aria-label={s.label}
+            title={s.label}
             className={cn(
-              'flex size-10 items-center justify-center rounded-ds-md border border-ds-border bg-ds-surface-1 text-ds-fg-muted',
-              'transition-colors duration-ds-fast ease-ds-standard',
-              'hover:border-ds-primary/30 hover:bg-ds-primary-soft hover:text-ds-primary',
-              '[&_svg]:size-[18px]',
+              'inline-flex size-11 items-center justify-center rounded-full text-ds-fg-muted',
+              'transition-colors duration-ds-fast ease-ds-standard active:scale-95',
+              'hover:bg-ds-primary-soft hover:text-ds-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-ring',
+              '[&_svg]:size-[22px]',
             )}
           >
-            {s.icon ?? <Globe className="size-[18px]" />}
+            {s.icon ?? <Globe className="size-[22px]" />}
           </a>
         ))}
       </motion.div>

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"silan-backend/internal/httpapi"
 	"silan-backend/internal/logic/ideas"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -21,7 +22,7 @@ func GetIdeaHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		l := ideas.NewGetIdeaLogic(r.Context(), svcCtx)
 		resp, err := l.GetIdea(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpapi.Error(r.Context(), w, err)
 		} else {
 			httpx.OkJsonCtx(r.Context(), w, resp)
 		}

@@ -1,10 +1,12 @@
-import React, { ReactNode, useRef, useEffect } from 'react';
+import React, { ReactNode, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
 import TopNavigation, { NavBefore, NavAfter, NavAvatar } from './TopNavigation';
 import { useTheme } from '../components/ThemeContext';
-import { NoiseBackground } from '../components/ds';
+import { useLanguage } from '../components/LanguageContext';
+import { MobileTabBar } from '../components/ds';
+import Footer from './Footer';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -15,11 +17,20 @@ interface MainLayoutProps {
 // inside a rounded "tab content" window — like a browser tab.
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { colors, isDarkMode } = useTheme();
+  const { language } = useLanguage();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   // The progress bar is driven straight through a ref — writing `transform`
   // on every animation frame, never via React state, so scrolling does not
   // re-render MainLayout (and the heavy NoiseBackground) on every event.
   const progressRef = useRef<HTMLDivElement | null>(null);
+
+  // The app scrolls inside the browser-window surface, not window. Route
+  // changes therefore reset this owner once, centrally; page components do
+  // not guess which scroll container happens to be active.
+  useLayoutEffect(() => {
+    document.getElementById('browser-window')?.scrollTo({ top: 0, left: 0 });
+  }, [pathname]);
 
   // Layered graphite (dark) / paper (light): the desk is the deepest
   // layer, the content window sits a step above it. The desk base stays
@@ -80,22 +91,38 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div
-      className="relative flex h-screen w-screen flex-col overflow-hidden"
+      className="relative flex h-dvh w-full flex-col overflow-hidden"
       style={{ backgroundColor: deskBg }}
     >
-      {/* Desk material — NUS orange (top-left) + NUS blue (bottom-right)
-          glows over a Gaussian-noise grain, behind the chrome and content
-          (z-0; the chrome and content window are lifted to z-10 below). */}
-      <NoiseBackground glow="nus-duo" intensity={isDarkMode ? 0.08 : 0.06} />
+      <a
+        href="#browser-window"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('browser-window')?.focus();
+        }}
+        className="fixed left-4 top-2 z-60 -translate-y-16 rounded-ds-md bg-ds-fg px-4 py-2 text-ds-sm font-medium text-ds-bg shadow-ds-3 transition-transform focus:translate-y-0"
+      >
+        {language === 'zh' ? '跳到主要内容' : 'Skip to main content'}
+      </a>
 
-      {/* ── Chrome bar ── */}
-      <header className="relative z-10 flex flex-shrink-0 items-center gap-2.5 px-3 py-1.5 sm:px-4">
+      {/* Desk material — plain neutral surface (deskBg). Per silan
+          2026-05-22: drop the NUS-duo NoiseBackground entirely, the
+          orange→blue gradient was competing with content. */}
+
+      {/* ── Chrome bar ──
+          Mobile (silan, 2026-05-22): the chrome was a crammed icon strip on
+          narrow viewports — back/fwd/reload + page hops + tools all jostled
+          the address bar down to a two-character label. Browsers have system
+          back gestures and the page has a bottom action bar already, so on
+          mobile we hide everything except the avatar + address bar and let
+          TopNavigation own the row. Desktop (sm+) keeps the full chrome. */}
+      <header className="relative z-10 flex flex-shrink-0 items-center gap-2 px-3 py-1.5 sm:gap-2.5 sm:px-4">
         {/* Personal avatar — leads to the contact page */}
         <NavAvatar />
 
         {/* Left control capsule: back / forward / reload */}
         <div
-          className="flex flex-shrink-0 items-center gap-0.5 rounded-full p-1"
+          className="hidden flex-shrink-0 items-center gap-0.5 rounded-full p-1 sm:flex"
           style={{ backgroundColor: capsuleBg, boxShadow: colors.shadowSm }}
         >
           <ControlButton label="Back" onClick={() => navigate(-1)}>
@@ -109,19 +136,26 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </ControlButton>
         </div>
 
-        {/* Pages ordered before the current one */}
-        <NavBefore />
+        {/* Pages ordered before the current one — desktop only. Mobile uses
+            the bottom action bar / address-bar popover instead. */}
+        <div className="hidden sm:contents">
+          <NavBefore />
+        </div>
 
         {/* Address bar — leads with the current page's icon */}
         <TopNavigation />
 
-        {/* Pages ordered after the current one */}
-        <NavAfter />
+        {/* Pages ordered after the current one — desktop only. */}
+        <div className="hidden sm:contents">
+          <NavAfter />
+        </div>
       </header>
 
       {/* ── Content window: the "browser tab" ── */}
       <motion.main
         id="browser-window"
+        tabIndex={-1}
+        aria-label={language === 'zh' ? '页面主要内容' : 'Page content'}
         className="relative z-10 mx-1.5 mb-1.5 flex-1 overflow-y-auto rounded-xl sm:mx-2 sm:mb-2"
         style={{ backgroundColor: windowBg }}
         initial={{ opacity: 0, y: 8 }}
@@ -143,24 +177,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           />
         </div>
 
-        {/* Content-window background — a faint NUS diffusion field pinned to
-            the window viewport, so the content area itself carries the brand
-            glow (not just the desk behind it). Kept low-intensity: this is
-            a reading surface. A sticky 0-height anchor holds a fixed-size
-            layer that tracks the window without scrolling with content. */}
-        <div className="sticky left-0 top-0 z-0 h-0 w-full">
-          <div className="absolute left-0 top-0 h-screen w-full overflow-hidden">
-            <NoiseBackground
-              glow="nus-duo"
-              intensity={isDarkMode ? 0.05 : 0.035}
-            />
-          </div>
-        </div>
+        {/* Content-window background — plain windowBg (set on motion.main).
+            Per silan 2026-05-22: dropped the inner NoiseBackground too. */}
 
-        <div className="relative z-10 mx-auto px-4 pb-16 pt-2 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto px-4 pt-2 sm:px-6 lg:px-8">
           {children}
         </div>
+        <Footer />
       </motion.main>
+
+      {/* Mobile-only glass dock — the primary nav on viewports where the
+          desktop chrome capsules (NavBefore/NavAfter) are hidden. Purely
+          `fixed` + z-40, floating above scrolling content like iOS's own
+          floating tab bars — it never reserves layout space of its own. */}
+      <MobileTabBar />
     </div>
   );
 };

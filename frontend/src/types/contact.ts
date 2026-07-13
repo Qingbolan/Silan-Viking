@@ -15,14 +15,14 @@ export interface User {
 export interface ContactMessage {
   id: string;
   author_name: string;
-  author_email: string;
+  author_email?: string;
   author_avatar?: string;
 
   // Message type
   type: 'general' | 'job';
 
   // Basic info
-  subject: string;
+  subject?: string;
   message: string;
 
   // Job-specific fields

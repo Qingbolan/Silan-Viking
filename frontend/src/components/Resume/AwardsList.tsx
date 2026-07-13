@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Award } from 'lucide-react';
+import Markdown from '../ui/Markdown';
 
 interface AwardsListProps {
   awards: string[];
@@ -46,9 +47,9 @@ const AwardsList: React.FC<AwardsListProps> = ({ awards }) => {
                   {year}
                 </span>
               )}
-              <span className="align-middle text-sm leading-relaxed text-theme-secondary">
+              <Markdown className="inline align-middle text-sm leading-relaxed text-theme-secondary [&>div]:my-0 [&>div]:inline">
                 {text}
-              </span>
+              </Markdown>
             </div>
           </motion.li>
         );

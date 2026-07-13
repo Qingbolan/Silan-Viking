@@ -79,6 +79,8 @@ export interface SegmentedProps {
   size?: 'sm' | 'md';
   /** Active-item accent. 'neutral' (default) or 'primary' (NUS orange). */
   tone?: 'neutral' | 'primary';
+  /** Accessible name for the tab list when no visible group label exists. */
+  ariaLabel?: string;
   className?: string;
 }
 
@@ -88,6 +90,7 @@ export const Segmented: React.FC<SegmentedProps> = ({
   options,
   size = 'md',
   tone = 'neutral',
+  ariaLabel,
   className,
 }) => {
   const groupId = React.useId();
@@ -95,6 +98,7 @@ export const Segmented: React.FC<SegmentedProps> = ({
     <div
       {...dsRoot}
       role="tablist"
+      aria-label={ariaLabel}
       className={cn(
         'inline-flex items-center gap-0.5 rounded-ds-md bg-ds-surface-2 p-0.5 border border-ds-border',
         className,
@@ -105,6 +109,7 @@ export const Segmented: React.FC<SegmentedProps> = ({
         return (
           <button
             key={opt.value}
+            type="button"
             {...dsRoot}
             role="tab"
             aria-selected={active}
@@ -224,6 +229,7 @@ export const Accordion: React.FC<AccordionProps> = ({
           <div key={item.key}>
             <button
               {...dsRoot}
+              type="button"
               onClick={() => toggle(item.key)}
               aria-expanded={isOpen}
               className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-ds-sm font-medium text-ds-fg transition-colors duration-ds-fast hover:bg-ds-surface-2"

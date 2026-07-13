@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { message } from 'antd';
-import { Send, Mail, User as UserIcon, Building2, Briefcase, Lock, Globe } from 'lucide-react';
-import { LoginOutlined } from '@ant-design/icons';
+import { Send, Mail, User as UserIcon, Building2, Briefcase, Lock, Globe, LogIn } from 'lucide-react';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from './AuthContext';
-import { createIdeaComment } from '../../api/ideas/ideaApi';
+import { createContactMessage } from '../../api/contact/contactApi';
+import { apiUrl } from '../../api/utils';
 import { getClientFingerprint } from '../../utils/fingerprint';
 import {
   Segmented,
@@ -14,6 +13,8 @@ import {
   Textarea,
   Switch,
   Button,
+  Spinner,
+  useToast,
 } from '../../components/ds';
 
 interface ModernContactFormProps {
@@ -29,7 +30,6 @@ interface JobFields {
   company: string;
   company_email: string;
   position: string;
-  send_resume: boolean;
 }
 
 const EMPTY_JOB: JobFields = {
@@ -38,14 +38,13 @@ const EMPTY_JOB: JobFields = {
   company: '',
   company_email: '',
   position: '',
-  send_resume: false,
 };
 
 const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMessageTypeChange, onMessageSent }) => {
   const [messageType, setMessageType] = useState<'general' | 'job'>('general');
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
   const [consentLogo, setConsentLogo] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
+  const [companyDomainAccepted, setCompanyDomainAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   // Controlled form fields.
   const [body, setBody] = useState('');
@@ -53,7 +52,8 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
   // Per-field error map — keyed by field name.
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { language } = useLanguage();
-  const { user, isAuthenticated, loginWithGoogle } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, loginWithGoogle } = useAuth();
+  const toast = useToast();
 
   const setJobField = <K extends keyof JobFields>(key: K, value: JobFields[K]) =>
     setJob((prev) => ({ ...prev, [key]: value }));
@@ -70,7 +70,7 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
       if (!job.company.trim()) next.company = t('Company required', '请输入公司名称');
       if (!job.company_email.trim()) next.company_email = t('Company email required', '请输入公司邮箱');
       if (!job.position.trim()) next.position = t('Position required', '请输入职位名称');
-      if (!emailVerified) next.company_email = t('Please verify your company email', '请验证您的公司邮箱');
+      if (!companyDomainAccepted) next.company_email = t('Validate the company email domain', '请校验企业邮箱域名');
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -83,87 +83,84 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
     setSubmitting(true);
     try {
       const fingerprint = getClientFingerprint();
-      let content = body;
-
-      if (messageType === 'job') {
-        const jobMetadata = {
-          recruiter_name: job.recruiter_name,
-          recruiter_title: job.recruiter_title,
-          company: job.company,
-          position: job.position,
-          company_email: job.company_email,
-          send_resume: job.send_resume,
-          isPublic,
-          consentCompanyLogo: consentLogo,
-        };
-        content = `${body}\n\n__METADATA__${JSON.stringify(jobMetadata)}`;
-      }
-
-      await createIdeaComment(
-        'contact-page',
-        content,
+      await createContactMessage({
+        type: messageType,
+        author_name: messageType === 'job' ? job.recruiter_name : user?.username,
+        author_email: messageType === 'job' ? job.company_email : user?.email,
+        message: body.trim(),
+        company: messageType === 'job' ? job.company : undefined,
+        company_email: messageType === 'job' ? job.company_email : undefined,
+        position: messageType === 'job' ? job.position : undefined,
+        recruiter_name: messageType === 'job' ? job.recruiter_name : undefined,
+        recruiter_title: messageType === 'job' ? job.recruiter_title : undefined,
+        is_public: isPublic,
+        consent_company_logo: messageType === 'job' ? consentLogo : false,
         fingerprint,
-        {
-          type: messageType,
-          authorName: messageType === 'job' ? job.recruiter_name : (user?.username || 'Anonymous'),
-          authorEmail: messageType === 'job' ? job.company_email : (user?.email || 'anonymous@example.com'),
-          userIdentityId: user?.id,
-          language: language as 'en' | 'zh',
-        }
-      );
+      });
 
-      message.success(t('Message sent successfully!', '留言发送成功！'));
+      toast.success(t('Message sent', '留言已发送'));
       setBody('');
       setJob(EMPTY_JOB);
-      setEmailVerified(false);
+      setIsPublic(false);
+      setConsentLogo(false);
+      setCompanyDomainAccepted(false);
       setErrors({});
       onSuccess?.();
       onMessageSent?.();
     } catch (error) {
-      message.error(t('Failed to send message', '发送失败'));
+      toast.error(t('Message could not be sent', '留言发送失败'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const verifyEmail = async () => {
+  const validateCompanyDomain = async () => {
     if (!job.company_email) {
       setErrors((p) => ({ ...p, company_email: t('Please enter company email', '请输入公司邮箱') }));
       return;
     }
     try {
-      const response = await fetch('/api/v1/auth/verify-email', {
+      const response = await fetch(apiUrl('/api/v1/auth/verify-email'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: job.company_email }),
       });
-      if (response.ok) {
-        setEmailVerified(true);
+      const payload = await response.json().catch(() => null);
+      if (response.ok && payload?.valid) {
+        setCompanyDomainAccepted(true);
         setErrors((p) => ({ ...p, company_email: '' }));
-        message.success(t('Email verified!', '邮箱验证成功！'));
+        toast.success(t('Company domain accepted', '企业邮箱域名有效'));
       } else {
-        message.error(t('Verification failed', '验证失败'));
+        setCompanyDomainAccepted(false);
+        setErrors((p) => ({
+          ...p,
+          company_email: payload?.message || t('Use a valid company email', '请使用有效的公司邮箱'),
+        }));
       }
     } catch (error) {
-      message.error(t('Verification failed', '验证失败'));
+      setCompanyDomainAccepted(false);
+      setErrors((p) => ({
+        ...p,
+        company_email: t('Email check is unavailable. Try again.', '邮箱检查暂不可用，请重试'),
+      }));
     }
   };
 
   const handleGoogleLogin = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
-      message.error(t('Login failed', '登录失败'));
+      toast.error(t('Sign-in failed', '登录失败'));
       return;
     }
     try {
       await loginWithGoogle(credentialResponse.credential);
-      message.success(t('Login successful!', '登录成功！'));
+      toast.success(t('Signed in', '登录成功'));
     } catch (error) {
-      message.error(t('Login failed', '登录失败'));
+      toast.error(t('Sign-in failed', '登录失败'));
     }
   };
 
   const handleGoogleError = () => {
-    message.error(t('Login failed', '登录失败'));
+    toast.error(t('Sign-in failed', '登录失败'));
   };
 
   return (
@@ -193,9 +190,8 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
         ]}
       />
 
-      {/* Privacy Settings — only for job type. */}
-      {messageType === 'job' && (
-        <div className="rounded-ds-lg border border-ds-border bg-ds-surface-2 p-4">
+      {/* Publication is always explicit and privacy-preserving by default. */}
+      <div className="rounded-ds-lg border border-ds-border bg-ds-surface-2 p-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -204,17 +200,23 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
                 </div>
                 <div>
                   <div className="text-ds-sm font-medium text-ds-fg">
-                    {t('Display Publicly', '公开展示')}
+                    {t('Publish on the message wall', '发布到公开留言墙')}
                   </div>
                   <div className="text-ds-xs text-ds-fg-subtle">
-                    {t('Show on public board after review', '审核后在公开留言板显示')}
+                    {isPublic
+                      ? t('Anyone can read this message', '任何人都可以阅读这条留言')
+                      : t('Only Silan can read this message', '仅 Silan 可以阅读这条留言')}
                   </div>
                 </div>
               </div>
-              <Switch checked={isPublic} onChange={setIsPublic} />
+              <Switch
+                checked={isPublic}
+                onChange={setIsPublic}
+                ariaLabel={t('Publish on the public message wall', '发布到公开留言墙')}
+              />
             </div>
 
-            {emailVerified && (
+            {messageType === 'job' && companyDomainAccepted && (
               <div className="flex items-center justify-between border-t border-ds-border pt-3">
                 <div className="flex items-center gap-2.5">
                   <div className="rounded-ds-md bg-ds-primary-soft p-1.5">
@@ -222,25 +224,33 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
                   </div>
                   <div>
                     <div className="text-ds-sm font-medium text-ds-fg">
-                      {t('Display Company Logo', '展示公司标识')}
+                      {t('Display Company Name', '展示公司名称')}
                     </div>
                     <div className="text-ds-xs text-ds-fg-subtle">
-                      {t('Show company name and logo', '允许展示公司名称和 Logo')}
+                      {t('Show the company name on the public message', '允许在公开留言中展示公司名称')}
                     </div>
                   </div>
                 </div>
-                <Switch checked={consentLogo} onChange={setConsentLogo} disabled={!isPublic} />
+                <Switch
+                  checked={consentLogo}
+                  onChange={setConsentLogo}
+                  disabled={!isPublic}
+                  ariaLabel={t('Display company name publicly', '公开展示公司名称')}
+                />
               </div>
             )}
           </div>
-        </div>
-      )}
+      </div>
 
       {/* Login required for a general message. */}
-      {!isAuthenticated && messageType === 'general' ? (
+      {authLoading && messageType === 'general' ? (
+        <div className="flex min-h-48 items-center justify-center" aria-live="polite">
+          <Spinner label={t('Checking sign-in session', '正在检查登录状态')} />
+        </div>
+      ) : !isAuthenticated && messageType === 'general' ? (
         <div className="space-y-4 py-8 text-center">
           <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-ds-primary">
-            <LoginOutlined className="text-2xl text-white" />
+            <LogIn className="size-7 text-white" aria-hidden />
           </div>
           <div>
             <h3 className="mb-2 text-ds-lg font-semibold text-ds-fg">
@@ -304,15 +314,18 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
                       placeholder={t('Company Email', '公司邮箱')}
                       invalid={!!errors.company_email}
                       value={job.company_email}
-                      onChange={(e) => setJobField('company_email', e.target.value)}
+                      onChange={(e) => {
+                        setJobField('company_email', e.target.value);
+                        setCompanyDomainAccepted(false);
+                      }}
                     />
                     <Button
                       type="button"
-                      variant={emailVerified ? 'outline' : 'primary'}
-                      onClick={verifyEmail}
-                      disabled={emailVerified}
+                      variant={companyDomainAccepted ? 'outline' : 'primary'}
+                      onClick={validateCompanyDomain}
+                      disabled={companyDomainAccepted}
                     >
-                      {emailVerified ? `✓ ${t('Verified', '已验证')}` : t('Verify', '验证')}
+                      {companyDomainAccepted ? `✓ ${t('Valid domain', '域名有效')}` : t('Validate domain', '校验域名')}
                     </Button>
                   </div>
                 </Field>
@@ -328,12 +341,6 @@ const ModernContactForm: React.FC<ModernContactFormProps> = ({ onSuccess, onMess
                 />
               </Field>
 
-              <Switch
-                checked={job.send_resume}
-                onChange={(v) => setJobField('send_resume', v)}
-                disabled={!emailVerified}
-                label={t('Send my resume to this email', '向此邮箱发送我的简历')}
-              />
             </>
           )}
 

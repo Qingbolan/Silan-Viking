@@ -12,3 +12,7 @@ Database:
   ssl_mode: ""
 Auth:
   google_client_id: ""
+Media:
+  # The development server runs from backend/, so serve the canonical
+  # content assets without maintaining a second copied media directory.
+  Root: ../content/resources

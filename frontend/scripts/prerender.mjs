@@ -1,23 +1,21 @@
 // scripts/prerender.mjs
 //
-// Post-build static prerender. After `vite build`, this:
-//   1. starts the Go backend (so API-driven content is real),
-//   2. serves dist/ with an /api proxy to the backend,
-//   3. opens every static route in headless Chromium, waits for the
-//      network to go idle (data loaded), and snapshots the rendered HTML,
-//   4. writes each route back to dist/<route>/index.html.
-//
-// Detail pages (/blog/:id, /projects/:id, /ideas/:id) are NOT prerendered
-// here — they stay client-rendered with react-helmet driving their <head>.
-//
-// Run via `npm run build:seo`. Plain `npm run build` is untouched, so CI
-// without a backend still produces a normal SPA build.
+// Post-build static prerender. A target is a named build profile:
+// `--target <name>` loads `.env.<name>` and uses its public base/origin and API
+// origin. The default target preserves the existing silan.tech build flow.
 import { spawn } from 'node:child_process';
 import http from 'node:http';
 import { createServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+} from 'node:fs';
 import sirv from 'sirv';
 import puppeteer from 'puppeteer';
 
@@ -29,84 +27,158 @@ const DIST = join(FRONTEND, 'dist');
 const BACKEND_PORT = 5200;
 const SERVE_PORT = 4185;
 const DB_PATH = join(REPO, '_deploy', 'api', 'portfolio.db');
+const CHROME_CANDIDATES = [
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/Applications/Chromium.app/Contents/MacOS/Chromium',
+  '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+].filter(Boolean);
 
-// Static, indexable routes — always prerendered.
-const STATIC_ROUTES = ['/', '/blog', '/projects', '/ideas', '/plans', '/recent-updates', '/contact'];
+const TARGET = process.argv.includes('--target')
+  ? process.argv[process.argv.indexOf('--target') + 1]
+  : 'default';
 
-/** Fetch JSON from the running backend. */
-const fetchJson = (path) =>
-  new Promise((res, rej) => {
-    http
-      .get(`http://localhost:${BACKEND_PORT}${path}`, (r) => {
-        let d = '';
-        r.on('data', (c) => (d += c));
-        r.on('end', () => {
-          try {
-            res(JSON.parse(d));
-          } catch {
-            rej(new Error(`bad JSON from ${path}`));
-          }
-        });
-      })
-      .on('error', rej);
-  });
+const trimTrailingSlash = (value) => value.replace(/\/+$/, '');
+const trimSlashes = (value) => value.replace(/^\/+|\/+$/g, '');
 
-/** Normalise a list response to an array. */
+function readEnvFile(path) {
+  if (!existsSync(path)) return {};
+  const entries = {};
+  for (const rawLine of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    entries[key] = value;
+  }
+  return entries;
+}
+
+function targetEnv(name) {
+  if (name === 'default') return {};
+  const envPath = join(FRONTEND, `.env.${name}`);
+  if (!existsSync(envPath)) {
+    throw new Error(`unknown prerender target "${name}" — expected ${envPath}`);
+  }
+  return readEnvFile(envPath);
+}
+
+const profileEnv = targetEnv(TARGET);
+const envValue = (key) => process.env[key] || profileEnv[key];
+const normalizeBase = (value) => {
+  if (!value || value === '/') return '/';
+  const withLeading = value.startsWith('/') ? value : `/${value}`;
+  return withLeading.endsWith('/') ? withLeading : `${withLeading}/`;
+};
+const apiOrigin = envValue('VITE_API_ORIGIN') || `http://localhost:${BACKEND_PORT}`;
+const isLocalApiOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(apiOrigin);
+const startLocalBackend =
+  envValue('PRERENDER_START_LOCAL_BACKEND') === undefined
+    ? isLocalApiOrigin
+    : envValue('PRERENDER_START_LOCAL_BACKEND') === 'true';
+
+const config = {
+  name: envValue('PRERENDER_LABEL') || TARGET,
+  base: normalizeBase(envValue('VITE_PUBLIC_BASE') || '/'),
+  publicOrigin: trimTrailingSlash(envValue('VITE_PUBLIC_ORIGIN') || 'https://silan.tech'),
+  apiOrigin,
+  startLocalBackend,
+};
+
+const log = (m) => console.log(`[prerender:${config.name}] ${m}`);
+
+const basePath = config.base === '/' ? '' : trimTrailingSlash(config.base);
+const publicUrl = (route = '/') => {
+  const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
+  return `${trimTrailingSlash(config.publicOrigin)}${basePath}${normalizedRoute}`;
+};
+const apiUrl = (path) => new URL(path, `${trimTrailingSlash(config.apiOrigin)}/`).toString();
+
+const STATIC_ROUTES = ['/', '/blog/', '/projects/', '/ideas/', '/recent-updates/', '/contact/', '/search/'];
+
+async function fetchJson(path) {
+  const response = await fetch(apiUrl(path));
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText} from ${path}`);
+  return response.json();
+}
+
 const asArray = (j) =>
-  Array.isArray(j) ? j : j?.posts || j?.projects || j?.ideas || j?.data || j?.list || [];
+  Array.isArray(j) ? j : j?.posts || j?.projects || j?.ideas || j?.series || j?.episodes || j?.data || j?.list || [];
 
-/**
- * Collect every detail-page route from the backend:
- * /blog/:slug, /projects/:id, /ideas/:id.
- */
+const routeDir = (route) => (route === '/' ? DIST : join(DIST, trimSlashes(route)));
+
+const withTrailingSlash = (route) => {
+  if (route === '/') return route;
+  return route.endsWith('/') ? route : `${route}/`;
+};
+
 async function detailRoutes() {
   const routes = [];
   try {
     const blogs = asArray(await fetchJson('/api/v1/blog/posts?lang=en'));
     for (const b of blogs) {
       const seg = b.slug || b.id;
-      if (seg) routes.push(`/blog/${seg}`);
+      if (seg) routes.push(`/blog/${seg}/`);
     }
   } catch (e) {
     log(`could not list blog posts: ${e.message}`);
   }
   try {
     const projects = asArray(await fetchJson('/api/v1/projects?lang=en'));
-    for (const p of projects) if (p.id) routes.push(`/projects/${p.id}`);
+    for (const p of projects) {
+      const seg = p.slug || p.id;
+      if (seg) routes.push(`/projects/${seg}/`);
+    }
   } catch (e) {
     log(`could not list projects: ${e.message}`);
   }
   try {
     const ideas = asArray(await fetchJson('/api/v1/ideas?lang=en'));
-    for (const i of ideas) if (i.id) routes.push(`/ideas/${i.id}`);
+    for (const i of ideas) {
+      const seg = i.id || i.slug;
+      if (seg) routes.push(`/ideas/${seg}/`);
+    }
   } catch (e) {
     log(`could not list ideas: ${e.message}`);
+  }
+  try {
+    const series = asArray(await fetchJson('/api/v1/episodes/series?lang=en'));
+    for (const s of series) {
+      for (const episode of asArray(s.episodes)) {
+        if (episode.slug) routes.push(`/episodes/${episode.slug}/`);
+      }
+    }
+  } catch (e) {
+    log(`could not list episodes: ${e.message}`);
   }
   return routes;
 }
 
-const SITE_URL = 'https://silan.tech';
-
-const log = (m) => console.log(`[prerender] ${m}`);
-
-/** Per-route sitemap priority. */
 const priorityFor = (route) => {
-  if (route === '/') return '1.0';
-  if (/^\/(blog|projects|ideas)$/.test(route)) return '0.8';
-  if (/^\/(blog|projects|ideas)\//.test(route)) return '0.7';
+  const normalized = route.replace(/\/$/, '') || '/';
+  if (normalized === '/') return '1.0';
+  if (/^\/(blog|projects|ideas)$/.test(normalized)) return '0.8';
+  if (/^\/(blog|projects|ideas|episodes)\//.test(normalized)) return '0.7';
   return '0.6';
 };
 
-/** Write dist/sitemap.xml covering every prerendered route. */
 function writeSitemap(routes) {
   const today = new Date().toISOString().slice(0, 10);
   const urls = routes
     .map(
-      (r) =>
-        `  <url>\n    <loc>${SITE_URL}${r}</loc>\n` +
+      (route) =>
+        `  <url>\n    <loc>${publicUrl(withTrailingSlash(route))}</loc>\n` +
         `    <lastmod>${today}</lastmod>\n` +
         `    <changefreq>weekly</changefreq>\n` +
-        `    <priority>${priorityFor(r)}</priority>\n  </url>`,
+        `    <priority>${priorityFor(route)}</priority>\n  </url>`,
     )
     .join('\n');
   const xml =
@@ -117,7 +189,78 @@ function writeSitemap(routes) {
   writeFileSync(join(DIST, 'sitemap.xml'), xml, 'utf8');
 }
 
-/** Wait until an HTTP endpoint answers, or time out. */
+function rewriteManifest() {
+  const path = join(DIST, 'manifest.json');
+  if (!existsSync(path)) return;
+  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  const prefixPublicPath = (value) => {
+    if (typeof value !== 'string' || /^(https?:)?\/\//i.test(value)) return value;
+    if (basePath && (value === basePath || value.startsWith(`${basePath}/`))) return value;
+    const raw = value.startsWith('/') ? value : `/${value}`;
+    return `${basePath}${raw}` || raw;
+  };
+  manifest.icons = Array.isArray(manifest.icons)
+    ? manifest.icons.map((icon) => ({ ...icon, src: prefixPublicPath(icon.src) }))
+    : manifest.icons;
+  manifest.id = `${basePath}/` || '/';
+  manifest.start_url = `${basePath}/` || '/';
+  manifest.scope = `${basePath}/` || '/';
+  writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+}
+
+function rewriteHtmlMetadata(routes) {
+  for (const route of routes) {
+    const path = join(routeDir(route), 'index.html');
+    if (!existsSync(path)) continue;
+    const canonical = publicUrl(withTrailingSlash(route));
+    let html = readFileSync(path, 'utf8');
+    html = html.replace(/(rel="canonical"\s+href=")[^"]*(")/g, `$1${canonical}$2`);
+    html = html.replace(/(property="og:url"\s+content=")[^"]*(")/g, `$1${canonical}$2`);
+    writeFileSync(path, html, 'utf8');
+  }
+}
+
+function writeRobots() {
+  const disallowPrefix = basePath || '';
+  const robots = [
+    'User-agent: *',
+    'Allow: /',
+    '# Internal pages — not for indexing.',
+    `Disallow: ${disallowPrefix}/search`,
+    `Disallow: ${disallowPrefix}/gallery`,
+    `Disallow: ${disallowPrefix}/design`,
+    '',
+    `Sitemap: ${publicUrl('/sitemap.xml')}`,
+    '',
+  ].join('\n');
+  writeFileSync(join(DIST, 'robots.txt'), robots, 'utf8');
+}
+
+function walkFiles(dir, predicate, out = []) {
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    const stats = statSync(path);
+    if (stats.isDirectory()) walkFiles(path, predicate, out);
+    else if (predicate(path)) out.push(path);
+  }
+  return out;
+}
+
+function rewriteBuiltAssetPaths() {
+  if (!basePath) return;
+  const files = walkFiles(DIST, (path) => /\.(html|css)$/.test(path));
+  const publicRoots = ['fonts', 'image.png', 'favicon.ico', 'manifest.json', 'avatar-'];
+  for (const file of files) {
+    let source = readFileSync(file, 'utf8');
+    for (const root of publicRoots) {
+      source = source.replaceAll(`"/${root}`, `"${basePath}/${root}`);
+      source = source.replaceAll(`'/${root}`, `'${basePath}/${root}`);
+      source = source.replaceAll(`(/${root}`, `(${basePath}/${root}`);
+    }
+    writeFileSync(file, source, 'utf8');
+  }
+}
+
 const waitForHttp = (url, timeoutMs = 30000) =>
   new Promise((res, rej) => {
     const started = Date.now();
@@ -135,46 +278,60 @@ const waitForHttp = (url, timeoutMs = 30000) =>
     tick();
   });
 
-async function main() {
-  if (!existsSync(DIST)) {
-    throw new Error('dist/ not found — run `vite build` first.');
-  }
+const withTimeout = (promise, timeoutMs, label) =>
+  Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => {
+      log(`WARNING: timed out while closing ${label}.`);
+      resolve();
+    }, timeoutMs)),
+  ]);
 
-  // 1. Backend — reuse one already on :5200, else start our own.
-  const apiUrl = `http://localhost:${BACKEND_PORT}/api/v1/resume`;
+async function ensureBackend() {
+  if (!config.startLocalBackend) return { backend: null, backendUp: true };
+
+  const healthUrl = apiUrl('/api/v1/resume');
   let backend = null;
-  let backendUp = false;
   try {
-    await waitForHttp(apiUrl, 1500);
-    backendUp = true;
+    await waitForHttp(healthUrl, 1500);
     log('reusing the backend already running on :5200.');
+    return { backend, backendUp: true };
   } catch {
-    log('starting backend…');
+    log('starting backend...');
     backend = spawn(
       'go',
       [
         'run', 'backend.go',
         '--port', String(BACKEND_PORT),
-        // Pass both — the backend only honours --db-source when --db-driver
-        // is also set (else it resets the source to its default).
         '--db-driver', 'sqlite3',
         '--db-source', DB_PATH,
       ],
       { cwd: join(REPO, 'backend'), stdio: 'inherit' },
     );
-    try {
-      await waitForHttp(apiUrl, 40000);
-      backendUp = true;
-      log('backend is up.');
-    } catch {
-      log('WARNING: backend did not come up — prerendered pages will show the loading state.');
-    }
   }
 
-  // 2. Serve dist/ with an /api proxy to the backend.
+  try {
+    await waitForHttp(healthUrl, 40000);
+    log('backend is up.');
+    return { backend, backendUp: true };
+  } catch {
+    log('WARNING: backend did not come up — prerendered pages will show the loading state.');
+    return { backend, backendUp: false };
+  }
+}
+
+function startStaticServer() {
   const assets = sirv(DIST, { dev: false, single: false });
   const server = createServer((req, res) => {
-    if (req.url.startsWith('/api')) {
+    const original = new URL(req.url || '/', `http://localhost:${SERVE_PORT}`);
+    let pathname = original.pathname;
+
+    if (basePath && (pathname === basePath || pathname.startsWith(`${basePath}/`))) {
+      pathname = pathname.slice(basePath.length) || '/';
+    }
+    req.url = `${pathname}${original.search}`;
+
+    if (config.startLocalBackend && req.url.startsWith('/api')) {
       const proxy = http.request(
         { host: 'localhost', port: BACKEND_PORT, path: req.url, method: req.method, headers: req.headers },
         (pr) => {
@@ -189,32 +346,46 @@ async function main() {
       req.pipe(proxy);
       return;
     }
+
     assets(req, res, () => {
-      // SPA fallback — serve index.html for unknown paths.
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(readFileSync(join(DIST, 'index.html')));
     });
   });
-  await new Promise((r) => server.listen(SERVE_PORT, r));
-  log(`serving dist/ on http://localhost:${SERVE_PORT}`);
+  return new Promise((resolveServer) => {
+    server.listen(SERVE_PORT, () => resolveServer(server));
+  });
+}
 
-  // 3. Build the full route list — static routes + every detail page.
+const chromeExecutablePath = () => CHROME_CANDIDATES.find((path) => existsSync(path));
+
+async function main() {
+  if (!existsSync(DIST)) {
+    throw new Error('dist/ not found — run `vite build` first.');
+  }
+
+  const { backend, backendUp } = await ensureBackend();
+  const server = await startStaticServer();
+  log(`serving dist/ on http://localhost:${SERVE_PORT}${config.base}`);
+
   const detail = backendUp ? await detailRoutes() : [];
-  const routes = [...STATIC_ROUTES, ...detail];
+  const routes = [...new Set([...STATIC_ROUTES, ...detail].map(withTrailingSlash))];
   log(`${routes.length} routes to prerender (${detail.length} detail pages).`);
 
-  // 4. Render each route in headless Chromium.
-  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+  const browser = await puppeteer.launch({
+    headless: 'new',
+    executablePath: chromeExecutablePath(),
+    args: ['--no-sandbox'],
+  });
   for (const route of routes) {
     const page = await browser.newPage();
-    const url = `http://localhost:${SERVE_PORT}${route}`;
+    const url = `http://localhost:${SERVE_PORT}${basePath}${route}`;
     log(`rendering ${route}`);
     try {
       await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
-      // Give react-helmet a beat to flush <head>.
       await new Promise((r) => setTimeout(r, 300));
       const html = await page.content();
-      const outDir = route === '/' ? DIST : join(DIST, route);
+      const outDir = routeDir(route);
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, 'index.html'), html, 'utf8');
     } catch (err) {
@@ -223,13 +394,15 @@ async function main() {
     await page.close();
   }
 
-  // 5. Write sitemap.xml — every prerendered route.
   writeSitemap(routes);
-  log('wrote sitemap.xml');
+  rewriteHtmlMetadata(routes);
+  rewriteManifest();
+  writeRobots();
+  rewriteBuiltAssetPaths();
+  log('wrote sitemap.xml, robots.txt and manifest.json');
 
-  // 6. Tear down.
-  await browser.close();
-  server.close();
+  await withTimeout(browser.close(), 5000, 'browser');
+  await new Promise((resolve) => server.close(resolve));
   if (backend) backend.kill('SIGTERM');
   log(backendUp ? 'done — pages prerendered with live content.' : 'done — pages prerendered (shell only).');
   process.exit(0);

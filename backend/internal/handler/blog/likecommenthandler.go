@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	"silan-backend/internal/logic/blog"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -21,6 +22,7 @@ func LikeCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		req.ClientIP = utils.GetClientIP(r)
 		req.UserAgentFull = utils.GetUserAgent(r)
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := blog.NewLikeCommentLogic(r.Context(), svcCtx)
 		resp, err := l.LikeComment(&req)

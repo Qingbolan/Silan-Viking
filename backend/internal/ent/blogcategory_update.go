@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"silan-backend/internal/ent/blogcategory"
 	"silan-backend/internal/ent/blogcategorytranslation"
-	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/predicate"
 	"time"
 
@@ -146,21 +145,6 @@ func (bcu *BlogCategoryUpdate) AddTranslations(b ...*BlogCategoryTranslation) *B
 	return bcu.AddTranslationIDs(ids...)
 }
 
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (bcu *BlogCategoryUpdate) AddBlogPostIDs(ids ...string) *BlogCategoryUpdate {
-	bcu.mutation.AddBlogPostIDs(ids...)
-	return bcu
-}
-
-// AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
-func (bcu *BlogCategoryUpdate) AddBlogPosts(b ...*BlogPost) *BlogCategoryUpdate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bcu.AddBlogPostIDs(ids...)
-}
-
 // Mutation returns the BlogCategoryMutation object of the builder.
 func (bcu *BlogCategoryUpdate) Mutation() *BlogCategoryMutation {
 	return bcu.mutation
@@ -185,27 +169,6 @@ func (bcu *BlogCategoryUpdate) RemoveTranslations(b ...*BlogCategoryTranslation)
 		ids[i] = b[i].ID
 	}
 	return bcu.RemoveTranslationIDs(ids...)
-}
-
-// ClearBlogPosts clears all "blog_posts" edges to the BlogPost entity.
-func (bcu *BlogCategoryUpdate) ClearBlogPosts() *BlogCategoryUpdate {
-	bcu.mutation.ClearBlogPosts()
-	return bcu
-}
-
-// RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (bcu *BlogCategoryUpdate) RemoveBlogPostIDs(ids ...string) *BlogCategoryUpdate {
-	bcu.mutation.RemoveBlogPostIDs(ids...)
-	return bcu
-}
-
-// RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
-func (bcu *BlogCategoryUpdate) RemoveBlogPosts(b ...*BlogPost) *BlogCategoryUpdate {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bcu.RemoveBlogPostIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -354,51 +317,6 @@ func (bcu *BlogCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if bcu.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogcategory.BlogPostsTable,
-			Columns: []string{blogcategory.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bcu.mutation.RemovedBlogPostsIDs(); len(nodes) > 0 && !bcu.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogcategory.BlogPostsTable,
-			Columns: []string{blogcategory.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bcu.mutation.BlogPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogcategory.BlogPostsTable,
-			Columns: []string{blogcategory.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, bcu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{blogcategory.Label}
@@ -535,21 +453,6 @@ func (bcuo *BlogCategoryUpdateOne) AddTranslations(b ...*BlogCategoryTranslation
 	return bcuo.AddTranslationIDs(ids...)
 }
 
-// AddBlogPostIDs adds the "blog_posts" edge to the BlogPost entity by IDs.
-func (bcuo *BlogCategoryUpdateOne) AddBlogPostIDs(ids ...string) *BlogCategoryUpdateOne {
-	bcuo.mutation.AddBlogPostIDs(ids...)
-	return bcuo
-}
-
-// AddBlogPosts adds the "blog_posts" edges to the BlogPost entity.
-func (bcuo *BlogCategoryUpdateOne) AddBlogPosts(b ...*BlogPost) *BlogCategoryUpdateOne {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bcuo.AddBlogPostIDs(ids...)
-}
-
 // Mutation returns the BlogCategoryMutation object of the builder.
 func (bcuo *BlogCategoryUpdateOne) Mutation() *BlogCategoryMutation {
 	return bcuo.mutation
@@ -574,27 +477,6 @@ func (bcuo *BlogCategoryUpdateOne) RemoveTranslations(b ...*BlogCategoryTranslat
 		ids[i] = b[i].ID
 	}
 	return bcuo.RemoveTranslationIDs(ids...)
-}
-
-// ClearBlogPosts clears all "blog_posts" edges to the BlogPost entity.
-func (bcuo *BlogCategoryUpdateOne) ClearBlogPosts() *BlogCategoryUpdateOne {
-	bcuo.mutation.ClearBlogPosts()
-	return bcuo
-}
-
-// RemoveBlogPostIDs removes the "blog_posts" edge to BlogPost entities by IDs.
-func (bcuo *BlogCategoryUpdateOne) RemoveBlogPostIDs(ids ...string) *BlogCategoryUpdateOne {
-	bcuo.mutation.RemoveBlogPostIDs(ids...)
-	return bcuo
-}
-
-// RemoveBlogPosts removes "blog_posts" edges to BlogPost entities.
-func (bcuo *BlogCategoryUpdateOne) RemoveBlogPosts(b ...*BlogPost) *BlogCategoryUpdateOne {
-	ids := make([]string, len(b))
-	for i := range b {
-		ids[i] = b[i].ID
-	}
-	return bcuo.RemoveBlogPostIDs(ids...)
 }
 
 // Where appends a list predicates to the BlogCategoryUpdate builder.
@@ -766,51 +648,6 @@ func (bcuo *BlogCategoryUpdateOne) sqlSave(ctx context.Context) (_node *BlogCate
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(blogcategorytranslation.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if bcuo.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogcategory.BlogPostsTable,
-			Columns: []string{blogcategory.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bcuo.mutation.RemovedBlogPostsIDs(); len(nodes) > 0 && !bcuo.mutation.BlogPostsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogcategory.BlogPostsTable,
-			Columns: []string{blogcategory.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := bcuo.mutation.BlogPostsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   blogcategory.BlogPostsTable,
-			Columns: []string{blogcategory.BlogPostsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(blogpost.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

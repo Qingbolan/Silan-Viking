@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	"silan-backend/internal/logic/blog"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -22,6 +23,7 @@ func DeleteBlogCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// Extract client info for logging/auditing
 		req.ClientIP = utils.GetClientIP(r)
 		req.UserAgentFull = utils.GetUserAgent(r)
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := blog.NewDeleteBlogCommentLogic(r.Context(), svcCtx)
 		err := l.DeleteBlogComment(&req)
