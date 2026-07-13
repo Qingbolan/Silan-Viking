@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	"silan-backend/internal/logic/auth"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -23,6 +24,7 @@ func GoogleVerifyHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {
+			authn.SetSessionCookie(w, r, req.IdToken)
 			httpx.OkJsonCtx(r.Context(), w, resp)
 		}
 	}

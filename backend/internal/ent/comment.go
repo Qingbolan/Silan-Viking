@@ -32,7 +32,7 @@ type Comment struct {
 	AuthorWebsite string `json:"author_website,omitempty"`
 	// Content holds the value of the "content" field.
 	Content string `json:"content,omitempty"`
-	// Type of comment (M0.5a §11.6: enum)
+	// Discussion kind; issue is reserved for project issue threads
 	Type comment.Type `json:"type,omitempty"`
 	// ReferenceID holds the value of the "reference_id" field.
 	ReferenceID string `json:"reference_id,omitempty"`

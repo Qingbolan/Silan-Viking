@@ -64,8 +64,8 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 	authorName := req.AuthorName
 	authorEmail := req.AuthorEmail
 	avatarURL := ""
-	if req.UserIdentityId != "" && strings.TrimSpace(req.UserIdentityId) != "" {
-		user, err := l.svcCtx.DB.UserIdentity.Get(l.ctx, req.UserIdentityId)
+	if req.AuthenticatedUserID != "" && strings.TrimSpace(req.AuthenticatedUserID) != "" {
+		user, err := l.svcCtx.DB.UserIdentity.Get(l.ctx, req.AuthenticatedUserID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid user identity")
 		}
@@ -97,11 +97,12 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		userAgent += " | " + req.UserAgentFull
 	}
 
-	// Create comment using entgo
-	// Use entity_type with idea_<type> for better filtering while keeping the type field
-	entityType := "idea_" + strings.ToLower(req.Type)
+	// entity_type identifies the owning content model; the independent type
+	// column identifies general/question/feedback. Combining both values
+	// (for example "idea_general") violates the ent enum and makes every
+	// create fail at validation time.
 	commentBuilder := l.svcCtx.DB.Comment.Create().
-		SetEntityType(entcomment.EntityType(entityType)).
+		SetEntityType(entcomment.EntityTypeIdea).
 		SetEntityID(ideaUUID).
 		SetType(entcomment.Type(req.Type)).
 		SetAuthorName(authorName).
@@ -122,8 +123,8 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 	if userAgent != "" {
 		commentBuilder = commentBuilder.SetUserAgent(userAgent)
 	}
-	if req.UserIdentityId != "" {
-		commentBuilder = commentBuilder.SetUserIdentityID(req.UserIdentityId)
+	if req.AuthenticatedUserID != "" {
+		commentBuilder = commentBuilder.SetUserIdentityID(req.AuthenticatedUserID)
 	}
 
 	comment, err := commentBuilder.Save(l.ctx)
@@ -140,7 +141,7 @@ func (l *CreateCommentLogic) CreateComment(req *types.CreateIdeaCommentRequest) 
 		Content:         comment.Content,
 		Type:            string(comment.Type),
 		CreatedAt:       comment.CreatedAt.Format(time.RFC3339),
-		UserIdentityID:  req.UserIdentityId,
+		CanDelete:       true,
 		LikesCount:      comment.LikesCount,
 		IsLikedByUser:   false,
 		Replies:         []types.IdeaCommentData{},

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	"silan-backend/internal/logic/blog"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -24,7 +25,7 @@ func ListBlogCommentsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		clientIP := utils.GetClientIP(r)
 		userAgent := utils.GetUserAgent(r)
 		fingerprint := r.URL.Query().Get("fingerprint")
-		userIdentityID := r.URL.Query().Get("user_identity_id")
+		userIdentityID := authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 		l.Infof("Comments list request for post %s from IP %s", req.ID, clientIP)
 
 		resp, err := l.ListBlogComments(&req, clientIP, userAgent, fingerprint, userIdentityID)

@@ -77,6 +77,9 @@ func (c *Config) LoadConfigFromEnv() {
 	if googleID := os.Getenv("GOOGLE_CLIENT_ID"); googleID != "" {
 		c.Auth.GoogleClientID = googleID
 	}
+	if mediaRoot := os.Getenv("MEDIA_ROOT"); mediaRoot != "" {
+		c.Media.Root = mediaRoot
+	}
 
 	// Auto-generate connection string if individual components are provided
 	if c.Database.Source == "" && c.Database.Host != "" {

@@ -116,6 +116,18 @@ func (f CommentLikeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommentLikeMutation", m)
 }
 
+// The ContactMessageFunc type is an adapter to allow the use of ordinary
+// function as ContactMessage mutator.
+type ContactMessageFunc func(context.Context, *ent.ContactMessageMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ContactMessageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ContactMessageMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ContactMessageMutation", m)
+}
+
 // The ContentInteractionFunc type is an adapter to allow the use of ordinary
 // function as ContentInteraction mutator.
 type ContentInteractionFunc func(context.Context, *ent.ContentInteractionMutation) (ent.Value, error)

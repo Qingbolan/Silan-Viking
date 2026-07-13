@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	"silan-backend/internal/logic/blog"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -22,6 +23,7 @@ func CreateBlogCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// Extract client info
 		req.ClientIP = utils.GetClientIP(r)
 		req.UserAgentFull = utils.GetUserAgent(r)
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := blog.NewCreateBlogCommentLogic(r.Context(), svcCtx)
 		resp, err := l.CreateBlogComment(&req)

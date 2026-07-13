@@ -3,32 +3,11 @@
 
 package types
 
-type AnnualPlan struct {
-	ID           string        `json:"id"`
-	Year         int           `json:"year"`
-	Name         string        `json:"name"`
-	Description  string        `json:"description"`
-	Icon         string        `json:"icon,omitempty"`
-	Image        string        `json:"image,omitempty"`
-	ProjectCount int           `json:"project_count"`
-	Objectives   []string      `json:"objectives"`
-	Projects     []PlanProject `json:"projects"`
-	CreatedAt    string        `json:"created_at"`
-	UpdatedAt    string        `json:"updated_at"`
-}
-
-type AnnualPlanListRequest struct {
-	Language string `form:"lang,default=en"`
-}
-
-type AnnualPlanRequest struct {
-	Name     string `path:"name"`
-	Language string `form:"lang,default=en"`
-}
-
 type BlogByIdRequest struct {
-	ID       string `path:"id"`
-	Language string `form:"lang,default=en"`
+	ID                  string `path:"id"`
+	Fingerprint         string `form:"fingerprint,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	Language            string `form:"lang,default=en"`
 }
 
 type BlogCategoriesRequest struct {
@@ -52,7 +31,7 @@ type BlogCommentData struct {
 	AuthorAvatarURL string            `json:"author_avatar_url,optional"`
 	Content         string            `json:"content"`
 	CreatedAt       string            `json:"created_at"`
-	UserIdentityID  string            `json:"user_identity_id,optional"`
+	CanDelete       bool              `json:"can_delete"`
 	LikesCount      int               `json:"likes_count"`
 	IsLikedByUser   bool              `json:"is_liked_by_user"`
 	Replies         []BlogCommentData `json:"replies,optional"`
@@ -89,6 +68,7 @@ type BlogData struct {
 	Tags                []string      `json:"tags"`
 	Content             []BlogContent `json:"content"`
 	Likes               int64         `json:"likes"`
+	IsLikedByUser       bool          `json:"is_liked_by_user"`
 	Views               int64         `json:"views"`
 	Summary             string        `json:"summary"`
 	SummaryZh           string        `json:"summary_zh,omitempty"`
@@ -130,8 +110,10 @@ type BlogListResponse struct {
 }
 
 type BlogRequest struct {
-	Slug     string `path:"slug"`
-	Language string `form:"lang,default=en"`
+	Slug                string `path:"slug"`
+	Fingerprint         string `form:"fingerprint,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	Language            string `form:"lang,default=en"`
 }
 
 type BlogSearchRequest struct {
@@ -193,6 +175,48 @@ type Contact struct {
 	Value string `json:"value"`
 }
 
+type CreateContactMessageRequest struct {
+	MessageType         string `json:"type"`
+	AuthorName          string `json:"author_name,optional"`
+	AuthorEmail         string `json:"author_email,optional"`
+	Subject             string `json:"subject,optional"`
+	Message             string `json:"message"`
+	Company             string `json:"company,optional"`
+	CompanyEmail        string `json:"company_email,optional"`
+	Position            string `json:"position,optional"`
+	RecruiterName       string `json:"recruiter_name,optional"`
+	RecruiterTitle      string `json:"recruiter_title,optional"`
+	SendResume          bool   `json:"send_resume,optional"`
+	IsPublic            bool   `json:"is_public,optional"`
+	ConsentCompanyLogo  bool   `json:"consent_company_logo,optional"`
+	Fingerprint         string `json:"fingerprint,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+}
+
+// ContactMessageData intentionally omits the sender's email. Public list
+// responses must never expose a private contact address.
+type ContactMessageData struct {
+	ID                 string `json:"id"`
+	MessageType        string `json:"type"`
+	AuthorName         string `json:"author_name"`
+	AuthorAvatar       string `json:"author_avatar,omitempty"`
+	Subject            string `json:"subject,omitempty"`
+	Message            string `json:"message"`
+	Company            string `json:"company,omitempty"`
+	Position           string `json:"position,omitempty"`
+	RecruiterName      string `json:"recruiter_name,omitempty"`
+	RecruiterTitle     string `json:"recruiter_title,omitempty"`
+	IsPublic           bool   `json:"isPublic"`
+	ConsentCompanyLogo bool   `json:"consentCompanyLogo"`
+	Status             string `json:"status"`
+	CreatedAt          string `json:"createdAt"`
+	UpdatedAt          string `json:"updatedAt"`
+}
+
+type ContactMessageListResponse struct {
+	Items []ContactMessageData `json:"items"`
+}
+
 type CrawlerBreakdownResponse struct {
 	Items []CrawlerRow `json:"items"`
 }
@@ -203,33 +227,32 @@ type CrawlerRow struct {
 }
 
 type CreateBlogCommentRequest struct {
-	ID             string `path:"id"`
-	ParentId       string `json:"parent_id,optional"`
-	AuthorName     string `json:"author_name"`
-	AuthorEmail    string `json:"author_email"`
-	Content        string `json:"content"`
-	Fingerprint    string `json:"fingerprint"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	IdToken        string `json:"id_token,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	Language       string `form:"lang,default=en"`
+	ID                  string `path:"id"`
+	ParentId            string `json:"parent_id,optional"`
+	AuthorName          string `json:"author_name"`
+	AuthorEmail         string `json:"author_email"`
+	Content             string `json:"content"`
+	Fingerprint         string `json:"fingerprint"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	ClientIP            string `json:"client_ip,optional"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	Language            string `form:"lang,default=en"`
 }
 
 type CreateIdeaCommentRequest struct {
-	ID             string `path:"id"`
-	ParentId       string `json:"parent_id,optional"`
-	AuthorName     string `json:"author_name,optional"`
-	AuthorEmail    string `json:"author_email,optional"`
-	AuthorWebsite  string `json:"author_website,optional"`
-	Content        string `json:"content"`
-	Type           string `json:"type"`
-	IsApproved     bool   `json:"is_approved,optional"`
-	Fingerprint    string `json:"fingerprint"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	Language       string `form:"lang,default=en"`
+	ID                  string `path:"id"`
+	ParentId            string `json:"parent_id,optional"`
+	AuthorName          string `json:"author_name,optional"`
+	AuthorEmail         string `json:"author_email,optional"`
+	AuthorWebsite       string `json:"author_website,optional"`
+	Content             string `json:"content"`
+	Type                string `json:"type"`
+	IsApproved          bool   `json:"is_approved,optional"`
+	Fingerprint         string `json:"fingerprint"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	ClientIP            string `json:"client_ip,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	Language            string `form:"lang,default=en"`
 }
 
 type CreateIdeaRequest struct {
@@ -248,19 +271,19 @@ type CreateIdeaRequest struct {
 }
 
 type CreateProjectCommentRequest struct {
-	ID             string `path:"id"`
-	ParentId       string `json:"parent_id,optional"`
-	AuthorName     string `json:"author_name,optional"`
-	AuthorEmail    string `json:"author_email,optional"`
-	AuthorWebsite  string `json:"author_website,optional"`
-	Content        string `json:"content"`
-	Type           string `json:"type"`
-	IsApproved     bool   `json:"is_approved,optional"`
-	Fingerprint    string `json:"fingerprint"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	Language       string `form:"lang,default=en"`
+	ID                  string `path:"id"`
+	ParentId            string `json:"parent_id,optional"`
+	AuthorName          string `json:"author_name,optional"`
+	AuthorEmail         string `json:"author_email,optional"`
+	AuthorWebsite       string `json:"author_website,optional"`
+	Content             string `json:"content"`
+	Type                string `json:"type"`
+	IsApproved          bool   `json:"is_approved,optional"`
+	Fingerprint         string `json:"fingerprint"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	ClientIP            string `json:"client_ip,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	Language            string `form:"lang,default=en"`
 }
 
 type CreateProjectRequest struct {
@@ -268,22 +291,21 @@ type CreateProjectRequest struct {
 	Description string   `json:"description,optional"`
 	Tags        []string `json:"tags,optional"`
 	Year        int      `json:"year"`
-	AnnualPlan  string   `json:"annual_plan"`
 }
 
 type DeleteBlogCommentRequest struct {
-	CommentID      string `path:"comment_id"`
-	Fingerprint    string `json:"fingerprint"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	Language       string `form:"lang,default=en"`
+	CommentID           string `path:"comment_id"`
+	Fingerprint         string `json:"fingerprint"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	ClientIP            string `json:"client_ip,optional"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	Language            string `form:"lang,default=en"`
 }
 
 type DeleteIdeaCommentRequest struct {
-	CommentID      string `path:"comment_id"`
-	Fingerprint    string `json:"fingerprint"`
-	UserIdentityId string `json:"user_identity_id,optional"`
+	CommentID           string `path:"comment_id"`
+	Fingerprint         string `json:"fingerprint"`
+	AuthenticatedUserID string `json:"-" form:"-"`
 }
 
 type DeleteIdeaRequest struct {
@@ -291,9 +313,9 @@ type DeleteIdeaRequest struct {
 }
 
 type DeleteProjectCommentRequest struct {
-	CommentID      string `path:"comment_id"`
-	Fingerprint    string `json:"fingerprint"`
-	UserIdentityId string `json:"user_identity_id,optional"`
+	CommentID           string `path:"comment_id"`
+	Fingerprint         string `json:"fingerprint"`
+	AuthenticatedUserID string `json:"-" form:"-"`
 }
 
 type DeleteProjectRequest struct {
@@ -318,6 +340,21 @@ type EpisodeData struct {
 type EpisodeRequest struct {
 	Slug     string `path:"slug"`
 	Language string `form:"lang,default=en"`
+}
+
+type EpisodeSearchRequest struct {
+	Query    string `form:"query,optional"`
+	Language string `form:"lang,default=en"`
+	Page     int    `form:"page,default=1"`
+	Size     int    `form:"size,default=10"`
+}
+
+type EpisodeSearchResponse struct {
+	Episodes   []EpisodeData `json:"episodes"`
+	Total      int64         `json:"total"`
+	Page       int           `json:"page"`
+	Size       int           `json:"size"`
+	TotalPages int           `json:"total_pages"`
 }
 
 type EpisodeSeriesData struct {
@@ -416,7 +453,7 @@ type IdeaCommentData struct {
 	Content         string            `json:"content"`
 	Type            string            `json:"type"`
 	CreatedAt       string            `json:"created_at"`
-	UserIdentityID  string            `json:"user_identity_id,optional"`
+	CanDelete       bool              `json:"can_delete"`
 	LikesCount      int               `json:"likes_count"`
 	IsLikedByUser   bool              `json:"is_liked_by_user"`
 	Replies         []IdeaCommentData `json:"replies,optional"`
@@ -440,6 +477,7 @@ type IdeaData struct {
 	Category             string               `json:"category"`
 	Tags                 []string             `json:"tags"`
 	Status               string               `json:"status"`
+	Priority             string               `json:"priority,omitempty"`
 	CreatedAt            string               `json:"created_at"`
 	LastUpdated          string               `json:"last_updated,omitempty"`
 	Abstract             string               `json:"abstract,omitempty"`
@@ -541,12 +579,12 @@ type IdeaTagsRequest struct {
 }
 
 type LikeCommentRequest struct {
-	CommentID      string `path:"comment_id"`
-	Fingerprint    string `json:"fingerprint"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	Language       string `form:"lang,default=en"`
+	CommentID           string `path:"comment_id"`
+	Fingerprint         string `json:"fingerprint"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	ClientIP            string `json:"client_ip,optional"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	Language            string `form:"lang,default=en"`
 }
 
 type LikeCommentResponse struct {
@@ -555,13 +593,13 @@ type LikeCommentResponse struct {
 }
 
 type LikeProjectRequest struct {
-	ProjectID      string `path:"id"`
-	Fingerprint    string `json:"fingerprint"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	Referrer       string `json:"referrer,optional"`
-	Language       string `form:"lang,default=en"`
+	ProjectID           string `path:"id"`
+	Fingerprint         string `json:"fingerprint"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	ClientIP            string `json:"client_ip,optional"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	Referrer            string `json:"referrer,optional"`
+	Language            string `form:"lang,default=en"`
 }
 
 type LikeProjectResponse struct {
@@ -595,19 +633,21 @@ type PersonalInfoRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
-type PlanProject struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
 type Project struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Tags        []string `json:"tags"`
-	Year        int      `json:"year"`
-	AnnualPlan  string   `json:"annual_plan"`
+	ID               string   `json:"id"`
+	Slug             string   `json:"slug"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description"`
+	Tags             []string `json:"tags"`
+	Year             int      `json:"year"`
+	Status           string   `json:"status"`
+	StartDate        string   `json:"start_date,omitempty"`
+	EndDate          string   `json:"end_date,omitempty"`
+	GithubURL        string   `json:"github_url,omitempty"`
+	DemoURL          string   `json:"demo_url,omitempty"`
+	DocumentationURL string   `json:"documentation_url,omitempty"`
+	ThumbnailURL     string   `json:"thumbnail_url,omitempty"`
+	UpdatedAt        string   `json:"updated_at,omitempty"`
 }
 
 type ProjectBlogRef struct {
@@ -637,16 +677,18 @@ type ProjectCommentData struct {
 	Content         string               `json:"content"`
 	Type            string               `json:"type"`
 	CreatedAt       string               `json:"created_at"`
-	UserIdentityID  string               `json:"user_identity_id,optional"`
+	CanDelete       bool                 `json:"can_delete"`
 	LikesCount      int                  `json:"likes_count"`
 	IsLikedByUser   bool                 `json:"is_liked_by_user"`
 	Replies         []ProjectCommentData `json:"replies,optional"`
 }
 
 type ProjectCommentListRequest struct {
-	ID       string `path:"id"`
-	Type     string `form:"type,default=general"`
-	Language string `form:"lang,default=en"`
+	ID                  string `path:"id"`
+	Type                string `form:"type,default=general"`
+	Fingerprint         string `form:"fingerprint,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	Language            string `form:"lang,default=en"`
 }
 
 type ProjectCommentListResponse struct {
@@ -657,6 +699,10 @@ type ProjectCommentListResponse struct {
 type ProjectDetail struct {
 	ID                  string           `json:"id"`
 	ProjectID           string           `json:"project_id"`
+	Slug                string           `json:"slug,omitempty"`
+	Title               string           `json:"title,omitempty"`
+	Description         string           `json:"description,omitempty"`
+	Tags                []string         `json:"tags"`
 	DetailedDescription string           `json:"detailed_description,omitempty"`
 	Goals               string           `json:"goals,omitempty"`
 	Challenges          string           `json:"challenges,omitempty"`
@@ -693,6 +739,7 @@ type ProjectExtended struct {
 	StartDate        string   `json:"start_date,omitempty"`
 	EndDate          string   `json:"end_date,omitempty"`
 	Technologies     []string `json:"technologies"`
+	Tags             []string `json:"tags"`
 	GithubURL        string   `json:"github_url,omitempty"`
 	DemoURL          string   `json:"demo_url,omitempty"`
 	DocumentationURL string   `json:"documentation_url,omitempty"`
@@ -703,7 +750,6 @@ type ProjectExtended struct {
 	StarCount        int64    `json:"star_count"`
 	SortOrder        int      `json:"sort_order"`
 	Year             int      `json:"year"`
-	AnnualPlan       string   `json:"annual_plan,omitempty"`
 	TeamSize         int      `json:"team_size,omitempty"`
 	MyRole           string   `json:"my_role,omitempty"`
 	Features         []string `json:"features"`
@@ -715,16 +761,15 @@ type ProjectExtended struct {
 }
 
 type ProjectListRequest struct {
-	Page       int    `form:"page,default=1"`
-	Size       int    `form:"size,default=10"`
-	Type       string `form:"type,optional"`
-	Featured   bool   `form:"featured,optional"`
-	Status     string `form:"status,optional"`
-	Search     string `form:"search,optional"`
-	Year       int    `form:"year,optional"`
-	AnnualPlan string `form:"annual_plan,optional"`
-	Tags       string `form:"tags,optional"`
-	Language   string `form:"lang,default=en"`
+	Page     int    `form:"page,default=1"`
+	Size     int    `form:"size,default=10"`
+	Type     string `form:"type,optional"`
+	Featured bool   `form:"featured,optional"`
+	Status   string `form:"status,optional"`
+	Search   string `form:"search,optional"`
+	Year     int    `form:"year,optional"`
+	Tags     string `form:"tags,optional"`
+	Language string `form:"lang,default=en"`
 }
 
 type ProjectListResponse struct {
@@ -743,10 +788,10 @@ type ProjectMetrics struct {
 }
 
 type ProjectMetricsRequest struct {
-	ProjectID      string `path:"id"`
-	Fingerprint    string `form:"fingerprint,optional"`
-	UserIdentityId string `form:"user_identity_id,optional"`
-	Language       string `form:"lang,default=en"`
+	ProjectID           string `path:"id"`
+	Fingerprint         string `form:"fingerprint,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	Language            string `form:"lang,default=en"`
 }
 
 type ProjectMetricsResponse struct {
@@ -764,7 +809,6 @@ type ProjectSearchRequest struct {
 	Query    string `form:"query,optional"`
 	Tags     string `form:"tags,optional"`
 	Year     int    `form:"year,optional"`
-	PlanID   string `form:"plan_id,optional"`
 	Language string `form:"lang,default=en"`
 }
 
@@ -772,15 +816,6 @@ type ProjectTimeline struct {
 	Start    string `json:"start"`
 	End      string `json:"end"`
 	Duration string `json:"duration"`
-}
-
-type ProjectsByPlanRequest struct {
-	PlanName string `path:"plan_name"`
-	Language string `form:"lang,default=en"`
-}
-
-type ProjectsWithPlansRequest struct {
-	Language string `form:"lang,default=en"`
 }
 
 type RecentUpdate struct {
@@ -801,13 +836,13 @@ type RecentUpdate struct {
 }
 
 type RecordProjectViewRequest struct {
-	ProjectID      string `path:"id"`
-	Fingerprint    string `json:"fingerprint"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	Referrer       string `json:"referrer,optional"`
-	Language       string `form:"lang,default=en"`
+	ProjectID           string `path:"id"`
+	Fingerprint         string `json:"fingerprint"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	ClientIP            string `json:"client_ip,optional"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	Referrer            string `json:"referrer,optional"`
+	Language            string `form:"lang,default=en"`
 }
 
 type RecordProjectViewResponse struct {
@@ -888,32 +923,33 @@ type StatsResponse struct {
 }
 
 type UpdateBlogLikesRequest struct {
-	ID             string `path:"id"`
-	Increment      bool   `json:"increment,default=true"`
-	Fingerprint    string `json:"fingerprint,optional"`
-	UserIdentityId string `json:"user_identity_id,optional"`
-	ClientIP       string `json:"client_ip,optional"`
-	UserAgentFull  string `json:"user_agent_full,optional"`
-	Referrer       string `json:"referrer,optional"`
-	Language       string `form:"lang,default=en"`
+	ID                  string `path:"id"`
+	Increment           bool   `json:"increment,default=true"`
+	Fingerprint         string `json:"fingerprint,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	ClientIP            string `json:"client_ip,optional"`
+	UserAgentFull       string `json:"user_agent_full,optional"`
+	Referrer            string `json:"referrer,optional"`
+	Language            string `form:"lang,default=en"`
 }
 
 type UpdateBlogLikesResponse struct {
-	Likes int64 `json:"likes"`
+	Likes         int64 `json:"likes"`
+	IsLikedByUser bool  `json:"is_liked_by_user"`
 }
 
 type UpdateBlogViewsRequest struct {
-	ID             string  `path:"id"`
-	Fingerprint    string  `json:"fingerprint,optional"`
-	UserIdentityId string  `json:"user_identity_id,optional"`
-	ClientIP       string  `json:"client_ip,optional"`
-	UserAgentFull  string  `json:"user_agent_full,optional"`
-	Referrer       string  `json:"referrer,optional"`
-	ReadingTime    int     `json:"reading_time,optional"`
-	ScrollProgress float64 `json:"scroll_progress,optional"`
-	SessionStart   string  `json:"session_start,optional"`
-	SessionEnd     string  `json:"session_end,optional"`
-	Language       string  `form:"lang,default=en"`
+	ID                  string  `path:"id"`
+	Fingerprint         string  `json:"fingerprint,optional"`
+	AuthenticatedUserID string  `json:"-" form:"-"`
+	ClientIP            string  `json:"client_ip,optional"`
+	UserAgentFull       string  `json:"user_agent_full,optional"`
+	Referrer            string  `json:"referrer,optional"`
+	ReadingTime         int     `json:"reading_time,optional"`
+	ScrollProgress      float64 `json:"scroll_progress,optional"`
+	SessionStart        string  `json:"session_start,optional"`
+	SessionEnd          string  `json:"session_end,optional"`
+	Language            string  `form:"lang,default=en"`
 }
 
 type UpdateIdeaRequest struct {
@@ -964,7 +1000,6 @@ type UpdateProjectRequest struct {
 	Description string   `json:"description,optional"`
 	Tags        []string `json:"tags,optional"`
 	Year        int      `json:"year,optional"`
-	AnnualPlan  string   `json:"annual_plan,optional"`
 }
 
 type UpdateRequest struct {

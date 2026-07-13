@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"silan-backend/internal/auth"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -56,22 +55,8 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 	var userIdentity *ent.UserIdentity
 	var authorName, authorEmail, avatarURL string
 
-	// If user provides an ID token, verify it against Google and upsert.
-	if req.IdToken != "" {
-		claims, vErr := auth.VerifyGoogleIDToken(l.ctx, req.IdToken, l.svcCtx.Config.Auth.GoogleClientID)
-		if vErr != nil {
-			return nil, fmt.Errorf("token verification failed: %v", vErr)
-		}
-		userIdentity, err = auth.UpsertGoogleIdentity(l.ctx, l.svcCtx.DB, claims)
-		if err != nil {
-			return nil, fmt.Errorf("failed to process user identity: %v", err)
-		}
-		authorName = userIdentity.DisplayName
-		authorEmail = userIdentity.Email
-		avatarURL = userIdentity.AvatarURL
-	} else if req.UserIdentityId != "" && strings.TrimSpace(req.UserIdentityId) != "" {
-		// If user provides identity ID, validate it exists
-		userIdentity, err = l.svcCtx.DB.UserIdentity.Get(l.ctx, req.UserIdentityId)
+	if req.AuthenticatedUserID != "" && strings.TrimSpace(req.AuthenticatedUserID) != "" {
+		userIdentity, err = l.svcCtx.DB.UserIdentity.Get(l.ctx, req.AuthenticatedUserID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid user identity")
 		}
@@ -142,11 +127,6 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 	l.Infof("Created %s comment %s by %s user (author: %s, ip: %s, fingerprint: %s)",
 		commentType, c.ID, userType, authorName, req.ClientIP, req.Fingerprint)
 
-	var userIdentityIDStr string
-	if userIdentity != nil {
-		userIdentityIDStr = userIdentity.ID
-	}
-
 	return &types.BlogCommentData{
 		ID:              c.ID,
 		BlogPostID:      c.EntityID,
@@ -155,7 +135,7 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		AuthorAvatarURL: avatarURL,
 		Content:         c.Content,
 		CreatedAt:       c.CreatedAt.Format(time.RFC3339),
-		UserIdentityID:  userIdentityIDStr,
+		CanDelete:       true,
 		Replies:         []types.BlogCommentData{},
 	}, nil
 }

@@ -16,6 +16,7 @@ import (
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
+	"silan-backend/internal/ent/contactmessage"
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/contentrelation"
 	"silan-backend/internal/ent/contenttag"
@@ -143,6 +144,7 @@ func checkColumn(table, column string) error {
 			blogposttranslation.Table:              blogposttranslation.ValidColumn,
 			comment.Table:                          comment.ValidColumn,
 			commentlike.Table:                      commentlike.ValidColumn,
+			contactmessage.Table:                   contactmessage.ValidColumn,
 			contentinteraction.Table:               contentinteraction.ValidColumn,
 			contentrelation.Table:                  contentrelation.ValidColumn,
 			contenttag.Table:                       contenttag.ValidColumn,

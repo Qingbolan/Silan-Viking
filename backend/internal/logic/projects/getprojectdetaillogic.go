@@ -7,6 +7,7 @@ import (
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/logic/contentpart"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -29,13 +30,9 @@ func NewGetProjectDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *GetProjectDetailLogic) GetLicenseText(str string) string {
-	if str == "" {
-		return "MIT"
-	}
-
 	str = strings.TrimSpace(str)
 	if str == "" {
-		return "MIT"
+		return ""
 	}
 
 	// Simple license detection
@@ -99,7 +96,11 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 	var metrics types.ProjectMetrics
 	metrics.LinesOfCode = 0 // These could be calculated from git repos
 	metrics.Commits = 0
-	metrics.Stars = proj.LikeCount
+	counts, err := engagement.ProjectCount(l.ctx, l.svcCtx.DB, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+	metrics.Stars = counts.Likes
 	metrics.Downloads = 0
 
 	// Create detail information
@@ -111,18 +112,19 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		detail := proj.Edges.Details
 		detailID = detail.ID
 		dependencies = detail.Dependencies
-		license = l.GetLicenseText(detail.LicenseText)
+		license = strings.TrimSpace(detail.License)
+		if license == "" {
+			license = l.GetLicenseText(detail.LicenseText)
+		}
 		licenseText = detail.LicenseText
 		version = detail.Version
-		createdAt = detail.CreatedAt.Format("2006-01-02 15:04:05")
-		updatedAt = detail.UpdatedAt.Format("2006-01-02 15:04:05")
+		createdAt = formatContentTime(detail.CreatedAt, "2006-01-02 15:04:05")
+		updatedAt = formatContentTime(detail.UpdatedAt, "2006-01-02 15:04:05")
 	} else {
-		// No details found - return empty values
+		// Absence remains absence. The API must not invent a license or release.
 		detailID = proj.ID
-		license = "MIT"
-		version = "1.0.0"
-		createdAt = proj.CreatedAt.Format("2006-01-02 15:04:05")
-		updatedAt = proj.UpdatedAt.Format("2006-01-02 15:04:05")
+		createdAt = formatContentTime(proj.CreatedAt, "2006-01-02 15:04:05")
+		updatedAt = formatContentTime(proj.UpdatedAt, "2006-01-02 15:04:05")
 	}
 
 	// A project's prose lives in `item_part` Parts — one per role the

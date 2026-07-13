@@ -40,10 +40,11 @@ func seedDB(t *testing.T) *sql.DB {
 func TestListTags(t *testing.T) {
 	db := seedDB(t)
 	defer db.Close()
+	repository := NewRepository(db, "sqlite3")
 
 	// seedDB: blog post-a -> easynet, research ; blog post-b -> easynet.
 	// So for entity_type "blog": easynet used twice, research once.
-	tags, err := ListTags(context.Background(), db, "blog")
+	tags, err := repository.ListTags(context.Background(), "blog")
 	if err != nil {
 		t.Fatalf("ListTags: %v", err)
 	}
@@ -59,7 +60,7 @@ func TestListTags(t *testing.T) {
 	}
 
 	// A type with no tagged Items yields an empty, non-nil slice.
-	empty, err := ListTags(context.Background(), db, "project")
+	empty, err := repository.ListTags(context.Background(), "project")
 	if err != nil {
 		t.Fatalf("ListTags(project): %v", err)
 	}
@@ -71,8 +72,9 @@ func TestListTags(t *testing.T) {
 func TestLookupReturnsLabelsSorted(t *testing.T) {
 	db := seedDB(t)
 	defer db.Close()
+	repository := NewRepository(db, "sqlite3")
 
-	got, err := Lookup(context.Background(), db, "blog", "post-a")
+	got, err := repository.Lookup(context.Background(), "blog", "post-a")
 	if err != nil {
 		t.Fatalf("Lookup: %v", err)
 	}
@@ -82,7 +84,7 @@ func TestLookupReturnsLabelsSorted(t *testing.T) {
 	}
 
 	// An Item with no tags yields a non-nil empty slice — never nil.
-	empty, err := Lookup(context.Background(), db, "blog", "no-such-post")
+	empty, err := repository.Lookup(context.Background(), "blog", "no-such-post")
 	if err != nil {
 		t.Fatalf("Lookup(missing): %v", err)
 	}
@@ -95,9 +97,10 @@ func TestEntityIDsMatchingTags(t *testing.T) {
 	db := seedDB(t)
 	defer db.Close()
 	ctx := context.Background()
+	repository := NewRepository(db, "sqlite3")
 
 	// Single tag — both blog posts carry `easynet`.
-	got, err := EntityIDsMatchingTags(ctx, db, "blog", []string{"easynet"})
+	got, err := repository.EntityIDsMatchingTags(ctx, "blog", []string{"easynet"})
 	if err != nil {
 		t.Fatalf("single tag: %v", err)
 	}
@@ -107,7 +110,7 @@ func TestEntityIDsMatchingTags(t *testing.T) {
 	}
 
 	// AND semantics — only post-a carries both `easynet` and `research`.
-	got, err = EntityIDsMatchingTags(ctx, db, "blog", []string{"easynet", "research"})
+	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"easynet", "research"})
 	if err != nil {
 		t.Fatalf("two tags: %v", err)
 	}
@@ -116,13 +119,13 @@ func TestEntityIDsMatchingTags(t *testing.T) {
 	}
 
 	// Case-insensitive, and matches the label too ("EasyNet" -> easynet tag).
-	got, err = EntityIDsMatchingTags(ctx, db, "blog", []string{"EASYNET"})
+	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"EASYNET"})
 	if err != nil || len(got) != 2 {
 		t.Errorf("EASYNET -> %v (err %v), want 2 matches", got, err)
 	}
 
 	// A non-empty filter that matches nothing returns an empty, non-nil slice.
-	got, err = EntityIDsMatchingTags(ctx, db, "blog", []string{"no-such-tag"})
+	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"no-such-tag"})
 	if err != nil {
 		t.Fatalf("no-match: %v", err)
 	}
@@ -131,8 +134,17 @@ func TestEntityIDsMatchingTags(t *testing.T) {
 	}
 
 	// An empty filter list returns (nil, nil) — caller applies no filter.
-	got, err = EntityIDsMatchingTags(ctx, db, "blog", []string{"", "  "})
+	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"", "  "})
 	if err != nil || got != nil {
 		t.Errorf("blank tags -> %v (err %v), want nil", got, err)
+	}
+}
+
+func TestPostgresBindingPreservesQuotedQuestionMarks(t *testing.T) {
+	repository := NewRepository(nil, "postgres")
+	query := `SELECT '?' AS literal, "?" AS identifier FROM content_tag WHERE entity_type = ? AND entity_id = ?`
+	want := `SELECT '?' AS literal, "?" AS identifier FROM content_tag WHERE entity_type = $1 AND entity_id = $2`
+	if got := repository.bind(query); got != want {
+		t.Fatalf("bind() = %q, want %q", got, want)
 	}
 }

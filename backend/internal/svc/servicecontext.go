@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"silan-backend/internal/config"
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/migrate"
 	"silan-backend/internal/middleware"
@@ -19,11 +20,12 @@ import (
 )
 
 type ServiceContext struct {
-	Config    config.Config
-	Cors      rest.Middleware
-	Analytics rest.Middleware
-	DB        *ent.Client
-	RawDB     *sql.DB
+	Config      config.Config
+	Cors        rest.Middleware
+	Analytics   rest.Middleware
+	DB          *ent.Client
+	RawDB       *sql.DB
+	ContentTags *contenttag.Repository
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -199,11 +201,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	dropContentForeignKeys(rawDB, c.Database.Driver)
 
 	return &ServiceContext{
-		Config:    c,
-		Cors:      middleware.NewCorsMiddleware().Handle,
-		Analytics: middleware.NewAnalyticsMiddleware(client).Handle,
-		DB:        client,
-		RawDB:     rawDB,
+		Config:      c,
+		Cors:        middleware.NewCorsMiddleware().Handle,
+		Analytics:   middleware.NewAnalyticsMiddleware(client).Handle,
+		DB:          client,
+		RawDB:       rawDB,
+		ContentTags: contenttag.NewRepository(rawDB, c.Database.Driver),
 	}
 }
 

@@ -202,7 +202,7 @@ var (
 		{Name: "author_email", Type: field.TypeString, Size: 255},
 		{Name: "author_website", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "content", Type: field.TypeString, Size: 2147483647},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"general", "question", "feedback"}, Default: "general"},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"general", "question", "feedback", "suggestion", "bug-report", "issue"}, Default: "general"},
 		{Name: "reference_id", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "attachment_id", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "is_approved", Type: field.TypeBool, Default: false},
@@ -289,6 +289,52 @@ var (
 				Name:    "commentlike_user_identity_id",
 				Unique:  false,
 				Columns: []*schema.Column{CommentLikesColumns[6]},
+			},
+		},
+	}
+	// ContactMessagesColumns holds the columns for the "contact_messages" table.
+	ContactMessagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "message_type", Type: field.TypeEnum, Enums: []string{"general", "job"}},
+		{Name: "author_name", Type: field.TypeString, Size: 100},
+		{Name: "author_email", Type: field.TypeString, Size: 255},
+		{Name: "author_avatar", Type: field.TypeString, Nullable: true, Size: 1000},
+		{Name: "subject", Type: field.TypeString, Nullable: true, Size: 240},
+		{Name: "message", Type: field.TypeString, Size: 2147483647},
+		{Name: "company", Type: field.TypeString, Nullable: true, Size: 200},
+		{Name: "company_email", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "position", Type: field.TypeString, Nullable: true, Size: 200},
+		{Name: "recruiter_name", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "recruiter_title", Type: field.TypeString, Nullable: true, Size: 160},
+		{Name: "send_resume", Type: field.TypeBool, Default: false},
+		{Name: "is_public", Type: field.TypeBool, Default: false},
+		{Name: "consent_company_logo", Type: field.TypeBool, Default: false},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "read", "replied"}, Default: "pending"},
+		{Name: "fingerprint", Type: field.TypeString, Nullable: true, Size: 200},
+		{Name: "user_identity_id", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// ContactMessagesTable holds the schema information for the "contact_messages" table.
+	ContactMessagesTable = &schema.Table{
+		Name:       "contact_messages",
+		Columns:    ContactMessagesColumns,
+		PrimaryKey: []*schema.Column{ContactMessagesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "contactmessage_is_public_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ContactMessagesColumns[13], ContactMessagesColumns[18]},
+			},
+			{
+				Name:    "contactmessage_user_identity_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ContactMessagesColumns[17], ContactMessagesColumns[18]},
+			},
+			{
+				Name:    "contactmessage_author_email_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ContactMessagesColumns[3], ContactMessagesColumns[18]},
 			},
 		},
 	}
@@ -657,6 +703,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "estimated_duration_months", Type: field.TypeInt, Nullable: true},
 		{Name: "required_resources", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "priority", Type: field.TypeEnum, Enums: []string{"high", "medium", "low"}, Default: "medium"},
 		{Name: "collaboration_needed", Type: field.TypeBool, Default: false},
 		{Name: "funding_required", Type: field.TypeBool, Default: false},
 		{Name: "estimated_budget", Type: field.TypeFloat64, Nullable: true},
@@ -672,7 +719,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "idea_details_ideas_details",
-				Columns:    []*schema.Column{IdeaDetailsColumns[8]},
+				Columns:    []*schema.Column{IdeaDetailsColumns[9]},
 				RefColumns: []*schema.Column{IdeasColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1837,6 +1884,7 @@ var (
 		BlogPostTranslationsTable,
 		CommentsTable,
 		CommentLikesTable,
+		ContactMessagesTable,
 		ContentInteractionTable,
 		ContentRelationTable,
 		ContentTagTable,
@@ -1929,6 +1977,9 @@ func init() {
 	CommentLikesTable.ForeignKeys[0].RefTable = UserIdentitiesTable
 	CommentLikesTable.Annotation = &entsql.Annotation{
 		Table: "comment_likes",
+	}
+	ContactMessagesTable.Annotation = &entsql.Annotation{
+		Table: "contact_messages",
 	}
 	ContentInteractionTable.Annotation = &entsql.Annotation{
 		Table: "content_interaction",

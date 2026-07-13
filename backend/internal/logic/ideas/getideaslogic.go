@@ -6,10 +6,12 @@ import (
 	"math"
 	"strings"
 
-	"silan-backend/internal/contenttag"
+	"silan-backend/internal/contentsearch"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/idea"
 	"silan-backend/internal/ent/ideadetail"
+	"silan-backend/internal/ent/ideatranslation"
+	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -40,6 +42,10 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		query = query.Where(idea.StatusEQ(idea.Status(req.Status)))
 	}
 
+	if req.Category != "" {
+		query = query.Where(idea.CategoryEqualFold(req.Category))
+	}
+
 	if req.Collaboration {
 		query = query.Where(idea.HasDetailsWith(ideadetail.CollaborationNeeded(true)))
 	}
@@ -52,11 +58,35 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		}
 	}
 
-	if req.Search != "" {
+	if req.Tags != "" {
+		ids, tagErr := l.svcCtx.ContentTags.EntityIDsMatchingTags(
+			l.ctx, "idea", strings.Split(req.Tags, ","),
+		)
+		if tagErr != nil {
+			return nil, tagErr
+		}
+		query = query.Where(idea.IDIn(ids...))
+	}
+
+	if search := strings.TrimSpace(req.Search); search != "" {
+		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
+			l.ctx, l.svcCtx.DB, itempart.EntityTypeIdea, search, req.Language,
+		)
+		if partErr != nil {
+			return nil, partErr
+		}
 		query = query.Where(idea.Or(
-			idea.TitleContains(req.Search),
-			idea.DescriptionContains(req.Search),
-			idea.AbstractContains(req.Search),
+			idea.TitleContainsFold(search),
+			idea.DescriptionContainsFold(search),
+			idea.AbstractContainsFold(search),
+			idea.IDIn(partIDs...),
+			idea.HasTranslationsWith(
+				ideatranslation.LanguageCodeIn(contentsearch.Languages(req.Language)...),
+				ideatranslation.Or(
+					ideatranslation.TitleContainsFold(search),
+					ideatranslation.AbstractContainsFold(search),
+				),
+			),
 		))
 	}
 
@@ -103,11 +133,13 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 		var requiredResources string
 		var collaborationNeeded bool
 		var estimatedDuration string
+		var priority string
 
 		if ideaEntity.Edges.Details != nil {
 			detail := ideaEntity.Edges.Details
 			requiredResources = detail.RequiredResources
 			collaborationNeeded = detail.CollaborationNeeded
+			priority = string(detail.Priority)
 
 			if detail.EstimatedDurationMonths > 0 {
 				estimatedDuration = fmt.Sprintf("%d months", detail.EstimatedDurationMonths)
@@ -116,7 +148,7 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 
 		// Tags come from the cross-type `content_tag` table — the engine no
 		// longer populates the legacy ent `Tags` edge.
-		tags, tagErr := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "idea", ideaEntity.ID)
+		tags, tagErr := l.svcCtx.ContentTags.Lookup(l.ctx, "idea", ideaEntity.ID)
 		if tagErr != nil {
 			l.Errorf("content_tag lookup for idea %s: %v", ideaEntity.ID, tagErr)
 		}
@@ -146,6 +178,7 @@ func (l *GetIdeasLogic) GetIdeas(req *types.IdeaListRequest) (resp *types.IdeaLi
 			Category:             category,
 			Tags:                 tags,
 			Status:               strings.ToLower(string(ideaEntity.Status)),
+			Priority:             priority,
 			CreatedAt:            ideaEntity.CreatedAt.Format("2006-01-02T15:04:05Z"),
 			LastUpdated:          ideaEntity.UpdatedAt.Format("2006-01-02T15:04:05Z"),
 			Abstract:             abstract,

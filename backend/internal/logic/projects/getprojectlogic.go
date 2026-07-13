@@ -2,10 +2,10 @@ package projects
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"silan-backend/internal/ent/project"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -47,6 +47,14 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 	for _, tech := range proj.Edges.Technologies {
 		technologies = append(technologies, tech.TechnologyName)
 	}
+	tags, tagErr := l.svcCtx.ContentTags.Lookup(l.ctx, "project", proj.ID)
+	if tagErr != nil {
+		l.Errorf("content_tag lookup for project %s: %v", proj.ID, tagErr)
+	}
+	counts, err := engagement.ProjectCount(l.ctx, l.svcCtx.DB, proj.ID)
+	if err != nil {
+		return nil, err
+	}
 
 	// title/description live in project_translations — the content engine
 	// leaves the main projects row's title/description empty.
@@ -61,15 +69,13 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		}
 	}
 
-	// Generate annual plan name based on year. `start_date` is a plain
-	// `YYYY-MM-DD` string; fall back to the created-at timestamp.
+	// Resolve the display year from `start_date`, falling back to created_at.
 	year := proj.CreatedAt.Year()
 	if len(proj.StartDate) >= 4 {
 		if y, err := strconv.Atoi(proj.StartDate[:4]); err == nil {
 			year = y
 		}
 	}
-	annualPlan := fmt.Sprintf("Annual Plan %d", year)
 
 	// Handle URL fields (now non-nullable)
 	githubURL := proj.GithubURL
@@ -91,17 +97,18 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		StartDate:        startDate,
 		EndDate:          endDate,
 		Technologies:     technologies,
+		Tags:             tags,
 		GithubURL:        githubURL,
 		DemoURL:          demoURL,
 		DocumentationURL: documentationURL,
 		ThumbnailURL:     thumbnailURL,
 		IsFeatured:       proj.IsFeatured,
 		IsPublic:         proj.Visibility == project.VisibilityPublic,
-		ViewCount:        int64(proj.ViewCount),
+		ViewCount:        int64(counts.Views),
+		StarCount:        int64(counts.Likes),
 		SortOrder:        proj.SortOrder,
 		Year:             year,
-		AnnualPlan:       annualPlan,
-		CreatedAt:        proj.CreatedAt.Format("2006-01-02 15:04:05"),
-		UpdatedAt:        proj.UpdatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:        formatContentTime(proj.CreatedAt, "2006-01-02 15:04:05"),
+		UpdatedAt:        formatContentTime(proj.UpdatedAt, "2006-01-02 15:04:05"),
 	}, nil
 }

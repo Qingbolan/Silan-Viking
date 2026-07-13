@@ -91,6 +91,20 @@ func (idu *IdeaDetailUpdate) ClearRequiredResources() *IdeaDetailUpdate {
 	return idu
 }
 
+// SetPriority sets the "priority" field.
+func (idu *IdeaDetailUpdate) SetPriority(i ideadetail.Priority) *IdeaDetailUpdate {
+	idu.mutation.SetPriority(i)
+	return idu
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (idu *IdeaDetailUpdate) SetNillablePriority(i *ideadetail.Priority) *IdeaDetailUpdate {
+	if i != nil {
+		idu.SetPriority(*i)
+	}
+	return idu
+}
+
 // SetCollaborationNeeded sets the "collaboration_needed" field.
 func (idu *IdeaDetailUpdate) SetCollaborationNeeded(b bool) *IdeaDetailUpdate {
 	idu.mutation.SetCollaborationNeeded(b)
@@ -248,6 +262,11 @@ func (idu *IdeaDetailUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (idu *IdeaDetailUpdate) check() error {
+	if v, ok := idu.mutation.Priority(); ok {
+		if err := ideadetail.PriorityValidator(v); err != nil {
+			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "IdeaDetail.priority": %w`, err)}
+		}
+	}
 	if idu.mutation.IdeaCleared() && len(idu.mutation.IdeaIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IdeaDetail.idea"`)
 	}
@@ -280,6 +299,9 @@ func (idu *IdeaDetailUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if idu.mutation.RequiredResourcesCleared() {
 		_spec.ClearField(ideadetail.FieldRequiredResources, field.TypeString)
+	}
+	if value, ok := idu.mutation.Priority(); ok {
+		_spec.SetField(ideadetail.FieldPriority, field.TypeEnum, value)
 	}
 	if value, ok := idu.mutation.CollaborationNeeded(); ok {
 		_spec.SetField(ideadetail.FieldCollaborationNeeded, field.TypeBool, value)
@@ -460,6 +482,20 @@ func (iduo *IdeaDetailUpdateOne) ClearRequiredResources() *IdeaDetailUpdateOne {
 	return iduo
 }
 
+// SetPriority sets the "priority" field.
+func (iduo *IdeaDetailUpdateOne) SetPriority(i ideadetail.Priority) *IdeaDetailUpdateOne {
+	iduo.mutation.SetPriority(i)
+	return iduo
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (iduo *IdeaDetailUpdateOne) SetNillablePriority(i *ideadetail.Priority) *IdeaDetailUpdateOne {
+	if i != nil {
+		iduo.SetPriority(*i)
+	}
+	return iduo
+}
+
 // SetCollaborationNeeded sets the "collaboration_needed" field.
 func (iduo *IdeaDetailUpdateOne) SetCollaborationNeeded(b bool) *IdeaDetailUpdateOne {
 	iduo.mutation.SetCollaborationNeeded(b)
@@ -630,6 +666,11 @@ func (iduo *IdeaDetailUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (iduo *IdeaDetailUpdateOne) check() error {
+	if v, ok := iduo.mutation.Priority(); ok {
+		if err := ideadetail.PriorityValidator(v); err != nil {
+			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "IdeaDetail.priority": %w`, err)}
+		}
+	}
 	if iduo.mutation.IdeaCleared() && len(iduo.mutation.IdeaIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "IdeaDetail.idea"`)
 	}
@@ -679,6 +720,9 @@ func (iduo *IdeaDetailUpdateOne) sqlSave(ctx context.Context) (_node *IdeaDetail
 	}
 	if iduo.mutation.RequiredResourcesCleared() {
 		_spec.ClearField(ideadetail.FieldRequiredResources, field.TypeString)
+	}
+	if value, ok := iduo.mutation.Priority(); ok {
+		_spec.SetField(ideadetail.FieldPriority, field.TypeEnum, value)
 	}
 	if value, ok := iduo.mutation.CollaborationNeeded(); ok {
 		_spec.SetField(ideadetail.FieldCollaborationNeeded, field.TypeBool, value)

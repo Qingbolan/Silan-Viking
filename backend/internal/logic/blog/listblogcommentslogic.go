@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"silan-backend/internal/commentruntime"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
 	"silan-backend/internal/svc"
@@ -30,6 +31,7 @@ func NewListBlogCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListRequest, clientIP, userAgent, fingerprint, userIdentityID string) (resp *types.BlogCommentListResponse, err error) {
 	postID := req.ID
+	actor := commentruntime.NewActor(userIdentityID, fingerprint)
 
 	list, err := l.svcCtx.DB.Comment.
 		Query().
@@ -79,11 +81,6 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 
 	// First pass: create all comment objects
 	for _, c := range list {
-		userIdentityIDStr := ""
-		if c.UserIdentityID != "" {
-			userIdentityIDStr = c.UserIdentityID
-		}
-
 		comment := types.BlogCommentData{
 			ID:              c.ID,
 			BlogPostID:      c.EntityID,
@@ -92,7 +89,7 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 			AuthorAvatarURL: lookupAvatar(c.AuthorEmail),
 			Content:         c.Content,
 			CreatedAt:       c.CreatedAt.Format(time.RFC3339),
-			UserIdentityID:  userIdentityIDStr,
+			CanDelete:       actor.CanDelete(c),
 			LikesCount:      c.LikesCount,
 			IsLikedByUser:   false, // Will be set below
 			Replies:         []types.BlogCommentData{},
@@ -103,6 +100,11 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 		if c.ParentID == "" {
 			rootCommentIDs = append(rootCommentIDs, c.ID)
 		}
+	}
+
+	// Resolve actor-specific state before copying values into the reply tree.
+	if userIdentityID != "" || fingerprint != "" {
+		l.setLikeStatus(commentMap, userIdentityID, fingerprint)
 	}
 
 	// Second pass: build tree structure
@@ -123,11 +125,6 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 		if rootComment, exists := commentMap[rootID]; exists {
 			rootComments = append(rootComments, *rootComment)
 		}
-	}
-
-	// Fourth pass: check if user has liked each comment
-	if userIdentityID != "" || fingerprint != "" {
-		l.setLikeStatus(commentMap, userIdentityID, fingerprint)
 	}
 
 	// Log analytics data (optional - could be moved to a separate analytics service)
@@ -171,17 +168,7 @@ func (l *ListBlogCommentsLogic) setLikeStatus(commentMap map[string]*types.BlogC
 		likedComments[like.CommentID] = true
 	}
 
-	// Update the IsLikedByUser field for all comments
-	var updateComment func(*types.BlogCommentData)
-	updateComment = func(comment *types.BlogCommentData) {
-		comment.IsLikedByUser = likedComments[comment.ID]
-		// Recursively update replies
-		for i := range comment.Replies {
-			updateComment(&comment.Replies[i])
-		}
-	}
-
 	for _, comment := range commentMap {
-		updateComment(comment)
+		comment.IsLikedByUser = likedComments[comment.ID]
 	}
 }

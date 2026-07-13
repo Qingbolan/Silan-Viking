@@ -3,6 +3,7 @@
 package ideadetail
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -20,6 +21,8 @@ const (
 	FieldEstimatedDurationMonths = "estimated_duration_months"
 	// FieldRequiredResources holds the string denoting the required_resources field in the database.
 	FieldRequiredResources = "required_resources"
+	// FieldPriority holds the string denoting the priority field in the database.
+	FieldPriority = "priority"
 	// FieldCollaborationNeeded holds the string denoting the collaboration_needed field in the database.
 	FieldCollaborationNeeded = "collaboration_needed"
 	// FieldFundingRequired holds the string denoting the funding_required field in the database.
@@ -58,6 +61,7 @@ var Columns = []string{
 	FieldIdeaID,
 	FieldEstimatedDurationMonths,
 	FieldRequiredResources,
+	FieldPriority,
 	FieldCollaborationNeeded,
 	FieldFundingRequired,
 	FieldEstimatedBudget,
@@ -90,6 +94,33 @@ var (
 	DefaultID func() string
 )
 
+// Priority defines the type for the "priority" enum field.
+type Priority string
+
+// PriorityMedium is the default value of the Priority enum.
+const DefaultPriority = PriorityMedium
+
+// Priority values.
+const (
+	PriorityHigh   Priority = "high"
+	PriorityMedium Priority = "medium"
+	PriorityLow    Priority = "low"
+)
+
+func (pr Priority) String() string {
+	return string(pr)
+}
+
+// PriorityValidator is a validator for the "priority" field enum values. It is called by the builders before save.
+func PriorityValidator(pr Priority) error {
+	switch pr {
+	case PriorityHigh, PriorityMedium, PriorityLow:
+		return nil
+	default:
+		return fmt.Errorf("ideadetail: invalid enum value for priority field: %q", pr)
+	}
+}
+
 // OrderOption defines the ordering options for the IdeaDetail queries.
 type OrderOption func(*sql.Selector)
 
@@ -111,6 +142,11 @@ func ByEstimatedDurationMonths(opts ...sql.OrderTermOption) OrderOption {
 // ByRequiredResources orders the results by the required_resources field.
 func ByRequiredResources(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRequiredResources, opts...).ToFunc()
+}
+
+// ByPriority orders the results by the priority field.
+func ByPriority(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPriority, opts...).ToFunc()
 }
 
 // ByCollaborationNeeded orders the results by the collaboration_needed field.

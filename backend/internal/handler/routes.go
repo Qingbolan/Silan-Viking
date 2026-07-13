@@ -8,11 +8,11 @@ import (
 
 	auth "silan-backend/internal/handler/auth"
 	blog "silan-backend/internal/handler/blog"
+	contact "silan-backend/internal/handler/contact"
 	episodes "silan-backend/internal/handler/episodes"
 	health "silan-backend/internal/handler/health"
 	ideas "silan-backend/internal/handler/ideas"
 	media "silan-backend/internal/handler/media"
-	plans "silan-backend/internal/handler/plans"
 	projects "silan-backend/internal/handler/projects"
 	resume "silan-backend/internal/handler/resume"
 	stats "silan-backend/internal/handler/stats"
@@ -28,10 +28,41 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
 			[]rest.Route{
 				{
+					Method:  http.MethodPost,
+					Path:    "/messages",
+					Handler: contact.CreateContactMessageHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/messages/public",
+					Handler: contact.ListPublicContactMessagesHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/v1/contact"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Route{
+				{
 					// Verify Google ID token and upsert identity
 					Method:  http.MethodPost,
 					Path:    "/google/verify",
 					Handler: auth.GoogleVerifyHandler(serverCtx),
+				},
+				{
+					// Resolve the current HttpOnly Google session
+					Method:  http.MethodGet,
+					Path:    "/session",
+					Handler: auth.SessionHandler(serverCtx),
+				},
+				{
+					// Clear the current sign-in session
+					Method:  http.MethodPost,
+					Path:    "/logout",
+					Handler: auth.LogoutHandler(serverCtx),
 				},
 				{
 					// Validate a company email — well-formed and not a free-mail provider
@@ -129,6 +160,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
 			[]rest.Route{
+				{
+					// Search public episodes across title, series and authored body
+					Method:  http.MethodGet,
+					Path:    "/search",
+					Handler: episodes.SearchEpisodesHandler(serverCtx),
+				},
 				{
 					// Get episode by slug
 					Method:  http.MethodGet,
@@ -241,45 +278,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api/v1"),
-	)
-
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
-			[]rest.Route{
-				{
-					// Get projects by annual plan
-					Method:  http.MethodGet,
-					Path:    "/:plan_name/projects",
-					Handler: plans.GetProjectsByPlanHandler(serverCtx),
-				},
-				{
-					// Get annual plans list
-					Method:  http.MethodGet,
-					Path:    "/annual",
-					Handler: plans.GetAnnualPlansHandler(serverCtx),
-				},
-				{
-					// Get annual plan by name
-					Method:  http.MethodGet,
-					Path:    "/annual/:name",
-					Handler: plans.GetAnnualPlanByNameHandler(serverCtx),
-				},
-				{
-					// Get current annual plan
-					Method:  http.MethodGet,
-					Path:    "/annual/current",
-					Handler: plans.GetCurrentAnnualPlanHandler(serverCtx),
-				},
-				{
-					// Get projects with their annual plans
-					Method:  http.MethodGet,
-					Path:    "/projects",
-					Handler: plans.GetProjectsWithPlansHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithPrefix("/api/v1/plans"),
 	)
 
 	server.AddRoutes(

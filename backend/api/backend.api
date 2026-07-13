@@ -118,7 +118,6 @@ type (
 		Description string   `json:"description"`
 		Tags        []string `json:"tags"`
 		Year        int      `json:"year"`
-		AnnualPlan  string   `json:"annual_plan"`
 	}
 	// Extended project for detailed views
 	ProjectExtended {
@@ -143,7 +142,6 @@ type (
 		StarCount        int64    `json:"star_count"`
 		SortOrder        int      `json:"sort_order"`
 		Year             int      `json:"year"`
-		AnnualPlan       string   `json:"annual_plan,omitempty"`
 		TeamSize         int      `json:"team_size,omitempty"`
 		MyRole           string   `json:"my_role,omitempty"`
 		Features         []string `json:"features"`
@@ -156,6 +154,10 @@ type (
 	ProjectDetail {
 		ID                  string           `json:"id"`
 		ProjectID           string           `json:"project_id"`
+		Slug                string           `json:"slug,omitempty"`
+		Title               string           `json:"title,omitempty"`
+		Description         string           `json:"description,omitempty"`
+		Tags                []string         `json:"tags"`
 		DetailedDescription string           `json:"detailed_description,omitempty"`
 		Goals               string           `json:"goals,omitempty"`
 		Challenges          string           `json:"challenges,omitempty"`
@@ -200,25 +202,6 @@ type (
 		Relevance   string   `json:"relevance"`
 		Description string   `json:"description"`
 	}
-	// Annual Plan types
-	AnnualPlan {
-		ID           string        `json:"id"`
-		Year         int           `json:"year"`
-		Name         string        `json:"name"`
-		Description  string        `json:"description"`
-		Icon         string        `json:"icon,omitempty"`
-		Image        string        `json:"image,omitempty"`
-		ProjectCount int           `json:"project_count"`
-		Objectives   []string      `json:"objectives"`
-		Projects     []PlanProject `json:"projects"`
-		CreatedAt    string        `json:"created_at"`
-		UpdatedAt    string        `json:"updated_at"`
-	}
-	PlanProject {
-		ID          string `json:"id"`
-		Name        string `json:"name"`
-		Description string `json:"description"`
-	}
 	// Resume requests
 	ResumeRequest {
 		Language string `form:"lang,default=en"`
@@ -247,7 +230,6 @@ type (
 		Status     string `form:"status,optional"`
 		Search     string `form:"search,optional"`
 		Year       int    `form:"year,optional"`
-		AnnualPlan string `form:"annual_plan,optional"`
 		Tags       string `form:"tags,optional"`
 		Language   string `form:"lang,default=en"`
 	}
@@ -276,7 +258,6 @@ type (
 		Description string   `json:"description,optional"`
 		Tags        []string `json:"tags,optional"`
 		Year        int      `json:"year"`
-		AnnualPlan  string   `json:"annual_plan"`
 	}
 	UpdateProjectRequest {
 		ID          string   `path:"id"`
@@ -284,25 +265,9 @@ type (
 		Description string   `json:"description,optional"`
 		Tags        []string `json:"tags,optional"`
 		Year        int      `json:"year,optional"`
-		AnnualPlan  string   `json:"annual_plan,optional"`
 	}
 	DeleteProjectRequest {
 		ID string `path:"id"`
-	}
-	// Annual Plan requests
-	AnnualPlanListRequest {
-		Language string `form:"lang,default=en"`
-	}
-	AnnualPlanRequest {
-		Name     string `path:"name"`
-		Language string `form:"lang,default=en"`
-	}
-	ProjectsWithPlansRequest {
-		Language string `form:"lang,default=en"`
-	}
-	ProjectsByPlanRequest {
-		PlanName string `path:"plan_name"`
-		Language string `form:"lang,default=en"`
 	}
 	// Blog types (matching frontend BlogData interface)
 	BlogContent {
@@ -325,6 +290,7 @@ type (
 		Tags                []string      `json:"tags"`
 		Content             []BlogContent `json:"content"`
 		Likes               int64         `json:"likes"`
+		IsLikedByUser       bool          `json:"is_liked_by_user"`
 		Views               int64         `json:"views"`
 		Summary             string        `json:"summary"`
 		SummaryZh           string        `json:"summary_zh,omitempty"`
@@ -396,6 +362,19 @@ type (
 		Slug     string `path:"slug"`
 		Language string `form:"lang,default=en"`
 	}
+	EpisodeSearchRequest {
+		Query    string `form:"query,optional"`
+		Language string `form:"lang,default=en"`
+		Page     int    `form:"page,default=1"`
+		Size     int    `form:"size,default=10"`
+	}
+	EpisodeSearchResponse {
+		Episodes   []EpisodeData `json:"episodes"`
+		Total      int64         `json:"total"`
+		Page       int           `json:"page"`
+		Size       int           `json:"size"`
+		TotalPages int           `json:"total_pages"`
+	}
 	// Blog comments
 	BlogCommentData {
 		ID              string            `json:"id"`
@@ -405,7 +384,7 @@ type (
 		AuthorAvatarURL string            `json:"author_avatar_url,optional"`
 		Content         string            `json:"content"`
 		CreatedAt       string            `json:"created_at"`
-		UserIdentityID  string            `json:"user_identity_id,optional"`
+		CanDelete       bool              `json:"can_delete"`
 		LikesCount      int               `json:"likes_count"`
 		IsLikedByUser   bool              `json:"is_liked_by_user"`
 		Replies         []BlogCommentData `json:"replies,optional"`
@@ -425,8 +404,6 @@ type (
 		AuthorEmail    string `json:"author_email"`
 		Content        string `json:"content"`
 		Fingerprint    string `json:"fingerprint"`
-		UserIdentityId string `json:"user_identity_id,optional"`
-		IdToken        string `json:"id_token,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Language       string `form:"lang,default=en"`
@@ -434,7 +411,6 @@ type (
 	DeleteBlogCommentRequest {
 		CommentID      string `path:"comment_id"`
 		Fingerprint    string `json:"fingerprint"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Language       string `form:"lang,default=en"`
@@ -442,7 +418,6 @@ type (
 	LikeCommentRequest {
 		CommentID      string `path:"comment_id"`
 		Fingerprint    string `json:"fingerprint"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Language       string `form:"lang,default=en"`
@@ -471,12 +446,14 @@ type (
 		TotalPages int        `json:"total_pages"`
 	}
 	BlogRequest {
-		Slug     string `path:"slug"`
-		Language string `form:"lang,default=en"`
+		Slug           string `path:"slug"`
+		Fingerprint    string `form:"fingerprint,optional"`
+		Language       string `form:"lang,default=en"`
 	}
 	BlogByIdRequest {
-		ID       string `path:"id"`
-		Language string `form:"lang,default=en"`
+		ID             string `path:"id"`
+		Fingerprint    string `form:"fingerprint,optional"`
+		Language       string `form:"lang,default=en"`
 	}
 	// Graph Data for project visualization
 	GraphNode {
@@ -505,7 +482,6 @@ type (
 	UpdateBlogViewsRequest {
 		ID             string  `path:"id"`
 		Fingerprint    string  `json:"fingerprint,optional"`
-		UserIdentityId string  `json:"user_identity_id,optional"`
 		ClientIP       string  `json:"client_ip,optional"`
 		UserAgentFull  string  `json:"user_agent_full,optional"`
 		Referrer       string  `json:"referrer,optional"`
@@ -519,14 +495,14 @@ type (
 		ID             string `path:"id"`
 		Increment      bool   `json:"increment,default=true"`
 		Fingerprint    string `json:"fingerprint,optional"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Referrer       string `json:"referrer,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	UpdateBlogLikesResponse {
-		Likes int64 `json:"likes"`
+		Likes         int64 `json:"likes"`
+		IsLikedByUser bool  `json:"is_liked_by_user"`
 	}
 	// Idea types (matching frontend IdeaData exactly)
 	IdeaData {
@@ -690,7 +666,7 @@ type (
 		Content         string            `json:"content"`
 		Type            string            `json:"type"`
 		CreatedAt       string            `json:"created_at"`
-		UserIdentityID  string            `json:"user_identity_id,optional"`
+		CanDelete       bool              `json:"can_delete"`
 		LikesCount      int               `json:"likes_count"`
 		IsLikedByUser   bool              `json:"is_liked_by_user"`
 		Replies         []IdeaCommentData `json:"replies,optional"`
@@ -716,13 +692,11 @@ type (
 		Fingerprint    string `json:"fingerprint"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		ClientIP       string `json:"client_ip,optional"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	DeleteIdeaCommentRequest {
 		CommentID      string `path:"comment_id"`
 		Fingerprint    string `json:"fingerprint"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 	}
 	// ----- Project comments (mirror idea comments) -----
 	ProjectCommentData {
@@ -734,7 +708,7 @@ type (
 		Content         string               `json:"content"`
 		Type            string               `json:"type"`
 		CreatedAt       string               `json:"created_at"`
-		UserIdentityID  string               `json:"user_identity_id,optional"`
+		CanDelete       bool                 `json:"can_delete"`
 		LikesCount      int                  `json:"likes_count"`
 		IsLikedByUser   bool                 `json:"is_liked_by_user"`
 		Replies         []ProjectCommentData `json:"replies,optional"`
@@ -744,9 +718,10 @@ type (
 		Total    int                  `json:"total"`
 	}
 	ProjectCommentListRequest {
-		ID       string `path:"id"`
-		Type     string `form:"type,default=general"`
-		Language string `form:"lang,default=en"`
+		ID             string `path:"id"`
+		Type           string `form:"type,default=general"`
+		Fingerprint    string `form:"fingerprint,optional"`
+		Language       string `form:"lang,default=en"`
 	}
 	CreateProjectCommentRequest {
 		ID             string `path:"id"`
@@ -760,19 +735,16 @@ type (
 		Fingerprint    string `json:"fingerprint"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		ClientIP       string `json:"client_ip,optional"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	DeleteProjectCommentRequest {
 		CommentID      string `path:"comment_id"`
 		Fingerprint    string `json:"fingerprint"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 	}
 	// Project interaction request types
 	LikeProjectRequest {
 		ProjectID      string `path:"id"`
 		Fingerprint    string `json:"fingerprint"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Referrer       string `json:"referrer,optional"`
@@ -785,7 +757,6 @@ type (
 	RecordProjectViewRequest {
 		ProjectID      string `path:"id"`
 		Fingerprint    string `json:"fingerprint"`
-		UserIdentityId string `json:"user_identity_id,optional"`
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Referrer       string `json:"referrer,optional"`
@@ -798,7 +769,6 @@ type (
 	ProjectMetricsRequest {
 		ProjectID      string `path:"id"`
 		Fingerprint    string `form:"fingerprint,optional"`
-		UserIdentityId string `form:"user_identity_id,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	ProjectMetricsResponse {
@@ -820,7 +790,6 @@ type (
 		Query    string `form:"query,optional"`
 		Tags     string `form:"tags,optional"`
 		Year     int    `form:"year,optional"`
-		PlanID   string `form:"plan_id,optional"`
 		Language string `form:"lang,default=en"`
 	}
 	IdeaSearchRequest {
@@ -948,34 +917,6 @@ service backend-api {
 	get /:id/metrics (ProjectMetricsRequest) returns (ProjectMetricsResponse)
 }
 
-// ========== ANNUAL PLANS GROUP ==========
-@server (
-	group:      plans
-	prefix:     /api/v1/plans
-	middleware: Cors,Analytics
-)
-service backend-api {
-	@doc "Get annual plans list"
-	@handler GetAnnualPlans
-	get /annual (AnnualPlanListRequest) returns ([]AnnualPlan)
-
-	@doc "Get current annual plan"
-	@handler GetCurrentAnnualPlan
-	get /annual/current (AnnualPlanListRequest) returns (AnnualPlan)
-
-	@doc "Get annual plan by name"
-	@handler GetAnnualPlanByName
-	get /annual/:name (AnnualPlanRequest) returns (AnnualPlan)
-
-	@doc "Get projects with their annual plans"
-	@handler GetProjectsWithPlans
-	get /projects (ProjectsWithPlansRequest) returns ([]Project)
-
-	@doc "Get projects by annual plan"
-	@handler GetProjectsByPlan
-	get /:plan_name/projects (ProjectsByPlanRequest) returns ([]Project)
-}
-
 // ========== BLOG PAGE GROUP ==========
 @server (
 	group:      blog
@@ -1040,6 +981,10 @@ service backend-api {
 	middleware: Cors,Analytics
 )
 service backend-api {
+	@doc "Search published episodes across title, series and authored body"
+	@handler SearchEpisodes
+	get /search (EpisodeSearchRequest) returns (EpisodeSearchResponse)
+
 	@doc "Get episode series list"
 	@handler GetEpisodeSeriesList
 	get /series (EpisodeSeriesListRequest) returns (EpisodeSeriesListResponse)
@@ -1124,6 +1069,14 @@ service backend-api {
 	@doc "Verify Google ID token and upsert identity"
 	@handler GoogleVerify
 	post /google/verify (GoogleVerifyRequest) returns (GoogleVerifyResponse)
+
+	@doc "Resolve the current HttpOnly Google session"
+	@handler Session
+	get /session returns (GoogleVerifyResponse)
+
+	@doc "Clear the current sign-in session"
+	@handler Logout
+	post /logout
 
 	@doc "Validate a company email — well-formed and not a free-mail provider"
 	@handler VerifyEmail
@@ -1281,4 +1234,3 @@ service backend-api {
 	@handler GetMedia
 	get /media (MediaRequest)
 }
-

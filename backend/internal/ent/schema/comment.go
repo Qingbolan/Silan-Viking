@@ -51,9 +51,9 @@ func (Comment) Fields() []ent.Field {
 		field.Text("content").
 			NotEmpty(),
 		field.Enum("type").
-			Values("general", "question", "feedback").
+			Values("general", "question", "feedback", "suggestion", "bug-report", "issue").
 			Default("general").
-			Comment("Type of comment (M0.5a §11.6: enum)"),
+			Comment("Discussion kind; issue is reserved for project issue threads"),
 		// Renamed from referrence_id (M0.5a §11.6). The runtime migration
 		// must ALTER TABLE comments RENAME COLUMN, not drop+add.
 		field.String("reference_id").

@@ -25,6 +25,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -88,6 +89,20 @@ func main() {
 	if err := entClient.Close(); err != nil {
 		log.Fatalf("sqlite2pg: close ent client: %v", err)
 	}
+	// Schema.Create runs through the admin DSN so it can add tables safely,
+	// but those new objects must be handed back to the runtime role. Without
+	// this transfer PostgreSQL hides the admin-owned table from ent's
+	// information_schema inspection and the API enters a create/already-exists
+	// restart loop on its next boot.
+	if adminDSN != "" {
+		runtimeRole, err := postgresRoleFromDSN(*pgDSN)
+		if err != nil {
+			log.Fatalf("sqlite2pg: runtime role: %v", err)
+		}
+		if err := transferPublicSchemaOwnership(context.Background(), writeDSN, runtimeRole); err != nil {
+			log.Fatalf("sqlite2pg: transfer schema ownership to %s: %v", runtimeRole, err)
+		}
+	}
 
 	// 2. Open both as raw sql.DB for the bulk copy. The write side uses the
 	// admin DSN so we can DISABLE TRIGGER ALL around the import; reads
@@ -118,15 +133,20 @@ func main() {
 		dstSet[t] = struct{}{}
 	}
 
-	var copied, skipped []string
+	var copied, skipped, preservedRuntime []string
 	for _, t := range srcTables {
 		if _, ok := dstSet[t]; !ok {
 			skipped = append(skipped, t)
 			continue
 		}
+		if isRuntimeOwnedTable(t) {
+			preservedRuntime = append(preservedRuntime, t)
+			continue
+		}
 		copied = append(copied, t)
 	}
 	sort.Strings(copied)
+	sort.Strings(preservedRuntime)
 
 	if *dryRun {
 		fmt.Println("would copy:")
@@ -136,6 +156,10 @@ func main() {
 		}
 		fmt.Println("skipped (no matching PG table):")
 		for _, t := range skipped {
+			fmt.Printf("  %s\n", t)
+		}
+		fmt.Println("preserved (runtime-owned PG table):")
+		for _, t := range preservedRuntime {
 			fmt.Printf("  %s\n", t)
 		}
 		return
@@ -219,10 +243,122 @@ func main() {
 		log.Fatalf("sqlite2pg: reset sequences: %v", err)
 	}
 
-	log.Printf("done: copied %d tables, skipped %d", len(copied), len(skipped))
+	log.Printf(
+		"done: copied %d tables, preserved %d runtime tables, skipped %d",
+		len(copied),
+		len(preservedRuntime),
+		len(skipped),
+	)
+	for _, t := range preservedRuntime {
+		log.Printf("  preserved (runtime-owned): %s", t)
+	}
 	for _, t := range skipped {
 		log.Printf("  skipped (no PG counterpart): %s", t)
 	}
+}
+
+// Runtime-owned tables are written by visitors or the serving backend. A
+// content deploy must never truncate them using the author's local SQLite
+// snapshot. Everything not listed here is projection-owned and may be
+// replaced from the content tree.
+var runtimeOwnedTables = map[string]struct{}{
+	"annotations":         {},
+	"comment_likes":       {},
+	"comments":            {},
+	"contact_messages":    {},
+	"content_interaction": {},
+	"project_likes":       {},
+	"project_views":       {},
+	"request_logs":        {},
+	"stats_cache_crawler": {},
+	"stats_cache_item":    {},
+	"stats_cache_source":  {},
+	"stats_cache_visitor": {},
+	"user_identities":     {},
+	"users":               {},
+}
+
+func isRuntimeOwnedTable(table string) bool {
+	_, ok := runtimeOwnedTables[table]
+	return ok
+}
+
+func postgresRoleFromDSN(dsn string) (string, error) {
+	u, err := url.Parse(dsn)
+	if err != nil {
+		return "", fmt.Errorf("parse PostgreSQL DSN: %w", err)
+	}
+	if u.User == nil || u.User.Username() == "" {
+		return "", fmt.Errorf("PostgreSQL DSN has no runtime user")
+	}
+	return u.User.Username(), nil
+}
+
+// transferPublicSchemaOwnership gives every public table and sequence to the
+// role used by the serving API. Object names come from PostgreSQL catalogues;
+// quotePGIdentifier still quotes each component defensively before execution.
+func transferPublicSchemaOwnership(ctx context.Context, adminDSN, runtimeRole string) error {
+	db, err := sql.Open("postgres", adminDSN)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	rollback := func(cause error) error {
+		_ = tx.Rollback()
+		return cause
+	}
+
+	type object struct{ schema, name, kind string }
+	var objects []object
+	for _, catalogue := range []struct {
+		query string
+		kind  string
+	}{
+		{`SELECT schemaname, tablename FROM pg_tables WHERE schemaname = 'public'`, "TABLE"},
+		{`SELECT sequence_schema, sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'`, "SEQUENCE"},
+	} {
+		rows, err := tx.QueryContext(ctx, catalogue.query)
+		if err != nil {
+			return rollback(err)
+		}
+		for rows.Next() {
+			var schema, name string
+			if err := rows.Scan(&schema, &name); err != nil {
+				_ = rows.Close()
+				return rollback(err)
+			}
+			objects = append(objects, object{schema: schema, name: name, kind: catalogue.kind})
+		}
+		if err := rows.Err(); err != nil {
+			_ = rows.Close()
+			return rollback(err)
+		}
+		_ = rows.Close()
+	}
+
+	role := quotePGIdentifier(runtimeRole)
+	for _, obj := range objects {
+		statement := fmt.Sprintf(
+			"ALTER %s %s.%s OWNER TO %s",
+			obj.kind,
+			quotePGIdentifier(obj.schema),
+			quotePGIdentifier(obj.name),
+			role,
+		)
+		if _, err := tx.ExecContext(ctx, statement); err != nil {
+			return rollback(fmt.Errorf("%s %s.%s: %w", obj.kind, obj.schema, obj.name, err))
+		}
+	}
+	return tx.Commit()
+}
+
+func quotePGIdentifier(value string) string {
+	return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`
 }
 
 func listSQLiteTables(db *sql.DB) ([]string, error) {

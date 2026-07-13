@@ -3,12 +3,17 @@ package projects
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"silan-backend/internal/contentsearch"
 	"silan-backend/internal/ent"
+	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projectdetail"
 	"silan-backend/internal/ent/projecttechnology"
+	"silan-backend/internal/ent/projecttranslation"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -40,17 +45,31 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 		Where(projectdetail.HasProjectWith(project.VisibilityEQ(project.VisibilityPublic)))
 
 	// Apply filters through project relationship if provided
-	if req.Query != "" {
+	if search := strings.TrimSpace(req.Query); search != "" {
+		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
+			l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, search, req.Language,
+		)
+		if partErr != nil {
+			return nil, partErr
+		}
 		query = query.Where(
 			projectdetail.Or(
 				// M0.5a §11.8: release_notes / quick_start moved to item_part
-				projectdetail.DependenciesContains(req.Query),
-				projectdetail.LicenseTextContains(req.Query),
-				projectdetail.VersionContains(req.Query),
+				projectdetail.DependenciesContainsFold(search),
+				projectdetail.LicenseTextContainsFold(search),
+				projectdetail.VersionContainsFold(search),
 				projectdetail.HasProjectWith(
 					project.Or(
-						project.TitleContains(req.Query),
-						project.DescriptionContains(req.Query),
+						project.TitleContainsFold(search),
+						project.DescriptionContainsFold(search),
+						project.IDIn(partIDs...),
+						project.HasTranslationsWith(
+							projecttranslation.LanguageCodeIn(contentsearch.Languages(req.Language)...),
+							projecttranslation.Or(
+								projecttranslation.TitleContainsFold(search),
+								projecttranslation.DescriptionContainsFold(search),
+							),
+						),
 					),
 				),
 			),
@@ -78,6 +97,14 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 
 	// Execute the query
 	projectDetails, err := query.All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	projectIDs := make([]string, 0, len(projectDetails))
+	for _, pd := range projectDetails {
+		projectIDs = append(projectIDs, pd.ProjectID)
+	}
+	engagementCounts, err := engagement.ProjectCounts(l.ctx, l.svcCtx.DB, projectIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +144,7 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 				}
 			}
 
-			metrics.Stars = proj.LikeCount
+			metrics.Stars = engagementCounts[proj.ID].Likes
 		}
 
 		// Get values from project detail entity (these are strings, not pointers)
@@ -137,9 +164,33 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			}
 		}
 
+		var slug, title, description string
+		var tags []string
+		if proj := pd.Edges.Project; proj != nil {
+			slug = proj.Slug
+			title = proj.Title
+			description = proj.Description
+			if tr := pickProjectTranslation(proj.Edges.Translations, req.Language); tr != nil {
+				if tr.Title != "" {
+					title = tr.Title
+				}
+				if tr.Description != "" {
+					description = tr.Description
+				}
+			}
+			tags, err = l.svcCtx.ContentTags.Lookup(l.ctx, "project", proj.ID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		result = append(result, types.ProjectDetail{
 			ID:                  pd.ID,
 			ProjectID:           pd.ProjectID,
+			Slug:                slug,
+			Title:               title,
+			Description:         description,
+			Tags:                tags,
 			DetailedDescription: detailedDescription,
 			Release:             "", // M0.5a §11.8: moved to item_part
 			QuickStart:          "", // M0.5a §11.8: moved to item_part
@@ -150,8 +201,8 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 			Timeline:            timeline,
 			Metrics:             metrics,
 			RelatedBlogs:        []types.ProjectBlogRef{},
-			CreatedAt:           pd.CreatedAt.Format("2006-01-02 15:04:05"),
-			UpdatedAt:           pd.UpdatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:           formatContentTime(pd.CreatedAt, "2006-01-02 15:04:05"),
+			UpdatedAt:           formatContentTime(pd.UpdatedAt, "2006-01-02 15:04:05"),
 		})
 	}
 

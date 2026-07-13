@@ -5,8 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"silan-backend/internal/commentruntime"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/comment"
+	"silan-backend/internal/ent/commentlike"
 	"silan-backend/internal/ent/useridentity"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -32,6 +34,7 @@ func NewListProjectCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectCommentListRequest) (resp *types.ProjectCommentListResponse, err error) {
 	projectUUID := req.ID
+	actor := commentruntime.NewActor(req.AuthenticatedUserID, req.Fingerprint)
 
 	// Fetch comments using entgo - using project_<type> entity type format
 	desiredEntityType := "project_" + strings.ToLower(req.Type)
@@ -53,6 +56,37 @@ func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectComment
 		return nil, err
 	}
 
+	likedCommentIDs := make(map[string]struct{})
+	if req.Fingerprint != "" || req.AuthenticatedUserID != "" {
+		commentIDs := make([]string, 0, len(comments))
+		for _, item := range comments {
+			commentIDs = append(commentIDs, item.ID)
+		}
+		if len(commentIDs) > 0 {
+			likesQuery := l.svcCtx.DB.CommentLike.Query().Where(commentlike.CommentIDIn(commentIDs...))
+			switch {
+			case req.Fingerprint != "" && req.AuthenticatedUserID != "":
+				likesQuery = likesQuery.Where(func(s *sql.Selector) {
+					s.Where(sql.Or(
+						sql.EQ(s.C(commentlike.FieldFingerprint), req.Fingerprint),
+						sql.EQ(s.C(commentlike.FieldUserIdentityID), req.AuthenticatedUserID),
+					))
+				})
+			case req.AuthenticatedUserID != "":
+				likesQuery = likesQuery.Where(commentlike.UserIdentityIDEQ(req.AuthenticatedUserID))
+			default:
+				likesQuery = likesQuery.Where(commentlike.FingerprintEQ(req.Fingerprint))
+			}
+			likes, likeErr := likesQuery.All(l.ctx)
+			if likeErr != nil {
+				return nil, likeErr
+			}
+			for _, like := range likes {
+				likedCommentIDs[like.CommentID] = struct{}{}
+			}
+		}
+	}
+
 	lookupAvatar := func(email string) string {
 		if email == "" {
 			return ""
@@ -72,6 +106,7 @@ func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectComment
 	commentMap := make(map[string]*types.ProjectCommentData)
 	var order []string
 	for _, comment := range comments {
+		_, isLiked := likedCommentIDs[comment.ID]
 		commentData := types.ProjectCommentData{
 			ID:              comment.ID,
 			ProjectID:       comment.EntityID,
@@ -81,9 +116,9 @@ func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectComment
 			Content:         comment.Content,
 			Type:            string(comment.Type),
 			CreatedAt:       comment.CreatedAt.Format(time.RFC3339),
-			UserIdentityID:  comment.UserIdentityID,
+			CanDelete:       actor.CanDelete(comment),
 			LikesCount:      comment.LikesCount,
-			IsLikedByUser:   false,
+			IsLikedByUser:   isLiked,
 			Replies:         []types.ProjectCommentData{},
 		}
 		commentMap[comment.ID] = &commentData

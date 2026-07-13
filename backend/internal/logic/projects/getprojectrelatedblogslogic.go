@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 
-	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/contentrelation"
 	"silan-backend/internal/ent/project"
@@ -102,7 +101,7 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 
 		// Tags come from the cross-type `content_tag` table — the engine no
 		// longer populates the legacy ent `Tags` edge.
-		tags, tagErr := contenttag.Lookup(l.ctx, l.svcCtx.RawDB, "blog", post.ID)
+		tags, tagErr := l.svcCtx.ContentTags.Lookup(l.ctx, "blog", post.ID)
 		if tagErr != nil {
 			l.Errorf("content_tag lookup for blog %s: %v", post.ID, tagErr)
 		}

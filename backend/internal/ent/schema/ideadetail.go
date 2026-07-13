@@ -37,6 +37,9 @@ func (IdeaDetail) Fields() []ent.Field {
 			Optional(),
 		field.Text("required_resources").
 			Optional(),
+		field.Enum("priority").
+			Values("high", "medium", "low").
+			Default("medium"),
 		field.Bool("collaboration_needed").
 			Default(false),
 		field.Bool("funding_required").

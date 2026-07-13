@@ -3,8 +3,8 @@ package projects
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"silan-backend/internal/commentruntime"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -38,38 +38,10 @@ func (l *DeleteProjectCommentLogic) DeleteProjectComment(req *types.DeleteProjec
 	}
 
 	// Authorization: identity or fingerprint match in user_agent
-	authorized := false
-	if req.UserIdentityId != "" && cmt.UserIdentityID != "" && req.UserIdentityId == cmt.UserIdentityID {
-		authorized = true
-	}
-	if !authorized && req.Fingerprint != "" && strings.Contains(cmt.UserAgent, "fp:"+req.Fingerprint) {
-		authorized = true
-	}
-	if !authorized {
+	if !commentruntime.NewActor(req.AuthenticatedUserID, req.Fingerprint).CanDelete(cmt) {
 		return fmt.Errorf("forbidden: insufficient permissions to delete this comment")
 	}
 
 	// Recursive delete
-	return l.deleteWithReplies(req.CommentID)
-}
-
-func (l *DeleteProjectCommentLogic) deleteWithReplies(commentID string) error {
-	// Find replies using entgo (filter by entity_type like blog implementation)
-	replies, err := l.svcCtx.DB.Comment.Query().
-		Where(comment.ParentIDEQ(commentID)).
-		Where(comment.EntityTypeEQ(comment.EntityTypeProject)).
-		All(l.ctx)
-	if err != nil {
-		return err
-	}
-
-	// Recursively delete replies
-	for _, reply := range replies {
-		if err := l.deleteWithReplies(reply.ID); err != nil {
-			return err
-		}
-	}
-
-	// Delete self using entgo
-	return l.svcCtx.DB.Comment.DeleteOneID(commentID).Exec(l.ctx)
+	return commentruntime.DeleteTree(l.ctx, l.svcCtx.DB, req.CommentID, comment.EntityTypeProject)
 }

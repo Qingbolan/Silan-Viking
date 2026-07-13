@@ -2,11 +2,19 @@ package projects
 
 import (
 	"context"
+	"time"
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/svc"
 )
+
+func formatContentTime(value time.Time, layout string) string {
+	if value.IsZero() || value.Year() <= 1 {
+		return ""
+	}
+	return value.Format(layout)
+}
 
 // resolveLang normalizes an empty language to the default ("en").
 func resolveLang(lang string) string {

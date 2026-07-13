@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	"silan-backend/internal/logic/projects"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -17,6 +18,7 @@ func LikeProjectCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := projects.NewLikeProjectCommentLogic(r.Context(), svcCtx)
 		resp, err := l.LikeProjectComment(&req)

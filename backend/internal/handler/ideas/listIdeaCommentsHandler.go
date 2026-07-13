@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/zeromicro/go-zero/rest/httpx"
+	authn "silan-backend/internal/auth"
 	ideaslogic "silan-backend/internal/logic/ideas"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -23,7 +24,7 @@ func ListIdeaCommentsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		clientIP := utils.GetClientIP(r)
 		userAgent := utils.GetUserAgent(r)
 		fingerprint := r.URL.Query().Get("fingerprint")
-		userIdentityID := r.URL.Query().Get("user_identity_id")
+		userIdentityID := authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		resp, err := l.ListComments(&req, clientIP, userAgent, fingerprint, userIdentityID)
 		if err != nil {
@@ -33,4 +34,3 @@ func ListIdeaCommentsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		httpx.OkJsonCtx(r.Context(), w, resp)
 	}
 }
-

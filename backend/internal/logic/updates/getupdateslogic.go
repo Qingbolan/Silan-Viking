@@ -35,9 +35,19 @@ func (l *GetUpdatesLogic) GetUpdates(req *types.UpdateListRequest) (*types.Updat
 		return nil, err
 	}
 
+	ids := make([]string, 0, len(updates))
+	for _, update := range updates {
+		ids = append(ids, update.ID)
+	}
+	bodies := updatePartBodies(l.ctx, l.svcCtx, ids, "body", req.Language)
+
 	result := make([]types.RecentUpdate, 0, len(updates))
 	for _, update := range updates {
-		result = append(result, updateToData(l.ctx, l.svcCtx.RawDB, update, req.Language))
+		data := updateToData(l.ctx, l.svcCtx.ContentTags, update, req.Language)
+		if body := bodies[update.ID]; body != "" {
+			data.Description = body
+		}
+		result = append(result, data)
 	}
 
 	return &types.UpdateListResponse{

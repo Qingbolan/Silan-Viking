@@ -2,10 +2,14 @@ package blog
 
 import (
 	"context"
+	"fmt"
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/logic/engagement"
+	"silan-backend/internal/siteidentity"
 	"silan-backend/internal/svc"
+	"silan-backend/internal/types"
 )
 
 // resolveLang normalizes an empty language to the default ("en").
@@ -14,6 +18,84 @@ func resolveLang(lang string) string {
 		return "en"
 	}
 	return lang
+}
+
+// blogDetailData is the single projection for both slug and ID detail
+// transports. Keeping it here prevents the two public routes from drifting in
+// content IDs, actor state, author metadata, or language fallback.
+func blogDetailData(
+	ctx context.Context,
+	svcCtx *svc.ServiceContext,
+	post *ent.BlogPost,
+	language string,
+	userIdentityID string,
+	fingerprint string,
+) (*types.BlogData, error) {
+	tags, err := svcCtx.ContentTags.Lookup(ctx, "blog", post.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	title := post.Title
+	excerpt := post.Excerpt
+	if tr := pickBlogTranslation(post.Edges.Translations, language); tr != nil {
+		if tr.Title != "" {
+			title = tr.Title
+		}
+		if tr.Excerpt != "" {
+			excerpt = tr.Excerpt
+		}
+	}
+	body := post.Content
+	if synced := blogBody(ctx, svcCtx, post.ID, language); synced != "" {
+		body = synced
+	}
+
+	author, err := siteidentity.OwnerName(ctx, svcCtx.DB, language)
+	if err != nil {
+		return nil, err
+	}
+
+	counts, err := engagement.BlogCount(ctx, svcCtx.DB, post.ID)
+	if err != nil {
+		return nil, err
+	}
+	liked, err := engagement.IsBlogLiked(ctx, svcCtx.DB, post.ID, userIdentityID, fingerprint)
+	if err != nil {
+		return nil, err
+	}
+
+	readTime := ""
+	if post.ReadingTimeMinutes > 0 {
+		readTime = fmt.Sprintf("%d min read", post.ReadingTimeMinutes)
+	}
+	seriesID := post.SeriesID
+	seriesTitle := ""
+	if seriesID != "" {
+		seriesTitle = seriesID
+	}
+
+	return &types.BlogData{
+		ID:               post.ID,
+		Title:            title,
+		Slug:             post.Slug,
+		Author:           author,
+		PublishDate:      post.PublishedAt,
+		ReadTime:         readTime,
+		Category:         post.CategoryID,
+		Tags:             tags,
+		Content:          []types.BlogContent{{Type: "text", Content: body, ID: post.ID + "-content"}},
+		Likes:            int64(counts.Likes),
+		IsLikedByUser:    liked,
+		Views:            int64(counts.Views),
+		Summary:          excerpt,
+		FeaturedImageURL: post.FeaturedImageURL,
+		Type:             string(post.ContentType),
+		SeriesID:         seriesID,
+		SeriesSlug:       seriesID,
+		SeriesTitle:      seriesTitle,
+		EpisodeNumber:    post.SeriesOrder,
+	}, nil
 }
 
 // pickBlogTranslation selects the best blog translation for a language:
