@@ -2,34 +2,39 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="/image.png" />
+    <!-- The browser mark and the in-page brand use the same portrait source.
+         Keep the conventional ICO endpoint for older clients, then expose the
+         original PNG as the authoritative icon for modern browsers. -->
+    <link rel="icon" type="image/x-icon" href="%BASE_URL%favicon.ico?v=20260712-avatar-3" sizes="any" />
+    <link rel="icon" type="image/png" href="%BASE_URL%image.png?v=20260712-avatar-3" sizes="1024x1024" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#4a0e4e" />
     <meta
+    data-rh="true"
     name="description"
     content="胡思蓝 (Silan Hu) - AI研究员与全栈开发工程师。专注于人工智能、机器学习和全栈开发。AI Researcher and Full Stack Developer specializing in artificial intelligence, machine learning, and full-stack development."
     />
     <meta name="keywords" content="胡思蓝, Silan Hu, AI研究员, AI Researcher, 全栈开发工程师, Full Stack Developer, 机器学习, Machine Learning, 人工智能, Artificial Intelligence, 简历, Resume" />
     <meta name="author" content="胡思蓝 (Silan Hu)" />
-    <link rel="apple-touch-icon" href="/image.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="canonical" href="https://silan.tech/" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%BASE_URL%avatar-apple-touch-icon.png?v=20260712-avatar-3" />
+    <link rel="manifest" href="%BASE_URL%manifest.json?v=20260712-avatar-3" />
+    <link data-rh="true" rel="canonical" href="https://silan.tech/" />
     <title>Silan Hu(胡思蓝) - AI Researcher & Full Stack Developer | Resume | AI研究员 & 全栈开发工程师 | 个人简历 </title>
 
     <!-- Open Graph — default share card (per-page values are set by react-helmet). -->
-    <meta property="og:site_name" content="Silan Hu" />
-    <meta property="og:type" content="profile" />
-    <meta property="og:title" content="Silan Hu(胡思蓝) - AI Researcher & Full Stack Developer" />
-    <meta property="og:description" content="AI Researcher and Full Stack Developer specialising in artificial intelligence, machine learning and full-stack development." />
-    <meta property="og:url" content="https://silan.tech/" />
-    <meta property="og:image" content="https://silan.tech/image.png" />
-    <meta property="og:locale" content="en_US" />
+    <meta data-rh="true" property="og:site_name" content="Silan Hu" />
+    <meta data-rh="true" property="og:type" content="profile" />
+    <meta data-rh="true" property="og:title" content="Silan Hu(胡思蓝) - AI Researcher & Full Stack Developer" />
+    <meta data-rh="true" property="og:description" content="AI Researcher and Full Stack Developer specialising in artificial intelligence, machine learning and full-stack development." />
+    <meta data-rh="true" property="og:url" content="https://silan.tech/" />
+    <meta data-rh="true" property="og:image" content="https://silan.tech/image.png" />
+    <meta data-rh="true" property="og:locale" content="en_US" />
 
     <!-- Twitter Card. -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Silan Hu(胡思蓝) - AI Researcher & Full Stack Developer" />
-    <meta name="twitter:description" content="AI Researcher and Full Stack Developer specialising in artificial intelligence, machine learning and full-stack development." />
-    <meta name="twitter:image" content="https://silan.tech/image.png" />
+    <meta data-rh="true" name="twitter:card" content="summary_large_image" />
+    <meta data-rh="true" name="twitter:title" content="Silan Hu(胡思蓝) - AI Researcher & Full Stack Developer" />
+    <meta data-rh="true" name="twitter:description" content="AI Researcher and Full Stack Developer specialising in artificial intelligence, machine learning and full-stack development." />
+    <meta data-rh="true" name="twitter:image" content="https://silan.tech/image.png" />
 
     <!-- Structured Data for Google -->
     <script type="application/ld+json">
@@ -38,6 +43,7 @@
       "@type": "Person",
       "name": "胡思蓝 (Silan Hu)",
       "alternateName": "Silan Hu",
+      "image": "https://silan.tech/image.png",
       "jobTitle": "AI研究员 & 全栈开发工程师 (AI Researcher & Full Stack Developer)",
       "url": "https://silan.tech",
       "sameAs": [
@@ -53,4 +59,4 @@
     <div id="root"></div>
     <script type="module" src="/src/index.tsx"></script>
   </body>
-</html> 
+</html>

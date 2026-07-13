@@ -10,6 +10,7 @@
 __pycache__
 # production
 /dist
+dist.zip
 /api-test-portfolio
 
 # misc

@@ -257,6 +257,36 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 cd backend  && go mod download && go run backend.go   # http://localhost:8080
 ```
 
+### NUS static mirror
+
+The NUS Computing mirror is a static `~/public_html/` deployment under
+`https://www.comp.nus.edu.sg/~silan-hu/`. It does not rely on `.htaccess` or
+server rewrites; the static build physically prerenders every public route as a
+directory with an `index.html`, while runtime API and media requests continue
+to use `https://silan.tech/api/v1/...`.
+
+```sh
+cd frontend
+npm run build:static -- /~silan-hu/
+rsync -av --delete dist/ your-nus-account@server:~/public_html/
+```
+
+`npm run build:nus` is the convenience alias for the same NUS base path.
+
+The equivalent CLI entry from the repository root is:
+
+```sh
+silan-viking site build --static-base /~silan-hu/
+rsync -av --delete frontend/dist/ your-nus-account@server:~/public_html/
+```
+
+`silan-viking site build --target nus` is kept as the same alias.
+
+Known limitation: authenticated login depends on cross-site secure cookies and
+may be blocked by browser third-party-cookie policy on the NUS mirror. Anonymous
+browsing, search, content loading, public comments and contact messages remain
+the supported mirror use cases.
+
 ### Cross-compiling releases
 
 ```sh
