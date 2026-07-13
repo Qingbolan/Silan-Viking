@@ -4,6 +4,7 @@
 
 # dependencies
 /node_modules
+/desktop/node_modules
 /.pnp
 .pnp.js
 
@@ -12,6 +13,9 @@
 __pycache__
 # production
 /dist
+/desktop/dist
+/desktop/src-tauri/gen
+/desktop/src-tauri/target
 /api-test-portfolio
 
 # Python bytecode and caches

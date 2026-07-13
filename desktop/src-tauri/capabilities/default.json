@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "Default desktop editor capability",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

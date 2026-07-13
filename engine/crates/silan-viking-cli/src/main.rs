@@ -103,6 +103,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "stats sync <uri>",
             "stats show|visitors|crawlers|sources <uri>",
         ],
+        "desktop" | "destop" => &["desktop"],
         "mcp" => &["mcp serve [--stdio] · mcp status"],
         "uninstall" => &["uninstall [--purge] [--dry-run|--yes]"],
         "skill" => &["skill emit|status [--path PATH]", "skill rm [--path PATH]"],
@@ -203,6 +204,9 @@ fn run(args: Vec<String>) -> Result<(), String> {
         }
         ["config", "edit"] => config_edit(&opts.content_root, false),
         ["config", "edit", "--global"] => config_edit(&opts.content_root, true),
+        ["desktop", flags @ ..] | ["destop", flags @ ..] => {
+            desktop_editor(&opts.content_root, &opts.db_path, flags)
+        }
         ["completion", shell] => completion(shell),
         ["index", "sync"] => {
             let ws = Workspace::open(&opts.content_root).map_err(|e| e.to_string())?;
@@ -768,6 +772,7 @@ fn print_help(content_root: &Path) {
     row("guide", "Show the next recommended step for this project");
     row("doctor", "Health check — content, index, embedder");
     row("config", "Show resolved paths, or edit silan-viking.toml");
+    row("desktop", "Open the local Vditor content editor");
     row(
         "completion",
         "Emit a shell completion script (bash/zsh/fish)",
@@ -850,7 +855,7 @@ fn print_help(content_root: &Path) {
     println!("{}", h("Maintenance verbs:"));
     println!(
         "  {}",
-        d("config edit [--global] · completion bash|zsh|fish")
+        d("desktop · config edit [--global] · completion bash|zsh|fish")
     );
     println!("  {}", d("uninstall [--purge] [--dry-run|--yes]"));
     println!();
@@ -2151,6 +2156,42 @@ fn config_edit(content_root: &Path, global: bool) -> Result<(), String> {
             Ok(())
         }
     }
+}
+
+fn desktop_editor(content_root: &Path, db_path: &Path, args: &[&str]) -> Result<(), String> {
+    if let Some(flag) = args.first() {
+        return Err(format!(
+            "desktop: unknown argument `{flag}` · the Tauri desktop app takes no CLI flags"
+        ));
+    }
+
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let desktop_dir = project_root.join("desktop");
+    let package_json = desktop_dir.join("package.json");
+    if !package_json.is_file() {
+        return Err(format!(
+            "desktop editor needs desktop/package.json under project root: {}",
+            package_json.display()
+        ));
+    }
+
+    println!("desktop editor: Silan Desktop Tauri app");
+    println!("content root: {}", content_root.display());
+    println!("database: {}", db_path.display());
+    println!("desktop: {}", desktop_dir.display());
+    println!("press Ctrl-C to stop the desktop dev session");
+
+    let status = Command::new("npm")
+        .current_dir(&desktop_dir)
+        .env("SILAN_DESKTOP_CONTENT", content_root)
+        .env("SILAN_DESKTOP_DB", db_path)
+        .args(["run", "desktop"])
+        .status()
+        .map_err(|e| format!("launch Tauri desktop app: {e}"))?;
+    if !status.success() {
+        return Err("Tauri desktop app exited with a non-zero status".to_string());
+    }
+    Ok(())
 }
 
 /// `silan completion <shell>` — emit a shell completion script (`02` §顶层
