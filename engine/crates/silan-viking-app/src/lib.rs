@@ -21,6 +21,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod editor;
 pub mod parser;
 pub mod proposal;
 pub mod query;
@@ -29,6 +30,7 @@ pub mod stats;
 pub mod sync;
 pub mod workspace;
 
+pub use editor::{ContentEditor, EditorError, SourceDocument, TranslationLocator};
 pub use proposal::store::ProposalKind;
 pub use proposal::{
     canonicalize, AcceptOutcome, AcceptReport, GitRepo, ProposalError, ProposalId, ProposalLock,

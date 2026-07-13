@@ -21,7 +21,7 @@ mod blog;
 mod entry;
 mod episode;
 mod error;
-mod frontmatter;
+pub(crate) mod frontmatter;
 mod idea;
 mod parsed;
 mod project;

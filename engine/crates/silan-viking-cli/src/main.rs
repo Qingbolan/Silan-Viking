@@ -2175,9 +2175,20 @@ fn desktop_editor(content_root: &Path, db_path: &Path, args: &[&str]) -> Result<
         ));
     }
 
+    let workspace = Workspace::open(content_root)
+        .map_err(|error| format!("desktop: open content workspace: {error}"))?;
+    let sync = workspace
+        .sync(db_path)
+        .map_err(|error| format!("desktop: refresh SQLite projection: {error}"))?;
+
     println!("desktop editor: Silan Desktop Tauri app");
     println!("content root: {}", content_root.display());
     println!("database: {}", db_path.display());
+    println!(
+        "projection: {} items · {}",
+        sync.items_scanned,
+        if sync.wrote { "refreshed" } else { "current" }
+    );
     println!("desktop: {}", desktop_dir.display());
     println!("press Ctrl-C to stop the desktop dev session");
 

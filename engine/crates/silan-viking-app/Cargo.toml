@@ -21,3 +21,4 @@ serde_yaml            = { workspace = true }
 rusqlite              = { workspace = true }
 tracing               = { workspace = true }
 ureq                  = { workspace = true }
+tempfile              = "3"

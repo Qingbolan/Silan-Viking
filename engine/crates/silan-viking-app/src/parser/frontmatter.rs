@@ -46,6 +46,22 @@ pub fn split(text: &str) -> FrontmatterDoc {
     }
 }
 
+/// Replace only the markdown body while preserving the source frontmatter
+/// byte-for-byte. A body-only translation remains body-only.
+pub(crate) fn replace_body(text: &str, body: &str) -> Option<String> {
+    let bom_len = usize::from(text.starts_with('\u{feff}')) * '\u{feff}'.len_utf8();
+    let without_bom = &text[bom_len..];
+    let Some(rest) = without_bom.strip_prefix("---\n") else {
+        return Some(format!("{}{}", &text[..bom_len], body));
+    };
+    if let Some(end) = rest.find("\n---\n") {
+        let body_offset = bom_len + 4 + end + 5;
+        return Some(format!("{}{}", &text[..body_offset], body));
+    }
+    rest.strip_suffix("\n---")
+        .map(|_| format!("{text}\n{body}"))
+}
+
 /// Parse a YAML frontmatter block into a mapping.
 ///
 /// Returns [`ParseError::Malformed`] if the block is not valid YAML. An empty
@@ -158,6 +174,36 @@ mod tests {
         let doc = split("just body text\n");
         assert!(doc.frontmatter.is_empty());
         assert_eq!(doc.body, "just body text\n");
+    }
+
+    #[test]
+    fn replace_body_preserves_frontmatter_exactly() {
+        let source = "---\nslug: hello\ntags: [one, two]\n---\nold body\n";
+        assert_eq!(
+            replace_body(source, "# New body\n"),
+            Some("---\nslug: hello\ntags: [one, two]\n---\n# New body\n".to_owned())
+        );
+    }
+
+    #[test]
+    fn replace_body_keeps_body_only_translations_body_only() {
+        assert_eq!(
+            replace_body("old body", "new body"),
+            Some("new body".to_owned())
+        );
+    }
+
+    #[test]
+    fn replace_body_rejects_an_unclosed_frontmatter_fence() {
+        assert_eq!(replace_body("---\nslug: broken\nbody", "new body"), None);
+    }
+
+    #[test]
+    fn replace_body_appends_after_a_closing_fence_at_end_of_file() {
+        assert_eq!(
+            replace_body("---\nslug: empty\n---", "new body"),
+            Some("---\nslug: empty\n---\nnew body".to_owned())
+        );
     }
 
     #[test]
