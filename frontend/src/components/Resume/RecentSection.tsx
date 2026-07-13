@@ -1,8 +1,8 @@
 // src/components/Resume/RecentSection.tsx
 //
 // Résumé "recent updates" panel — a ds-styled timeline of the latest
-// work / research / publication entries. A ds Card frames the section;
-// a primary-tone Segmented filters by type; each entry is a quiet
+// work / research / publication entries. A primary-tone Segmented filters
+// by type; each entry is a quiet
 // hairline list-row with a Badge status marker. A height-clipped list
 // fades into a ds Button CTA when there is more than fits.
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -11,7 +11,7 @@ import { Clock, Zap, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Markdown from '../ui/Markdown';
-import { Card, CardContent, Segmented, Badge, Button } from '../../components/ds';
+import { Segmented, Badge, Button } from '../../components/ds';
 import type { SegmentedOption } from '../../components/ds';
 
 export interface RecentItem {
@@ -138,8 +138,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
     >
-      <Card variant="flat" padding="lg">
-        <CardContent>
+      <div className="p-7">
           {/* Header — title + a primary-tone Segmented type filter. */}
           <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h3 className="text-xl font-bold tracking-[-0.015em] text-ds-fg sm:text-2xl">
@@ -238,7 +237,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
               <>
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-ds-surface-1"
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-ds-bg"
                 />
                 <div className="absolute inset-x-0 bottom-2 flex justify-center">
                   <Button
@@ -252,8 +251,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
               </>
             )}
           </div>
-        </CardContent>
-      </Card>
+      </div>
     </motion.section>
   );
 };

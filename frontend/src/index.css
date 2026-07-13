@@ -1,3 +1,12 @@
+/* Self-hosted display face — used only for the oversized personal sign-off. */
+@font-face {
+  font-family: 'DM Serif Display';
+  src: url('/fonts/dm-serif-display-latin.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Tailwind Base with Enhanced CSS Variables */
 @tailwind base;
 @tailwind components;
@@ -6,9 +15,9 @@
 /* Modern Typography Variables */
 :root {
   /* Typography - Clean, modern font stack */
-  --font-system: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-system: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, 'Liberation Mono', monospace;
   
   /* Spacing and sizing - Apple's spacing scale */
@@ -1301,3 +1310,37 @@ code[class*="language-"] .token.italic { font-style: italic; }
 .ant-drawer-content, .ant-picker-dropdown, .ant-tooltip-inner {
   box-shadow: none !important;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Code syntax highlighting — rehype-highlight emits hljs-* classes
+   with zero theme CSS behind them (no highlight.js stylesheet was
+   ever loaded), so fenced code blocks rendered plain black-on-white.
+   This is a minimal theme built from the site's own --color-* tokens
+   (not an imported highlight.js theme) so it follows light/dark mode
+   automatically instead of needing a separate stylesheet swap.
+   ════════════════════════════════════════════════════════════════ */
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-tag {
+  color: var(--color-accent);
+}
+.hljs-string, .hljs-attr, .hljs-regexp, .hljs-addition {
+  color: var(--color-success);
+}
+.hljs-number, .hljs-symbol, .hljs-bullet {
+  color: var(--color-warning);
+}
+.hljs-title, .hljs-title.function_, .hljs-title.class_, .hljs-section {
+  color: var(--color-primary);
+}
+.hljs-comment, .hljs-quote, .hljs-deletion {
+  color: var(--color-textTertiary);
+  font-style: italic;
+}
+.hljs-variable, .hljs-template-variable, .hljs-attribute, .hljs-name,
+.hljs-type, .hljs-params {
+  color: var(--color-textSecondary);
+}
+.hljs-built_in, .hljs-builtin-name {
+  color: var(--color-error);
+}
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }

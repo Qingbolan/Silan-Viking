@@ -1,8 +1,5 @@
 import React from 'react';
-import { Typography, Divider } from 'antd';
 import { Link as RouterLink } from 'react-router-dom';
-
-const { Text } = Typography;
 
 /* =========================
    Utilities
@@ -318,14 +315,12 @@ const tokenize = (input: string): Token[] => {
           .join('');
         // 立即把 Token 与字符串重新合并为数组，供下一轮继续解析
         const merged: (string | Token)[] = [];
-        let idx = 0;
         for (const p of parts) {
           if (typeof p === 'string') {
             merged.push(p);
           } else {
             merged.push(p);
           }
-          idx++;
         }
         // 下一轮解析只作用在 string；这里直接把 merged 再拼回字符串与 Token 的混合结构是复杂的
         // 简化：如果还没到最后一个 pattern，就把 Token 替换成不可分割的标记字符拼回，再下一轮统一再分
@@ -396,38 +391,19 @@ export const renderInlineMarkdown = (text: string): React.ReactNode => {
           </SafeLink>
         );
       case 'bold':
-        return (
-          <Text key={`b-${i}`} strong style={{ fontWeight: 600 }}>
-            {tk.value}
-          </Text>
-        );
+        return <strong key={`b-${i}`} className="font-semibold">{tk.value}</strong>;
       case 'italic':
-        return (
-          <Text key={`i-${i}`} italic>
-            {tk.value}
-          </Text>
-        );
+        return <em key={`i-${i}`}>{tk.value}</em>;
       case 'strike':
-        return (
-          <Text key={`s-${i}`} delete>
-            {tk.value}
-          </Text>
-        );
+        return <del key={`s-${i}`}>{tk.value}</del>;
       case 'code':
         return (
-          <Text
+          <code
             key={`c-${i}`}
-            code
-            style={{
-              fontSize: '0.9em',
-              background: 'var(--color-surface, #f5f5f5)',
-              color: 'var(--color-primary, #0066FF)',
-              padding: '2px 6px',
-              borderRadius: 4,
-            }}
+            className="rounded-ds-sm bg-ds-surface-2 px-1.5 py-0.5 font-mono text-[0.9em] text-ds-primary"
           >
             {tk.value}
-          </Text>
+          </code>
         );
       case 'text':
       default:
@@ -473,13 +449,7 @@ export const renderMarkdownBlock = (
     }
 
     case 'divider':
-      return (
-        <Divider
-          key={key}
-          className="my-8"
-          style={{ borderColor: 'var(--color-cardBorder, #e5e7eb)' }}
-        />
-      );
+      return <hr key={key} className="my-8 border-0 border-t border-ds-border" />;
 
     case 'blockquote':
       return (
@@ -492,9 +462,9 @@ export const renderMarkdownBlock = (
             padding: '1rem',
           }}
         >
-          <Text style={{ color: 'var(--color-textSecondary,#6b7280)', fontStyle: 'italic' }}>
+          <span className="italic text-ds-fg-muted">
             {renderInlineMarkdown(block.content as string)}
-          </Text>
+          </span>
         </blockquote>
       );
 

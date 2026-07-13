@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, Clock, BookOpen } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { useLanguage } from '../../LanguageContext';
 
 interface ArticleMetaProps {
   contributors?: string[];
@@ -8,7 +9,9 @@ interface ArticleMetaProps {
   viewCount?: number;
   ipRegion?: string;
   shareTargets?: ('weibo' | 'wechat')[];
-  onShare?: (target: 'weibo' | 'wechat') => void;
+  shareTitle?: string;
+  shareUrl?: string;
+  onShare?: (target: 'weibo' | 'wechat') => void | Promise<void>;
 }
 
 const MetaItem: React.FC<{ icon?: React.ReactNode; children: React.ReactNode }> = ({
@@ -61,8 +64,57 @@ const ArticleMeta: React.FC<ArticleMetaProps> = ({
   viewCount,
   ipRegion,
   shareTargets = ['weibo', 'wechat'],
+  shareTitle,
+  shareUrl,
   onShare,
 }) => {
+  const { language } = useLanguage();
+  const [shareFeedback, setShareFeedback] = useState<string>();
+
+  const copyLink = async (value: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand('copy');
+    textarea.remove();
+    if (!copied) throw new Error('Copy command failed');
+  };
+
+  const handleShare = async (target: 'weibo' | 'wechat') => {
+    if (onShare) {
+      await onShare(target);
+      return;
+    }
+
+    const url = shareUrl || window.location.href.split('#')[0];
+    const title = shareTitle || document.title;
+    try {
+      if (target === 'weibo') {
+        const destination = new URL('https://service.weibo.com/share/share.php');
+        destination.searchParams.set('url', url);
+        destination.searchParams.set('title', title);
+        window.open(destination.toString(), '_blank', 'noopener,noreferrer,width=720,height=560');
+        setShareFeedback(language === 'zh' ? '已打开微博分享' : 'Weibo share opened');
+      } else if (navigator.share) {
+        await navigator.share({ title, url });
+        setShareFeedback(language === 'zh' ? '分享面板已打开' : 'Share sheet opened');
+      } else {
+        await copyLink(url);
+        setShareFeedback(language === 'zh' ? '链接已复制，可粘贴到微信' : 'Link copied for WeChat');
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      setShareFeedback(language === 'zh' ? '分享失败，请重试' : 'Sharing failed. Please retry.');
+    }
+  };
+
   return (
     <div className="border-t border-ds-border pt-6">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -77,16 +129,19 @@ const ArticleMeta: React.FC<ArticleMetaProps> = ({
         {typeof viewCount === 'number' && (
           <MetaItem icon={<BookOpen />}>{viewCount.toLocaleString()}</MetaItem>
         )}
-        {ipRegion && <MetaItem>IP region {ipRegion}</MetaItem>}
+        {ipRegion && <MetaItem>{language === 'zh' ? '发布于' : 'Published from'} {ipRegion}</MetaItem>}
 
         {shareTargets.length > 0 && (
           <span className="ml-auto inline-flex items-center gap-1 text-ds-sm text-ds-fg-muted">
-            Share to:
+            {language === 'zh' ? '分享：' : 'Share:'}
             {shareTargets.map((t) => (
-              <ShareButton key={t} target={t} onClick={() => onShare?.(t)} />
+              <ShareButton key={t} target={t} onClick={() => void handleShare(t)} />
             ))}
           </span>
         )}
+      </div>
+      <div className="mt-2 min-h-4 text-right text-ds-xs text-ds-fg-subtle" aria-live="polite">
+        {shareFeedback}
       </div>
     </div>
   );

@@ -60,7 +60,11 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
       const seen = new Set<string>();
       const result: HeadingEntry[] = [];
       for (const el of els) {
-        const text = (el.textContent || '').trim();
+        // Markdown headings include a clickable “#” permalink inside the
+        // heading node. It is a control, not part of the heading label.
+        const labelNode = el.cloneNode(true) as HTMLElement;
+        labelNode.querySelectorAll('a[href^="#"]').forEach((anchor) => anchor.remove());
+        const text = (labelNode.textContent || '').trim();
         if (!text) continue;
         let id = el.id || slugify(text);
         let n = 1;

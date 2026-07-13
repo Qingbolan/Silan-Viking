@@ -103,6 +103,7 @@ export const ToastProvider: React.FC<{
                   </div>
                   <button
                     {...dsRoot}
+                    type="button"
                     aria-label="Dismiss"
                     onClick={() => remove(t.id)}
                     className="rounded-ds-sm p-0.5 text-ds-fg-subtle hover:bg-ds-surface-2 hover:text-ds-fg"

@@ -1,7 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:5200',
-  // BASE_URL: 'https://silan.tech/',
+  BASE_URL: 'https://silan.tech',
   DEFAULT_HEADERS: {
   },
   TIMEOUT: 10000, // 10 seconds

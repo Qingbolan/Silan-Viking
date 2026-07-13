@@ -1,60 +1,53 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { ConfigProvider } from 'antd';
 import './i18n/index'; // Initialize i18n
 import MainLayout from './layout/MainLayout';
-import ResumeWebsite from './views/ResumeWebsite';
-import RecentUpdates from './views/RecentUpdates';
-import InteractiveContactPage from './views/InteractiveContactPage';
-import ProjectGallery from './views/ProjectGallery';
-import ProjectDetail from './components/ProjectGallery/ProjectDetail';
-import IdeaPage from './views/IdeaPage';
-import IdeaDetail from './components/IdeaPage/IdeaDetail';
-import BlogStack from './views/BlogStack';
-import BlogDetail from './components/BlogStack/BlogDetail';
-import EpisodeDetail from './components/Episode/EpisodeDetail';
-import PlansPage from './views/PlansPage';
-import SearchResults from './views/SearchResults';
-import Gallery from './views/Gallery';
-import { ThemeProvider, useTheme } from './components/ThemeContext';
+import { ThemeProvider } from './components/ThemeContext';
 import { LanguageProvider, useLanguage } from './components/LanguageContext';
 import { PageTitleProvider } from './layout/PageTitleContext';
-import { ErrorBoundary, NotFoundError } from './components/ds';
+import { ErrorBoundary, NotFoundError, Spinner, ToastProvider } from './components/ds';
+import { AuthProvider } from './components/InteractiveContact';
+import { Seo } from './components/Seo';
 
-// antd v5 derives its colour palette with tinycolor, which does NOT
-// understand `oklch()`. Passing an oklch string makes antd silently fall
-// back to its default blue. So we let the browser resolve the theme
-// colour to an rgb() string antd can parse.
-const resolveColor = (value: string): string => {
-  if (typeof document === 'undefined') return value;
-  if (!value.includes('oklch')) return value;
-  const probe = document.createElement('span');
-  probe.style.color = value;
-  probe.style.display = 'none';
-  document.body.appendChild(probe);
-  const resolved = getComputedStyle(probe).color; // -> rgb(...)
-  document.body.removeChild(probe);
-  return resolved || value;
-};
+// Every public route owns a separate production chunk. The previous eager
+// imports made a first-time visitor download the blog editor, project
+// discussions, contact workflow and résumé renderer before seeing the home
+// hero. Route boundaries are the natural ownership boundary for that code.
+const ResumeWebsite = React.lazy(() => import('./views/ResumeWebsite'));
+const RecentUpdates = React.lazy(() => import('./views/RecentUpdates'));
+const InteractiveContactPage = React.lazy(() => import('./views/InteractiveContactPage'));
+const ProjectGallery = React.lazy(() => import('./views/ProjectGallery'));
+const ProjectDetail = React.lazy(() => import('./components/ProjectGallery/ProjectDetail'));
+const IdeaPage = React.lazy(() => import('./views/IdeaPage'));
+const IdeaDetail = React.lazy(() => import('./components/IdeaPage/IdeaDetail'));
+const BlogStack = React.lazy(() => import('./views/BlogStack'));
+const BlogDetail = React.lazy(() => import('./components/BlogStack/BlogDetail'));
+const EpisodeDetail = React.lazy(() => import('./components/Episode/EpisodeDetail'));
+const SearchResults = React.lazy(() => import('./views/SearchResults'));
 
-// Feeds the active theme colour into antd's design tokens so every antd
-// component (Tabs ink/underline, buttons, etc.) uses the theme colour
-// instead of antd's default blue.
-const AntdThemeBridge: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { colors } = useTheme();
-  const primary = React.useMemo(() => resolveColor(colors.primary), [colors.primary]);
+// The component gallery is an internal design-system workbench. Keep it out
+// of the public application surface and production bundle.
+const DesignGallery = import.meta.env.DEV
+  ? React.lazy(() => import('./views/Gallery'))
+  : null;
+
+const NotFoundRoute: React.FC = () => {
+  const location = useLocation();
+  const { language } = useLanguage();
+  const zh = language === 'zh';
+
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: primary,
-          colorInfo: primary,
-        },
-      }}
-    >
-      {children}
-    </ConfigProvider>
+    <>
+      <Seo
+        title={zh ? '页面不存在' : 'Page not found'}
+        description={zh ? '请求的页面不存在或已移动。' : 'The requested page does not exist or has moved.'}
+        path={location.pathname}
+        noindex
+        lang={language as 'en' | 'zh'}
+      />
+      <NotFoundError />
+    </>
   );
 };
 
@@ -62,46 +55,60 @@ const LocalizedRoutes: React.FC = () => {
   const { language } = useLanguage();
 
   return (
-    <Routes key={language}>
-      <Route path="/" element={<ResumeWebsite />} />
-      <Route path="/recent-updates" element={<RecentUpdates />} />
-      <Route path="/contact" element={<InteractiveContactPage />} />
-      <Route path="/projects" element={<ProjectGallery />} />
-      <Route path="/projects/:id" element={<ProjectDetail />} />
-      <Route path="/plans" element={<PlansPage />} />
-      <Route path="/ideas" element={<IdeaPage />} />
-      <Route path="/ideas/:id" element={<IdeaDetail />} />
-      <Route path="/blog" element={<BlogStack />} />
-      <Route path="/blog/:id" element={<BlogDetail />} />
-      <Route path="/episodes/:slug" element={<EpisodeDetail />} />
-      <Route path="/search" element={<SearchResults />} />
-      {/* Design-system gallery — /design is an alias of /gallery. */}
-      <Route path="/gallery" element={<Gallery />} />
-      <Route path="/design" element={<Gallery />} />
-      {/* Catch-all — branded 404 instead of a blank screen. */}
-      <Route path="*" element={<NotFoundError />} />
-    </Routes>
+    <React.Suspense
+      fallback={(
+        <div className="flex min-h-[55dvh] items-center justify-center" aria-live="polite">
+          <Spinner label={language === 'zh' ? '正在加载页面' : 'Loading page'} />
+        </div>
+      )}
+    >
+      <Routes key={language}>
+        <Route path="/" element={<ResumeWebsite />} />
+        <Route path="/recent-updates" element={<RecentUpdates />} />
+        <Route path="/contact" element={<InteractiveContactPage />} />
+        <Route path="/projects" element={<ProjectGallery />} />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/ideas" element={<IdeaPage />} />
+        <Route path="/ideas/:id" element={<IdeaDetail />} />
+        <Route path="/blog" element={<BlogStack />} />
+        <Route path="/blog/:id" element={<BlogDetail />} />
+        <Route path="/episodes/:slug" element={<EpisodeDetail />} />
+        <Route path="/search" element={<SearchResults />} />
+        {DesignGallery && (
+          <>
+            <Route path="/gallery" element={<DesignGallery />} />
+            <Route path="/design" element={<DesignGallery />} />
+          </>
+        )}
+        {/* Catch-all — branded 404 instead of a blank screen. */}
+        <Route path="*" element={<NotFoundRoute />} />
+      </Routes>
+    </React.Suspense>
   );
 };
 
 const App: React.FC = () => {
+  const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
+
   return (
     <HelmetProvider>
       <ThemeProvider>
-        <AntdThemeBridge>
-          <LanguageProvider>
-            <Router>
-              <PageTitleProvider>
-                <MainLayout>
-                  {/* Catches render crashes in any route → branded page error. */}
-                  <ErrorBoundary>
-                    <LocalizedRoutes />
-                  </ErrorBoundary>
-                </MainLayout>
-              </PageTitleProvider>
-            </Router>
-          </LanguageProvider>
-        </AntdThemeBridge>
+        <LanguageProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <Router basename={basename} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <PageTitleProvider>
+                  <MainLayout>
+                    {/* Catches render crashes in any route → branded page error. */}
+                    <ErrorBoundary>
+                      <LocalizedRoutes />
+                    </ErrorBoundary>
+                  </MainLayout>
+                </PageTitleProvider>
+              </Router>
+            </AuthProvider>
+          </ToastProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </HelmetProvider>
   );

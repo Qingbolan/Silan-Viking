@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -13,10 +13,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../LanguageContext';
 import { Seo, creativeWorkJsonLd } from '../Seo';
-import { getPlanDisplay } from '../../utils/iconMap';
-import { fetchAnnualPlanByName } from '../../api/plans/planApi';
-import { fetchProjectDetailById } from '../../api';
 import {
+  fetchProjectDetailById,
   likeProject,
   recordProjectView,
   getProjectMetrics,
@@ -26,6 +24,7 @@ import { getClientFingerprint } from '../../utils/fingerprint';
 import ProjectTabs from './ProjectTabs';
 import type { ProjectDetail as ProjectDetailType } from '../../types/api';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
+import { useRemoteResource } from '../../hooks/useRemoteResource';
 import {
   Container,
   Section,
@@ -34,26 +33,33 @@ import {
   Divider,
   BrandLoading,
   ErrorState,
-  ArticleFooter,
-  mockComments,
-  mockRecentLikers,
+  NetworkError,
 } from '../../components/ds';
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { language } = useLanguage();
   const { t } = useTranslation();
-  const [plan, setPlan] = useState<any>(null);
-  const [project, setProject] = useState<ProjectDetailType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<ProjectMetricsResponse | null>(null);
   const [fingerprint, setFingerprint] = useState<string>('');
   const [liking, setLiking] = useState(false);
 
+  const loadProject = useCallback(
+    () => id ? fetchProjectDetailById(id, language as 'en' | 'zh') : Promise.resolve(null),
+    [id, language],
+  );
+  const projectResource = useRemoteResource<ProjectDetailType>(id, loadProject);
+  const project = projectResource.data;
+
   // Reflect the project title in the address-bar breadcrumb.
   useSetPageTitle(
-    project ? (language === 'zh' && project.titleZh ? project.titleZh : project.title) : null,
+    project
+      ? (language === 'zh' && project.titleZh ? project.titleZh : project.title)
+      : projectResource.status === 'not-found'
+        ? t('projects.projectNotFound')
+        : projectResource.status === 'error'
+          ? (language === 'zh' ? '项目暂不可用' : 'Project unavailable')
+          : null,
   );
 
   // Initialize fingerprint
@@ -65,72 +71,26 @@ const ProjectDetail: React.FC = () => {
     initFingerprint();
   }, []);
 
-  // Fetch project data
   useEffect(() => {
-    const loadProject = async () => {
-      if (!id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch project details with language support
-        const projectData = await fetchProjectDetailById(id, language as 'en' | 'zh');
-
-        if (projectData) {
-          setProject(projectData);
-        } else {
-          setError(t('projects.projectNotFound'));
-        }
-      } catch (err) {
-        console.error('Error loading project:', err);
-        setError(t('projects.failedToLoadProject'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProject();
-  }, [id, language]);
+    setMetrics(null);
+  }, [project?.id]);
 
   // Record view and load metrics when project and fingerprint are ready
   useEffect(() => {
     const recordViewAndLoadMetrics = async () => {
-      if (!id || !fingerprint || !project) return;
+      if (!fingerprint || !project) return;
+
+      const projectId = project.id;
 
       try {
-        // Get user identity if available
-        const getCurrentUser = () => {
-          try {
-            const raw = localStorage.getItem('auth_user');
-            if (!raw) return null;
-            const rawUser = JSON.parse(raw);
-            if (rawUser && (rawUser.id || rawUser.email || rawUser.name)) {
-              return {
-                id: rawUser.id || rawUser.sub || rawUser.user_id,
-                name: rawUser.name || rawUser.given_name || 'User',
-                email: rawUser.email,
-              };
-            }
-          } catch {}
-          return null;
-        };
-
-        const user = getCurrentUser();
-
         // Record view
-        await recordProjectView(id, fingerprint, {
-          userIdentityId: user?.id,
+        await recordProjectView(projectId, fingerprint, {
           language: language as 'en' | 'zh'
         });
 
         // Load metrics
-        const metricsData = await getProjectMetrics(id, {
+        const metricsData = await getProjectMetrics(projectId, {
           fingerprint,
-          userIdentityId: user?.id,
           language: language as 'en' | 'zh'
         });
 
@@ -141,52 +101,16 @@ const ProjectDetail: React.FC = () => {
     };
 
     recordViewAndLoadMetrics();
-  }, [id, fingerprint, project, language]);
+  }, [fingerprint, project, language]);
   
-  // Fetch plan data
-  useEffect(() => {
-    const loadPlan = async () => {
-      if (project?.planId) {
-        try {
-          const planData = await fetchAnnualPlanByName(project.planId, language);
-          setPlan(planData);
-        } catch (error) {
-          console.error('Failed to load plan:', error);
-        }
-      }
-    };
-    
-    loadPlan();
-  }, [project?.planId, language]);
-
   // Handle like/unlike project
   const handleLikeProject = async () => {
-    if (!id || !fingerprint || liking) return;
+    if (!project || !fingerprint || liking) return;
 
     setLiking(true);
     try {
-      // Get user identity if available
-      const getCurrentUser = () => {
-        try {
-          const raw = localStorage.getItem('auth_user');
-          if (!raw) return null;
-          const rawUser = JSON.parse(raw);
-          if (rawUser && (rawUser.id || rawUser.email || rawUser.name)) {
-            return {
-              id: rawUser.id || rawUser.sub || rawUser.user_id,
-              name: rawUser.name || rawUser.given_name || 'User',
-              email: rawUser.email,
-            };
-          }
-        } catch {}
-        return null;
-      };
-
-      const user = getCurrentUser();
-
       // Toggle like
-      const response = await likeProject(id, fingerprint, {
-        userIdentityId: user?.id,
+      const response = await likeProject(project.id, fingerprint, {
         language: language as 'en' | 'zh'
       });
 
@@ -207,45 +131,66 @@ const ProjectDetail: React.FC = () => {
     }
   };
   
-  if (loading) {
+  if (projectResource.status === 'loading') {
     return <BrandLoading inline message={t('projects.loadingProject')} />;
   }
 
-  if (error || !project) {
+  if (projectResource.status === 'error') {
+    return <NetworkError onRetry={projectResource.reload} />;
+  }
+
+  if (!project) {
     return (
-      <ErrorState
-        variant="page"
-        title={t('projects.projectNotFound')}
-        description={typeof error === 'string' ? error : undefined}
-        actions={
-          <Link to="/projects">
-            <Button variant="outline" size="sm">
-              {t('projects.backToProjects')}
-            </Button>
-          </Link>
-        }
-      />
+      <>
+        <Seo
+          title={t('projects.projectNotFound')}
+          description={t('projects.projectNotFound')}
+          path={`/projects/${id ?? ''}`}
+          noindex
+          lang={language as 'en' | 'zh'}
+        />
+        <ErrorState
+          variant="page"
+          title={t('projects.projectNotFound')}
+          description={
+            language === 'zh'
+              ? '该项目不存在，或尚未公开。'
+              : 'This project does not exist or is not public.'
+          }
+          actions={
+            <Link to="/projects">
+              <Button variant="outline" size="sm">
+                {t('projects.backToProjects')}
+              </Button>
+            </Link>
+          }
+        />
+      </>
     );
   }
 
-  const planDisplay = plan ? getPlanDisplay(plan) : null;
+  const buildStatus = project.status?.buildStatus;
+  const hasReportedBuildStatus = buildStatus === 'passing' || buildStatus === 'failing';
+  const downloadableAsset = project.versions?.releases
+    ?.flatMap((release) => release.assets ?? [])
+    .find((asset) => Boolean(asset.downloadUrl));
 
   const seoTitle =
     language === 'zh' && project.titleZh ? project.titleZh : project.title;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="lg:ml-72" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Seo
         title={seoTitle}
         description={project.description || ''}
-        path={`/projects/${project.id}`}
+        path={`/projects/${id}`}
         image={project.image || undefined}
         type="article"
         lang={language as 'en' | 'zh'}
         jsonLd={creativeWorkJsonLd({
           title: seoTitle,
           description: project.description || '',
-          path: `/projects/${project.id}`,
+          path: `/projects/${id}`,
           image: project.image || undefined,
           type: 'SoftwareSourceCode',
         })}
@@ -258,24 +203,29 @@ const ProjectDetail: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            {/* Eyebrow row — plan label + build-status marker. */}
-            {(plan || project.status?.buildStatus) && (
+            {/* Eyebrow row — only authored lifecycle/build facts. */}
+            {(project.status?.lifecycle || project.year || hasReportedBuildStatus) && (
               <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                {plan && planDisplay && (
+                {project.status?.lifecycle && (
                   <span className="inline-flex items-center gap-1.5 text-ds-xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
-                    {planDisplay}
-                    {language === 'en' ? plan.name : plan.nameZh}
+                    <span className="size-1.5 rounded-full bg-ds-primary" aria-hidden />
+                    {project.status.lifecycle}
                   </span>
                 )}
-                {plan && project.status?.buildStatus && (
+                {project.year > 0 && (
+                  <span className="font-mono text-ds-xs tabular-nums text-ds-fg-subtle">
+                    {project.year}
+                  </span>
+                )}
+                {(project.status?.lifecycle || project.year > 0) && hasReportedBuildStatus && (
                   <Divider orientation="vertical" className="h-3" />
                 )}
-                {project.status?.buildStatus && (
+                {hasReportedBuildStatus && buildStatus && (
                   <span
                     className={`inline-flex items-center gap-1.5 text-ds-xs font-medium uppercase tracking-[0.08em] ${
-                      project.status.buildStatus === 'passing'
+                      buildStatus === 'passing'
                         ? 'text-ds-success'
-                        : project.status.buildStatus === 'failing'
+                        : buildStatus === 'failing'
                           ? 'text-ds-error'
                           : 'text-ds-fg-subtle'
                     }`}
@@ -284,8 +234,8 @@ const ProjectDetail: React.FC = () => {
                       className="size-1.5 rounded-full bg-current"
                       aria-hidden
                     />
-                    {t(`projects.build.${project.status.buildStatus}`, {
-                      defaultValue: project.status.buildStatus,
+                    {t(`projects.build.${buildStatus}`, {
+                      defaultValue: buildStatus,
                     })}
                   </span>
                 )}
@@ -303,21 +253,25 @@ const ProjectDetail: React.FC = () => {
             )}
 
             {/* Byline — license · updated, inline peers split by hairlines. */}
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 text-ds-sm text-ds-fg-muted">
-                <Shield size={15} className="text-ds-fg-subtle" />
-                {project.status?.license || 'MIT'}
-              </span>
+            {(project.status?.license || project.status?.lastUpdated) && (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+              {project.status?.license && (
+                <span className="inline-flex items-center gap-1.5 text-ds-sm text-ds-fg-muted">
+                  <Shield size={15} className="text-ds-fg-subtle" />
+                  {project.status.license}
+                </span>
+              )}
               {project.status?.lastUpdated && (
                 <>
-                  <Divider orientation="vertical" className="h-3.5" />
+                  {project.status?.license && <Divider orientation="vertical" className="h-3.5" />}
                   <span className="inline-flex items-center gap-1.5 text-ds-sm text-ds-fg-muted">
                     <Calendar size={15} className="text-ds-fg-subtle" />
-                    {t('projects.updated')} {project.status.lastUpdated}
+                    {t('projects.updated')} {new Date(project.status.lastUpdated).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-SG')}
                   </span>
                 </>
               )}
-            </div>
+              </div>
+            )}
 
             {/* Tag chips. */}
             {project.tags && project.tags.length > 0 && (
@@ -346,6 +300,7 @@ const ProjectDetail: React.FC = () => {
             <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-ds-sm text-ds-fg-muted">
                 <button
+                  type="button"
                   onClick={handleLikeProject}
                   disabled={liking}
                   className={`inline-flex items-center gap-1.5 rounded-ds-sm px-1 py-0.5 transition-colors hover:text-ds-error ${
@@ -362,11 +317,6 @@ const ProjectDetail: React.FC = () => {
                 <span className="inline-flex items-center gap-1.5">
                   <Eye size={15} className="text-ds-fg-subtle" />
                   {metrics?.views_count || 0} views
-                </span>
-                <Divider orientation="vertical" className="h-3.5" />
-                <span className="inline-flex items-center gap-1.5">
-                  <Download size={15} className="text-ds-fg-subtle" />
-                  {project.metrics?.downloads || 0} {t('projects.downloads')}
                 </span>
               </div>
 
@@ -385,36 +335,32 @@ const ProjectDetail: React.FC = () => {
                     </Button>
                   </a>
                 )}
-                <Button variant="secondary" size="sm" leadingIcon={<Download />}>
-                  {t('projects.download')} v{project.versions?.latest || '1.0.0'}
-                </Button>
+                {downloadableAsset && (
+                  <a href={downloadableAsset.downloadUrl} download>
+                    <Button variant="secondary" size="sm" leadingIcon={<Download />}>
+                      {t('projects.download')} {downloadableAsset.name}
+                    </Button>
+                  </a>
+                )}
               </div>
             </div>
           </div>
 
           {/* --- Tabs --------------------------------------------------- */}
-          <motion.div
-            className="mt-6"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-          >
-            <ProjectTabs projectData={project} />
-          </motion.div>
-
-          <ArticleFooter
-            likes={2047}
-            recentLikers={mockRecentLikers}
-            contributors={['Silan Hu']}
-            publishedAt="2026-02-01"
-            viewCount={1296204}
-            ipRegion="Singapore"
-            comments={mockComments}
-          />
+          {/* Keep the navigation outside transformed animation containers:
+              CSS fixed positioning is otherwise scoped to that ancestor and
+              the rail moves with the article instead of the viewport. */}
+          <div className="mt-6">
+            <ProjectTabs
+              projectData={project}
+              projectId={project.id}
+              documentTitle={language === 'zh' && project.titleZh ? project.titleZh : project.title}
+            />
+          </div>
         </Section>
       </Container>
     </motion.div>
   );
 };
 
-export default ProjectDetail; 
+export default ProjectDetail;

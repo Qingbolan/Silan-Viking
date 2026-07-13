@@ -16,6 +16,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { useTheme } from '../components/ThemeContext';
 import GlobalSearch from '../components/Search/GlobalSearch';
 import { usePageTitle, usePageSectionState, usePageFilterState } from './PageTitleContext';
+import { isNavigationPathActive, primaryNavigationPath } from '../utils/navigation';
+import { publicAssetUrl } from '../utils/publicAsset';
 
 // ── Primary page routes ─────────────────────────────────────────────
 interface Route {
@@ -32,9 +34,6 @@ const ROUTES = (zh: boolean): Route[] => [
   { path: '/contact',  label: zh ? '联系' : 'Contact',  icon: <Mail size={16} /> },
 ];
 
-const isActivePath = (pathname: string, path: string) =>
-  path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(path + '/');
-
 /**
  * Standalone sub-pages that aren't in the primary nav but still need a
  * breadcrumb. Each maps its path to a parent route + a display label,
@@ -42,7 +41,6 @@ const isActivePath = (pathname: string, path: string) =>
  */
 const SUBROUTES = (zh: boolean): Record<string, { parent: string; label: string }> => ({
   '/recent-updates': { parent: '/', label: zh ? '近期更新' : 'Recent Updates' },
-  '/plans': { parent: '/', label: zh ? '计划' : 'Plans' },
   '/search': { parent: '/', label: zh ? '搜索结果' : 'Search Results' },
 });
 
@@ -81,7 +79,8 @@ const useNavGroups = () => {
   const routes = useMemo(() => ROUTES(zh), [zh]);
 
   return useMemo(() => {
-    let idx = routes.findIndex((r) => isActivePath(pathname, r.path));
+    const effectivePath = primaryNavigationPath(pathname);
+    let idx = routes.findIndex((r) => isNavigationPathActive(effectivePath, r.path));
     if (idx < 0) idx = 0;
     return {
       before: routes.slice(0, idx),
@@ -147,7 +146,7 @@ export const NavAfter: React.FC = () => {
  * Personal avatar — a fixed headshot acting as a brand mark.
  *
  * Sits at the leading edge of the chrome bar; clicking it navigates to
- * the contact page. The photo is served from `public/avatar.jpg`; if it
+ * the contact page. The photo is served from `public/image.png`; if it
  * is missing, the button falls back to an initial so the chrome bar
  * never shows a broken image.
  */
@@ -178,7 +177,7 @@ export const NavAvatar: React.FC = () => {
       >
         {imgOk ? (
           <img
-            src="/image.png"
+            src={publicAssetUrl('/image.png')}
             alt=""
             aria-hidden
             className="h-full w-full object-cover"
@@ -377,6 +376,7 @@ const TopNavigation: React.FC = () => {
   const zh = language === 'zh';
 
   const [searchOpen, setSearchOpen] = useState(false);
+  const searchTriggerRef = useRef<HTMLButtonElement>(null);
 
   const routes = useMemo(() => ROUTES(zh), [zh]);
   const detailTitle = usePageTitle();
@@ -389,7 +389,7 @@ const TopNavigation: React.FC = () => {
   );
 
   const isActive = useCallback(
-    (path: string) => isActivePath(pathname, path),
+    (path: string) => isNavigationPathActive(pathname, path),
     [pathname],
   );
 
@@ -421,7 +421,8 @@ const TopNavigation: React.FC = () => {
     } else {
       // A detail route is the section path + one more segment (/blog/:id).
       const isDetail =
-        section.path !== '/' && pathname.startsWith(section.path + '/');
+        (section.path !== '/' && pathname.startsWith(section.path + '/')) ||
+        pathname.startsWith('/episodes/');
       if (isDetail) {
         trail.push({ label: detailTitle ?? (zh ? '加载中…' : 'Loading…') });
       }
@@ -444,17 +445,26 @@ const TopNavigation: React.FC = () => {
   const { capsuleBg: fieldBg, hoverBg } = useChromeTokens();
 
   // Trailing tool icon.
-  const Tool: React.FC<{ label: string; onClick: () => void; children: React.ReactNode }> = ({
+  const Tool: React.FC<{
+    label: string;
+    onClick: () => void;
+    children: React.ReactNode;
+    className?: string;
+    buttonRef?: React.Ref<HTMLButtonElement>;
+  }> = ({
     label,
     onClick,
     children,
+    className,
+    buttonRef,
   }) => (
     <button
+      ref={buttonRef}
       type="button"
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors"
+      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-colors sm:h-7 sm:w-7 ${className ?? ''}`}
       style={{ color: colors.textSecondary }}
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -518,13 +528,15 @@ const TopNavigation: React.FC = () => {
 
             {/* In-page section — a coloured #anchor crumb with a jump menu */}
             {activeSection && (
-              <MenuCrumb
-                label={activeSection.title}
-                ariaLabel={zh ? '跳转到章节' : 'Jump to section'}
-                items={sections.map((s) => ({ value: s.id, label: s.title }))}
-                activeValue={activeSection.id}
-                onSelect={scrollToSection}
-              />
+              <span className="hidden sm:contents">
+                <MenuCrumb
+                  label={activeSection.title}
+                  ariaLabel={zh ? '跳转到章节' : 'Jump to section'}
+                  items={sections.map((s) => ({ value: s.id, label: s.title }))}
+                  activeValue={activeSection.id}
+                  onSelect={scrollToSection}
+                />
+              </span>
             )}
 
             {/* Page-scoped filter — a coloured #facet crumb with a select menu */}
@@ -552,23 +564,32 @@ const TopNavigation: React.FC = () => {
 
           {/* Tools */}
           <div className="flex flex-shrink-0 items-center">
-            <Tool label={zh ? '搜索' : 'Search'} onClick={() => setSearchOpen(true)}>
+            <Tool buttonRef={searchTriggerRef} label={zh ? '搜索' : 'Search'} onClick={() => setSearchOpen(true)}>
               <Search size={15} />
             </Tool>
             <Tool
+              className="hidden sm:flex"
               label={zh ? '切换语言' : 'Toggle language'}
               onClick={() => setLanguage(zh ? 'en' : 'zh')}
             >
               <Globe size={15} />
             </Tool>
-            <Tool label={zh ? '切换主题' : 'Toggle theme'} onClick={toggleTheme}>
+            <Tool
+              className="hidden sm:flex"
+              label={zh ? '切换主题' : 'Toggle theme'}
+              onClick={toggleTheme}
+            >
               {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
             </Tool>
           </div>
         </div>
       </div>
 
-      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <GlobalSearch
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        returnFocusRef={searchTriggerRef}
+      />
     </>
   );
 };

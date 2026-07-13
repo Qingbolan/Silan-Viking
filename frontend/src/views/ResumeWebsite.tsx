@@ -16,6 +16,7 @@ import { BrandLoading } from '../components/ds/BrandLoading';
 import { ErrorState } from '../components/ds/ErrorState';
 import Markdown from '../components/ui/Markdown';
 import { Seo, SITE_URL } from '../components/Seo';
+import { publicAssetUrl } from '../utils/publicAsset';
 import { fetchResumeData, fetchPersonalInfo } from '../api/home/resumeApi';
 import {
   AwardsList,
@@ -92,6 +93,10 @@ interface ResumeViewData {
         title: string;
         authors?: string;
         venue?: string;
+        venueFullName?: string;
+        venueUrl?: string;
+        venueLocation?: string;
+        ccfRank?: 'A' | 'B' | 'C';
         year?: string;
         abstract?: string;
         award?: string;
@@ -100,6 +105,7 @@ interface ResumeViewData {
         url?: string;
         pdfUrl?: string;
         githubUrl?: string;
+        slidesUrl?: string;
         blogUrl?: string;
         image?: string;
       }>;
@@ -125,6 +131,7 @@ const ResumeWebsite: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [resumeData, setResumeData] = useState<ResumeViewData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   // Stable Latin-script owner name for PublicationCard highlight. authors[]
   // lists every paper with the Latin-script names ("Silan Hu" etc.), so when
   // the UI is in zh and resumeData.name becomes "胡思蓝", the includes() match
@@ -239,31 +246,30 @@ const ResumeWebsite: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [language, t]);
+  }, [language, t, retryKey]);
 
   // Removed unused handleDownloadResume function
 
-  if (loading || !resumeData) {
+  if (loading) {
     // The home page boot — the design-system branded splash.
     return <BrandLoading message={t('resume.loading_profile')} />;
   }
 
-  if (error) {
+  if (error || !resumeData) {
     // A failed resume load — the design-system full-page error, with a
     // retry that re-runs the fetch.
     return (
       <ErrorState
         variant="page"
         title={t('resume.error_loading')}
-        description={error}
-        onRetry={() => window.location.reload()}
+        description={error ?? t('resume.failed_to_load')}
+        onRetry={() => setRetryKey((value) => value + 1)}
       />
     );
   }
 
   return (
-    <motion.div
-      role="main"
+    <motion.section
       aria-label={t('resume.page_label', { defaultValue: 'Resume' })}
       className="min-h-screen relative"
       initial={reduceMotion ? false : { opacity: 0 }}
@@ -297,7 +303,7 @@ const ResumeWebsite: React.FC = () => {
           current={resumeData.current || ''}
           contacts={resumeData.contacts || []}
           socialLinks={resumeData.socialLinks || []}
-          avatarSrc="/image.png"
+          avatarSrc={publicAssetUrl('/image.png')}
         />
       </div>
 
@@ -446,7 +452,7 @@ const ResumeWebsite: React.FC = () => {
           </div>
         )}
       </div>
-    </motion.div>
+    </motion.section>
   );
 };
 

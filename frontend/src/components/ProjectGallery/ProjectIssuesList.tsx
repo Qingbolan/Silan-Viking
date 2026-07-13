@@ -1,455 +1,280 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bug,
-  Lightbulb,
-  HelpCircle,
-  AlertCircle,
-  CheckCircle,
-  Plus,
-  MessageSquare,
-  Calendar,
-  Eye,
+  CalendarDays,
   FileText,
-  MoreHorizontal,
-  Trash2
+  HelpCircle,
+  Lightbulb,
+  MessageSquare,
+  Plus,
+  Search,
+  ThumbsUp,
+  Trash2,
 } from 'lucide-react';
-import { Button, Input, Select, Tag, Modal, message, Avatar, Dropdown, Popconfirm } from 'antd';
 import { useLanguage } from '../LanguageContext';
 import ProjectIssueDiscussion from './ProjectIssueDiscussion';
 import NewIssueForm from './NewIssueForm';
 import {
-  fetchProjectIssues,
   deleteProjectIssue,
-  type ProjectIssueRecord
+  fetchProjectIssues,
+  type ProjectIssueRecord,
 } from '../../api/projects/projectApi';
 import { getClientFingerprint } from '../../utils/fingerprint';
-
-const { Search } = Input;
-const { Option } = Select;
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  Input,
+  Modal,
+  Select,
+  Skeleton,
+  useToast,
+} from '../ds';
 
 interface ProjectIssuesListProps {
   projectId: string;
 }
 
+type FeedbackType = 'all' | ProjectIssueRecord['type'];
+type LoadState = 'loading' | 'ready' | 'error';
+
+const TYPE_ICONS = {
+  bug: Bug,
+  enhancement: Lightbulb,
+  question: HelpCircle,
+  documentation: FileText,
+} as const;
+
 const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
+  const locale = language as 'en' | 'zh';
+  const toast = useToast();
   const [issues, setIssues] = useState<ProjectIssueRecord[]>([]);
-  const [filteredIssues, setFilteredIssues] = useState<ProjectIssueRecord[]>([]);
-  const [selectedIssue, setSelectedIssue] = useState<ProjectIssueRecord | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('open');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [typeFilter, setTypeFilter] = useState<FeedbackType>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIssue, setSelectedIssue] = useState<ProjectIssueRecord | null>(null);
   const [showNewIssueForm, setShowNewIssueForm] = useState(false);
-  const [showIssueModal, setShowIssueModal] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ id?: string; name?: string; email?: string } | null>(null);
-  const [deletingIssueId, setDeletingIssueId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProjectIssueRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Get current user from localStorage
-  const getCurrentUser = (): { id?: string; name?: string; email?: string } | null => {
+  const copy = language === 'en'
+    ? {
+        title: 'Project feedback',
+        description: 'Questions, bug reports, documentation notes, and feature suggestions from readers.',
+        newFeedback: 'New feedback',
+        search: 'Search feedback…',
+        allTypes: 'All types',
+        types: { bug: 'Bug report', enhancement: 'Feature suggestion', question: 'Question', documentation: 'Documentation' },
+        loading: 'Loading project feedback',
+        errorTitle: 'Feedback could not be loaded',
+        errorBody: 'The discussion service did not respond. Try again without losing your filters.',
+        retry: 'Try again',
+        emptyTitle: 'No feedback yet',
+        emptyBody: 'Start a concrete question, report, or suggestion for this project.',
+        filteredEmptyTitle: 'No feedback matched',
+        filteredEmptyBody: 'Change the type or search phrase to see other threads.',
+        replies: 'replies',
+        likes: 'likes',
+        by: 'by',
+        delete: 'Delete',
+        cancel: 'Cancel',
+        confirmDelete: 'Delete this feedback thread?',
+        confirmDeleteBody: 'Its replies will also be removed. This action cannot be undone.',
+        deleteSuccess: 'Feedback deleted',
+        deleteError: 'Feedback could not be deleted',
+        modalTitle: 'New project feedback',
+        detailTitle: 'Feedback thread',
+      }
+    : {
+        title: '项目反馈',
+        description: '读者提交的问题、错误报告、文档建议与功能想法。',
+        newFeedback: '提交反馈',
+        search: '搜索反馈…',
+        allTypes: '全部类型',
+        types: { bug: '错误报告', enhancement: '功能建议', question: '问题', documentation: '文档' },
+        loading: '正在加载项目反馈',
+        errorTitle: '反馈加载失败',
+        errorBody: '讨论服务没有响应，重试不会丢失当前筛选。',
+        retry: '重试',
+        emptyTitle: '还没有反馈',
+        emptyBody: '可以提交一个具体问题、错误报告或功能建议。',
+        filteredEmptyTitle: '没有匹配的反馈',
+        filteredEmptyBody: '更改类型或搜索词以查看其他讨论。',
+        replies: '条回复',
+        likes: '个赞',
+        by: '来自',
+        delete: '删除',
+        cancel: '取消',
+        confirmDelete: '删除这条反馈？',
+        confirmDeleteBody: '其回复也会一并删除，此操作无法撤销。',
+        deleteSuccess: '反馈已删除',
+        deleteError: '反馈删除失败',
+        modalTitle: '提交项目反馈',
+        detailTitle: '反馈讨论',
+      };
+
+  const loadIssues = useCallback(async () => {
+    setLoadState('loading');
     try {
-      const raw = localStorage.getItem('auth_user');
-      if (!raw) return null;
-      const u = JSON.parse(raw);
-      if (u && (u.id || u.email || u.name)) return u;
-    } catch {}
-    return null;
-  };
+      setIssues(await fetchProjectIssues(projectId, locale));
+      setLoadState('ready');
+    } catch {
+      setLoadState('error');
+    }
+  }, [locale, projectId]);
 
-  // Check if current user can delete an issue
-  const canDeleteIssue = (issue: ProjectIssueRecord): boolean => {
-    const user = currentUser || getCurrentUser();
-    if (!user || !user.id) return false;
-    return issue.author === user.name || issue.author === user.email;
-  };
+  useEffect(() => {
+    void loadIssues();
+  }, [loadIssues]);
 
-  // Handle delete issue
-  const handleDeleteIssue = async (issue: ProjectIssueRecord) => {
+  const filteredIssues = useMemo(() => {
+    const needle = searchQuery.trim().toLocaleLowerCase(locale === 'zh' ? 'zh-CN' : 'en-US');
+    return issues.filter((issue) => {
+      if (typeFilter !== 'all' && issue.type !== typeFilter) return false;
+      if (!needle) return true;
+      return `${issue.title}\n${issue.description}`.toLocaleLowerCase().includes(needle);
+    });
+  }, [issues, locale, searchQuery, typeFilter]);
+
+  const totalReplies = issues.reduce((sum, issue) => sum + issue.comments, 0);
+
+  const canDeleteIssue = (issue: ProjectIssueRecord) => issue.comment.can_delete;
+
+  const deleteIssue = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      setDeletingIssueId(issue.id);
-      const fingerprint = getClientFingerprint();
-      const user = getCurrentUser();
-
-      await deleteProjectIssue(issue.id, {
-        fingerprint,
-        userIdentityId: user?.id,
-        language: language as 'en' | 'zh'
+      await deleteProjectIssue(deleteTarget.id, {
+        fingerprint: getClientFingerprint(),
+        language: locale,
       });
-
-      message.success(t('issues.deleteSuccess') || 'Issue deleted successfully');
-      await loadIssues(); // Reload issues
-    } catch (error) {
-      console.error('Failed to delete issue:', error);
-      message.error(t('issues.deleteFailed') || 'Failed to delete issue');
+      setDeleteTarget(null);
+      toast.success(copy.deleteSuccess);
+      await loadIssues();
+    } catch {
+      toast.error(copy.deleteError);
     } finally {
-      setDeletingIssueId(null);
+      setDeleting(false);
     }
   };
 
-  // Load issues from API
-  const loadIssues = async () => {
-    try {
-      setLoading(true);
-      const issuesFromBackend = await fetchProjectIssues(projectId, language as 'en' | 'zh');
-      setIssues(issuesFromBackend);
-    } catch (error) {
-      console.error('Failed to load issues:', error);
-      message.error(t('issues.loadFailed'));
-      setIssues([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (projectId) {
-      loadIssues();
-    }
-  }, [projectId, language]);
-
-  useEffect(() => {
-    setCurrentUser(getCurrentUser());
-  }, []);
-
-  useEffect(() => {
-    let filtered = issues;
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(issue => issue.status === statusFilter);
-    }
-
-    // Type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(issue => issue.type === typeFilter);
-    }
-
-    // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(issue =>
-        issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        issue.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    setFilteredIssues(filtered);
-  }, [issues, statusFilter, typeFilter, searchQuery]);
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'bug': return <Bug className="w-4 h-4 text-red-500" />;
-      case 'enhancement': return <Lightbulb className="w-4 h-4 text-blue-500" />;
-      case 'question': return <HelpCircle className="w-4 h-4 text-theme-accent" />;
-      case 'documentation': return <FileText className="w-4 h-4 text-green-500" />;
-      default: return <AlertCircle className="w-4 h-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    return status === 'open' ? (
-      <AlertCircle className="w-4 h-4 text-green-600" />
-    ) : (
-      <CheckCircle className="w-4 h-4 text-theme-accent" />
-    );
-  };
-
-  const getLabelColor = (label: string) => {
-    const colors: Record<string, string> = {
-      'bug': 'red',
-      'enhancement': 'blue',
-      'documentation': 'geekblue',
-      'question': 'blue',
-      'high-priority': 'volcano',
-      'low-priority': 'cyan',
-      'ui': 'orange',
-      'api': 'green',
-      'authentication': 'magenta'
-    };
-    return colors[label] || 'default';
-  };
-
-  const getRelativeTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-    if (diffInHours < 1) {
-      return language === 'zh' ? '刚刚' : 'just now';
-    }
-    if (diffInHours < 24) {
-      return language === 'zh'
-        ? `${diffInHours} 小时前`
-        : `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    }
-    const diffInDays = Math.floor(diffInHours / 24);
-    return language === 'zh'
-      ? `${diffInDays} 天前`
-      : `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-  };
-
-  const openCounts = issues.filter(issue => issue.status === 'open').length;
-  const closedCounts = issues.filter(issue => issue.status === 'closed').length;
-
-  const handleNewIssueCreated = async (_newIssue?: ProjectIssueRecord) => {
-    setShowNewIssueForm(false);
-    // Reload issues to get the latest data from backend
-    await loadIssues();
-  };
-
-  const handleIssueClick = (issue: ProjectIssueRecord) => {
-    setSelectedIssue(issue);
-    setShowIssueModal(true);
-  };
-
-  const handleCloseIssueModal = () => {
-    setShowIssueModal(false);
-    setSelectedIssue(null);
-  };
-
+  const typeOptions = [
+    { value: 'all', label: copy.allTypes },
+    ...Object.entries(copy.types).map(([value, label]) => ({ value, label })),
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-theme-primary flex items-center gap-2">
-            <Bug className="w-5 h-5" />
-            Issues
-          </h2>
-          <div className="flex items-center gap-2">
-            <Tag color="green" className="flex items-center gap-1">
-              <AlertCircle className="w-3 h-3" />
-              {openCounts} Open
-            </Tag>
-            <Tag color="default" className="flex items-center gap-1">
-              <CheckCircle className="w-3 h-3" />
-              {closedCounts} Closed
-            </Tag>
+    <section aria-labelledby="project-feedback-title" className="space-y-6">
+      <header className="flex flex-col gap-4 border-b border-ds-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 id="project-feedback-title" className="text-ds-2xl font-semibold tracking-[-0.02em] text-ds-fg">{copy.title}</h2>
+            <Badge appearance="soft" tone="neutral">{issues.length}</Badge>
+            {totalReplies > 0 && <span className="text-ds-xs text-ds-fg-subtle">{totalReplies} {copy.replies}</span>}
           </div>
+          <p className="mt-1 max-w-2xl text-ds-sm leading-6 text-ds-fg-muted">{copy.description}</p>
         </div>
-        <Button
-          type="primary"
-          icon={<Plus className="w-4 h-4" />}
-          onClick={() => setShowNewIssueForm(true)}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          New Issue
-        </Button>
-      </div>
+        <Button leadingIcon={<Plus />} onClick={() => setShowNewIssueForm(true)}>{copy.newFeedback}</Button>
+      </header>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        <div className="flex gap-2 flex-wrap">
-          <Select
-            value={statusFilter}
-            onChange={(value: 'all' | 'open' | 'closed') => setStatusFilter(value)}
-            className="w-32"
-          >
-            <Option value="all">All Status</Option>
-            <Option value="open">Open</Option>
-            <Option value="closed">Closed</Option>
-          </Select>
-
-          <Select
-            value={typeFilter}
-            onChange={(value: string) => setTypeFilter(value)}
-            className="w-32"
-          >
-            <Option value="all">All Types</Option>
-            <Option value="bug">Bug</Option>
-            <Option value="enhancement">Enhancement</Option>
-            <Option value="question">Question</Option>
-            <Option value="documentation">Documentation</Option>
-          </Select>
-        </div>
-
-        <Search
-          placeholder="Search issues..."
+      <div className="grid gap-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
+        <Select
+          value={typeFilter}
+          onChange={(event) => setTypeFilter(event.target.value as FeedbackType)}
+          options={typeOptions}
+          aria-label={copy.allTypes}
+        />
+        <Input
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 max-w-md"
+          onChange={(event) => setSearchQuery(event.target.value)}
+          leadingIcon={<Search />}
+          placeholder={copy.search}
+          aria-label={copy.search}
         />
       </div>
 
-      {/* Issues List */}
-      <div className="border border-theme-border rounded-lg bg-theme-surface">
-        {loading ? (
-          <div className="p-8 text-center text-theme-secondary">
-            <div className="animate-spin w-8 h-8 mx-auto mb-4 border-2 border-theme-primary border-t-transparent rounded-full"></div>
-            <p>{t('common.loading')}...</p>
-          </div>
-        ) : filteredIssues.length === 0 ? (
-          <div className="p-8 text-center text-theme-secondary">
-            <Bug className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="font-medium mb-2">No issues found</p>
-            <p className="text-sm">Try adjusting your search or filters.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-theme-border">
-            {filteredIssues.map((issue, index) => (
-              <motion.div
-                key={issue.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="p-4 hover:bg-theme-hover cursor-pointer transition-colors"
-                onClick={() => handleIssueClick(issue)}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {getStatusIcon(issue.status)}
-                  </div>
+      {loadState === 'loading' && (
+        <div aria-label={copy.loading} className="divide-y divide-ds-border border-y border-ds-border">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="grid grid-cols-[2.25rem_1fr] gap-3 py-5">
+              <Skeleton shape="circle" className="size-9" />
+              <div className="space-y-2.5"><Skeleton className="w-2/3" /><Skeleton className="w-full" /><Skeleton className="w-40" /></div>
+            </div>
+          ))}
+        </div>
+      )}
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 pr-4">
-                        <h3 className="font-medium text-theme-primary hover:text-theme-accent transition-colors">
-                          {issue.title}
-                          <span className="text-theme-secondary ml-2 text-sm">#{issue.number}</span>
-                        </h3>
+      {loadState === 'error' && (
+        <Alert tone="error" title={copy.errorTitle}>
+          <p>{copy.errorBody}</p>
+          <Button variant="ghost" size="sm" className="mt-2" onClick={() => void loadIssues()}>{copy.retry}</Button>
+        </Alert>
+      )}
 
-                        <p className="text-theme-secondary mt-1 text-sm line-clamp-2">
-                          {issue.description}
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-theme-tertiary">
-                          <span className="flex items-center gap-1">
-                            {getTypeIcon(issue.type)}
-                            {issue.type}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <Avatar
-                              src={issue.author_avatar}
-                              size={16}
-                              className="flex-shrink-0"
-                            >
-                              {issue.author[0]?.toUpperCase()}
-                            </Avatar>
-                            <span className="text-xs">{issue.author}</span>
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            opened {getRelativeTime(issue.created)}
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {issue.labels.map((label, labelIndex) => (
-                            <Tag key={labelIndex} color={getLabelColor(label)}>
-                              {label}
-                            </Tag>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-xs text-theme-tertiary">
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="w-3 h-3" />
-                          {issue.comments}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3 h-3" />
-                          {issue.likes}
-                        </span>
-                        {canDeleteIssue(issue) && (
-                          <Dropdown
-                            menu={{
-                              items: [
-                                {
-                                  key: 'delete',
-                                  icon: <Trash2 className="w-3 h-3" />,
-                                  label: (
-                                    <Popconfirm
-                                      title={language === 'zh' ? '确认删除' : 'Confirm Delete'}
-                                      description={language === 'zh' ? '确定要删除这个问题吗？' : 'Are you sure you want to delete this issue?'}
-                                      onConfirm={(e) => {
-                                        e?.stopPropagation();
-                                        handleDeleteIssue(issue);
-                                      }}
-                                      onCancel={(e) => e?.stopPropagation()}
-                                      okText={language === 'zh' ? '删除' : 'Delete'}
-                                      cancelText={language === 'zh' ? '取消' : 'Cancel'}
-                                      okButtonProps={{ danger: true }}
-                                    >
-                                      <span onClick={(e) => e.stopPropagation()}>
-                                        {language === 'zh' ? '删除' : 'Delete'}
-                                      </span>
-                                    </Popconfirm>
-                                  ),
-                                  danger: true,
-                                }
-                              ]
-                            }}
-                            trigger={['click']}
-                            placement="bottomRight"
-                          >
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={<MoreHorizontal className="w-3 h-3" />}
-                              onClick={(e) => e.stopPropagation()}
-                              loading={deletingIssueId === issue.id}
-                              className="hover:bg-theme-hover"
-                            />
-                          </Dropdown>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* New Issue Form Modal */}
-      <Modal
-        title={
-          <div className="flex items-center gap-2">
-            <Bug className="w-5 h-5" />
-            {language === 'zh' ? '新建问题' : 'New Issue'}
-          </div>
-        }
-        open={showNewIssueForm}
-        onCancel={() => setShowNewIssueForm(false)}
-        footer={null}
-        width="90%"
-        style={{ maxWidth: '1000px' }}
-        destroyOnHidden
-      >
-        <NewIssueForm
-          projectId={projectId}
-          onIssueCreated={handleNewIssueCreated}
-          onSuccess={() => setShowNewIssueForm(false)}
+      {loadState === 'ready' && filteredIssues.length === 0 && (
+        <EmptyState
+          icon={<MessageSquare />}
+          title={issues.length === 0 ? copy.emptyTitle : copy.filteredEmptyTitle}
+          description={issues.length === 0 ? copy.emptyBody : copy.filteredEmptyBody}
+          action={issues.length === 0 ? <Button variant="outline" size="sm" onClick={() => setShowNewIssueForm(true)}>{copy.newFeedback}</Button> : undefined}
         />
+      )}
+
+      {loadState === 'ready' && filteredIssues.length > 0 && (
+        <ol className="divide-y divide-ds-border border-y border-ds-border">
+          {filteredIssues.map((issue, index) => {
+            const TypeIcon = TYPE_ICONS[issue.type];
+            const date = new Date(issue.created);
+            const formattedDate = Number.isNaN(date.getTime()) ? issue.created : date.toLocaleDateString(locale === 'en' ? 'en-SG' : 'zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
+            return (
+              <motion.li key={issue.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, delay: Math.min(index * 0.04, 0.16) }} className="group relative">
+                <button type="button" onClick={() => setSelectedIssue(issue)} className="grid w-full grid-cols-[2.25rem_minmax(0,1fr)] gap-3 py-5 text-left outline-none focus-visible:rounded-ds-md focus-visible:shadow-ds-focus sm:grid-cols-[2.5rem_minmax(0,1fr)_auto] sm:gap-4">
+                  <span className="mt-0.5 flex size-9 items-center justify-center rounded-full border border-ds-border text-ds-fg-muted transition-colors group-hover:border-ds-primary/30 group-hover:bg-ds-primary-soft group-hover:text-ds-primary"><TypeIcon className="size-4" aria-hidden /></span>
+                  <span className="min-w-0">
+                    <span className="block text-ds-lg font-semibold leading-snug text-ds-fg group-hover:text-ds-primary">{issue.title}</span>
+                    <span className="mt-1 line-clamp-2 block text-ds-sm leading-6 text-ds-fg-muted">{issue.description}</span>
+                    <span className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-ds-xs text-ds-fg-subtle">
+                      <span>{copy.types[issue.type]}</span>
+                      <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" aria-hidden />{formattedDate}</span>
+                      <span>{copy.by} {issue.author}</span>
+                      {issue.labels.slice(0, 3).map((label) => <span key={label} className="font-mono">#{label}</span>)}
+                    </span>
+                  </span>
+                  <span className="col-start-2 flex items-center gap-3 text-ds-xs text-ds-fg-subtle sm:col-start-auto sm:row-start-1 sm:items-start sm:pt-1">
+                    <span className="inline-flex items-center gap-1"><MessageSquare className="size-3.5" aria-hidden />{issue.comments}</span>
+                    <span className="inline-flex items-center gap-1"><ThumbsUp className="size-3.5" aria-hidden />{issue.likes}</span>
+                  </span>
+                </button>
+                {canDeleteIssue(issue) && (
+                  <Button variant="ghost" size="icon-sm" aria-label={`${copy.delete}: ${issue.title}`} className="absolute bottom-3 right-0 sm:bottom-auto sm:right-16 sm:top-3" onClick={() => setDeleteTarget(issue)}><Trash2 /></Button>
+                )}
+              </motion.li>
+            );
+          })}
+        </ol>
+      )}
+
+      <Modal open={showNewIssueForm} onClose={() => setShowNewIssueForm(false)} title={copy.modalTitle} size="lg" closeLabel={copy.cancel}>
+        <NewIssueForm projectId={projectId} onIssueCreated={async () => { setShowNewIssueForm(false); await loadIssues(); }} />
       </Modal>
 
-      {/* Issue Detail Modal */}
-      <Modal
-        title={null}
-        open={showIssueModal}
-        onCancel={handleCloseIssueModal}
-        footer={null}
-        width="90%"
-        style={{ maxWidth: '1200px' }}
-        className="issue-detail-modal"
-        destroyOnHidden
-      >
-        {selectedIssue && (
-          <ProjectIssueDiscussion
-            projectId={projectId}
-            issueId={selectedIssue.id}
-            issueTitle={selectedIssue.title}
-            issueStatus={selectedIssue.status}
-            issueAuthor={selectedIssue.author}
-            issueCreated={selectedIssue.created}
-            issueLabels={selectedIssue.labels}
-          />
-        )}
+      <Modal open={Boolean(selectedIssue)} onClose={() => setSelectedIssue(null)} title={copy.detailTitle} size="lg" closeLabel={copy.cancel}>
+        {selectedIssue && <ProjectIssueDiscussion projectId={projectId} issueId={selectedIssue.id} />}
       </Modal>
-    </div>
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        title={copy.confirmDelete}
+        description={copy.confirmDeleteBody}
+        size="sm"
+        closeLabel={copy.cancel}
+        footer={<><Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>{copy.cancel}</Button><Button variant="danger" onClick={() => void deleteIssue()} loading={deleting}>{copy.delete}</Button></>}
+      />
+    </section>
   );
 };
 

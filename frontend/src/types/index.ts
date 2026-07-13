@@ -74,6 +74,7 @@ export interface IdeaData {
   category: string;
   tags: string[];
   status: 'draft' | 'hypothesis' | 'experimenting' | 'validating' | 'published' | 'concluded';
+  priority?: 'high' | 'medium' | 'low';
   createdAt: string;
   lastUpdated?: string;
   
@@ -235,27 +236,3 @@ export interface Resource {
   description?: string;
   descriptionZh?: string;
 }
-
-// Plan/Phase system types
-export interface Plan {
-  id: string;
-  name: string;
-  nameZh: string;
-  description: string;
-  descriptionZh: string;
-  slogan: string;
-  sloganZh: string;
-  goals: string[];
-  goalsZh: string[];
-  icon?: string; // icon name for dynamic loading (optional)
-  image?: string; // custom image URL (optional)
-  startYear: number;
-  endYear?: number;
-  status: 'active' | 'completed' | 'planned';
-}
-
-// Enhanced project data with plan association
-export interface ProjectWithPlan extends ProjectData {
-  planId: string;
-  year: number;
-} 

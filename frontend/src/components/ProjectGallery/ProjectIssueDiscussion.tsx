@@ -1,476 +1,287 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  MessageSquare,
-  Heart,
-  Send,
-  Calendar,
-  User,
-  MoreHorizontal,
-  CheckCircle,
-  AlertCircle,
-  Github
-} from 'lucide-react';
-import { Button, Input, Avatar, Dropdown, Tag, Popconfirm, message } from 'antd';
+import React, { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { CalendarDays, MessageSquare, Send, ThumbsUp, Trash2 } from 'lucide-react';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '../InteractiveContact';
 import { getClientFingerprint } from '../../utils/fingerprint';
 import {
   createProjectComment,
-  likeProjectComment,
   deleteProjectComment,
   fetchProjectIssueThread,
+  likeProjectComment,
   projectIssueFromComment,
   type ProjectCommentData,
-  type ProjectIssueRecord
+  type ProjectIssueRecord,
 } from '../../api/projects/projectApi';
-import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
-
-const { TextArea } = Input;
+import Markdown from '../ui/Markdown';
+import {
+  Alert,
+  Avatar,
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  Modal,
+  Skeleton,
+  Textarea,
+  useToast,
+} from '../ds';
 
 interface ProjectIssueDiscussionProps {
   projectId: string;
-  issueId?: string;
-  issueTitle?: string;
-  issueStatus?: 'open' | 'closed';
-  issueAuthor?: string;
-  issueCreated?: string;
-  issueLabels?: string[];
+  issueId: string;
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-}
+type LoadState = 'loading' | 'ready' | 'error' | 'not-found';
 
-const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({
-  projectId,
-  issueId = "sample-issue-1",
-  issueTitle = "Sample Issue Title",
-  issueStatus = "open",
-  issueAuthor = "Developer",
-  issueCreated = "2025-09-20",
-  issueLabels = ["bug", "high-priority"]
-}) => {
-  const { language, t } = useLanguage();
+const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({ projectId, issueId }) => {
+  const { language } = useLanguage();
+  const locale = language as 'en' | 'zh';
+  const { user, isAuthenticated, loginWithGoogle } = useAuth();
+  const toast = useToast();
+  const fingerprint = getClientFingerprint();
+  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [issue, setIssue] = useState<ProjectIssueRecord | null>(null);
   const [comments, setComments] = useState<ProjectCommentData[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [fingerprint, setFingerprint] = useState<string>('');
-  const [issueDetails, setIssueDetails] = useState<ProjectIssueRecord | null>(null);
+  const [likingId, setLikingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProjectCommentData | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  // Initialize fingerprint and check existing auth
-  useEffect(() => {
-    const initFingerprint = async () => {
-      const fp = await getClientFingerprint();
-      setFingerprint(fp);
-    };
-    initFingerprint();
+  const copy = language === 'en'
+    ? {
+        loading: 'Loading feedback thread',
+        loadError: 'This feedback thread could not be loaded',
+        loadErrorBody: 'The discussion service did not respond. Try again.',
+        notFound: 'Feedback thread not found',
+        notFoundBody: 'It may have been removed by its author.',
+        retry: 'Try again',
+        by: 'by',
+        replies: 'Replies',
+        noReplies: 'No replies yet',
+        noRepliesBody: 'Start the discussion with a concrete observation or answer.',
+        reply: 'Reply',
+        replyPlaceholder: 'Add a useful reply…',
+        signIn: 'Sign in to reply',
+        signInError: 'Google sign-in could not be completed',
+        sent: 'Reply posted',
+        sendError: 'Reply could not be posted',
+        likeError: 'Reaction could not be saved',
+        delete: 'Delete',
+        cancel: 'Cancel',
+        confirmDelete: 'Delete this reply?',
+        confirmDeleteBody: 'This action cannot be undone.',
+        deleted: 'Reply deleted',
+        deleteError: 'Reply could not be deleted',
+      }
+    : {
+        loading: '正在加载反馈讨论',
+        loadError: '反馈讨论加载失败',
+        loadErrorBody: '讨论服务没有响应，请重试。',
+        notFound: '没有找到这条反馈',
+        notFoundBody: '该反馈可能已被作者删除。',
+        retry: '重试',
+        by: '来自',
+        replies: '回复',
+        noReplies: '还没有回复',
+        noRepliesBody: '可以用具体观察或答案开始讨论。',
+        reply: '回复',
+        replyPlaceholder: '添加有帮助的回复…',
+        signIn: '登录后回复',
+        signInError: 'Google 登录失败',
+        sent: '回复已发布',
+        sendError: '回复发布失败',
+        likeError: '点赞状态保存失败',
+        delete: '删除',
+        cancel: '取消',
+        confirmDelete: '删除这条回复？',
+        confirmDeleteBody: '此操作无法撤销。',
+        deleted: '回复已删除',
+        deleteError: '回复删除失败',
+      };
 
-    // Check for existing authentication from localStorage
-    const getCurrentUser = () => {
-      try {
-        const raw = localStorage.getItem('auth_user');
-        if (!raw) return null;
-        const rawUser = JSON.parse(raw);
-        if (rawUser && (rawUser.id || rawUser.email || rawUser.name)) {
-          // Ensure consistent mapping for existing users
-          const user: User = {
-            id: rawUser.id || rawUser.sub || rawUser.user_id,
-            name: rawUser.name || rawUser.given_name || 'User',
-            email: rawUser.email,
-            avatar: rawUser.avatar || rawUser.picture || rawUser.avatar_url
-          };
-          return user;
-        }
-      } catch {}
-      return null;
-    };
-
-    const existingUser = getCurrentUser();
-    if (existingUser) {
-      console.log('Loading existing user from localStorage (Discussion):', existingUser);
-      setUser(existingUser);
-    }
-  }, []);
-
-  // Load comments for issue type
-  const loadComments = async () => {
-    setLoading(true);
+  const loadThread = useCallback(async () => {
+    setLoadState('loading');
     try {
       const thread = await fetchProjectIssueThread(projectId, issueId, {
         fingerprint,
-        userIdentityId: user?.id,
-        language: language as 'en' | 'zh'
+        language: locale,
       });
-
-      if (thread) {
-        setIssueDetails(projectIssueFromComment(thread));
-        setComments(thread.replies ?? []);
-      } else {
-        setIssueDetails(null);
+      if (!thread) {
+        setIssue(null);
         setComments([]);
+        setLoadState('not-found');
+        return;
       }
-    } catch (error) {
-      console.error('Failed to load issue comments:', error);
-      message.error(t('comments.loadFailed'));
-    } finally {
-      setLoading(false);
+      setIssue(projectIssueFromComment(thread));
+      setComments(thread.replies ?? []);
+      setLoadState('ready');
+    } catch {
+      setLoadState('error');
     }
-  };
+  }, [fingerprint, issueId, locale, projectId]);
 
   useEffect(() => {
-    loadComments();
-  }, [projectId, fingerprint, user?.id, language]);
+    void loadThread();
+  }, [loadThread]);
 
-  // Handle Google OAuth login with backend verification
-  const handleGoogleLogin = async (credentialResponse: CredentialResponse) => {
-    const idToken = credentialResponse?.credential;
-    if (!idToken) {
-      message.error(t('auth.loginFailed'));
+  const signIn = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) {
+      toast.error(copy.signInError);
       return;
     }
-
     try {
-      const resp = await fetch(`/api/v1/auth/google/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id_token: idToken }),
-      });
-
-      if (!resp.ok) {
-        const errorText = await resp.text();
-        throw new Error(errorText || `HTTP ${resp.status}`);
-      }
-
-      const rawUser = await resp.json();
-      console.log('Google login response user data (Discussion):', rawUser);
-
-      // Map the response to our User interface format
-      const user: User = {
-        id: rawUser.id || rawUser.sub || rawUser.user_id,
-        name: rawUser.name || rawUser.given_name || 'User',
-        email: rawUser.email,
-        avatar: rawUser.avatar || rawUser.picture || rawUser.avatar_url
-      };
-
-      console.log('Mapped user data (Discussion):', user);
-      setUser(user);
-
-      // Persist to localStorage for sharing across components
-      try {
-        localStorage.setItem('auth_user', JSON.stringify(user));
-      } catch {}
-
-      message.success(t('auth.loginSuccess'));
-    } catch (error) {
-      console.error('Google login failed:', error);
-      message.error(t('auth.loginFailed'));
+      await loginWithGoogle(credentialResponse.credential);
+    } catch {
+      toast.error(copy.signInError);
     }
   };
 
-  // Submit new comment
-  const handleSubmitComment = async () => {
-    if (!newComment.trim() || !fingerprint) return;
-
+  const submitReply = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!user || !draft.trim()) return;
     setSubmitting(true);
     try {
-      await createProjectComment(
-        projectId,
-        newComment.trim(),
-        fingerprint,
-        {
-          type: 'issue',
-          authorName: user?.name,
-          authorEmail: user?.email,
-          userIdentityId: user?.id,
-          parentId: issueId,
-          language: language as 'en' | 'zh'
-        }
-      );
-
-      setNewComment('');
-      message.success(t('comments.submitted'));
-      await loadComments();
-    } catch (error) {
-      console.error('Failed to submit comment:', error);
-      message.error(t('comments.submitFailed'));
+      await createProjectComment(projectId, draft.trim(), fingerprint, {
+        type: 'issue',
+        authorName: user.username,
+        authorEmail: user.email,
+        parentId: issueId,
+        language: locale,
+      });
+      setDraft('');
+      toast.success(copy.sent);
+      await loadThread();
+    } catch {
+      toast.error(copy.sendError);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handle like/unlike comment
-  const handleLikeComment = async (commentId: string) => {
+  const toggleLike = async (commentId: string) => {
+    setLikingId(commentId);
     try {
-      await likeProjectComment(commentId, fingerprint, user?.id, language as 'en' | 'zh');
-      await loadComments();
-    } catch (error) {
-      console.error('Failed to like comment:', error);
-      message.error(t('comments.likeFailed'));
+      await likeProjectComment(commentId, fingerprint, locale);
+      await loadThread();
+    } catch {
+      toast.error(copy.likeError);
+    } finally {
+      setLikingId(null);
     }
   };
 
-  // Handle delete comment
-  const handleDeleteComment = async (commentId: string) => {
+  const deleteReply = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await deleteProjectComment(commentId, {
+      await deleteProjectComment(deleteTarget.id, {
         fingerprint,
-        userIdentityId: user?.id,
-        language: language as 'en' | 'zh'
+        language: locale,
       });
-      message.success(t('comments.deleted'));
-      await loadComments();
-    } catch (error) {
-      console.error('Failed to delete comment:', error);
-      message.error(t('comments.deleteFailed'));
+      setDeleteTarget(null);
+      toast.success(copy.deleted);
+      await loadThread();
+    } catch {
+      toast.error(copy.deleteError);
+    } finally {
+      setDeleting(false);
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US');
-  };
-
-  const getStatusIcon = (status: string) => {
-    return status === 'open' ? (
-      <AlertCircle className="w-4 h-4 text-green-600" />
-    ) : (
-      <CheckCircle className="w-4 h-4 text-theme-accent" />
+  if (loadState === 'loading') {
+    return (
+      <div aria-label={copy.loading} className="space-y-5">
+        <Skeleton className="w-3/4" />
+        <Skeleton className="w-full" />
+        <Skeleton className="w-5/6" />
+        <Skeleton shape="block" className="h-28" />
+      </div>
     );
-  };
+  }
 
-  const getStatusColor = (status: string) => {
-    return status === 'open' ? 'green' : 'blue';
-  };
+  if (loadState === 'error') {
+    return <Alert tone="error" title={copy.loadError}><p>{copy.loadErrorBody}</p><Button variant="ghost" size="sm" className="mt-2" onClick={() => void loadThread()}>{copy.retry}</Button></Alert>;
+  }
 
-  const getLabelColor = (label: string) => {
-    const colors: Record<string, string> = {
-      'bug': 'red',
-      'enhancement': 'blue',
-      'documentation': 'geekblue',
-      'question': 'orange',
-      'high-priority': 'volcano',
-      'low-priority': 'cyan'
-    };
-    return colors[label] || 'default';
-  };
+  if (loadState === 'not-found' || !issue) {
+    return <EmptyState icon={<MessageSquare />} title={copy.notFound} description={copy.notFoundBody} />;
+  }
 
-  const displayTitle = issueDetails?.title ?? issueTitle;
-  const displayStatus = issueDetails?.status ?? issueStatus;
-  const displayAuthor = issueDetails?.author ?? issueAuthor;
-  const displayCreated = issueDetails?.created ?? issueCreated;
-  const displayLabels = issueDetails?.labels ?? issueLabels;
-
-  const canDeleteComment = (comment: ProjectCommentData) => {
-    return Boolean(user?.id && comment.user_identity_id === user.id);
-  };
+  const created = new Date(issue.created);
+  const createdLabel = Number.isNaN(created.getTime())
+    ? issue.created
+    : created.toLocaleDateString(locale === 'en' ? 'en-SG' : 'zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
 
   return (
-    <div className="space-y-6">
-      {/* Issue Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0">
-            <Avatar icon={<Github className="w-6 h-6" />} size={40} />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-xl font-semibold text-gray-900">{displayTitle}</h1>
-              <Tag
-                icon={getStatusIcon(displayStatus)}
-                color={getStatusColor(displayStatus)}
-                className="capitalize"
-              >
-                {displayStatus}
-              </Tag>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-              <span className="flex items-center gap-1">
-                <User className="w-4 h-4" />
-                {displayAuthor}
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {formatDate(displayCreated)}
-              </span>
-              <span>#{issueId}</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {displayLabels.map((label, index) => (
-                <Tag key={index} color={getLabelColor(label)}>
-                  {label}
-                </Tag>
-              ))}
-              {issueDetails?.priority && (
-                <Tag color="gold">
-                  Priority: {issueDetails.priority}
-                </Tag>
-              )}
-            </div>
-          </div>
+    <article className="space-y-8">
+      <header className="border-b border-ds-border pb-5">
+        <div className="flex flex-wrap items-center gap-2 text-ds-xs text-ds-fg-subtle">
+          <Badge appearance="soft" tone="primary">{issue.type}</Badge>
+          <span>{copy.by} {issue.author}</span>
+          <span className="inline-flex items-center gap-1"><CalendarDays className="size-3" aria-hidden />{createdLabel}</span>
         </div>
-        {issueDetails?.description && (
-          <div className="mt-4 text-gray-700 whitespace-pre-line border-t border-gray-100 pt-4">
-            {issueDetails.description}
-          </div>
-        )}
-      </div>
+        <h3 className="mt-2 text-balance text-ds-2xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg">{issue.title}</h3>
+        <Markdown className="mt-4 text-ds-sm leading-7 text-ds-fg-muted">{issue.description}</Markdown>
+        {issue.labels.length > 0 && <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1">{issue.labels.map((label) => <span key={label} className="font-mono text-ds-xs text-ds-fg-subtle">#{label}</span>)}</div>}
+      </header>
 
-      {/* Comments Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <MessageSquare className="w-5 h-5" />
-          {t('projects.discussion')} ({comments.length})
+      <section aria-labelledby="feedback-replies-title">
+        <div className="flex items-center justify-between border-b border-ds-border pb-3">
+          <h4 id="feedback-replies-title" className="flex items-center gap-2 text-ds-base font-semibold text-ds-fg"><MessageSquare className="size-4" aria-hidden />{copy.replies}</h4>
+          <Badge appearance="soft" tone="neutral">{comments.length}</Badge>
         </div>
 
-        {/* Comments List */}
-        <AnimatePresence>
-          {comments.map((comment, index) => (
-            <motion.div
-              key={comment.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white border border-gray-200 rounded-lg"
-            >
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar
-                      src={comment.author_avatar_url}
-                      size={32}
-                      className="bg-gray-100"
-                    >
-                      {comment.author_name[0]?.toUpperCase()}
-                    </Avatar>
-                    <div>
-                      <span className="font-medium text-gray-900">
-                        {comment.author_name}
-                      </span>
-                      <span className="text-sm text-gray-500 ml-2">
-                        {formatDate(comment.created_at)}
-                      </span>
+        {comments.length === 0 ? (
+          <EmptyState icon={<MessageSquare />} title={copy.noReplies} description={copy.noRepliesBody} />
+        ) : (
+          <ol className="divide-y divide-ds-border">
+            {comments.map((comment, index) => {
+              const date = new Date(comment.created_at);
+              const dateLabel = Number.isNaN(date.getTime()) ? comment.created_at : date.toLocaleDateString(locale === 'en' ? 'en-SG' : 'zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
+              const canDelete = comment.can_delete;
+              return (
+                <motion.li key={comment.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: Math.min(index * 0.04, 0.16) }} className="py-5">
+                  <div className="flex gap-3">
+                    <Avatar src={comment.author_avatar_url} name={comment.author_name} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div><span className="text-ds-sm font-medium text-ds-fg">{comment.author_name}</span><span className="ml-2 text-ds-xs text-ds-fg-subtle">{dateLabel}</span></div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" loading={likingId === comment.id} aria-label={`${comment.likes_count} ${language === 'en' ? 'likes' : '个赞'}`} onClick={() => void toggleLike(comment.id)} className={comment.is_liked_by_user ? 'text-ds-primary' : undefined}><ThumbsUp className={comment.is_liked_by_user ? 'fill-current' : undefined} />{comment.likes_count}</Button>
+                          {canDelete && <Button variant="ghost" size="icon-sm" aria-label={`${copy.delete}: ${comment.author_name}`} onClick={() => setDeleteTarget(comment)}><Trash2 /></Button>}
+                        </div>
+                      </div>
+                      <Markdown className="mt-2 text-ds-sm leading-6 text-ds-fg-muted">{comment.content}</Markdown>
                     </div>
                   </div>
+                </motion.li>
+              );
+            })}
+          </ol>
+        )}
+      </section>
 
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<Heart className={`w-4 h-4 ${comment.is_liked_by_user ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />}
-                      onClick={() => handleLikeComment(comment.id)}
-                      className="flex items-center gap-1"
-                    >
-                      {comment.likes_count}
-                    </Button>
-
-                    {canDeleteComment(comment) && (
-                      <Dropdown
-                        menu={{
-                          items: [
-                            {
-                              key: 'delete',
-                              label: (
-                                <Popconfirm
-                                  title={t('comments.confirmDelete')}
-                                  onConfirm={() => handleDeleteComment(comment.id)}
-                                  okText={t('common.yes')}
-                                  cancelText={t('common.no')}
-                                >
-                                  <span className="text-red-600">{t('common.delete')}</span>
-                                </Popconfirm>
-                              ),
-                            }
-                          ]
-                        }}
-                        trigger={['click']}
-                      >
-                        <Button type="text" size="small" icon={<MoreHorizontal className="w-4 h-4" />} />
-                      </Dropdown>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4">
-                <div className="prose prose-sm max-w-none text-gray-700">
-                  {comment.content}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {loading && (
-          <div className="text-center py-8 text-gray-500">
-            {t('common.loading')}...
+      <section className="border-t border-ds-border pt-5">
+        {isAuthenticated && user ? (
+          <form onSubmit={submitReply} className="space-y-3">
+            <Field label={`${copy.reply} · ${user.username}`} htmlFor="feedback-reply">
+              <Textarea id="feedback-reply" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={copy.replyPlaceholder} rows={4} maxLength={2000} />
+            </Field>
+            <div className="flex justify-end"><Button type="submit" leadingIcon={<Send />} loading={submitting} disabled={!draft.trim()}>{copy.reply}</Button></div>
+          </form>
+        ) : (
+          <div className="flex flex-col items-center justify-between gap-3 rounded-ds-md bg-ds-surface-2 p-4 sm:flex-row">
+            <span className="text-ds-sm text-ds-fg-muted">{copy.signIn}</span>
+            <GoogleLogin onSuccess={(response) => void signIn(response)} onError={() => toast.error(copy.signInError)} text="signin_with" shape="rectangular" size="medium" />
           </div>
         )}
+      </section>
 
-        {comments.length === 0 && !loading && (
-          <div className="text-center py-12 text-gray-500">
-            <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p>{t('comments.noComments')}</p>
-          </div>
-        )}
-      </div>
-
-      {/* New Comment Form */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <div className="flex items-start gap-4">
-          <Avatar
-            src={user?.avatar}
-            size={40}
-            className="bg-gray-100 flex-shrink-0"
-          >
-            {user?.name?.[0]?.toUpperCase() || '?'}
-          </Avatar>
-          <div className="flex-1 space-y-4">
-            <TextArea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder={t('comments.placeholder')}
-              rows={4}
-              className="resize-none"
-            />
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {!user && (
-                  <GoogleLogin
-                    onSuccess={handleGoogleLogin}
-                    onError={() => message.error(t('auth.loginFailed'))}
-                    text="signin_with"
-                    shape="rectangular"
-                    size="medium"
-                  />
-                )}
-                {user && (
-                  <span className="text-sm text-gray-600">
-                    {t('auth.signedInAs')} <strong>{user.name}</strong>
-                  </span>
-                )}
-              </div>
-
-              <Button
-                type="primary"
-                icon={<Send className="w-4 h-4" />}
-                onClick={handleSubmitComment}
-                loading={submitting}
-                disabled={!newComment.trim()}
-                className="bg-green-600 hover:bg-green-700 border-green-600"
-              >
-                {t('comments.submit')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Modal open={Boolean(deleteTarget)} onClose={() => !deleting && setDeleteTarget(null)} title={copy.confirmDelete} description={copy.confirmDeleteBody} size="sm" closeLabel={copy.cancel} footer={<><Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>{copy.cancel}</Button><Button variant="danger" loading={deleting} onClick={() => void deleteReply()}>{copy.delete}</Button></>} />
+    </article>
   );
 };
 

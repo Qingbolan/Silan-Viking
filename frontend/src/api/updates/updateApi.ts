@@ -12,13 +12,3 @@ export const fetchUpdates = async (language: 'en' | 'zh' = 'en'): Promise<Recent
   });
   return response?.updates ?? [];
 };
-
-export const fetchUpdate = async (
-  slug: string,
-  language: 'en' | 'zh' = 'en',
-): Promise<RecentUpdate | null> => {
-  if (!slug) return null;
-  return get<RecentUpdate>(`/api/v1/updates/${slug}`, {
-    lang: formatLanguage(language),
-  });
-};

@@ -9,7 +9,7 @@ import type {
   Publication,
   Award,
 } from '../../types/api';
-import { get, formatLanguage } from '../utils';
+import { get, formatLanguage, mediaUrl } from '../utils';
 import { fetchUpdates } from '../updates/updateApi';
 
 interface ResumeEntryResponse {
@@ -100,6 +100,11 @@ const bodyText = (part?: ResumePartResponse, language: Language = 'en'): string 
   return (part.body[language] || part.body.en || Object.values(part.body)[0] || '').trim();
 };
 
+const optionalMediaUrl = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  return mediaUrl(value);
+};
+
 const mapEducation = (part?: ResumePartResponse): EducationItem[] =>
   (part?.entries || []).map((entry) => {
     const payload = entryPayload(entry);
@@ -180,12 +185,17 @@ const mapPublications = (part?: ResumePartResponse): Publication[] =>
       authors: joinAuthors(payload.authors),
       journal: payload.journal || payload.journal_name || '',
       conference: payload.conference || payload.conference_name || payload.venue || '',
+      conference_full_name: payload.conference_full_name || '',
+      conference_url: payload.conference_url || '',
+      conference_location: payload.conference_location || '',
+      ccf_rank: payload.ccf_rank || undefined,
       publisher: payload.publisher || '',
       published_at: payload.published_at || payload.publication_date || payload.date || '',
       doi: payload.doi || '',
       url: payload.url || '',
       pdf_url: payload.pdf_url || '',
       github_url: payload.github_url || payload.github || payload.code_url || '',
+      slides_url: payload.slides_url || payload.slides || '',
       blog_url: payload.blog_url || payload.blog || '',
       abstract: payload.abstract || payload.summary || payload.description || '',
       award: payload.award || payload.award_name || '',
@@ -264,7 +274,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           degree: edu.degree,
           date: formatDateRange(edu, language),
           details: edu.details || [],
-          logo: edu.institution_logo_url,
+          logo: optionalMediaUrl(edu.institution_logo_url),
           website: edu.institution_website,
           location: edu.location,
         })),
@@ -276,7 +286,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           role: exp.position,
           date: formatDateRange(exp, language),
           details: exp.details || [],
-          logo: exp.company_logo_url,
+          logo: optionalMediaUrl(exp.company_logo_url),
           website: exp.company_website,
           location: exp.location,
         })),
@@ -289,7 +299,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           location: item.location || item.institution || '',
           date: formatDateRange(item, language),
           details: item.details || [],
-          image: item.image || undefined,
+          image: optionalMediaUrl(item.image),
           tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
         })),
       },
@@ -302,6 +312,10 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           title: item.title,
           authors: item.authors || undefined,
           venue: item.conference || item.journal || item.publisher || undefined,
+          venueFullName: item.conference_full_name || undefined,
+          venueUrl: item.conference_url || undefined,
+          venueLocation: item.conference_location || undefined,
+          ccfRank: item.ccf_rank || undefined,
           year: item.published_at || undefined,
           abstract: item.abstract || undefined,
           award: item.award || undefined,
@@ -310,8 +324,9 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           url: item.url || item.doi || undefined,
           pdfUrl: item.pdf_url || undefined,
           githubUrl: item.github_url || undefined,
+          slidesUrl: item.slides_url || undefined,
           blogUrl: item.blog_url || undefined,
-          image: item.image || undefined,
+          image: optionalMediaUrl(item.image),
           publicationType: item.publication_type || undefined,
         })),
       },

@@ -1,4 +1,5 @@
 import { getClientFingerprint } from './fingerprint';
+import { apiUrl } from '../api/utils';
 
 export interface ReadingSession {
   postId: string;
@@ -147,7 +148,7 @@ class ReadingBehaviorTracker {
 
   private async sendSessionData(session: ReadingSession): Promise<void> {
     try {
-      await fetch(`/api/v1/blog/posts/${session.postId}/views`, {
+      await fetch(apiUrl(`/api/v1/blog/posts/${session.postId}/views`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

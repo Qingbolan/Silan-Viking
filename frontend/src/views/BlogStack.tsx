@@ -5,7 +5,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Seo } from '../components/Seo';
 import { BlogData } from '../components/BlogStack/types/blog';
-import { fetchBlogPosts } from '../api';
+import { fetchBlogPosts } from '../api/blog/blogApi';
 import { fetchEpisodeSeriesList } from '../api/episodes/episodeApi';
 import type { EpisodeSeriesData } from '../types/episode';
 import {
@@ -15,6 +15,8 @@ import {
   BlogCard,
   EmptyState,
   Masonry,
+  Alert,
+  Button,
   type BlogCardData,
 } from '../components/ds';
 
@@ -160,7 +162,6 @@ const BlogStack: React.FC = () => {
   const location = useLocation();
 
   const [posts, setPosts] = useState<BlogData[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<BlogData[]>([]);
   // `selectedTag` holds the raw tag string ('all' = the reset chip).
   // `selectedType` holds a stable key: 'all' | 'article' | 'vlog' | 'episode'.
   const [selectedTag, setSelectedTag] = useState<string>('all');
@@ -168,11 +169,8 @@ const BlogStack: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Scroll to top on component mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const [partialError, setPartialError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Handle URL parameters — `?type=` maps directly to a Segmented key.
   useEffect(() => {
@@ -189,13 +187,19 @@ const BlogStack: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        setPartialError(false);
 
-        // Fetch blog posts and episode series in parallel — the backend
-        // doesn't merge them server-side, so we surface series here.
-        const [fetchedPosts, fetchedSeries] = await Promise.all([
+        const [postsResult, seriesResult] = await Promise.allSettled([
           fetchBlogPosts({}, language as 'en' | 'zh'),
-          fetchEpisodeSeriesList(language as 'en' | 'zh').catch(() => []),
+          fetchEpisodeSeriesList(language as 'en' | 'zh'),
         ]);
+
+        if (postsResult.status === 'rejected' && seriesResult.status === 'rejected') {
+          throw new Error('Both writing sources are unavailable');
+        }
+
+        const fetchedPosts = postsResult.status === 'fulfilled' ? postsResult.value : [];
+        const fetchedSeries = seriesResult.status === 'fulfilled' ? seriesResult.value : [];
 
         const seriesCards = fetchedSeries
           .map(seriesToBlogData)
@@ -204,7 +208,7 @@ const BlogStack: React.FC = () => {
 
         if (isMounted) {
           setPosts(merged);
-          setFilteredPosts(merged);
+          setPartialError(postsResult.status === 'rejected' || seriesResult.status === 'rejected');
           setLoading(false);
         }
       } catch (err) {
@@ -220,7 +224,7 @@ const BlogStack: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [language]);
+  }, [language, retryKey]);
 
   // Filter posts based on tag, type and search term
   const filteredPostsMemo = useMemo(() => {
@@ -248,13 +252,9 @@ const BlogStack: React.FC = () => {
     return filtered;
   }, [posts, selectedTag, selectedType, searchTerm]);
 
-  useEffect(() => {
-    setFilteredPosts(filteredPostsMemo);
-  }, [filteredPostsMemo]);
-
   const arrangedPosts = useMemo(
-    () => arrangePostsForGrid(filteredPosts),
-    [filteredPosts],
+    () => arrangePostsForGrid(filteredPostsMemo),
+    [filteredPostsMemo],
   );
 
   // Topic chips — 'all' is the reset chip, followed by every unique tag.
@@ -281,7 +281,7 @@ const BlogStack: React.FC = () => {
       navigate(`/episodes/${post.slug}`);
       return;
     }
-    navigate(`/blog/${post.id}`);
+    navigate(`/blog/${post.slug || post.id}`);
   }, [navigate]);
 
   if (loading) {
@@ -299,6 +299,7 @@ const BlogStack: React.FC = () => {
         title={language === 'en' ? 'Error Loading Posts' : '加载文章出错'}
         description={error}
         showHome
+        onRetry={() => setRetryKey((key) => key + 1)}
       />
     );
   }
@@ -353,6 +354,19 @@ const BlogStack: React.FC = () => {
           />
         </motion.div>
 
+        {partialError && (
+          <Alert
+            tone="warning"
+            title={language === 'en' ? 'Some writing could not be loaded' : '部分内容加载失败'}
+            className="mb-8"
+          >
+            <p>{language === 'en' ? 'Available articles and series are shown below.' : '当前可用的文章和系列已显示在下方。'}</p>
+            <Button variant="ghost" size="sm" className="mt-2" onClick={() => setRetryKey((key) => key + 1)}>
+              {language === 'en' ? 'Try again' : '重试'}
+            </Button>
+          </Alert>
+        )}
+
         {/* Blog Posts Grid — masonry / waterfall layout. Series posts
             span 2 columns with the wide `feature` layout. */}
         <AnimatePresence mode="wait">
@@ -379,7 +393,7 @@ const BlogStack: React.FC = () => {
         </AnimatePresence>
 
         {/* Empty State */}
-        {filteredPosts.length === 0 && !loading && (
+        {filteredPostsMemo.length === 0 && !loading && (
           <motion.div
             className="py-20"
             initial={{ opacity: 0, scale: 0.96 }}

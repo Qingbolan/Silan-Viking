@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User } from '../../types/contact';
+import { apiUrl } from '../../api/utils';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -27,22 +28,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check for existing user in localStorage
-    const storedUser = localStorage.getItem('auth_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        localStorage.removeItem('auth_user');
-      }
-    }
-    setLoading(false);
+  const mapUser = useCallback((data: any): User => {
+    const payload = data.user ?? data;
+    return {
+      id: payload.id || payload.user_id,
+      email: payload.email,
+      username: payload.username || payload.name,
+      avatar: payload.avatar_url || payload.avatar || payload.picture,
+      title: payload.title,
+      bio: payload.bio,
+      website: payload.website,
+      contact: payload.contact,
+      createdAt: payload.created_at || payload.createdAt || '',
+    };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    // Remove the former client-trusted identity cache. The HttpOnly session
+    // endpoint is now the only source of authentication truth.
+    localStorage.removeItem('auth_user');
+    // Known NUS mirror limitation: login depends on cross-site HttpOnly
+    // cookies (SameSite=None; Secure). Browsers that block third-party
+    // cookies may keep this anonymous even though public browsing, comments,
+    // search and content loading continue to work against silan.tech.
+    void fetch(apiUrl('/api/v1/auth/session'), { credentials: 'include' })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return mapUser(await response.json());
+      })
+      .then((identity) => {
+        if (active) setUser(identity);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [mapUser]);
 
   const loginWithGoogle = useCallback(async (idToken: string) => {
     try {
-      const response = await fetch('/api/v1/auth/google/verify', {
+      const response = await fetch(apiUrl('/api/v1/auth/google/verify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_token: idToken }),
@@ -53,37 +84,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Authentication failed');
       }
 
-      const data = await response.json();
-
-      // Convert backend user format to User type
-      const userData: User = {
-        id: data.user.id || data.user.user_id,
-        email: data.user.email,
-        username: data.user.username || data.user.name,
-        avatar: data.user.avatar || data.user.picture,
-        title: data.user.title,
-        bio: data.user.bio,
-        website: data.user.website,
-        contact: data.user.contact,
-        createdAt: data.user.createdAt || new Date().toISOString(),
-      };
-
-      setUser(userData);
-      localStorage.setItem('auth_user', JSON.stringify(userData));
+      setUser(mapUser(await response.json()));
     } catch (error) {
       console.error('Login error:', error);
       throw error;
     }
-  }, []);
+  }, [mapUser]);
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('auth_user');
-    // Optionally call backend logout endpoint
-    fetch('/api/v1/auth/logout', {
+    void fetch(apiUrl('/api/v1/auth/logout'), {
       method: 'POST',
       credentials: 'include',
-    }).catch(console.error);
+    });
   }, []);
 
   return (

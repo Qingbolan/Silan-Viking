@@ -2,21 +2,25 @@
 //
 //   ┌──────────────┬────────────────────────────────┬──────────────┐
 //   │  BookNav     │  Centre content (scrollable)   │  DOMOutline  │
-//   │  (fixed L)   │  - breadcrumb / title          │  (fixed R)   │
+//   │  (sticky L)  │  - breadcrumb / title          │  (sticky R)  │
 //   │              │  - body                        │              │
 //   │              │  - ArticleFooter (at bottom)   │              │
 //   │  WordCount   │                                │              │
 //   └──────────────┴────────────────────────────────┴──────────────┘
 //                                                      [👍] [💬]  ← EngagementFAB
 //
-// Both rails are fixed overlays anchored under the global top-nav (`top-12`).
-// The middle column gets `lg:mx-60` so the rails don't sit on top of content.
-// Below `lg` the rails collapse to icons or hide.
+// Desktop rails are sticky children of the shell's own grid, not viewport
+// overlays. That keeps the reader chrome scoped to the article/idea body, so
+// it cannot cover the global footer when the page scrolls past the content.
+// Below `lg` the rails collapse to compact native navigation.
 import React, { useRef } from 'react';
 import { cn } from '../../../lib/utils';
 import BookNav, { type BookNavChapter } from './BookNav';
 import DOMOutline from './DOMOutline';
 import EngagementFAB from './EngagementFAB';
+import { Select } from '../Controls';
+
+const MOBILE_OVERVIEW_ID = '__mobile_overview__';
 
 export interface KnowledgeBaseShellProps {
   // Left rail
@@ -47,8 +51,8 @@ export interface KnowledgeBaseShellProps {
   outlineContainerSelector?: string;
 
   // FAB
-  likes: number;
-  commentsCount: number;
+  likes?: number;
+  commentsCount?: number;
   // CSS selector inside the body that the comment FAB scrolls to. Defaults
   // to `#kb-comments`, which ArticleFooter wraps the comments section in.
   commentsAnchor?: string;
@@ -69,6 +73,18 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
   // Tab semantics: caller drives currentChapterId. Fall back to first chapter
   // so something is highlighted even before a click.
   const activeChapter = currentChapterId ?? chapters[0]?.id ?? '';
+  const mobileChapter = overview?.isActive ? MOBILE_OVERVIEW_ID : activeChapter;
+  const mobileOptions = [
+    ...(overview ? [{ value: MOBILE_OVERVIEW_ID, label: overview.label }] : []),
+    ...chapters.map((chapter) => ({ value: chapter.id, label: chapter.label })),
+  ];
+  const handleMobileChapterChange = (value: string) => {
+    if (value === MOBILE_OVERVIEW_ID) {
+      overview?.onClick();
+      return;
+    }
+    chapters.find((chapter) => chapter.id === value)?.onClick?.();
+  };
 
   const handleLikeClick = () => {
     const el = document.querySelector('#kb-likes');
@@ -96,64 +112,88 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
 
   return (
     <>
-      {/* Left rail — book nav. Hidden below lg. Width matches Yuque (288px).
-          Border is inline-styled because Tailwind's `border-r` was being
-          reset to 0px by an upstream reset elsewhere in the project. */}
-      <aside
-        className={cn(
-          'fixed left-0 top-12 bottom-0 z-30 hidden w-72 lg:block',
-          'bg-ds-surface-1',
-        )}
-        style={{ borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)' }}
-      >
-        <BookNav
-          overview={overview}
-          chapters={chapters}
-          currentId={activeChapter}
-        />
-      </aside>
-
-      {/* Right rail — outline. Hidden below lg. */}
-      <aside
-        className={cn(
-          'fixed right-0 top-12 bottom-0 z-30 hidden w-60 lg:block',
-          'overflow-y-auto px-5 pt-6',
-        )}
-      >
-        <DOMOutline containerSelector={outlineContainerSelector} activeKey={activeChapter} />
-      </aside>
-
-      {/* Centre — flow content. Left rail is w-72, right rail w-60. */}
-      <div className="lg:ml-72 lg:mr-60">
-        <div ref={centreRef} className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-10">
-          {children}
-        </div>
-      </div>
-
-      {/* Word count — fixed marker anchored to the bottom of the centre
-          column, just inside the left rail's right edge (Yuque-style
-          "366 Word" overlay). Behaves like the EngagementFAB: doesn't
-          scroll with content. */}
-      {typeof wordCount === 'number' && (
-        <div
-          className={cn(
-            'fixed bottom-3 z-30 hidden lg:block',
-            'font-mono text-[12px] text-ds-fg-subtle',
-            'pointer-events-none select-none',
-          )}
-          style={{ left: 'calc(18rem + 1rem)' }}
+      {/* Compact chapter navigation below desktop breakpoints. A native
+          select keeps long book titles usable and invokes the platform's
+          accessible picker on touch devices. */}
+      {mobileOptions.length > 1 && (
+        <nav
+          aria-label="Reading sections"
+          className="sticky top-0 z-20 border-b border-ds-border bg-ds-surface-1/92 px-4 py-2 backdrop-blur-md lg:hidden"
         >
-          {wordCount} Word
-        </div>
+          <div className="mx-auto max-w-3xl">
+            <Select
+              aria-label="Current reading section"
+              size="sm"
+              value={mobileChapter}
+              options={mobileOptions}
+              onChange={(event) => handleMobileChapterChange(event.target.value)}
+              className="bg-transparent font-medium"
+            />
+          </div>
+        </nav>
       )}
 
+      <div className="lg:grid lg:grid-cols-[18rem_minmax(0,1fr)_15rem]">
+        {/* Left rail — book nav. Hidden below lg. Width matches Yuque
+            (288px). Border is inline-styled because Tailwind's `border-r`
+            was being reset to 0px by an upstream reset elsewhere in the
+            project. */}
+        <aside
+          data-kb-left-rail
+          className={cn(
+            'relative z-30 hidden bg-ds-surface-1 lg:block',
+            'min-h-full',
+          )}
+          style={{ borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)' }}
+        >
+          <div className="sticky top-0 flex max-h-[calc(100dvh-4rem)] min-h-[calc(100dvh-4rem)] flex-col">
+            <BookNav
+              overview={overview}
+              chapters={chapters}
+              currentId={activeChapter}
+            />
+            {typeof wordCount === 'number' && (
+              <div
+                className={cn(
+                  'pointer-events-none shrink-0 select-none px-4 pb-3 pt-2',
+                  'font-mono text-[12px] text-ds-fg-subtle',
+                )}
+              >
+                {wordCount} Word
+              </div>
+            )}
+          </div>
+        </aside>
+
+        {/* Centre — flow content. */}
+        <div className="min-w-0">
+          <div ref={centreRef} className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-10">
+            {children}
+          </div>
+        </div>
+
+        {/* Right rail — outline. Hidden below lg. */}
+        <aside
+          className={cn(
+            'relative z-30 hidden lg:block',
+            'min-h-full px-5',
+          )}
+        >
+          <div className="sticky top-0 max-h-[calc(100dvh-4rem)] overflow-y-auto pt-6">
+            <DOMOutline containerSelector={outlineContainerSelector} activeKey={activeChapter} />
+          </div>
+        </aside>
+      </div>
+
       {/* Floating engagement pills */}
-      <EngagementFAB
-        likes={likes}
-        comments={commentsCount}
-        onLikeClick={handleLikeClick}
-        onCommentClick={handleCommentClick}
-      />
+      {(typeof likes === 'number' || typeof commentsCount === 'number') && (
+        <EngagementFAB
+          likes={likes}
+          comments={commentsCount}
+          onLikeClick={typeof likes === 'number' ? handleLikeClick : undefined}
+          onCommentClick={typeof commentsCount === 'number' ? handleCommentClick : undefined}
+        />
+      )}
     </>
   );
 };

@@ -1,14 +1,10 @@
 import type {
   Project,
-  ProjectWithPlan,
-  AnnualPlan,
-  GraphData,
   Language,
   ProjectDetail,
-  ProjectBlogReference
 } from '../../types/api';
 import { get, post, del, formatLanguage } from '../utils';
-import { type PaginationRequest, type SearchRequest, type ListResponse } from '../config';
+import { type PaginationRequest, type ListResponse } from '../config';
 import { mapContentParts } from '../contentParts';
 
 // Backend API request/response types
@@ -18,7 +14,6 @@ interface ProjectListRequest extends PaginationRequest {
   status?: string;
   search?: string;
   year?: number;
-  annual_plan?: string;
   tags?: string;
 }
 
@@ -30,12 +25,28 @@ interface ProjectListResponse extends ListResponse<Project> {
   total_pages: number;
 }
 
-interface ProjectSearchRequest extends SearchRequest {
-  query?: string;
-  tags?: string;
-  year?: number;
-  plan_id?: string;
-}
+const normalizeContentTimestamp = (value: unknown): string | undefined => {
+  if (typeof value !== 'string' || !value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) || date.getUTCFullYear() <= 1 ? undefined : value;
+};
+
+const normalizeProject = (raw: any): Project => ({
+  id: String(raw.id),
+  slug: raw.slug || '',
+  name: raw.name || raw.title || '',
+  description: raw.description || '',
+  tags: Array.isArray(raw.tags) ? raw.tags : [],
+  year: Number.isFinite(Number(raw.year)) ? Number(raw.year) : 0,
+  status: raw.status || undefined,
+  startDate: raw.startDate || raw.start_date || undefined,
+  endDate: raw.endDate || raw.end_date || undefined,
+  githubUrl: raw.githubUrl || raw.github_url || undefined,
+  demoUrl: raw.demoUrl || raw.demo_url || undefined,
+  documentationUrl: raw.documentationUrl || raw.documentation_url || undefined,
+  thumbnailUrl: raw.thumbnailUrl || raw.thumbnail_url || undefined,
+  updatedAt: normalizeContentTimestamp(raw.updatedAt || raw.updated_at),
+});
 
 
 // API Functions
@@ -51,368 +62,105 @@ export const fetchProjects = async (
     ...params,
     lang: formatLanguage(language)
   });
-  return response.projects || [];
+  return (response.projects || []).map(normalizeProject);
 };
 
-/**
- * Get single project by slug
- */
-export const fetchProject = async (
-  slug: string, 
-  language: Language = 'en'
-): Promise<Project | null> => {
-  const response = await get<Project>(`/api/v1/projects/${slug}`, {
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Get single project by ID (numeric)
- */
-export const fetchProjectById = async (
-  id: number | string, 
-  language: Language = 'en'
-): Promise<Project | null> => {
-  const response = await get<Project>(`/api/v1/projects/id/${id}`, {
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Get detailed project information
- */
-export const fetchProjectDetail = async (
-  id: string, 
-  language: Language = 'en'
-): Promise<ProjectDetail | null> => {
-  const response = await get<ProjectDetail>(`/api/v1/projects/${id}/detail`, {
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Get project categories
- */
-export const fetchCategories = async (language: Language = 'en'): Promise<string[]> => {
-  const response = await get<string[]>('/api/v1/projects/categories', {
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Get project technologies/tags
- */
-export const getProjectTags = async (language: Language = 'en'): Promise<string[]> => {
-  const response = await get<string[]>('/api/v1/projects/tags', {
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Get project graph data for visualization
- */
-export const fetchGraphData = async (
-  category: string = 'all', 
-  language: Language = 'en'
-): Promise<GraphData> => {
-  const response = await get<GraphData>('/api/v1/projects/graph', {
-    category,
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Get project related blogs
- */
-export const getProjectRelatedBlogs = async (
-  projectId: string, 
-  language: Language = 'en'
-): Promise<ProjectBlogReference[]> => {
-  const response = await get<ProjectBlogReference[]>(`/api/v1/projects/${projectId}/blogs`, {
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-/**
- * Search project details with filters
- */
-export const searchProjectDetails = async (
-  params: ProjectSearchRequest,
-  language: Language = 'en'
-): Promise<ProjectDetail[]> => {
-  const response = await get<ProjectDetail[]>('/api/v1/projects/search', {
-    ...params,
-    lang: formatLanguage(language)
-  });
-  return response;
-};
-
-// Extended functions for project details
+// Canonical project-detail query. The route may carry either the public slug
+// or the internal item id; this function resolves the basic record once and
+// then loads its detail projection.
 export const fetchProjectDetailById = async (
-  id: string, 
+  idOrSlug: string,
   language: Language = 'en'
 ): Promise<ProjectDetail | null> => {
-  try {
-    // Fetch both basic project info and detail info
-    const [basicProject, projectDetail] = await Promise.all([
-      get<Project>(`/api/v1/projects/id/${id}`, {
-        lang: formatLanguage(language)
-      }),
-      get<any>(`/api/v1/projects/${id}/detail`, {
-        lang: formatLanguage(language)
-      }).catch(() => null) // Don't fail if detail doesn't exist
-    ]);
+  const basicRaw = idOrSlug.startsWith('i_')
+    ? await get<Project>(`/api/v1/projects/id/${idOrSlug}`, { lang: formatLanguage(language) })
+    : await get<any>(`/api/v1/projects/${idOrSlug}`, { lang: formatLanguage(language) });
+  if (!basicRaw) return null;
 
-    if (!basicProject) {
-      return null;
-    }
+  const basicProject = normalizeProject(basicRaw);
+  const projectDetail = await get<any>(`/api/v1/projects/${basicProject.id}/detail`, {
+    lang: formatLanguage(language),
+  });
+  const releaseNotes: string | undefined = projectDetail?.release || projectDetail?.release_notes || undefined;
+  const version: string | undefined = projectDetail?.version || undefined;
+  const quickStartGuide: string | undefined = projectDetail?.quick_start || undefined;
+  const dependenciesDoc: string | undefined = projectDetail?.dependance || projectDetail?.dependencies || undefined;
+  const license: string | undefined = projectDetail?.license || undefined;
+  const licenseText: string | undefined = projectDetail?.license_text || undefined;
+  const timeline = projectDetail?.timeline;
+  const rawMetrics = projectDetail?.metrics;
+  const hasTimeline = timeline && (timeline.start || timeline.end || timeline.duration);
+  const hasMetrics = rawMetrics && Object.values(rawMetrics).some((value) => Number(value) > 0);
 
-    // Merge basic project info with detail info to create a complete ProjectDetail
-    const licenseName = projectDetail?.license || 'MIT';
-    const licenseText: string | undefined = projectDetail?.license_text;
-    const releaseNotes: string | undefined = projectDetail?.release || projectDetail?.release_notes;
-    const quickStartGuide: string | undefined = projectDetail?.quick_start;
-    const dependenciesDoc: string | undefined = projectDetail?.dependance || projectDetail?.dependencies;
-
-    const mergedDetail: ProjectDetail = {
-      id: basicProject.id,
-      title: basicProject.name,
-      description: basicProject.description,
-      fullDescription: projectDetail?.detailed_description || projectDetail?.project_details || basicProject.description,
-      // The silan-viking `project` Parts beyond `overview` — each a markdown
-      // string, undefined when the author has not written that Part.
-      goals: projectDetail?.goals || undefined,
-      challenges: projectDetail?.challenges || undefined,
-      solutions: projectDetail?.solutions || undefined,
-      lessons: projectDetail?.lessons || undefined,
-      // The data-driven Part list — ProjectTabs renders tabs from here.
-      parts: mapContentParts((projectDetail as any)?.parts),
-      tags: basicProject.tags || [],
-      year: basicProject.year,
-
-      // Timeline from detail or defaults
-      timeline: projectDetail?.timeline || {
-        start: '',
-        end: '',
-        duration: ''
-      },
-
-      // Metrics from detail or defaults
-      metrics: projectDetail?.metrics || {
-        linesOfCode: 0,
-        commits: 0,
-        stars: 0,
-        downloads: 0
-      },
-
-      // Related blogs
-      relatedBlogs: projectDetail?.related_blogs || [],
-
-      // Version info with release notes
-      versions: {
-        latest: projectDetail?.version || '1.0.0',
-        releases: releaseNotes
-          ? [{
-              version: projectDetail?.version || '1.0.0',
-              date: projectDetail?.updated_at || new Date().toISOString().split('T')[0],
-              description: releaseNotes,
-              downloadCount: 0,
-              assets: [],
-              // Include markdown notes for UI markdown rendering
-              notes: releaseNotes,
-            }]
-          : []
-      },
-
-      // Default status info
-      status: {
-        buildStatus: 'unknown' as const,
-        coverage: 0,
-        vulnerabilities: 0,
-        lastUpdated: projectDetail?.updated_at || new Date().toISOString().split('T')[0],
-        license: projectDetail?.license || 'MIT',
-        language: 'Multiple',
-        size: 'Medium'
-      },
-
-      // Always provide quickStart object; UI handles empty content
-      quickStart: {
-        installation: [],
-        basicUsage: quickStartGuide || '',
-        requirements: []
-      },
-
-      // Default community info
-      community: {
-        contributors: 1,
-        forks: 0,
-        watchers: 0,
-        issues: {
-          open: 0,
-          closed: 0,
-          recent: []
-        },
-        discussions: []
-      },
-
-      // Dependencies from database or defaults
-      dependencies: dependenciesDoc
-        ? {
-            production: [],
-            development: [],
-            // Additional raw markdown for UI rendering
-            raw: dependenciesDoc as any,
-          } as any
-        : {
-            production: [],
-            development: []
-          },
-
-      // Default performance
-      performance: {
-        benchmarks: [],
-        analytics: {
-          downloads: [],
-          usage: []
+  const detail: ProjectDetail = {
+    id: basicProject.id,
+    title: basicProject.name,
+    description: basicProject.description,
+    fullDescription: projectDetail?.detailed_description || projectDetail?.project_details || basicProject.description,
+    image: basicProject.thumbnailUrl,
+    goals: projectDetail?.goals || undefined,
+    challenges: projectDetail?.challenges || undefined,
+    solutions: projectDetail?.solutions || undefined,
+    lessons: projectDetail?.lessons || undefined,
+    parts: mapContentParts(projectDetail?.parts),
+    tags: basicProject.tags,
+    year: basicProject.year,
+    relatedBlogs: projectDetail?.related_blogs || [],
+    github: basicProject.githubUrl,
+    demo: basicProject.demoUrl,
+    status: (basicProject.status || basicProject.updatedAt || license)
+      ? {
+          lifecycle: basicProject.status,
+          lastUpdated: basicProject.updatedAt,
+          license,
         }
-      },
+      : undefined,
+    timeline: hasTimeline ? timeline : undefined,
+    metrics: hasMetrics
+      ? {
+          linesOfCode: Number(rawMetrics.lines_of_code || rawMetrics.linesOfCode || 0),
+          commits: Number(rawMetrics.commits || 0),
+          stars: Number(rawMetrics.stars || 0),
+          downloads: Number(rawMetrics.downloads || 0),
+        }
+      : undefined,
+    versions: (version || releaseNotes)
+      ? {
+          latest: version || '',
+          releases: releaseNotes
+            ? [{
+                version: version || '',
+                date: projectDetail?.updated_at || '',
+                description: releaseNotes,
+                downloadCount: 0,
+                assets: [],
+                notes: releaseNotes,
+              }]
+            : [],
+        }
+      : undefined,
+    quickStart: quickStartGuide
+      ? { installation: [], basicUsage: quickStartGuide, requirements: [] }
+      : undefined,
+    dependencies: dependenciesDoc
+      ? { production: [], development: [], raw: dependenciesDoc }
+      : undefined,
+  };
 
-      // Additional fields
-      features: [],
-      teamSize: 1,
-      myRole: 'Developer',
-      planId: basicProject.annualPlan,
-
-      // URLs (these might not be in the basic project, so we use defaults)
-      github: '', // These would need to be added to the basic project type
-      demo: ''    // or fetched from somewhere else
+  if (licenseText) {
+    detail.licenseInfo = {
+      name: license || '',
+      spdxId: license || '',
+      fullText: licenseText,
+      url: '',
+      permissions: [],
+      conditions: [],
+      limitations: [],
+      description: '',
     };
-
-    // Populate licenseInfo if backend returned full license text
-    if (licenseText) {
-      (mergedDetail as any).licenseInfo = {
-        name: licenseName,
-        spdxId: licenseName,
-        fullText: licenseText,
-        url: '',
-        permissions: [],
-        conditions: [],
-        limitations: [],
-        description: ''
-      };
-    }
-
-    return mergedDetail;
-  } catch (err) {
-    console.error('Error fetching project detail:', err);
-    return null;
   }
-};
 
-// Backward compatibility exports
-export const fetchAnnualPlans = async (language: Language = 'en'): Promise<AnnualPlan[]> => {
-  // This function is now handled by plans API
-  const { fetchAnnualPlans: fetchPlans } = await import('../plans/planApi');
-  return fetchPlans(language);
-};
-
-export const fetchAnnualPlanByName = async (
-  name: string, 
-  language: Language = 'en'
-): Promise<AnnualPlan | null> => {
-  // This function is now handled by plans API
-  const { fetchAnnualPlanByName: fetchPlanByName } = await import('../plans/planApi');
-  return fetchPlanByName(name, language);
-};
-
-export const fetchProjectsWithPlans = async (
-  language: Language = 'en'
-): Promise<ProjectWithPlan[]> => {
-  const projects = await fetchProjects({}, language);
-
-  return projects.map((project) => {
-    const projectAny = project as Record<string, any>;
-
-    const titleZh =
-      projectAny.titleZh ??
-      projectAny.nameZh ??
-      projectAny.title_zh ??
-      projectAny.name_zh;
-    const descriptionZh =
-      projectAny.descriptionZh ?? projectAny.description_zh;
-    const github =
-      projectAny.github ??
-      projectAny.githubUrl ??
-      projectAny.github_url;
-    const demo =
-      projectAny.demo ??
-      projectAny.demoUrl ??
-      projectAny.demo_url ??
-      projectAny.previewUrl ??
-      projectAny.preview_url;
-    const rawTags = projectAny.tags ?? project.tags;
-    const tags = Array.isArray(rawTags) ? rawTags : [];
-    const rawYear = projectAny.year ?? project.year;
-    const parsedYear =
-      typeof rawYear === 'string'
-        ? Number.parseInt(rawYear, 10)
-        : rawYear;
-    const year = Number.isFinite(parsedYear)
-      ? (parsedYear as number)
-      : new Date().getFullYear();
-    const planId =
-      projectAny.planId ??
-      projectAny.annualPlan ??
-      projectAny.plan_id ??
-      project.annualPlan ??
-      '';
-
-    return {
-      id: String(project.id),
-      title: projectAny.title ?? projectAny.name ?? project.name,
-      titleZh,
-      description: projectAny.description ?? project.description,
-      descriptionZh,
-      // No fake-URL fallback: when the project has no cover, leave `image`
-      // undefined so `ProjectCard` renders its built-in branded placeholder
-      // instead of a broken-image icon from a non-existent endpoint.
-      image:
-        projectAny.image ??
-        projectAny.coverImage ??
-        projectAny.cover_image ??
-        projectAny.thumbnail_url ??
-        projectAny.thumbnailUrl ??
-        undefined,
-      tags,
-      github,
-      demo,
-      planId,
-      year,
-    } satisfies ProjectWithPlan;
-  });
-};
-
-export const fetchProjectsByPlan = async (
-  planName: string,
-  language: Language = 'en'
-): Promise<Project[]> => {
-  const projects = await fetchProjects({}, language);
-  return projects.filter((project) => {
-    const projectAny = project as Record<string, any>;
-    const projectPlan =
-      project.annualPlan ??
-      projectAny.annual_plan ??
-      projectAny.planId ??
-      projectAny.plan_id;
-    return projectPlan === planName;
-  });
+  return detail;
 };
 
 // ====== Project Comment API Functions ======
@@ -426,7 +174,7 @@ export interface ProjectCommentData {
   content: string;
   type: string;
   created_at: string;
-  user_identity_id?: string;
+  can_delete: boolean;
   likes_count: number;
   is_liked_by_user: boolean;
   replies: ProjectCommentData[];
@@ -449,7 +197,6 @@ export const listProjectComments = async (
   projectId: string,
   type: string = 'general',
   fingerprint?: string,
-  userIdentityId?: string,
   language: 'en' | 'zh' = 'en'
 ): Promise<ProjectCommentData[]> => {
   const response = await get<ProjectCommentListResponse>(
@@ -458,7 +205,6 @@ export const listProjectComments = async (
       type,
       lang: formatLanguage(language),
       fingerprint,
-      user_identity_id: userIdentityId,
     }
   );
   return response.comments || [];
@@ -475,7 +221,6 @@ export const createProjectComment = async (
     type?: string;
     authorName?: string;
     authorEmail?: string;
-    userIdentityId?: string;
     parentId?: string;
     language?: 'en' | 'zh';
   }
@@ -487,16 +232,14 @@ export const createProjectComment = async (
   };
   if (options?.authorName && options.authorName.trim()) body.author_name = options.authorName.trim();
   if (options?.authorEmail && options.authorEmail.trim()) body.author_email = options.authorEmail.trim();
-  if (options?.userIdentityId && options.userIdentityId.trim()) body.user_identity_id = options.userIdentityId.trim();
   if (options?.parentId && options.parentId.trim()) body.parent_id = options.parentId.trim();
 
-  // Align with backend model: if no user_identity_id provided, backend requires author_name and author_email
-  if (!body.user_identity_id) {
+  if (body.author_name || body.author_email) {
     if (!body.author_name || typeof body.author_name !== 'string' || !body.author_name.trim()) {
-      body.author_name = 'Anonymous';
+      throw new Error('author_name is required');
     }
     if (!body.author_email || typeof body.author_email !== 'string' || body.author_email.trim().length < 5 || !body.author_email.includes('@')) {
-      body.author_email = 'anonymous@example.com';
+      throw new Error('author_email is required and must be valid');
     }
   }
 
@@ -512,12 +255,10 @@ export const createProjectComment = async (
 export const likeProjectComment = async (
   commentId: string,
   fingerprint?: string,
-  userIdentityId?: string,
   language: 'en' | 'zh' = 'en'
 ): Promise<LikeProjectCommentResponse> => {
   const data: any = { lang: formatLanguage(language) };
   if (fingerprint) data.fingerprint = fingerprint;
-  if (userIdentityId) data.user_identity_id = userIdentityId;
   const res = await post<LikeProjectCommentResponse>(`/api/v1/projects/comments/${commentId}/like`, data);
   return res;
 };
@@ -527,11 +268,10 @@ export const likeProjectComment = async (
  */
 export const deleteProjectComment = async (
   commentId: string,
-  payload: { fingerprint: string; userIdentityId?: string; language?: 'en' | 'zh' }
+  payload: { fingerprint: string; language?: 'en' | 'zh' }
 ): Promise<void> => {
   await del(`/api/v1/projects/comments/${commentId}`, {
     fingerprint: payload.fingerprint,
-    user_identity_id: payload.userIdentityId || '',
   });
 };
 
@@ -539,17 +279,14 @@ export const deleteProjectComment = async (
 
 export interface ProjectIssueRecord {
   id: string;
-  number: number;
   title: string;
   description: string;
-  status: 'open' | 'closed';
   type: 'bug' | 'enhancement' | 'question' | 'documentation';
   priority: 'low' | 'medium' | 'high';
   labels: string[];
   author: string;
   author_avatar?: string;
   created: string;
-  updated: string;
   comments: number;
   likes: number;
   comment: ProjectCommentData;
@@ -565,7 +302,6 @@ export interface CreateProjectIssuePayload {
   fingerprint: string;
   authorName?: string;
   authorEmail?: string;
-  userIdentityId?: string;
   language?: 'en' | 'zh';
 }
 
@@ -615,24 +351,20 @@ const parseIssueContent = (content: string) => {
 
 const buildIssueFromComment = (
   comment: ProjectCommentData,
-  number: number
 ): ProjectIssueRecord => {
   const { title, description, issueType, priority, labels } = parseIssueContent(comment.content);
   const mergedLabels = Array.from(new Set([issueType, `${priority}-priority`, ...labels]));
 
   return {
     id: comment.id,
-    number,
     title,
     description: description || 'No description provided',
-    status: 'open',
     type: issueType,
     priority,
     labels: mergedLabels,
     author: comment.author_name,
     author_avatar: comment.author_avatar_url,
     created: comment.created_at,
-    updated: comment.created_at,
     comments: comment.replies?.length || 0,
     likes: comment.likes_count,
     comment,
@@ -643,15 +375,10 @@ export const fetchProjectIssues = async (
   projectId: string,
   language: Language = 'en'
 ): Promise<ProjectIssueRecord[]> => {
-  const comments = await listProjectComments(projectId, 'issue', undefined, undefined, language);
-  const sorted = comments
-    .map((comment) => buildIssueFromComment(comment, 0))
+  const comments = await listProjectComments(projectId, 'issue', undefined, language);
+  return comments
+    .map((comment) => buildIssueFromComment(comment))
     .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
-
-  return sorted.map((issue, index) => ({
-    ...issue,
-    number: sorted.length - index,
-  }));
 };
 
 export const createProjectIssue = async (
@@ -667,12 +394,11 @@ export const createProjectIssue = async (
       type: 'issue',
       authorName: payload.authorName,
       authorEmail: payload.authorEmail,
-      userIdentityId: payload.userIdentityId,
       language: payload.language ?? 'en'
     }
   );
 
-  return buildIssueFromComment(comment, 0);
+  return buildIssueFromComment(comment);
 };
 
 export const fetchProjectIssueThread = async (
@@ -680,7 +406,6 @@ export const fetchProjectIssueThread = async (
   issueId: string,
   options: {
     fingerprint?: string;
-    userIdentityId?: string;
     language?: 'en' | 'zh';
   } = {}
 ): Promise<ProjectCommentData | null> => {
@@ -688,14 +413,13 @@ export const fetchProjectIssueThread = async (
     projectId,
     'issue',
     options.fingerprint,
-    options.userIdentityId,
     options.language ?? 'en'
   );
   return comments.find((comment) => comment.id === issueId) ?? null;
 };
 
 export const projectIssueFromComment = (comment: ProjectCommentData): ProjectIssueRecord => {
-  return buildIssueFromComment(comment, 0);
+  return buildIssueFromComment(comment);
 };
 
 /**
@@ -703,7 +427,7 @@ export const projectIssueFromComment = (comment: ProjectCommentData): ProjectIss
  */
 export const deleteProjectIssue = async (
   issueId: string,
-  payload: { fingerprint: string; userIdentityId?: string; language?: 'en' | 'zh' }
+  payload: { fingerprint: string; language?: 'en' | 'zh' }
 ): Promise<void> => {
   return deleteProjectComment(issueId, payload);
 };
@@ -733,7 +457,6 @@ export const likeProject = async (
   projectId: string,
   fingerprint: string,
   options: {
-    userIdentityId?: string;
     clientIP?: string;
     userAgent?: string;
     language?: 'en' | 'zh';
@@ -743,7 +466,6 @@ export const likeProject = async (
     fingerprint,
   };
 
-  if (options.userIdentityId) body.user_identity_id = options.userIdentityId;
   if (options.clientIP) body.client_ip = options.clientIP;
   body.user_agent_full = options.userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
   body.referrer = typeof document !== 'undefined' ? document.referrer : '';
@@ -760,7 +482,6 @@ export const recordProjectView = async (
   projectId: string,
   fingerprint: string,
   options: {
-    userIdentityId?: string;
     clientIP?: string;
     userAgent?: string;
     language?: 'en' | 'zh';
@@ -770,7 +491,6 @@ export const recordProjectView = async (
     fingerprint,
   };
 
-  if (options.userIdentityId) body.user_identity_id = options.userIdentityId;
   if (options.clientIP) body.client_ip = options.clientIP;
   body.user_agent_full = options.userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
   body.referrer = typeof document !== 'undefined' ? document.referrer : '';
@@ -787,7 +507,6 @@ export const getProjectMetrics = async (
   projectId: string,
   options: {
     fingerprint?: string;
-    userIdentityId?: string;
     language?: 'en' | 'zh';
   } = {}
 ): Promise<ProjectMetricsResponse> => {
@@ -796,7 +515,6 @@ export const getProjectMetrics = async (
   };
 
   if (options.fingerprint) params.fingerprint = options.fingerprint;
-  if (options.userIdentityId) params.user_identity_id = options.userIdentityId;
 
   const response = await get<ProjectMetricsResponse>(`/api/v1/projects/${projectId}/metrics`, params);
   return response;

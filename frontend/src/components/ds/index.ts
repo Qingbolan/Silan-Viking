@@ -13,8 +13,11 @@ export type { ButtonProps } from './Button';
 
 export { default as ArticleFooter } from './ArticleFooter';
 export type { ArticleFooterProps } from './ArticleFooter';
-export { mockComments, mockRecentLikers } from './__mocks__/articleFooterMock';
-export type { MockComment, MockLiker, MockReaction } from './__mocks__/articleFooterMock';
+export type {
+  ArticleComment,
+  CommentDraft,
+  CommentLoadState,
+} from './article-footer/types';
 
 export { default as KnowledgeBaseShell } from './knowledge-base/KnowledgeBaseShell';
 export type { KnowledgeBaseShellProps } from './knowledge-base/KnowledgeBaseShell';
@@ -97,7 +100,7 @@ export { BlogHeader } from './BlogHeader';
 export type { BlogHeaderProps } from './BlogHeader';
 
 export { ProfileHero } from './ProfileHero';
-export type { ProfileHeroProps, ContactItem, SocialItem } from './ProfileHero';
+export type { ProfileHeroProps, ContactItem, HeroAction, SocialItem } from './ProfileHero';
 
 export { EpisodeList } from './EpisodeList';
 export type { EpisodeListProps, EpisodeListItem } from './EpisodeList';
@@ -107,6 +110,8 @@ export type { TableOfContentsProps, TocItem } from './TableOfContents';
 
 export { NoiseBackground } from './NoiseBackground';
 export type { NoiseBackgroundProps } from './NoiseBackground';
+
+export { MobileTabBar } from './MobileTabBar';
 
 export { Masonry } from './Masonry';
 export type { MasonryProps, MasonryBreakpoint } from './Masonry';

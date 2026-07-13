@@ -21,6 +21,8 @@ export interface AvatarProps {
   size?: keyof typeof sizeMap;
   /** Render a square (rounded) avatar instead of a circle. */
   square?: boolean;
+  /** Keep the shared theme hairline. Disable when a parent supplies its own frame. */
+  bordered?: boolean;
   className?: string;
 }
 
@@ -36,6 +38,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   name,
   size = 'md',
   square = false,
+  bordered = true,
   className,
 }) => {
   const [failed, setFailed] = React.useState(false);
@@ -46,13 +49,14 @@ export const Avatar: React.FC<AvatarProps> = ({
       {...dsRoot}
       className={cn(
         'inline-flex shrink-0 select-none items-center justify-center overflow-hidden',
-        'bg-ds-primary-soft font-semibold text-ds-primary ds-hairline',
+        'bg-ds-primary-soft font-semibold text-ds-primary',
+        bordered && 'ds-hairline',
         square ? 'rounded-ds-md' : 'rounded-full',
         sizeMap[size],
         className,
       )}
-      role="img"
-      aria-label={name}
+      role={showImage ? undefined : 'img'}
+      aria-label={showImage ? undefined : name}
     >
       {showImage ? (
         <img

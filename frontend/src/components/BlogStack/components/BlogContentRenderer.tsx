@@ -18,21 +18,25 @@ import rehypeHighlight from 'rehype-highlight';
 interface BlogContentRendererProps {
   content: BlogContent[];
   isWideScreen: boolean;
-  userAnnotations: Record<string, UserAnnotation>;
-  annotations: Record<string, boolean>;
-  showAnnotationForm: string | null;
-  newAnnotationText: string;
-  selectedText: SelectedText | null;
-  highlightedAnnotation: string | null;
-  onTextSelection: () => void;
-  onToggleAnnotation: (contentId: string) => void;
-  onSetShowAnnotationForm: (contentId: string | null) => void;
-  onSetNewAnnotationText: (text: string) => void;
-  onAddUserAnnotation: (contentId: string) => void;
-  onRemoveUserAnnotation: (annotationId: string) => void;
-  onHighlightAnnotation: (annotationId: string) => void;
-  onCancelAnnotation: () => void;
+  readOnly?: boolean;
+  userAnnotations?: Record<string, UserAnnotation>;
+  annotations?: Record<string, boolean>;
+  showAnnotationForm?: string | null;
+  newAnnotationText?: string;
+  selectedText?: SelectedText | null;
+  highlightedAnnotation?: string | null;
+  onTextSelection?: () => void;
+  onToggleAnnotation?: (contentId: string) => void;
+  onSetShowAnnotationForm?: (contentId: string | null) => void;
+  onSetNewAnnotationText?: (text: string) => void;
+  onAddUserAnnotation?: (contentId: string) => void;
+  onRemoveUserAnnotation?: (annotationId: string) => void;
+  onHighlightAnnotation?: (annotationId: string) => void;
+  onCancelAnnotation?: () => void;
 }
+
+const EMPTY_ANNOTATIONS = {};
+const NOOP = () => {};
 
 /** 更可靠地判断“像 Markdown 的文本块”，但避免 fenced code */
 const looksLikeLooseMarkdown = (text: string): boolean => {
@@ -43,7 +47,7 @@ const looksLikeLooseMarkdown = (text: string): boolean => {
     /^[-*+]\s/m.test(text) || // 无序列表
     /^\d+\.\s/m.test(text) || // 有序列表
     /^>\s/m.test(text) || // 引用
-    /\[[^\]]+\]\([^\)]+\)/.test(text) || // 链接
+    /\[[^\]]+\]\([^)]+\)/.test(text) || // 链接
     /^(-{3,}|\*{3,}|_{3,})$/m.test(text); // 分割线
   return mdSignals;
 };
@@ -59,16 +63,6 @@ const hasGfmTable = (s: string = ''): boolean => {
   // Variant: rows separated by " | | " (spaces around the divider)
   const collapsedRowSpaced = /\s\|\s\|/.test(s);
   const collapsedRow = (collapsedRowTight || collapsedRowSpaced) && /\|/.test(s);
-  // eslint-disable-next-line no-console
-  console.debug('[GFM Detect] flags', {
-    lineHasPipes,
-    alignRow,
-    collapsedRow,
-    collapsedRowTight,
-    collapsedRowSpaced,
-    length: s.length,
-    preview: s.slice(0, 200).replace(/\n/g, '\\n')
-  });
   return (lineHasPipes && alignRow) || collapsedRow;
 };
 
@@ -76,29 +70,14 @@ const hasGfmTable = (s: string = ''): boolean => {
 const expandCollapsedTableRows = (s: string = ''): string => {
   if (!s) return s;
   if (/\|\|/.test(s)) {
-    const before = s;
     let after = s.replace(/\|\|\s*/g, '\n');
     // Also support the spaced variant: " | | "
-    const before2 = after;
     after = after.replace(/\s\|\s\|\s*/g, '\n');
-    // eslint-disable-next-line no-console
-    console.debug('[GFM Normalize] collapsed rows expanded', {
-      beforePreview: before.slice(0, 200).replace(/\n/g, '\\n'),
-      midPreview: before2.slice(0, 200).replace(/\n/g, '\\n'),
-      afterPreview: after.slice(0, 200).replace(/\n/g, '\\n')
-    });
     return after;
   }
   // If it doesn't contain tight "||", still try spaced variant alone
   if (/\s\|\s\|/.test(s)) {
-    const before = s;
-    const after = s.replace(/\s\|\s\|\s*/g, '\n');
-    // eslint-disable-next-line no-console
-    console.debug('[GFM Normalize] spaced collapsed rows expanded', {
-      beforePreview: before.slice(0, 200).replace(/\n/g, '\\n'),
-      afterPreview: after.slice(0, 200).replace(/\n/g, '\\n')
-    });
-    return after;
+    return s.replace(/\s\|\s\|\s*/g, '\n');
   }
   return s;
 };
@@ -126,13 +105,7 @@ const coerceGfmTableFormat = (s: string = ''): string => {
     if (!/\|\s*$/.test(line)) line = `${line} |`;
     return line;
   });
-  const out = coerced.join('\n');
-  // eslint-disable-next-line no-console
-  console.debug('[GFM Normalize] coerced table lines', {
-    beforePreview: s.slice(0, 200).replace(/\n/g, '\\n'),
-    afterPreview: out.slice(0, 200).replace(/\n/g, '\\n')
-  });
-  return out;
+  return coerced.join('\n');
 };
 
 type CanonicalType = NonNullable<BlogContent['type']>;
@@ -181,7 +154,7 @@ const normalizeInlineMarkdownHeuristics = (raw: string): string => {
   if (!s.includes('\n')) {
     const parts = s.split(/\s-\s(?!\[[ xX]\]\s)/);
     if (parts.length >= 3) {
-      s = parts.map((p) => `- ${p.trim().replace(/^[•*+\-]\s*/, '')}`).join('\n');
+      s = parts.map((p) => `- ${p.trim().replace(/^[•*+-]\s*/, '')}`).join('\n');
     }
   }
 
@@ -189,10 +162,10 @@ const normalizeInlineMarkdownHeuristics = (raw: string): string => {
   // 修复原实现中的多余括号
   if (
     !s.includes('\n') &&
-    /^\s*\d+[\.)、]\s/.test(s) &&
-    /\s(?=\d+[\.)、]\s)/.test(s) === false // 如果原串没有清晰分隔，下面再尝试强制换行
+    /^\s*\d+[.)、]\s/.test(s) &&
+    /\s(?=\d+[.)、]\s)/.test(s) === false // 如果原串没有清晰分隔，下面再尝试强制换行
   ) {
-    s = s.replace(/\s(?=\d+[\.)、]\s)/g, '\n');
+    s = s.replace(/\s(?=\d+[.)、]\s)/g, '\n');
   }
 
   return s;
@@ -209,20 +182,21 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
   const {
     content,
     isWideScreen,
-    userAnnotations,
-    annotations,
-    showAnnotationForm,
-    newAnnotationText,
-    selectedText,
-    highlightedAnnotation,
-    onTextSelection,
-    onToggleAnnotation,
-    onSetShowAnnotationForm,
-    onSetNewAnnotationText,
-    onAddUserAnnotation,
-    onRemoveUserAnnotation,
-    onHighlightAnnotation,
-    onCancelAnnotation,
+    readOnly = false,
+    userAnnotations = EMPTY_ANNOTATIONS,
+    annotations = EMPTY_ANNOTATIONS,
+    showAnnotationForm = null,
+    newAnnotationText = '',
+    selectedText = null,
+    highlightedAnnotation = null,
+    onTextSelection = NOOP,
+    onToggleAnnotation = NOOP,
+    onSetShowAnnotationForm = NOOP,
+    onSetNewAnnotationText = NOOP,
+    onAddUserAnnotation = NOOP,
+    onRemoveUserAnnotation = NOOP,
+    onHighlightAnnotation = NOOP,
+    onCancelAnnotation = NOOP,
   } = props;
 
   // 预处理：归一化 + 计算稳定 kindIndex
@@ -261,24 +235,95 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
     if (hasGfmTable(md)) {
       md = expandCollapsedTableRows(md);
       md = coerceGfmTableFormat(md);
-      // Debug: confirm detection/normalization in console
-      // eslint-disable-next-line no-console
-      console.debug('[BlogContentRenderer] GFM table detected', {
-        id: item.id,
-        type: item.type,
-        length: md.length,
-        preview: md.slice(0, 200).replace(/\n/g, '\\n')
-      });
     }
 
     return (
-      <div key={item.id} className="prose prose-lg max-w-none">
+      <div key={item.id} className="font-article max-w-none text-theme-text-primary">
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
           components={{
+            h1: ({ node, ...hProps }) => (
+              <h1
+                {...hProps}
+                className="font-display mb-4 mt-0 text-[1.75rem] font-bold leading-[1.2] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
+              />
+            ),
+            h2: ({ node, ...hProps }) => (
+              <h2
+                {...hProps}
+                className="font-display mb-4 mt-14 text-[1.5rem] font-semibold leading-[1.3] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
+              />
+            ),
+            h3: ({ node, ...hProps }) => (
+              <h3
+                {...hProps}
+                className="font-display mb-3 mt-10 text-[1.25rem] font-semibold leading-[1.3] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
+              />
+            ),
+            h4: ({ node, ...hProps }) => (
+              <h4
+                {...hProps}
+                className="font-display mb-2 mt-8 text-[1.125rem] font-medium leading-[1.4] tracking-[-0.01em] text-theme-text-primary scroll-mt-24"
+              />
+            ),
+            h5: ({ node, ...hProps }) => (
+              <h5
+                {...hProps}
+                className="font-display mb-2 mt-6 text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-theme-text-tertiary scroll-mt-24"
+              />
+            ),
+            h6: ({ node, ...hProps }) => (
+              <h6
+                {...hProps}
+                className="font-display mb-2 mt-6 text-[0.8rem] font-semibold uppercase tracking-[0.08em] text-theme-text-tertiary scroll-mt-24"
+              />
+            ),
+            p: ({ node, ...pProps }) => (
+              <p
+                {...pProps}
+                className="my-4 text-[15px] leading-[1.8] text-theme-text-primary sm:text-base lg:text-[17px]"
+              />
+            ),
+            strong: ({ node, ...sProps }) => (
+              <strong {...sProps} className="font-semibold text-theme-text-primary" />
+            ),
+            em: ({ node, ...eProps }) => <em {...eProps} className="italic" />,
+            code: ({ node, className, children, ...cProps }) => (
+              <code
+                {...cProps}
+                className={`rounded bg-theme-surface px-[0.36rem] py-[0.12rem] font-article-mono text-[13px] font-medium text-theme-text-primary ${className || ''}`.trim()}
+              >
+                {children}
+              </code>
+            ),
+            pre: ({ node, children, ...preProps }) => (
+              <pre
+                {...preProps}
+                className="my-5 overflow-x-auto rounded-lg bg-theme-surface p-4 font-article-mono text-[13px] leading-[1.6] text-theme-text-primary [&_code]:bg-transparent [&_code]:p-0 [&_code]:font-normal"
+              >
+                {children}
+              </pre>
+            ),
+            blockquote: ({ node, ...bqProps }) => (
+              <blockquote
+                {...bqProps}
+                className="my-5 border-l-2 border-theme-accent/40 pl-4 italic text-theme-secondary"
+              />
+            ),
+            hr: ({ node, ...hrProps }) => (
+              <hr {...hrProps} className="my-8 h-px border-0 bg-theme-card" />
+            ),
+            img: ({ node, ...imgProps }) => (
+              <img {...imgProps} alt={imgProps.alt ?? ''} className="my-5 rounded-lg" loading="lazy" />
+            ),
             a: ({ node, ...aProps }) => (
-              <a {...aProps} target="_blank" rel="noopener noreferrer" />
+              <a
+                {...aProps}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-theme-accent underline underline-offset-2 decoration-theme-accent/40 transition-colors hover:decoration-theme-accent"
+              />
             ),
             ul: ({ node, ...ulProps }) => {
               const isTask = (ulProps.className || '').includes('contains-task-list');
@@ -376,10 +421,9 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
                 return <TableBlock header={header as any} rows={rows as any} />;
               } catch (e) {
                 // Fallback: simple wrapper if parsing fails
-                // eslint-disable-next-line no-console
                 console.warn('[Markdown->TableBlock] Failed to convert table, falling back.', e);
                 return (
-                  <div className="my-6 overflow-x-auto not-prose">
+                  <div className="my-6 overflow-x-auto">
                     <table className="w-full text-sm" />
                   </div>
                 );
@@ -395,19 +439,12 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
 
   const renderContent = (item: PreparedItem) => {
     // Programmatic table support via metadata
-    // Programmatic table support via metadata
     const tableMeta = (item.metadata as any)?.table;
     if (
       tableMeta &&
       Array.isArray(tableMeta.header) &&
       Array.isArray(tableMeta.rows)
     ) {
-      // eslint-disable-next-line no-console
-      console.debug('[BlogContentRenderer] Rendering TableBlock via metadata', {
-        id: item.id,
-        headers: (tableMeta.header || []).length,
-        rows: (tableMeta.rows || []).length
-      });
       return (
         <TableBlock
           key={item.id}
@@ -422,22 +459,15 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
         {
           const raw = item.content || '';
           if (hasGfmTable(raw)) {
-            // eslint-disable-next-line no-console
-            console.debug('[BlogContentRenderer] Rendering text item as Markdown due to table', { id: item.id });
             return renderMarkdown(item);
           }
-          // eslint-disable-next-line no-console
-          console.debug('[BlogContentRenderer] Rendering TextContent (no table detected)', {
-            id: item.id,
-            length: raw.length,
-            preview: raw.slice(0, 200).replace(/\n/g, '\\n')
-          });
         }
         return (
           <TextContent
             key={item.id}
             item={item}
             index={item.kindIndex}
+            interactiveAnnotations={!readOnly}
             userAnnotations={userAnnotations}
             annotations={annotations}
             showAnnotationForm={showAnnotationForm}
@@ -507,11 +537,6 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
         );
 
       case 'markdown':
-        // eslint-disable-next-line no-console
-        console.debug('[BlogContentRenderer] Rendering explicit markdown block', {
-          id: item.id,
-          length: (item.content || '').length
-        });
         return renderMarkdown(item);
 
       default:

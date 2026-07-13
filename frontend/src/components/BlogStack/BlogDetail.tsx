@@ -12,7 +12,6 @@ import SeriesDetailLayout from './SeriesDetailLayout';
 
 // Import reading behavior utilities
 import { readingTracker } from '../../utils/readingBehavior';
-import { calculateReadingTime } from '../../utils/readingTime';
 import { useLanguage } from '../LanguageContext';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
 import { Seo, blogPostingJsonLd } from '../Seo';
@@ -26,7 +25,8 @@ const BlogDetail: React.FC = () => {
   const [annotations, setAnnotations] = useState<Record<string, boolean>>({});
 
   // Custom hooks
-  const { blog, loading, error } = useBlogData(id);
+  const [retryKey, setRetryKey] = useState(0);
+  const { blog, state } = useBlogData(id, retryKey);
   const {
     userAnnotations,
     showAnnotationForm,
@@ -43,7 +43,15 @@ const BlogDetail: React.FC = () => {
   } = useAnnotations(id);
 
   // Reflect the post title in the address-bar breadcrumb.
-  useSetPageTitle(blog ? (language === 'zh' && blog.titleZh ? blog.titleZh : blog.title) : null);
+  useSetPageTitle(
+    blog
+      ? (language === 'zh' && blog.titleZh ? blog.titleZh : blog.title)
+      : state === 'not-found'
+        ? (language === 'zh' ? '文章不存在' : 'Article not found')
+        : state === 'error'
+          ? (language === 'zh' ? '文章暂不可用' : 'Article unavailable')
+          : null,
+  );
 
   // Start reading tracking when blog is loaded
   useEffect(() => {
@@ -57,17 +65,6 @@ const BlogDetail: React.FC = () => {
     }
   }, [blog]);
 
-  // Update reading time if it's missing or incorrect
-  useEffect(() => {
-    if (blog && blog.content) {
-      const calculatedTime = calculateReadingTime(blog.content, language as 'en' | 'zh');
-      if (!blog.readTime || blog.readTime === '') {
-        // Update the blog object with calculated reading time
-        blog.readTime = calculatedTime;
-      }
-    }
-  }, [blog, language]);
-
   // Handle annotation toggle
   const toggleAnnotation = (contentId: string) => {
     setAnnotations(prev => ({
@@ -77,8 +74,21 @@ const BlogDetail: React.FC = () => {
   };
 
   // Loading and error states
-  if (loading || !blog || error) {
-    return <BlogLoadingState loading={loading} error={!!error || (!loading && !blog)} />;
+  if (state !== 'ready' || !blog) {
+    return (
+      <>
+        {state === 'not-found' && (
+          <Seo
+            title={language === 'zh' ? '文章不存在' : 'Article not found'}
+            description={language === 'zh' ? '未找到该公开文章。' : 'This public article could not be found.'}
+            path={`/blog/${id ?? ''}`}
+            noindex
+            lang={language as 'en' | 'zh'}
+          />
+        )}
+        <BlogLoadingState state={state} onRetry={() => setRetryKey((key) => key + 1)} />
+      </>
+    );
   }
 
   // Handle back navigation
@@ -94,14 +104,14 @@ const BlogDetail: React.FC = () => {
     <Seo
       title={seoTitle}
       description={seoDescription}
-      path={`/blog/${blog.id}`}
+      path={`/blog/${blog.slug || blog.id}`}
       image={blog.vlogCover}
       type="article"
       lang={language as 'en' | 'zh'}
       jsonLd={blogPostingJsonLd({
         title: seoTitle,
         description: seoDescription,
-        path: `/blog/${blog.id}`,
+        path: `/blog/${blog.slug || blog.id}`,
         image: blog.vlogCover,
         datePublished: blog.publishDate,
         author: blog.author,

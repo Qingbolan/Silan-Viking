@@ -1,82 +1,64 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import { ThumbsUp, MoreHorizontal } from 'lucide-react';
+import { LoaderCircle, ThumbsUp } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import Avatar from './Avatar';
-import type { MockLiker } from '../__mocks__/articleFooterMock';
+import { useLanguage } from '../../LanguageContext';
 
 interface LikePanelProps {
   likes: number;
-  liked?: boolean;
-  recentLikers?: MockLiker[];
-  onLike?: () => void;
+  liked: boolean;
+  pending?: boolean;
+  onLike: () => void | Promise<void>;
 }
 
 const LikePanel: React.FC<LikePanelProps> = ({
   likes,
-  liked = false,
-  recentLikers = [],
+  liked,
+  pending = false,
   onLike,
 }) => {
-  const [localLiked, setLocalLiked] = useState(liked);
-  const [localCount, setLocalCount] = useState(likes);
-
-  const handleClick = () => {
-    setLocalLiked((prev) => {
-      setLocalCount((c) => c + (prev ? -1 : 1));
-      return !prev;
-    });
-    onLike?.();
-  };
+  const { language } = useLanguage();
 
   return (
     <div className="flex flex-col items-center py-8">
       {/* Thumbs-up icon — outline by default, filled when liked. */}
       <motion.button
         type="button"
-        onClick={handleClick}
+        onClick={() => void onLike()}
+        disabled={pending}
         whileTap={{ scale: 1.3 }}
         transition={{ duration: 0.2 }}
         className={cn(
           'group inline-flex items-center justify-center',
           'transition-colors duration-150',
         )}
-        aria-label={localLiked ? 'Unlike' : 'Like'}
+        aria-label={
+          liked
+            ? language === 'zh' ? '取消点赞' : 'Unlike this article'
+            : language === 'zh' ? '点赞' : 'Like this article'
+        }
+        aria-pressed={liked}
+        aria-busy={pending}
       >
-        <ThumbsUp
-          size={40}
-          strokeWidth={1.5}
-          className={cn(
-            'transition-colors duration-150',
-            localLiked
-              ? 'fill-[#F5A623] text-[#F5A623]'
-              : 'text-[#F5A623] group-hover:fill-[#F5A623]/20',
-          )}
-        />
+        {pending ? (
+          <LoaderCircle size={40} strokeWidth={1.5} className="animate-spin text-ds-primary" />
+        ) : (
+          <ThumbsUp
+            size={40}
+            strokeWidth={1.5}
+            className={cn(
+              'transition-colors duration-150',
+              liked
+                ? 'fill-ds-primary text-ds-primary'
+                : 'text-ds-primary group-hover:fill-ds-primary/15',
+            )}
+          />
+        )}
       </motion.button>
 
       <div className="mt-3 text-ds-sm text-ds-fg-muted">
-        {localCount.toLocaleString()} likes
+        {likes.toLocaleString()} {language === 'zh' ? '次点赞' : likes === 1 ? 'like' : 'likes'}
       </div>
-
-      {recentLikers.length > 0 && (
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          {recentLikers.slice(0, 13).map((liker) => (
-            <Avatar key={liker.name} name={liker.name} src={liker.avatar} size="lg" />
-          ))}
-          <button
-            type="button"
-            className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-full',
-              'border border-ds-border bg-transparent text-ds-fg-subtle',
-              'transition-colors hover:border-ds-fg-muted hover:text-ds-fg-muted',
-            )}
-            aria-label="View all likers"
-          >
-            <MoreHorizontal size={16} />
-          </button>
-        </div>
-      )}
     </div>
   );
 };

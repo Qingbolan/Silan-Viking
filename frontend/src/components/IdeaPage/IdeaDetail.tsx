@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -9,11 +9,12 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { Seo, creativeWorkJsonLd } from '../Seo';
-import CommunityFeedback from './CommunityFeedback';
+import IdeaDiscussion from './IdeaDiscussion';
 import ContentParts from '../content/ContentParts';
 import { IdeaData } from '../../types';
 import { fetchIdeaById } from '../../api/ideas/ideaApi';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
+import { useRemoteResource } from '../../hooks/useRemoteResource';
 import {
   Container,
   Section,
@@ -21,62 +22,48 @@ import {
   Button,
   BrandLoading,
   ErrorState,
-  ArticleFooter,
+  NetworkError,
   KnowledgeBaseShell,
   type BookNavChapter,
-  mockComments,
-  mockRecentLikers,
 } from '../../components/ds';
 
+const OVERVIEW_ID = '__overview__';
 
 const IdeaDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { language } = useLanguage();
 
-  const [idea, setIdea] = useState<IdeaData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [activePart, setActivePart] = useState<string>('');
+  const [activePart, setActivePart] = useState<string>(OVERVIEW_ID);
+
+  const loadIdea = useCallback(
+    () => id ? fetchIdeaById(id, language as 'en' | 'zh') : Promise.resolve(null),
+    [id, language],
+  );
+  const ideaResource = useRemoteResource<IdeaData>(id, loadIdea);
+  const idea = ideaResource.data;
 
   // Reflect the idea title in the address-bar breadcrumb.
-  useSetPageTitle(idea ? idea.title : null);
+  useSetPageTitle(
+    idea
+      ? idea.title
+      : ideaResource.status === 'not-found'
+        ? (language === 'en' ? 'Research not found' : '未找到研究')
+        : ideaResource.status === 'error'
+          ? (language === 'en' ? 'Research unavailable' : '研究暂不可用')
+          : null,
+  );
 
+  const ideaID = idea?.id;
   useEffect(() => {
-    const loadIdea = async () => {
-      if (!id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        
-        // Fetch idea from API with language support
-        const ideaData = await fetchIdeaById(id, language as 'en' | 'zh');
-        
-        if (ideaData) {
-          setIdea(ideaData);
-        } else {
-          // If no data found, you can optionally fall back to mock data for development
-          // or show a not found message
-          setIdea(null);
-        }
-      } catch (err) {
-        console.error('Error loading idea:', err);
-        setIdea(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadIdea();
-  }, [id, language]);
+    if (ideaID) setActivePart(OVERVIEW_ID);
+  }, [ideaID]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'zh-CN');
   };
 
-  if (loading) {
+  if (ideaResource.status === 'loading') {
     return (
       <BrandLoading
         inline
@@ -85,32 +72,45 @@ const IdeaDetail: React.FC = () => {
     );
   }
 
+  if (ideaResource.status === 'error') {
+    return <NetworkError onRetry={ideaResource.reload} />;
+  }
+
   if (!idea) {
     // A missing / non-public idea renders the ds standard page-level error,
     // not a bespoke panel — same design language as every other route.
     return (
-      <Container>
-        <Section>
-          <ErrorState
-            variant="page"
-            title={language === 'en' ? 'Research Not Found' : '未找到研究'}
-            description={
-              language === 'en'
-                ? 'This research idea does not exist, or has not been published yet.'
-                : '该研究想法不存在，或尚未发布。'
-            }
-            actions={
-              <Button
-                variant="primary"
-                onClick={() => navigate('/ideas')}
-                leadingIcon={<ArrowLeft />}
-              >
-                {language === 'en' ? 'Back to Ideas' : '返回想法列表'}
-              </Button>
-            }
-          />
-        </Section>
-      </Container>
+      <>
+        <Seo
+          title={language === 'en' ? 'Research not found' : '未找到研究'}
+          description={language === 'en' ? 'This public research idea could not be found.' : '未找到该公开研究想法。'}
+          path={`/ideas/${id ?? ''}`}
+          noindex
+          lang={language as 'en' | 'zh'}
+        />
+        <Container>
+          <Section>
+            <ErrorState
+              variant="page"
+              title={language === 'en' ? 'Research Not Found' : '未找到研究'}
+              description={
+                language === 'en'
+                  ? 'This research idea does not exist, or has not been published yet.'
+                  : '该研究想法不存在，或尚未发布。'
+              }
+              actions={
+                <Button
+                  variant="primary"
+                  onClick={() => navigate('/ideas')}
+                  leadingIcon={<ArrowLeft />}
+                >
+                  {language === 'en' ? 'Back to Ideas' : '返回想法列表'}
+                </Button>
+              }
+            />
+          </Section>
+        </Container>
+      </>
     );
   }
 
@@ -126,10 +126,8 @@ const IdeaDetail: React.FC = () => {
 
   const seoDescription =
     (language === 'en' ? idea.abstract : idea.abstractZh || idea.abstract) || '';
-
-  // The 'Overview' virtual page — id `__overview__` shows the idea's
-  // intro card (status, title, dates, actions); other ids show that Part.
-  const OVERVIEW_ID = '__overview__';
+  // The API already localizes the title according to `lang`.
+  const documentTitle = idea.title;
 
   // Build the BookNav chapter list from the idea's Parts. `role` is the
   // stable id (matches ContentParts' tab value), so clicking a chapter
@@ -138,10 +136,8 @@ const IdeaDetail: React.FC = () => {
   const partRoles = (idea.parts ?? [])
     .slice()
     .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((p) => p.role);
-  if (!activePart) {
-    setActivePart(OVERVIEW_ID);
-  }
+    .map((p) => p.role)
+    .filter((role) => role !== 'overview');
   const roleLabels: Record<string, { en: string; zh: string }> = {
     overview:   { en: 'Overview',        zh: '概述' },
     progress:   { en: 'Latest Progress', zh: '最新进展' },
@@ -149,6 +145,8 @@ const IdeaDetail: React.FC = () => {
     goals:      { en: 'Goals',           zh: '目标' },
     challenges: { en: 'Challenges',      zh: '挑战' },
     solutions:  { en: 'Solutions',       zh: '解决方案' },
+    result:     { en: 'Results',         zh: '结果' },
+    reference:  { en: 'References',      zh: '参考文献' },
   };
   const chapterFromRole = (role: string): string => {
     const known = roleLabels[role];
@@ -184,48 +182,47 @@ const IdeaDetail: React.FC = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Seo
-        title={idea.title}
+        title={documentTitle}
         description={seoDescription}
-        path={`/ideas/${idea.id}`}
+        path={`/ideas/${id}`}
         type="article"
         lang={language as 'en' | 'zh'}
         jsonLd={creativeWorkJsonLd({
-          title: idea.title,
+          title: documentTitle,
           description: seoDescription,
-          path: `/ideas/${idea.id}`,
+          path: `/ideas/${id}`,
         })}
       />
       <KnowledgeBaseShell
         overview={{
-          label: idea.title || (language === 'en' ? 'Overview' : '概述'),
+          label: documentTitle || (language === 'en' ? 'Overview' : '概述'),
           onClick: () => goToPart(OVERVIEW_ID),
           isActive: activePart === OVERVIEW_ID,
         }}
         chapters={chapters}
         currentChapterId={activePart}
         wordCount={wordCount}
-        likes={2047}
-        commentsCount={94}
       >
           {activePart === OVERVIEW_ID ? (
             <>
               {/* Overview / cover page — status eyebrow, title, dates, abstract.
                   Stats + actions intentionally absent: this is a book cover,
                   not a control panel. */}
-              <div className="space-y-2">
-                <div className="text-[12px] font-medium uppercase tracking-[0.1em] text-ds-fg-subtle">
-                  {statusLabel[idea.status] ?? idea.status}
-                </div>
-                <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.02em] text-ds-fg">
-                  {idea.title}
-                </h1>
+              <div className="text-[12px] font-medium uppercase tracking-[0.1em] text-ds-fg-subtle">
+                {statusLabel[idea.status] ?? idea.status}
               </div>
 
+              <h1 className="mt-3 text-ds-4xl font-semibold leading-[1.15] tracking-[-0.02em] text-ds-fg">
+                {documentTitle}
+              </h1>
+
               <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-ds-fg-muted">
-                <span className="inline-flex items-center gap-1.5">
-                  <Calendar className="size-3.5" />
-                  {language === 'en' ? 'Created' : '创建于'} {formatDate(idea.createdAt)}
-                </span>
+                {idea.createdAt && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Calendar className="size-3.5" />
+                    {language === 'en' ? 'Created' : '创建于'} {formatDate(idea.createdAt)}
+                  </span>
+                )}
                 {idea.lastUpdated && (
                   <span className="inline-flex items-center gap-1.5">
                     <Clock className="size-3.5" />
@@ -244,48 +241,42 @@ const IdeaDetail: React.FC = () => {
                 </div>
               )}
 
-              {/* Abstract — the only body content on the cover page */}
-              {(idea.abstract || idea.abstractZh) && (
-                <p className="mt-8 text-[15px] leading-[1.8] text-ds-fg-muted">
-                  {language === 'en'
-                    ? idea.abstract || idea.abstractZh
-                    : idea.abstractZh || idea.abstract}
-                </p>
-              )}
+              {/* The cover owns the canonical Overview Part. It is real
+                  article content, not a second empty landing page. */}
+              <div className="prose-content markdown-body mt-8 w-full">
+                <ContentParts
+                  parts={idea.parts ?? []}
+                  value="overview"
+                  hideNav
+                  documentTitle={documentTitle}
+                />
+              </div>
             </>
           ) : (
             <div className="prose-content markdown-body w-full">
+              <h1 className="sr-only">{documentTitle}</h1>
               <ContentParts
                 parts={idea.parts ?? []}
                 value={activePart}
                 onValueChange={setActivePart}
                 hideNav
+                documentTitle={documentTitle}
                 extraTabs={[
                   {
                     key: 'discussion',
                     label: language === 'en' ? 'Discussion' : '讨论',
                     icon: <MessageSquare size={16} />,
                     render: () => (
-                      <CommunityFeedback projectId={`idea-${idea.id}`} />
+                      <IdeaDiscussion ideaId={idea.id} />
                     ),
                   },
                 ]}
               />
             </div>
           )}
-
-          <ArticleFooter
-            likes={2047}
-            recentLikers={mockRecentLikers}
-            contributors={['Silan Hu']}
-            publishedAt="2026-04-15 10:00"
-            viewCount={1296204}
-            ipRegion="Singapore"
-            comments={mockComments}
-          />
       </KnowledgeBaseShell>
     </motion.div>
   );
 };
 
-export default IdeaDetail; 
+export default IdeaDetail;

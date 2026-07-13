@@ -21,9 +21,12 @@ import {
   CheckCircle,
   ListTree,
 } from 'lucide-react';
-import { Tabs } from '../ds';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Tabs, type TabItem } from '../ds';
 import Markdown from '../ui/Markdown';
 import { useLanguage } from '../LanguageContext';
+import { cn } from '../../lib/utils';
+import { dsRoot } from '../ds/dsAttr';
 import type { ContentPart, ContentEntry } from '../../types';
 
 /**
@@ -68,6 +71,8 @@ interface ContentPartsProps {
    * pane. Behaves like `tabs` for everything else.
    */
   hideNav?: boolean;
+  /** Canonical page title used to remove a duplicated leading markdown h1. */
+  documentTitle?: string;
 }
 
 /** Known roles get a curated icon; an unknown role falls back to a generic. */
@@ -159,6 +164,63 @@ const EntryCard: React.FC<{ entry: ContentEntry }> = ({ entry }) => {
  *  Part `role` (a project could legitimately have a `community` Part). */
 const EXTRA_PREFIX = 'tab:';
 
+/**
+ * Mobile-only floating icon dock — replaces the desktop left-rail nav on
+ * sub-desktop viewports, where a full vertical list of full-width rows (one per
+ * tab) would push the actual content off-screen below the fold. Icons only,
+ * no labels, tapped directly (no popover) since staying on one row is the
+ * point. Sits above the site-wide MobileTabBar dock (bottom-3, ~46px tall)
+ * so the two floating docks don't collide; scrolls horizontally on its own
+ * axis if a content Item has enough Parts to overflow the row.
+ */
+const MobileTabDock: React.FC<{
+  items: TabItem[];
+  active: string;
+  onChange: (value: string) => void;
+}> = ({ items, active, onChange }) => {
+  const reduceMotion = useReducedMotion();
+  if (items.length === 0) return null;
+
+  return (
+    <nav
+      {...dsRoot}
+      aria-label="Section navigation"
+      className="ds-liquid-glass fixed bottom-20 right-4 z-30 flex max-w-[calc(100vw-2rem)] items-center gap-0.5 overflow-x-auto rounded-full px-1 py-1 lg:hidden"
+    >
+      {items.map((item) => {
+        const isActive = item.value === active;
+        return (
+          <button
+            key={item.value}
+            type="button"
+            title={typeof item.label === 'string' ? item.label : undefined}
+            aria-label={typeof item.label === 'string' ? item.label : undefined}
+            aria-current={isActive ? 'true' : undefined}
+            onClick={() => onChange(item.value)}
+            className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center transition-transform duration-ds-fast active:scale-[0.94]"
+          >
+            {isActive && (
+              <motion.span
+                layoutId={reduceMotion ? undefined : 'mobile-content-tab-pill'}
+                className="absolute inset-0 rounded-full bg-ds-primary/15"
+                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+              />
+            )}
+            <span
+              className={cn(
+                'relative z-10 [&_svg]:size-[18px]',
+                isActive ? 'text-ds-primary' : 'text-ds-fg-subtle',
+              )}
+            >
+              {item.icon}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+};
+
 const ContentParts: React.FC<ContentPartsProps> = ({
   parts,
   extraTabs = [],
@@ -167,6 +229,7 @@ const ContentParts: React.FC<ContentPartsProps> = ({
   onValueChange,
   layout = 'tabs',
   hideNav = false,
+  documentTitle,
 }) => {
   const { language } = useLanguage();
 
@@ -244,7 +307,7 @@ const ContentParts: React.FC<ContentPartsProps> = ({
                   ))}
               </div>
             ) : (
-              <Markdown>{partBody(p, language)}</Markdown>
+              <Markdown documentTitle={documentTitle}>{partBody(p, language)}</Markdown>
             )}
           </section>
         ))}
@@ -279,7 +342,7 @@ const ContentParts: React.FC<ContentPartsProps> = ({
             ))}
         </div>
       ) : activePart ? (
-        <Markdown>{partBody(activePart, language)}</Markdown>
+        <Markdown documentTitle={documentTitle}>{partBody(activePart, language)}</Markdown>
       ) : null}
     </article>
   );
@@ -289,11 +352,17 @@ const ContentParts: React.FC<ContentPartsProps> = ({
   }
 
   return (
-    // Two-column docs layout — a left-rail vertical nav and the content
-    // panel beside it. On a narrow viewport the rail stacks above.
-    <div className={`flex w-full flex-col gap-6 md:flex-row md:gap-8 ${className || ''}`}>
-      <nav className="shrink-0 md:w-56">
-        <div className="md:sticky md:top-16">
+    // Project knowledge layout — the section rail is viewport-pinned like
+    // the Vlog/Idea book navigator. Below `lg` it becomes the compact
+    // bottom-right dock so article content never starts beneath a tall tab
+    // stack on tablets or phones.
+    <div className={`flex w-full flex-col gap-6 pb-32 lg:flex-row lg:gap-8 lg:pb-0 ${className || ''}`}>
+      <nav
+        aria-label={language === 'en' ? 'Project sections' : '项目章节'}
+        className="fixed bottom-0 left-0 top-12 z-30 hidden w-72 overflow-y-auto bg-ds-surface-1 px-4 pt-6 lg:block"
+        style={{ borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)' }}
+      >
+        <div>
           <Tabs
             appearance="vertical"
             value={activeValue}
@@ -302,7 +371,8 @@ const ContentParts: React.FC<ContentPartsProps> = ({
           />
         </div>
       </nav>
-      <div className="flex-1">{body}</div>
+      <div className="min-w-0 flex-1">{body}</div>
+      <MobileTabDock items={tabItems} active={activeValue} onChange={setActive} />
     </div>
   );
 };

@@ -18,9 +18,26 @@ interface TimelineProps {
   variant?: 'primary' | 'secondary' | 'accent';
 }
 
+/**
+ * Content is authored as one logical list but arrives from the content API as
+ * string[]. Normalize plain entries into Markdown list rows while preserving
+ * authors' existing `-`, `*`, or ordered-list syntax. Rendering the combined
+ * document lets Markdown own emphasis, links, nested lists, and line breaks.
+ */
+const detailsToMarkdown = (details: string[]) =>
+  details
+    .map((detail) => {
+      const content = detail.trim();
+      if (!content) return '';
+      if (/^(?:[-*+] |\d+[.)] )/.test(content)) return content;
+      return `- ${content.replace(/\n/g, '\n  ')}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
 const Timeline: React.FC<TimelineProps> = ({ items }) => {
   return (
-    <ol className="space-y-6">
+    <ol className="space-y-5 sm:space-y-6">
       {items.map((item, index) => (
         <motion.li
           key={`${item.title}-${index}`}
@@ -30,7 +47,7 @@ const Timeline: React.FC<TimelineProps> = ({ items }) => {
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.5, delay: index * 0.08 }}
         >
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             <div className="flex items-start gap-3">
               {item.logo && (
                 <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl bg-theme-surface p-1">
@@ -89,22 +106,17 @@ const Timeline: React.FC<TimelineProps> = ({ items }) => {
             </div>
 
             {item.details && Array.isArray(item.details) && item.details.length > 0 && (
-              <div className="rounded-xl bg-theme-surface p-4 transition-colors duration-300">
-                <ul className="space-y-1.5">
-                  {item.details.map((detail, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <span
-                        aria-hidden
-                        className="select-none font-mono text-sm leading-relaxed text-theme-tertiary"
-                      >
-                        –
-                      </span>
-                      <Markdown className="flex-1 text-sm leading-relaxed text-theme-secondary [&>div]:my-0">
-                        {detail}
-                      </Markdown>
-                    </li>
-                  ))}
-                </ul>
+              <div className="border-l border-ds-border pl-3">
+                <Markdown
+                  className={[
+                    'text-sm leading-relaxed text-theme-secondary',
+                    '[&>ul]:!my-0 [&>ul]:!space-y-2 [&>ul]:!pl-4',
+                    '[&_li]:!my-0 [&_li]:!pl-1 [&_li]:!leading-6',
+                    '[&_p]:!my-0 [&_p]:!leading-6',
+                  ].join(' ')}
+                >
+                  {detailsToMarkdown(item.details)}
+                </Markdown>
               </div>
             )}
           </div>

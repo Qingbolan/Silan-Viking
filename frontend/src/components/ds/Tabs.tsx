@@ -73,6 +73,7 @@ export const Tabs: React.FC<TabsProps> = ({
           return (
             <button
               key={item.value}
+              type="button"
               role="tab"
               aria-selected={isActive}
               disabled={item.disabled}
@@ -120,6 +121,7 @@ export const Tabs: React.FC<TabsProps> = ({
           return (
             <button
               key={item.value}
+              type="button"
               role="tab"
               aria-selected={isActive}
               disabled={item.disabled}
@@ -164,6 +166,7 @@ export const Tabs: React.FC<TabsProps> = ({
         return (
           <button
             key={item.value}
+            type="button"
             role="tab"
             aria-selected={isActive}
             disabled={item.disabled}

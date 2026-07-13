@@ -1,13 +1,11 @@
 // src/components/Resume/PublicationCard.tsx
 //
-// A single publication, rendered as a vertical card for a masonry grid
-// in the style of an academic portfolio: a figure on top, then the
-// title, an optional award badge, the venue · year line, a short
-// abstract, the author list (owner emphasised), topic tags and a row of
-// outlined link buttons — Paper / PDF / Code / Blog.
+// A single publication, rendered as a compact editorial list item: teaser
+// image, title and venue lead; authors, abstract and links follow without a
+// second nested card competing with the section that already contains it.
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Github, Newspaper } from 'lucide-react';
+import { ExternalLink, FileText, Github, MapPin, Newspaper } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import Markdown from '../ui/Markdown';
@@ -18,6 +16,14 @@ export interface PublicationCardData {
   authors?: string;
   /** Journal / conference — the venue. */
   venue?: string;
+  /** Full official venue name, displayed as a linked secondary line. */
+  venueFullName?: string;
+  /** Official conference / journal website. */
+  venueUrl?: string;
+  /** Host city / country, shown with the full official venue name. */
+  venueLocation?: string;
+  /** CCF venue ranking, deliberately supplied by content rather than inferred. */
+  ccfRank?: 'A' | 'B' | 'C';
   year?: string;
   /** One-line abstract / summary. */
   abstract?: string;
@@ -32,6 +38,8 @@ export interface PublicationCardData {
   pdfUrl?: string;
   /** Code repository link. */
   githubUrl?: string;
+  /** Public talk or presentation deck. */
+  slidesUrl?: string;
   /** Related blog post link. */
   blogUrl?: string;
   /** Optional figure / cover image. */
@@ -80,27 +88,20 @@ const formatYearMonth = (raw?: string): string => {
   return m[2] ? `${m[1]}-${m[2]}` : m[1];
 };
 
-/** Per-type visual treatment for the publication_type badge.
- *  - conference / journal / workshop: peer-reviewed venues → primary tone
- *  - preprint: not peer-reviewed → neutral, quieter
- *  - unknown / missing: skipped */
-const typeBadgeClass = (type?: string): string | null => {
-  if (!type) return null;
-  switch (type.toLowerCase()) {
-    case 'conference':
-      return 'border-ds-primary/40 bg-ds-primary-soft text-ds-primary';
-    case 'journal':
-      return 'border-ds-success/40 bg-ds-success-soft text-ds-success';
-    case 'workshop':
-      return 'border-ds-warning/40 bg-ds-warning-soft text-ds-warning';
-    case 'preprint':
-      return 'border-ds-border bg-ds-surface-2 text-ds-fg-subtle';
-    default:
-      return 'border-ds-border bg-ds-surface-2 text-ds-fg-muted';
-  }
-};
+/** A compact, formal venue classification badge — CCF wordmark + rank seal. */
+const CcfBadge: React.FC<{ rank: 'A' | 'B' | 'C' }> = ({ rank }) => (
+  <span
+    title={`CCF ${rank} conference`}
+    className="inline-flex h-7 items-center gap-1 rounded-full border border-[#003D7C]/25 bg-[#003D7C]/[0.08] py-0.5 pl-2 pr-1 text-[#003D7C] dark:border-[#8AB5F5]/30 dark:bg-[#8AB5F5]/10 dark:text-[#A8C7FA]"
+  >
+    <span className="font-mono text-[0.625rem] font-semibold tracking-[0.12em]">CCF</span>
+    <span className="flex size-5 items-center justify-center rounded-full bg-[#003D7C] text-[0.6875rem] font-bold text-white dark:bg-[#A8C7FA] dark:text-[#10213D]">
+      {rank}
+    </span>
+  </span>
+);
 
-/** An outlined pill link — Paper / PDF / Code / Blog. */
+/** A compact resource control — Paper / PDF / Code / Slides / Blog. */
 const LinkPill: React.FC<{ href: string; icon: React.ReactNode; label: string }> = ({
   href,
   icon,
@@ -111,7 +112,7 @@ const LinkPill: React.FC<{ href: string; icon: React.ReactNode; label: string }>
     target="_blank"
     rel="noopener noreferrer"
     className={cn(
-      'inline-flex items-center gap-1 rounded-ds-sm border border-ds-border px-2 py-0.5',
+      'inline-flex min-h-9 items-center gap-1 rounded-full border border-ds-border px-3 py-1',
       'text-ds-2xs font-medium uppercase tracking-[0.06em] text-ds-fg-muted',
       'transition-colors duration-ds-fast ease-ds-standard',
       'hover:border-ds-primary/40 hover:bg-ds-primary-soft hover:text-ds-primary',
@@ -130,49 +131,89 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
 }) => {
   const { t } = useTranslation();
   const {
-    title, authors, venue, year, abstract, award, tags = [],
-    url, pdfUrl, githubUrl, blogUrl, image, publicationType,
+    title, authors, venue, venueFullName, venueUrl, venueLocation, ccfRank, year, abstract, award, tags = [],
+    url, pdfUrl, githubUrl, slidesUrl, blogUrl, image, publicationType,
   } = publication;
   const yearMonth = formatYearMonth(year);
-  const typeClass = typeBadgeClass(publicationType);
 
   return (
-    <motion.div
+    <motion.article
       initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.4, delay: index * 0.06 }}
       className={cn(
-        'group flex flex-col rounded-ds-lg border border-ds-border bg-ds-surface-1',
-        'transition-[border-color,box-shadow] duration-ds-fast ease-ds-standard',
-        'hover:border-ds-primary/40 hover:shadow-ds-2',
+        'group grid gap-4 py-5 first:pt-0 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(0,1fr)] sm:gap-5 sm:py-6',
       )}
     >
-      {/* Figure — inset on a tinted plate, like a paper teaser. */}
+      {/* Figure — a restrained teaser, no additional card frame. */}
       {image && (
-        <div className="p-3">
-          <div className="overflow-hidden rounded-ds-md border border-ds-border bg-white">
-            <img
-              src={image}
-              alt={title}
-              loading="lazy"
-              className="h-44 w-full object-contain transition-transform duration-ds-normal ease-ds-emphasized group-hover:scale-[1.02]"
-            />
-          </div>
+        <div className="aspect-[16/9] overflow-hidden rounded-ds-md border border-ds-border bg-ds-surface-2">
+          <img
+            src={image}
+            alt={title}
+            loading="lazy"
+            className="size-full object-contain transition-transform duration-ds-normal ease-ds-emphasized group-hover:scale-[1.02]"
+          />
         </div>
       )}
 
-      {/* Body. Tightened type scale (silan, 2026-05-22): a publications
-          card is a list item, not a hero — drop every level by one step.
-          Title md (was xl), abstract sm (was base), authors xs (was sm),
-          meta line stays xs but loses its block-shouting all-caps look. */}
-      <div className="flex flex-1 flex-col gap-2.5 p-5 pt-2">
+      <div className="flex min-w-0 flex-1 flex-col gap-2.5">
         {/* Title. */}
-        <h3 className="text-ds-md font-semibold leading-snug tracking-[-0.01em] text-ds-fg">
+        <h3 className="text-ds-lg font-semibold leading-snug tracking-[-0.02em] text-ds-fg sm:text-xl">
           {title}
         </h3>
 
-        {/* Award badge — split pill: dark venue acronym + red award name. */}
+        {/* Meta — rank first, then venue and date. */}
+        {(ccfRank || publicationType || venue || yearMonth) && (
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+            {ccfRank && <CcfBadge rank={ccfRank} />}
+            {publicationType && (
+              <span className="font-mono text-[0.625rem] font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
+                {publicationType}
+              </span>
+            )}
+            {venue && (venueUrl ? (
+              <a
+                href={venueUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-ds-sm font-semibold text-ds-fg transition-colors hover:text-ds-primary"
+              >
+                {venue}
+                <ExternalLink aria-hidden className="size-3" />
+              </a>
+            ) : (
+              <span className="text-ds-sm font-semibold text-ds-fg">{venue}</span>
+            ))}
+            {yearMonth && <span className="text-ds-xs font-mono text-ds-fg-subtle">{yearMonth}</span>}
+          </div>
+        )}
+
+        {venueFullName && (
+          venueUrl ? (
+            <a
+              href={venueUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-fit items-start gap-1 text-ds-xs leading-5 text-ds-fg-muted transition-colors hover:text-ds-primary"
+            >
+              <span>{venueFullName}</span>
+              <ExternalLink aria-hidden className="mt-0.5 size-3 shrink-0" />
+            </a>
+          ) : (
+            <p className="text-ds-xs leading-5 text-ds-fg-muted">{venueFullName}</p>
+          )
+        )}
+
+        {venueLocation && (
+          <span className="inline-flex items-center gap-1 text-ds-xs leading-5 text-ds-fg-subtle">
+            <MapPin aria-hidden className="size-3" />
+            {venueLocation}
+          </span>
+        )}
+
+        {/* Award is distinct from the venue rank, so it remains a quiet note. */}
         {award && (
           <div className="inline-flex w-fit overflow-hidden rounded-ds-sm text-ds-2xs font-semibold">
             {venueAcronym(venue) && (
@@ -184,48 +225,16 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
           </div>
         )}
 
-        {/* Meta row — type badge · venue · year-month.
-            Type badge is colour-coded so a peer-reviewed conference reads
-            differently from a preprint at a glance. Venue is rendered as
-            an emphasised foreground line (not the muted all-caps it was)
-            so KDD 2026 / Springer CCIS is the second thing the eye lands
-            on after the title. Date is trimmed to YYYY-MM. */}
-        {(publicationType || venue || yearMonth) && (
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            {publicationType && typeClass && (
-              <span
-                className={cn(
-                  'inline-flex items-center rounded-ds-sm border px-2 py-0.5',
-                  'text-[0.65rem] font-semibold uppercase tracking-[0.08em]',
-                  typeClass,
-                )}
-              >
-                {publicationType}
-              </span>
-            )}
-            {venue && (
-              <span className="text-ds-xs font-semibold text-ds-fg">
-                {venue}
-              </span>
-            )}
-            {yearMonth && (
-              <span className="text-ds-2xs font-mono text-ds-fg-subtle">
-                {yearMonth}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Abstract — short summary. Markdown so links / emphasis render. */}
+        {/* Abstract — a concise Markdown preview, not an essay in the list. */}
         {abstract && (
-          <Markdown className="text-ds-sm leading-relaxed text-ds-fg-muted [&>div]:my-0">
+          <Markdown className="text-ds-sm leading-6 text-ds-fg-muted [&>div]:!my-0 [&>div]:line-clamp-3">
             {abstract}
           </Markdown>
         )}
 
         {/* Authors — owner emphasised. */}
         {authors && (
-          <p className="text-ds-xs leading-relaxed text-ds-fg-subtle">
+          <p className="text-ds-xs leading-5 text-ds-fg-subtle">
             <span className="font-semibold text-ds-fg-muted">
               {t('resume.authors', { defaultValue: 'Authors' })}:{' '}
             </span>
@@ -248,16 +257,17 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
         )}
 
         {/* Links — outlined pills. */}
-        {(url || pdfUrl || githubUrl || blogUrl) && (
-          <div className="mt-auto flex flex-wrap gap-2 pt-1">
+        {(url || pdfUrl || githubUrl || slidesUrl || blogUrl) && (
+          <div className="mt-auto flex flex-wrap gap-2 pt-0.5">
             {url && <LinkPill href={url} icon={<FileText />} label="Paper" />}
             {pdfUrl && <LinkPill href={pdfUrl} icon={<FileText />} label="PDF" />}
-            {githubUrl && <LinkPill href={githubUrl} icon={<Github />} label="GitHub" />}
+            {githubUrl && <LinkPill href={githubUrl} icon={<Github />} label="Code" />}
+            {slidesUrl && <LinkPill href={slidesUrl} icon={<FileText />} label="Slides" />}
             {blogUrl && <LinkPill href={blogUrl} icon={<Newspaper />} label="Blog" />}
           </div>
         )}
       </div>
-    </motion.div>
+    </motion.article>
   );
 };
 

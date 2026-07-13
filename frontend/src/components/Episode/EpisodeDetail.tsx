@@ -5,7 +5,7 @@
 //
 // Wired directly to the episode + episode_series endpoints — independent of
 // BlogDetail (episode is its own content type, not a blog).
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
@@ -14,14 +14,15 @@ import { Seo } from '../Seo';
 import { fetchEpisode, fetchEpisodeSeries } from '../../api/episodes/episodeApi';
 import type { EpisodeData, EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from '../BlogStack/components/BlogContentRenderer';
+import { useRemoteResource } from '../../hooks/useRemoteResource';
+import { useSetPageTitle } from '../../layout/PageTitleContext';
 import {
-  ArticleFooter,
   KnowledgeBaseShell,
   type BookNavChapter,
   BrandLoading,
   ErrorState,
-  mockComments,
-  mockRecentLikers,
+  NetworkError,
+  Button,
 } from '../ds';
 
 const SERIES_OVERVIEW_ID = '__series_overview__';
@@ -31,46 +32,49 @@ const EpisodeDetail: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
 
-  const [episode, setEpisode] = useState<EpisodeData | null>(null);
   const [seriesData, setSeriesData] = useState<EpisodeSeriesData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeChapter, setActiveChapter] = useState<string>('');
 
-  // Load the episode, then load its series so we can build the left rail.
+  const loadEpisode = useCallback(
+    () => slug ? fetchEpisode(slug, language as 'en' | 'zh') : Promise.resolve(null),
+    [language, slug],
+  );
+  const episodeResource = useRemoteResource<EpisodeData>(slug, loadEpisode);
+  const episode = episodeResource.data;
+
+  useSetPageTitle(
+    episode
+      ? episode.title
+      : episodeResource.status === 'not-found'
+        ? (language === 'en' ? 'Episode not found' : '未找到该集')
+        : episodeResource.status === 'error'
+          ? (language === 'en' ? 'Episode unavailable' : '内容暂不可用')
+          : null,
+  );
+
+  // Series metadata is an optional enhancement around the canonical episode
+  // resource. A series failure must not hide an otherwise readable episode.
   useEffect(() => {
-    if (!slug) return;
+    if (!episode) {
+      setSeriesData(null);
+      return;
+    }
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    fetchEpisode(slug, language as 'en' | 'zh')
-      .then(async (ep) => {
-        if (cancelled || !ep) {
-          if (!cancelled) setError(language === 'en' ? 'Episode not found' : '未找到该集');
-          setLoading(false);
-          return;
-        }
-        setEpisode(ep);
-        setActiveChapter(ep.id);
-        if (ep.series_slug) {
-          const series = await fetchEpisodeSeries(
-            ep.series_slug,
-            language as 'en' | 'zh',
-          ).catch(() => null);
+    setActiveChapter(episode.id);
+    setSeriesData(null);
+    if (episode.series_slug) {
+      void fetchEpisodeSeries(episode.series_slug, language as 'en' | 'zh')
+        .then((series) => {
           if (!cancelled) setSeriesData(series);
-        }
-        if (!cancelled) setLoading(false);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setError(language === 'en' ? 'Failed to load episode' : '加载失败');
-          setLoading(false);
-        }
-      });
+        })
+        .catch(() => {
+          if (!cancelled) setSeriesData(null);
+        });
+    }
     return () => {
       cancelled = true;
     };
-  }, [slug, language]);
+  }, [episode, language]);
 
   const chapters: BookNavChapter[] = useMemo(() => {
     if (!seriesData) return [];
@@ -100,13 +104,31 @@ const EpisodeDetail: React.FC = () => {
     [episode?.content],
   );
 
-  if (loading) return <BrandLoading />;
-  if (error || !episode) {
+  if (episodeResource.status === 'loading') return <BrandLoading />;
+  if (episodeResource.status === 'error') {
+    return <NetworkError onRetry={episodeResource.reload} />;
+  }
+  if (!episode) {
     return (
-      <ErrorState
-        title={language === 'en' ? 'Episode unavailable' : '加载失败'}
-        description={error || ''}
-      />
+      <>
+        <Seo
+          title={language === 'en' ? 'Episode not found' : '未找到该集'}
+          description={language === 'en' ? 'This public episode could not be found.' : '未找到该公开内容。'}
+          path={`/episodes/${slug ?? ''}`}
+          noindex
+          lang={language as 'en' | 'zh'}
+        />
+        <ErrorState
+          variant="page"
+          title={language === 'en' ? 'Episode not found' : '未找到该集'}
+          description={language === 'en' ? 'This episode does not exist or is not public.' : '该内容不存在或尚未公开。'}
+          actions={
+            <Button variant="outline" size="sm" onClick={() => navigate('/blog')}>
+              {language === 'en' ? 'Back to writing' : '返回文章列表'}
+            </Button>
+          }
+        />
+      </>
     );
   }
 
@@ -133,8 +155,6 @@ const EpisodeDetail: React.FC = () => {
         chapters={chapters}
         currentChapterId={activeChapter}
         wordCount={wordCount}
-        likes={2047}
-        commentsCount={94}
       >
         {isOverview ? (
           <>
@@ -196,33 +216,10 @@ const EpisodeDetail: React.FC = () => {
             <BlogContentRenderer
               content={episode.content || []}
               isWideScreen={true}
-              userAnnotations={{}}
-              annotations={{}}
-              showAnnotationForm={null}
-              newAnnotationText=""
-              selectedText={null}
-              highlightedAnnotation={null}
-              onTextSelection={() => {}}
-              onToggleAnnotation={() => {}}
-              onSetShowAnnotationForm={() => {}}
-              onSetNewAnnotationText={() => {}}
-              onAddUserAnnotation={() => {}}
-              onRemoveUserAnnotation={() => {}}
-              onHighlightAnnotation={() => {}}
-              onCancelAnnotation={() => {}}
+              readOnly
             />
           </div>
         )}
-
-        <ArticleFooter
-          likes={2047}
-          recentLikers={mockRecentLikers}
-          contributors={['Silan Hu']}
-          publishedAt={episode.publish_date || ''}
-          viewCount={1296204}
-          ipRegion="Singapore"
-          comments={mockComments}
-        />
       </KnowledgeBaseShell>
     </motion.div>
   );

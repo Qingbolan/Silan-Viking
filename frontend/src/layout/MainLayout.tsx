@@ -1,9 +1,12 @@
-import React, { ReactNode, useRef, useEffect } from 'react';
+import React, { ReactNode, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
 import TopNavigation, { NavBefore, NavAfter, NavAvatar } from './TopNavigation';
 import { useTheme } from '../components/ThemeContext';
+import { useLanguage } from '../components/LanguageContext';
+import { MobileTabBar } from '../components/ds';
+import Footer from './Footer';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -14,11 +17,20 @@ interface MainLayoutProps {
 // inside a rounded "tab content" window — like a browser tab.
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { colors, isDarkMode } = useTheme();
+  const { language } = useLanguage();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   // The progress bar is driven straight through a ref — writing `transform`
   // on every animation frame, never via React state, so scrolling does not
   // re-render MainLayout (and the heavy NoiseBackground) on every event.
   const progressRef = useRef<HTMLDivElement | null>(null);
+
+  // The app scrolls inside the browser-window surface, not window. Route
+  // changes therefore reset this owner once, centrally; page components do
+  // not guess which scroll container happens to be active.
+  useLayoutEffect(() => {
+    document.getElementById('browser-window')?.scrollTo({ top: 0, left: 0 });
+  }, [pathname]);
 
   // Layered graphite (dark) / paper (light): the desk is the deepest
   // layer, the content window sits a step above it. The desk base stays
@@ -79,9 +91,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div
-      className="relative flex h-screen w-screen flex-col overflow-hidden"
+      className="relative flex h-dvh w-full flex-col overflow-hidden"
       style={{ backgroundColor: deskBg }}
     >
+      <a
+        href="#browser-window"
+        onClick={(event) => {
+          event.preventDefault();
+          document.getElementById('browser-window')?.focus();
+        }}
+        className="fixed left-4 top-2 z-60 -translate-y-16 rounded-ds-md bg-ds-fg px-4 py-2 text-ds-sm font-medium text-ds-bg shadow-ds-3 transition-transform focus:translate-y-0"
+      >
+        {language === 'zh' ? '跳到主要内容' : 'Skip to main content'}
+      </a>
+
       {/* Desk material — plain neutral surface (deskBg). Per silan
           2026-05-22: drop the NUS-duo NoiseBackground entirely, the
           orange→blue gradient was competing with content. */}
@@ -131,6 +154,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* ── Content window: the "browser tab" ── */}
       <motion.main
         id="browser-window"
+        tabIndex={-1}
+        aria-label={language === 'zh' ? '页面主要内容' : 'Page content'}
         className="relative z-10 mx-1.5 mb-1.5 flex-1 overflow-y-auto rounded-xl sm:mx-2 sm:mb-2"
         style={{ backgroundColor: windowBg }}
         initial={{ opacity: 0, y: 8 }}
@@ -155,10 +180,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {/* Content-window background — plain windowBg (set on motion.main).
             Per silan 2026-05-22: dropped the inner NoiseBackground too. */}
 
-        <div className="relative z-10 mx-auto px-4 pb-16 pt-2 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto px-4 pt-2 sm:px-6 lg:px-8">
           {children}
         </div>
+        <Footer />
       </motion.main>
+
+      {/* Mobile-only glass dock — the primary nav on viewports where the
+          desktop chrome capsules (NavBefore/NavAfter) are hidden. Purely
+          `fixed` + z-40, floating above scrolling content like iOS's own
+          floating tab bars — it never reserves layout space of its own. */}
+      <MobileTabBar />
     </div>
   );
 };

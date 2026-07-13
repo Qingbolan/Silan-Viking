@@ -10,12 +10,11 @@ import { BookOpen, Play } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
+import { useBlogEngagement } from './hooks/useBlogEngagement';
 import {
   ArticleFooter,
   KnowledgeBaseShell,
   type BookNavChapter,
-  mockComments,
-  mockRecentLikers,
 } from '../ds';
 
 interface ArticleDetailLayoutProps {
@@ -76,6 +75,12 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 }) => {
   const { language } = useLanguage();
   const [activeChapter, setActiveChapter] = useState<string>(ARTICLE_ID);
+  const engagement = useBlogEngagement({
+    postId: post.id,
+    initialLikes: post.likes ?? 0,
+    initialLiked: Boolean(post.isLikedByUser),
+    language,
+  });
 
   // Reset to top whenever a new article loads under the same route.
   useEffect(() => {
@@ -106,8 +111,8 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
     return () => obs.disconnect();
   }, [post.id]);
 
-  const likes = post.likes ?? 2047;
-  const commentsCount = 94;
+  const likes = engagement.likes;
+  const commentsCount = engagement.commentsCount;
 
   const chapters: BookNavChapter[] = useMemo(
     () => [
@@ -189,12 +194,24 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
         <ArticleFooter
           likes={likes}
-          recentLikers={mockRecentLikers}
+          liked={engagement.liked}
+          likePending={engagement.likePending}
           contributors={[typeof post.author === 'string' ? post.author : 'Silan Hu']}
-          publishedAt={post.publishDate || '2026-04-15'}
-          viewCount={post.views ?? 1296204}
-          ipRegion="Singapore"
-          comments={mockComments}
+          publishedAt={post.publishDate}
+          viewCount={post.views}
+          shareTitle={title}
+          comments={engagement.comments}
+          commentsState={engagement.commentsState}
+          commentsError={engagement.commentsError}
+          commentSubmitting={engagement.commentSubmitting}
+          interactionError={engagement.interactionError}
+          onLike={engagement.toggleLike}
+          onRetryComments={engagement.reloadComments}
+          onComment={engagement.submitComment}
+          onCommentLike={engagement.toggleCommentLike}
+          isCommentLikePending={engagement.isCommentLikePending}
+          onCommentDelete={engagement.deleteComment}
+          isCommentDeletePending={engagement.isCommentDeletePending}
         />
       </KnowledgeBaseShell>
     </motion.div>

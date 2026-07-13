@@ -13,15 +13,14 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen, Calendar, Clock, User } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
-import { fetchEpisodeSeries } from '../../api';
+import { fetchEpisodeSeries } from '../../api/episodes/episodeApi';
 import type { EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
+import { useBlogEngagement } from './hooks/useBlogEngagement';
 import {
   ArticleFooter,
   KnowledgeBaseShell,
   type BookNavChapter,
-  mockComments,
-  mockRecentLikers,
 } from '../ds';
 
 interface SeriesDetailLayoutProps {
@@ -68,6 +67,12 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   // Active chapter: the current episode id, or the overview sentinel
   // when the user lands on / clicks the series cover.
   const [activeChapter, setActiveChapter] = useState<string>(post.id);
+  const engagement = useBlogEngagement({
+    postId: post.id,
+    initialLikes: post.likes ?? 0,
+    initialLiked: Boolean(post.isLikedByUser),
+    language,
+  });
 
   // Reset chapter target when the underlying post (episode) changes —
   // BlogDetail re-renders with a new `post` after navigation.
@@ -129,8 +134,8 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
         chapters={chapters}
         currentChapterId={activeChapter}
         wordCount={wordCount}
-        likes={post.likes ?? 2047}
-        commentsCount={94}
+        likes={engagement.likes}
+        commentsCount={engagement.commentsCount}
       >
         {isOverview ? (
           // Series cover — title, episode count, abstract / description, and
@@ -234,13 +239,25 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
         )}
 
         <ArticleFooter
-          likes={post.likes ?? 2047}
-          recentLikers={mockRecentLikers}
+          likes={engagement.likes}
+          liked={engagement.liked}
+          likePending={engagement.likePending}
           contributors={[typeof post.author === 'string' ? post.author : 'Silan Hu']}
-          publishedAt={post.publishDate || '2026-04-15'}
-          viewCount={post.views ?? 1296204}
-          ipRegion="Singapore"
-          comments={mockComments}
+          publishedAt={post.publishDate}
+          viewCount={post.views}
+          shareTitle={post.title}
+          comments={engagement.comments}
+          commentsState={engagement.commentsState}
+          commentsError={engagement.commentsError}
+          commentSubmitting={engagement.commentSubmitting}
+          interactionError={engagement.interactionError}
+          onLike={engagement.toggleLike}
+          onRetryComments={engagement.reloadComments}
+          onComment={engagement.submitComment}
+          onCommentLike={engagement.toggleCommentLike}
+          isCommentLikePending={engagement.isCommentLikePending}
+          onCommentDelete={engagement.deleteComment}
+          isCommentDeletePending={engagement.isCommentDeletePending}
         />
       </KnowledgeBaseShell>
     </motion.div>

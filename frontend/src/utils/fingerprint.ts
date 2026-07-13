@@ -37,7 +37,9 @@ export function getClientFingerprint(): string {
   try {
     const existing = localStorage.getItem(STORAGE_KEY);
     if (existing) return existing;
-  } catch {}
+  } catch {
+    // Storage can be unavailable in privacy-restricted contexts.
+  }
 
   const raw = generateRawFingerprint();
   // Add a random nonce once to avoid collisions across users sharing exact env
@@ -45,14 +47,17 @@ export function getClientFingerprint(): string {
   const fp = `${raw}-${nonce}`;
   try {
     localStorage.setItem(STORAGE_KEY, fp);
-  } catch {}
+  } catch {
+    // The in-memory value still works for the current page lifetime.
+  }
   return fp;
 }
 
 export function resetClientFingerprint(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+  } catch {
+    // Reset is best-effort when storage access is blocked.
+  }
 }
-
 

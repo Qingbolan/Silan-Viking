@@ -6,8 +6,8 @@ import { ThumbsUp, MessageCircle } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
 interface EngagementFABProps {
-  likes: number;
-  comments: number;
+  likes?: number;
+  comments?: number;
   onLikeClick?: () => void;
   onCommentClick?: () => void;
 }
@@ -51,19 +51,26 @@ const EngagementFAB: React.FC<EngagementFABProps> = ({
   onCommentClick,
 }) => {
   return (
-    <div className="fixed bottom-6 right-4 z-40 flex flex-col gap-3 sm:right-6">
-      <FabPill
-        icon={<ThumbsUp size={18} />}
-        count={likes}
-        ariaLabel="Likes"
-        onClick={onLikeClick}
-      />
-      <FabPill
-        icon={<MessageCircle size={18} />}
-        count={comments}
-        ariaLabel="Comments"
-        onClick={onCommentClick}
-      />
+    // Mobile clears the floating MobileTabBar dock (fixed bottom-3, ~46px
+    // tall) with extra bottom offset; sm+ drops back to sitting directly
+    // above the viewport edge since the dock is desktop-hidden there.
+    <div className="fixed bottom-20 right-4 z-30 flex flex-col gap-3 sm:bottom-6 sm:right-6">
+      {typeof likes === 'number' && (
+        <FabPill
+          icon={<ThumbsUp size={18} />}
+          count={likes}
+          ariaLabel="Likes"
+          onClick={onLikeClick}
+        />
+      )}
+      {typeof comments === 'number' && (
+        <FabPill
+          icon={<MessageCircle size={18} />}
+          count={comments}
+          ariaLabel="Comments"
+          onClick={onCommentClick}
+        />
+      )}
     </div>
   );
 };

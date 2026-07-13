@@ -29,13 +29,13 @@ const SectionCard: React.FC<SectionCardProps> = ({
 
   return (
     <motion.section
-      className="bg-theme-surface rounded-xl p-6 shadow-sm transition-shadow duration-300 hover:shadow-md sm:p-8"
+      className="bg-theme-surface rounded-xl p-4 shadow-ds-1 transition-shadow duration-300 hover:shadow-ds-2 sm:p-6"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay }}
       aria-labelledby={sectionId}
     >
-      <header className="mb-8 flex justify-center">
+      <header className="mb-4 flex justify-center sm:mb-6">
         <h3
           id={sectionId}
           className={

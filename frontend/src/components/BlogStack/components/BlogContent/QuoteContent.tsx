@@ -40,12 +40,11 @@ export const QuoteContent: React.FC<QuoteContentProps> = ({ item }) => {
                   p: ({ node, ...props }) => (
                     <p
                       {...props}
-                      className={`text-lg sm:text-xl lg:text-2xl leading-relaxed text-theme-text-primary font-normal italic tracking-wide ${props.className || ''}`.trim()}
+                      className={`font-article text-lg sm:text-xl lg:text-2xl leading-[1.6] text-theme-text-primary font-normal ${props.className || ''}`.trim()}
                       style={{
                         textRendering: 'optimizeLegibility',
                         WebkitFontSmoothing: 'antialiased',
                         MozOsxFontSmoothing: 'grayscale',
-                        lineHeight: '1.6'
                       }}
                     />
                   ),
@@ -61,7 +60,7 @@ export const QuoteContent: React.FC<QuoteContentProps> = ({ item }) => {
                       return (
                         <code
                           {...props}
-                          className={`px-1.5 py-0.5 rounded bg-theme-surface-secondary text-theme-primary ${className || ''}`.trim()}
+                          className={`px-1.5 py-0.5 rounded bg-theme-surface-secondary text-theme-text-primary ${className || ''}`.trim()}
                         >
                           {children}
                         </code>
@@ -88,16 +87,16 @@ export const QuoteContent: React.FC<QuoteContentProps> = ({ item }) => {
                     </div>
                   ),
                   thead: ({ className, ...props }) => (
-                    <thead {...props} className={`bg-gray-50 dark:bg-gray-800 ${className || ''}`.trim()} />
+                    <thead {...props} className={`bg-theme-surface-secondary ${className || ''}`.trim()} />
                   ),
                   tr: ({ className, ...props }) => (
-                    <tr {...props} className={`border-b last:border-0 border-gray-200 dark:border-gray-700 ${className || ''}`.trim()} />
+                    <tr {...props} className={`border-b last:border-0 border-theme-card-border ${className || ''}`.trim()} />
                   ),
                   th: ({ className, ...props }) => (
-                    <th {...props} className={`text-left font-semibold px-3 py-2 align-top border border-gray-200 dark:border-gray-700 ${className || ''}`.trim()} />
+                    <th {...props} className={`text-left font-semibold px-3 py-2 align-top border border-theme-card-border ${className || ''}`.trim()} />
                   ),
                   td: ({ className, ...props }) => (
-                    <td {...props} className={`px-3 py-2 align-top border border-gray-200 dark:border-gray-700 ${className || ''}`.trim()} />
+                    <td {...props} className={`px-3 py-2 align-top border border-theme-card-border ${className || ''}`.trim()} />
                   ),
                 }}
               >

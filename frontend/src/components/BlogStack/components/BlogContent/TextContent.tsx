@@ -14,6 +14,7 @@ import rehypeHighlight from 'rehype-highlight';
 interface TextContentProps {
   item: BlogContent;
   index: number;
+  interactiveAnnotations: boolean;
   userAnnotations: Record<string, UserAnnotation>;
   annotations: Record<string, boolean>;
   showAnnotationForm: string | null;
@@ -33,6 +34,7 @@ interface TextContentProps {
 export const TextContent: React.FC<TextContentProps> = ({
   item,
   index,
+  interactiveAnnotations,
   userAnnotations,
   annotations,
   showAnnotationForm,
@@ -117,13 +119,11 @@ export const TextContent: React.FC<TextContentProps> = ({
           if (isFirstParagraph && lastIndex === 0) {
             if (typeof processedBeforeText === 'string' || React.isValidElement(processedBeforeText)) {
               const dropCapResult = renderFirstLetterDropCap(processedBeforeText);
-              if (dropCapResult !== undefined && dropCapResult !== null) {
-                if (typeof dropCapResult === 'string' || React.isValidElement(dropCapResult)) {
-                  parts.push(dropCapResult as string | JSX.Element);
-                }
+              if (typeof dropCapResult === 'string' || React.isValidElement(dropCapResult)) {
+                parts.push(dropCapResult as string | JSX.Element);
+              } else {
+                parts.push(processedBeforeText as string | JSX.Element);
               }
-            } else if (typeof processedBeforeText === 'string' || React.isValidElement(processedBeforeText)) {
-              parts.push(processedBeforeText as string | JSX.Element);
             }
           } else if (typeof processedBeforeText === 'string' || React.isValidElement(processedBeforeText)) {
             parts.push(processedBeforeText as string | JSX.Element);
@@ -209,6 +209,7 @@ export const TextContent: React.FC<TextContentProps> = ({
                   </p>
                     {clickedAnnotation === annotationId && userAnnotations[annotationId]?.fingerprint === (typeof window !== 'undefined' ? (localStorage.getItem('client_fingerprint_v1') || '') : '') && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         onRemoveUserAnnotation(annotationId);
@@ -266,12 +267,12 @@ export const TextContent: React.FC<TextContentProps> = ({
       
       return (
         <>
-          <span 
+          <span className="sm:hidden">{firstChar}</span>
+          <span
             key="drop-cap"
-            className="float-left text-5xl lg:text-6xl xl:text-7xl leading-none 
-                       text-theme-accent font-bold italic mr-2 mt-1"
+            className="font-display hidden sm:block float-left text-5xl lg:text-6xl xl:text-7xl leading-none
+                       text-theme-accent font-bold mr-2 mt-1"
             style={{
-              fontFamily: 'Georgia, "Times New Roman", Charter, serif',
               lineHeight: '0.8',
               paddingTop: '4px'
             }}
@@ -316,7 +317,7 @@ export const TextContent: React.FC<TextContentProps> = ({
       const parts = text.split(/\s-\s(?!\[[ xX]\]\s)/); // exclude task-list markers
       if (parts.length >= 3) {
         const listText = parts
-          .map((s) => `- ${s.trim().replace(/^[•*+\-]\s*/, '')}`)
+          .map((s) => `- ${s.trim().replace(/^[•*+-]\s*/, '')}`)
           .join('\n');
         return (
           <ReactMarkdown
@@ -324,7 +325,12 @@ export const TextContent: React.FC<TextContentProps> = ({
             rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
             components={{
               a: ({ node, ...props }) => (
-                <a {...props} target="_blank" rel="noopener noreferrer" />
+                <a
+                  {...props}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`text-theme-accent underline underline-offset-2 decoration-theme-accent/40 hover:decoration-theme-accent transition-colors ${props.className || ''}`.trim()}
+                />
               ),
               ul: ({ node, ...props }) => {
                 const isTaskList = (props.className || '').includes('contains-task-list');
@@ -345,8 +351,8 @@ export const TextContent: React.FC<TextContentProps> = ({
     }
 
     // Normalize inline ordered list: supports "1. A - 2. B", "1) A 2) B", "1、A 2、B"
-    if (!text.includes('\n') && /^\s*\d+[\.)、]\s/.test(text) && /\s(?=\d+[\.)、]\s)/.test(text)) {
-      const listText = text.replace(/\s(?:-\s)?(?=\d+[\.)、]\s)/g, '\n');
+    if (!text.includes('\n') && /^\s*\d+[.)、]\s/.test(text) && /\s(?=\d+[.)、]\s)/.test(text)) {
+      const listText = text.replace(/\s(?:-\s)?(?=\d+[.)、]\s)/g, '\n');
       return (
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
@@ -388,7 +394,29 @@ export const TextContent: React.FC<TextContentProps> = ({
           rehypePlugins={[rehypeKatex as any, rehypeHighlight as any]}
           components={{
             a: ({ node, ...props }) => (
-              <a {...props} target="_blank" rel="noopener noreferrer" />
+              <a
+                {...props}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`text-theme-accent underline underline-offset-2 decoration-theme-accent/40 hover:decoration-theme-accent transition-colors ${props.className || ''}`.trim()}
+              />
+            ),
+            strong: ({ node, ...props }) => (
+              <strong {...props} className={`font-semibold text-theme-text-primary ${props.className || ''}`.trim()} />
+            ),
+            code: ({ node, className, children, ...props }) => (
+              <code
+                {...props}
+                className={`rounded bg-theme-surface px-[0.36rem] py-[0.12rem] font-article-mono text-[13px] font-medium text-theme-text-primary ${className || ''}`.trim()}
+              >
+                {children}
+              </code>
+            ),
+            blockquote: ({ node, ...props }) => (
+              <blockquote
+                {...props}
+                className={`my-5 border-l-2 border-theme-accent/40 pl-4 italic text-theme-secondary ${props.className || ''}`.trim()}
+              />
             ),
             // duplicate table overrides removed
             table: ({ node, children, ...tblProps }) => (
@@ -467,7 +495,7 @@ export const TextContent: React.FC<TextContentProps> = ({
 
     // Avoid over-aggressive inline list conversion: if text already looks like a single bullet
     // or contains URLs/code-like patterns, do not rewrite it.
-    const hasUrl = /https?:\/\//i.test(text) || /\[[^\]]+\]\([^\)]+\)/.test(text);
+    const hasUrl = /https?:\/\//i.test(text) || /\[[^\]]+\]\([^)]+\)/.test(text);
     const looksLikeSingleBullet = /^[-•]\s+.+$/.test(text) && !/\n/.test(text);
     if (!hasUrl && !looksLikeSingleBullet) {
       // Pattern: many inline segments like " - Title: desc - Title: desc - Title: desc"
@@ -519,7 +547,7 @@ export const TextContent: React.FC<TextContentProps> = ({
       <div 
         id={item.id}
         className="relative"
-        onMouseUp={onTextSelection}
+        onMouseUp={interactiveAnnotations ? onTextSelection : undefined}
       >
         <div className="prose prose-lg max-w-none">
           {(() => {
@@ -528,20 +556,19 @@ export const TextContent: React.FC<TextContentProps> = ({
             if (isHeader || annotatedContent.hasBlockElements) {
               // Render headers or content with block elements without <p> wrapper
               return (
-                <div className="text-theme-primary selection:bg-theme-accent/20">
+                <div className="text-theme-text-primary selection:bg-theme-accent/20">
                   {annotatedContent.content}
                 </div>
               );
             } else {
               // Render regular text with <p> wrapper
               return (
-                <p className={`text-theme-primary leading-relaxed tracking-wide font-normal 
-                               text-justify hyphens-auto selection:bg-theme-accent/20 
-                               sm:text-base lg:text-lg xl:leading-[1.8] ${
-                                 isFirstParagraph ? 'first-letter:text-theme-accent first-letter:font-bold first-letter:italic' : ''
+                <p className={`font-article text-theme-text-primary leading-[1.8] font-normal
+                               selection:bg-theme-accent/20
+                               text-[15px] sm:text-base lg:text-[17px] ${
+                                 isFirstParagraph ? 'first-letter:text-theme-accent first-letter:font-bold' : ''
                                }`}
-                   style={{ 
-                     fontFamily: 'Georgia, "Times New Roman", Charter, serif',
+                   style={{
                      textRendering: 'optimizeLegibility',
                      WebkitFontSmoothing: 'antialiased',
                      MozOsxFontSmoothing: 'grayscale'
@@ -554,7 +581,7 @@ export const TextContent: React.FC<TextContentProps> = ({
         </div>
 
         {/* Annotation Count Badge - Right Side Indicator */}
-        {contentAnnotations.length > 0 && (
+        {interactiveAnnotations && contentAnnotations.length > 0 && (
           <div className="absolute -right-16 top-0 hidden lg:flex flex-col items-center">
             <div className="flex items-center justify-center w-8 h-8 rounded-full 
                             bg-theme-accent/10 border border-theme-accent/30 
@@ -571,9 +598,10 @@ export const TextContent: React.FC<TextContentProps> = ({
       </div>
 
       {/* Author's Original Annotation */}
-      {item.annotation && (
+      {item.annotation && interactiveAnnotations && (
         <div className="mt-8 border-l-2 border-theme-accent/30 pl-6">
           <button
+            type="button"
             onClick={() => onToggleAnnotation(item.id)}
             className="inline-flex items-center gap-2 text-sm font-medium text-theme-accent 
                        hover:text-theme-accent-hover transition-colors duration-200 
@@ -607,11 +635,23 @@ export const TextContent: React.FC<TextContentProps> = ({
         </div>
       )}
 
+      {item.annotation && !interactiveAnnotations && (
+        <aside className="mt-8 border-l-2 border-theme-accent/30 pl-6">
+          <div className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-theme-accent">
+            <Quote size={14} className="stroke-2" />
+            <span>{language === 'en' ? 'Author\'s Note' : '作者批注'}</span>
+          </div>
+          <p className="text-sm italic leading-relaxed text-theme-secondary">
+            {item.annotation}
+          </p>
+        </aside>
+      )}
+
 
 
       {/* Annotation Form - Modal Popup */}
       <AnimatePresence>
-        {showAnnotationForm === item.id && (
+        {interactiveAnnotations && showAnnotationForm === item.id && (
           <>
             {/* Backdrop */}
             <motion.div
@@ -664,6 +704,7 @@ export const TextContent: React.FC<TextContentProps> = ({
                 <div className="flex items-center justify-between mt-4">
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={() => onAddUserAnnotation(item.id)}
                       disabled={!newAnnotationText.trim()}
                       className="px-4 py-2 bg-theme-accent text-white rounded-lg 
@@ -675,6 +716,7 @@ export const TextContent: React.FC<TextContentProps> = ({
                       {language === 'en' ? 'Save' : '保存'}
                     </button>
                     <button
+                      type="button"
                       onClick={onCancelAnnotation}
                       className="px-4 py-2 text-theme-secondary hover:text-theme-primary 
                                  hover:bg-theme-hover rounded-lg transition-all duration-200

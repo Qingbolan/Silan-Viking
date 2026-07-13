@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { ProfileHero, type ContactItem, type SocialItem } from '../../components/ds';
+import { useLanguage } from '../../components/LanguageContext';
+import { ProfileHero, type ContactItem, type HeroAction, type SocialItem } from '../../components/ds';
 import { resolveSocialLink } from '../../utils/socialPlatform';
 
 interface ContactInfo {
@@ -35,6 +36,8 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
   socialLinks = [],
   avatarSrc,
 }) => {
+  const { language } = useLanguage();
+  const zh = language === 'zh';
   const dsContacts = useMemo<ContactItem[]>(
     () =>
       (contacts ?? []).map((c) => ({
@@ -62,6 +65,14 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
     [socialLinks],
   );
 
+  const heroActions = useMemo<HeroAction[]>(() => {
+    const email = contacts.find((contact) => contact.type === 'email')?.value;
+    return [
+      { label: zh ? '浏览项目' : 'Explore work', href: '/projects', primary: true },
+      ...(email ? [{ label: zh ? '联系我' : 'Start a conversation', href: `mailto:${email}` }] : []),
+    ];
+  }, [contacts, zh]);
+
   return (
     <ProfileHero
       name={name}
@@ -69,6 +80,7 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
       tagline={current}
       contacts={dsContacts}
       socials={dsSocials}
+      actions={heroActions}
       avatarSrc={avatarSrc}
     />
   );

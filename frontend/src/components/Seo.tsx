@@ -12,11 +12,13 @@
 //        jsonLd={blogPostingJsonLd(post)} />
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { mediaUrl } from '../api/utils';
+import { PUBLIC_ORIGIN, publicAssetUrl, siteUrl } from '../utils/publicAsset';
 
 /* --- Site-wide defaults -------------------------------------------------- */
 
-/** Canonical origin — every canonical / og:url is built from this. */
-export const SITE_URL = 'https://silan.tech';
+/** Canonical site URL — origin plus Vite base for subpath deployments. */
+export const SITE_URL = siteUrl('/').replace(/\/$/, '');
 /** Brand name — appended to page titles and used as og:site_name. */
 export const SITE_NAME = 'Silan Hu';
 /** Default share image (absolute path under SITE_URL). */
@@ -46,7 +48,11 @@ export interface SeoProps {
 
 /** Resolve an image path/URL to an absolute URL. */
 const absoluteUrl = (value: string): string =>
-  value.startsWith('http') ? value : `${SITE_URL}${value.startsWith('/') ? '' : '/'}${value}`;
+  value.startsWith('http')
+    ? value
+    : value.startsWith('/api/')
+      ? mediaUrl(value)
+      : `${PUBLIC_ORIGIN}${publicAssetUrl(value)}`;
 
 export const Seo: React.FC<SeoProps> = ({
   title,
@@ -59,7 +65,7 @@ export const Seo: React.FC<SeoProps> = ({
   jsonLd,
 }) => {
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — AI Researcher & Full Stack Developer`;
-  const canonical = `${SITE_URL}${path}`;
+  const canonical = siteUrl(path);
   const ogImage = absoluteUrl(image);
 
   return (
@@ -111,7 +117,7 @@ export const blogPostingJsonLd = (post: {
   '@type': 'BlogPosting',
   headline: post.title,
   description: post.description,
-  url: `${SITE_URL}${post.path}`,
+  url: siteUrl(post.path),
   ...(post.image && { image: absoluteUrl(post.image) }),
   ...(post.datePublished && { datePublished: post.datePublished }),
   ...(post.dateModified && { dateModified: post.dateModified }),
@@ -130,7 +136,7 @@ export const creativeWorkJsonLd = (work: {
   '@type': work.type || 'CreativeWork',
   name: work.title,
   description: work.description,
-  url: `${SITE_URL}${work.path}`,
+  url: siteUrl(work.path),
   ...(work.image && { image: absoluteUrl(work.image) }),
   author: { '@type': 'Person', name: SITE_NAME },
 });

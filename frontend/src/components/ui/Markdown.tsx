@@ -21,9 +21,39 @@ import remarkGfm from 'remark-gfm';
 interface MarkdownProps {
   children: string;
   className?: string;
+  /** Page-level title already rendered outside this embedded markdown. */
+  documentTitle?: string;
 }
 
-const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
+const normalizedHeading = (value: string): string =>
+  value
+    .replace(/[`*_~]/g, '')
+    .replace(/[—–]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleLowerCase();
+
+const embeddedBody = (markdown: string, documentTitle?: string): string => {
+  if (!documentTitle) return markdown;
+  const leadingHeading = markdown.match(/^\s*#\s+([^\r\n]+)\r?\n/);
+  if (!leadingHeading || normalizedHeading(leadingHeading[1]) !== normalizedHeading(documentTitle)) {
+    return markdown;
+  }
+  return markdown.slice(leadingHeading[0].length).replace(/^\s*\r?\n/, '');
+};
+
+const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle }) => {
+  const content = embeddedBody(children, documentTitle);
+  // When a body still owns a level-one section heading (for example a Part
+  // titled "Where it stands"), shift its complete local outline down once.
+  // Bodies whose duplicate document title was removed keep their existing
+  // h2/h3 hierarchy intact.
+  const shiftsLocalOutline = /^#(?!#)\s+/m.test(content);
+  const H2 = shiftsLocalOutline ? 'h3' : 'h2';
+  const H3 = shiftsLocalOutline ? 'h4' : 'h3';
+  const H4 = shiftsLocalOutline ? 'h5' : 'h4';
+  const H5 = shiftsLocalOutline ? 'h6' : 'h5';
+
   return (
     <div
       // The `data-ds` opt-out unhooks index.css's global heading sizes
@@ -36,32 +66,34 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
         remarkPlugins={[remarkGfm]}
         unwrapDisallowed={true}
         components={{
+          // Markdown is always embedded inside a route or component that
+          // already owns the page-level h1, so its outline starts at h2.
           h1: ({ node, ...props }) => (
-            <h1
+            <h2
               className="mt-8 mb-4 text-[32px] font-bold leading-[1.3] tracking-[-0.01em] text-theme-primary scroll-mt-24"
               {...props}
             />
           ),
           h2: ({ node, ...props }) => (
-            <h2
+            <H2
               className="mt-7 mb-3 text-[22px] font-semibold leading-[1.4] tracking-[-0.01em] text-theme-primary scroll-mt-24"
               {...props}
             />
           ),
           h3: ({ node, ...props }) => (
-            <h3
+            <H3
               className="mt-6 mb-2 text-[18px] font-semibold leading-[1.45] tracking-[-0.01em] text-theme-primary scroll-mt-24"
               {...props}
             />
           ),
           h4: ({ node, ...props }) => (
-            <h4
+            <H4
               className="mt-5 mb-2 text-[16px] font-semibold leading-[1.5] tracking-[-0.01em] text-theme-primary scroll-mt-24"
               {...props}
             />
           ),
           h5: ({ node, ...props }) => (
-            <h5
+            <H5
               className="mt-5 mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-theme-tertiary"
               {...props}
             />
@@ -175,11 +207,11 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className }) => {
             <td className="border border-theme-card px-3 py-2 text-theme-secondary" {...props} />
           ),
           img: ({ node, ...props }) => (
-            <img className="my-5 rounded-lg" loading="lazy" {...props} />
+            <img className="my-5 rounded-lg" loading="lazy" {...props} alt={props.alt ?? ''} />
           ),
         }}
       >
-        {children}
+        {content}
       </ReactMarkdown>
     </div>
   );
