@@ -241,11 +241,14 @@ mod tests {
 
     #[test]
     fn parse_series_target_is_a_two_segment_episode_uri() {
-        let target = ProposalTarget::parse("silan://resources/episode/using-silan-viking")
-            .expect("parse");
+        let target =
+            ProposalTarget::parse("silan://resources/episode/using-silan-viking").expect("parse");
         match target {
             ProposalTarget::Series(uri) => {
-                assert_eq!(uri.to_string(), "silan://resources/episode/using-silan-viking");
+                assert_eq!(
+                    uri.to_string(),
+                    "silan://resources/episode/using-silan-viking"
+                );
             }
             _ => panic!("expected Series target"),
         }

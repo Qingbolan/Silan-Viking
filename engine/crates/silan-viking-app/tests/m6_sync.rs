@@ -93,6 +93,31 @@ fn sync_writes_resume_part_entries() {
 }
 
 #[test]
+fn sync_writes_schema_routed_side_table_fields() {
+    let ws = workspace();
+    let mut sink = SqliteSink::open_in_memory().expect("in-memory sink");
+    ws.sync_into(&mut sink).expect("sync succeeds");
+    let conn = sink.connection();
+
+    let (license, version): (String, String) = conn
+        .query_row(
+            "SELECT license, version FROM project_details LIMIT 1",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .expect("authored project detail row exists");
+    assert_eq!(license, "Apache-2.0");
+    assert_eq!(version, "0.8.4");
+
+    let priority: String = conn
+        .query_row("SELECT priority FROM idea_details LIMIT 1", [], |row| {
+            row.get(0)
+        })
+        .expect("authored idea detail row exists");
+    assert_eq!(priority, "high");
+}
+
+#[test]
 fn incremental_sync_of_unchanged_content_does_not_rewrite() {
     let ws = workspace();
     let mut sink = SqliteSink::open_in_memory().expect("in-memory sink");

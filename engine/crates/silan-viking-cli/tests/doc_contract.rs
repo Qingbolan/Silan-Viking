@@ -138,6 +138,24 @@ fn scaffolded_meta_toml_carries_a_stable_part_id() {
 }
 
 #[test]
+fn scaffolded_item_toml_carries_a_stable_item_id() {
+    let c = fresh_init();
+    let path = c.join("resources/projects/first-project/item.toml");
+    let first = std::fs::read_to_string(&path).expect("read item.toml");
+    let item_id = first
+        .lines()
+        .find(|line| line.trim_start().starts_with("item_id"))
+        .and_then(|line| line.split('"').nth(1))
+        .expect("item_id value");
+    assert!(item_id.starts_with("i_"), "ItemId must use the i_ prefix");
+
+    let (ok, output) = cli(&c, &["index", "sync"]);
+    assert!(ok, "sync must succeed: {output}");
+    let second = std::fs::read_to_string(&path).expect("re-read item.toml");
+    assert_eq!(first, second, "sync must not rewrite Item identity");
+}
+
+#[test]
 fn scaffolded_part_id_is_stable_across_a_re_read() {
     // `01` §1.4: `index sync` reads `part_id`, never rewrites it — so two
     // reads of a freshly scaffolded Part see the same id.

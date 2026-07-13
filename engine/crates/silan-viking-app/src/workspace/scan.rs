@@ -5,7 +5,7 @@
 //! guessed by a parser. The on-disk layout (`10` §10.4, `06` §6.2):
 //!
 //! ```text
-//!   content/resources/{type}/{item}/parts/{role}/{meta.toml, <lang>.<ext>}
+//!   content/resources/{type}/{item}/{item.toml, parts/{role}/{meta.toml, <lang>.<ext>}}
 //!   content/resources/episode/{series}/{item}/parts/{role}/...   (episodes)
 //! ```
 //!
@@ -53,6 +53,14 @@ pub enum ScanError {
     /// An episode series' `series.toml` was not valid TOML.
     #[error("malformed `series.toml` for episode series `{slug}`: {detail}")]
     MalformedSeries { slug: String, detail: String },
+
+    /// Every Item owns a persisted identity; sync never mints one.
+    #[error("missing `item.toml` for `{location}` — create it with `item_id = \"i_<ulid>\"`")]
+    MissingItemMeta { location: String },
+
+    /// `item.toml` exists but cannot supply a valid ItemId.
+    #[error("malformed `item.toml` for `{location}`: {detail}")]
+    MalformedItemMeta { location: String, detail: String },
 }
 
 /// A container series discovered on disk — the `series.toml` of one
@@ -347,9 +355,11 @@ fn build_item(kind: ContentKind, slug_name: &str, item_dir: &Path) -> Result<Ite
         }
     }
 
-    // The Item's content hash is the digest of its Parts' canonical bytes,
-    // joined in a stable order — enough for change detection.
-    let mut digest_source = String::new();
+    // Identity participates in the digest: migrating or deliberately
+    // repairing an item_id must force a projection rewrite even when the
+    // prose itself did not change.
+    let item_id = read_item_id(item_dir, kind, slug_name)?;
+    let mut digest_source = item_id.as_str().to_owned();
     for part in &parts {
         for file in part.files() {
             digest_source.push_str(file.hash().as_str());
@@ -359,8 +369,37 @@ fn build_item(kind: ContentKind, slug_name: &str, item_dir: &Path) -> Result<Ite
         ContentHash::of(digest_source.as_bytes()),
         scan_timestamp(item_dir),
     );
+    Ok(Item::new(item_id, kind, slug, uri, meta, parts))
+}
 
-    Ok(Item::new(ItemId::generate(), kind, slug, uri, meta, parts))
+/// Read the Item's stable identity from its root `item.toml`.
+///
+/// Identity is source data, exactly like each Part's `part_id`. Generating a
+/// new ULID during every scan disconnects runtime comments/views from their
+/// content after a rebuild, so missing or invalid metadata is a hard error.
+fn read_item_id(item_dir: &Path, kind: ContentKind, slug: &str) -> Result<ItemId, ScanError> {
+    let location = format!("{}/{slug}", kind.dir_name());
+    let path = item_dir.join("item.toml");
+    if !path.is_file() {
+        return Err(ScanError::MissingItemMeta { location });
+    }
+    let doc: toml::Value = read_file(&path)?
+        .parse()
+        .map_err(|error: toml::de::Error| ScanError::MalformedItemMeta {
+            location: location.clone(),
+            detail: error.to_string(),
+        })?;
+    let raw = doc
+        .get("item_id")
+        .and_then(toml::Value::as_str)
+        .ok_or_else(|| ScanError::MalformedItemMeta {
+            location: location.clone(),
+            detail: "missing string field `item_id`".to_owned(),
+        })?;
+    ItemId::parse(raw).map_err(|error| ScanError::MalformedItemMeta {
+        location,
+        detail: error.to_string(),
+    })
 }
 
 /// The optional declarations a Part `meta.toml` may carry. Each field is
@@ -630,6 +669,33 @@ mod tests {
         let mut out = Vec::new();
         collect_assets(&root.join("blog/bare-post"), &root, &mut out).expect("collect");
         assert!(out.is_empty());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn item_identity_is_persisted_and_stable_across_scans() {
+        let root = tmp_dir("stable-item-id");
+        let item = root.join("blog/stable-post");
+        std::fs::create_dir_all(&item).expect("mkdir");
+        std::fs::write(
+            item.join("item.toml"),
+            "item_id = \"i_01ARZ3NDEKTSV4RRFFQ69G5FAV\"\n",
+        )
+        .expect("write item metadata");
+
+        let first = read_item_id(&item, ContentKind::Blog, "stable-post").expect("first read");
+        let second = read_item_id(&item, ContentKind::Blog, "stable-post").expect("second read");
+        assert_eq!(first, second);
+        assert_eq!(first.as_str(), "i_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn missing_item_identity_is_rejected_instead_of_regenerated() {
+        let root = tmp_dir("missing-item-id");
+        let err = read_item_id(&root, ContentKind::Blog, "unstable")
+            .expect_err("missing item.toml must fail");
+        assert!(matches!(err, ScanError::MissingItemMeta { .. }));
         let _ = std::fs::remove_dir_all(&root);
     }
 }

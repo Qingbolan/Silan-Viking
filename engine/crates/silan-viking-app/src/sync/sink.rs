@@ -149,7 +149,8 @@ impl Sink for SqliteSink {
             return Err(SyncError::SchemaDrift(drift));
         }
 
-        // Phase 1a: ensure every Entity-backed table exists, even ones the
+        // Phase 1a: ensure every projection-owned Entity table exists, even
+        // ones the
         // batch carries zero rows for. Before this step, an entity-backed
         // table whose mapper produced no rows (e.g. `content_relation` when
         // the workspace has no relations) was never CREATE'd; after a
@@ -160,7 +161,9 @@ impl Sink for SqliteSink {
         // set, so the on-disk schema always matches the Entity layer
         // regardless of which kinds happen to have rows this sync.
         // (V2-7 from 2026-05-22 e2e.)
-        for (table, columns) in silan_viking_entities::all_entity_tables() {
+        // Runtime-owned tables are intentionally outside this set and remain
+        // untouched across syncs.
+        for (table, columns) in silan_viking_entities::all_projection_tables() {
             create_table(&tx, &table, &columns)?;
             tx.execute(&format!("DELETE FROM \"{table}\""), [])?;
         }
@@ -382,5 +385,31 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM ideas", [], |r| r.get(0))
             .expect("count");
         assert_eq!(count, 1, "a sync derives the whole table afresh");
+    }
+
+    #[test]
+    fn write_batch_preserves_runtime_owned_rows() {
+        let mut sink = SqliteSink::open_in_memory().expect("in-memory db");
+        sink.connection_mut()
+            .execute_batch(
+                "CREATE TABLE comments (id TEXT PRIMARY KEY, content TEXT);\n                 INSERT INTO comments (id, content) VALUES ('visitor-1', 'keep me');",
+            )
+            .expect("seed runtime row");
+
+        let mut set = RowSet::new();
+        set.push(Row::new("ideas").with("id", SqlValue::Text("i_new".to_owned())));
+        let mut batch = RowSetBatch::new();
+        batch.push(set);
+        sink.write_batch(&batch).expect("content sync");
+
+        let content: String = sink
+            .connection()
+            .query_row(
+                "SELECT content FROM comments WHERE id='visitor-1'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("runtime row survives");
+        assert_eq!(content, "keep me");
     }
 }

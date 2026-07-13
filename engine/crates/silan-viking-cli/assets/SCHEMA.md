@@ -15,6 +15,11 @@
 `field_types`, `types`, `relations`, `errors` — plus the `version` and
 `layout` scalars (see `docs/silan-viking/10` §10.2).
 
+Every Item directory also contains an `item.toml` with a lifetime-stable
+`item_id = "i_<ulid>"`. The CLI creates it when scaffolding the Item; sync
+only reads it. Rebuilding the projection must never mint a new identity,
+because comments, likes and views reference that id.
+
 ```yaml
 version: 1
 layout: latest-only
@@ -248,11 +253,17 @@ types:
           - { name: authors,          type: "list<string>", required: false, translatable: false }
           - { name: journal_name,     type: string,         required: false, translatable: true }
           - { name: conference_name,  type: string,         required: false, translatable: true }
+          - { name: conference_full_name, type: string,     required: false, translatable: true }
+          - { name: conference_url,   type: string,         required: false, translatable: false }
+          - { name: conference_location, type: string,      required: false, translatable: true }
+          - { name: ccf_rank,         type: "enum(A,B,C)", required: false, translatable: false }
           - { name: publication_type, type: "enum(journal,conference,workshop,preprint)", required: false, translatable: false }
           - { name: publication_date, type: date,           required: false, translatable: false }
           - { name: doi,              type: string,         required: false, translatable: false }
           - { name: url,              type: string,         required: false, translatable: false }
           - { name: pdf_url,          type: string,         required: false, translatable: false }
+          - { name: github_url,       type: string,         required: false, translatable: false }
+          - { name: slides_url,       type: string,         required: false, translatable: false }
           - { name: image_url,        type: string,         required: false, translatable: false }
           - { name: abstract,         type: text,           required: false, translatable: true }
           - { name: citation_count,   type: int,            required: false, translatable: false }

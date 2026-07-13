@@ -185,7 +185,8 @@ layers: **Collection → Item → Part → File**:
 | L2 object | What it is | Requirement | Invariant |
 |---|---|---|---|
 | `Collection` | A type directory; disk path `content/resources/{type}/` (blog / projects / ideas / episode / resume / update — 6 types) | #2 | Belongs to `ResourceNamespace`; collection-level Manifest registers its Items |
-| `Item` | A single entry (directory + several Parts + one Manifest) | #2 | `kind: ContentKind` distinguishes the type |
+| `Item` | A single entry (directory + `item.toml` + several Parts + one Manifest) | #2 | Has a lifetime-stable `ItemID`; `kind: ContentKind` distinguishes the type |
+| `ItemID` | Value object, `i_<ulid>` | #2 | Engine-generated at scaffold time; lifetime-immutable; written to the Item root's `item.toml`; sync never regenerates it |
 | `ContentKind` | Enum: `Blog/Project/Idea/Episode/Update/Resume` | #2 | The discriminant field of Item |
 | `Part` | A semantic part / one front-end tab | #2 | **Has a stable `PartID`**; identity not bound to filename; `role` is the semantic type |
 | `PartID` | Value object, `p_<ulid>` | #2 | Engine-generated; lifetime-immutable; written to `meta.toml` |
@@ -202,7 +203,8 @@ layers: **Collection → Item → Part → File**:
 
 ```
 content/resources/ideas/rust-context-engine/
-├── .silan-cache                  # ItemManifest
+├── item.toml                     # ★ Item identity is here
+├── .silan-cache                  # derived ItemManifest
 └── parts/
     ├── overview/
     │   ├── meta.toml              # ★ Part identity is here
@@ -212,6 +214,16 @@ content/resources/ideas/rust-context-engine/
         ├── meta.toml
         └── en.md
 ```
+
+`item.toml` is committed source data:
+
+```toml
+item_id = "i_01H8X7..."          # lifetime-immutable across rebuilds and renames
+```
+
+The database and runtime interaction tables use this value as the Item key.
+Generating it during scan would orphan comments, likes, and views on every
+content rebuild, so a missing or malformed `item.toml` is a hard scan error.
 
 `meta.toml` — a Part's identity and translation metadata:
 

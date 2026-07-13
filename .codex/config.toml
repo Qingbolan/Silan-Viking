@@ -1,0 +1,7 @@
+[mcp_servers.silan-viking]
+command = "silan-viking"
+args = [
+    "mcp",
+    "serve",
+    "--stdio",
+]

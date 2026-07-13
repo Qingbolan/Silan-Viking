@@ -94,7 +94,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "proposal create <uri> [--lang en] (--from-file <path> | --from-stdin)",
         ],
         "site" => &[
-            "site build|preview|check|status [--out PATH]",
+            "site build [--static-base <base>|--target nus] · site preview|check|status [--out PATH]",
             "site publish <uri> · site deploy [--dry-run|--confirm]",
             "site update-content [--dry-run|--confirm]",
             "site rollback · site promote <live-db> <snapshot-db> <content-commit>",
@@ -432,7 +432,10 @@ fn run(args: Vec<String>) -> Result<(), String> {
             }
         }
         ["mcp", "status"] => mcp_status(&opts.content_root),
-        ["site", "build"] => site_build(&opts.content_root, &opts.out_dir),
+        ["site", "build", flags @ ..] => {
+            let target = FrontendBuildTarget::parse_site_build_flags(flags)?;
+            site_build(&opts.content_root, &opts.out_dir, target)
+        }
         // `site preview` and `site build` used to be aliases — the 2026-05-21
         // e2e pass surfaced that `preview` produced only SEO artefacts and
         // never started anything you could open in a browser. Now `preview`
@@ -825,7 +828,10 @@ fn print_help(content_root: &Path) {
     println!();
 
     println!("{}", h("Publish verbs:"));
-    println!("  {}", d("site build|preview|check|status [--out PATH]"));
+    println!(
+        "  {}",
+        d("site build [--static-base <base>|--target nus] · site preview|check|status [--out PATH]")
+    );
     println!(
         "  {}",
         d("site publish <uri> · site deploy [--dry-run|--confirm]")
@@ -1704,8 +1710,10 @@ fn proposal_show(content_root: &Path, id: &str) -> Result<(), String> {
 /// URI must be a valid proposal target (Item, Part, or Series).
 fn proposal_create(content_root: &Path, args: &[&str]) -> Result<(), String> {
     if args.is_empty() {
-        return Err("usage: proposal create <uri> [--lang en] (--from-file <path> | --from-stdin)"
-            .to_owned());
+        return Err(
+            "usage: proposal create <uri> [--lang en] (--from-file <path> | --from-stdin)"
+                .to_owned(),
+        );
     }
     let uri = args[0].to_owned();
     let mut lang = "en".to_owned();
@@ -1746,7 +1754,9 @@ fn proposal_create(content_root: &Path, args: &[&str]) -> Result<(), String> {
     }
 
     if from_stdin && source.is_some() {
-        return Err("proposal create: pick either --from-file or --from-stdin, not both".to_owned());
+        return Err(
+            "proposal create: pick either --from-file or --from-stdin, not both".to_owned(),
+        );
     }
     let draft_body = if let Some(path) = source {
         std::fs::read_to_string(&path).map_err(|e| format!("reading {path}: {e}"))?
@@ -2190,7 +2200,129 @@ fn completion(shell: &str) -> Result<(), String> {
     }
 }
 
-fn site_build(content_root: &Path, out_dir: &Path) -> Result<(), String> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct FrontendBuildTarget {
+    static_base: Option<String>,
+}
+
+impl FrontendBuildTarget {
+    fn default() -> Self {
+        Self { static_base: None }
+    }
+
+    fn static_base(base: &str) -> Result<Self, String> {
+        let normalized = normalize_static_base(base)?;
+        if normalized == "/" {
+            return Ok(Self::default());
+        }
+        Ok(Self {
+            static_base: Some(normalized),
+        })
+    }
+
+    fn parse_site_build_flags(flags: &[&str]) -> Result<Self, String> {
+        let mut target = Self::default();
+        let mut i = 0;
+        while i < flags.len() {
+            let arg = flags[i];
+            if arg == "--static-base" || arg == "--base" {
+                let Some(value) = flags.get(i + 1) else {
+                    return Err(format!("site build: {arg} needs a base path"));
+                };
+                target = Self::static_base(value)?;
+                i += 2;
+            } else if arg == "--target" {
+                let Some(value) = flags.get(i + 1) else {
+                    return Err("site build: --target needs a target name".to_owned());
+                };
+                target = Self::named_target(value)?;
+                i += 2;
+            } else if let Some(value) = arg.strip_prefix("--static-base=") {
+                target = Self::static_base(value)?;
+                i += 1;
+            } else if let Some(value) = arg.strip_prefix("--base=") {
+                target = Self::static_base(value)?;
+                i += 1;
+            } else if let Some(value) = arg.strip_prefix("--target=") {
+                target = Self::named_target(value)?;
+                i += 1;
+            } else {
+                return Err(format!(
+                    "site build: unknown flag `{arg}` · expected --static-base <base> | --target nus"
+                ));
+            }
+        }
+        Ok(target)
+    }
+
+    fn named_target(target: &str) -> Result<Self, String> {
+        match target.trim() {
+            "default" => Ok(Self::default()),
+            "nus" => Self::static_base("/~silan-hu/"),
+            other => Err(format!("--target={other}: supported target aliases: nus")),
+        }
+    }
+
+    fn npm_script(&self) -> String {
+        if self.static_base.is_some() {
+            "build:static".to_owned()
+        } else {
+            "build".to_owned()
+        }
+    }
+
+    fn npm_args(&self) -> Vec<String> {
+        match &self.static_base {
+            Some(base) => vec!["run".to_owned(), self.npm_script(), "--".to_owned(), base.clone()],
+            None => vec!["run".to_owned(), self.npm_script()],
+        }
+    }
+
+    fn label(&self) -> &str {
+        self.static_base.as_deref().unwrap_or("default")
+    }
+
+    fn is_default(&self) -> bool {
+        self.static_base.is_none()
+    }
+}
+
+fn normalize_static_base(value: &str) -> Result<String, String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err("--static-base needs a non-empty base path".to_owned());
+    }
+    if trimmed.contains("://") {
+        return Err(format!("--static-base={trimmed}: expected a path, not a URL"));
+    }
+    let with_leading = if trimmed.starts_with('/') {
+        trimmed.to_owned()
+    } else {
+        format!("/{trimmed}")
+    };
+    Ok(if with_leading.ends_with('/') {
+        with_leading
+    } else {
+        format!("{with_leading}/")
+    })
+}
+
+fn site_build(
+    content_root: &Path,
+    out_dir: &Path,
+    target: FrontendBuildTarget,
+) -> Result<(), String> {
+    if !target.is_default() {
+        let project_root = content_root.parent().unwrap_or(content_root);
+        let dist = build_frontend_target(project_root, &target)?;
+        println!(
+            "built frontend target={} out={}",
+            target.label(),
+            dist.display()
+        );
+        return Ok(());
+    }
+
     // The base URL is a deploy-config value; default to a placeholder so
     // `site build` works offline. `--out` controls the artifact directory.
     let projector = silan_viking_site::SiteProjector::new("https://silan.tech");
@@ -2202,6 +2334,53 @@ fn site_build(content_root: &Path, out_dir: &Path) -> Result<(), String> {
         println!("artifact={}", artifact.display());
     }
     Ok(())
+}
+
+fn build_frontend_target(
+    project_root: &Path,
+    target: &FrontendBuildTarget,
+) -> Result<PathBuf, String> {
+    let frontend = project_root.join("frontend");
+    if !frontend.is_dir() {
+        return Err(format!(
+            "[frontend] {} not found — silan-viking expects a frontend/ next to content/",
+            frontend.display(),
+        ));
+    }
+    if which("npm").is_none() {
+        return Err(
+            "[frontend] `npm` not found on PATH · install Node.js to build the frontend"
+                .to_owned(),
+        );
+    }
+
+    let script = target.npm_script();
+    let npm_args = target.npm_args();
+    println!(
+        "[frontend] npm run {} (target={}, in {})",
+        script,
+        target.label(),
+        frontend.display()
+    );
+    let status = Command::new("npm")
+        .args(&npm_args)
+        .current_dir(&frontend)
+        .status()
+        .map_err(|e| format!("[frontend] npm run {script}: {e}"))?;
+    if !status.success() {
+        return Err(format!(
+            "[frontend] npm run {script} failed (status {status})"
+        ));
+    }
+
+    let dist = frontend.join("dist");
+    if !dist.is_dir() {
+        return Err(format!(
+            "[frontend] build finished but {} does not exist",
+            dist.display(),
+        ));
+    }
+    Ok(dist)
 }
 
 fn site_check(content_root: &Path) -> Result<(), String> {
@@ -2572,6 +2751,46 @@ fn scp_to(cfg: &DeployConfig, src: &Path, dst: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// `scp <user>@<host>:<src> <dst>`. This is the read-side counterpart of
+/// [`scp_to`], used by deploy promotion to bring the server's live SQLite DB
+/// to the operator machine before replacing derived tables. Pulling the live
+/// file first is what preserves comments, likes, views and contact messages.
+fn scp_from(cfg: &DeployConfig, src: &str, dst: &Path) -> Result<(), String> {
+    let mut cmd = Command::new("scp");
+    if !cfg.ssh_key_path.as_os_str().is_empty() {
+        cmd.arg("-i").arg(&cfg.ssh_key_path);
+    }
+    if cfg.ssh_port != 22 {
+        cmd.arg("-P").arg(cfg.ssh_port.to_string());
+    }
+    cmd.args([
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+    ]);
+    cmd.arg(format!("{}@{}:{src}", cfg.user, cfg.host));
+    cmd.arg(dst);
+    let status = cmd.status().map_err(|e| {
+        format!(
+            "scp {}@{}:{src} -> {}: {e}",
+            cfg.user,
+            cfg.host,
+            dst.display()
+        )
+    })?;
+    if !status.success() {
+        return Err(format!(
+            "scp {}@{}:{src} -> {} exited with status {}",
+            cfg.user,
+            cfg.host,
+            dst.display(),
+            status,
+        ));
+    }
+    Ok(())
+}
+
 /// Probe `https://<host>/api/v1/health` over HTTPS. Returns Err when the
 /// status is not 2xx or the body doesn't include `"ok"`. Uses `curl` via
 /// the host shell — Rust's HTTP clients would mean another dependency for
@@ -2838,26 +3057,25 @@ fn run_nginx_deploy(
         );
         println!("  scope   --what={}", what.label());
         let mut step = 1;
-        if what.does_content() {
-            println!(
-                "  {step} content  silan-viking index sync → stop {} → cp .prev → \
-                 clear wal/shm → scp portfolio.db → chown → md5-verify → \
-                 (if PG-configured: sqlite2pg) → mirror media/",
-                cfg.systemd_unit,
-            );
-            step += 1;
-        }
         if what.does_frontend() {
             println!("  {step} frontend npm run build → scp dist/",);
             step += 1;
         }
         if what.does_backend() {
-            println!("  {step} backend  tar source → scp → CGO_ENABLED=1 go build (remote)");
+            println!("  {step} backend  tar source → scp → build API + sqlite2pg (remote)");
             step += 1;
         }
-        // content always stops the backend itself, so the unconditional
-        // post-step is `start` only when content is the *only* phase.
-        let bring_up_verb = if matches!(what, DeployWhat::Content) {
+        if what.does_content() {
+            println!(
+                "  {step} content  silan-viking index sync → stop {} → cp .prev → \
+                 clear wal/shm → pull live DB → promote derived tables locally → \
+                 scp promoted DB → chown → md5-verify → \
+                 (if PG-configured: sqlite2pg, preserving runtime tables) → mirror media/",
+                cfg.systemd_unit,
+            );
+            step += 1;
+        }
+        let bring_up_verb = if what.does_content() {
             "start"
         } else {
             "restart"
@@ -2876,16 +3094,20 @@ fn run_nginx_deploy(
     // journal context, and tooling that watches the unit state sees two
     // active→inactive flips instead of one.
     let mut backend_stopped = false;
-    if what.does_content() {
-        backend_stopped = deploy_nginx_content(content_root, db_path, cfg)?;
-        did_work = true;
-    }
+    // Run every failure-prone build before content stops the live API. This
+    // prevents a missing local toolchain or remote compile error from leaving
+    // the service offline. Backend goes before content so the matching
+    // sqlite2pg importer is installed before the content phase invokes it.
     if what.does_frontend() {
         deploy_nginx_frontend(project_root, cfg)?;
         did_work = true;
     }
     if what.does_backend() {
         deploy_nginx_backend(project_root, cfg)?;
+        did_work = true;
+    }
+    if what.does_content() {
+        backend_stopped = deploy_nginx_content(content_root, db_path, cfg)?;
         did_work = true;
     }
     if !did_work {
@@ -2916,12 +3138,10 @@ fn run_nginx_deploy(
 /// Phase 1 — content. Rebuild the local derived db, ship it, leave the
 /// restart/health check to the caller.
 ///
-/// The DB swap is wrapped in stop → backup → scp → clear-wal → chown so the
-/// live backend can never be mid-mmap when scp rewrites the file (which
-/// silently makes scp "succeed" against a stale inode — health returns 200
-/// while the served data is the pre-deploy snapshot). Returns `true` when
-/// the backend was stopped here, so the caller does `start` instead of
-/// `restart`.
+/// The DB swap is wrapped in stop → backup → pull-live → promote → push →
+/// clear-wal → chown. Only derived tables come from `index sync`; runtime
+/// facts remain owned by the live DB. Returns `true` when the backend was
+/// stopped here, so the caller does `start` instead of `restart`.
 fn deploy_nginx_content(
     content_root: &Path,
     db_path: &Path,
@@ -2961,16 +3181,52 @@ fn deploy_nginx_content(
     println!("[content] clear stale WAL/SHM on remote");
     ssh_exec(cfg, &format!("rm -f {remote_db}-wal {remote_db}-shm"))?;
 
-    println!("[content] scp {} → {remote_db}", db_path.display());
-    scp_to(cfg, db_path, &remote_db)?;
+    // Never ship the derived snapshot over the live DB. The live file owns
+    // all runtime facts; pull it, replace only the derived-table whitelist in
+    // one local transaction, then ship that promoted generation back.
+    let live_snapshot = std::env::temp_dir().join(format!(
+        "silan-viking-nginx-live-{}-{}.db",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|e| format!("system clock before unix epoch: {e}"))?
+            .as_nanos(),
+    ));
+    let promotion = (|| -> Result<(), String> {
+        let remote_exists = ssh_exec(
+            cfg,
+            &format!("if [ -f {remote_db} ]; then printf present; fi"),
+        )?;
+        if remote_exists.trim() == "present" {
+            println!("[content] pull live DB → {}", live_snapshot.display());
+            scp_from(cfg, &remote_db, &live_snapshot)?;
+        } else {
+            println!("[content] first deploy — seed live DB from derived snapshot");
+            fs::copy(db_path, &live_snapshot).map_err(|e| {
+                format!(
+                    "[content] seed {} from {}: {e}",
+                    live_snapshot.display(),
+                    db_path.display()
+                )
+            })?;
+        }
 
-    // Backend runs as `User=www` per the silan-backend.service unit; if scp
-    // landed as root the daemon can't open the DB for writes.
-    ssh_exec(cfg, &format!("chown www:www {remote_db}"))?;
+        let content_commit = git_head_commit(content_root).unwrap_or_else(|| "unknown".into());
+        println!("[content] promote derived tables (runtime facts stay live)");
+        promote_db(&live_snapshot, db_path, &content_commit)?;
 
-    // Trust nothing — verify by content hash, not by exit code or timestamp.
-    // This is the line that catches the silent-mmap failure mode.
-    verify_remote_db_matches(cfg, db_path, &remote_db)?;
+        println!("[content] scp {} → {remote_db}", live_snapshot.display());
+        scp_to(cfg, &live_snapshot, &remote_db)?;
+
+        // Backend runs as `User=www` per the silan-backend.service unit; if
+        // scp landed as root the daemon cannot open the DB for writes.
+        ssh_exec(cfg, &format!("chown www:www {remote_db}"))?;
+
+        // Trust nothing — verify the promoted generation byte-for-byte.
+        verify_remote_db_matches(cfg, &live_snapshot, &remote_db)
+    })();
+    let _ = fs::remove_file(&live_snapshot);
+    promotion?;
 
     // If the live backend runs against PostgreSQL (the runtime DB is no
     // longer the shipped SQLite file but a server-resident PG), import the
@@ -3136,43 +3392,12 @@ fn md5_file(path: &Path) -> Result<String, String> {
     Ok(format!("{:x}", ctx.compute()))
 }
 
-/// Phase 2 — frontend. Run `npm run build` locally; ship `dist/`. macOS-
-/// produced `._*` AppleDouble files are stripped on the remote side
-/// (otherwise nginx serves them as text/plain and search engines index them).
+/// Phase 2 — frontend. Build the default frontend target locally; ship
+/// `dist/`. macOS-produced `._*` AppleDouble files are stripped on the remote
+/// side (otherwise nginx serves them as text/plain and search engines index
+/// them).
 fn deploy_nginx_frontend(project_root: &Path, cfg: &DeployConfig) -> Result<(), String> {
-    let frontend = project_root.join("frontend");
-    if !frontend.is_dir() {
-        return Err(format!(
-            "[frontend] {} not found — silan-viking expects a frontend/ next to engine/",
-            frontend.display(),
-        ));
-    }
-    // npm must be on PATH on the host. The error mentions the install
-    // hint instead of letting the user decode a node-not-found stack.
-    if which("npm").is_none() {
-        return Err(
-            "[frontend] `npm` not found on PATH · install Node.js to deploy the frontend"
-                .to_owned(),
-        );
-    }
-
-    println!("[frontend] npm run build (in {})", frontend.display());
-    let status = Command::new("npm")
-        .args(["run", "build"])
-        .current_dir(&frontend)
-        .status()
-        .map_err(|e| format!("[frontend] npm run build: {e}"))?;
-    if !status.success() {
-        return Err(format!("[frontend] npm run build failed (status {status})"));
-    }
-
-    let dist = frontend.join("dist");
-    if !dist.is_dir() {
-        return Err(format!(
-            "[frontend] build finished but {} does not exist",
-            dist.display(),
-        ));
-    }
+    let dist = build_frontend_target(project_root, &FrontendBuildTarget::default())?;
     let tarball = std::env::temp_dir().join("silan-viking-frontend-dist.tar.gz");
     println!("[frontend] tar dist → {}", tarball.display());
     let status = Command::new("tar")
@@ -3243,10 +3468,11 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
     let api_dir = format!("{}/api", cfg.remote_dir);
     let etc_dir = format!("{api_dir}/etc");
     let bin_path = format!("{api_dir}/silan-backend");
+    let importer = REMOTE_SQLITE2PG_BIN;
     // Untar + go build. We rebuild every time — Go's incremental cache
     // makes this fast after the first run, and a fresh build catches any
     // drift between local source and what is deployed.
-    println!("[backend] remote build (CGO_ENABLED=1 go build)");
+    println!("[backend] remote build (API + runtime-safe sqlite2pg importer)");
     ssh_exec(
         cfg,
         &format!(
@@ -3254,7 +3480,8 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
              mkdir -p {api_dir} {etc_dir} && \
              rm -rf /tmp/silan-backend-build && mkdir -p /tmp/silan-backend-build && \
              cd /tmp/silan-backend-build && tar -xzf {remote_tar} && \
-             CGO_ENABLED=1 go build -o {bin_path} backend.go"
+             CGO_ENABLED=1 go build -o {bin_path} backend.go && \
+             CGO_ENABLED=1 go build -o {importer} ./cmd/sqlite2pg"
         ),
     )?;
 
