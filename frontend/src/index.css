@@ -110,7 +110,7 @@ img, svg, canvas, video, audio, iframe, table, tr, td, th, ul, ol, li):not([data
 
 /* Button reset — buttons never carry a background or border.
    !important overrides Tailwind bg-* utilities and inline styles. */
-button:not([data-ds]) {
+button:not([data-ds]):not([data-ds] *) {
   cursor: pointer;
   font-family: inherit;
   font-size: inherit;
@@ -118,8 +118,8 @@ button:not([data-ds]) {
 }
 
 /* Input reset */
-input:not([data-ds]),
-textarea:not([data-ds]) {
+input:not([data-ds]):not([data-ds] *),
+textarea:not([data-ds]):not([data-ds] *) {
   background: transparent;
   font-family: inherit;
   font-size: inherit;
@@ -127,7 +127,7 @@ textarea:not([data-ds]) {
 }
 
 /* Link reset */
-a:not([data-ds]) {
+a:not([data-ds]):not([data-ds] *) {
   text-decoration: none;
   color: inherit;
   transition: all 0.3s ease;

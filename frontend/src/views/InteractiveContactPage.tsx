@@ -169,17 +169,17 @@ const InteractiveContactPageContent: React.FC = () => {
                   {
                     value: 'thoughts',
                     icon: <Lightbulb />,
-                    label: language === 'en' ? 'Recent Thoughts' : '最新想法',
+                    label: language === 'en' ? 'Thoughts' : '想法',
                   },
                   {
                     value: 'jobs',
                     icon: <Briefcase />,
-                    label: language === 'en' ? 'Expected Jobs' : '期待职位',
+                    label: language === 'en' ? 'Roles' : '职位',
                   },
                   {
                     value: 'contact',
                     icon: <Contact />,
-                    label: language === 'en' ? 'Quick Contact' : '快速联系',
+                    label: language === 'en' ? 'Contact' : '联系',
                   },
                 ]}
               />
