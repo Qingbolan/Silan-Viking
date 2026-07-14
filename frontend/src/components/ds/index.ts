@@ -100,7 +100,7 @@ export { BlogHeader } from './BlogHeader';
 export type { BlogHeaderProps } from './BlogHeader';
 
 export { ProfileHero } from './ProfileHero';
-export type { ProfileHeroProps, ContactItem, HeroAction, SocialItem } from './ProfileHero';
+export type { ProfileHeroProps, ContactItem, HeroAction, HeroIllustration, SocialItem } from './ProfileHero';
 
 export { EpisodeList } from './EpisodeList';
 export type { EpisodeListProps, EpisodeListItem } from './EpisodeList';

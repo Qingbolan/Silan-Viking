@@ -106,7 +106,7 @@ const Timeline: React.FC<TimelineProps> = ({ items }) => {
             </div>
 
             {item.details && Array.isArray(item.details) && item.details.length > 0 && (
-              <div className="border-l border-ds-border pl-3">
+              <div className="pl-3">
                 <Markdown
                   className={[
                     'text-sm leading-relaxed text-theme-secondary',

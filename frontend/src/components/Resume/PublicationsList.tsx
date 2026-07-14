@@ -16,7 +16,7 @@ const PublicationsList: React.FC<PublicationsListProps> = ({
   publications,
   highlightAuthor,
 }) => (
-  <div className="divide-y divide-ds-border">
+  <div className="space-y-2">
     {publications.map((publication, index) => (
       <PublicationCard
         key={publication.id}

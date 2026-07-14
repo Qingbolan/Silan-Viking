@@ -22,13 +22,13 @@ const splitYear = (line: string): { year?: string; text: string } => {
 
 const AwardsList: React.FC<AwardsListProps> = ({ awards }) => {
   return (
-    <ul className="space-y-2.5">
+    <ul className="space-y-3">
       {awards.map((award, index) => {
         const { year, text } = splitYear(award);
         return (
           <motion.li
             key={index}
-            className="group/award flex items-start gap-3 rounded-xl bg-theme-surface p-3.5 transition-colors duration-200 hover:bg-theme-hover sm:p-4"
+            className="flex items-start gap-3 py-1"
             initial={{ opacity: 0, x: -16 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, amount: 0.3 }}
@@ -36,18 +36,21 @@ const AwardsList: React.FC<AwardsListProps> = ({ awards }) => {
           >
             <span
               aria-hidden
-              className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-theme-primary/10 text-theme-accent"
+              className="mt-[0.2em] inline-flex size-5 flex-shrink-0 items-center justify-center text-theme-accent"
             >
               <Award size={15} />
             </span>
 
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 text-sm leading-6 text-theme-secondary">
               {year && (
-                <span className="mr-2 inline-block align-middle font-mono text-[0.7rem] font-medium tracking-wider text-theme-accent">
+                <span className="mr-2 inline font-mono text-[0.7rem] font-medium tracking-wider text-theme-accent">
                   {year}
                 </span>
               )}
-              <Markdown className="inline align-middle text-sm leading-relaxed text-theme-secondary [&>div]:my-0 [&>div]:inline">
+              <Markdown
+                inline
+                className="inline text-sm leading-6 text-theme-secondary"
+              >
                 {text}
               </Markdown>
             </div>

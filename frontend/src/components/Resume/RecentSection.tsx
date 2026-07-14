@@ -185,10 +185,9 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
                   aria-label={`${t('resume.view_details', { defaultValue: 'View details' })}: ${item.title}`}
                   className={[
                     'group flex w-full cursor-pointer items-center gap-3 rounded-ds-md px-3 py-2',
-                    'border border-transparent',
-                    'transition-[border-color,background-color]',
+                    'transition-colors',
                     'duration-ds-fast ease-ds-standard',
-                    'hover:border-ds-border hover:bg-ds-surface-2',
+                    'hover:bg-ds-surface-2',
                     'outline-none focus-visible:shadow-ds-focus',
                   ].join(' ')}
                 >
@@ -220,7 +219,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
                     appearance="soft"
                     size="sm"
                     dot
-                    className="shrink-0"
+                    className="shrink-0 border-0"
                   >
                     {t(`resume.status.${item.status}`)}
                   </Badge>

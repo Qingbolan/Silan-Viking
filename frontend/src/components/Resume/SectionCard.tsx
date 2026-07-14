@@ -29,7 +29,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
 
   return (
     <motion.section
-      className="bg-theme-surface rounded-xl p-4 shadow-ds-1 transition-shadow duration-300 hover:shadow-ds-2 sm:p-6"
+      className="px-4 py-6 sm:px-6 sm:py-8"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay }}
@@ -38,11 +38,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
       <header className="mb-4 flex justify-center sm:mb-6">
         <h3
           id={sectionId}
-          className={
-            'inline-flex items-center rounded-full border border-ds-border ' +
-            'bg-ds-surface-1 px-5 py-1.5 text-ds-sm font-semibold ' +
-            'tracking-wide text-ds-fg sm:text-ds-base'
-          }
+          className="text-center text-ds-sm font-semibold tracking-wide text-ds-fg sm:text-ds-base"
         >
           {title}
         </h3>

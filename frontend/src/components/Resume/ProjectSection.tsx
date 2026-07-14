@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useLanguage } from '../../components/LanguageContext';
-import { ProfileHero, type ContactItem, type HeroAction, type SocialItem } from '../../components/ds';
+import { ProfileHero, type ContactItem, type HeroAction, type HeroIllustration, type SocialItem } from '../../components/ds';
 import { resolveSocialLink } from '../../utils/socialPlatform';
 
 interface ContactInfo {
@@ -22,6 +22,8 @@ interface ProjectSectionProps {
   socialLinks?: SocialLink[];
   /** Headshot URL — passed straight through to ProfileHero. */
   avatarSrc?: string;
+  /** Desktop-only illustrations for unused hero space. */
+  bottomIllustrations?: HeroIllustration[];
 }
 
 /**
@@ -35,6 +37,7 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
   contacts = [],
   socialLinks = [],
   avatarSrc,
+  bottomIllustrations,
 }) => {
   const { language } = useLanguage();
   const zh = language === 'zh';
@@ -82,6 +85,8 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
       socials={dsSocials}
       actions={heroActions}
       avatarSrc={avatarSrc}
+      bottomIllustrations={bottomIllustrations}
+      chrome={false}
     />
   );
 };

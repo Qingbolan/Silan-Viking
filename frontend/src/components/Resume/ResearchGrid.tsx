@@ -41,7 +41,7 @@ const ResearchGrid: React.FC<ResearchGridProps> = ({ items }) => (
     getKey={(item) => item.id}
     gap={16}
     renderItem={(item) => (
-      <ProjectCard project={toCardData(item)} coverSize="standard" />
+      <ProjectCard project={toCardData(item)} coverSize="standard" hoverChrome={false} />
     )}
   />
 );

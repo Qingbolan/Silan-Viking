@@ -304,6 +304,17 @@ const ResumeWebsite: React.FC = () => {
           contacts={resumeData.contacts || []}
           socialLinks={resumeData.socialLinks || []}
           avatarSrc={publicAssetUrl('/image.png')}
+          bottomIllustrations={[
+            {
+              src: publicAssetUrl('/intj-illustration.png'),
+              alt: 'INTJ personality illustration',
+            },
+            {
+              src: publicAssetUrl('/scorpion-line-art.png'),
+              alt: 'Scorpion line illustration',
+              tone: 'line-art',
+            },
+          ]}
         />
       </div>
 

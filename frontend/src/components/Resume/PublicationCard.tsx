@@ -92,7 +92,7 @@ const formatYearMonth = (raw?: string): string => {
 const CcfBadge: React.FC<{ rank: 'A' | 'B' | 'C' }> = ({ rank }) => (
   <span
     title={`CCF ${rank} conference`}
-    className="inline-flex h-7 items-center gap-1 rounded-full border border-[#003D7C]/25 bg-[#003D7C]/[0.08] py-0.5 pl-2 pr-1 text-[#003D7C] dark:border-[#8AB5F5]/30 dark:bg-[#8AB5F5]/10 dark:text-[#A8C7FA]"
+    className="inline-flex h-7 items-center gap-1 rounded-full bg-[#003D7C]/[0.08] py-0.5 pl-2 pr-1 text-[#003D7C] dark:bg-[#8AB5F5]/10 dark:text-[#A8C7FA]"
   >
     <span className="font-mono text-[0.625rem] font-semibold tracking-[0.12em]">CCF</span>
     <span className="flex size-5 items-center justify-center rounded-full bg-[#003D7C] text-[0.6875rem] font-bold text-white dark:bg-[#A8C7FA] dark:text-[#10213D]">
@@ -112,10 +112,10 @@ const LinkPill: React.FC<{ href: string; icon: React.ReactNode; label: string }>
     target="_blank"
     rel="noopener noreferrer"
     className={cn(
-      'inline-flex min-h-9 items-center gap-1 rounded-full border border-ds-border px-3 py-1',
+      'inline-flex min-h-9 items-center gap-1 rounded-full px-3 py-1',
       'text-ds-2xs font-medium uppercase tracking-[0.06em] text-ds-fg-muted',
       'transition-colors duration-ds-fast ease-ds-standard',
-      'hover:border-ds-primary/40 hover:bg-ds-primary-soft hover:text-ds-primary',
+      'hover:bg-ds-primary-soft hover:text-ds-primary',
       '[&_svg]:size-3',
     )}
   >
@@ -148,7 +148,7 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
     >
       {/* Figure — a restrained teaser, no additional card frame. */}
       {image && (
-        <div className="aspect-[16/9] overflow-hidden rounded-ds-md border border-ds-border bg-ds-surface-2">
+        <div className="aspect-[16/9] overflow-hidden rounded-ds-md bg-ds-surface-2">
           <img
             src={image}
             alt={title}
@@ -248,7 +248,7 @@ const PublicationCard: React.FC<PublicationCardProps> = ({
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-ds-sm border border-ds-border px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-[0.06em] text-ds-fg-subtle"
+                className="rounded-ds-sm bg-ds-surface-2 px-2 py-0.5 text-[0.65rem] font-medium uppercase tracking-[0.06em] text-ds-fg-subtle"
               >
                 {tag}
               </span>

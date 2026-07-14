@@ -50,12 +50,22 @@ const entryPayload = (entry: ResumeEntryResponse) => ({
   ...(entry.localized_payload || {}),
 });
 
-const formatDateRange = (payload: any, language: Language = 'en') => {
+const formatDateValue = (value: unknown, precision: 'day' | 'month') => {
+  if (!value) return '';
+  const text = String(value);
+  return precision === 'month' && /^\d{4}-\d{2}/.test(text) ? text.slice(0, 7) : text;
+};
+
+const formatDateRange = (
+  payload: any,
+  language: Language = 'en',
+  precision: 'day' | 'month' = 'day',
+) => {
   if (payload.date) return String(payload.date);
-  const start = payload.start_date || payload.startDate || payload.start || '';
+  const start = formatDateValue(payload.start_date || payload.startDate || payload.start, precision);
   const end = payload.is_current || payload.current
     ? (language === 'zh' ? '至今' : 'Present')
-    : payload.end_date || payload.endDate || payload.end || '';
+    : formatDateValue(payload.end_date || payload.endDate || payload.end, precision);
   return [start, end].filter(Boolean).join(' - ');
 };
 
@@ -272,7 +282,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
         content: education.map((edu) => ({
           school: edu.institution,
           degree: edu.degree,
-          date: formatDateRange(edu, language),
+          date: formatDateRange(edu, language, 'month'),
           details: edu.details || [],
           logo: optionalMediaUrl(edu.institution_logo_url),
           website: edu.institution_website,
@@ -284,7 +294,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
         content: experience.map((exp) => ({
           company: exp.company,
           role: exp.position,
-          date: formatDateRange(exp, language),
+          date: formatDateRange(exp, language, 'month'),
           details: exp.details || [],
           logo: optionalMediaUrl(exp.company_logo_url),
           website: exp.company_website,
