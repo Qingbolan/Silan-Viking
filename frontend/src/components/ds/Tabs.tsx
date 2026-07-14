@@ -29,6 +29,8 @@ export interface TabsProps {
   onChange?: (_value: string) => void;
   appearance?: 'underline' | 'pill' | 'vertical';
   size?: 'sm' | 'md';
+  /** Stretch horizontal tabs across the available width. */
+  fullWidth?: boolean;
   className?: string;
 }
 
@@ -39,6 +41,7 @@ export const Tabs: React.FC<TabsProps> = ({
   onChange,
   appearance = 'underline',
   size = 'md',
+  fullWidth = false,
   className,
 }) => {
   const isControlled = value !== undefined;
@@ -111,8 +114,12 @@ export const Tabs: React.FC<TabsProps> = ({
       <div
         role="tablist"
         {...dsRoot}
+        style={{ '--tabs-count': items.length } as React.CSSProperties}
         className={cn(
-          'inline-flex items-center gap-1 rounded-ds-md bg-ds-surface-2 p-1 ds-hairline',
+          fullWidth
+            ? 'grid w-full grid-cols-[repeat(var(--tabs-count),minmax(0,1fr))]'
+            : 'inline-flex',
+          'items-center gap-1 rounded-ds-md bg-ds-surface-2 p-1 ds-hairline',
           className,
         )}
       >
@@ -127,11 +134,13 @@ export const Tabs: React.FC<TabsProps> = ({
               disabled={item.disabled}
               onClick={() => select(item.value)}
               className={cn(
-                'relative inline-flex items-center gap-1.5 rounded-ds-sm font-medium',
+                'relative isolate inline-flex min-w-0 items-center justify-center gap-1.5 rounded-ds-sm font-medium',
                 'transition-colors duration-ds-fast ease-ds-standard',
                 'disabled:opacity-40 disabled:pointer-events-none',
                 'outline-none focus-visible:shadow-ds-focus',
+                '[&_svg]:size-4 [&_svg]:shrink-0',
                 sizing,
+                fullWidth && 'w-full',
                 isActive ? 'text-ds-fg' : 'text-ds-fg-muted hover:text-ds-fg',
               )}
             >
@@ -143,7 +152,7 @@ export const Tabs: React.FC<TabsProps> = ({
                 />
               )}
               {item.icon}
-              {item.label}
+              <span className="min-w-0 truncate">{item.label}</span>
               {item.badge != null && (
                 <span className="text-ds-2xs text-ds-fg-subtle">{item.badge}</span>
               )}
@@ -159,7 +168,14 @@ export const Tabs: React.FC<TabsProps> = ({
     <div
       role="tablist"
       {...dsRoot}
-      className={cn('flex items-center gap-1 border-b border-ds-border', className)}
+      style={{ '--tabs-count': items.length } as React.CSSProperties}
+      className={cn(
+        fullWidth
+          ? 'grid w-full grid-cols-[repeat(var(--tabs-count),minmax(0,1fr))]'
+          : 'flex',
+        'items-center gap-1 border-b border-ds-border',
+        className,
+      )}
     >
       {items.map((item) => {
         const isActive = item.value === active;
@@ -172,16 +188,18 @@ export const Tabs: React.FC<TabsProps> = ({
             disabled={item.disabled}
             onClick={() => select(item.value)}
             className={cn(
-              'relative inline-flex items-center gap-1.5 font-medium',
+              'relative inline-flex min-w-0 items-center justify-center gap-1.5 font-medium',
               '-mb-px transition-colors duration-ds-fast ease-ds-standard',
               'disabled:opacity-40 disabled:pointer-events-none',
               'outline-none focus-visible:shadow-ds-focus rounded-t-ds-sm',
+              '[&_svg]:size-4 [&_svg]:shrink-0',
               sizing,
+              fullWidth && 'w-full',
               isActive ? 'text-ds-primary' : 'text-ds-fg-muted hover:text-ds-fg',
             )}
           >
             {item.icon}
-            {item.label}
+            <span className="min-w-0 truncate">{item.label}</span>
             {item.badge != null && (
               <span className="text-ds-2xs text-ds-fg-subtle">{item.badge}</span>
             )}

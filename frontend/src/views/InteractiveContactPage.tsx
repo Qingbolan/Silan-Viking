@@ -33,10 +33,10 @@ const ListRow: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className="w-full rounded-ds-md border border-transparent px-3 py-2.5 text-left transition-colors duration-ds-fast hover:border-ds-border hover:bg-ds-surface-2"
+    className="group w-full rounded-ds-md border border-transparent bg-ds-surface-1 px-3 py-2.5 text-left transition-[background-color,border-color,transform] duration-ds-fast hover:border-ds-border hover:bg-ds-surface-2 active:scale-[0.99]"
   >
-    <div className="text-ds-sm font-medium text-ds-fg">{title}</div>
-    <div className="mt-0.5 text-ds-xs text-ds-fg-muted">{description}</div>
+    <div className="line-clamp-1 text-ds-sm font-medium text-ds-fg group-hover:text-ds-primary">{title}</div>
+    {description && <div className="mt-0.5 line-clamp-2 text-ds-xs leading-5 text-ds-fg-muted">{description}</div>}
   </button>
 );
 
@@ -141,7 +141,7 @@ const InteractiveContactPageContent: React.FC = () => {
           }
         />
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
           {/* Left — contact form. */}
           <Card>
             <CardContent>
@@ -162,6 +162,9 @@ const InteractiveContactPageContent: React.FC = () => {
               <Tabs
                 value={activeTab}
                 onChange={setActiveTab}
+                appearance="pill"
+                size="sm"
+                fullWidth
                 items={[
                   {
                     value: 'thoughts',
@@ -183,7 +186,7 @@ const InteractiveContactPageContent: React.FC = () => {
 
               {/* Recent thoughts. */}
               {activeTab === 'thoughts' && (
-                <div className="mt-4 space-y-1.5">
+                <div className="mt-4 space-y-2">
                   {thoughtsResource.status === 'loading' ? (
                     <PanelLoading label={language === 'en' ? 'Loading recent thoughts' : '正在加载最新想法'} />
                   ) : thoughtsResource.status === 'error' ? (
@@ -208,22 +211,22 @@ const InteractiveContactPageContent: React.FC = () => {
                       />
                     ))
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    block
-                    className="mt-2"
-                    trailingIcon={<ArrowRight />}
-                    onClick={() => navigate('/ideas')}
-                  >
-                    {language === 'en' ? 'Show More Ideas' : '查看更多想法'}
-                  </Button>
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      trailingIcon={<ArrowRight />}
+                      onClick={() => navigate('/ideas')}
+                    >
+                      {language === 'en' ? 'Show More Ideas' : '查看更多想法'}
+                    </Button>
+                  </div>
                 </div>
               )}
 
               {/* Expected jobs. */}
               {activeTab === 'jobs' && (
-                <div className="mt-4 space-y-1.5">
+                <div className="mt-4 space-y-2">
                   {jobsResource.status === 'loading' ? (
                     <PanelLoading label={language === 'en' ? 'Loading preferred roles' : '正在加载期待职位'} />
                   ) : jobsResource.status === 'error' ? (
@@ -248,17 +251,17 @@ const InteractiveContactPageContent: React.FC = () => {
                       />
                     ))
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    block
-                    className="mt-2"
-                    leadingIcon={<User />}
-                    trailingIcon={<ArrowRight />}
-                    onClick={() => navigate('/')}
-                  >
-                    {language === 'en' ? 'Who Am I' : '关于我'}
-                  </Button>
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      leadingIcon={<User />}
+                      trailingIcon={<ArrowRight />}
+                      onClick={() => navigate('/')}
+                    >
+                      {language === 'en' ? 'Who Am I' : '关于我'}
+                    </Button>
+                  </div>
                 </div>
               )}
 
