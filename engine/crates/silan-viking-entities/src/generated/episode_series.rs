@@ -14,6 +14,8 @@ pub struct Model {
     pub title: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub description: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub cover_url: Option<String>,
     #[sea_orm(column_type = "Text")]
     pub status: String,
     #[sea_orm(column_type = "custom(\"datetime\")")]

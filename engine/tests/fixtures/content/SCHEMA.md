@@ -149,6 +149,7 @@ types:
         - { name: title,       type: string,                                required: true,  default: null,               source: py,  column: "episode_series.title" }
         - { name: slug,        type: slug,                                  required: true,  default: null,               source: py,  column: "episode_series.slug" }
         - { name: description, type: text,                                  required: false, default: null,               source: py,  column: "episode_series.description" }
+        - { name: cover_url,   type: string,                                required: false, default: null,               source: py,  column: "episode_series.cover_url" }
         - { name: status,      type: "enum(ongoing,completed,archived)",    required: true,  default: ongoing,            source: py,  column: "episode_series.status" }
     fields:
       - { name: slug,             type: slug,                              required: true,  default: null,    source: py,  column: "episodes.slug" }
@@ -174,6 +175,7 @@ types:
       - { name: update_type, type: "enum(milestone,achievement,progress,release,announcement,insight,learning,reflection)", required: true, default: progress, source: py, column: "recent_updates.update_type" }
       - { name: status,      type: "enum(active,ongoing,completed)",                                      required: true,  default: active,  source: "py,ent", column: "recent_updates.status" }
       - { name: priority,    type: "enum(high,medium,low)",                                               required: false, default: medium,  source: "py,ent", column: "recent_updates.priority" }
+      - { name: pinned,      type: bool,                                                                  required: false, default: false,   source: "py,ent", column: "recent_updates.pinned" }
       - { name: visibility,  type: "enum(private,unlisted,public)",                                       required: true,  default: private, source: new,      column: "recent_updates.visibility" }
       - { name: date,        type: date,                                                                  required: true,  default: null,    source: "py,ent", column: "recent_updates.date" }
       - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "content_tag" }
@@ -269,6 +271,7 @@ types:
           - { name: award_type,            type: string, required: false, translatable: true }
           - { name: amount,                type: float,  required: false, translatable: false }
           - { name: description,           type: text,   required: false, translatable: true }
+          - { name: url,                   type: string, required: false, translatable: false }
           - { name: certificate_url,       type: string, required: false, translatable: false }
           - { name: sort_order,            type: int,    required: false, translatable: false }
       - role: research

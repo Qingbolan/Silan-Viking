@@ -576,6 +576,7 @@ entry_fields:
 | `award_type` | string | | ✔ | awards.award_type + award_translations.award_type |
 | `amount` | float | | ✗ | awards.amount |
 | `description` | text | | ✔ | awards.description + award_translations.description |
+| `url` | string | | ✗ | public source/title link |
 | `certificate_url` | string | | ✗ | awards.certificate_url |
 | `sort_order` | int | | ✗ | awards.sort_order |
 

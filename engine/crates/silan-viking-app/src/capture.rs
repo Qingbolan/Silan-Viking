@@ -80,6 +80,7 @@ enum CaptureKind {
     Idea(IdeaCategory),
     Blog(IdeaCategory),
     Project,
+    Update,
 }
 
 impl CaptureKind {
@@ -88,6 +89,7 @@ impl CaptureKind {
             Self::Idea(_) => "ideas",
             Self::Blog(_) => "blog",
             Self::Project => "projects",
+            Self::Update => "update",
         }
     }
 
@@ -96,12 +98,13 @@ impl CaptureKind {
             Self::Idea(_) => "idea",
             Self::Blog(_) => "blog",
             Self::Project => "project",
+            Self::Update => "update",
         }
     }
 
     fn role(self) -> &'static str {
         match self {
-            Self::Blog(_) => "body",
+            Self::Blog(_) | Self::Update => "body",
             Self::Idea(_) | Self::Project => "overview",
         }
     }
@@ -109,6 +112,7 @@ impl CaptureKind {
     fn initial_status(self) -> &'static str {
         match self {
             Self::Project => "active",
+            Self::Update => "ongoing",
             Self::Idea(_) | Self::Blog(_) => "draft",
         }
     }
@@ -118,6 +122,7 @@ impl CaptureKind {
             Self::Idea(_) => ".idea-capture-",
             Self::Blog(_) => ".blog-capture-",
             Self::Project => ".project-capture-",
+            Self::Update => ".update-capture-",
         }
     }
 }
@@ -180,6 +185,20 @@ impl ContentCreator {
         let title = required_text(title, "the project title is empty")?;
         let body = format!("# {title}\n\nDraft body - replace this.");
         self.create_and_sync(CaptureKind::Project, title, &body, db_path.as_ref())
+    }
+
+    pub fn capture_update_and_sync(
+        &self,
+        event: &str,
+        db_path: impl AsRef<Path>,
+    ) -> Result<CapturedContent, CaptureError> {
+        let event = required_text(event, "the update event is empty")?;
+        self.create_and_sync(
+            CaptureKind::Update,
+            &derive_title(event),
+            event,
+            db_path.as_ref(),
+        )
     }
 
     fn create_and_sync(
@@ -335,6 +354,15 @@ fn build_files(
     if matches!(kind, CaptureKind::Blog(_)) {
         insert(&mut frontmatter, "content_type", "article");
     }
+    if matches!(kind, CaptureKind::Update) {
+        insert(&mut frontmatter, "update_type", "progress");
+        insert(&mut frontmatter, "priority", "medium");
+        insert(
+            &mut frontmatter,
+            "date",
+            &time::OffsetDateTime::now_utc().date().to_string(),
+        );
+    }
     insert(&mut frontmatter, "status", kind.initial_status());
     insert(&mut frontmatter, "visibility", "private");
     if let CaptureKind::Idea(category) | CaptureKind::Blog(category) = kind {
@@ -420,5 +448,26 @@ mod tests {
             IdeaCategory::parse("misc"),
             Err(CaptureError::InvalidInput { .. })
         ));
+    }
+
+    #[test]
+    fn update_capture_writes_timeline_frontmatter() {
+        let item_id = ItemId::generate();
+        let part_id = PartId::generate();
+        let files = build_files(
+            CaptureKind::Update,
+            &item_id,
+            &part_id,
+            "shipping-update",
+            "Shipping update",
+            "Shipped the latest editor flow.",
+        )
+        .expect("update files should be serializable");
+
+        assert!(files.part.contains("type           = \"body\""));
+        assert!(files.markdown.contains("kind: update"));
+        assert!(files.markdown.contains("update_type: progress"));
+        assert!(files.markdown.contains("status: ongoing"));
+        assert!(files.markdown.contains("date: "));
     }
 }

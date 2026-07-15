@@ -81,6 +81,8 @@ pub struct ScannedSeries {
     pub title: String,
     /// The series description, from `series.toml` (`""` if absent).
     pub description: String,
+    /// The series cover image URL/reference, from `series.toml` (`""` if absent).
+    pub cover_url: String,
     /// The series status, from `series.toml` (defaults to `"ongoing"`).
     pub status: String,
 }
@@ -219,10 +221,14 @@ fn scan_episode_type(
 ) -> Result<(), ScanError> {
     for series_dir in sorted_subdirs(type_dir)? {
         series_out.push(read_series(&series_dir)?);
+        collect_assets(&series_dir, resources_root, assets_out)?;
         // `sorted_subdirs` returns directories only, so the series' own
         // `series.toml` file is naturally excluded — each remaining entry is
         // one episode Item directory.
         for episode_dir in sorted_subdirs(&series_dir)? {
+            if dir_name(&episode_dir) == "assets" {
+                continue;
+            }
             let slug_name = dir_name(&episode_dir);
             out.push(build_item(ContentKind::Episode, &slug_name, &episode_dir)?);
             collect_assets(&episode_dir, resources_root, assets_out)?;
@@ -326,6 +332,7 @@ fn read_series(series_dir: &Path) -> Result<ScannedSeries, ScanError> {
         slug,
         title: field("title"),
         description: field("description"),
+        cover_url: field("cover_url"),
         status,
     })
 }
@@ -595,7 +602,7 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("mkdir");
         std::fs::write(
             dir.join("series.toml"),
-            "title = \"Building EasyNet\"\ndescription = \"A journal.\"\nstatus = \"completed\"\n",
+            "title = \"Building EasyNet\"\ndescription = \"A journal.\"\ncover_url = \"silan://resources/episode/building-easynet/assets/cover.png\"\nstatus = \"completed\"\n",
         )
         .expect("write series.toml");
 
@@ -604,6 +611,10 @@ mod tests {
         assert_eq!(series.slug, "building-easynet");
         assert_eq!(series.title, "Building EasyNet");
         assert_eq!(series.description, "A journal.");
+        assert_eq!(
+            series.cover_url,
+            "silan://resources/episode/building-easynet/assets/cover.png"
+        );
         assert_eq!(series.status, "completed");
         let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
     }
@@ -620,6 +631,7 @@ mod tests {
         assert_eq!(series.slug, "orphan-series");
         assert_eq!(series.title, "");
         assert_eq!(series.description, "");
+        assert_eq!(series.cover_url, "");
         assert_eq!(series.status, "ongoing");
         let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
     }

@@ -28,6 +28,7 @@ pub struct Model {
     pub status: String,
     #[sea_orm(column_type = "Text")]
     pub priority: String,
+    pub pinned: bool,
     #[sea_orm(column_type = "Text", nullable)]
     pub external_id: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]

@@ -153,6 +153,38 @@ pub fn ensure_cache_schema(db: &Path) -> Result<(), StatsError> {
     Ok(())
 }
 
+/// Resolve the deployed Go API base URL from `<project_root>/silan-viking.toml`.
+///
+/// `content_root` is the workspace's `content/` directory; the project root
+/// is its parent. `[deploy].api_base` wins if set. Otherwise the public site
+/// URL is used; `[deploy].host` is only a final fallback because it is often an
+/// SSH target rather than the TLS hostname users visit.
+pub fn api_base_url(content_root: &Path) -> Result<String, StatsError> {
+    let project_root = content_root.parent().unwrap_or(content_root);
+    let config_path = project_root.join("silan-viking.toml");
+    let text = std::fs::read_to_string(&config_path).map_err(|_| StatsError::NoServer)?;
+    let config: toml::Value = text
+        .parse()
+        .map_err(|e| StatsError::Decode(format!("{}: {e}", config_path.display())))?;
+    let deploy = config.get("deploy");
+    if let Some(base) = deploy
+        .and_then(|d| d.get("api_base"))
+        .and_then(|v| v.as_str())
+    {
+        return Ok(base.trim_end_matches('/').to_owned());
+    }
+    if let Some(public_url) = deploy
+        .and_then(|d| d.get("public_url"))
+        .and_then(|v| v.as_str())
+    {
+        return Ok(public_url.trim_end_matches('/').to_owned());
+    }
+    if let Some(host) = deploy.and_then(|d| d.get("host")).and_then(|v| v.as_str()) {
+        return Ok(format!("https://{host}"));
+    }
+    Err(StatsError::NoServer)
+}
+
 /// Current UTC time as an RFC-3339-ish `synced_at` stamp.
 fn now_stamp() -> String {
     let now = time::OffsetDateTime::now_utc();
@@ -438,6 +470,79 @@ mod tests {
         // An un-synced item reports NotSynced, not a silent zero.
         let missing = cache.item("blog", "nope");
         assert!(matches!(missing, Err(StatsError::NotSynced(_))));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn api_base_url_prefers_explicit_api_base_over_host() {
+        let dir = std::env::temp_dir().join(format!("silan-api-base-{}", std::process::id()));
+        let content_root = dir.join("content");
+        std::fs::create_dir_all(&content_root).expect("mkdir");
+        std::fs::write(
+            dir.join("silan-viking.toml"),
+            "[deploy]\nhost = \"example.com\"\napi_base = \"https://api.example.com/\"\n",
+        )
+        .expect("write config");
+
+        assert_eq!(
+            api_base_url(&content_root).expect("resolve base url"),
+            "https://api.example.com"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn api_base_url_uses_public_url_before_ssh_host() {
+        let dir =
+            std::env::temp_dir().join(format!("silan-api-base-public-{}", std::process::id()));
+        let content_root = dir.join("content");
+        std::fs::create_dir_all(&content_root).expect("mkdir");
+        std::fs::write(
+            dir.join("silan-viking.toml"),
+            "[deploy]\nhost = \"198.51.100.7\"\npublic_url = \"https://silan.tech/\"\n",
+        )
+        .expect("write config");
+
+        assert_eq!(
+            api_base_url(&content_root).expect("resolve base url"),
+            "https://silan.tech"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn api_base_url_derives_https_from_host_when_api_base_is_absent() {
+        let dir = std::env::temp_dir().join(format!("silan-api-base-host-{}", std::process::id()));
+        let content_root = dir.join("content");
+        std::fs::create_dir_all(&content_root).expect("mkdir");
+        std::fs::write(
+            dir.join("silan-viking.toml"),
+            "[deploy]\nhost = \"198.51.100.7\"\n",
+        )
+        .expect("write config");
+
+        assert_eq!(
+            api_base_url(&content_root).expect("resolve base url"),
+            "https://198.51.100.7"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn api_base_url_reports_no_server_when_config_is_missing() {
+        let dir =
+            std::env::temp_dir().join(format!("silan-api-base-missing-{}", std::process::id()));
+        let content_root = dir.join("content");
+        std::fs::create_dir_all(&content_root).expect("mkdir");
+
+        assert!(matches!(
+            api_base_url(&content_root),
+            Err(StatsError::NoServer)
+        ));
 
         let _ = std::fs::remove_dir_all(&dir);
     }

@@ -280,6 +280,7 @@ types:
           - { name: award_type,            type: string, required: false, translatable: true }
           - { name: amount,                type: float,  required: false, translatable: false }
           - { name: description,           type: text,   required: false, translatable: true }
+          - { name: url,                   type: string, required: false, translatable: false }
           - { name: certificate_url,       type: string, required: false, translatable: false }
           - { name: sort_order,            type: int,    required: false, translatable: false }
       - role: research

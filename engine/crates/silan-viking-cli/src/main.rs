@@ -636,7 +636,7 @@ fn find_project_root_from(start: &Path) -> Option<PathBuf> {
 /// config path is joined onto it. Returns `None` when there is no project
 /// config yet (e.g. before `silan init`) so the caller can fall back.
 fn resolve_db_path(content_root: &Path) -> Option<PathBuf> {
-    let project_root = content_root.parent().unwrap_or(content_root);
+    let project_root = content_root.parent().unwrap_or(&content_root);
     let config: toml::Value = fs::read_to_string(project_root.join("silan-viking.toml"))
         .ok()?
         .parse()
@@ -651,6 +651,15 @@ fn resolve_db_path(content_root: &Path) -> Option<PathBuf> {
     } else {
         project_root.join(path)
     })
+}
+
+fn absolute_path(path: &Path) -> Result<PathBuf, String> {
+    if path.is_absolute() {
+        return Ok(path.to_path_buf());
+    }
+    Ok(env::current_dir()
+        .map_err(|error| error.to_string())?
+        .join(path))
 }
 
 /// Resolve the content root for the help/banner path. Mirrors the
@@ -925,7 +934,7 @@ fn init_content(content_root: &Path) -> Result<(), String> {
         .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or("content");
-    let project_root = content_root.parent().unwrap_or(content_root);
+    let project_root = content_root.parent().unwrap_or(&content_root);
     let config = project_root.join("silan-viking.toml");
     if !config.exists() {
         fs::write(&config, default_config(content_dir_name)).map_err(|e| e.to_string())?;
@@ -1939,46 +1948,13 @@ struct StatsFilter {
     entity_id: String,
 }
 
-/// Read the Go API base URL from `silan-viking.toml`. The config lives at the
-/// project root (the content dir's parent). stats needs a deployed server, so
-/// a missing `[deploy] host` is a clear error, not a silent fallback.
-fn api_base_url(content_root: &Path) -> Result<String, String> {
-    let project_root = content_root.parent().unwrap_or(content_root);
-    let config_path = project_root.join("silan-viking.toml");
-    let text = fs::read_to_string(&config_path).map_err(|e| {
-        format!(
-            "stats needs a deployed server: cannot read {}: {e}",
-            config_path.display()
-        )
-    })?;
-    let config: toml::Value = text
-        .parse()
-        .map_err(|e| format!("{}: {e}", config_path.display()))?;
-    // [deploy].api_base wins; else derive https://<host> from [deploy].host.
-    let deploy = config.get("deploy");
-    if let Some(base) = deploy
-        .and_then(|d| d.get("api_base"))
-        .and_then(|v| v.as_str())
-    {
-        return Ok(base.trim_end_matches('/').to_owned());
-    }
-    if let Some(host) = deploy.and_then(|d| d.get("host")).and_then(|v| v.as_str()) {
-        return Ok(format!("https://{host}"));
-    }
-    Err(
-        "stats needs a deployed server: add a [deploy] section with `host` \
-         (or `api_base`) to silan-viking.toml"
-            .to_owned(),
-    )
-}
-
 /// `silan stats sync <uri>` — pull this item's runtime stats from the Go API
 /// into the local cache.
 fn stats_sync(content_root: &Path, db_path: &Path, uri: &str) -> Result<(), String> {
     let conn = Connection::open(db_path)
         .map_err(|e| format!("open local db {}: {e}", db_path.display()))?;
     let filter = resolve_stats_filter(&conn, uri)?;
-    let base = api_base_url(content_root)?;
+    let base = silan_viking_app::api_base_url(content_root).map_err(|e| e.to_string())?;
     let sync = silan_viking_app::StatsSync::new(base, db_path);
     sync.sync_item(&filter.entity_type, &filter.entity_id)
         .map_err(|e| e.to_string())?;
@@ -2165,7 +2141,20 @@ fn desktop_editor(content_root: &Path, db_path: &Path, args: &[&str]) -> Result<
         ));
     }
 
-    let project_root = content_root.parent().unwrap_or(content_root);
+    let content_root = fs::canonicalize(content_root).map_err(|error| {
+        format!(
+            "desktop: resolve content root {}: {error}",
+            content_root.display()
+        )
+    })?;
+    let db_path = absolute_path(db_path).map_err(|error| {
+        format!(
+            "desktop: resolve database path {}: {error}",
+            db_path.display()
+        )
+    })?;
+
+    let project_root = content_root.parent().unwrap_or(&content_root);
     let desktop_dir = project_root.join("desktop");
     let package_json = desktop_dir.join("package.json");
     if !package_json.is_file() {
@@ -2175,10 +2164,10 @@ fn desktop_editor(content_root: &Path, db_path: &Path, args: &[&str]) -> Result<
         ));
     }
 
-    let workspace = Workspace::open(content_root)
+    let workspace = Workspace::open(&content_root)
         .map_err(|error| format!("desktop: open content workspace: {error}"))?;
     let sync = workspace
-        .sync(db_path)
+        .sync(&db_path)
         .map_err(|error| format!("desktop: refresh SQLite projection: {error}"))?;
 
     println!("desktop editor: Silan Desktop Tauri app");
@@ -2194,8 +2183,8 @@ fn desktop_editor(content_root: &Path, db_path: &Path, args: &[&str]) -> Result<
 
     let status = Command::new("npm")
         .current_dir(&desktop_dir)
-        .env("SILAN_DESKTOP_CONTENT", content_root)
-        .env("SILAN_DESKTOP_DB", db_path)
+        .env("SILAN_DESKTOP_CONTENT", &content_root)
+        .env("SILAN_DESKTOP_DB", &db_path)
         .args(["run", "desktop"])
         .status()
         .map_err(|e| format!("launch Tauri desktop app: {e}"))?;
@@ -2319,13 +2308,18 @@ impl FrontendBuildTarget {
         if self.static_base.is_some() {
             "build:static".to_owned()
         } else {
-            "build".to_owned()
+            "build:seo".to_owned()
         }
     }
 
     fn npm_args(&self) -> Vec<String> {
         match &self.static_base {
-            Some(base) => vec!["run".to_owned(), self.npm_script(), "--".to_owned(), base.clone()],
+            Some(base) => vec![
+                "run".to_owned(),
+                self.npm_script(),
+                "--".to_owned(),
+                base.clone(),
+            ],
             None => vec!["run".to_owned(), self.npm_script()],
         }
     }
@@ -2345,7 +2339,9 @@ fn normalize_static_base(value: &str) -> Result<String, String> {
         return Err("--static-base needs a non-empty base path".to_owned());
     }
     if trimmed.contains("://") {
-        return Err(format!("--static-base={trimmed}: expected a path, not a URL"));
+        return Err(format!(
+            "--static-base={trimmed}: expected a path, not a URL"
+        ));
     }
     let with_leading = if trimmed.starts_with('/') {
         trimmed.to_owned()
@@ -2401,8 +2397,7 @@ fn build_frontend_target(
     }
     if which("npm").is_none() {
         return Err(
-            "[frontend] `npm` not found on PATH · install Node.js to build the frontend"
-                .to_owned(),
+            "[frontend] `npm` not found on PATH · install Node.js to build the frontend".to_owned(),
         );
     }
 
@@ -3543,6 +3538,7 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
         cfg,
         &format!("test -f {etc_dir}/backend-api.yaml && echo yes || echo no"),
     )?;
+    let traffic_yaml = default_backend_traffic_yaml();
     if probe.trim() == "no" {
         println!("[backend] write {etc_dir}/backend-api.yaml (defaults)");
         let yaml = format!(
@@ -3555,9 +3551,11 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
              \x20\x20host: ''\n\x20\x20port: ''\n\x20\x20user: ''\n\
              \x20\x20password: ''\n\x20\x20name: ''\n\x20\x20ssl_mode: ''\n\
              Auth:\n\x20\x20google_client_id: ''\n\
-             Media:\n\x20\x20Root: {dir}/api/media\n",
+             Media:\n\x20\x20Root: {dir}/api/media\n\
+             {traffic_yaml}",
             port = cfg.backend_port,
             dir = cfg.remote_dir,
+            traffic_yaml = traffic_yaml,
         );
         // Use a heredoc-like base64 round-trip so any awkward shell
         // characters (back-quotes, $ signs) survive intact.
@@ -3566,9 +3564,105 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
             cfg,
             &format!("echo {b64} | base64 -d > {etc_dir}/backend-api.yaml"),
         )?;
+    } else {
+        let has_traffic = ssh_exec(
+            cfg,
+            &format!("grep -q '^Traffic:' {etc_dir}/backend-api.yaml && echo yes || echo no"),
+        )?;
+        if has_traffic.trim() == "no" {
+            println!("[backend] append missing Traffic defaults to {etc_dir}/backend-api.yaml");
+            let b64 = base64_encode(format!("\n{traffic_yaml}").as_bytes());
+            ssh_exec(
+                cfg,
+                &format!("echo {b64} | base64 -d >> {etc_dir}/backend-api.yaml"),
+            )?;
+        }
     }
     let _ = std::fs::remove_file(&tarball);
     Ok(())
+}
+
+fn default_backend_traffic_yaml() -> &'static str {
+    "Traffic:\n\
+     \x20\x20ai_user_agents:\n\
+     \x20\x20\x20\x20- gptbot\n\
+     \x20\x20\x20\x20- chatgpt-user\n\
+     \x20\x20\x20\x20- oai-searchbot\n\
+     \x20\x20\x20\x20- claudebot\n\
+     \x20\x20\x20\x20- anthropic-ai\n\
+     \x20\x20\x20\x20- perplexitybot\n\
+     \x20\x20\x20\x20- google-extended\n\
+     \x20\x20search_user_agents:\n\
+     \x20\x20\x20\x20- googlebot\n\
+     \x20\x20\x20\x20- bingbot\n\
+     \x20\x20\x20\x20- duckduckbot\n\
+     \x20\x20\x20\x20- baiduspider\n\
+     \x20\x20\x20\x20- yandexbot\n\
+     \x20\x20\x20\x20- bot\n\
+     \x20\x20\x20\x20- crawler\n\
+     \x20\x20\x20\x20- spider\n\
+     \x20\x20bot_user_agents:\n\
+     \x20\x20\x20\x20- { token: googlebot, name: Googlebot }\n\
+     \x20\x20\x20\x20- { token: google-inspectiontool, name: Googlebot }\n\
+     \x20\x20\x20\x20- { token: storebot-google, name: Googlebot }\n\
+     \x20\x20\x20\x20- { token: bingbot, name: Bingbot }\n\
+     \x20\x20\x20\x20- { token: slurp, name: Yahoo Slurp }\n\
+     \x20\x20\x20\x20- { token: duckduckbot, name: DuckDuckBot }\n\
+     \x20\x20\x20\x20- { token: baiduspider, name: Baiduspider }\n\
+     \x20\x20\x20\x20- { token: yandexbot, name: YandexBot }\n\
+     \x20\x20\x20\x20- { token: sogou, name: Sogou Spider }\n\
+     \x20\x20\x20\x20- { token: bytespider, name: Bytespider }\n\
+     \x20\x20\x20\x20- { token: applebot, name: Applebot }\n\
+     \x20\x20\x20\x20- { token: facebookexternalhit, name: Facebook }\n\
+     \x20\x20\x20\x20- { token: facebot, name: Facebook }\n\
+     \x20\x20\x20\x20- { token: twitterbot, name: Twitterbot }\n\
+     \x20\x20\x20\x20- { token: linkedinbot, name: LinkedInBot }\n\
+     \x20\x20\x20\x20- { token: slackbot, name: Slackbot }\n\
+     \x20\x20\x20\x20- { token: telegrambot, name: TelegramBot }\n\
+     \x20\x20\x20\x20- { token: whatsapp, name: WhatsApp }\n\
+     \x20\x20\x20\x20- { token: discordbot, name: Discordbot }\n\
+     \x20\x20\x20\x20- { token: pinterest, name: Pinterest }\n\
+     \x20\x20\x20\x20- { token: mj12bot, name: MJ12bot }\n\
+     \x20\x20\x20\x20- { token: ahrefsbot, name: AhrefsBot }\n\
+     \x20\x20\x20\x20- { token: semrushbot, name: SemrushBot }\n\
+     \x20\x20\x20\x20- { token: petalbot, name: PetalBot }\n\
+     \x20\x20\x20\x20- { token: gptbot, name: GPTBot }\n\
+     \x20\x20\x20\x20- { token: oai-searchbot, name: OAI-SearchBot }\n\
+     \x20\x20\x20\x20- { token: chatgpt-user, name: ChatGPT-User }\n\
+     \x20\x20\x20\x20- { token: claudebot, name: ClaudeBot }\n\
+     \x20\x20\x20\x20- { token: perplexitybot, name: PerplexityBot }\n\
+     \x20\x20\x20\x20- { token: ccbot, name: CCBot }\n\
+     \x20\x20generic_bot_tokens:\n\
+     \x20\x20\x20\x20- bot\n\
+     \x20\x20\x20\x20- crawler\n\
+     \x20\x20\x20\x20- spider\n\
+     \x20\x20other_bot_name: Other Bot\n\
+     \x20\x20internal_referrers:\n\
+     \x20\x20\x20\x20- silan.tech\n\
+     \x20\x20\x20\x20- localhost\n\
+     \x20\x20\x20\x20- 127.0.0.1\n\
+     \x20\x20ai_referrers:\n\
+     \x20\x20\x20\x20- chatgpt\n\
+     \x20\x20\x20\x20- perplexity\n\
+     \x20\x20\x20\x20- gemini\n\
+     \x20\x20\x20\x20- claude\n\
+     \x20\x20\x20\x20- copilot\n\
+     \x20\x20search_referrers:\n\
+     \x20\x20\x20\x20- google.\n\
+     \x20\x20\x20\x20- bing.\n\
+     \x20\x20\x20\x20- duckduckgo.\n\
+     \x20\x20\x20\x20- baidu.\n\
+     \x20\x20\x20\x20- yahoo.\n\
+     \x20\x20\x20\x20- yandex.\n\
+     \x20\x20social_referrers:\n\
+     \x20\x20\x20\x20- x.com\n\
+     \x20\x20\x20\x20- twitter.\n\
+     \x20\x20\x20\x20- linkedin.\n\
+     \x20\x20\x20\x20- facebook.\n\
+     \x20\x20\x20\x20- instagram.\n\
+     \x20\x20\x20\x20- reddit.\n\
+     \x20\x20\x20\x20- weibo.\n\
+     \x20\x20\x20\x20- zhihu.\n"
 }
 
 /// Minimal base64 encoder — used only for shipping a multi-line YAML

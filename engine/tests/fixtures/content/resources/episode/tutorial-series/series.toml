@@ -2,4 +2,5 @@
 title       = "Tutorial Series"
 slug        = "tutorial-series"
 description = "A walkthrough series."
+cover_url   = "silan://resources/episode/tutorial-series/assets/cover.png"
 status      = "ongoing"

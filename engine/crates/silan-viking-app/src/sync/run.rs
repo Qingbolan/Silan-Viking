@@ -14,6 +14,7 @@
 //! The whole run is one `#[tracing::instrument]` span (`09` §9.2.2).
 
 use super::error::SyncError;
+use super::mapper::media_uri;
 use super::mapper::MapperRegistry;
 use super::rows::{Row, RowSet, RowSetBatch, SqlValue};
 use super::sink::{Sink, SqliteSink};
@@ -192,6 +193,10 @@ fn episode_series_rows(scan: &ScanReport) -> RowSet {
                 .with("slug", SqlValue::Text(series.slug.clone()))
                 .with("title", SqlValue::Text(series.title.clone()))
                 .with("description", SqlValue::Text(series.description.clone()))
+                .with(
+                    "cover_url",
+                    SqlValue::Text(media_uri::rewrite_reference(&series.cover_url)),
+                )
                 .with("status", SqlValue::Text(series.status.clone())),
         );
     }

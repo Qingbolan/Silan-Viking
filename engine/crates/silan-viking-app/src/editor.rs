@@ -89,6 +89,39 @@ pub struct SourceDocument {
     pub relative_path: String,
 }
 
+/// The editable Resume profile source: YAML frontmatter plus Markdown bio
+/// from `resume/parts/summary/<lang>.md`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResumeProfileSource {
+    /// YAML frontmatter without fences.
+    pub frontmatter: String,
+    /// Markdown body after the frontmatter.
+    pub body: String,
+    /// Hash of the complete source file, used for optimistic concurrency.
+    pub revision: String,
+    /// Source path relative to `content/` for user-facing context.
+    pub relative_path: String,
+}
+
+/// Editable source for one episode series' `series.toml`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SeriesMetadataSource {
+    /// Directory slug under `content/resources/episode/`.
+    pub slug: String,
+    /// Series title stored in `series.toml`.
+    pub title: String,
+    /// Series description stored in `series.toml`.
+    pub description: String,
+    /// Series cover image URL/reference stored in `series.toml`.
+    pub cover_url: String,
+    /// Series status stored in `series.toml`.
+    pub status: String,
+    /// Hash of the complete `series.toml`, used for optimistic concurrency.
+    pub revision: String,
+    /// Source path relative to `content/` for user-facing context.
+    pub relative_path: String,
+}
+
 /// Source editing failures with an operator-actionable cause.
 #[derive(Debug, Error)]
 pub enum EditorError {
@@ -226,6 +259,381 @@ impl ContentEditor {
         Ok(self.source_document(&path, &persisted))
     }
 
+    /// Update selected YAML frontmatter scalar fields and refresh the
+    /// projection. This is the metadata counterpart to body editing:
+    /// lifecycle controls (`status`, `visibility`) mutate the source file
+    /// that owns item-level frontmatter, never the SQLite projection.
+    pub fn save_frontmatter_fields_and_sync(
+        &self,
+        locator: &TranslationLocator,
+        fields: &[(&str, &str)],
+        expected_revision: &str,
+        db_path: impl AsRef<Path>,
+    ) -> Result<SourceDocument, EditorError> {
+        let path = self.source_path(locator);
+        let relative_path = self.relative_path(&path);
+        let _save_guard = source_lock::acquire().map_err(|detail| EditorError::Io {
+            path: relative_path.clone(),
+            detail,
+        })?;
+        let original = read_source(&path)?;
+        let actual_revision = ContentHash::of(original.as_bytes());
+        if actual_revision.as_str() != expected_revision {
+            return Err(EditorError::RevisionConflict {
+                path: relative_path,
+            });
+        }
+
+        let doc = frontmatter::split(&original);
+        let mut map = parse_frontmatter_mapping(&doc.frontmatter, &relative_path)?;
+        for (key, value) in fields {
+            map.insert(
+                serde_yaml::Value::String((*key).to_owned()),
+                serde_yaml::Value::String((*value).to_owned()),
+            );
+        }
+        let frontmatter =
+            serde_yaml::to_string(&serde_yaml::Value::Mapping(map)).map_err(|error| {
+                EditorError::Io {
+                    path: relative_path.clone(),
+                    detail: format!("cannot serialize frontmatter: {error}"),
+                }
+            })?;
+        let updated = format!("---\n{}\n---\n{}", frontmatter.trim_end(), doc.body);
+        if updated == original {
+            return Ok(self.source_document(&path, &original));
+        }
+
+        atomic_replace(&path, updated.as_bytes())?;
+        if let Err(error) = self.workspace.sync(db_path.as_ref()) {
+            let projection = error.to_string();
+            let current = read_source(&path).map_err(|error| EditorError::Rollback {
+                path: relative_path.clone(),
+                projection: projection.clone(),
+                rollback: format!("cannot verify the source before rollback: {error}"),
+            })?;
+            if ContentHash::of(current.as_bytes()) != ContentHash::of(updated.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: "source changed after save; refusing to overwrite the external edit"
+                        .to_owned(),
+                });
+            }
+            if let Err(rollback) = atomic_replace(&path, original.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: rollback.to_string(),
+                });
+            }
+            return Err(EditorError::Projection {
+                path: relative_path,
+                detail: projection,
+            });
+        }
+
+        let persisted = read_source(&path)?;
+        Ok(self.source_document(&path, &persisted))
+    }
+
+    /// Read one structured Resume part file (`entry_list` /
+    /// `key_value_list` TOML) for a language. Unlike Markdown parts there
+    /// is no frontmatter: `body` is the complete file content.
+    pub fn read_resume_part(
+        &self,
+        role: &str,
+        language: &str,
+    ) -> Result<SourceDocument, EditorError> {
+        let path = self.resume_part_path(role, language)?;
+        let source = read_source(&path)?;
+        Ok(SourceDocument {
+            body: source.clone(),
+            revision: ContentHash::of(source.as_bytes()).to_string(),
+            relative_path: self.relative_path(&path),
+        })
+    }
+
+    /// Save one structured Resume part file and refresh the SQLite
+    /// projection as one recoverable operation, with the same optimistic
+    /// concurrency and rollback discipline as [`Self::save_markdown_and_sync`].
+    pub fn save_resume_part_and_sync(
+        &self,
+        role: &str,
+        language: &str,
+        content: &str,
+        expected_revision: &str,
+        db_path: impl AsRef<Path>,
+    ) -> Result<SourceDocument, EditorError> {
+        let path = self.resume_part_path(role, language)?;
+        let relative_path = self.relative_path(&path);
+        let _save_guard = source_lock::acquire().map_err(|detail| EditorError::Io {
+            path: relative_path.clone(),
+            detail,
+        })?;
+        let original = read_source(&path)?;
+        let actual_revision = ContentHash::of(original.as_bytes());
+        if actual_revision.as_str() != expected_revision {
+            return Err(EditorError::RevisionConflict {
+                path: relative_path,
+            });
+        }
+        if content == original {
+            return self.read_resume_part(role, language);
+        }
+
+        atomic_replace(&path, content.as_bytes())?;
+        if let Err(error) = self.workspace.sync(db_path.as_ref()) {
+            let projection = error.to_string();
+            let current = read_source(&path).map_err(|error| EditorError::Rollback {
+                path: relative_path.clone(),
+                projection: projection.clone(),
+                rollback: format!("cannot verify the source before rollback: {error}"),
+            })?;
+            if ContentHash::of(current.as_bytes()) != ContentHash::of(content.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: "source changed after save; refusing to overwrite the external edit"
+                        .to_owned(),
+                });
+            }
+            if let Err(rollback) = atomic_replace(&path, original.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: rollback.to_string(),
+                });
+            }
+            return Err(EditorError::Projection {
+                path: relative_path,
+                detail: projection,
+            });
+        }
+
+        self.read_resume_part(role, language)
+    }
+
+    /// Read the resume profile header — the YAML frontmatter of
+    /// `summary/<lang>.md` (name, title, contact, social links).
+    pub fn read_resume_profile(&self, language: &str) -> Result<ResumeProfileSource, EditorError> {
+        let path = self.resume_summary_path(language)?;
+        let source = read_source(&path)?;
+        let doc = frontmatter::split(&source);
+        Ok(ResumeProfileSource {
+            frontmatter: doc.frontmatter,
+            body: doc.body,
+            revision: ContentHash::of(source.as_bytes()).to_string(),
+            relative_path: self.relative_path(&path),
+        })
+    }
+
+    /// Save the resume profile header and refresh the SQLite projection as
+    /// one recoverable operation. The Markdown body is preserved
+    /// byte-for-byte — this is the frontmatter counterpart of
+    /// [`Self::save_markdown_and_sync`].
+    pub fn save_resume_profile_and_sync(
+        &self,
+        language: &str,
+        frontmatter_text: &str,
+        body: &str,
+        expected_revision: &str,
+        db_path: impl AsRef<Path>,
+    ) -> Result<ResumeProfileSource, EditorError> {
+        let path = self.resume_summary_path(language)?;
+        let relative_path = self.relative_path(&path);
+        let _save_guard = source_lock::acquire().map_err(|detail| EditorError::Io {
+            path: relative_path.clone(),
+            detail,
+        })?;
+        let original = read_source(&path)?;
+        let actual_revision = ContentHash::of(original.as_bytes());
+        if actual_revision.as_str() != expected_revision {
+            return Err(EditorError::RevisionConflict {
+                path: relative_path,
+            });
+        }
+
+        let updated = format!(
+            "---\n{}\n---\n{body}",
+            frontmatter_text.trim_end_matches('\n'),
+        );
+        if updated == original {
+            return self.read_resume_profile(language);
+        }
+
+        atomic_replace(&path, updated.as_bytes())?;
+        if let Err(error) = self.workspace.sync(db_path.as_ref()) {
+            let projection = error.to_string();
+            let current = read_source(&path).map_err(|error| EditorError::Rollback {
+                path: relative_path.clone(),
+                projection: projection.clone(),
+                rollback: format!("cannot verify the source before rollback: {error}"),
+            })?;
+            if ContentHash::of(current.as_bytes()) != ContentHash::of(updated.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: "source changed after save; refusing to overwrite the external edit"
+                        .to_owned(),
+                });
+            }
+            if let Err(rollback) = atomic_replace(&path, original.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: rollback.to_string(),
+                });
+            }
+            return Err(EditorError::Projection {
+                path: relative_path,
+                detail: projection,
+            });
+        }
+
+        self.read_resume_profile(language)
+    }
+
+    /// Read an episode series' directory-level metadata (`series.toml`).
+    pub fn read_episode_series_metadata(
+        &self,
+        series_slug: &str,
+    ) -> Result<SeriesMetadataSource, EditorError> {
+        let path = self.episode_series_path(series_slug)?;
+        let source = read_source(&path)?;
+        self.series_metadata_source(series_slug, &path, &source)
+    }
+
+    /// Save an episode series' metadata and refresh the SQLite projection as
+    /// one recoverable operation. This edits `series.toml`, not any episode
+    /// Item, so episode publication state remains owned by episode files.
+    pub fn save_episode_series_metadata_and_sync(
+        &self,
+        series_slug: &str,
+        title: &str,
+        description: &str,
+        cover_url: &str,
+        status: &str,
+        expected_revision: &str,
+        db_path: impl AsRef<Path>,
+    ) -> Result<SeriesMetadataSource, EditorError> {
+        let path = self.episode_series_path(series_slug)?;
+        let relative_path = self.relative_path(&path);
+        let _save_guard = source_lock::acquire().map_err(|detail| EditorError::Io {
+            path: relative_path.clone(),
+            detail,
+        })?;
+        let original = read_source(&path)?;
+        let actual_revision = ContentHash::of(original.as_bytes());
+        if actual_revision.as_str() != expected_revision {
+            return Err(EditorError::RevisionConflict {
+                path: relative_path,
+            });
+        }
+
+        let mut table = parse_toml_table(&original, &self.relative_path(&path))?;
+        table.insert("title".to_owned(), toml::Value::String(title.to_owned()));
+        table.insert(
+            "slug".to_owned(),
+            toml::Value::String(series_slug.to_owned()),
+        );
+        table.insert(
+            "description".to_owned(),
+            toml::Value::String(description.to_owned()),
+        );
+        table.insert(
+            "cover_url".to_owned(),
+            toml::Value::String(cover_url.to_owned()),
+        );
+        table.insert("status".to_owned(), toml::Value::String(status.to_owned()));
+        let updated = toml::to_string_pretty(&toml::Value::Table(table)).map_err(|error| {
+            EditorError::Io {
+                path: self.relative_path(&path),
+                detail: format!("cannot serialize series metadata: {error}"),
+            }
+        })?;
+        if updated == original {
+            return self.read_episode_series_metadata(series_slug);
+        }
+
+        atomic_replace(&path, updated.as_bytes())?;
+        if let Err(error) = self.workspace.sync(db_path.as_ref()) {
+            let projection = error.to_string();
+            let current = read_source(&path).map_err(|error| EditorError::Rollback {
+                path: self.relative_path(&path),
+                projection: projection.clone(),
+                rollback: format!("cannot verify the source before rollback: {error}"),
+            })?;
+            if ContentHash::of(current.as_bytes()) != ContentHash::of(updated.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: self.relative_path(&path),
+                    projection,
+                    rollback: "source changed after save; refusing to overwrite the external edit"
+                        .to_owned(),
+                });
+            }
+            if let Err(rollback) = atomic_replace(&path, original.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: self.relative_path(&path),
+                    projection,
+                    rollback: rollback.to_string(),
+                });
+            }
+            return Err(EditorError::Projection {
+                path: self.relative_path(&path),
+                detail: projection,
+            });
+        }
+
+        self.read_episode_series_metadata(series_slug)
+    }
+
+    fn episode_series_path(&self, series_slug: &str) -> Result<PathBuf, EditorError> {
+        let series_slug = Slug::new(series_slug).map_err(|error| EditorError::InvalidLocator {
+            detail: error.to_string(),
+        })?;
+        Ok(self
+            .workspace
+            .content_root()
+            .join("resources")
+            .join(ContentKind::Episode.dir_name())
+            .join(series_slug.as_str())
+            .join("series.toml"))
+    }
+
+    fn resume_summary_path(&self, language: &str) -> Result<PathBuf, EditorError> {
+        let language = Lang::new(language).map_err(|error| EditorError::InvalidLocator {
+            detail: error.to_string(),
+        })?;
+        Ok(self
+            .workspace
+            .content_root()
+            .join("resources")
+            .join(ContentKind::Resume.dir_name())
+            .join("parts")
+            .join("summary")
+            .join(format!("{}.md", language.as_str())))
+    }
+
+    fn resume_part_path(&self, role: &str, language: &str) -> Result<PathBuf, EditorError> {
+        if !is_safe_component(role) {
+            return Err(EditorError::InvalidLocator {
+                detail: format!("invalid Part role `{role}`"),
+            });
+        }
+        let language = Lang::new(language).map_err(|error| EditorError::InvalidLocator {
+            detail: error.to_string(),
+        })?;
+        Ok(self
+            .workspace
+            .content_root()
+            .join("resources")
+            .join(ContentKind::Resume.dir_name())
+            .join("parts")
+            .join(role)
+            .join(format!("{}.toml", language.as_str())))
+    }
+
     fn source_path(&self, locator: &TranslationLocator) -> PathBuf {
         let mut path = self
             .workspace
@@ -255,6 +663,36 @@ impl ContentEditor {
         }
     }
 
+    fn series_metadata_source(
+        &self,
+        series_slug: &str,
+        path: &Path,
+        source: &str,
+    ) -> Result<SeriesMetadataSource, EditorError> {
+        let table = parse_toml_table(source, &self.relative_path(path))?;
+        let text = |key: &str| {
+            table
+                .get(key)
+                .and_then(toml::Value::as_str)
+                .unwrap_or_default()
+                .to_owned()
+        };
+        Ok(SeriesMetadataSource {
+            slug: series_slug.to_owned(),
+            title: text("title"),
+            description: text("description"),
+            cover_url: text("cover_url"),
+            status: table
+                .get("status")
+                .and_then(toml::Value::as_str)
+                .filter(|value| !value.is_empty())
+                .unwrap_or("ongoing")
+                .to_owned(),
+            revision: ContentHash::of(source.as_bytes()).to_string(),
+            relative_path: self.relative_path(path),
+        })
+    }
+
     fn relative_path(&self, path: &Path) -> String {
         path.strip_prefix(self.workspace.content_root())
             .unwrap_or(path)
@@ -282,6 +720,46 @@ fn read_source(path: &Path) -> Result<String, EditorError> {
         path: path.display().to_string(),
         detail: error.to_string(),
     })
+}
+
+fn parse_frontmatter_mapping(
+    frontmatter: &str,
+    relative_path: &str,
+) -> Result<serde_yaml::Mapping, EditorError> {
+    if frontmatter.trim().is_empty() {
+        return Ok(serde_yaml::Mapping::new());
+    }
+    let value: serde_yaml::Value =
+        serde_yaml::from_str(frontmatter).map_err(|error| EditorError::Io {
+            path: relative_path.to_owned(),
+            detail: format!("cannot parse frontmatter: {error}"),
+        })?;
+    match value {
+        serde_yaml::Value::Mapping(map) => Ok(map),
+        serde_yaml::Value::Null => Ok(serde_yaml::Mapping::new()),
+        _ => Err(EditorError::Io {
+            path: relative_path.to_owned(),
+            detail: "frontmatter is not a YAML mapping".to_owned(),
+        }),
+    }
+}
+
+fn parse_toml_table(
+    source: &str,
+    relative_path: &str,
+) -> Result<toml::map::Map<String, toml::Value>, EditorError> {
+    match source
+        .parse::<toml::Value>()
+        .map_err(|error| EditorError::Io {
+            path: relative_path.to_owned(),
+            detail: format!("cannot parse TOML: {error}"),
+        })? {
+        toml::Value::Table(table) => Ok(table),
+        _ => Err(EditorError::Io {
+            path: relative_path.to_owned(),
+            detail: "series metadata is not a TOML table".to_owned(),
+        }),
+    }
 }
 
 fn atomic_replace(path: &Path, bytes: &[u8]) -> Result<(), EditorError> {

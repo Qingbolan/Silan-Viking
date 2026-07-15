@@ -125,3 +125,199 @@ fn projection_failure_restores_the_original_markdown() {
         original.revision
     );
 }
+
+#[test]
+fn save_frontmatter_fields_updates_source_then_refreshes_the_projection() {
+    let temporary = tempfile::tempdir().expect("temporary workspace");
+    let content_root = temporary.path().join("content");
+    let db_path = temporary.path().join("portfolio.db");
+    copy_tree(&fixture_root(), &content_root);
+
+    Workspace::open(&content_root)
+        .expect("open copied fixture")
+        .sync(&db_path)
+        .expect("seed projection");
+
+    let editor = ContentEditor::open(&content_root).expect("open source editor");
+    let locator = TranslationLocator::new(
+        ContentKind::Blog,
+        "hello-world",
+        None::<String>,
+        "body",
+        "en",
+    )
+    .expect("valid locator");
+    let original = editor.read_markdown(&locator).expect("read source");
+    let source_path = content_root.join(&original.relative_path);
+    let source_before = fs::read_to_string(&source_path).expect("read source bytes");
+
+    let saved = editor
+        .save_frontmatter_fields_and_sync(
+            &locator,
+            &[("status", "published"), ("visibility", "public")],
+            &original.revision,
+            &db_path,
+        )
+        .expect("save frontmatter and sync");
+
+    let source_after = fs::read_to_string(source_path).expect("read updated source");
+    assert!(source_after.contains("status: published"));
+    assert!(source_after.contains("visibility: public"));
+    assert_eq!(saved.body, original.body);
+    assert_ne!(saved.revision, original.revision);
+    assert_ne!(source_after, source_before);
+
+    let conn = Connection::open(&db_path).expect("open refreshed projection");
+    let projected: (String, String) = conn
+        .query_row(
+            "SELECT status, visibility FROM blog_posts WHERE slug = 'hello-world'",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .expect("projected state");
+    assert_eq!(projected, ("published".to_owned(), "public".to_owned()));
+}
+
+#[test]
+fn save_resume_part_rewrites_toml_then_refreshes_the_projection() {
+    let temporary = tempfile::tempdir().expect("temporary workspace");
+    let content_root = temporary.path().join("content");
+    let db_path = temporary.path().join("portfolio.db");
+    copy_tree(&fixture_root(), &content_root);
+
+    Workspace::open(&content_root)
+        .expect("open copied fixture")
+        .sync(&db_path)
+        .expect("seed projection");
+
+    let editor = ContentEditor::open(&content_root).expect("open source editor");
+    let original = editor
+        .read_resume_part("education", "en")
+        .expect("read resume part");
+
+    let replacement = "\
+# education entry_list — TOML array-of-tables (per 10 §10.4.5).
+
+[[entry]]
+entry_id    = \"e_education_nus\"
+institution = \"National University of Singapore\"
+degree      = \"PhD Computer Science\"
+start_date  = \"2026-01-01\"
+gpa         = \"4.8/5.0\"
+details     = [\"Edited through ContentEditor\"]
+";
+    // A stale revision must never overwrite disk.
+    let conflict =
+        editor.save_resume_part_and_sync("education", "en", replacement, "stale", &db_path);
+    assert!(matches!(
+        conflict,
+        Err(EditorError::RevisionConflict { .. })
+    ));
+
+    let saved = editor
+        .save_resume_part_and_sync("education", "en", replacement, &original.revision, &db_path)
+        .expect("save resume part and sync");
+    assert_ne!(saved.revision, original.revision);
+    assert_eq!(
+        fs::read_to_string(content_root.join(&saved.relative_path)).expect("read updated TOML"),
+        replacement
+    );
+
+    let connection = Connection::open(&db_path).expect("open projection");
+    let localized: String = connection
+        .query_row(
+            "
+            SELECT t.localized_payload
+            FROM part_entry AS pe
+            INNER JOIN item_part AS ip ON ip.id = pe.item_part_id
+            INNER JOIN part_entry_translation AS t
+                ON t.part_entry_id = pe.id AND t.language_code = 'en'
+            WHERE ip.entity_type = 'resume' AND ip.role = 'education'
+              AND pe.entry_id = 'e_education_nus'
+            ",
+            [],
+            |row| row.get(0),
+        )
+        .expect("read projected entry");
+    assert!(localized.contains("PhD Computer Science"));
+}
+
+#[test]
+fn save_episode_series_metadata_rewrites_series_toml_then_refreshes_projection() {
+    let temporary = tempfile::tempdir().expect("temporary workspace");
+    let content_root = temporary.path().join("content");
+    let db_path = temporary.path().join("portfolio.db");
+    copy_tree(&fixture_root(), &content_root);
+
+    Workspace::open(&content_root)
+        .expect("open copied fixture")
+        .sync(&db_path)
+        .expect("seed projection");
+
+    let editor = ContentEditor::open(&content_root).expect("open source editor");
+    let original = editor
+        .read_episode_series_metadata("tutorial-series")
+        .expect("read series metadata");
+    assert_eq!(original.title, "Tutorial Series");
+    assert_eq!(original.description, "A walkthrough series.");
+    assert_eq!(
+        original.cover_url,
+        "silan://resources/episode/tutorial-series/assets/cover.png"
+    );
+
+    let conflict = editor.save_episode_series_metadata_and_sync(
+        "tutorial-series",
+        "Updated Series",
+        "Edited through ContentEditor.",
+        "https://example.com/cover.png",
+        "completed",
+        "stale",
+        &db_path,
+    );
+    assert!(matches!(
+        conflict,
+        Err(EditorError::RevisionConflict { .. })
+    ));
+
+    let saved = editor
+        .save_episode_series_metadata_and_sync(
+            "tutorial-series",
+            "Updated Series",
+            "Edited through ContentEditor.",
+            "https://example.com/cover.png",
+            "completed",
+            &original.revision,
+            &db_path,
+        )
+        .expect("save series metadata and sync");
+    assert_eq!(saved.title, "Updated Series");
+    assert_eq!(saved.description, "Edited through ContentEditor.");
+    assert_eq!(saved.cover_url, "https://example.com/cover.png");
+    assert_eq!(saved.status, "completed");
+    assert_ne!(saved.revision, original.revision);
+
+    let source = fs::read_to_string(content_root.join(&saved.relative_path))
+        .expect("read updated series.toml");
+    assert!(source.contains("title = \"Updated Series\""));
+    assert!(source.contains("description = \"Edited through ContentEditor.\""));
+    assert!(source.contains("cover_url = \"https://example.com/cover.png\""));
+    assert!(source.contains("status = \"completed\""));
+
+    let connection = Connection::open(&db_path).expect("open projection");
+    let projected: (String, String, String, String) = connection
+        .query_row(
+            "SELECT title, description, cover_url, status FROM episode_series WHERE slug = 'tutorial-series'",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+        )
+        .expect("projected series metadata");
+    assert_eq!(
+        projected,
+        (
+            "Updated Series".to_owned(),
+            "Edited through ContentEditor.".to_owned(),
+            "https://example.com/cover.png".to_owned(),
+            "completed".to_owned()
+        )
+    );
+}

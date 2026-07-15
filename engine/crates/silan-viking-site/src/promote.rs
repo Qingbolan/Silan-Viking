@@ -177,6 +177,8 @@ fn promote_txn(conn: &Connection, content_commit: &str) -> Result<PromoteReport,
                     |r| r.get(0),
                 )?;
                 conn.execute_batch(&ddl)?;
+            } else {
+                add_missing_snapshot_columns(conn, table)?;
             }
             replaceable.push(*table);
         }
@@ -266,13 +268,68 @@ fn has_table(conn: &Connection, schema: &str, table: &str) -> Result<bool, Promo
     Ok(count > 0)
 }
 
-/// Information promote needs about a column of the live derived table.
-struct LiveColumn {
+/// Add snapshot-only columns to an existing live derived table.
+///
+/// Deploy promotion treats the `index sync` snapshot as authoritative for
+/// derived-table shape. Runtime tables are never passed here. SQLite cannot
+/// replace a table's full schema without rebuilding indexes and constraints,
+/// but additive projection columns are exactly what content schema evolution
+/// needs; adding them before the insert plan lets new fields deploy without
+/// discarding runtime-owned tables.
+fn add_missing_snapshot_columns(conn: &Connection, table: &str) -> Result<(), PromoteError> {
+    let snapshot_cols = table_columns(conn, "snapshot", table)?;
+    let live_cols = table_columns(conn, "main", table)?;
+    for col in snapshot_cols {
+        if live_cols.iter().any(|live| live.name == col.name) {
+            continue;
+        }
+        conn.execute(
+            &format!(
+                "ALTER TABLE {table} ADD COLUMN \"{}\" {}",
+                col.name,
+                column_type_sql(&col.decl_type)
+            ),
+            [],
+        )?;
+    }
+    Ok(())
+}
+
+/// Information promote needs about a column.
+struct TableColumn {
     name: String,
     /// SQLite declared type, lower-cased (`text`, `integer`, `datetime`, …).
     decl_type: String,
     not_null: bool,
     has_default: bool,
+}
+
+fn table_columns(
+    conn: &Connection,
+    schema: &str,
+    table: &str,
+) -> Result<Vec<TableColumn>, PromoteError> {
+    let mut stmt = conn.prepare(&format!("PRAGMA {schema}.table_info({table})"))?;
+    let columns = stmt
+        .query_map([], |row| {
+            Ok(TableColumn {
+                name: row.get::<_, String>(1)?,
+                decl_type: row.get::<_, String>(2)?.to_ascii_lowercase(),
+                not_null: row.get::<_, i64>(3)? != 0,
+                has_default: row.get::<_, Option<String>>(4)?.is_some(),
+            })
+        })?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(PromoteError::from)?;
+    Ok(columns)
+}
+
+fn column_type_sql(decl_type: &str) -> &str {
+    if decl_type.trim().is_empty() {
+        ""
+    } else {
+        decl_type
+    }
 }
 
 /// Plan how promote fills a derived table: a list of
@@ -293,23 +350,11 @@ struct LiveColumn {
 ///
 /// `table` is a `DERIVED_TABLES` literal, never user input.
 fn column_plan(conn: &Connection, table: &str) -> Result<Vec<(String, String)>, PromoteError> {
-    // Snapshot column names.
-    let mut snap_stmt = conn.prepare(&format!("PRAGMA snapshot.table_info({table})"))?;
-    let snapshot_cols: Vec<String> = snap_stmt
-        .query_map([], |row| row.get::<_, String>(1))?
-        .collect::<Result<Vec<_>, _>>()?;
-    // Live columns. `table_info` columns: 1=name, 2=type, 3=notnull, 4=dflt.
-    let mut live_stmt = conn.prepare(&format!("PRAGMA main.table_info({table})"))?;
-    let live_cols: Vec<LiveColumn> = live_stmt
-        .query_map([], |row| {
-            Ok(LiveColumn {
-                name: row.get::<_, String>(1)?,
-                decl_type: row.get::<_, String>(2)?.to_ascii_lowercase(),
-                not_null: row.get::<_, i64>(3)? != 0,
-                has_default: row.get::<_, Option<String>>(4)?.is_some(),
-            })
-        })?
-        .collect::<Result<Vec<_>, _>>()?;
+    let snapshot_cols: Vec<String> = table_columns(conn, "snapshot", table)?
+        .into_iter()
+        .map(|col| col.name)
+        .collect();
+    let live_cols = table_columns(conn, "main", table)?;
 
     let mut plan = Vec::new();
     for col in live_cols {
@@ -440,6 +485,66 @@ mod tests {
             .expect("query marker");
         assert_eq!(commit, "commit-abc");
         assert_eq!(hash, "hash-123");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn promote_adds_new_snapshot_columns_to_existing_derived_tables() {
+        let dir =
+            std::env::temp_dir().join(format!("silan-promote-schema-drift-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("mkdir");
+        let live = dir.join("live.db");
+        let snap = dir.join("snapshot.db");
+
+        {
+            let c = Connection::open(&live).expect("open live");
+            c.execute_batch(
+                "CREATE TABLE episode_series(id TEXT, slug TEXT, title TEXT, status TEXT);
+                 INSERT INTO episode_series VALUES('old','old-series','Old','ongoing');",
+            )
+            .expect("seed old live shape");
+        }
+        {
+            let c = Connection::open(&snap).expect("open snap");
+            c.execute_batch(
+                "CREATE TABLE episode_series(id TEXT, slug TEXT, title TEXT, cover_url TEXT, status TEXT);
+                 CREATE TABLE sync_meta(content_hash TEXT, items_total INTEGER, content_commit TEXT);
+                 INSERT INTO episode_series VALUES('new','fresh-series','Fresh','/api/v1/media?f=episode/fresh/assets/cover.png','completed');
+                 INSERT INTO sync_meta VALUES('hash-456', 1, '');",
+            )
+            .expect("seed snapshot shape");
+        }
+
+        promote(
+            live.to_str().expect("path"),
+            snap.to_str().expect("path"),
+            "commit-schema",
+        )
+        .expect("promote succeeds");
+
+        let c = Connection::open(&live).expect("reopen live");
+        let has_cover: bool = c
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM pragma_table_info('episode_series') WHERE name = 'cover_url')",
+                [],
+                |r| r.get(0),
+            )
+            .expect("schema query");
+        assert!(has_cover);
+        let projected: (String, String) = c
+            .query_row("SELECT slug, cover_url FROM episode_series", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .expect("query promoted row");
+        assert_eq!(
+            projected,
+            (
+                "fresh-series".to_owned(),
+                "/api/v1/media?f=episode/fresh/assets/cover.png".to_owned(),
+            )
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }
