@@ -3,6 +3,7 @@ import { get, post, formatLanguage, del, apiUrl } from '../utils';
 import { type PaginationRequest } from '../config';
 import { processRawContent } from '../../utils/markdownParser';
 import { getClientFingerprint } from '../../utils/fingerprint';
+import { isPrerenderRuntime } from '../../utils/runtimeContext';
 
 // Backend API request/response types
 interface BlogListRequest extends PaginationRequest {
@@ -79,6 +80,8 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
  * Update blog views
  */
 export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'): Promise<void> => {
+  if (isPrerenderRuntime()) return;
+
   try {
     const response = await fetch(apiUrl(`/api/v1/blog/posts/${id}/views?lang=${formatLanguage(language)}`), {
       method: 'POST',

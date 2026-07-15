@@ -1,5 +1,6 @@
 import { getClientFingerprint } from './fingerprint';
 import { apiUrl } from '../api/utils';
+import { isPrerenderRuntime } from './runtimeContext';
 
 export interface ReadingSession {
   postId: string;
@@ -147,6 +148,8 @@ class ReadingBehaviorTracker {
   }
 
   private async sendSessionData(session: ReadingSession): Promise<void> {
+    if (isPrerenderRuntime()) return;
+
     try {
       await fetch(apiUrl(`/api/v1/blog/posts/${session.postId}/views`), {
         method: 'POST',

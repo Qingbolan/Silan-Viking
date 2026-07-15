@@ -7,6 +7,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
+import { iconSrcForHref } from '../../utils/linkIcon';
 
 interface MarkdownProps {
   children: string;
@@ -41,6 +42,33 @@ const shiftLocalOutline = (markdown: string): string => {
 
 const prepareMarkdown = (markdown: string, documentTitle?: string): string =>
   shiftLocalOutline(embeddedBody(markdown ?? '', documentTitle));
+
+const shouldEnhanceAnchor = (anchor: HTMLAnchorElement): boolean => {
+  const href = anchor.getAttribute('href') || '';
+  if (!href || href.startsWith('#')) return false;
+  if (anchor.dataset.richLink === 'true') return false;
+  if (anchor.classList.contains('vditor-anchor')) return false;
+  return Boolean(anchor.textContent?.trim());
+};
+
+const enhanceAnchor = (anchor: HTMLAnchorElement) => {
+  const href = anchor.getAttribute('href') || '';
+  anchor.dataset.richLink = 'true';
+  anchor.setAttribute('data-ds', 'rich-link');
+  anchor.classList.add('markdown-rich-link');
+
+  const icon = document.createElement('img');
+  icon.src = iconSrcForHref(href);
+  icon.alt = '';
+  icon.loading = 'lazy';
+  icon.decoding = 'async';
+  icon.className = 'markdown-rich-link__icon';
+  icon.addEventListener('error', () => {
+    icon.src = '/avatar-icon-32.png';
+  }, { once: true });
+
+  anchor.prepend(icon);
+};
 
 const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle, inline = false }) => {
   const navigate = useNavigate();
@@ -81,6 +109,9 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle,
           if (/^https?:\/\//i.test(href)) {
             anchor.target = '_blank';
             anchor.rel = 'noopener noreferrer';
+          }
+          if (shouldEnhanceAnchor(anchor)) {
+            enhanceAnchor(anchor);
           }
         });
       },

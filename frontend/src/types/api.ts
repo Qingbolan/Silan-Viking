@@ -171,7 +171,15 @@ export interface ResumeData {
     };
     awards?: {
       title: string;
-      content: string[];
+      content: {
+        id: string;
+        title: string;
+        description?: string;
+        organization?: string;
+        date?: string;
+        category?: string;
+        url?: string;
+      }[];
     };
     skills?: {
       title: string;
@@ -256,6 +264,7 @@ export interface Award {
   description?: string;
   award_date?: string;
   category?: string;
+  url?: string;
   sort_order: number;
   created_at: string;
   updated_at: string;

@@ -1402,6 +1402,53 @@ code[class*="language-"] .token.italic { font-style: italic; }
   text-decoration-color: color-mix(in srgb, var(--color-accent, #f97316) 40%, transparent);
   text-underline-offset: 0.18em;
 }
+.vditor-markdown .vditor-reset a.markdown-rich-link,
+.rich-link {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-textPrimary, #171717) 6%, var(--color-background, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--color-textPrimary, #171717) 18%, var(--color-cardBorder, #d4d4d4));
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-background, #ffffff) 78%, transparent);
+  color: var(--color-textPrimary, #171717);
+  display: inline-flex;
+  font-weight: 560;
+  gap: 0.32rem;
+  line-height: 1.08;
+  margin: 0 0.1rem;
+  max-width: 100%;
+  padding: 0.2em 0.58em 0.18em 0.24em;
+  text-decoration: none;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, transform 180ms ease;
+  vertical-align: -0.12em;
+}
+.vditor-markdown .vditor-reset a.markdown-rich-link:hover,
+.rich-link:hover {
+  background: color-mix(in srgb, var(--color-textPrimary, #171717) 10%, var(--color-background, #ffffff));
+  border-color: color-mix(in srgb, var(--color-accent, #f97316) 36%, var(--color-cardBorder, #d4d4d4));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-background, #ffffff) 84%, transparent);
+  color: var(--color-textPrimary, #171717);
+  transform: translateY(-1px);
+}
+.vditor-markdown .vditor-reset a.markdown-rich-link:focus-visible,
+.rich-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent, #f97316) 48%, transparent);
+  outline-offset: 2px;
+}
+.vditor-markdown .vditor-reset a.markdown-rich-link:active,
+.rich-link:active {
+  transform: translateY(0);
+}
+.vditor-markdown .vditor-reset .markdown-rich-link__icon,
+.rich-link__icon {
+  background: var(--color-background, #ffffff);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-cardBorder, #e5e7eb) 72%, transparent);
+  flex: 0 0 auto;
+  height: 1.12em;
+  margin: 0;
+  object-fit: cover;
+  width: 1.12em;
+}
 .vditor-markdown .vditor-reset ul,
 .vditor-markdown .vditor-reset ol { padding-left: 1.4rem; }
 .vditor-markdown .vditor-reset li { margin: 0.25rem 0; }

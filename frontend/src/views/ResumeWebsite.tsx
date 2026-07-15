@@ -15,7 +15,7 @@ import { useTheme } from '../components/ThemeContext';
 import { BrandLoading } from '../components/ds/BrandLoading';
 import { ErrorState } from '../components/ds/ErrorState';
 import Markdown from '../components/ui/Markdown';
-import { Seo, SITE_URL } from '../components/Seo';
+import { Seo, personJsonLd } from '../components/Seo';
 import { publicAssetUrl } from '../utils/publicAsset';
 import { fetchResumeData, fetchPersonalInfo } from '../api/home/resumeApi';
 import {
@@ -286,12 +286,11 @@ const ResumeWebsite: React.FC = () => {
         type="profile"
         lang={language as 'en' | 'zh'}
         jsonLd={{
-          '@context': 'https://schema.org',
-          '@type': 'Person',
-          name: resumeData.name,
-          jobTitle: resumeData.title,
-          url: SITE_URL,
-          sameAs: resumeData.socialLinks?.map((l) => l.url).filter(Boolean) || [],
+          ...personJsonLd({
+            name: resumeData.name,
+            jobTitle: resumeData.title,
+            sameAs: resumeData.socialLinks?.map((l) => l.url).filter(Boolean) || [],
+          }),
         }}
       />
 

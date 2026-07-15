@@ -6,6 +6,7 @@ import type {
 import { get, post, del, formatLanguage } from '../utils';
 import { type PaginationRequest, type ListResponse } from '../config';
 import { mapContentParts } from '../contentParts';
+import { isPrerenderRuntime } from '../../utils/runtimeContext';
 
 // Backend API request/response types
 interface ProjectListRequest extends PaginationRequest {
@@ -487,6 +488,10 @@ export const recordProjectView = async (
     language?: 'en' | 'zh';
   } = {}
 ): Promise<RecordProjectViewResponse> => {
+  if (isPrerenderRuntime()) {
+    return { views_count: 0, view_recorded: false };
+  }
+
   const body: any = {
     fingerprint,
   };
