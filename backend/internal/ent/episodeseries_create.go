@@ -56,6 +56,20 @@ func (esc *EpisodeSeriesCreate) SetNillableDescription(s *string) *EpisodeSeries
 	return esc
 }
 
+// SetCoverURL sets the "cover_url" field.
+func (esc *EpisodeSeriesCreate) SetCoverURL(s string) *EpisodeSeriesCreate {
+	esc.mutation.SetCoverURL(s)
+	return esc
+}
+
+// SetNillableCoverURL sets the "cover_url" field if the given value is not nil.
+func (esc *EpisodeSeriesCreate) SetNillableCoverURL(s *string) *EpisodeSeriesCreate {
+	if s != nil {
+		esc.SetCoverURL(*s)
+	}
+	return esc
+}
+
 // SetStatus sets the "status" field.
 func (esc *EpisodeSeriesCreate) SetStatus(e episodeseries.Status) *EpisodeSeriesCreate {
 	esc.mutation.SetStatus(e)
@@ -210,6 +224,11 @@ func (esc *EpisodeSeriesCreate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.title": %w`, err)}
 		}
 	}
+	if v, ok := esc.mutation.CoverURL(); ok {
+		if err := episodeseries.CoverURLValidator(v); err != nil {
+			return &ValidationError{Name: "cover_url", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.cover_url": %w`, err)}
+		}
+	}
 	if _, ok := esc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "EpisodeSeries.status"`)}
 	}
@@ -264,6 +283,10 @@ func (esc *EpisodeSeriesCreate) createSpec() (*EpisodeSeries, *sqlgraph.CreateSp
 	if value, ok := esc.mutation.Description(); ok {
 		_spec.SetField(episodeseries.FieldDescription, field.TypeString, value)
 		_node.Description = &value
+	}
+	if value, ok := esc.mutation.CoverURL(); ok {
+		_spec.SetField(episodeseries.FieldCoverURL, field.TypeString, value)
+		_node.CoverURL = &value
 	}
 	if value, ok := esc.mutation.Status(); ok {
 		_spec.SetField(episodeseries.FieldStatus, field.TypeEnum, value)

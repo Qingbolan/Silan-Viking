@@ -84,6 +84,26 @@ func (esu *EpisodeSeriesUpdate) ClearDescription() *EpisodeSeriesUpdate {
 	return esu
 }
 
+// SetCoverURL sets the "cover_url" field.
+func (esu *EpisodeSeriesUpdate) SetCoverURL(s string) *EpisodeSeriesUpdate {
+	esu.mutation.SetCoverURL(s)
+	return esu
+}
+
+// SetNillableCoverURL sets the "cover_url" field if the given value is not nil.
+func (esu *EpisodeSeriesUpdate) SetNillableCoverURL(s *string) *EpisodeSeriesUpdate {
+	if s != nil {
+		esu.SetCoverURL(*s)
+	}
+	return esu
+}
+
+// ClearCoverURL clears the value of the "cover_url" field.
+func (esu *EpisodeSeriesUpdate) ClearCoverURL() *EpisodeSeriesUpdate {
+	esu.mutation.ClearCoverURL()
+	return esu
+}
+
 // SetStatus sets the "status" field.
 func (esu *EpisodeSeriesUpdate) SetStatus(e episodeseries.Status) *EpisodeSeriesUpdate {
 	esu.mutation.SetStatus(e)
@@ -235,6 +255,11 @@ func (esu *EpisodeSeriesUpdate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.title": %w`, err)}
 		}
 	}
+	if v, ok := esu.mutation.CoverURL(); ok {
+		if err := episodeseries.CoverURLValidator(v); err != nil {
+			return &ValidationError{Name: "cover_url", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.cover_url": %w`, err)}
+		}
+	}
 	if v, ok := esu.mutation.Status(); ok {
 		if err := episodeseries.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.status": %w`, err)}
@@ -269,6 +294,12 @@ func (esu *EpisodeSeriesUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if esu.mutation.DescriptionCleared() {
 		_spec.ClearField(episodeseries.FieldDescription, field.TypeString)
+	}
+	if value, ok := esu.mutation.CoverURL(); ok {
+		_spec.SetField(episodeseries.FieldCoverURL, field.TypeString, value)
+	}
+	if esu.mutation.CoverURLCleared() {
+		_spec.ClearField(episodeseries.FieldCoverURL, field.TypeString)
 	}
 	if value, ok := esu.mutation.Status(); ok {
 		_spec.SetField(episodeseries.FieldStatus, field.TypeEnum, value)
@@ -446,6 +477,26 @@ func (esuo *EpisodeSeriesUpdateOne) ClearDescription() *EpisodeSeriesUpdateOne {
 	return esuo
 }
 
+// SetCoverURL sets the "cover_url" field.
+func (esuo *EpisodeSeriesUpdateOne) SetCoverURL(s string) *EpisodeSeriesUpdateOne {
+	esuo.mutation.SetCoverURL(s)
+	return esuo
+}
+
+// SetNillableCoverURL sets the "cover_url" field if the given value is not nil.
+func (esuo *EpisodeSeriesUpdateOne) SetNillableCoverURL(s *string) *EpisodeSeriesUpdateOne {
+	if s != nil {
+		esuo.SetCoverURL(*s)
+	}
+	return esuo
+}
+
+// ClearCoverURL clears the value of the "cover_url" field.
+func (esuo *EpisodeSeriesUpdateOne) ClearCoverURL() *EpisodeSeriesUpdateOne {
+	esuo.mutation.ClearCoverURL()
+	return esuo
+}
+
 // SetStatus sets the "status" field.
 func (esuo *EpisodeSeriesUpdateOne) SetStatus(e episodeseries.Status) *EpisodeSeriesUpdateOne {
 	esuo.mutation.SetStatus(e)
@@ -610,6 +661,11 @@ func (esuo *EpisodeSeriesUpdateOne) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.title": %w`, err)}
 		}
 	}
+	if v, ok := esuo.mutation.CoverURL(); ok {
+		if err := episodeseries.CoverURLValidator(v); err != nil {
+			return &ValidationError{Name: "cover_url", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.cover_url": %w`, err)}
+		}
+	}
 	if v, ok := esuo.mutation.Status(); ok {
 		if err := episodeseries.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.status": %w`, err)}
@@ -661,6 +717,12 @@ func (esuo *EpisodeSeriesUpdateOne) sqlSave(ctx context.Context) (_node *Episode
 	}
 	if esuo.mutation.DescriptionCleared() {
 		_spec.ClearField(episodeseries.FieldDescription, field.TypeString)
+	}
+	if value, ok := esuo.mutation.CoverURL(); ok {
+		_spec.SetField(episodeseries.FieldCoverURL, field.TypeString, value)
+	}
+	if esuo.mutation.CoverURLCleared() {
+		_spec.ClearField(episodeseries.FieldCoverURL, field.TypeString)
 	}
 	if value, ok := esuo.mutation.Status(); ok {
 		_spec.SetField(episodeseries.FieldStatus, field.TypeEnum, value)

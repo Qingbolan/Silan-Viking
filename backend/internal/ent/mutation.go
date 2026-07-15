@@ -18399,6 +18399,7 @@ type EpisodeSeriesMutation struct {
 	slug                *string
 	title               *string
 	description         *string
+	cover_url           *string
 	status              *episodeseries.Status
 	created_at          *time.Time
 	updated_at          *time.Time
@@ -18650,6 +18651,55 @@ func (m *EpisodeSeriesMutation) DescriptionCleared() bool {
 func (m *EpisodeSeriesMutation) ResetDescription() {
 	m.description = nil
 	delete(m.clearedFields, episodeseries.FieldDescription)
+}
+
+// SetCoverURL sets the "cover_url" field.
+func (m *EpisodeSeriesMutation) SetCoverURL(s string) {
+	m.cover_url = &s
+}
+
+// CoverURL returns the value of the "cover_url" field in the mutation.
+func (m *EpisodeSeriesMutation) CoverURL() (r string, exists bool) {
+	v := m.cover_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCoverURL returns the old "cover_url" field's value of the EpisodeSeries entity.
+// If the EpisodeSeries object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EpisodeSeriesMutation) OldCoverURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCoverURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCoverURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCoverURL: %w", err)
+	}
+	return oldValue.CoverURL, nil
+}
+
+// ClearCoverURL clears the value of the "cover_url" field.
+func (m *EpisodeSeriesMutation) ClearCoverURL() {
+	m.cover_url = nil
+	m.clearedFields[episodeseries.FieldCoverURL] = struct{}{}
+}
+
+// CoverURLCleared returns if the "cover_url" field was cleared in this mutation.
+func (m *EpisodeSeriesMutation) CoverURLCleared() bool {
+	_, ok := m.clearedFields[episodeseries.FieldCoverURL]
+	return ok
+}
+
+// ResetCoverURL resets all changes to the "cover_url" field.
+func (m *EpisodeSeriesMutation) ResetCoverURL() {
+	m.cover_url = nil
+	delete(m.clearedFields, episodeseries.FieldCoverURL)
 }
 
 // SetStatus sets the "status" field.
@@ -18928,7 +18978,7 @@ func (m *EpisodeSeriesMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EpisodeSeriesMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.slug != nil {
 		fields = append(fields, episodeseries.FieldSlug)
 	}
@@ -18937,6 +18987,9 @@ func (m *EpisodeSeriesMutation) Fields() []string {
 	}
 	if m.description != nil {
 		fields = append(fields, episodeseries.FieldDescription)
+	}
+	if m.cover_url != nil {
+		fields = append(fields, episodeseries.FieldCoverURL)
 	}
 	if m.status != nil {
 		fields = append(fields, episodeseries.FieldStatus)
@@ -18961,6 +19014,8 @@ func (m *EpisodeSeriesMutation) Field(name string) (ent.Value, bool) {
 		return m.Title()
 	case episodeseries.FieldDescription:
 		return m.Description()
+	case episodeseries.FieldCoverURL:
+		return m.CoverURL()
 	case episodeseries.FieldStatus:
 		return m.Status()
 	case episodeseries.FieldCreatedAt:
@@ -18982,6 +19037,8 @@ func (m *EpisodeSeriesMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldTitle(ctx)
 	case episodeseries.FieldDescription:
 		return m.OldDescription(ctx)
+	case episodeseries.FieldCoverURL:
+		return m.OldCoverURL(ctx)
 	case episodeseries.FieldStatus:
 		return m.OldStatus(ctx)
 	case episodeseries.FieldCreatedAt:
@@ -19017,6 +19074,13 @@ func (m *EpisodeSeriesMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDescription(v)
+		return nil
+	case episodeseries.FieldCoverURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCoverURL(v)
 		return nil
 	case episodeseries.FieldStatus:
 		v, ok := value.(episodeseries.Status)
@@ -19075,6 +19139,9 @@ func (m *EpisodeSeriesMutation) ClearedFields() []string {
 	if m.FieldCleared(episodeseries.FieldDescription) {
 		fields = append(fields, episodeseries.FieldDescription)
 	}
+	if m.FieldCleared(episodeseries.FieldCoverURL) {
+		fields = append(fields, episodeseries.FieldCoverURL)
+	}
 	if m.FieldCleared(episodeseries.FieldCreatedAt) {
 		fields = append(fields, episodeseries.FieldCreatedAt)
 	}
@@ -19101,6 +19168,9 @@ func (m *EpisodeSeriesMutation) ClearField(name string) error {
 	case episodeseries.FieldDescription:
 		m.ClearDescription()
 		return nil
+	case episodeseries.FieldCoverURL:
+		m.ClearCoverURL()
+		return nil
 	case episodeseries.FieldCreatedAt:
 		m.ClearCreatedAt()
 		return nil
@@ -19123,6 +19193,9 @@ func (m *EpisodeSeriesMutation) ResetField(name string) error {
 		return nil
 	case episodeseries.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case episodeseries.FieldCoverURL:
+		m.ResetCoverURL()
 		return nil
 	case episodeseries.FieldStatus:
 		m.ResetStatus()
@@ -43426,6 +43499,7 @@ type RecentUpdateMutation struct {
 	appendtags          []string
 	status              *recentupdate.Status
 	priority            *recentupdate.Priority
+	pinned              *bool
 	external_id         *string
 	image_url           *string
 	video_url           *string
@@ -44032,6 +44106,42 @@ func (m *RecentUpdateMutation) OldPriority(ctx context.Context) (v recentupdate.
 // ResetPriority resets all changes to the "priority" field.
 func (m *RecentUpdateMutation) ResetPriority() {
 	m.priority = nil
+}
+
+// SetPinned sets the "pinned" field.
+func (m *RecentUpdateMutation) SetPinned(b bool) {
+	m.pinned = &b
+}
+
+// Pinned returns the value of the "pinned" field in the mutation.
+func (m *RecentUpdateMutation) Pinned() (r bool, exists bool) {
+	v := m.pinned
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPinned returns the old "pinned" field's value of the RecentUpdate entity.
+// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecentUpdateMutation) OldPinned(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPinned is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPinned requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPinned: %w", err)
+	}
+	return oldValue.Pinned, nil
+}
+
+// ResetPinned resets all changes to the "pinned" field.
+func (m *RecentUpdateMutation) ResetPinned() {
+	m.pinned = nil
 }
 
 // SetExternalID sets the "external_id" field.
@@ -44863,7 +44973,7 @@ func (m *RecentUpdateMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RecentUpdateMutation) Fields() []string {
-	fields := make([]string, 0, 25)
+	fields := make([]string, 0, 26)
 	if m.user_id != nil {
 		fields = append(fields, recentupdate.FieldUserID)
 	}
@@ -44896,6 +45006,9 @@ func (m *RecentUpdateMutation) Fields() []string {
 	}
 	if m.priority != nil {
 		fields = append(fields, recentupdate.FieldPriority)
+	}
+	if m.pinned != nil {
+		fields = append(fields, recentupdate.FieldPinned)
 	}
 	if m.external_id != nil {
 		fields = append(fields, recentupdate.FieldExternalID)
@@ -44969,6 +45082,8 @@ func (m *RecentUpdateMutation) Field(name string) (ent.Value, bool) {
 		return m.Status()
 	case recentupdate.FieldPriority:
 		return m.Priority()
+	case recentupdate.FieldPinned:
+		return m.Pinned()
 	case recentupdate.FieldExternalID:
 		return m.ExternalID()
 	case recentupdate.FieldImageURL:
@@ -45028,6 +45143,8 @@ func (m *RecentUpdateMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldStatus(ctx)
 	case recentupdate.FieldPriority:
 		return m.OldPriority(ctx)
+	case recentupdate.FieldPinned:
+		return m.OldPinned(ctx)
 	case recentupdate.FieldExternalID:
 		return m.OldExternalID(ctx)
 	case recentupdate.FieldImageURL:
@@ -45141,6 +45258,13 @@ func (m *RecentUpdateMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPriority(v)
+		return nil
+	case recentupdate.FieldPinned:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPinned(v)
 		return nil
 	case recentupdate.FieldExternalID:
 		v, ok := value.(string)
@@ -45447,6 +45571,9 @@ func (m *RecentUpdateMutation) ResetField(name string) error {
 		return nil
 	case recentupdate.FieldPriority:
 		m.ResetPriority()
+		return nil
+	case recentupdate.FieldPinned:
+		m.ResetPinned()
 		return nil
 	case recentupdate.FieldExternalID:
 		m.ResetExternalID()

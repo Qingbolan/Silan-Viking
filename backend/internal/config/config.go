@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 
 	"github.com/zeromicro/go-zero/rest"
 )
@@ -11,6 +12,7 @@ type Config struct {
 	Database DatabaseConfig `json:"database"`
 	Auth     AuthConfig     `json:"auth"`
 	Media    MediaConfig    `json:"media"`
+	Traffic  TrafficConfig  `json:"traffic,optional"`
 }
 
 // MediaConfig locates the binary resource files the media endpoint serves.
@@ -38,6 +40,23 @@ type DatabaseConfig struct {
 	Password string `json:"password,env=DB_PASSWORD"`
 	Name     string `json:"name,env=DB_NAME"`
 	SSLMode  string `json:"ssl_mode,env=DB_SSL_MODE"`
+}
+
+type BotSignatureConfig struct {
+	Token string `json:"token"`
+	Name  string `json:"name"`
+}
+
+type TrafficConfig struct {
+	AIUserAgents      []string             `json:"ai_user_agents,env=TRAFFIC_AI_USER_AGENTS,optional"`
+	SearchUserAgents  []string             `json:"search_user_agents,env=TRAFFIC_SEARCH_USER_AGENTS,optional"`
+	BotUserAgents     []BotSignatureConfig `json:"bot_user_agents,optional"`
+	GenericBotTokens  []string             `json:"generic_bot_tokens,env=TRAFFIC_GENERIC_BOT_TOKENS,optional"`
+	OtherBotName      string               `json:"other_bot_name,env=TRAFFIC_OTHER_BOT_NAME,optional"`
+	InternalReferrers []string             `json:"internal_referrers,env=TRAFFIC_INTERNAL_REFERRERS,optional"`
+	AIReferrers       []string             `json:"ai_referrers,env=TRAFFIC_AI_REFERRERS,optional"`
+	SearchReferrers   []string             `json:"search_referrers,env=TRAFFIC_SEARCH_REFERRERS,optional"`
+	SocialReferrers   []string             `json:"social_referrers,env=TRAFFIC_SOCIAL_REFERRERS,optional"`
 }
 
 // AuthConfig holds authentication-related settings
@@ -80,11 +99,68 @@ func (c *Config) LoadConfigFromEnv() {
 	if mediaRoot := os.Getenv("MEDIA_ROOT"); mediaRoot != "" {
 		c.Media.Root = mediaRoot
 	}
+	if value := os.Getenv("TRAFFIC_AI_USER_AGENTS"); value != "" {
+		c.Traffic.AIUserAgents = csvList(value)
+	}
+	if value := os.Getenv("TRAFFIC_SEARCH_USER_AGENTS"); value != "" {
+		c.Traffic.SearchUserAgents = csvList(value)
+	}
+	if value := os.Getenv("TRAFFIC_GENERIC_BOT_TOKENS"); value != "" {
+		c.Traffic.GenericBotTokens = csvList(value)
+	}
+	if value := os.Getenv("TRAFFIC_OTHER_BOT_NAME"); value != "" {
+		c.Traffic.OtherBotName = value
+	}
+	if value := os.Getenv("TRAFFIC_INTERNAL_REFERRERS"); value != "" {
+		c.Traffic.InternalReferrers = csvList(value)
+	}
+	if value := os.Getenv("TRAFFIC_AI_REFERRERS"); value != "" {
+		c.Traffic.AIReferrers = csvList(value)
+	}
+	if value := os.Getenv("TRAFFIC_SEARCH_REFERRERS"); value != "" {
+		c.Traffic.SearchReferrers = csvList(value)
+	}
+	if value := os.Getenv("TRAFFIC_SOCIAL_REFERRERS"); value != "" {
+		c.Traffic.SocialReferrers = csvList(value)
+	}
+	if value := os.Getenv("TRAFFIC_BOT_USER_AGENTS"); value != "" {
+		c.Traffic.BotUserAgents = botSignatureList(value)
+	}
 
 	// Auto-generate connection string if individual components are provided
 	if c.Database.Source == "" && c.Database.Host != "" {
 		c.Database.Source = c.buildConnectionString()
 	}
+}
+
+func csvList(value string) []string {
+	parts := strings.Split(value, ",")
+	items := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item != "" {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func botSignatureList(value string) []BotSignatureConfig {
+	parts := strings.Split(value, ",")
+	items := make([]BotSignatureConfig, 0, len(parts))
+	for _, part := range parts {
+		pair := strings.SplitN(part, "=", 2)
+		token := strings.TrimSpace(pair[0])
+		if token == "" {
+			continue
+		}
+		name := token
+		if len(pair) == 2 && strings.TrimSpace(pair[1]) != "" {
+			name = strings.TrimSpace(pair[1])
+		}
+		items = append(items, BotSignatureConfig{Token: token, Name: name})
+	}
+	return items
 }
 
 // buildConnectionString creates a connection string from individual components

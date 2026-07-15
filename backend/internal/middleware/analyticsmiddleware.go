@@ -8,14 +8,16 @@ import (
 	"time"
 
 	"silan-backend/internal/ent"
+	"silan-backend/internal/traffic"
 )
 
 type AnalyticsMiddleware struct {
-	client *ent.Client
+	client     *ent.Client
+	classifier *traffic.Classifier
 }
 
-func NewAnalyticsMiddleware(client *ent.Client) *AnalyticsMiddleware {
-	return &AnalyticsMiddleware{client: client}
+func NewAnalyticsMiddleware(client *ent.Client, classifier *traffic.Classifier) *AnalyticsMiddleware {
+	return &AnalyticsMiddleware{client: client, classifier: classifier}
 }
 
 type analyticsResponseWriter struct {
@@ -49,7 +51,11 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		duration := time.Since(start).Milliseconds()
 		// Flag known search-engine / social crawlers so bot traffic is
 		// queryable straight from request_logs.
-		isBot, botName := detectBot(r.UserAgent())
+		isBot := false
+		botName := ""
+		if m.classifier != nil {
+			isBot, botName = m.classifier.DetectBot(r.UserAgent())
+		}
 
 		// Persist the access-log row via the ent client. Best-effort —
 		// a logging failure must never affect the response. A fresh,

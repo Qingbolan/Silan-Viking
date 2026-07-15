@@ -90,6 +90,11 @@ func Date(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldDate, v))
 }
 
+// Pinned applies equality check predicate on the "pinned" field. It's identical to PinnedEQ.
+func Pinned(v bool) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEQ(FieldPinned, v))
+}
+
 // ExternalID applies equality check predicate on the "external_id" field. It's identical to ExternalIDEQ.
 func ExternalID(v string) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldEQ(FieldExternalID, v))
@@ -613,6 +618,16 @@ func PriorityIn(vs ...Priority) predicate.RecentUpdate {
 // PriorityNotIn applies the NotIn predicate on the "priority" field.
 func PriorityNotIn(vs ...Priority) predicate.RecentUpdate {
 	return predicate.RecentUpdate(sql.FieldNotIn(FieldPriority, vs...))
+}
+
+// PinnedEQ applies the EQ predicate on the "pinned" field.
+func PinnedEQ(v bool) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldEQ(FieldPinned, v))
+}
+
+// PinnedNEQ applies the NEQ predicate on the "pinned" field.
+func PinnedNEQ(v bool) predicate.RecentUpdate {
+	return predicate.RecentUpdate(sql.FieldNEQ(FieldPinned, v))
 }
 
 // ExternalIDEQ applies the EQ predicate on the "external_id" field.

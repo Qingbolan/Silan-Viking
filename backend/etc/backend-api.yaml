@@ -16,3 +16,83 @@ Media:
   # The development server runs from backend/, so serve the canonical
   # content assets without maintaining a second copied media directory.
   Root: ../content/resources
+Traffic:
+  ai_user_agents:
+    - gptbot
+    - chatgpt-user
+    - oai-searchbot
+    - claudebot
+    - anthropic-ai
+    - perplexitybot
+    - google-extended
+  search_user_agents:
+    - googlebot
+    - bingbot
+    - duckduckbot
+    - baiduspider
+    - yandexbot
+    - bot
+    - crawler
+    - spider
+  bot_user_agents:
+    - { token: googlebot, name: Googlebot }
+    - { token: google-inspectiontool, name: Googlebot }
+    - { token: storebot-google, name: Googlebot }
+    - { token: bingbot, name: Bingbot }
+    - { token: slurp, name: Yahoo Slurp }
+    - { token: duckduckbot, name: DuckDuckBot }
+    - { token: baiduspider, name: Baiduspider }
+    - { token: yandexbot, name: YandexBot }
+    - { token: sogou, name: Sogou Spider }
+    - { token: bytespider, name: Bytespider }
+    - { token: applebot, name: Applebot }
+    - { token: facebookexternalhit, name: Facebook }
+    - { token: facebot, name: Facebook }
+    - { token: twitterbot, name: Twitterbot }
+    - { token: linkedinbot, name: LinkedInBot }
+    - { token: slackbot, name: Slackbot }
+    - { token: telegrambot, name: TelegramBot }
+    - { token: whatsapp, name: WhatsApp }
+    - { token: discordbot, name: Discordbot }
+    - { token: pinterest, name: Pinterest }
+    - { token: mj12bot, name: MJ12bot }
+    - { token: ahrefsbot, name: AhrefsBot }
+    - { token: semrushbot, name: SemrushBot }
+    - { token: petalbot, name: PetalBot }
+    - { token: gptbot, name: GPTBot }
+    - { token: oai-searchbot, name: OAI-SearchBot }
+    - { token: chatgpt-user, name: ChatGPT-User }
+    - { token: claudebot, name: ClaudeBot }
+    - { token: perplexitybot, name: PerplexityBot }
+    - { token: ccbot, name: CCBot }
+  generic_bot_tokens:
+    - bot
+    - crawler
+    - spider
+  other_bot_name: Other Bot
+  internal_referrers:
+    - silan.tech
+    - localhost
+    - 127.0.0.1
+  ai_referrers:
+    - chatgpt
+    - perplexity
+    - gemini
+    - claude
+    - copilot
+  search_referrers:
+    - google.
+    - bing.
+    - duckduckgo.
+    - baidu.
+    - yahoo.
+    - yandex.
+  social_referrers:
+    - x.com
+    - twitter.
+    - linkedin.
+    - facebook.
+    - instagram.
+    - reddit.
+    - weibo.
+    - zhihu.

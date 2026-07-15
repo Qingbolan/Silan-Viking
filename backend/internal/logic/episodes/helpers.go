@@ -146,6 +146,10 @@ func seriesToData(series *ent.EpisodeSeries, language string) types.EpisodeSerie
 	if series.Description != nil {
 		description = *series.Description
 	}
+	coverURL := ""
+	if series.CoverURL != nil {
+		coverURL = *series.CoverURL
+	}
 	pick := func(code string) *ent.EpisodeSeriesTranslation {
 		for _, translation := range series.Edges.Translations {
 			if translation.LanguageCode == code {
@@ -182,6 +186,7 @@ func seriesToData(series *ent.EpisodeSeries, language string) types.EpisodeSerie
 		Slug:        series.Slug,
 		Title:       title,
 		Description: description,
+		CoverURL:    coverURL,
 		Status:      string(series.Status),
 		Episodes:    episodes,
 		CreatedAt:   series.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),

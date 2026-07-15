@@ -40,6 +40,8 @@ type RecentUpdate struct {
 	Status recentupdate.Status `json:"status,omitempty"`
 	// Priority holds the value of the "priority" field.
 	Priority recentupdate.Priority `json:"priority,omitempty"`
+	// Pinned holds the value of the "pinned" field.
+	Pinned bool `json:"pinned,omitempty"`
 	// ExternalID holds the value of the "external_id" field.
 	ExternalID string `json:"external_id,omitempty"`
 	// ImageURL holds the value of the "image_url" field.
@@ -99,6 +101,8 @@ func (*RecentUpdate) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case recentupdate.FieldTags, recentupdate.FieldGallery, recentupdate.FieldAttachments, recentupdate.FieldMediaMetadata, recentupdate.FieldSocialLinks:
 			values[i] = new([]byte)
+		case recentupdate.FieldPinned:
+			values[i] = new(sql.NullBool)
 		case recentupdate.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
 		case recentupdate.FieldID, recentupdate.FieldUserID, recentupdate.FieldSlug, recentupdate.FieldSubjectKind, recentupdate.FieldUpdateType, recentupdate.FieldVisibility, recentupdate.FieldTitle, recentupdate.FieldDescription, recentupdate.FieldDate, recentupdate.FieldStatus, recentupdate.FieldPriority, recentupdate.FieldExternalID, recentupdate.FieldImageURL, recentupdate.FieldVideoURL, recentupdate.FieldDocumentURL, recentupdate.FieldDemoURL, recentupdate.FieldGithubURL, recentupdate.FieldExternalURL:
@@ -193,6 +197,12 @@ func (ru *RecentUpdate) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field priority", values[i])
 			} else if value.Valid {
 				ru.Priority = recentupdate.Priority(value.String)
+			}
+		case recentupdate.FieldPinned:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field pinned", values[i])
+			} else if value.Valid {
+				ru.Pinned = value.Bool
 			}
 		case recentupdate.FieldExternalID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -359,6 +369,9 @@ func (ru *RecentUpdate) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("priority=")
 	builder.WriteString(fmt.Sprintf("%v", ru.Priority))
+	builder.WriteString(", ")
+	builder.WriteString("pinned=")
+	builder.WriteString(fmt.Sprintf("%v", ru.Pinned))
 	builder.WriteString(", ")
 	builder.WriteString("external_id=")
 	builder.WriteString(ru.ExternalID)

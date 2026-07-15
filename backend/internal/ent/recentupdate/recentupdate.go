@@ -37,6 +37,8 @@ const (
 	FieldStatus = "status"
 	// FieldPriority holds the string denoting the priority field in the database.
 	FieldPriority = "priority"
+	// FieldPinned holds the string denoting the pinned field in the database.
+	FieldPinned = "pinned"
 	// FieldExternalID holds the string denoting the external_id field in the database.
 	FieldExternalID = "external_id"
 	// FieldImageURL holds the string denoting the image_url field in the database.
@@ -92,6 +94,7 @@ var Columns = []string{
 	FieldTags,
 	FieldStatus,
 	FieldPriority,
+	FieldPinned,
 	FieldExternalID,
 	FieldImageURL,
 	FieldVideoURL,
@@ -123,6 +126,8 @@ var (
 	SlugValidator func(string) error
 	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	TitleValidator func(string) error
+	// DefaultPinned holds the default value on creation for the "pinned" field.
+	DefaultPinned bool
 	// ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
 	ExternalIDValidator func(string) error
 	// ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
@@ -347,6 +352,11 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByPriority orders the results by the priority field.
 func ByPriority(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPriority, opts...).ToFunc()
+}
+
+// ByPinned orders the results by the pinned field.
+func ByPinned(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPinned, opts...).ToFunc()
 }
 
 // ByExternalID orders the results by the external_id field.

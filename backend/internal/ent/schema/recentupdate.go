@@ -71,6 +71,8 @@ func (RecentUpdate) Fields() []ent.Field {
 		field.Enum("priority").
 			Values("high", "medium", "low").
 			Default("medium"),
+		field.Bool("pinned").
+			Default(false),
 		field.String("external_id").
 			Optional().
 			MaxLen(100),
@@ -110,13 +112,13 @@ func (RecentUpdate) Fields() []ent.Field {
 			Default(0),
 		field.Time("created_at").
 			Default(time.Now).
-		Optional().
-				Optional().
+			Optional().
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-		Optional().
-				Optional().
+			Optional().
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

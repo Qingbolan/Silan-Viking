@@ -342,6 +342,7 @@ type (
 		Slug        string        `json:"slug"`
 		Title       string        `json:"title"`
 		Description string        `json:"description,omitempty"`
+		CoverURL    string        `json:"cover_url,omitempty"`
 		Status      string        `json:"status"`
 		Episodes    []EpisodeData `json:"episodes"`
 		CreatedAt   string        `json:"created_at"`
@@ -1088,8 +1089,8 @@ service backend-api {
 type (
 	// StatsRequest identifies the content whose statistics are queried.
 	StatsRequest {
-		EntityType string `form:"entity_type"`
-		EntityID   string `form:"entity_id"`
+		EntityType string `form:"entity_type,optional"`
+		EntityID   string `form:"entity_id,optional"`
 		Section    string `form:"section,optional"`
 	}
 	// StatsResponse is the aggregate view/like/comment count of one item.

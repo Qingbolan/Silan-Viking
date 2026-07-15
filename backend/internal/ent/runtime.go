@@ -778,12 +778,16 @@ func init() {
 	episodeseriesDescTitle := episodeseriesFields[2].Descriptor()
 	// episodeseries.TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	episodeseries.TitleValidator = episodeseriesDescTitle.Validators[0].(func(string) error)
+	// episodeseriesDescCoverURL is the schema descriptor for cover_url field.
+	episodeseriesDescCoverURL := episodeseriesFields[4].Descriptor()
+	// episodeseries.CoverURLValidator is a validator for the "cover_url" field. It is called by the builders before save.
+	episodeseries.CoverURLValidator = episodeseriesDescCoverURL.Validators[0].(func(string) error)
 	// episodeseriesDescCreatedAt is the schema descriptor for created_at field.
-	episodeseriesDescCreatedAt := episodeseriesFields[5].Descriptor()
+	episodeseriesDescCreatedAt := episodeseriesFields[6].Descriptor()
 	// episodeseries.DefaultCreatedAt holds the default value on creation for the created_at field.
 	episodeseries.DefaultCreatedAt = episodeseriesDescCreatedAt.Default.(func() time.Time)
 	// episodeseriesDescUpdatedAt is the schema descriptor for updated_at field.
-	episodeseriesDescUpdatedAt := episodeseriesFields[6].Descriptor()
+	episodeseriesDescUpdatedAt := episodeseriesFields[7].Descriptor()
 	// episodeseries.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	episodeseries.DefaultUpdatedAt = episodeseriesDescUpdatedAt.Default.(func() time.Time)
 	// episodeseries.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -1646,44 +1650,48 @@ func init() {
 	recentupdateDescTitle := recentupdateFields[6].Descriptor()
 	// recentupdate.TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	recentupdate.TitleValidator = recentupdateDescTitle.Validators[0].(func(string) error)
+	// recentupdateDescPinned is the schema descriptor for pinned field.
+	recentupdateDescPinned := recentupdateFields[12].Descriptor()
+	// recentupdate.DefaultPinned holds the default value on creation for the pinned field.
+	recentupdate.DefaultPinned = recentupdateDescPinned.Default.(bool)
 	// recentupdateDescExternalID is the schema descriptor for external_id field.
-	recentupdateDescExternalID := recentupdateFields[12].Descriptor()
+	recentupdateDescExternalID := recentupdateFields[13].Descriptor()
 	// recentupdate.ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
 	recentupdate.ExternalIDValidator = recentupdateDescExternalID.Validators[0].(func(string) error)
 	// recentupdateDescImageURL is the schema descriptor for image_url field.
-	recentupdateDescImageURL := recentupdateFields[13].Descriptor()
+	recentupdateDescImageURL := recentupdateFields[14].Descriptor()
 	// recentupdate.ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
 	recentupdate.ImageURLValidator = recentupdateDescImageURL.Validators[0].(func(string) error)
 	// recentupdateDescVideoURL is the schema descriptor for video_url field.
-	recentupdateDescVideoURL := recentupdateFields[14].Descriptor()
+	recentupdateDescVideoURL := recentupdateFields[15].Descriptor()
 	// recentupdate.VideoURLValidator is a validator for the "video_url" field. It is called by the builders before save.
 	recentupdate.VideoURLValidator = recentupdateDescVideoURL.Validators[0].(func(string) error)
 	// recentupdateDescDocumentURL is the schema descriptor for document_url field.
-	recentupdateDescDocumentURL := recentupdateFields[15].Descriptor()
+	recentupdateDescDocumentURL := recentupdateFields[16].Descriptor()
 	// recentupdate.DocumentURLValidator is a validator for the "document_url" field. It is called by the builders before save.
 	recentupdate.DocumentURLValidator = recentupdateDescDocumentURL.Validators[0].(func(string) error)
 	// recentupdateDescDemoURL is the schema descriptor for demo_url field.
-	recentupdateDescDemoURL := recentupdateFields[19].Descriptor()
+	recentupdateDescDemoURL := recentupdateFields[20].Descriptor()
 	// recentupdate.DemoURLValidator is a validator for the "demo_url" field. It is called by the builders before save.
 	recentupdate.DemoURLValidator = recentupdateDescDemoURL.Validators[0].(func(string) error)
 	// recentupdateDescGithubURL is the schema descriptor for github_url field.
-	recentupdateDescGithubURL := recentupdateFields[20].Descriptor()
+	recentupdateDescGithubURL := recentupdateFields[21].Descriptor()
 	// recentupdate.GithubURLValidator is a validator for the "github_url" field. It is called by the builders before save.
 	recentupdate.GithubURLValidator = recentupdateDescGithubURL.Validators[0].(func(string) error)
 	// recentupdateDescExternalURL is the schema descriptor for external_url field.
-	recentupdateDescExternalURL := recentupdateFields[21].Descriptor()
+	recentupdateDescExternalURL := recentupdateFields[22].Descriptor()
 	// recentupdate.ExternalURLValidator is a validator for the "external_url" field. It is called by the builders before save.
 	recentupdate.ExternalURLValidator = recentupdateDescExternalURL.Validators[0].(func(string) error)
 	// recentupdateDescSortOrder is the schema descriptor for sort_order field.
-	recentupdateDescSortOrder := recentupdateFields[23].Descriptor()
+	recentupdateDescSortOrder := recentupdateFields[24].Descriptor()
 	// recentupdate.DefaultSortOrder holds the default value on creation for the sort_order field.
 	recentupdate.DefaultSortOrder = recentupdateDescSortOrder.Default.(int)
 	// recentupdateDescCreatedAt is the schema descriptor for created_at field.
-	recentupdateDescCreatedAt := recentupdateFields[24].Descriptor()
+	recentupdateDescCreatedAt := recentupdateFields[25].Descriptor()
 	// recentupdate.DefaultCreatedAt holds the default value on creation for the created_at field.
 	recentupdate.DefaultCreatedAt = recentupdateDescCreatedAt.Default.(func() time.Time)
 	// recentupdateDescUpdatedAt is the schema descriptor for updated_at field.
-	recentupdateDescUpdatedAt := recentupdateFields[25].Descriptor()
+	recentupdateDescUpdatedAt := recentupdateFields[26].Descriptor()
 	// recentupdate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	recentupdate.DefaultUpdatedAt = recentupdateDescUpdatedAt.Default.(func() time.Time)
 	// recentupdate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

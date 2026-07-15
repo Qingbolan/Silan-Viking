@@ -362,6 +362,7 @@ type EpisodeSeriesData struct {
 	Slug        string        `json:"slug"`
 	Title       string        `json:"title"`
 	Description string        `json:"description,omitempty"`
+	CoverURL    string        `json:"cover_url,omitempty"`
 	Status      string        `json:"status"`
 	Episodes    []EpisodeData `json:"episodes"`
 	CreatedAt   string        `json:"created_at"`
@@ -909,8 +910,8 @@ type SourceRow struct {
 }
 
 type StatsRequest struct {
-	EntityType string `form:"entity_type"`
-	EntityID   string `form:"entity_id"`
+	EntityType string `form:"entity_type,optional"`
+	EntityID   string `form:"entity_id,optional"`
 	Section    string `form:"section,optional"`
 }
 

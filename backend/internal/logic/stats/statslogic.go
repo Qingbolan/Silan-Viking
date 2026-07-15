@@ -43,14 +43,25 @@ func entityID(req *types.StatsRequest) (string, error) {
 	return req.EntityID, nil
 }
 
+func entityType(req *types.StatsRequest) (string, error) {
+	if req.EntityType == "" {
+		return "", fmt.Errorf("entity_type is required")
+	}
+	return req.EntityType, nil
+}
+
 // Stats returns the aggregate view/like/comment counts of one content item.
 func (l *StatsLogic) Stats(req *types.StatsRequest) (*types.StatsResponse, error) {
+	kind, err := entityType(req)
+	if err != nil {
+		return nil, err
+	}
 	id, err := entityID(req)
 	if err != nil {
 		return nil, err
 	}
 	var views, likes int
-	switch req.EntityType {
+	switch kind {
 	case "project":
 		counts, countErr := engagement.ProjectCount(l.ctx, l.svcCtx.DB, id)
 		if countErr != nil {
@@ -64,7 +75,7 @@ func (l *StatsLogic) Stats(req *types.StatsRequest) (*types.StatsResponse, error
 		}
 		views, likes = counts.Views, counts.Likes
 	default:
-		entityType := contentinteraction.EntityType(req.EntityType)
+		entityType := contentinteraction.EntityType(kind)
 		views, err = l.svcCtx.DB.ContentInteraction.Query().
 			Where(
 				contentinteraction.EntityTypeEQ(entityType),
@@ -119,13 +130,17 @@ func maskIP(ip string) string {
 
 // Visitors lists the de-identified visitors of a content item.
 func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse, error) {
+	kind, err := entityType(req)
+	if err != nil {
+		return nil, err
+	}
 	id, err := entityID(req)
 	if err != nil {
 		return nil, err
 	}
 	rows, err := l.svcCtx.DB.ContentInteraction.Query().
 		Where(
-			contentinteraction.EntityTypeEQ(contentinteraction.EntityType(req.EntityType)),
+			contentinteraction.EntityTypeEQ(contentinteraction.EntityType(kind)),
 			contentinteraction.EntityIDEQ(id),
 		).
 		Order(contentinteraction.ByCreatedAt()).
@@ -164,12 +179,16 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 func (l *StatsLogic) CrawlerBreakdown(req *types.StatsRequest) (*types.CrawlerBreakdownResponse, error) {
 	query := l.svcCtx.DB.ContentInteraction.Query()
 	if req.EntityID != "" {
+		kind, err := entityType(req)
+		if err != nil {
+			return nil, err
+		}
 		id, err := entityID(req)
 		if err != nil {
 			return nil, err
 		}
 		query = query.Where(
-			contentinteraction.EntityTypeEQ(contentinteraction.EntityType(req.EntityType)),
+			contentinteraction.EntityTypeEQ(contentinteraction.EntityType(kind)),
 			contentinteraction.EntityIDEQ(id),
 		)
 	}
@@ -194,12 +213,16 @@ func (l *StatsLogic) CrawlerBreakdown(req *types.StatsRequest) (*types.CrawlerBr
 func (l *StatsLogic) SourceBreakdown(req *types.StatsRequest) (*types.SourceBreakdownResponse, error) {
 	query := l.svcCtx.DB.ContentInteraction.Query()
 	if req.EntityID != "" {
+		kind, err := entityType(req)
+		if err != nil {
+			return nil, err
+		}
 		id, err := entityID(req)
 		if err != nil {
 			return nil, err
 		}
 		query = query.Where(
-			contentinteraction.EntityTypeEQ(contentinteraction.EntityType(req.EntityType)),
+			contentinteraction.EntityTypeEQ(contentinteraction.EntityType(kind)),
 			contentinteraction.EntityIDEQ(id),
 		)
 	}

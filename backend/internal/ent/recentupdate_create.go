@@ -159,6 +159,20 @@ func (ruc *RecentUpdateCreate) SetNillablePriority(r *recentupdate.Priority) *Re
 	return ruc
 }
 
+// SetPinned sets the "pinned" field.
+func (ruc *RecentUpdateCreate) SetPinned(b bool) *RecentUpdateCreate {
+	ruc.mutation.SetPinned(b)
+	return ruc
+}
+
+// SetNillablePinned sets the "pinned" field if the given value is not nil.
+func (ruc *RecentUpdateCreate) SetNillablePinned(b *bool) *RecentUpdateCreate {
+	if b != nil {
+		ruc.SetPinned(*b)
+	}
+	return ruc
+}
+
 // SetExternalID sets the "external_id" field.
 func (ruc *RecentUpdateCreate) SetExternalID(s string) *RecentUpdateCreate {
 	ruc.mutation.SetExternalID(s)
@@ -407,6 +421,10 @@ func (ruc *RecentUpdateCreate) defaults() {
 		v := recentupdate.DefaultPriority
 		ruc.mutation.SetPriority(v)
 	}
+	if _, ok := ruc.mutation.Pinned(); !ok {
+		v := recentupdate.DefaultPinned
+		ruc.mutation.SetPinned(v)
+	}
 	if _, ok := ruc.mutation.SortOrder(); !ok {
 		v := recentupdate.DefaultSortOrder
 		ruc.mutation.SetSortOrder(v)
@@ -479,6 +497,9 @@ func (ruc *RecentUpdateCreate) check() error {
 		if err := recentupdate.PriorityValidator(v); err != nil {
 			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "RecentUpdate.priority": %w`, err)}
 		}
+	}
+	if _, ok := ruc.mutation.Pinned(); !ok {
+		return &ValidationError{Name: "pinned", err: errors.New(`ent: missing required field "RecentUpdate.pinned"`)}
 	}
 	if v, ok := ruc.mutation.ExternalID(); ok {
 		if err := recentupdate.ExternalIDValidator(v); err != nil {
@@ -596,6 +617,10 @@ func (ruc *RecentUpdateCreate) createSpec() (*RecentUpdate, *sqlgraph.CreateSpec
 	if value, ok := ruc.mutation.Priority(); ok {
 		_spec.SetField(recentupdate.FieldPriority, field.TypeEnum, value)
 		_node.Priority = value
+	}
+	if value, ok := ruc.mutation.Pinned(); ok {
+		_spec.SetField(recentupdate.FieldPinned, field.TypeBool, value)
+		_node.Pinned = value
 	}
 	if value, ok := ruc.mutation.ExternalID(); ok {
 		_spec.SetField(recentupdate.FieldExternalID, field.TypeString, value)

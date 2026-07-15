@@ -97,7 +97,7 @@ func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewR
 			return nil, err
 		}
 
-		if err := analytics.RecordContentInteraction(l.ctx, client, analytics.InteractionEvent{
+		if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, analytics.InteractionEvent{
 			EntityType:     "project",
 			EntityID:       projectID,
 			Kind:           "view",

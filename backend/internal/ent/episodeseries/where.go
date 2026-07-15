@@ -80,6 +80,11 @@ func Description(v string) predicate.EpisodeSeries {
 	return predicate.EpisodeSeries(sql.FieldEQ(FieldDescription, v))
 }
 
+// CoverURL applies equality check predicate on the "cover_url" field. It's identical to CoverURLEQ.
+func CoverURL(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldEQ(FieldCoverURL, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.EpisodeSeries {
 	return predicate.EpisodeSeries(sql.FieldEQ(FieldCreatedAt, v))
@@ -303,6 +308,81 @@ func DescriptionEqualFold(v string) predicate.EpisodeSeries {
 // DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
 func DescriptionContainsFold(v string) predicate.EpisodeSeries {
 	return predicate.EpisodeSeries(sql.FieldContainsFold(FieldDescription, v))
+}
+
+// CoverURLEQ applies the EQ predicate on the "cover_url" field.
+func CoverURLEQ(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldEQ(FieldCoverURL, v))
+}
+
+// CoverURLNEQ applies the NEQ predicate on the "cover_url" field.
+func CoverURLNEQ(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldNEQ(FieldCoverURL, v))
+}
+
+// CoverURLIn applies the In predicate on the "cover_url" field.
+func CoverURLIn(vs ...string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldIn(FieldCoverURL, vs...))
+}
+
+// CoverURLNotIn applies the NotIn predicate on the "cover_url" field.
+func CoverURLNotIn(vs ...string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldNotIn(FieldCoverURL, vs...))
+}
+
+// CoverURLGT applies the GT predicate on the "cover_url" field.
+func CoverURLGT(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldGT(FieldCoverURL, v))
+}
+
+// CoverURLGTE applies the GTE predicate on the "cover_url" field.
+func CoverURLGTE(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldGTE(FieldCoverURL, v))
+}
+
+// CoverURLLT applies the LT predicate on the "cover_url" field.
+func CoverURLLT(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldLT(FieldCoverURL, v))
+}
+
+// CoverURLLTE applies the LTE predicate on the "cover_url" field.
+func CoverURLLTE(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldLTE(FieldCoverURL, v))
+}
+
+// CoverURLContains applies the Contains predicate on the "cover_url" field.
+func CoverURLContains(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldContains(FieldCoverURL, v))
+}
+
+// CoverURLHasPrefix applies the HasPrefix predicate on the "cover_url" field.
+func CoverURLHasPrefix(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldHasPrefix(FieldCoverURL, v))
+}
+
+// CoverURLHasSuffix applies the HasSuffix predicate on the "cover_url" field.
+func CoverURLHasSuffix(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldHasSuffix(FieldCoverURL, v))
+}
+
+// CoverURLIsNil applies the IsNil predicate on the "cover_url" field.
+func CoverURLIsNil() predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldIsNull(FieldCoverURL))
+}
+
+// CoverURLNotNil applies the NotNil predicate on the "cover_url" field.
+func CoverURLNotNil() predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldNotNull(FieldCoverURL))
+}
+
+// CoverURLEqualFold applies the EqualFold predicate on the "cover_url" field.
+func CoverURLEqualFold(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldEqualFold(FieldCoverURL, v))
+}
+
+// CoverURLContainsFold applies the ContainsFold predicate on the "cover_url" field.
+func CoverURLContainsFold(v string) predicate.EpisodeSeries {
+	return predicate.EpisodeSeries(sql.FieldContainsFold(FieldCoverURL, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

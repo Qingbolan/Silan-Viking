@@ -75,7 +75,7 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 		return tx.Commit()
 	}
 
-	if err := analytics.RecordContentInteraction(l.ctx, client, analytics.InteractionEvent{
+	if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, analytics.InteractionEvent{
 		EntityType:      "blog",
 		EntityID:        postID,
 		Kind:            "view",

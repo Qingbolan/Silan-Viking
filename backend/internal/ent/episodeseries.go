@@ -23,6 +23,8 @@ type EpisodeSeries struct {
 	Title string `json:"title,omitempty"`
 	// Description holds the value of the "description" field.
 	Description *string `json:"description,omitempty"`
+	// CoverURL holds the value of the "cover_url" field.
+	CoverURL *string `json:"cover_url,omitempty"`
 	// Status holds the value of the "status" field.
 	Status episodeseries.Status `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -69,7 +71,7 @@ func (*EpisodeSeries) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case episodeseries.FieldID, episodeseries.FieldSlug, episodeseries.FieldTitle, episodeseries.FieldDescription, episodeseries.FieldStatus:
+		case episodeseries.FieldID, episodeseries.FieldSlug, episodeseries.FieldTitle, episodeseries.FieldDescription, episodeseries.FieldCoverURL, episodeseries.FieldStatus:
 			values[i] = new(sql.NullString)
 		case episodeseries.FieldCreatedAt, episodeseries.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -112,6 +114,13 @@ func (es *EpisodeSeries) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				es.Description = new(string)
 				*es.Description = value.String
+			}
+		case episodeseries.FieldCoverURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field cover_url", values[i])
+			} else if value.Valid {
+				es.CoverURL = new(string)
+				*es.CoverURL = value.String
 			}
 		case episodeseries.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -185,6 +194,11 @@ func (es *EpisodeSeries) String() string {
 	builder.WriteString(", ")
 	if v := es.Description; v != nil {
 		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := es.CoverURL; v != nil {
+		builder.WriteString("cover_url=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

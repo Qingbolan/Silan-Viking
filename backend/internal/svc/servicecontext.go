@@ -11,6 +11,7 @@ import (
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/migrate"
 	"silan-backend/internal/middleware"
+	"silan-backend/internal/traffic"
 
 	"github.com/zeromicro/go-zero/rest"
 
@@ -26,6 +27,7 @@ type ServiceContext struct {
 	DB          *ent.Client
 	RawDB       *sql.DB
 	ContentTags *contenttag.Repository
+	Traffic     *traffic.Classifier
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -199,14 +201,16 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	createAnalyticsTables(rawDB, c.Database.Driver)
 	createContentRelationTable(rawDB, c.Database.Driver)
 	dropContentForeignKeys(rawDB, c.Database.Driver)
+	trafficClassifier := traffic.NewClassifier(c.Traffic)
 
 	return &ServiceContext{
 		Config:      c,
 		Cors:        middleware.NewCorsMiddleware().Handle,
-		Analytics:   middleware.NewAnalyticsMiddleware(client).Handle,
+		Analytics:   middleware.NewAnalyticsMiddleware(client, trafficClassifier).Handle,
 		DB:          client,
 		RawDB:       rawDB,
 		ContentTags: contenttag.NewRepository(rawDB, c.Database.Driver),
+		Traffic:     trafficClassifier,
 	}
 }
 

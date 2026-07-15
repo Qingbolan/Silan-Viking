@@ -212,6 +212,20 @@ func (ruu *RecentUpdateUpdate) SetNillablePriority(r *recentupdate.Priority) *Re
 	return ruu
 }
 
+// SetPinned sets the "pinned" field.
+func (ruu *RecentUpdateUpdate) SetPinned(b bool) *RecentUpdateUpdate {
+	ruu.mutation.SetPinned(b)
+	return ruu
+}
+
+// SetNillablePinned sets the "pinned" field if the given value is not nil.
+func (ruu *RecentUpdateUpdate) SetNillablePinned(b *bool) *RecentUpdateUpdate {
+	if b != nil {
+		ruu.SetPinned(*b)
+	}
+	return ruu
+}
+
 // SetExternalID sets the "external_id" field.
 func (ruu *RecentUpdateUpdate) SetExternalID(s string) *RecentUpdateUpdate {
 	ruu.mutation.SetExternalID(s)
@@ -668,6 +682,9 @@ func (ruu *RecentUpdateUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ruu.mutation.Priority(); ok {
 		_spec.SetField(recentupdate.FieldPriority, field.TypeEnum, value)
 	}
+	if value, ok := ruu.mutation.Pinned(); ok {
+		_spec.SetField(recentupdate.FieldPinned, field.TypeBool, value)
+	}
 	if value, ok := ruu.mutation.ExternalID(); ok {
 		_spec.SetField(recentupdate.FieldExternalID, field.TypeString, value)
 	}
@@ -1007,6 +1024,20 @@ func (ruuo *RecentUpdateUpdateOne) SetPriority(r recentupdate.Priority) *RecentU
 func (ruuo *RecentUpdateUpdateOne) SetNillablePriority(r *recentupdate.Priority) *RecentUpdateUpdateOne {
 	if r != nil {
 		ruuo.SetPriority(*r)
+	}
+	return ruuo
+}
+
+// SetPinned sets the "pinned" field.
+func (ruuo *RecentUpdateUpdateOne) SetPinned(b bool) *RecentUpdateUpdateOne {
+	ruuo.mutation.SetPinned(b)
+	return ruuo
+}
+
+// SetNillablePinned sets the "pinned" field if the given value is not nil.
+func (ruuo *RecentUpdateUpdateOne) SetNillablePinned(b *bool) *RecentUpdateUpdateOne {
+	if b != nil {
+		ruuo.SetPinned(*b)
 	}
 	return ruuo
 }
@@ -1496,6 +1527,9 @@ func (ruuo *RecentUpdateUpdateOne) sqlSave(ctx context.Context) (_node *RecentUp
 	}
 	if value, ok := ruuo.mutation.Priority(); ok {
 		_spec.SetField(recentupdate.FieldPriority, field.TypeEnum, value)
+	}
+	if value, ok := ruuo.mutation.Pinned(); ok {
+		_spec.SetField(recentupdate.FieldPinned, field.TypeBool, value)
 	}
 	if value, ok := ruuo.mutation.ExternalID(); ok {
 		_spec.SetField(recentupdate.FieldExternalID, field.TypeString, value)
