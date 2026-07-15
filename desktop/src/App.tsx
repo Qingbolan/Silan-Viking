@@ -3,118 +3,95 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   Activity,
   AlertCircle,
-  ArrowUp,
+  Archive,
   BarChart3,
   BookOpen,
   Brain,
   Briefcase,
   CalendarDays,
+  CheckCircle2,
   Clock3,
+  Eye,
+  EyeOff,
   FileText,
   Folder,
   FolderPlus,
-  ImagePlus,
   Lightbulb,
   LoaderCircle,
+  Menu,
   PencilLine,
   Plus,
+  PauseCircle,
+  PlayCircle,
   Radio,
   RefreshCw,
+  RotateCcw,
   Save,
   Scale,
   Search,
+  Send,
   Sparkles,
+  Type,
   UserRound,
   X,
 } from 'lucide-react';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
+import { CaptureSheet } from './components/CaptureSheet';
+import { ContentCard } from './components/ContentCard';
+import { NewProjectDialog } from './components/NewProjectDialog';
+import { ResumePage } from './components/ResumePage';
+import { RefreshConfirmDialog } from './components/RefreshConfirmDialog';
+import { SeriesDetail } from './components/SeriesDetail';
+import { UpdateFeed } from './components/UpdateFeed';
+import {
+  arrangeBlogGroupsForGrid,
+  badgeClass,
+  docPath,
+  selectPrimaryDocument,
+} from './lib/content';
+import {
+  contentLifecycleFor,
+  contentStateSummary,
+  seriesLifecycleFor,
+  type DocumentStateInput,
+  type LifecycleAction,
+  type SeriesLifecycleAction,
+} from './lib/contentLifecycle';
+import { formatSyncedAgo } from './lib/format';
+import { cssBackgroundImage } from './lib/media';
+import type {
+  CapturePhase,
+  CaptureTarget,
+  ContentGroup,
+  ContentKind,
+  DashboardData,
+  DashboardItem,
+  EditorDocument,
+  EntityFilter,
+  EpisodeGroup,
+  EpisodeSeriesInput,
+  EpisodeSeriesSource,
+  EpisodeSeries,
+  IdeaCategory,
+  MomentsSettings,
+  StatsSyncReport,
+} from './types';
 
-type ContentKind = 'blog' | 'project' | 'idea' | 'resume' | 'episode' | 'update';
+const masonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea']);
+const editableMasonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'resume', 'update']);
 
-type EditorDocument = {
-  id: string;
-  part_id: string;
-  entity_type: ContentKind;
-  entity_id: string;
-  series_id?: string | null;
-  series_slug?: string | null;
-  series_title?: string | null;
-  episode_number?: number | null;
-  slug: string;
-  role: string;
-  canonical_language: string;
-  title: string;
-  status: string;
-  visibility: string;
-  updated_at: string;
-  translations: EditorTranslation[];
+const entityMeta: Record<EntityFilter, { label: string; eyebrow: string; empty: string; Icon: typeof Folder }> = {
+  all: { label: 'Library', eyebrow: 'All content', empty: 'No matching Markdown content.', Icon: Folder },
+  blog: { label: 'Blog', eyebrow: 'Articles & posts', empty: 'No blog posts yet. Write the first one.', Icon: BookOpen },
+  project: { label: 'Projects', eyebrow: 'Work in progress', empty: 'No projects yet. Create the first one.', Icon: Briefcase },
+  idea: { label: 'Ideas', eyebrow: 'Half-formed thoughts', empty: 'No ideas yet. Record the first one.', Icon: Lightbulb },
+  resume: { label: 'Resume', eyebrow: 'Structured record', empty: 'No resume parts found.', Icon: UserRound },
+  episode: { label: 'Episodes', eyebrow: 'Series & episodes', empty: 'No episodes yet.', Icon: Radio },
+  update: { label: 'Updates', eyebrow: 'Changelog', empty: 'No updates yet.', Icon: Clock3 },
 };
 
-type EditorTranslation = {
-  id: string;
-  language: string;
-  content: string;
-  revision: string;
-  source_path: string;
-};
-
-type DashboardData = {
-  total_views: number;
-  total_likes: number;
-  total_comments: number;
-  pending_comments: number;
-  human_interactions: number;
-  crawler_interactions: number;
-  recent_items: DashboardItem[];
-};
-
-type DashboardItem = {
-  entity_type: string;
-  title: string;
-  slug: string;
-  status: string;
-  visibility: string;
-  updated_at: string;
-};
-
-type EntityFilter = 'all' | ContentKind;
-type IdeaCategory = 'inspiration' | 'thought' | 'decision' | 'state' | 'event';
-type CaptureTarget = 'blog' | 'idea';
-type CapturePhase = 'closed' | 'opening' | 'editing' | 'confirming-close' | 'submitting' | 'failed' | 'closing';
-
-type ContentGroup = {
-  id: string;
-  kind: ContentKind;
-  title: string;
-  slug: string;
-  status: string;
-  visibility: string;
-  documents: EditorDocument[];
-};
-
-type EpisodeGroup = ContentGroup & {
-  episodeNumber?: number | null;
-};
-
-type EpisodeSeries = {
-  id: string;
-  title: string;
-  slug: string;
-  episodes: EpisodeGroup[];
-};
-
-const entityMeta: Record<EntityFilter, { label: string; Icon: typeof Folder }> = {
-  all: { label: 'Library', Icon: Folder },
-  blog: { label: 'Blog', Icon: BookOpen },
-  project: { label: 'Projects', Icon: Briefcase },
-  idea: { label: 'Ideas', Icon: Lightbulb },
-  resume: { label: 'Resume', Icon: UserRound },
-  episode: { label: 'Episodes', Icon: Radio },
-  update: { label: 'Updates', Icon: Clock3 },
-};
-
-const entityFilters = Object.keys(entityMeta) as EntityFilter[];
+const navigationEntityFilters: EntityFilter[] = ['resume', 'update', 'blog', 'project', 'idea'];
 
 const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof Sparkles }> = [
   { value: 'inspiration', label: '灵感', Icon: Sparkles },
@@ -124,51 +101,57 @@ const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof S
   { value: 'event', label: '事件', Icon: CalendarDays },
 ];
 
+const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode']);
+
 const destroyVditor = (editor: Vditor | null) => {
   if (!editor) return;
   const internal = (editor as unknown as { vditor?: { element?: HTMLElement } }).vditor;
   if (internal?.element) editor.destroy();
 };
 
-const docPath = (doc: EditorDocument) => {
-  if (doc.entity_type === 'episode' && doc.series_slug) {
-    return `episode/${doc.series_slug}/${doc.slug}/${doc.role}`;
+const lifecycleIconFor = (action: LifecycleAction | SeriesLifecycleAction) => {
+  switch (action.id) {
+    case 'publish':
+    case 'publish-all':
+      return <Send size={13} />;
+    case 'unpublish':
+    case 'unpublish-all':
+    case 'hide':
+      return <EyeOff size={13} />;
+    case 'archive':
+    case 'archive-all':
+      return <Archive size={13} />;
+    case 'restore':
+      return <RotateCcw size={13} />;
+    case 'show':
+      return <Eye size={13} />;
+    case 'activate':
+    case 'experiment':
+    case 'validate':
+    case 'hypothesis':
+      return <PlayCircle size={13} />;
+    case 'pause':
+      return <PauseCircle size={13} />;
+    case 'complete':
+    case 'conclude':
+      return <CheckCircle2 size={13} />;
+    case 'cancel':
+      return <X size={13} />;
+    default:
+      return null;
   }
-  return `${doc.entity_type}/${doc.slug}/${doc.role}`;
 };
-
-const badgeClass = (kind: ContentKind) => `badge badge-${kind}`;
-
-function MarkdownPreview({ content }: { content: string }) {
-  const previewRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    const element = previewRef.current;
-    if (!element) return;
-    element.innerHTML = '';
-    void Vditor.preview(element, content, {
-      mode: 'light',
-      hljs: { lineNumber: true },
-      markdown: { toc: true },
-    });
-    return () => {
-      element.innerHTML = '';
-    };
-  }, [content]);
-
-  return <div ref={previewRef} className="markdown-preview" />;
-}
 
 export default function App() {
   const [documents, setDocuments] = React.useState<EditorDocument[]>([]);
   const [dashboard, setDashboard] = React.useState<DashboardData | null>(null);
+  const [momentsSettings, setMomentsSettings] = React.useState<MomentsSettings | null>(null);
   const [screen, setScreen] = React.useState<'dashboard' | 'content'>('dashboard');
   const [selectedId, setSelectedId] = React.useState('');
   const [languageByDocument, setLanguageByDocument] = React.useState<Record<string, string>>({});
   const [query, setQuery] = React.useState('');
   const [entityFilter, setEntityFilter] = React.useState<EntityFilter>('all');
   const [dirtyIds, setDirtyIds] = React.useState<Set<string>>(() => new Set());
-  const [mode, setMode] = React.useState<'edit' | 'preview'>('edit');
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [saveFailed, setSaveFailed] = React.useState(false);
@@ -179,10 +162,32 @@ export default function App() {
   const [captureNote, setCaptureNote] = React.useState('');
   const [captureCategory, setCaptureCategory] = React.useState<IdeaCategory>('inspiration');
   const [captureError, setCaptureError] = React.useState<string | null>(null);
+  const [contentEditorOpen, setContentEditorOpen] = React.useState(false);
+  // Typora-style: the toolbar is a setting, hidden by default — formatting
+  // happens by typing Markdown syntax and native shortcuts (⌘B, ⌘I…).
+  const [toolbarVisible, setToolbarVisible] = React.useState(
+    () => window.localStorage.getItem('sv-editor-toolbar') === '1',
+  );
+  const [selectedSeriesId, setSelectedSeriesId] = React.useState('');
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [creatingProject, setCreatingProject] = React.useState(false);
   const [newProjectTitle, setNewProjectTitle] = React.useState('');
   const [newProjectSubmitting, setNewProjectSubmitting] = React.useState(false);
   const [newProjectError, setNewProjectError] = React.useState<string | null>(null);
+  const [syncingStats, setSyncingStats] = React.useState(false);
+  const [statsSyncError, setStatsSyncError] = React.useState<string | null>(null);
+  const [stateSavingId, setStateSavingId] = React.useState('');
+  const [seriesEditingSlug, setSeriesEditingSlug] = React.useState('');
+  const [seriesSource, setSeriesSource] = React.useState<EpisodeSeriesSource | null>(null);
+  const [seriesDraft, setSeriesDraft] = React.useState<EpisodeSeriesInput>({
+    title: '',
+    description: '',
+    cover_url: '',
+    status: 'ongoing',
+  });
+  const [seriesEditorLoading, setSeriesEditorLoading] = React.useState(false);
+  const [seriesEditorSaving, setSeriesEditorSaving] = React.useState(false);
+  const [seriesEditorError, setSeriesEditorError] = React.useState<string | null>(null);
   const hostRef = React.useRef<HTMLDivElement | null>(null);
   const editorRef = React.useRef<Vditor | null>(null);
   const captureInputRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -190,17 +195,13 @@ export default function App() {
 
   const entityCounts = React.useMemo(() => {
     const itemIds = new Map<ContentKind, Set<string>>();
-    const episodeSeriesIds = new Set<string>();
     documents.forEach((document) => {
       if (!itemIds.has(document.entity_type)) itemIds.set(document.entity_type, new Set());
       itemIds.get(document.entity_type)?.add(document.entity_id);
-      if (document.entity_type === 'episode') {
-        episodeSeriesIds.add(document.series_id || document.series_slug || document.entity_id);
-      }
     });
     const counts = new Map<EntityFilter, number>();
     itemIds.forEach((ids, kind) => counts.set(kind, ids.size));
-    counts.set('episode', episodeSeriesIds.size);
+    counts.set('blog', (counts.get('blog') || 0) + (counts.get('episode') || 0));
     counts.set('all', Array.from(itemIds.values()).reduce((total, ids) => total + ids.size, 0));
     return counts;
   }, [documents]);
@@ -215,7 +216,10 @@ export default function App() {
       document.series_slug,
       ...document.translations.map((translation) => translation.language),
     ].filter(Boolean).join(' ').toLowerCase();
-    return (entityFilter === 'all' || document.entity_type === entityFilter)
+    const belongsToShelf = entityFilter === 'all'
+      || document.entity_type === entityFilter
+      || (entityFilter === 'blog' && document.entity_type === 'episode');
+    return belongsToShelf
       && text.includes(query.trim().toLowerCase());
   }), [documents, entityFilter, query]);
 
@@ -231,7 +235,11 @@ export default function App() {
           slug: document.slug,
           status: document.status,
           visibility: document.visibility,
+          date: document.date || null,
+          pinned: Boolean(document.pinned),
+          coverUrl: document.cover_url || undefined,
           documents: [],
+          cardKind: document.entity_type === 'blog' ? 'article' : undefined,
         });
       }
       groups.get(id)?.documents.push(document);
@@ -240,7 +248,14 @@ export default function App() {
   }, [filtered]);
 
   const episodeSeries = React.useMemo(() => {
-    const seriesMap = new Map<string, { id: string; title: string; slug: string; episodes: Map<string, EpisodeGroup> }>();
+    const seriesMap = new Map<string, {
+      id: string;
+      title: string;
+      slug: string;
+      description: string;
+      coverUrl: string;
+      episodes: Map<string, EpisodeGroup>;
+    }>();
     filtered.filter((document) => document.entity_type === 'episode').forEach((document) => {
       const seriesId = document.series_id || document.series_slug || 'unfiled';
       if (!seriesMap.has(seriesId)) {
@@ -248,10 +263,15 @@ export default function App() {
           id: seriesId,
           title: document.series_title || document.series_slug || 'Unfiled series',
           slug: document.series_slug || seriesId,
+          description: document.series_description || '',
+          coverUrl: document.series_cover_url || '',
           episodes: new Map(),
         });
       }
       const series = seriesMap.get(seriesId);
+      if (series && !series.coverUrl && document.series_cover_url) {
+        series.coverUrl = document.series_cover_url;
+      }
       if (!series?.episodes.has(document.entity_id)) {
         series?.episodes.set(document.entity_id, {
           id: document.entity_id,
@@ -260,6 +280,8 @@ export default function App() {
           slug: document.slug,
           status: document.status,
           visibility: document.visibility,
+          date: document.date || null,
+          pinned: Boolean(document.pinned),
           episodeNumber: document.episode_number,
           documents: [],
         });
@@ -270,11 +292,41 @@ export default function App() {
       id: series.id,
       title: series.title,
       slug: series.slug,
+      description: series.description || null,
+      coverUrl: series.coverUrl || null,
       episodes: Array.from(series.episodes.values()).sort(
         (left, right) => (left.episodeNumber || 0) - (right.episodeNumber || 0),
       ),
     }));
   }, [filtered]);
+
+  const seriesCards = React.useMemo(() => episodeSeries.map((series): ContentGroup | null => {
+    const firstEpisode = series.episodes[0];
+    if (!firstEpisode) return null;
+    const latestEpisode = [...series.episodes].sort(
+      (left, right) => (right.episodeNumber || 0) - (left.episodeNumber || 0),
+    )[0];
+    const lifecycle = seriesLifecycleFor(series.episodes);
+    return {
+      id: `series:${series.id}`,
+      kind: 'episode',
+      title: series.title,
+      slug: series.slug,
+      status: lifecycle.statusLabel,
+      visibility: lifecycle.visibilityLabel,
+      coverUrl: series.coverUrl || undefined,
+      documents: firstEpisode.documents,
+      cardKind: 'series',
+      episodeCount: series.episodes.length,
+      latestEpisode: latestEpisode
+        ? { title: latestEpisode.title, episodeNumber: latestEpisode.episodeNumber }
+        : undefined,
+    };
+  }).filter((group): group is ContentGroup => group !== null), [episodeSeries]);
+
+  const selectedSeries = React.useMemo(() => (
+    episodeSeries.find((series) => `series:${series.id}` === selectedSeriesId) || null
+  ), [episodeSeries, selectedSeriesId]);
 
   const selected = documents.find((document) => document.id === selectedId)
     || filtered[0]
@@ -308,9 +360,37 @@ export default function App() {
     () => new Set(filtered.map((document) => `${document.entity_type}:${document.entity_id}`)).size,
     [filtered],
   );
-  const contentSummary = entityFilter === 'episode'
+  const contentSummary = entityFilter === 'blog'
+    ? `${contentGroups.filter((group) => group.kind === 'blog').length} articles · ${episodeSeries.length} series · ${episodeSeries.reduce((total, series) => total + series.episodes.length, 0)} episodes · ${filtered.length} Markdown parts`
+    : entityFilter === 'episode'
     ? `${episodeSeries.length} series · ${visibleItemCount} episodes · ${filtered.length} Markdown parts`
     : `${visibleItemCount} items · ${filtered.length} Markdown parts`;
+  const statsSyncedAt = dashboard?.stats_synced_at || null;
+  const hasSyncedStats = Boolean(statsSyncedAt);
+  const displayedViews = hasSyncedStats
+    ? dashboard?.deployed_views ?? 0
+    : dashboard?.total_views ?? 0;
+  const displayedLikes = hasSyncedStats
+    ? dashboard?.deployed_likes ?? 0
+    : dashboard?.total_likes ?? 0;
+  const displayedComments = hasSyncedStats
+    ? dashboard?.deployed_comments ?? 0
+    : dashboard?.total_comments ?? 0;
+  const displayedHumanInteractions = hasSyncedStats
+    ? dashboard?.deployed_human_interactions ?? 0
+    : dashboard?.human_interactions ?? 0;
+  const displayedAiCrawlerInteractions = hasSyncedStats
+    ? dashboard?.deployed_ai_crawler_interactions ?? 0
+    : dashboard?.ai_crawler_interactions ?? 0;
+  const displayedSearchCrawlerInteractions = hasSyncedStats
+    ? dashboard?.deployed_search_crawler_interactions ?? 0
+    : dashboard?.search_crawler_interactions ?? 0;
+  const displayedCrawlerInteractions = hasSyncedStats
+    ? displayedAiCrawlerInteractions + displayedSearchCrawlerInteractions
+    : dashboard?.crawler_interactions ?? 0;
+  const displayedAiChatReferrals = hasSyncedStats
+    ? dashboard?.deployed_ai_chat_referrals ?? 0
+    : 0;
 
   React.useEffect(() => {
     if (loading || filtered.length === 0) return;
@@ -335,16 +415,35 @@ export default function App() {
     }
   }, [creatingProject]);
 
+  React.useEffect(() => {
+    if (!contentEditorOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setContentEditorOpen(false);
+        return;
+      }
+      // Typora muscle memory: ⌘S / Ctrl+S saves the open translation.
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        void saveSelectedRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [contentEditorOpen]);
+
   const loadDocuments = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [nextDocuments, nextDashboard] = await Promise.all([
+      const [nextDocuments, nextDashboard, nextMomentsSettings] = await Promise.all([
         invoke<EditorDocument[]>('list_documents'),
         invoke<DashboardData>('get_dashboard'),
+        invoke<MomentsSettings>('get_moments_settings'),
       ]);
       setDocuments(nextDocuments);
       setDashboard(nextDashboard);
+      setMomentsSettings(nextMomentsSettings);
       setSelectedId((current) => (
         current && nextDocuments.some((document) => document.id === current)
           ? current
@@ -373,13 +472,21 @@ export default function App() {
   }, [loadDocuments]);
 
   React.useEffect(() => {
-    if (screen !== 'content' || mode !== 'edit' || !hostRef.current || !selected || !selectedTranslation) return;
+    if (screen !== 'content' || !hostRef.current || !selected || !selectedTranslation) return;
+    // `hostRef` is attached to two different DOM nodes depending on
+    // `contentEditorOpen` (the plain editor-frame vs. the content-editor
+    // overlay). Neither node identity nor `screen`/`selected.id`
+    // necessarily change when the overlay opens on an already-selected
+    // document, so `contentEditorOpen` must be a dependency too — otherwise
+    // the effect skips and Vditor never mounts into the freshly rendered
+    // overlay host, leaving a blank canvas.
 
+    const host = hostRef.current;
     destroyVditor(editorRef.current);
     editorRef.current = null;
-    hostRef.current.innerHTML = '';
+    host.innerHTML = '';
 
-    const editor = new Vditor(hostRef.current, {
+    const editor = new Vditor(host, {
       value: selectedTranslation.content,
       mode: 'wysiwyg',
       height: '100%',
@@ -407,16 +514,69 @@ export default function App() {
       },
     });
 
+    // Typora behavior: clicking the empty canvas below (or beside) the last
+    // block drops the caret at the end of the document so writing just
+    // continues — no dead whitespace.
+    const focusEndOnCanvasClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const isCanvas = target === host
+        || target.classList.contains('vditor')
+        || target.classList.contains('vditor-content')
+        || target.classList.contains('vditor-wysiwyg');
+      if (!isCanvas) return;
+      const editable = host.querySelector<HTMLElement>('.vditor-wysiwyg .vditor-reset');
+      if (!editable) return;
+      event.preventDefault();
+      const range = document.createRange();
+      range.selectNodeContents(editable);
+      range.collapse(false);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      editable.focus();
+    };
+    host.addEventListener('mousedown', focusEndOnCanvasClick);
+
     editorRef.current = editor;
     return () => {
+      host.removeEventListener('mousedown', focusEndOnCanvasClick);
       if (editorRef.current === editor) editorRef.current = null;
       destroyVditor(editor);
     };
-  }, [mode, screen, selected?.id, selectedTranslation?.id]);
+  }, [screen, selected?.id, selectedTranslation?.id, contentEditorOpen]);
 
   const openShelf = (filter: EntityFilter) => {
     setEntityFilter(filter);
     setScreen('content');
+    setSelectedSeriesId('');
+    setContentEditorOpen(false);
+  };
+
+  const openContentGroup = (group: ContentGroup) => {
+    if (!editableMasonryContentKinds.has(group.kind)) return;
+    const primary = selectPrimaryDocument(group);
+    if (!primary) return;
+    setSelectedId(primary.id);
+    setLanguageByDocument((current) => ({
+      ...current,
+      [primary.id]: current[primary.id]
+        || primary.canonical_language
+        || primary.translations[0]?.language
+        || '',
+    }));
+    setEntityFilter(group.kind === 'episode' ? 'blog' : group.kind);
+    setScreen('content');
+    // Opening an episode keeps (or establishes) its series as the screen
+    // underneath, so closing the editor returns to the series management
+    // view — Blog → Series → Episode unwinds in order. Same id fallback
+    // chain as the series tree builder.
+    if (group.kind === 'episode') {
+      const seriesId = primary.series_id || primary.series_slug || 'unfiled';
+      setSelectedSeriesId(`series:${seriesId}`);
+    } else {
+      setSelectedSeriesId('');
+    }
+    setContentEditorOpen(true);
   };
 
   const refreshDocuments = () => {
@@ -433,6 +593,20 @@ export default function App() {
   };
 
   const cancelRefresh = () => setConfirmingRefresh(false);
+
+  const syncStats = async () => {
+    if (syncingStats) return;
+    setSyncingStats(true);
+    setStatsSyncError(null);
+    try {
+      await invoke<StatsSyncReport>('sync_stats');
+      setDashboard(await invoke<DashboardData>('get_dashboard'));
+    } catch (reason) {
+      setStatsSyncError(String(reason));
+    } finally {
+      setSyncingStats(false);
+    }
+  };
 
   const openCapture = (target: CaptureTarget) => {
     setCaptureTarget(target);
@@ -464,9 +638,11 @@ export default function App() {
     setCapturePhase('submitting');
     setCaptureError(null);
     try {
-      const created = captureTarget === 'idea'
-        ? await invoke<EditorDocument>('capture_idea', { note, category: captureCategory })
-        : await invoke<EditorDocument>('capture_blog', { draft: note, category: captureCategory });
+      const created = captureTarget === 'update'
+        ? await invoke<EditorDocument>('capture_update', { event: note })
+        : captureTarget === 'idea'
+          ? await invoke<EditorDocument>('capture_idea', { note, category: captureCategory })
+          : await invoke<EditorDocument>('capture_blog', { draft: note, category: captureCategory });
       setDocuments((current) => [
         ...current.filter((document) => document.id !== created.id),
         created,
@@ -478,7 +654,8 @@ export default function App() {
       setSelectedId(created.id);
       setEntityFilter(captureTarget);
       setScreen('content');
-      setMode('edit');
+      setSelectedSeriesId('');
+      setContentEditorOpen(captureTarget === 'update');
       setCaptureNote('');
       setDashboard(await invoke<DashboardData>('get_dashboard'));
       setCapturePhase('closing');
@@ -529,7 +706,7 @@ export default function App() {
       setSelectedId(created.id);
       setEntityFilter('project');
       setScreen('content');
-      setMode('edit');
+      setSelectedSeriesId('');
       setDashboard(await invoke<DashboardData>('get_dashboard'));
       setCreatingProject(false);
     } catch (reason) {
@@ -588,6 +765,247 @@ export default function App() {
     }
   };
 
+  // Fresh-closure handle for the ⌘S keydown listener: the listener attaches
+  // once per overlay open, but `saveSelected` closes over the live document
+  // content — without this ref it would save a stale snapshot.
+  const saveSelectedRef = React.useRef(saveSelected);
+  React.useEffect(() => {
+    saveSelectedRef.current = saveSelected;
+  });
+
+  const toggleToolbar = () => setToolbarVisible((current) => {
+    const next = !current;
+    window.localStorage.setItem('sv-editor-toolbar', next ? '1' : '0');
+    return next;
+  });
+
+  const stateTargetForGroup = (group: ContentGroup) => {
+    const document = selectPrimaryDocument(group);
+    const translation = document?.translations.find((item) => item.language === document.canonical_language)
+      || document?.translations[0]
+      || null;
+    return { document, translation };
+  };
+
+  const mergeSavedDocument = React.useCallback((saved: EditorDocument) => {
+    setDocuments((current) => current.map((document) => {
+      const sameEntity = document.entity_type === saved.entity_type
+        && document.entity_id === saved.entity_id;
+      if (document.id === saved.id) return saved;
+      if (!sameEntity) return document;
+      return {
+        ...document,
+        status: saved.status,
+        visibility: saved.visibility,
+      };
+    }));
+  }, []);
+
+  const saveGroupState = async (group: ContentGroup, state: DocumentStateInput) => {
+    if (!stateManagedKinds.has(group.kind)) return;
+    const { translation } = stateTargetForGroup(group);
+    if (!translation) {
+      setError(`No editable source found for ${group.title}`);
+      return;
+    }
+    if (dirtyIds.has(translation.id)) {
+      setError('Save the Markdown body before changing publish state.');
+      return;
+    }
+
+    setStateSavingId(group.id);
+    setError(null);
+    try {
+      const saved = await invoke<EditorDocument>('save_document_state', {
+        id: translation.id,
+        state,
+        expectedRevision: translation.revision,
+      });
+      mergeSavedDocument(saved);
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setStateSavingId('');
+    }
+  };
+
+  const saveSeriesState = async (series: EpisodeSeries, state: DocumentStateInput) => {
+    const targets = series.episodes.map((episode) => ({
+      episode,
+      ...stateTargetForGroup(episode),
+    }));
+    const missing = targets.find((target) => !target.translation);
+    if (missing) {
+      setError(`No editable source found for ${missing.episode.title}`);
+      return;
+    }
+    const dirtyTarget = targets.find((target) => target.translation && dirtyIds.has(target.translation.id));
+    if (dirtyTarget) {
+      setError(`Save ${dirtyTarget.episode.title} before changing the whole series.`);
+      return;
+    }
+
+    setStateSavingId(`series:${series.id}`);
+    setError(null);
+    try {
+      for (const target of targets) {
+        if (!target.translation) continue;
+        const saved = await invoke<EditorDocument>('save_document_state', {
+          id: target.translation.id,
+          state,
+          expectedRevision: target.translation.revision,
+        });
+        mergeSavedDocument(saved);
+      }
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setStateSavingId('');
+    }
+  };
+
+  const renderStateControls = (group: ContentGroup, variant: 'card' | 'header' = 'card') => {
+    if (group.cardKind === 'series') return null;
+    if (!stateManagedKinds.has(group.kind)) return null;
+    const { translation } = stateTargetForGroup(group);
+    const stateDirty = Boolean(translation && dirtyIds.has(translation.id));
+    const savingState = stateSavingId === group.id;
+    const disabled = savingState || stateDirty || !translation;
+    const lifecycle = contentLifecycleFor(group.kind, group.status, group.visibility);
+    if (lifecycle.actions.length === 0) return null;
+
+    return (
+      <div
+        className={`state-controls state-controls--${variant}`}
+        title={stateDirty ? 'Save Markdown before changing lifecycle state' : undefined}
+      >
+        <span className="state-control-summary" aria-label={`${group.title} state`}>
+          <span>{lifecycle.statusLabel}</span>
+          <span data-visibility={lifecycle.visibility === 'private' ? 'private' : undefined}>{lifecycle.visibilityLabel}</span>
+        </span>
+        {lifecycle.actions.map((action) => (
+          <button
+            key={action.id}
+            type="button"
+            disabled={disabled}
+            className={`state-action state-action--${action.tone}`}
+            title={action.description}
+            onClick={() => void saveGroupState(group, action.nextState)}
+          >
+            {savingState ? <LoaderCircle className="state-spinner" size={13} /> : lifecycleIconFor(action)}
+            {action.label}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const renderSeriesStateControls = (series: EpisodeSeries, variant: 'card' | 'header' = 'card') => {
+    const lifecycle = seriesLifecycleFor(series.episodes);
+    const savingState = stateSavingId === `series:${series.id}`;
+    const stateDirty = series.episodes.some((episode) => {
+      const { translation } = stateTargetForGroup(episode);
+      return Boolean(translation && dirtyIds.has(translation.id));
+    });
+    const disabled = savingState || stateDirty || series.episodes.length === 0;
+
+    return (
+      <div
+        className={`state-controls state-controls--${variant}`}
+        title={stateDirty ? 'Save episode Markdown before changing the whole series' : undefined}
+      >
+        <span className="state-control-summary" aria-label={`${series.title} state`}>
+          <span>{lifecycle.statusLabel}</span>
+          <span data-visibility={lifecycle.visibility === 'private' ? 'private' : undefined}>{lifecycle.visibilityLabel}</span>
+        </span>
+        {lifecycle.actions.map((action) => (
+          <button
+            key={action.id}
+            type="button"
+            disabled={disabled}
+            className={`state-action state-action--${action.tone}`}
+            title={action.description}
+            onClick={() => void saveSeriesState(series, action.nextState)}
+          >
+            {savingState ? <LoaderCircle className="state-spinner" size={13} /> : lifecycleIconFor(action)}
+            {action.label}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const openSeriesEditor = async (series: EpisodeSeries) => {
+    if (seriesEditorLoading || seriesEditorSaving) return;
+    setSeriesEditingSlug(series.slug);
+    setSeriesSource(null);
+    setSeriesDraft({
+      title: series.title,
+      description: series.description || '',
+      cover_url: series.coverUrl || '',
+      status: 'ongoing',
+    });
+    setSeriesEditorError(null);
+    setSeriesEditorLoading(true);
+    try {
+      const source = await invoke<EpisodeSeriesSource>('get_episode_series_source', { slug: series.slug });
+      setSeriesSource(source);
+      setSeriesDraft({
+        title: source.title,
+        description: source.description,
+        cover_url: source.cover_url,
+        status: source.status || 'ongoing',
+      });
+    } catch (reason) {
+      setSeriesEditorError(String(reason));
+    } finally {
+      setSeriesEditorLoading(false);
+    }
+  };
+
+  const closeSeriesEditor = () => {
+    if (seriesEditorSaving) return;
+    setSeriesEditingSlug('');
+    setSeriesSource(null);
+    setSeriesEditorError(null);
+  };
+
+  const saveSeriesEditor = async () => {
+    if (!seriesEditingSlug || !seriesSource || seriesEditorSaving) return;
+    const next = {
+      title: seriesDraft.title.trim(),
+      description: seriesDraft.description.trim(),
+      cover_url: seriesDraft.cover_url.trim(),
+      status: seriesDraft.status.trim() || 'ongoing',
+    };
+    if (!next.title) {
+      setSeriesEditorError('Series title is required.');
+      return;
+    }
+    setSeriesEditorSaving(true);
+    setSeriesEditorError(null);
+    try {
+      const saved = await invoke<EpisodeSeriesSource>('save_episode_series', {
+        slug: seriesEditingSlug,
+        series: next,
+        expectedRevision: seriesSource.revision,
+      });
+      setSeriesSource(saved);
+      setSeriesDraft({
+        title: saved.title,
+        description: saved.description,
+        cover_url: saved.cover_url,
+        status: saved.status || 'ongoing',
+      });
+      await loadDocuments();
+      setSeriesEditingSlug('');
+    } catch (reason) {
+      setSeriesEditorError(String(reason));
+    } finally {
+      setSeriesEditorSaving(false);
+    }
+  };
+
   const renderDocumentRow = (document: EditorDocument, label = document.role) => (
     <button
       type="button"
@@ -604,14 +1022,61 @@ export default function App() {
     </button>
   );
 
+  const isMasonryShelf = masonryContentKinds.has(entityFilter as ContentKind);
+  const isResumeShelf = entityFilter === 'resume';
+  const isUpdateShelf = entityFilter === 'update';
+  const resumeOverview = filtered.find((document) => document.entity_type === 'resume' && document.role === 'summary')
+    || filtered.find((document) => document.entity_type === 'resume' && document.role === 'overview')
+    || null;
+  const resumeGroup = contentGroups.find((group) => group.kind === 'resume') || null;
+  // Episodes never appear in `contentGroups` (they group under their series),
+  // so the editor overlay resolves them from the series tree instead.
+  const selectedContentGroup = selected && editableMasonryContentKinds.has(selected.entity_type)
+    ? selected.entity_type === 'episode'
+      ? episodeSeries
+          .flatMap((series) => series.episodes)
+          .find((episode) => episode.documents.some((document) => document.id === selected.id)
+            || episode.id === selected.entity_id)
+        || null
+      : contentGroups.find((group) => group.id === `${selected.entity_type}:${selected.entity_id}`) || null
+    : null;
+  const masonryGroups = isMasonryShelf
+    ? entityFilter === 'blog'
+      ? arrangeBlogGroupsForGrid([
+          ...contentGroups.filter((group) => group.kind === 'blog'),
+          ...seriesCards,
+        ])
+      : contentGroups.filter((group) => group.kind === entityFilter)
+    : [];
+  const updateGroups = isUpdateShelf
+    ? contentGroups.filter((group) => group.kind === 'update')
+    : [];
+  const updatesShellActive = screen === 'content' && isUpdateShelf && !contentEditorOpen;
+  const momentsCoverImage = cssBackgroundImage(momentsSettings?.cover.background_image_url);
+  const mainStyle = updatesShellActive && momentsSettings
+    ? {
+        '--moments-cover-image': momentsCoverImage || undefined,
+        '--moments-cover-position': momentsSettings.cover.background_position || 'center 42%',
+        '--moments-cover-height': `${momentsSettings.cover.cover_height_px || 420}px`,
+      } as React.CSSProperties
+    : undefined;
+
   return (
-    <div className="shell">
-      <aside className="sidebar">
+    <div className={`shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={() => setSidebarOpen((open) => !open)}
+        aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+        aria-expanded={sidebarOpen}
+      >
+        <Menu size={17} />
+      </button>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="brand">
-          <FileText size={17} />
           <div>
-            <div className="brand-title">Silan</div>
-            <div className="brand-subtitle">Markdown studio</div>
+            <div className="brand-title">Silan-Viking</div>
+            <div className="brand-subtitle">Personal Context System</div>
           </div>
         </div>
 
@@ -619,14 +1084,16 @@ export default function App() {
           <button
             type="button"
             className={`entity-button ${screen === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setScreen('dashboard')}
+            onClick={() => {
+              setScreen('dashboard');
+            }}
           >
             <BarChart3 size={16} />
             <span>Dashboard</span>
             <strong>{dashboard?.pending_comments || 0}</strong>
           </button>
           <div className="nav-rule" />
-          {entityFilters.map((filter) => {
+          {navigationEntityFilters.map((filter) => {
             const { label, Icon } = entityMeta[filter];
             return (
               <button
@@ -655,34 +1122,60 @@ export default function App() {
         </div>
       </aside>
 
-      <main className="main">
-        <header className="topbar">
-          <div className="title-block">
-            <div className="eyebrow">{screen === 'dashboard' ? 'Workspace' : 'Content library'}</div>
-            <h1>{screen === 'dashboard' ? 'Overview' : currentShelf.label}</h1>
-            <div className="meta">
-              {screen === 'dashboard' ? (
-                <>
-                  <span>{dashboard?.human_interactions || 0} human interactions</span>
-                  <span>{dashboard?.pending_comments || 0} comments to review</span>
-                  <span>{dirtyIds.size} unsaved Markdown files</span>
-                </>
-              ) : (
-                <>
-                  <span>{contentSummary}</span>
-                  <span>{dirtyIds.size} unsaved</span>
-                  {selected && <span>{docPath(selected)}</span>}
-                </>
-              )}
+      <main
+        className={`main ${updatesShellActive ? 'main-updates' : ''}`}
+        data-has-moments-background={updatesShellActive && momentsCoverImage ? 'true' : undefined}
+        style={mainStyle}
+      >
+        {!updatesShellActive && (
+          <header className="topbar">
+            <div className="title-block">
+              <div className="eyebrow">{screen === 'dashboard' ? 'Workspace' : currentShelf.eyebrow}</div>
+              <h1>{screen === 'dashboard' ? 'Overview' : currentShelf.label}</h1>
+              <div className="meta">
+                {screen === 'dashboard' ? (
+                  <>
+                    <span>{displayedHumanInteractions} human interactions</span>
+                    <span>{displayedAiCrawlerInteractions} AI · {displayedSearchCrawlerInteractions} search crawler hits</span>
+                    <span>{dashboard?.pending_comments || 0} comments to review</span>
+                    <span>{dirtyIds.size} unsaved Markdown files</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{contentSummary}</span>
+                    <span>{dirtyIds.size} unsaved</span>
+                    {selected && <span>{docPath(selected)}</span>}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-          {screen === 'content' && (
-            <div className="mode-switch" role="tablist" aria-label="Editor mode">
-              <button type="button" className={mode === 'edit' ? 'active' : ''} disabled={!selected} onClick={() => setMode('edit')}>Edit</button>
-              <button type="button" className={mode === 'preview' ? 'active' : ''} disabled={!selected} onClick={() => setMode('preview')}>Preview</button>
-            </div>
-          )}
-        </header>
+            {screen === 'content' && !isUpdateShelf && isMasonryShelf && !contentEditorOpen && (
+              <div className="library-head-actions">
+                {entityFilter === 'blog' && (
+                  <button type="button" className="new-entity-button" onClick={() => openCapture('blog')} title="Write blog" aria-label="Write blog">
+                    <PencilLine size={15} />
+                    <span>New</span>
+                  </button>
+                )}
+                {entityFilter === 'project' && (
+                  <button type="button" className="new-entity-button" onClick={openNewProject} title="New project" aria-label="New project">
+                    <FolderPlus size={15} />
+                    <span>New</span>
+                  </button>
+                )}
+                {entityFilter === 'idea' && (
+                  <button type="button" className="new-entity-button" onClick={() => openCapture('idea')} title="Record idea" aria-label="Record idea">
+                    <Lightbulb size={15} />
+                    <span>New</span>
+                  </button>
+                )}
+                <button type="button" onClick={refreshDocuments} title="Refresh source tree" aria-label="Refresh source tree">
+                  <RefreshCw size={15} />
+                </button>
+              </div>
+            )}
+          </header>
+        )}
 
         {error && (
           <div className="error" role="alert">
@@ -694,27 +1187,49 @@ export default function App() {
         {screen === 'dashboard' ? (
           <section className="dashboard-area">
             <div className="dashboard-grid">
-              <section className="activity-summary">
+              <section className="activity-summary ds-acrylic" data-ds="">
                 <div>
-                  <div className="eyebrow">Site activity</div>
-                  <h2>{dashboard?.human_interactions || 0}</h2>
-                  <p>human interactions recorded in the local projection</p>
+                  <div className="activity-summary-head">
+                    <div className="eyebrow">Site activity</div>
+                    <button
+                      type="button"
+                      className={`sync-stats-button ${syncingStats ? 'pending' : ''}`}
+                      onClick={() => void syncStats()}
+                      disabled={syncingStats}
+                      title="Pull real views, reactions, crawler traffic, and source traffic from the deployed site"
+                    >
+                      {syncingStats ? <LoaderCircle size={13} /> : <RefreshCw size={13} />}
+                      {syncingStats ? 'Syncing' : 'Sync stats'}
+                    </button>
+                  </div>
+                  <h2>{displayedHumanInteractions}</h2>
+                  <p>{hasSyncedStats ? 'human interactions synced from the deployed site' : 'human interactions recorded in the local projection'}</p>
+                  <span className="sync-freshness">{formatSyncedAgo(statsSyncedAt)}</span>
+                  {statsSyncError && (
+                    <div className="dialog-error stats-sync-error" role="alert">
+                      <AlertCircle size={13} />
+                      <span>{statsSyncError}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="activity-breakdown">
-                  <div><span>Views</span><strong>{dashboard?.total_views || 0}</strong></div>
-                  <div><span>Likes</span><strong>{dashboard?.total_likes || 0}</strong></div>
-                  <div><span>Comments</span><strong>{dashboard?.total_comments || 0}</strong></div>
-                  <div><span>Crawlers</span><strong>{dashboard?.crawler_interactions || 0}</strong></div>
+                  <div><span>Views</span><strong>{displayedViews}</strong></div>
+                  <div><span>Likes</span><strong>{displayedLikes}</strong></div>
+                  <div><span>Comments</span><strong>{displayedComments}</strong></div>
+                  <div><span>Crawlers</span><strong>{displayedCrawlerInteractions}</strong></div>
+                  <div><span>AI crawlers</span><strong>{displayedAiCrawlerInteractions}</strong></div>
+                  <div><span>Search bots</span><strong>{displayedSearchCrawlerInteractions}</strong></div>
+                  <div><span>AI chat</span><strong>{displayedAiChatReferrals}</strong></div>
                 </div>
               </section>
 
-              <section className="attention-panel">
+              <section className="attention-panel ds-acrylic" data-ds="">
                 <span>Needs attention</span>
                 <strong>{dashboard?.pending_comments || 0}</strong>
                 <p>comments pending review</p>
               </section>
 
-              <section className="recent-board">
+              <section className="recent-board ds-acrylic" data-ds="">
                 <div className="board-head">
                   <div>
                     <span>Content activity</span>
@@ -730,20 +1245,82 @@ export default function App() {
                       type="button"
                       key={`${item.entity_type}-${item.slug}`}
                       className="recent-row"
-                      onClick={() => openShelf(item.entity_type as EntityFilter)}
+                      onClick={() => openShelf(item.entity_type === 'episode' ? 'blog' : item.entity_type as EntityFilter)}
                     >
                       <span className={badgeClass(item.entity_type as ContentKind)}>{item.entity_type}</span>
                       <strong>{item.title}</strong>
-                      <small>{item.status || 'draft'} · {item.visibility || 'private'}</small>
+                      <small>{contentStateSummary(item.entity_type as ContentKind, item.status, item.visibility)}</small>
                     </button>
                   ))}
                 </div>
               </section>
             </div>
           </section>
+        ) : isResumeShelf ? (
+          <section className="editor-area resume-editor-area">
+            <ResumePage
+              overview={resumeOverview}
+              onEditProse={resumeGroup ? () => openContentGroup(resumeGroup) : undefined}
+            />
+          </section>
+        ) : isUpdateShelf && !contentEditorOpen ? (
+          <section className="editor-area updates-editor-area">
+            {loading ? (
+              <div className="empty">Reading updates...</div>
+            ) : (
+              <UpdateFeed
+                groups={updateGroups}
+                empty={currentShelf.empty}
+                query={query}
+                settings={momentsSettings}
+                eyebrow={currentShelf.eyebrow}
+                title={currentShelf.label}
+                meta={[
+                  contentSummary,
+                  `${dirtyIds.size} unsaved`,
+                  ...(selected ? [docPath(selected)] : []),
+                ]}
+                onOpen={openContentGroup}
+              />
+            )}
+          </section>
         ) : (
-          <section className="editor-area">
-            <div className="workspace">
+          <section className={`editor-area ${isMasonryShelf ? 'content-editor-area' : ''}`}>
+            {isMasonryShelf ? (
+              loading ? (
+                <div className="empty">Reading Markdown sources...</div>
+              ) : selectedSeries ? (
+                <SeriesDetail
+                  series={selectedSeries}
+                  onBack={() => setSelectedSeriesId('')}
+                  onEditSeries={(series) => void openSeriesEditor(series)}
+                  onEditEpisode={openContentGroup}
+                  renderStateControls={renderStateControls}
+                  seriesStateControls={renderSeriesStateControls(selectedSeries, 'header')}
+                />
+              ) : masonryGroups.length === 0 ? (
+                <div className="empty content-empty">{query.trim() ? 'No matches for your search.' : currentShelf.empty}</div>
+              ) : (
+                <div className="content-grid">
+                  {masonryGroups.map((group) => (
+                    <ContentCard
+                      key={group.id}
+                      group={group}
+                      onOpen={group.cardKind === 'series'
+                        ? () => setSelectedSeriesId(group.id)
+                        : openContentGroup}
+                      stateControls={group.cardKind === 'series'
+                        ? renderSeriesStateControls(
+                            episodeSeries.find((series) => `series:${series.id}` === group.id)!,
+                            'card',
+                          )
+                        : renderStateControls(group, 'card')}
+                    />
+                  ))}
+                </div>
+              )
+            ) : (
+              <div className="workspace">
               <section className="library-panel" aria-label={`${currentShelf.label} content`}>
                 <div className="library-head">
                   <div>
@@ -752,8 +1329,15 @@ export default function App() {
                   </div>
                   <div className="library-head-actions">
                     {entityFilter === 'project' && (
-                      <button type="button" onClick={openNewProject} title="New project" aria-label="New project">
+                      <button type="button" className="new-entity-button" onClick={openNewProject} title="New project" aria-label="New project">
                         <FolderPlus size={15} />
+                        <span>New</span>
+                      </button>
+                    )}
+                    {entityFilter === 'idea' && (
+                      <button type="button" className="new-entity-button" onClick={() => openCapture('idea')} title="Record idea" aria-label="Record idea">
+                        <Lightbulb size={15} />
+                        <span>New</span>
                       </button>
                     )}
                     <button type="button" onClick={refreshDocuments} title="Refresh source tree" aria-label="Refresh source tree">
@@ -766,7 +1350,7 @@ export default function App() {
                   {loading ? (
                     <div className="empty">Reading Markdown sources...</div>
                   ) : filtered.length === 0 ? (
-                    <div className="empty">No matching Markdown content.</div>
+                    <div className="empty">{query.trim() ? 'No matches for your search.' : currentShelf.empty}</div>
                   ) : entityFilter === 'episode' ? (
                     episodeSeries.map((series) => (
                       <section className="series-group" key={series.id}>
@@ -789,11 +1373,11 @@ export default function App() {
                     <>
                       {contentGroups.map((group) => (
                         <section className="item-group" key={group.id}>
-                          <div className="item-head">
-                            {entityFilter === 'all' && <span className={badgeClass(group.kind)}>{group.kind}</span>}
-                            <strong>{group.title}</strong>
-                            <small>{group.status || 'draft'}</small>
-                          </div>
+                        <div className="item-head">
+                          {entityFilter === 'all' && <span className={badgeClass(group.kind)}>{group.kind}</span>}
+                          <strong>{group.title}</strong>
+                            <small>{contentStateSummary(group.kind, group.status, group.visibility)}</small>
+                        </div>
                           {group.documents.map((document) => renderDocumentRow(document))}
                         </section>
                       ))}
@@ -829,16 +1413,18 @@ export default function App() {
                         <span className={badgeClass(selected.entity_type)}>{selected.entity_type}</span>
                         <div>
                           <h2>{selected.title}</h2>
-                          <p>{selected.role} · {selectedTranslation?.source_path}</p>
-                        </div>
+                        <p>{selected.role} · {selectedTranslation?.source_path}</p>
                       </div>
-                      <div className="document-state">
-                        {selected.status && <span>{selected.status}</span>}
-                        {selected.visibility && <span>{selected.visibility}</span>}
-                      </div>
+                    </div>
+                    <div className="document-state">
+                        <span>{contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).statusLabel}</span>
+                        <span data-visibility={contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibility === 'private' ? 'private' : undefined}>
+                          {contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibilityLabel}
+                        </span>
+                    </div>
                     </header>
 
-                    <div className="editor-frame" data-entity={selected.entity_type}>
+                    <div className="editor-frame" data-entity={selected.entity_type} data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
                       <div className="language-tabs" role="tablist" aria-label="Language representations">
                         {selected.translations.map((translation) => (
                           <button
@@ -855,27 +1441,31 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      {mode === 'edit' ? (
-                        <div ref={hostRef} className="editor-host" />
-                      ) : (
-                        <MarkdownPreview content={selectedTranslation?.content || ''} />
-                      )}
+                      <div ref={hostRef} className="editor-host" />
                     </div>
                   </>
                 ) : null}
               </section>
             </div>
+            )}
           </section>
         )}
 
         {screen === 'dashboard' ? (
           <div className="quick-dock" aria-label="Writing shortcuts">
-            <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
             <button type="button" className="idea-trigger" onClick={() => openCapture('idea')}><Lightbulb size={15} />Record idea</button>
+            <button type="button" onClick={() => openCapture('update')}><Clock3 size={15} />New update</button>
             <button type="button" onClick={openNewProject}><Plus size={15} />New project</button>
-            <button type="button" onClick={() => openShelf('update')}><Clock3 size={15} />Log update</button>
+            <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
+            <button type="button" onClick={() => openShelf('update')}><Clock3 size={15} />Open moments</button>
           </div>
-        ) : (
+        ) : isUpdateShelf && !contentEditorOpen ? (
+          <div className="quick-dock moment-dock" aria-label="Moment shortcuts">
+            <button type="button" className="idea-trigger" onClick={() => openCapture('idea')}><Lightbulb size={15} />Catch idea</button>
+            <button type="button" onClick={() => openCapture('update')}><Clock3 size={15} />New update</button>
+            <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
+          </div>
+        ) : isResumeShelf || (isMasonryShelf && !contentEditorOpen) || (isUpdateShelf && !contentEditorOpen) ? null : (
           <div className="save-dock" data-state={saveDockState}>
             <div className="save-dock-copy">
               <span className="save-dock-dot" aria-hidden="true" />
@@ -897,189 +1487,251 @@ export default function App() {
         )}
 
         {confirmingRefresh && (
-          <div className="dialog-overlay" role="presentation" onClick={cancelRefresh}>
-            <div
-              className="dialog-card"
-              role="alertdialog"
-              aria-modal="true"
-              aria-labelledby="refresh-confirm-title"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <h3 id="refresh-confirm-title">Discard {dirtyIds.size} unsaved change{dirtyIds.size > 1 ? 's' : ''}?</h3>
-              <p>Refreshing reloads the source tree and discards Markdown edits that haven&apos;t been saved yet.</p>
-              <div className="dialog-actions">
-                <button type="button" className="cancel" onClick={cancelRefresh}>Cancel</button>
-                <button type="button" className="destructive" onClick={confirmRefresh}>Discard and refresh</button>
-              </div>
-            </div>
-          </div>
+          <RefreshConfirmDialog
+            dirtyCount={dirtyIds.size}
+            onCancel={cancelRefresh}
+            onConfirm={confirmRefresh}
+          />
         )}
 
         {creatingProject && (
-          <div className="dialog-overlay" role="presentation" onClick={cancelNewProject}>
+          <NewProjectDialog
+            title={newProjectTitle}
+            onTitleChange={setNewProjectTitle}
+            submitting={newProjectSubmitting}
+            error={newProjectError}
+            inputRef={newProjectInputRef}
+            onCancel={cancelNewProject}
+            onSubmit={() => void submitNewProject()}
+            onKeyDown={handleNewProjectKeyDown}
+          />
+        )}
+
+        {seriesEditingSlug && (
+          <div className="dialog-overlay" role="presentation" onClick={closeSeriesEditor}>
             <div
-              className="dialog-card"
+              className="dialog-card series-editor-card"
               role="dialog"
               aria-modal="true"
-              aria-labelledby="new-project-title"
+              aria-labelledby="series-editor-title"
               onClick={(event) => event.stopPropagation()}
             >
-              <h3 id="new-project-title">New project</h3>
-              <p>Creates a real content/project source with an overview Part, then opens it for editing.</p>
-              <input
-                ref={newProjectInputRef}
-                className="dialog-input"
-                type="text"
-                value={newProjectTitle}
-                onChange={(event) => setNewProjectTitle(event.target.value)}
-                onKeyDown={handleNewProjectKeyDown}
-                disabled={newProjectSubmitting}
-                placeholder="Project title"
-                aria-label="Project title"
-              />
-              {newProjectError && (
+              <div className="new-project-badge">
+                <Radio size={17} />
+              </div>
+              <h3 id="series-editor-title">Edit series</h3>
+              <p>{seriesSource?.relative_path || `content/resources/episode/${seriesEditingSlug}/series.toml`}</p>
+              <label className="series-editor-field">
+                <span>Title</span>
+                <input
+                  className="dialog-input"
+                  type="text"
+                  value={seriesDraft.title}
+                  onChange={(event) => setSeriesDraft((current) => ({ ...current, title: event.target.value }))}
+                  disabled={seriesEditorLoading || seriesEditorSaving}
+                />
+              </label>
+              <label className="series-editor-field">
+                <span>Description</span>
+                <textarea
+                  value={seriesDraft.description}
+                  onChange={(event) => setSeriesDraft((current) => ({ ...current, description: event.target.value }))}
+                  disabled={seriesEditorLoading || seriesEditorSaving}
+                  rows={4}
+                />
+              </label>
+              <label className="series-editor-field">
+                <span>Cover URL</span>
+                <input
+                  className="dialog-input"
+                  type="text"
+                  value={seriesDraft.cover_url}
+                  onChange={(event) => setSeriesDraft((current) => ({ ...current, cover_url: event.target.value }))}
+                  disabled={seriesEditorLoading || seriesEditorSaving}
+                  placeholder="silan://resources/episode/series/assets/cover.png"
+                />
+              </label>
+              <label className="series-editor-field">
+                <span>Status</span>
+                <input
+                  className="dialog-input"
+                  type="text"
+                  value={seriesDraft.status}
+                  onChange={(event) => setSeriesDraft((current) => ({ ...current, status: event.target.value }))}
+                  disabled={seriesEditorLoading || seriesEditorSaving}
+                />
+              </label>
+              {seriesEditorError && (
                 <div className="dialog-error" role="alert">
                   <AlertCircle size={14} />
-                  <span>{newProjectError}</span>
+                  <span>{seriesEditorError}</span>
                 </div>
               )}
               <div className="dialog-actions">
-                <button type="button" className="cancel" disabled={newProjectSubmitting} onClick={cancelNewProject}>Cancel</button>
+                <button type="button" className="cancel" disabled={seriesEditorSaving} onClick={closeSeriesEditor}>Cancel</button>
                 <button
                   type="button"
-                  className="primary"
-                  disabled={!newProjectTitle.trim() || newProjectSubmitting}
-                  onClick={() => void submitNewProject()}
+                  className={`primary ${seriesEditorSaving ? 'pending' : ''}`}
+                  disabled={!seriesSource || !seriesDraft.title.trim() || seriesEditorLoading || seriesEditorSaving}
+                  onClick={() => void saveSeriesEditor()}
                 >
-                  {newProjectSubmitting ? <LoaderCircle size={15} /> : <FolderPlus size={15} />}
-                  {newProjectSubmitting ? 'Creating' : 'Create project'}
+                  {seriesEditorSaving || seriesEditorLoading ? <LoaderCircle size={15} /> : <Save size={15} />}
+                  {seriesEditorLoading ? 'Loading' : seriesEditorSaving ? 'Saving' : 'Save series'}
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {contentEditorOpen && selectedContentGroup && selected && editableMasonryContentKinds.has(selected.entity_type) && (
+          <section
+            className="content-editor-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="content-editor-title"
+          >
+            <div className="content-editor-shell">
+              <header className="content-editor-header">
+                <div className="content-editor-title">
+                  <span className={badgeClass(selected.entity_type)}>{selected.entity_type}</span>
+                  <div>
+                    <h2 id="content-editor-title">{selectedContentGroup.title}</h2>
+                    <p>
+                      {selected.entity_type === 'episode' && selected.series_title
+                        ? `${selected.series_title} · Episode ${selected.episode_number ?? '?'} · `
+                        : ''}
+                      {selectedContentGroup.slug} · {selectedContentGroup.documents.length} Markdown parts
+                    </p>
+                  </div>
+                </div>
+                <div className="content-editor-actions">
+                  {renderStateControls(selectedContentGroup, 'header')}
+                  <button
+                    type="button"
+                    className={`content-close content-toolbar-toggle ${toolbarVisible ? 'active' : ''}`}
+                    aria-pressed={toolbarVisible}
+                    onClick={toggleToolbar}
+                    title={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
+                    aria-label={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
+                  >
+                    <Type size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`content-save ${saving ? 'pending' : ''}`}
+                    disabled={!dirty || saving}
+                    onClick={() => void saveSelected()}
+                  >
+                    {saving ? <LoaderCircle size={15} /> : <Save size={15} />}
+                    {saving ? 'Saving' : saveFailed ? 'Retry' : 'Save'}
+                  </button>
+                </div>
+              </header>
+
+              <button type="button" className="content-close content-close-top" onClick={() => setContentEditorOpen(false)} aria-label="Close content editor">
+                <X size={18} />
+              </button>
+
+              <div className="content-editor-body">
+                <aside className="content-part-rail" aria-label="Content Markdown parts">
+                  {selected.entity_type === 'episode' && selectedSeries && (
+                    <div className="content-episode-rail" role="navigation" aria-label="Series episodes">
+                      <div className="content-part-rail-head">
+                        <span>{selectedSeries.title}</span>
+                        <strong>{selectedSeries.episodes.length}</strong>
+                      </div>
+                      {selectedSeries.episodes.map((episode) => (
+                        <button
+                          type="button"
+                          key={episode.id}
+                          className={`content-episode-row ${episode.id === selected.entity_id ? 'active' : ''}`}
+                          onClick={() => openContentGroup(episode)}
+                        >
+                          <span className="content-episode-number">
+                            {episode.episodeNumber != null ? `#${episode.episodeNumber}` : '·'}
+                          </span>
+                          <span className="content-episode-title">{episode.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="content-part-rail-head">
+                    <span>Parts</span>
+                    <strong>{selectedContentGroup.documents.length}</strong>
+                  </div>
+                  {selectedContentGroup.documents.map((document) => renderDocumentRow(document))}
+                </aside>
+
+                <section className="content-writing-panel" aria-label="Content Markdown editor">
+                  <header className="document-header content-document-header">
+                    <div className="document-identity">
+                      <FileText size={16} />
+                      <div>
+                        <h2>{selected.title}</h2>
+                        <p>{selected.role} · {selectedTranslation?.source_path}</p>
+                      </div>
+                    </div>
+                    <div className="document-state">
+                      {dirty && <span>unsaved</span>}
+                      <span>{contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).statusLabel}</span>
+                      <span data-visibility={contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibility === 'private' ? 'private' : undefined}>
+                        {contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibilityLabel}
+                      </span>
+                    </div>
+                  </header>
+
+                  <div className="editor-frame content-editor-frame" data-entity={selected.entity_type} data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
+                    <div className="language-tabs" role="tablist" aria-label="Language representations">
+                      {selected.translations.map((translation) => (
+                        <button
+                          type="button"
+                          key={translation.id}
+                          className={translation.id === selectedTranslation?.id ? 'active' : ''}
+                          onClick={() => setLanguageByDocument((current) => ({
+                            ...current,
+                            [selected.id]: translation.language,
+                          }))}
+                        >
+                          {translation.language}
+                          {dirtyIds.has(translation.id) && <span />}
+                        </button>
+                      ))}
+                    </div>
+                    <div ref={hostRef} className="editor-host" />
+                  </div>
+                </section>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
-      <section
-        className="idea-capture"
-        data-phase={capturePhase}
-        data-target={captureTarget}
-        aria-hidden={capturePhase === 'closed'}
+      <CaptureSheet
+        phase={capturePhase}
+        target={captureTarget}
+        onTargetChange={setCaptureTarget}
+        category={captureCategory}
+        onCategoryChange={setCaptureCategory}
+        categories={ideaCategories}
+        note={captureNote}
+        onNoteChange={setCaptureNote}
+        error={captureError}
+        inputRef={captureInputRef}
+        onRequestClose={requestCaptureClose}
+        onDiscard={discardCapture}
+        onKeepWriting={() => setCapturePhase('editing')}
+        onSubmit={() => void submitCapture()}
+        onKeyDown={handleCaptureKeyDown}
         onTransitionEnd={(event) => {
           if (
             event.target === event.currentTarget
-            && event.propertyName === 'clip-path'
+            && event.propertyName === 'opacity'
             && capturePhase === 'closing'
           ) {
             setCapturePhase('closed');
           }
         }}
-      >
-        <header className="capture-header">
-          <nav className="capture-mode-tabs" role="tablist" aria-label="快速书写模式">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={captureTarget === 'blog'}
-              className={captureTarget === 'blog' ? 'active' : ''}
-              onClick={() => setCaptureTarget('blog')}
-              disabled={capturePhase === 'submitting'}
-            >
-              快速写文章
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={captureTarget === 'idea'}
-              className={captureTarget === 'idea' ? 'active' : ''}
-              onClick={() => setCaptureTarget('idea')}
-              disabled={capturePhase === 'submitting'}
-            >
-              记录想法
-            </button>
-          </nav>
-          <button
-            type="button"
-            className="capture-close"
-            onClick={requestCaptureClose}
-            disabled={capturePhase === 'submitting'}
-            title="Close capture"
-            aria-label="Close capture"
-          >
-            <X size={18} />
-          </button>
-        </header>
-
-        <div className="capture-workspace">
-          <div className="capture-categories" role="radiogroup" aria-label="Idea category">
-            {ideaCategories.map(({ value, label, Icon }) => (
-              <button
-                type="button"
-                role="radio"
-                aria-checked={captureCategory === value}
-                className={captureCategory === value ? 'active' : ''}
-                key={value}
-                onClick={() => setCaptureCategory(value)}
-                disabled={capturePhase === 'submitting'}
-              >
-                <Icon size={15} />
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div className="capture-sheet">
-            <textarea
-              ref={captureInputRef}
-              value={captureNote}
-              onChange={(event) => setCaptureNote(event.target.value)}
-              onKeyDown={handleCaptureKeyDown}
-              disabled={capturePhase === 'submitting'}
-              placeholder={captureTarget === 'idea' ? '把你现在想到的先说清楚...' : '先把文章草稿写下来...'}
-              aria-label={captureTarget === 'idea' ? '想法内容' : '文章草稿'}
-            />
-            <div className="capture-sheet-footer">
-              <button
-                type="button"
-                className="capture-attachment"
-                disabled
-                title="保存草稿后可在编辑器中添加图片"
-                aria-label="保存草稿后添加图片"
-              >
-                <ImagePlus size={19} />
-              </button>
-              <button
-                type="button"
-                className="capture-submit"
-                disabled={!captureNote.trim() || capturePhase === 'submitting'}
-                onClick={() => void submitCapture()}
-                title={captureTarget === 'idea' ? '记录想法' : '保存文章草稿'}
-                aria-label={captureTarget === 'idea' ? '记录想法' : '保存文章草稿'}
-              >
-                {capturePhase === 'submitting' ? <LoaderCircle size={19} /> : <ArrowUp size={19} />}
-              </button>
-            </div>
-          </div>
-
-          {captureError && (
-            <div className="capture-error" role="alert">
-              <AlertCircle size={15} />
-              <span>{captureError}</span>
-            </div>
-          )}
-        </div>
-
-        {capturePhase === 'confirming-close' && (
-          <div className="capture-discard" role="alertdialog" aria-modal="true">
-            <div>
-              <strong>Discard this thought?</strong>
-              <span>Nothing has been written to content/ yet.</span>
-            </div>
-            <button type="button" onClick={() => setCapturePhase('editing')}>Keep writing</button>
-            <button type="button" className="destructive" onClick={discardCapture}>Discard</button>
-          </div>
-        )}
-      </section>
+      />
     </div>
   );
 }

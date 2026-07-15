@@ -10,7 +10,7 @@ content_dir = "content"
 # Seeds content/resources/resume/parts/summary/en.md on `init`;
 # after that, edit that file — it is the truth source, this is not.
 full_name = "Silan Hu"
-title     = "AI Researcher & Full Stack Developer"
+title     = "Emerging AI Systems Researcher & Full Stack Engineer"
 email     = "Silan.Hu@u.nus.edu"
 location  = "Singapore / Beijing, China"
 
@@ -20,6 +20,12 @@ path = "_deploy/api/portfolio.db"
 [mcp]
 port          = 7700
 enable_deploy = false
+
+[desktop.moments]
+profile_alignment = "right"
+background_image = "resources/resume/assets/nus-computing-cover.png"
+background_position = "center 42%"
+cover_height_px = 420
 
 [deploy]
 # mode = "nginx" routes through systemd + a host-managed nginx (BaoTa /

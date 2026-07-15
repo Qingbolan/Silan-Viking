@@ -1,7 +1,11 @@
 //! Thin Tauri command adapter.
 
 use crate::application::DesktopWorkspace;
-use crate::model::{DashboardData, EditorDocument};
+use crate::model::{
+    DashboardData, DocumentStateInput, EditorDocument, EpisodeSeriesInput, EpisodeSeriesSource,
+    MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource,
+    ResumeSection, StatsSyncReport,
+};
 
 #[tauri::command]
 pub(crate) fn list_documents() -> Result<Vec<EditorDocument>, String> {
@@ -11,6 +15,11 @@ pub(crate) fn list_documents() -> Result<Vec<EditorDocument>, String> {
 #[tauri::command]
 pub(crate) fn get_dashboard() -> Result<DashboardData, String> {
     DesktopWorkspace::from_environment()?.dashboard()
+}
+
+#[tauri::command]
+pub(crate) fn get_moments_settings() -> Result<MomentsSettings, String> {
+    DesktopWorkspace::from_environment()?.moments_settings()
 }
 
 #[tauri::command]
@@ -28,6 +37,15 @@ pub(crate) fn save_document(
 }
 
 #[tauri::command]
+pub(crate) fn save_document_state(
+    id: String,
+    state: DocumentStateInput,
+    expected_revision: String,
+) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.save_document_state(&id, state, &expected_revision)
+}
+
+#[tauri::command]
 pub(crate) fn capture_idea(note: String, category: String) -> Result<EditorDocument, String> {
     DesktopWorkspace::from_environment()?.capture_idea(&note, &category)
 }
@@ -38,6 +56,80 @@ pub(crate) fn capture_blog(draft: String, category: String) -> Result<EditorDocu
 }
 
 #[tauri::command]
+pub(crate) fn capture_update(event: String) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.capture_update(&event)
+}
+
+#[tauri::command]
 pub(crate) fn create_project(title: String) -> Result<EditorDocument, String> {
     DesktopWorkspace::from_environment()?.create_project(&title)
+}
+
+#[tauri::command]
+pub(crate) fn sync_stats() -> Result<StatsSyncReport, String> {
+    DesktopWorkspace::from_environment()?.sync_stats()
+}
+
+#[tauri::command]
+pub(crate) fn get_episode_series_source(slug: String) -> Result<EpisodeSeriesSource, String> {
+    DesktopWorkspace::from_environment()?.episode_series_source(&slug)
+}
+
+#[tauri::command]
+pub(crate) fn save_episode_series(
+    slug: String,
+    series: EpisodeSeriesInput,
+    expected_revision: String,
+) -> Result<EpisodeSeriesSource, String> {
+    DesktopWorkspace::from_environment()?.save_episode_series(&slug, &series, &expected_revision)
+}
+
+#[tauri::command]
+pub(crate) fn get_resume_sections(language: String) -> Result<Vec<ResumeSection>, String> {
+    DesktopWorkspace::from_environment()?.resume_sections(&language)
+}
+
+#[tauri::command]
+pub(crate) fn get_resume_part_source(
+    role: String,
+    language: String,
+) -> Result<ResumePartSource, String> {
+    DesktopWorkspace::from_environment()?.resume_part_source(&role, &language)
+}
+
+#[tauri::command]
+pub(crate) fn get_resume_profile(language: String) -> Result<ResumeProfileSource, String> {
+    DesktopWorkspace::from_environment()?.resume_profile(&language)
+}
+
+#[tauri::command]
+pub(crate) fn save_resume_profile(
+    language: String,
+    profile: ResumeProfile,
+    summary: String,
+    expected_revision: String,
+) -> Result<ResumeProfileSource, String> {
+    DesktopWorkspace::from_environment()?.save_resume_profile(
+        &language,
+        &profile,
+        &summary,
+        &expected_revision,
+    )
+}
+
+#[tauri::command]
+pub(crate) fn save_resume_entries(
+    role: String,
+    language: String,
+    shape: String,
+    entries: Vec<ResumeEntryInput>,
+    expected_revision: String,
+) -> Result<Vec<ResumeSection>, String> {
+    DesktopWorkspace::from_environment()?.save_resume_entries(
+        &role,
+        &language,
+        &shape,
+        &entries,
+        &expected_revision,
+    )
 }
