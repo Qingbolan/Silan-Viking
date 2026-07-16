@@ -16,6 +16,7 @@ import {
   FileText,
   Folder,
   FolderPlus,
+  GitBranch,
   Lightbulb,
   LoaderCircle,
   Menu,
@@ -68,6 +69,7 @@ import type {
   DashboardData,
   DashboardItem,
   EditorDocument,
+  EntityCount,
   EntityFilter,
   EpisodeGroup,
   EpisodeSeriesInput,
@@ -76,10 +78,17 @@ import type {
   IdeaCategory,
   MomentsSettings,
   StatsSyncReport,
+  VersionStatus,
+  VersionScope,
 } from './types';
 
 const masonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea']);
 const editableMasonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'resume', 'update']);
+const versionScopeFilters = new Set<EntityFilter>(['resume', 'blog', 'project', 'idea', 'update']);
+
+const isVersionScope = (filter: EntityFilter): filter is VersionScope => (
+  versionScopeFilters.has(filter)
+);
 
 const entityMeta: Record<EntityFilter, { label: string; eyebrow: string; empty: string; Icon: typeof Folder }> = {
   all: { label: 'Library', eyebrow: 'All content', empty: 'No matching Markdown content.', Icon: Folder },
@@ -144,6 +153,7 @@ const lifecycleIconFor = (action: LifecycleAction | SeriesLifecycleAction) => {
 
 export default function App() {
   const [documents, setDocuments] = React.useState<EditorDocument[]>([]);
+  const [entityCounts, setEntityCounts] = React.useState<Map<EntityFilter, number>>(() => new Map());
   const [dashboard, setDashboard] = React.useState<DashboardData | null>(null);
   const [momentsSettings, setMomentsSettings] = React.useState<MomentsSettings | null>(null);
   const [screen, setScreen] = React.useState<'dashboard' | 'content'>('dashboard');
@@ -176,6 +186,12 @@ export default function App() {
   const [newProjectError, setNewProjectError] = React.useState<string | null>(null);
   const [syncingStats, setSyncingStats] = React.useState(false);
   const [statsSyncError, setStatsSyncError] = React.useState<string | null>(null);
+  const [versionStatus, setVersionStatus] = React.useState<VersionStatus | null>(null);
+  const [shelfVersionStatus, setShelfVersionStatus] = React.useState<VersionStatus | null>(null);
+  const [versionLoading, setVersionLoading] = React.useState(false);
+  const [releasingScope, setReleasingScope] = React.useState<VersionScope | ''>('');
+  const [versionError, setVersionError] = React.useState<string | null>(null);
+  const [versionPanelOpen, setVersionPanelOpen] = React.useState(false);
   const [stateSavingId, setStateSavingId] = React.useState('');
   const [seriesEditingSlug, setSeriesEditingSlug] = React.useState('');
   const [seriesSource, setSeriesSource] = React.useState<EpisodeSeriesSource | null>(null);
@@ -193,9 +209,9 @@ export default function App() {
   const captureInputRef = React.useRef<HTMLTextAreaElement | null>(null);
   const newProjectInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  const entityCounts = React.useMemo(() => {
+  const entityCountsFromDocuments = (nextDocuments: EditorDocument[]) => {
     const itemIds = new Map<ContentKind, Set<string>>();
-    documents.forEach((document) => {
+    nextDocuments.forEach((document) => {
       if (!itemIds.has(document.entity_type)) itemIds.set(document.entity_type, new Set());
       itemIds.get(document.entity_type)?.add(document.entity_id);
     });
@@ -204,7 +220,15 @@ export default function App() {
     counts.set('blog', (counts.get('blog') || 0) + (counts.get('episode') || 0));
     counts.set('all', Array.from(itemIds.values()).reduce((total, ids) => total + ids.size, 0));
     return counts;
-  }, [documents]);
+  };
+
+  const entityCountsFromRows = (rows: EntityCount[]) => {
+    const counts = new Map<EntityFilter, number>();
+    rows.forEach((row) => counts.set(row.entity_type, row.count));
+    counts.set('blog', (counts.get('blog') || 0) + (counts.get('episode') || 0));
+    counts.set('all', rows.reduce((total, row) => total + row.count, 0));
+    return counts;
+  };
 
   const filtered = React.useMemo(() => documents.filter((document) => {
     const text = [
@@ -341,6 +365,11 @@ export default function App() {
     (translation) => translation.language === selectedLanguage,
   ) || selected?.translations[0] || null;
   const dirty = selectedTranslation ? dirtyIds.has(selectedTranslation.id) : false;
+  const versionScope = screen === 'content'
+    && !contentEditorOpen
+    && isVersionScope(entityFilter)
+    ? entityFilter
+    : null;
   const otherDirtyCount = selected
     ? selected.translations.filter((translation) => translation.id !== selectedTranslation?.id && dirtyIds.has(translation.id)).length
     : 0;
@@ -436,14 +465,9 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const [nextDocuments, nextDashboard, nextMomentsSettings] = await Promise.all([
-        invoke<EditorDocument[]>('list_documents'),
-        invoke<DashboardData>('get_dashboard'),
-        invoke<MomentsSettings>('get_moments_settings'),
-      ]);
+      const nextDocuments = await invoke<EditorDocument[]>('list_documents');
       setDocuments(nextDocuments);
-      setDashboard(nextDashboard);
-      setMomentsSettings(nextMomentsSettings);
+      setEntityCounts(entityCountsFromDocuments(nextDocuments));
       setSelectedId((current) => (
         current && nextDocuments.some((document) => document.id === current)
           ? current
@@ -467,9 +491,45 @@ export default function App() {
     }
   }, []);
 
+  const loadEntityCounts = React.useCallback(async () => {
+    try {
+      setEntityCounts(entityCountsFromRows(await invoke<EntityCount[]>('get_entity_counts')));
+    } catch (reason) {
+      setError(String(reason));
+    }
+  }, []);
+
+  const loadDashboard = React.useCallback(async () => {
+    try {
+      setDashboard(await invoke<DashboardData>('get_dashboard'));
+    } catch (reason) {
+      setError(String(reason));
+    }
+  }, []);
+
+  const loadMomentsSettings = React.useCallback(async () => {
+    try {
+      setMomentsSettings(await invoke<MomentsSettings>('get_moments_settings'));
+    } catch (reason) {
+      setError(String(reason));
+    }
+  }, []);
+
   React.useEffect(() => {
-    void loadDocuments();
-  }, [loadDocuments]);
+    void loadEntityCounts();
+  }, [loadEntityCounts]);
+
+  React.useEffect(() => {
+    if (screen === 'content') void loadDocuments();
+  }, [screen, loadDocuments]);
+
+  React.useEffect(() => {
+    if (screen === 'dashboard') void loadDashboard();
+  }, [screen, loadDashboard]);
+
+  React.useEffect(() => {
+    if (screen === 'content' && entityFilter === 'update') void loadMomentsSettings();
+  }, [screen, entityFilter, loadMomentsSettings]);
 
   React.useEffect(() => {
     if (screen !== 'content' || !hostRef.current || !selected || !selectedTranslation) return;
@@ -594,6 +654,48 @@ export default function App() {
 
   const cancelRefresh = () => setConfirmingRefresh(false);
 
+  const openVersionPanel = async (scope = versionScope) => {
+    if (!scope) return;
+    if (versionLoading) return;
+    setVersionPanelOpen(true);
+    setVersionLoading(true);
+    setVersionError(null);
+    try {
+      setVersionStatus(await invoke<VersionStatus>('get_version_status', { scope }));
+    } catch (reason) {
+      setVersionError(String(reason));
+    } finally {
+      setVersionLoading(false);
+    }
+  };
+
+  const closeVersionPanel = () => {
+    if (versionLoading || releasingScope) return;
+    setVersionPanelOpen(false);
+  };
+
+  const releaseCurrentScope = async (scope = versionScope) => {
+    if (!scope) return;
+    if (versionLoading || releasingScope) return;
+    if (dirtyIds.size > 0) {
+      setError('Save open Markdown edits before releasing this section.');
+      return;
+    }
+    setReleasingScope(scope);
+    setVersionError(null);
+    try {
+      const nextStatus = await invoke<VersionStatus>('release_scope', { scope });
+      setVersionStatus(nextStatus);
+      setShelfVersionStatus(nextStatus);
+      await loadDocuments();
+    } catch (reason) {
+      setVersionError(String(reason));
+      setVersionPanelOpen(true);
+    } finally {
+      setReleasingScope('');
+    }
+  };
+
   const syncStats = async () => {
     if (syncingStats) return;
     setSyncingStats(true);
@@ -657,7 +759,7 @@ export default function App() {
       setSelectedSeriesId('');
       setContentEditorOpen(captureTarget === 'update');
       setCaptureNote('');
-      setDashboard(await invoke<DashboardData>('get_dashboard'));
+      await loadEntityCounts();
       setCapturePhase('closing');
     } catch (reason) {
       setCaptureError(String(reason));
@@ -707,7 +809,7 @@ export default function App() {
       setEntityFilter('project');
       setScreen('content');
       setSelectedSeriesId('');
-      setDashboard(await invoke<DashboardData>('get_dashboard'));
+      await loadEntityCounts();
       setCreatingProject(false);
     } catch (reason) {
       setNewProjectError(String(reason));
@@ -1052,6 +1154,9 @@ export default function App() {
     ? contentGroups.filter((group) => group.kind === 'update')
     : [];
   const updatesShellActive = screen === 'content' && isUpdateShelf && !contentEditorOpen;
+  const shelfDockMode = versionScope && versionScope !== 'update'
+    ? versionScope
+    : null;
   const momentsCoverImage = cssBackgroundImage(momentsSettings?.cover.background_image_url);
   const mainStyle = updatesShellActive && momentsSettings
     ? {
@@ -1060,6 +1165,29 @@ export default function App() {
         '--moments-cover-height': `${momentsSettings.cover.cover_height_px || 420}px`,
       } as React.CSSProperties
     : undefined;
+  const scopedReleaseVisible = Boolean(
+    versionScope
+      && shelfVersionStatus?.scope === versionScope
+      && shelfVersionStatus.dirty_count > 0,
+  );
+
+  React.useEffect(() => {
+    if (!versionScope) {
+      setShelfVersionStatus(null);
+      return;
+    }
+    let cancelled = false;
+    invoke<VersionStatus>('get_version_status', { scope: versionScope })
+      .then((status) => {
+        if (!cancelled) setShelfVersionStatus(status);
+      })
+      .catch(() => {
+        if (!cancelled) setShelfVersionStatus(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [versionScope, documents, dirtyIds.size]);
 
   return (
     <div className={`shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -1457,13 +1585,65 @@ export default function App() {
             <button type="button" onClick={() => openCapture('update')}><Clock3 size={15} />New update</button>
             <button type="button" onClick={openNewProject}><Plus size={15} />New project</button>
             <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
-            <button type="button" onClick={() => openShelf('update')}><Clock3 size={15} />Open moments</button>
           </div>
         ) : isUpdateShelf && !contentEditorOpen ? (
           <div className="quick-dock moment-dock" aria-label="Moment shortcuts">
             <button type="button" className="idea-trigger" onClick={() => openCapture('idea')}><Lightbulb size={15} />Catch idea</button>
             <button type="button" onClick={() => openCapture('update')}><Clock3 size={15} />New update</button>
             <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
+            <button type="button" onClick={() => void openVersionPanel('update')} title="Open Updates Git version status">
+              <GitBranch size={15} />
+              Version
+            </button>
+            {versionScope === 'update' && scopedReleaseVisible && (
+              <button
+                type="button"
+                className="dock-release"
+                disabled={releasingScope === 'update'}
+                onClick={() => void releaseCurrentScope('update')}
+                title="Commit and release Updates changes only"
+              >
+                {releasingScope === 'update' ? <LoaderCircle size={15} /> : <Send size={15} />}
+                {releasingScope === 'update' ? 'Releasing' : 'Release'}
+              </button>
+            )}
+          </div>
+        ) : shelfDockMode ? (
+          <div className="quick-dock shelf-action-dock" aria-label={`${currentShelf.label} shortcuts`}>
+            {shelfDockMode === 'blog' && (
+              <button type="button" className="dock-primary" onClick={() => openCapture('blog')}>
+                <PencilLine size={15} />
+                Create
+              </button>
+            )}
+            {shelfDockMode === 'project' && (
+              <button type="button" className="dock-primary" onClick={openNewProject}>
+                <FolderPlus size={15} />
+                Create
+              </button>
+            )}
+            {shelfDockMode === 'idea' && (
+              <button type="button" className="dock-primary" onClick={() => openCapture('idea')}>
+                <Lightbulb size={15} />
+                Create
+              </button>
+            )}
+            <button type="button" onClick={() => void openVersionPanel(shelfDockMode)} title={`Open ${currentShelf.label} Git version status`}>
+              <GitBranch size={15} />
+              Version
+            </button>
+            {scopedReleaseVisible && (
+              <button
+                type="button"
+                className="dock-release"
+                disabled={releasingScope === shelfDockMode}
+                onClick={() => void releaseCurrentScope(shelfDockMode)}
+                title={`Commit and release ${currentShelf.label} changes only`}
+              >
+                {releasingScope === shelfDockMode ? <LoaderCircle size={15} /> : <Send size={15} />}
+                {releasingScope === shelfDockMode ? 'Releasing' : 'Release'}
+              </button>
+            )}
           </div>
         ) : isResumeShelf || (isMasonryShelf && !contentEditorOpen) || (isUpdateShelf && !contentEditorOpen) ? null : (
           <div className="save-dock" data-state={saveDockState}>
@@ -1505,6 +1685,111 @@ export default function App() {
             onSubmit={() => void submitNewProject()}
             onKeyDown={handleNewProjectKeyDown}
           />
+        )}
+
+        {versionPanelOpen && (
+          <div className="dialog-overlay" role="presentation" onClick={closeVersionPanel}>
+            <div
+              className="dialog-card version-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="version-card-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="dialog-headline">
+                <div className="new-project-badge">
+                  <GitBranch size={17} />
+                </div>
+                <button
+                  type="button"
+                  className="dialog-close"
+                  onClick={closeVersionPanel}
+                  aria-label="Close version status"
+                  disabled={versionLoading || Boolean(releasingScope)}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              <h3 id="version-card-title">Version management</h3>
+              <p>{versionStatus?.scope_label || 'Section'} Git history under content/</p>
+              {versionLoading ? (
+                <div className="version-loading">
+                  <LoaderCircle size={15} />
+                  <span>Reading Git status...</span>
+                </div>
+              ) : versionError ? (
+                <div className="dialog-error" role="alert">
+                  <AlertCircle size={14} />
+                  <span>{versionError}</span>
+                </div>
+              ) : versionStatus ? (
+                <>
+                  <div className="version-summary">
+                    <div>
+                      <span>Branch</span>
+                      <strong>{versionStatus.branch}</strong>
+                    </div>
+                    <div>
+                      <span>HEAD</span>
+                      <strong>{versionStatus.head}</strong>
+                    </div>
+                    <div>
+                      <span>Changes</span>
+                      <strong>{versionStatus.dirty_count}</strong>
+                    </div>
+                  </div>
+                  <section className="version-section">
+                    <div className="version-section-head">
+                      <span>Working tree</span>
+                      <div className="version-section-actions">
+                        {versionStatus.dirty_count > 0 && (
+                          <button
+                            type="button"
+                            className="version-release-button"
+                            disabled={Boolean(releasingScope)}
+                            onClick={() => void releaseCurrentScope(versionStatus.scope)}
+                          >
+                            {releasingScope === versionStatus.scope ? <LoaderCircle size={13} /> : <Send size={13} />}
+                            {releasingScope === versionStatus.scope ? 'Releasing' : 'Release'}
+                          </button>
+                        )}
+                        <button type="button" onClick={() => void openVersionPanel(versionStatus.scope)} disabled={versionLoading || Boolean(releasingScope)}>
+                        <RefreshCw size={13} />
+                        Refresh
+                      </button>
+                      </div>
+                    </div>
+                    {versionStatus.changes.length === 0 ? (
+                      <div className="version-empty">Clean working tree.</div>
+                    ) : (
+                      <div className="version-change-list">
+                        {versionStatus.changes.map((change) => (
+                          <div className="version-change-row" key={`${change.status}:${change.path}`}>
+                            <span>{change.status}</span>
+                            <strong>{change.path}</strong>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                  <section className="version-section">
+                    <div className="version-section-head">
+                      <span>Recent commits</span>
+                    </div>
+                    <div className="version-commit-list">
+                      {versionStatus.recent_commits.map((commit) => (
+                        <div className="version-commit-row" key={commit.hash}>
+                          <code>{commit.hash}</code>
+                          <strong>{commit.subject}</strong>
+                          <span>{commit.relative_time}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </>
+              ) : null}
+            </div>
+          </div>
         )}
 
         {seriesEditingSlug && (

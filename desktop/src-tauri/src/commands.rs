@@ -3,13 +3,18 @@
 use crate::application::DesktopWorkspace;
 use crate::model::{
     DashboardData, DocumentStateInput, EditorDocument, EpisodeSeriesInput, EpisodeSeriesSource,
-    MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource,
-    ResumeSection, StatsSyncReport,
+    EntityCount, MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile,
+    ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus,
 };
 
 #[tauri::command]
 pub(crate) fn list_documents() -> Result<Vec<EditorDocument>, String> {
     DesktopWorkspace::from_environment()?.list_documents()
+}
+
+#[tauri::command]
+pub(crate) fn get_entity_counts() -> Result<Vec<EntityCount>, String> {
+    DesktopWorkspace::from_environment()?.entity_counts()
 }
 
 #[tauri::command]
@@ -68,6 +73,16 @@ pub(crate) fn create_project(title: String) -> Result<EditorDocument, String> {
 #[tauri::command]
 pub(crate) fn sync_stats() -> Result<StatsSyncReport, String> {
     DesktopWorkspace::from_environment()?.sync_stats()
+}
+
+#[tauri::command]
+pub(crate) fn get_version_status(scope: String) -> Result<VersionStatus, String> {
+    DesktopWorkspace::from_environment()?.version_status(&scope)
+}
+
+#[tauri::command]
+pub(crate) fn release_scope(scope: String) -> Result<VersionStatus, String> {
+    DesktopWorkspace::from_environment()?.release_scope(&scope)
 }
 
 #[tauri::command]

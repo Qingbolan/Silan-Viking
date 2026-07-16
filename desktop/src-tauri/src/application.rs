@@ -4,15 +4,15 @@
 use crate::insights::RuntimeInsightsRepository;
 use crate::model::{
     DashboardData, DocumentStateInput, EditorDocument, EditorTranslation, EpisodeSeriesInput,
-    EpisodeSeriesSource, MomentsCover, MomentsProfile, MomentsSettings, RawPart, ResumeEntryInput,
-    ResumePartSource, ResumeProfile, ResumeProfileSource, ResumeSection, ResumeSocialLink,
-    StatsSyncReport,
+    EpisodeSeriesSource, EntityCount, MomentsCover, MomentsProfile, MomentsSettings, RawPart,
+    ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource, ResumeSection,
+    ResumeSocialLink, StatsSyncReport, VersionChange, VersionCommit, VersionStatus,
 };
 use crate::projection::ProjectionRepository;
 use serde::Deserialize;
 use silan_viking_app::{
-    api_base_url, ContentCreator, ContentEditor, ContentKind, IdeaCategory, StatsSync,
-    TranslationLocator,
+    api_base_url, ContentCreator, ContentEditor, ContentKind, GitRepo, IdeaCategory, StatsSync,
+    TranslationLocator, Workspace,
 };
 use std::collections::BTreeSet;
 use std::env;
@@ -21,6 +21,64 @@ use std::path::{Path, PathBuf};
 
 const DEFAULT_MOMENTS_BACKGROUND_POSITION: &str = "center 42%";
 const DEFAULT_MOMENTS_COVER_HEIGHT_PX: u16 = 420;
+const VERSION_COMMIT_AUTHOR_NAME: &str = "Silan.Hu";
+const VERSION_COMMIT_AUTHOR_EMAIL: &str = "silan.hu@u.nus.edu";
+
+#[derive(Debug, Clone, Copy)]
+enum VersionScope {
+    Resume,
+    Blog,
+    Project,
+    Idea,
+    Update,
+}
+
+impl VersionScope {
+    fn parse(raw: &str) -> Result<Self, String> {
+        match raw {
+            "resume" => Ok(Self::Resume),
+            "blog" => Ok(Self::Blog),
+            "project" => Ok(Self::Project),
+            "idea" => Ok(Self::Idea),
+            "update" => Ok(Self::Update),
+            other => Err(format!("unsupported version scope `{other}`")),
+        }
+    }
+
+    fn id(self) -> &'static str {
+        match self {
+            Self::Resume => "resume",
+            Self::Blog => "blog",
+            Self::Project => "project",
+            Self::Idea => "idea",
+            Self::Update => "update",
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Resume => "Resume",
+            Self::Blog => "Blog",
+            Self::Project => "Projects",
+            Self::Idea => "Ideas",
+            Self::Update => "Updates",
+        }
+    }
+
+    fn pathspecs(self) -> &'static [&'static str] {
+        match self {
+            Self::Resume => &["resources/resume"],
+            Self::Blog => &["resources/blog", "resources/episode"],
+            Self::Project => &["resources/projects"],
+            Self::Idea => &["resources/ideas"],
+            Self::Update => &["resources/updates"],
+        }
+    }
+
+    fn release_message(self) -> String {
+        format!("release: {} updates", self.id())
+    }
+}
 
 #[derive(Debug, Clone)]
 struct MomentsUiConfig {
@@ -177,6 +235,95 @@ impl DesktopWorkspace {
         })
     }
 
+    pub(crate) fn version_status(&self, scope: &str) -> Result<VersionStatus, String> {
+        let scope = VersionScope::parse(scope)?;
+        let repo = GitRepo::open(&self.content_root).map_err(|error| error.to_string())?;
+        let branch = repo
+            .run(["branch", "--show-current"])
+            .map_err(|error| error.to_string())?
+            .stdout;
+        let head = repo
+            .run(["rev-parse", "--short=12", "HEAD"])
+            .map_err(|error| error.to_string())?;
+        let head = head.stdout;
+        let changes = repo
+            .run(git_pathspec_args(
+                &["status", "--porcelain"],
+                scope.pathspecs(),
+            ))
+            .map_err(|error| error.to_string())?
+            .stdout
+            .lines()
+            .filter_map(parse_git_status_line)
+            .collect::<Vec<_>>();
+        let recent_commits = repo
+            .run(git_pathspec_args(
+                &["log", "-5", "--pretty=format:%h%x1f%s%x1f%cr"],
+                scope.pathspecs(),
+            ))
+            .map_err(|error| error.to_string())?
+            .stdout
+            .lines()
+            .filter_map(parse_git_log_line)
+            .collect::<Vec<_>>();
+
+        Ok(VersionStatus {
+            scope: scope.id().to_owned(),
+            scope_label: scope.label().to_owned(),
+            branch: if branch.is_empty() {
+                "(detached)".to_owned()
+            } else {
+                branch
+            },
+            head,
+            dirty_count: changes.len(),
+            changes,
+            recent_commits,
+        })
+    }
+
+    pub(crate) fn release_scope(&self, scope: &str) -> Result<VersionStatus, String> {
+        let scope = VersionScope::parse(scope)?;
+        let repo = GitRepo::open(&self.content_root).map_err(|error| error.to_string())?;
+        let before = self.version_status(scope.id())?;
+        if before.dirty_count == 0 {
+            return Err(format!("{} has no updates to release", scope.label()));
+        }
+
+        repo.run(git_pathspec_args(&["add", "-A"], scope.pathspecs()))
+            .map_err(|error| error.to_string())?;
+        let staged = repo
+            .run(git_pathspec_args(
+                &["diff", "--cached", "--name-only"],
+                scope.pathspecs(),
+            ))
+            .map_err(|error| error.to_string())?
+            .stdout;
+        if staged.trim().is_empty() {
+            return Err(format!("{} has no staged updates to release", scope.label()));
+        }
+
+        let mut commit_args = vec![
+            "-c".to_owned(),
+            format!("user.name={VERSION_COMMIT_AUTHOR_NAME}"),
+            "-c".to_owned(),
+            format!("user.email={VERSION_COMMIT_AUTHOR_EMAIL}"),
+            "commit".to_owned(),
+            "--only".to_owned(),
+            "-m".to_owned(),
+            scope.release_message(),
+        ];
+        commit_args.push("--".to_owned());
+        commit_args.extend(scope.pathspecs().iter().map(|path| (*path).to_owned()));
+        repo.run(commit_args).map_err(|error| error.to_string())?;
+
+        Workspace::open(&self.content_root)
+            .map_err(|error| error.to_string())?
+            .sync(&self.db_path)
+            .map_err(|error| error.to_string())?;
+        self.version_status(scope.id())
+    }
+
     pub(crate) fn list_documents(&self) -> Result<Vec<EditorDocument>, String> {
         let mut documents = Vec::new();
         for part in self.projection.all_parts()? {
@@ -186,6 +333,10 @@ impl DesktopWorkspace {
             }
         }
         Ok(documents)
+    }
+
+    pub(crate) fn entity_counts(&self) -> Result<Vec<EntityCount>, String> {
+        self.projection.entity_counts()
     }
 
     pub(crate) fn document(&self, id: &str) -> Result<EditorDocument, String> {
@@ -807,4 +958,49 @@ fn translation_locator(
         language,
     )
     .map_err(|error| error.to_string())
+}
+
+fn parse_git_status_line(line: &str) -> Option<VersionChange> {
+    if line.len() < 4 {
+        return None;
+    }
+    let status = line.get(..2)?.trim().to_owned();
+    let path = line
+        .get(3..)?
+        .split(" -> ")
+        .last()
+        .unwrap_or_default()
+        .trim()
+        .to_owned();
+    if path.is_empty() {
+        return None;
+    }
+    Some(VersionChange { status, path })
+}
+
+fn git_pathspec_args(prefix: &[&str], pathspecs: &[&str]) -> Vec<String> {
+    let mut args = prefix
+        .iter()
+        .map(|arg| (*arg).to_owned())
+        .collect::<Vec<_>>();
+    if !pathspecs.is_empty() {
+        args.push("--".to_owned());
+        args.extend(pathspecs.iter().map(|path| (*path).to_owned()));
+    }
+    args
+}
+
+fn parse_git_log_line(line: &str) -> Option<VersionCommit> {
+    let mut parts = line.split('\x1f');
+    let hash = parts.next()?.trim().to_owned();
+    let subject = parts.next()?.trim().to_owned();
+    let relative_time = parts.next()?.trim().to_owned();
+    if hash.is_empty() {
+        return None;
+    }
+    Some(VersionCommit {
+        hash,
+        subject,
+        relative_time,
+    })
 }

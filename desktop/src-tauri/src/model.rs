@@ -75,6 +75,30 @@ pub(crate) struct StatsSyncReport {
 }
 
 #[derive(Debug, Serialize)]
+pub(crate) struct VersionStatus {
+    pub(crate) scope: String,
+    pub(crate) scope_label: String,
+    pub(crate) branch: String,
+    pub(crate) head: String,
+    pub(crate) dirty_count: usize,
+    pub(crate) changes: Vec<VersionChange>,
+    pub(crate) recent_commits: Vec<VersionCommit>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct VersionChange {
+    pub(crate) status: String,
+    pub(crate) path: String,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct VersionCommit {
+    pub(crate) hash: String,
+    pub(crate) subject: String,
+    pub(crate) relative_time: String,
+}
+
+#[derive(Debug, Serialize)]
 pub(crate) struct DashboardItem {
     pub(crate) entity_type: String,
     pub(crate) title: String,
@@ -82,6 +106,12 @@ pub(crate) struct DashboardItem {
     pub(crate) status: String,
     pub(crate) visibility: String,
     pub(crate) updated_at: String,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct EntityCount {
+    pub(crate) entity_type: String,
+    pub(crate) count: i64,
 }
 
 #[derive(Debug)]

@@ -67,6 +67,25 @@ export type StatsSyncReport = {
   };
 };
 
+export type VersionStatus = {
+  scope: VersionScope;
+  scope_label: string;
+  branch: string;
+  head: string;
+  dirty_count: number;
+  changes: Array<{
+    status: string;
+    path: string;
+  }>;
+  recent_commits: Array<{
+    hash: string;
+    subject: string;
+    relative_time: string;
+  }>;
+};
+
+export type VersionScope = 'resume' | 'blog' | 'project' | 'idea' | 'update';
+
 export type DashboardItem = {
   entity_type: string;
   title: string;
@@ -74,6 +93,11 @@ export type DashboardItem = {
   status: string;
   visibility: string;
   updated_at: string;
+};
+
+export type EntityCount = {
+  entity_type: ContentKind;
+  count: number;
 };
 
 export type EntityFilter = 'all' | ContentKind;

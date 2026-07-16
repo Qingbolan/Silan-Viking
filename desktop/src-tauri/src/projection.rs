@@ -2,7 +2,7 @@
 
 use crate::model::{
     ContentMetrics, DashboardItem, DeployedStats, EntitySummary, RawPart, RawTranslation,
-    ResumeEntry, ResumeSection,
+    EntityCount, ResumeEntry, ResumeSection,
 };
 use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 use std::path::Path;
@@ -161,6 +161,29 @@ impl ProjectionRepository {
             parts.push(part);
         }
         Ok(parts)
+    }
+
+    pub(crate) fn entity_counts(&self) -> Result<Vec<EntityCount>, String> {
+        let mut statement = self
+            .connection
+            .prepare(
+                "
+                SELECT entity_type, COUNT(DISTINCT entity_id)
+                FROM item_part
+                GROUP BY entity_type
+                ",
+            )
+            .map_err(|error| error.to_string())?;
+        let rows = statement
+            .query_map([], |row| {
+                Ok(EntityCount {
+                    entity_type: row.get(0)?,
+                    count: row.get(1)?,
+                })
+            })
+            .map_err(|error| error.to_string())?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(|error| error.to_string())
     }
 
     pub(crate) fn part(&self, id: &str) -> Result<RawPart, String> {

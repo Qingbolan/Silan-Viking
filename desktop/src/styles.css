@@ -1970,6 +1970,24 @@ h1 {
   color: #fff;
 }
 
+.quick-dock button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.quick-dock button:disabled:hover {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.quick-dock .dock-primary {
+  color: #fff;
+}
+
+.quick-dock .dock-release {
+  min-width: 88px;
+}
+
 .empty {
   padding: 14px;
   color: var(--faint);
@@ -2062,6 +2080,34 @@ h1 {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
+}
+
+.dialog-headline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.dialog-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper-solid);
+  color: var(--muted);
+}
+
+.dialog-close:hover:not(:disabled) {
+  background: var(--color-hoverBackground);
+  color: var(--ink);
+}
+
+.dialog-close:disabled {
+  opacity: 0.45;
 }
 
 .dialog-input {
@@ -2190,6 +2236,187 @@ h1 {
 
 .series-editor-card {
   width: min(520px, calc(100vw - 48px));
+}
+
+.version-card {
+  width: min(620px, calc(100vw - 48px));
+}
+
+.version-loading {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.version-loading svg {
+  animation: save-icon-spin 900ms linear infinite;
+}
+
+.version-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.version-summary > div {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  background: var(--color-surfaceSecondary);
+}
+
+.version-summary span,
+.version-section-head span {
+  display: block;
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.version-summary strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 4px;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.version-section {
+  margin-top: 16px;
+}
+
+.version-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.version-section-actions {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.version-section-head button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 0 9px;
+  background: var(--paper-solid);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.version-section-head button:hover:not(:disabled) {
+  background: var(--color-hoverBackground);
+  color: var(--ink);
+}
+
+.version-section-head .version-release-button {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.version-section-head .version-release-button:hover:not(:disabled) {
+  background: #000;
+  color: #fff;
+}
+
+.version-section-head button:disabled {
+  opacity: 0.42;
+}
+
+.version-empty,
+.version-change-list,
+.version-commit-list {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--paper-solid);
+}
+
+.version-empty {
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.version-change-row,
+.version-commit-row {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+  min-height: 34px;
+  border-top: 1px solid var(--line);
+  padding: 7px 10px;
+}
+
+.version-change-row:first-child,
+.version-commit-row:first-child {
+  border-top: 0;
+}
+
+.version-change-row {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+
+.version-change-row span {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.version-change-row strong,
+.version-commit-row strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.version-commit-row {
+  grid-template-columns: 74px minmax(0, 1fr) 92px;
+}
+
+.version-commit-row code {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.version-commit-row span {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 11px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.version-section-actions svg.lucide-loader-circle,
+.quick-dock button svg.lucide-loader-circle {
+  animation: save-icon-spin 900ms linear infinite;
 }
 
 .series-editor-field {
