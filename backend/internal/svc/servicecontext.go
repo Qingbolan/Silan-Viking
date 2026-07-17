@@ -211,11 +211,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	createContentRelationTable(rawDB, c.Database.Driver)
 	dropContentForeignKeys(rawDB, c.Database.Driver)
 	trafficClassifier := traffic.NewClassifier(c.Traffic)
+	countryResolver, countryErr := traffic.OpenCountryResolver("/var/lib/GeoIP/country.mmdb")
+	if countryErr != nil {
+		log.Printf("warning: country database unavailable: %v", countryErr)
+	}
 
 	return &ServiceContext{
 		Config:      c,
 		Cors:        middleware.NewCorsMiddleware().Handle,
-		Analytics:   middleware.NewAnalyticsMiddleware(client, trafficClassifier).Handle,
+		Analytics:   middleware.NewAnalyticsMiddleware(client, trafficClassifier, countryResolver).Handle,
 		PrivateAPI:  middleware.NewMachineTokenMiddleware(c.Security.StatsSyncToken).Handle,
 		DB:          client,
 		RawDB:       rawDB,

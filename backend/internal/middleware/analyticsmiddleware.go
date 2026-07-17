@@ -14,6 +14,7 @@ import (
 type AnalyticsMiddleware struct {
 	client     *ent.Client
 	classifier *traffic.Classifier
+	countries  *traffic.CountryResolver
 }
 
 var countryHeaders = [...]string{
@@ -22,8 +23,12 @@ var countryHeaders = [...]string{
 	"CloudFront-Viewer-Country",
 }
 
-func NewAnalyticsMiddleware(client *ent.Client, classifier *traffic.Classifier) *AnalyticsMiddleware {
-	return &AnalyticsMiddleware{client: client, classifier: classifier}
+func NewAnalyticsMiddleware(client *ent.Client, classifier *traffic.Classifier, countries ...*traffic.CountryResolver) *AnalyticsMiddleware {
+	var resolver *traffic.CountryResolver
+	if len(countries) > 0 {
+		resolver = countries[0]
+	}
+	return &AnalyticsMiddleware{client: client, classifier: classifier, countries: resolver}
 }
 
 type analyticsResponseWriter struct {
@@ -79,7 +84,11 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			SetLang(r.URL.Query().Get("lang")).
 			SetIsBot(isBot).
 			SetBotName(botName)
-		if country := edgeCountryCode(r); country != "" {
+		country := edgeCountryCode(r)
+		if country == "" {
+			country = m.countries.Resolve(clientIP(r))
+		}
+		if country != "" {
 			builder.SetCountryCode(country)
 		}
 		_, _ = builder.Save(ctx)
