@@ -72,6 +72,7 @@ pub struct TrafficCountry {
     pub city: String,
     pub latitude: String,
     pub longitude: String,
+    pub ip_addresses: Vec<String>,
     pub visits: i64,
 }
 
@@ -338,21 +339,24 @@ fn cached_traffic(
             .collect::<Result<Vec<_>, _>>()?;
     }
     let mut top_countries = Vec::new();
-    if table_exists(connection, "stats_cache_location")? {
+    if table_exists(connection, "stats_cache_location_v2")? {
         let mut statement = connection.prepare(
-            "SELECT country_code, city, latitude, longitude, count FROM stats_cache_location
+            "SELECT country_code, city, latitude, longitude, ip_addresses, count
+             FROM stats_cache_location_v2
              ORDER BY count DESC, country_code ASC LIMIT 4",
         )?;
         top_countries = statement
             .query_map([], |row| {
                 let latitude: f64 = row.get(2)?;
                 let longitude: f64 = row.get(3)?;
+                let ip_addresses: String = row.get(4)?;
                 Ok(TrafficCountry {
                     country_code: row.get(0)?,
                     city: row.get(1)?,
                     latitude: format!("{latitude:.1}"),
                     longitude: format!("{longitude:.1}"),
-                    visits: row.get(4)?,
+                    ip_addresses: serde_json::from_str(&ip_addresses).unwrap_or_default(),
+                    visits: row.get(5)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -557,8 +561,8 @@ mod tests {
                   ('blog', 'i_one', 'ai_crawler', 2, '2026-07-17T00:00:00Z');
                 INSERT INTO stats_cache_source VALUES
                   ('blog', 'i_one', 'ai_chat', 4, '2026-07-17T00:00:00Z');
-                INSERT INTO stats_cache_location VALUES
-                  ('SG', 'Singapore', 1.3, 103.9, 7, '2026-07-17T00:00:00Z');
+                INSERT INTO stats_cache_location_v2 VALUES
+                  ('SG', 'Singapore', 1.3, 103.9, '[\"203.0.113.8\"]', 7, '2026-07-17T00:00:00Z');
                 CREATE TABLE comments (is_approved INTEGER NOT NULL);
                 INSERT INTO comments VALUES (0), (1);
                 ",
@@ -580,6 +584,7 @@ mod tests {
                 city: "Singapore".to_owned(),
                 latitude: "1.3".to_owned(),
                 longitude: "103.9".to_owned(),
+                ip_addresses: vec!["203.0.113.8".to_owned()],
                 visits: 7,
             }]
         );

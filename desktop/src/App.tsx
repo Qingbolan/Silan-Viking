@@ -1609,7 +1609,7 @@ export default function App() {
                           <span>Countries</span>
                           {(dashboard?.top_countries || []).slice(0, 3).map((country) => (
                             <div key={`${country.country_code}-${country.city}-${country.latitude}-${country.longitude}`}>
-                              <span title={`Approx. ${country.latitude}, ${country.longitude}`}>
+                              <span title={country.ip_addresses.length ? `IP: ${country.ip_addresses.join(', ')}` : 'No IP recorded'}>
                                 {new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}
                                 {country.city && ` · ${country.city}`}
                               </span>

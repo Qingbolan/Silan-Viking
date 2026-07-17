@@ -127,11 +127,17 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 	}
 	countries := make([]types.CountryRow, 0, len(locationVisitors))
 	for location, visitors := range locationVisitors {
+		ipAddresses := make([]string, 0, len(visitors))
+		for ip := range visitors {
+			ipAddresses = append(ipAddresses, ip)
+		}
+		sort.Strings(ipAddresses)
 		countries = append(countries, types.CountryRow{
 			CountryCode: location.country,
 			City:        location.city,
 			Latitude:    location.latitude,
 			Longitude:   location.longitude,
+			IPAddresses: ipAddresses,
 			Count:       len(visitors),
 		})
 	}

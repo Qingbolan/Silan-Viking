@@ -192,6 +192,7 @@ impl DesktopWorkspace {
                     city: country.city,
                     latitude: country.latitude,
                     longitude: country.longitude,
+                    ip_addresses: country.ip_addresses,
                     visits: country.visits,
                 })
                 .collect(),

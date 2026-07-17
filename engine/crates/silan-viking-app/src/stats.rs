@@ -129,6 +129,8 @@ struct CountryItem {
     latitude: f64,
     #[serde(default)]
     longitude: f64,
+    #[serde(default)]
+    ip_addresses: Vec<String>,
     count: i64,
 }
 
@@ -185,11 +187,12 @@ CREATE TABLE IF NOT EXISTS stats_cache_source (
     count       INTEGER NOT NULL,
     synced_at   TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS stats_cache_location (
+CREATE TABLE IF NOT EXISTS stats_cache_location_v2 (
     country_code TEXT NOT NULL,
     city         TEXT NOT NULL,
     latitude     REAL NOT NULL,
     longitude    REAL NOT NULL,
+    ip_addresses TEXT NOT NULL,
     count        INTEGER NOT NULL,
     synced_at    TEXT NOT NULL,
     PRIMARY KEY (country_code, city, latitude, longitude)
@@ -396,7 +399,7 @@ impl StatsSync {
             "stats_cache_visitor",
             "stats_cache_crawler",
             "stats_cache_source",
-            "stats_cache_location",
+            "stats_cache_location_v2",
         ] {
             tx.execute(&format!("DELETE FROM {table}"), [])?;
         }
@@ -464,14 +467,16 @@ impl StatsSync {
         }
         for country in &snapshot.countries {
             tx.execute(
-                "INSERT INTO stats_cache_location
-                 (country_code, city, latitude, longitude, count, synced_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                "INSERT INTO stats_cache_location_v2
+                 (country_code, city, latitude, longitude, ip_addresses, count, synced_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
                 rusqlite::params![
                     country.country_code,
                     country.city,
                     country.latitude,
                     country.longitude,
+                    serde_json::to_string(&country.ip_addresses)
+                        .map_err(|error| StatsError::Decode(error.to_string()))?,
                     country.count,
                     stamp
                 ],
@@ -679,7 +684,7 @@ mod tests {
             assert!(request.starts_with("GET /api/v1/stats/snapshot "));
             assert!(request.contains("\r\nAuthorization: Bearer stats-contract-token\r\n"));
             observed.fetch_add(1, Ordering::SeqCst);
-            let body = r#"{"generated_at":"2026-07-17T00:00:00Z","items":[{"stats":{"entity_type":"blog","entity_id":"i_one","views":8,"likes":2,"comments":1},"visitors":[],"crawlers":[{"visitor_kind":"ai_crawler","count":3}],"sources":[{"source":"ai_chat","count":2}]}],"countries":[{"country_code":"SG","city":"Singapore","latitude":1.3,"longitude":103.9,"count":7}]}"#;
+            let body = r#"{"generated_at":"2026-07-17T00:00:00Z","items":[{"stats":{"entity_type":"blog","entity_id":"i_one","views":8,"likes":2,"comments":1},"visitors":[],"crawlers":[{"visitor_kind":"ai_crawler","count":3}],"sources":[{"source":"ai_chat","count":2}]}],"countries":[{"country_code":"SG","city":"Singapore","latitude":1.3,"longitude":103.9,"ip_addresses":["203.0.113.8"],"count":7}]}"#;
             write!(
                 stream,
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
@@ -707,14 +712,14 @@ mod tests {
             8
         );
         let connection = Connection::open(directory.path().join("portfolio.db")).expect("db");
-        let country: (String, String, f64, f64, i64) = connection
+        let country: (String, String, f64, f64, String, i64) = connection
             .query_row(
-                "SELECT country_code, city, latitude, longitude, count FROM stats_cache_location",
+                "SELECT country_code, city, latitude, longitude, ip_addresses, count FROM stats_cache_location_v2",
                 [],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)),
             )
             .expect("country cache");
-        assert_eq!(country, ("SG".to_owned(), "Singapore".to_owned(), 1.3, 103.9, 7));
+        assert_eq!(country, ("SG".to_owned(), "Singapore".to_owned(), 1.3, 103.9, "[\"203.0.113.8\"]".to_owned(), 7));
     }
 
     #[test]

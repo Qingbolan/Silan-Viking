@@ -110,6 +110,7 @@ export type DashboardData = {
     city: string;
     latitude: string;
     longitude: string;
+    ip_addresses: string[];
     visits: number;
   }>;
 };

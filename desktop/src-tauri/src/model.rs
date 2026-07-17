@@ -138,6 +138,7 @@ pub(crate) struct TrafficCountry {
     pub(crate) city: String,
     pub(crate) latitude: String,
     pub(crate) longitude: String,
+    pub(crate) ip_addresses: Vec<String>,
     pub(crate) visits: i64,
 }
 
