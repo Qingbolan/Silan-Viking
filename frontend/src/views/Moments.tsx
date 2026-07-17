@@ -321,12 +321,7 @@ const Moments: React.FC = () => {
                   if (node) momentElements.current.set(moment.id, node);
                   else momentElements.current.delete(moment.id);
                 }}
-                className={[
-                  'grid grid-cols-1 gap-4 py-7 transition-colors sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7 sm:py-9',
-                  selectedMomentId === moment.id || selectedMomentId === moment.slug
-                    ? 'bg-ds-surface-2'
-                    : '',
-                ].join(' ')}
+                className="grid scroll-mt-24 grid-cols-1 gap-4 py-7 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7 sm:py-9"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.2) }}

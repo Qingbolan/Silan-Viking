@@ -1490,3 +1490,24 @@ code[class*="language-"] .token.italic { font-style: italic; }
 .vditor-markdown--inline .vditor-reset p { display: inline; margin: 0; }
 .vditor-markdown--inline .vditor-reset ul,
 .vditor-markdown--inline .vditor-reset ol { display: inline; margin: 0; padding-left: 1rem; }
+
+/* Homepage moments are summaries, not article bodies. Constrain both the
+   Vditor host and its generated child so WebKit, Chromium, and Firefox all
+   render at most two lines even though the HTML arrives asynchronously. */
+.moment-home-summary,
+.moment-home-summary .vditor-reset {
+  max-height: 3rem;
+  overflow: hidden;
+}
+
+.moment-home-summary .vditor-reset {
+  display: -webkit-box;
+  line-height: 1.5rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.moment-home-summary .vditor-reset > * {
+  display: inline;
+  margin: 0;
+}

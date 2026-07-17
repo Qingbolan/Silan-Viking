@@ -216,7 +216,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
                           }
                         }}
                         aria-label={`${t('resume.view_details', { defaultValue: 'View details' })}: ${item.title}`}
-                        className="group grid cursor-pointer grid-cols-[3rem_minmax(0,1fr)] gap-4 py-5 outline-none transition-colors hover:bg-ds-surface-2 focus-visible:shadow-ds-focus sm:grid-cols-[4rem_minmax(0,1fr)] sm:gap-6 sm:px-2"
+                        className="group grid cursor-pointer grid-cols-[3rem_minmax(0,1fr)] gap-4 py-5 outline-none transition-colors hover:bg-ds-surface-2 focus-visible:shadow-ds-focus sm:grid-cols-[4rem_minmax(0,1fr)] sm:gap-6"
                       >
                         <time
                           dateTime={item.date}
@@ -253,7 +253,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
                             </div>
                           </div>
                           {item.description && (
-                            <Markdown className="mt-2 line-clamp-2 text-ds-sm leading-6 text-ds-fg-muted">
+                            <Markdown className="moment-home-summary mt-2 text-ds-sm leading-6 text-ds-fg-muted">
                               {withoutRepeatedTitle(item.description, item.title)}
                             </Markdown>
                           )}
