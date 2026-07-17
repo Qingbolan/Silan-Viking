@@ -19,6 +19,7 @@ use std::time::Duration;
 use thiserror::Error;
 
 const STATS_SYNC_TOKEN_ENV: &str = "SILAN_STATS_SYNC_TOKEN";
+const DEPLOYED_STATS_TOKEN_ENV: &str = "STATS_SYNC_TOKEN";
 
 /// A statistics failure.
 #[derive(Debug, Error)]
@@ -71,6 +72,20 @@ pub struct VisitorRow {
     pub visitor_kind: String,
     /// Referrer source kind.
     pub referrer_kind: String,
+    #[serde(default)]
+    pub referrer: String,
+    #[serde(default)]
+    pub landing_url: String,
+    #[serde(default)]
+    pub crawler_name: String,
+    #[serde(default)]
+    pub country_code: String,
+    #[serde(default)]
+    pub city: String,
+    #[serde(default)]
+    pub latitude: f64,
+    #[serde(default)]
+    pub longitude: f64,
     /// RFC-3339 timestamp of the last visit.
     pub last_seen_at: String,
 }
@@ -170,6 +185,13 @@ CREATE TABLE IF NOT EXISTS stats_cache_visitor (
     ip_masked     TEXT NOT NULL,
     visitor_kind  TEXT NOT NULL,
     referrer_kind TEXT NOT NULL,
+    referrer      TEXT NOT NULL DEFAULT '',
+    landing_url   TEXT NOT NULL DEFAULT '',
+    crawler_name  TEXT NOT NULL DEFAULT '',
+    country_code  TEXT NOT NULL DEFAULT '',
+    city          TEXT NOT NULL DEFAULT '',
+    latitude      REAL NOT NULL DEFAULT 0,
+    longitude     REAL NOT NULL DEFAULT 0,
     last_seen_at  TEXT NOT NULL,
     synced_at     TEXT NOT NULL
 );
@@ -203,6 +225,36 @@ CREATE TABLE IF NOT EXISTS stats_cache_location_v2 (
 pub fn ensure_cache_schema(db: &Path) -> Result<(), StatsError> {
     let conn = Connection::open(db)?;
     conn.execute_batch(CACHE_SCHEMA)?;
+    for (column, declaration) in [
+        ("referrer", "TEXT NOT NULL DEFAULT ''"),
+        ("crawler_name", "TEXT NOT NULL DEFAULT ''"),
+        ("landing_url", "TEXT NOT NULL DEFAULT ''"),
+        ("country_code", "TEXT NOT NULL DEFAULT ''"),
+        ("city", "TEXT NOT NULL DEFAULT ''"),
+        ("latitude", "REAL NOT NULL DEFAULT 0"),
+        ("longitude", "REAL NOT NULL DEFAULT 0"),
+    ] {
+        ensure_cache_column(&conn, "stats_cache_visitor", column, declaration)?;
+    }
+    Ok(())
+}
+
+fn ensure_cache_column(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    declaration: &str,
+) -> Result<(), StatsError> {
+    let columns = conn
+        .prepare(&format!("PRAGMA table_info({table})"))?
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?;
+    if !columns.iter().any(|existing| existing == column) {
+        conn.execute(
+            &format!("ALTER TABLE {table} ADD COLUMN {column} {declaration}"),
+            [],
+        )?;
+    }
     Ok(())
 }
 
@@ -353,8 +405,9 @@ impl StatsSync {
             tx.execute(
                 "INSERT INTO stats_cache_visitor
                  (entity_type, entity_id, fingerprint, ip_masked, visitor_kind,
-                  referrer_kind, last_seen_at, synced_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                  referrer_kind, referrer, landing_url, crawler_name, country_code, city,
+                  latitude, longitude, last_seen_at, synced_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
                 rusqlite::params![
                     entity_type,
                     entity_id,
@@ -362,6 +415,13 @@ impl StatsSync {
                     v.ip_masked,
                     v.visitor_kind,
                     v.referrer_kind,
+                    v.referrer,
+                    v.landing_url,
+                    v.crawler_name,
+                    v.country_code,
+                    v.city,
+                    v.latitude,
+                    v.longitude,
                     v.last_seen_at,
                     stamp
                 ],
@@ -422,8 +482,9 @@ impl StatsSync {
                 tx.execute(
                     "INSERT INTO stats_cache_visitor
                      (entity_type, entity_id, fingerprint, ip_masked, visitor_kind,
-                      referrer_kind, last_seen_at, synced_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                      referrer_kind, referrer, landing_url, crawler_name, country_code, city,
+                      latitude, longitude, last_seen_at, synced_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
                     rusqlite::params![
                         stats.entity_type,
                         stats.entity_id,
@@ -431,6 +492,13 @@ impl StatsSync {
                         visitor.ip_masked,
                         visitor.visitor_kind,
                         visitor.referrer_kind,
+                        visitor.referrer,
+                        visitor.landing_url,
+                        visitor.crawler_name,
+                        visitor.country_code,
+                        visitor.city,
+                        visitor.latitude,
+                        visitor.longitude,
                         visitor.last_seen_at,
                         stamp
                     ],
@@ -495,6 +563,33 @@ pub(crate) fn private_api_token() -> Option<String> {
     std::env::var(STATS_SYNC_TOKEN_ENV)
         .ok()
         .and_then(non_empty_token)
+}
+
+/// Resolve the private statistics credential for a workspace.
+///
+/// An explicit client-process variable wins. Desktop applications launched
+/// from Finder do not reliably inherit shell exports, so the project-local
+/// `.env` is also a credential source. Parse only the two relevant keys
+/// instead of mutating the process environment with the rest of the file.
+pub fn workspace_stats_sync_token(content_root: &Path) -> Option<String> {
+    private_api_token().or_else(|| {
+        let project_root = content_root.parent().unwrap_or(content_root);
+        dotenv_stats_sync_token(&project_root.join(".env"))
+    })
+}
+
+fn dotenv_stats_sync_token(path: &Path) -> Option<String> {
+    dotenvy::from_path_iter(path)
+        .ok()?
+        .filter_map(Result::ok)
+        .find_map(|(key, value)| {
+            matches!(
+                key.as_str(),
+                STATS_SYNC_TOKEN_ENV | DEPLOYED_STATS_TOKEN_ENV
+            )
+            .then(|| non_empty_token(value))
+            .flatten()
+        })
 }
 
 fn non_empty_token(token: String) -> Option<String> {
@@ -564,7 +659,9 @@ impl StatsCache {
         let conn = Connection::open(&self.db)?;
         let mut stmt = conn
             .prepare(
-                "SELECT fingerprint, ip_masked, visitor_kind, referrer_kind, last_seen_at
+                "SELECT fingerprint, ip_masked, visitor_kind, referrer_kind, referrer,
+                        landing_url, crawler_name, country_code, city, latitude, longitude,
+                        last_seen_at
                  FROM stats_cache_visitor WHERE entity_type = ?1 AND entity_id = ?2
                  ORDER BY last_seen_at",
             )
@@ -576,7 +673,14 @@ impl StatsCache {
                     ip_masked: row.get(1)?,
                     visitor_kind: row.get(2)?,
                     referrer_kind: row.get(3)?,
-                    last_seen_at: row.get(4)?,
+                    referrer: row.get(4)?,
+                    landing_url: row.get(5)?,
+                    crawler_name: row.get(6)?,
+                    country_code: row.get(7)?,
+                    city: row.get(8)?,
+                    latitude: row.get(9)?,
+                    longitude: row.get(10)?,
+                    last_seen_at: row.get(11)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -719,7 +823,17 @@ mod tests {
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)),
             )
             .expect("country cache");
-        assert_eq!(country, ("SG".to_owned(), "Singapore".to_owned(), 1.3, 103.9, "[\"203.0.113.8\"]".to_owned(), 7));
+        assert_eq!(
+            country,
+            (
+                "SG".to_owned(),
+                "Singapore".to_owned(),
+                1.3,
+                103.9,
+                "[\"203.0.113.8\"]".to_owned(),
+                7
+            )
+        );
     }
 
     #[test]
@@ -802,5 +916,19 @@ mod tests {
         ));
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn project_dotenv_parser_reads_only_a_stats_credential() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let dotenv = dir.path().join(".env");
+        std::fs::write(&dotenv, "UNRELATED=value\nSTATS_SYNC_TOKEN=project-token\n")
+            .expect("write dotenv");
+
+        assert_eq!(
+            dotenv_stats_sync_token(&dotenv).as_deref(),
+            Some("project-token")
+        );
+        assert!(std::env::var("UNRELATED").is_err());
     }
 }

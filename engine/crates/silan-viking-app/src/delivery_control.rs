@@ -1,11 +1,18 @@
 //! Release and deployment application control plane.
 
-use crate::{api_base_url, stats::private_api_token, GitRepo, Workspace, WorkspaceSync};
+use crate::{
+    api_base_url, workspace_stats_sync_token, GitRepo, Workspace, WorkspaceSync, WorkspaceSyncState,
+};
+use flate2::{write::GzEncoder, Compression};
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::time::Duration;
+use tar::Builder;
 use thiserror::Error;
 
 const AUTHOR_NAME: &str = "Silan.Hu";
@@ -21,7 +28,7 @@ pub enum DeliveryControlError {
     Runner(String),
     #[error("remote status error: {0}")]
     Remote(String),
-    #[error("remote verification needs SILAN_STATS_SYNC_TOKEN")]
+    #[error("remote verification needs SILAN_STATS_SYNC_TOKEN in the process environment or project .env")]
     MissingCredential,
     #[error("unsupported release scope `{0}`")]
     UnsupportedScope(String),
@@ -123,6 +130,16 @@ pub struct DeploymentPlan {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DeliverySyncStatus {
+    pub local_head: String,
+    pub remote_head: String,
+    pub local_commits: usize,
+    pub remote_commits: usize,
+    pub workspace_changes: usize,
+    pub state: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct DeployRunStatus {
     pub success: bool,
     pub content_commit: String,
@@ -139,6 +156,36 @@ pub struct RemoteContentVersion {
     pub media_root_ok: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+struct ContentDeployResponse {
+    success: bool,
+    state: String,
+    content_hash: String,
+    content_commit: String,
+    generated_at: String,
+    media_root_ok: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct ContentDeployManifest {
+    version: u8,
+    content_commit: String,
+    content_hash: String,
+    database_sha256: String,
+    media: Vec<MediaAssetManifest>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct MediaAssetManifest {
+    path: String,
+    hash: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct MediaPlanResponse {
+    upload_paths: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct DeployVerificationResult {
     pub verified: bool,
@@ -150,7 +197,6 @@ pub struct DeployVerificationResult {
 pub struct DeliveryControl {
     content_root: PathBuf,
     db_path: PathBuf,
-    repo_root: PathBuf,
     bearer_token: Option<String>,
 }
 
@@ -158,7 +204,7 @@ impl DeliveryControl {
     pub fn open(
         content_root: impl AsRef<Path>,
         db_path: impl AsRef<Path>,
-        repo_root: impl AsRef<Path>,
+        _repo_root: impl AsRef<Path>,
     ) -> Result<Self, DeliveryControlError> {
         Workspace::open(content_root.as_ref())
             .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
@@ -167,8 +213,7 @@ impl DeliveryControl {
         Ok(Self {
             content_root: content_root.as_ref().to_path_buf(),
             db_path: db_path.as_ref().to_path_buf(),
-            repo_root: repo_root.as_ref().to_path_buf(),
-            bearer_token: private_api_token(),
+            bearer_token: workspace_stats_sync_token(content_root.as_ref()),
         })
     }
 
@@ -297,6 +342,42 @@ impl DeliveryControl {
         })
     }
 
+    pub fn sync_status(&self) -> Result<DeliverySyncStatus, DeliveryControlError> {
+        let repo = self.repo()?;
+        let local_head = run(&repo, ["rev-parse", "HEAD"])?;
+        let remote_head = self.remote_content_version()?.content_commit;
+        let workspace_changes = run(&repo, ["status", "--porcelain"])?
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .count();
+        if local_head == remote_head {
+            return Ok(DeliverySyncStatus {
+                local_head,
+                remote_head,
+                local_commits: 0,
+                remote_commits: 0,
+                workspace_changes,
+                state: "synchronized".to_owned(),
+            });
+        }
+        let local_commits = revision_count(&repo, &format!("{remote_head}..{local_head}"));
+        let remote_commits = revision_count(&repo, &format!("{local_head}..{remote_head}"));
+        let state = match (local_commits, remote_commits) {
+            (Some(local), Some(0)) if local > 0 => "local_ahead",
+            (Some(0), Some(remote)) if remote > 0 => "remote_ahead",
+            (Some(local), Some(remote)) if local > 0 && remote > 0 => "diverged",
+            _ => "remote_unknown",
+        };
+        Ok(DeliverySyncStatus {
+            local_head,
+            remote_head,
+            local_commits: local_commits.unwrap_or(0),
+            remote_commits: remote_commits.unwrap_or(1),
+            workspace_changes,
+            state: state.to_owned(),
+        })
+    }
+
     fn commit_activity(
         &self,
         scopes: &[ReleaseScope],
@@ -390,42 +471,162 @@ impl DeliveryControl {
         ];
         args.extend(scope.paths().iter().map(|path| (*path).to_owned()));
         run(&repo, args)?;
-        WorkspaceSync::open(&self.content_root, &self.db_path)
-            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?
-            .sync()
+        let sync = WorkspaceSync::open(&self.content_root, &self.db_path)
             .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        let sync_status = sync
+            .status()
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        if sync_status.state != WorkspaceSyncState::Synchronized {
+            sync.sync()
+                .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        }
         self.scope_status(scope)
     }
 
     pub fn deploy_content(&self) -> Result<DeployRunStatus, DeliveryControlError> {
-        let executable =
-            std::env::var("SILAN_VIKING_BIN").unwrap_or_else(|_| "silan-viking".to_owned());
-        let output = Command::new(&executable)
-            .args(["--content"])
-            .arg(&self.content_root)
-            .args(["--db"])
-            .arg(&self.db_path)
-            .args(["site", "update-content", "--confirm"])
-            .current_dir(&self.repo_root)
-            .output()
-            .map_err(|error| {
-                DeliveryControlError::Runner(format!("cannot execute `{executable}`: {error}"))
-            })?;
         let content_commit = self.content_commit()?;
-        let status = DeployRunStatus {
-            success: output.status.success(),
-            content_commit,
-            stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
-            stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
-        };
-        if status.success {
-            Ok(status)
-        } else {
-            Err(DeliveryControlError::Runner(format!(
-                "content deploy failed: {}",
-                status.stderr
-            )))
+        let sync = WorkspaceSync::open(&self.content_root, &self.db_path)
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        let sync_status = sync
+            .status()
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        if sync_status.state != WorkspaceSyncState::Synchronized {
+            sync.sync()
+                .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
         }
+        let token = self
+            .bearer_token
+            .as_ref()
+            .ok_or(DeliveryControlError::MissingCredential)?;
+        let base = api_base_url(&self.content_root)
+            .map_err(|error| DeliveryControlError::Remote(error.to_string()))?;
+        let workspace = Workspace::open(&self.content_root)
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        let scan = workspace
+            .scan()
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        let media = scan
+            .assets()
+            .iter()
+            .map(|asset| MediaAssetManifest {
+                path: asset.rel_path.clone(),
+                hash: asset.hash.to_string(),
+            })
+            .collect::<Vec<_>>();
+        let agent = deploy_http_agent(&self.content_root, &base);
+        let url = format!("{base}/api/v1/content/deploy");
+        let empty_upload = BTreeSet::new();
+        let bundle =
+            self.build_deploy_bundle(&content_commit, &media, &empty_upload, scan.assets())?;
+        let raw_response = post_content_bundle(&agent, &url, token, &bundle);
+        let raw_response = match raw_response {
+            Err(ureq::Error::Status(409, response)) => {
+                let plan: MediaPlanResponse = response.into_json().map_err(|error| {
+                    DeliveryControlError::Remote(format!("{url}: invalid media plan: {error}"))
+                })?;
+                let upload_paths = plan.upload_paths.into_iter().collect::<BTreeSet<_>>();
+                if upload_paths
+                    .iter()
+                    .any(|path| !media.iter().any(|asset| asset.path == *path))
+                {
+                    return Err(DeliveryControlError::Remote(
+                        "server requested an unknown media path".to_owned(),
+                    ));
+                }
+                let bundle = self.build_deploy_bundle(
+                    &content_commit,
+                    &media,
+                    &upload_paths,
+                    scan.assets(),
+                )?;
+                post_content_bundle(&agent, &url, token, &bundle)
+                    .map_err(|error| deploy_http_error(&url, error))?
+            }
+            Err(error) => return Err(deploy_http_error(&url, error)),
+            Ok(response) => response,
+        };
+        let response: ContentDeployResponse = raw_response
+            .into_json()
+            .map_err(|error| DeliveryControlError::Remote(format!("{url}: {error}")))?;
+        if !response.success
+            || response.state != "complete"
+            || !response.media_root_ok
+            || response.content_commit != content_commit
+        {
+            return Err(DeliveryControlError::Remote(format!(
+                "deployment verification failed: state={}, commit={}, media_root_ok={}",
+                response.state, response.content_commit, response.media_root_ok
+            )));
+        }
+        Ok(DeployRunStatus {
+            success: true,
+            content_commit,
+            stdout: format!(
+                "Deployed content {} ({}) at {}",
+                response.content_commit, response.content_hash, response.generated_at
+            ),
+            stderr: String::new(),
+        })
+    }
+
+    fn build_deploy_bundle(
+        &self,
+        content_commit: &str,
+        media: &[MediaAssetManifest],
+        upload_paths: &BTreeSet<String>,
+        assets: &[crate::ScannedAsset],
+    ) -> Result<Vec<u8>, DeliveryControlError> {
+        let staging =
+            tempfile::tempdir().map_err(|error| DeliveryControlError::Runner(error.to_string()))?;
+        let database = staging.path().join("portfolio.db");
+        fs::copy(&self.db_path, &database)
+            .map_err(|error| DeliveryControlError::Runner(format!("stage database: {error}")))?;
+        let connection = Connection::open(&database).map_err(|error| {
+            DeliveryControlError::Runner(format!("open staged database: {error}"))
+        })?;
+        connection
+            .execute("UPDATE sync_meta SET content_commit = ?1", [content_commit])
+            .map_err(|error| {
+                DeliveryControlError::Runner(format!("stamp content commit: {error}"))
+            })?;
+        let content_hash: String = connection
+            .query_row("SELECT content_hash FROM sync_meta LIMIT 1", [], |row| {
+                row.get(0)
+            })
+            .map_err(|error| DeliveryControlError::Runner(format!("read content hash: {error}")))?;
+        drop(connection);
+        let database_bytes = fs::read(&database).map_err(|error| {
+            DeliveryControlError::Runner(format!("read staged database: {error}"))
+        })?;
+        let manifest = ContentDeployManifest {
+            version: 1,
+            content_commit: content_commit.to_owned(),
+            content_hash,
+            database_sha256: format!("{:x}", Sha256::digest(&database_bytes)),
+            media: media.to_vec(),
+        };
+
+        let encoder = GzEncoder::new(Vec::new(), Compression::default());
+        let mut archive = Builder::new(encoder);
+        let manifest_bytes = serde_json::to_vec(&manifest)
+            .map_err(|error| DeliveryControlError::Runner(format!("encode manifest: {error}")))?;
+        append_bytes(&mut archive, "manifest.json", &manifest_bytes)?;
+        append_bytes(&mut archive, "portfolio.db", &database_bytes)?;
+        append_directory(&mut archive, "media")?;
+        for asset in assets
+            .iter()
+            .filter(|asset| upload_paths.contains(&asset.rel_path))
+        {
+            archive
+                .append_path_with_name(&asset.abs_path, format!("media/{}", asset.rel_path))
+                .map_err(|error| DeliveryControlError::Runner(format!("bundle media: {error}")))?;
+        }
+        let encoder = archive
+            .into_inner()
+            .map_err(|error| DeliveryControlError::Runner(format!("finish bundle: {error}")))?;
+        encoder
+            .finish()
+            .map_err(|error| DeliveryControlError::Runner(format!("compress bundle: {error}")))
     }
 
     pub fn remote_content_version(&self) -> Result<RemoteContentVersion, DeliveryControlError> {
@@ -436,11 +637,7 @@ impl DeliveryControl {
             .bearer_token
             .as_ref()
             .ok_or(DeliveryControlError::MissingCredential)?;
-        let agent = ureq::AgentBuilder::new()
-            .timeout_connect(Duration::from_secs(3))
-            .timeout_read(Duration::from_secs(8))
-            .timeout_write(Duration::from_secs(3))
-            .build();
+        let agent = deploy_http_agent(&self.content_root, &base);
         let mut request = agent.get(&url);
         request = request.set("Authorization", &format!("Bearer {token}"));
         request
@@ -495,6 +692,103 @@ where
         .map_err(|error| DeliveryControlError::Repository(error.to_string()))
 }
 
+fn revision_count(repo: &GitRepo, revision: &str) -> Option<usize> {
+    repo.run(["rev-list", "--count", revision])
+        .ok()?
+        .stdout
+        .trim()
+        .parse()
+        .ok()
+}
+
+fn deploy_http_agent(content_root: &Path, api_base: &str) -> ureq::Agent {
+    let mut builder = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(3))
+        .timeout_read(Duration::from_secs(130))
+        .timeout_write(Duration::from_secs(60));
+    if let Some((api_host, deploy_ip)) = deploy_socket_override(content_root, api_base) {
+        builder = builder.resolver(move |netloc: &str| {
+            let (host, port) = netloc
+                .rsplit_once(':')
+                .and_then(|(host, port)| port.parse::<u16>().ok().map(|port| (host, port)))
+                .ok_or_else(|| {
+                    std::io::Error::new(std::io::ErrorKind::InvalidInput, "invalid network address")
+                })?;
+            if host == api_host {
+                Ok(vec![SocketAddr::new(deploy_ip, port)])
+            } else {
+                netloc.to_socket_addrs().map(Iterator::collect)
+            }
+        });
+    }
+    builder.build()
+}
+
+fn deploy_socket_override(content_root: &Path, api_base: &str) -> Option<(String, IpAddr)> {
+    let config = fs::read_to_string(content_root.parent()?.join("silan-viking.toml")).ok()?;
+    let config: toml::Value = toml::from_str(&config).ok()?;
+    let deploy = config.get("deploy")?.as_table()?;
+    let deploy_ip = deploy.get("host")?.as_str()?.parse::<IpAddr>().ok()?;
+    let api_host = url::Url::parse(api_base).ok()?.host_str()?.to_owned();
+    Some((api_host, deploy_ip))
+}
+
+fn post_content_bundle(
+    agent: &ureq::Agent,
+    url: &str,
+    token: &str,
+    bundle: &[u8],
+) -> Result<ureq::Response, ureq::Error> {
+    agent
+        .post(url)
+        .set("Authorization", &format!("Bearer {token}"))
+        .set(
+            "Content-Type",
+            "application/vnd.silan.content-deploy+tar+gzip",
+        )
+        .send_bytes(bundle)
+}
+
+fn deploy_http_error(url: &str, error: ureq::Error) -> DeliveryControlError {
+    match error {
+        ureq::Error::Status(status, response) => {
+            let detail = response
+                .into_string()
+                .unwrap_or_else(|_| "response body unavailable".to_owned());
+            DeliveryControlError::Remote(format!("{url}: HTTP {status}: {}", detail.trim()))
+        }
+        other => DeliveryControlError::Remote(format!("{url}: {other}")),
+    }
+}
+
+fn append_bytes(
+    archive: &mut Builder<GzEncoder<Vec<u8>>>,
+    path: &str,
+    bytes: &[u8],
+) -> Result<(), DeliveryControlError> {
+    let mut header = tar::Header::new_gnu();
+    header.set_size(bytes.len() as u64);
+    header.set_mode(0o600);
+    header.set_cksum();
+    archive
+        .append_data(&mut header, path, bytes)
+        .map_err(|error| DeliveryControlError::Runner(format!("bundle {path}: {error}")))
+}
+
+fn append_directory(
+    archive: &mut Builder<GzEncoder<Vec<u8>>>,
+    path: &str,
+) -> Result<(), DeliveryControlError> {
+    let mut header = tar::Header::new_gnu();
+    header.set_entry_type(tar::EntryType::Directory);
+    header.set_size(0);
+    header.set_mode(0o755);
+    header.set_cksum();
+    archive
+        .append_data(&mut header, path, std::io::empty())
+        .map_err(|error| DeliveryControlError::Runner(format!("bundle {path}: {error}")))
+}
+
 fn path_args(prefix: &[&str], paths: &[&str]) -> Vec<String> {
     let mut args = prefix
         .iter()
@@ -526,6 +820,7 @@ mod tests {
     use super::*;
     use std::io::{Read, Write};
     use std::net::TcpListener;
+    use std::process::Command;
 
     fn git(directory: &Path, args: &[&str]) {
         let status = Command::new("git")

@@ -1,7 +1,10 @@
 //! Website insight use cases over source content, runtime observations, and
 //! the locally cached remote statistics snapshot.
 
-use crate::{api_base_url, StatsSync, StatsSyncResult, WorkspaceContent, WorkspaceContentError};
+use crate::{
+    api_base_url, workspace_stats_sync_token, StatsSync, StatsSyncResult, WorkspaceContent,
+    WorkspaceContentError,
+};
 use rusqlite::{Connection, OpenFlags};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -33,6 +36,8 @@ pub struct DashboardSnapshot {
 pub struct TrafficDetail {
     pub today_visits: i64,
     pub daily_visits: Vec<DailyTraffic>,
+    pub daily_seo_visits: Vec<DailyTraffic>,
+    pub daily_geo_visits: Vec<DailyTraffic>,
     pub top_content: Vec<TopContentItem>,
     pub top_sources: Vec<TrafficSource>,
     pub top_countries: Vec<TrafficCountry>,
@@ -51,6 +56,27 @@ pub struct DailyContentTraffic {
     pub title: String,
     pub visits: i64,
     pub comments: i64,
+    pub evidence: Vec<TrafficEvidence>,
+    pub visitors: Vec<VisitorLocation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct VisitorLocation {
+    pub country_code: String,
+    pub city: String,
+    pub latitude: String,
+    pub longitude: String,
+    pub ip_addresses: Vec<String>,
+    pub visits: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct TrafficEvidence {
+    pub agent: String,
+    pub event: String,
+    pub subject_kind: Option<String>,
+    pub subject: Option<String>,
+    pub visits: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -162,6 +188,7 @@ impl WebsiteInsights {
         db_path: impl AsRef<Path>,
     ) -> Result<Self, WebsiteInsightsError> {
         WorkspaceContent::open(content_root.as_ref())?;
+        crate::stats::ensure_cache_schema(db_path.as_ref())?;
         Ok(Self {
             content_root: content_root.as_ref().to_path_buf(),
             db_path: db_path.as_ref().to_path_buf(),
@@ -210,7 +237,11 @@ impl WebsiteInsights {
 
     pub fn sync_remote_stats(&self) -> Result<StatsSyncResult, WebsiteInsightsError> {
         let base_url = api_base_url(&self.content_root)?;
-        Ok(StatsSync::new(base_url, &self.db_path).sync_snapshot()?)
+        let mut sync = StatsSync::new(base_url, &self.db_path);
+        if let Some(token) = workspace_stats_sync_token(&self.content_root) {
+            sync = sync.with_bearer_token(token);
+        }
+        Ok(sync.sync_snapshot()?)
     }
 
     pub fn needs_attention(&self) -> Result<Vec<AttentionItem>, WebsiteInsightsError> {
@@ -249,57 +280,33 @@ fn cached_traffic(
         scalar(
             connection,
             "SELECT COUNT(*) FROM stats_cache_visitor
-             WHERE visitor_kind = 'human' AND date(last_seen_at) = date('now')",
+             WHERE visitor_kind = 'human'
+               AND date(last_seen_at, '+8 hours') = date('now', '+8 hours')",
         )?
     } else {
         0
     };
-    let mut daily_visits = Vec::new();
-    if table_exists(connection, "stats_cache_visitor")? {
-        let mut statement = connection.prepare(
-            "SELECT date(last_seen_at) AS visit_date, entity_type, entity_id, COUNT(*) AS visits
-             FROM stats_cache_visitor
-             WHERE visitor_kind = 'human' AND date(last_seen_at) >= date('now', '-1 year')
-             GROUP BY visit_date, entity_type, entity_id
-             ORDER BY visit_date, visits DESC",
-        )?;
-        let rows = statement.query_map([], |row| {
-            Ok((
-                row.get::<_, String>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, i64>(3)?,
-            ))
-        })?;
-        for row in rows {
-            let (date, content_type, entity_id, visits) = row?;
-            if daily_visits
-                .last()
-                .is_none_or(|day: &DailyTraffic| day.date != date)
-            {
-                daily_visits.push(DailyTraffic {
-                    date: date.clone(),
-                    visits: 0,
-                    content: Vec::new(),
-                });
-            }
-            let day = daily_visits.last_mut().expect("daily traffic day");
-            day.visits += visits;
-            day.content.push(DailyContentTraffic {
-                title: titles
-                    .get(&(content_type.as_str(), entity_id.as_str()))
-                    .copied()
-                    .unwrap_or(entity_id.as_str())
-                    .to_owned(),
-                comments: comment_counts
-                    .get(&(content_type.clone(), entity_id))
-                    .copied()
-                    .unwrap_or(0),
-                content_type,
-                visits,
-            });
-        }
-    }
+    let daily_visits = daily_acquisition(
+        connection,
+        &titles,
+        &comment_counts,
+        "visitor_kind = 'human'",
+        AcquisitionKind::Human,
+    )?;
+    let daily_seo_visits = daily_acquisition(
+        connection,
+        &titles,
+        &comment_counts,
+        "(referrer_kind = 'search' OR visitor_kind = 'search_crawler')",
+        AcquisitionKind::Seo,
+    )?;
+    let daily_geo_visits = daily_acquisition(
+        connection,
+        &titles,
+        &comment_counts,
+        "(referrer_kind = 'ai_chat' OR visitor_kind = 'ai_crawler')",
+        AcquisitionKind::Geo,
+    )?;
     let mut top_sources = Vec::new();
     if table_exists(connection, "stats_cache_source")? {
         let mut statement = connection.prepare(
@@ -364,9 +371,340 @@ fn cached_traffic(
     Ok(TrafficDetail {
         today_visits,
         daily_visits,
+        daily_seo_visits,
+        daily_geo_visits,
         top_content,
         top_sources,
         top_countries,
+    })
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum AcquisitionKind {
+    Human,
+    Seo,
+    Geo,
+}
+
+fn daily_acquisition(
+    connection: &Connection,
+    titles: &std::collections::HashMap<(&str, &str), &str>,
+    comment_counts: &std::collections::HashMap<(String, String), i64>,
+    filter: &str,
+    kind: AcquisitionKind,
+) -> Result<Vec<DailyTraffic>, rusqlite::Error> {
+    if !table_exists(connection, "stats_cache_visitor")? {
+        return Ok(Vec::new());
+    }
+    let sql = format!(
+        "SELECT date(last_seen_at, '+8 hours'), entity_type, entity_id, visitor_kind,
+                referrer_kind, referrer, landing_url, crawler_name, ip_masked,
+                country_code, city, latitude, longitude, COUNT(*)
+         FROM stats_cache_visitor
+         WHERE {filter}
+           AND date(last_seen_at, '+8 hours') >= date('now', '+8 hours', '-1 year')
+         GROUP BY date(last_seen_at, '+8 hours'), entity_type, entity_id, visitor_kind,
+                  referrer_kind, referrer, landing_url, crawler_name, ip_masked,
+                  country_code, city, latitude, longitude
+         ORDER BY date(last_seen_at, '+8 hours'), COUNT(*) DESC"
+    );
+    let mut statement = connection.prepare(&sql)?;
+    let rows = statement.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, String>(3)?,
+            row.get::<_, String>(4)?,
+            row.get::<_, String>(5)?,
+            row.get::<_, String>(6)?,
+            row.get::<_, String>(7)?,
+            row.get::<_, String>(8)?,
+            row.get::<_, String>(9)?,
+            row.get::<_, String>(10)?,
+            row.get::<_, f64>(11)?,
+            row.get::<_, f64>(12)?,
+            row.get::<_, i64>(13)?,
+        ))
+    })?;
+    let mut days = Vec::<DailyTraffic>::new();
+    for row in rows {
+        let (
+            date,
+            content_type,
+            entity_id,
+            visitor_kind,
+            referrer_kind,
+            referrer,
+            landing_url,
+            crawler_name,
+            ip_masked,
+            country_code,
+            city,
+            latitude,
+            longitude,
+            visits,
+        ) = row?;
+        if days.last().is_none_or(|day| day.date != date) {
+            days.push(DailyTraffic {
+                date: date.clone(),
+                visits: 0,
+                content: Vec::new(),
+            });
+        }
+        let day = days.last_mut().expect("daily acquisition day");
+        day.visits += visits;
+        let content = day.content.iter_mut().find(|item| {
+            item.content_type == content_type
+                && item.title
+                    == titles
+                        .get(&(content_type.as_str(), entity_id.as_str()))
+                        .copied()
+                        .unwrap_or(entity_id.as_str())
+        });
+        let evidence = (kind != AcquisitionKind::Human).then(|| {
+            acquisition_evidence(
+                kind,
+                &visitor_kind,
+                &referrer_kind,
+                &referrer,
+                &landing_url,
+                &crawler_name,
+                visits,
+            )
+        });
+        let visitor = (kind == AcquisitionKind::Human).then(|| VisitorLocation {
+            country_code,
+            city,
+            latitude: format_coordinate(latitude),
+            longitude: format_coordinate(longitude),
+            ip_addresses: (!ip_masked.is_empty()).then_some(ip_masked).into_iter().collect(),
+            visits,
+        });
+        if let Some(content) = content {
+            content.visits += visits;
+            if let Some(evidence) = evidence {
+                merge_traffic_evidence(&mut content.evidence, evidence);
+            }
+            if let Some(visitor) = visitor {
+                merge_visitor_location(&mut content.visitors, visitor);
+            }
+        } else {
+            day.content.push(DailyContentTraffic {
+                title: titles
+                    .get(&(content_type.as_str(), entity_id.as_str()))
+                    .copied()
+                    .unwrap_or(entity_id.as_str())
+                    .to_owned(),
+                comments: comment_counts
+                    .get(&(content_type.clone(), entity_id))
+                    .copied()
+                    .unwrap_or(0),
+                content_type,
+                visits,
+                evidence: evidence.into_iter().collect(),
+                visitors: visitor.into_iter().collect(),
+            });
+        }
+    }
+    Ok(days)
+}
+
+fn format_coordinate(value: f64) -> String {
+    if value == 0.0 {
+        String::new()
+    } else {
+        format!("{value:.1}")
+    }
+}
+
+fn merge_visitor_location(locations: &mut Vec<VisitorLocation>, visitor: VisitorLocation) {
+    if let Some(existing) = locations.iter_mut().find(|location| {
+        location.country_code == visitor.country_code
+            && location.city == visitor.city
+            && location.latitude == visitor.latitude
+            && location.longitude == visitor.longitude
+    }) {
+        existing.visits += visitor.visits;
+        for ip in visitor.ip_addresses {
+            if !existing.ip_addresses.contains(&ip) {
+                existing.ip_addresses.push(ip);
+            }
+        }
+        return;
+    }
+    locations.push(visitor);
+}
+
+fn merge_traffic_evidence(evidence: &mut Vec<TrafficEvidence>, incoming: TrafficEvidence) {
+    if let Some(existing) = evidence.iter_mut().find(|item| {
+        item.agent == incoming.agent
+            && item.event == incoming.event
+            && item.subject_kind == incoming.subject_kind
+            && item.subject == incoming.subject
+    }) {
+        existing.visits += incoming.visits;
+    } else {
+        evidence.push(incoming);
+    }
+}
+
+fn acquisition_evidence(
+    kind: AcquisitionKind,
+    visitor_kind: &str,
+    referrer_kind: &str,
+    referrer: &str,
+    landing_url: &str,
+    crawler_name: &str,
+    visits: i64,
+) -> TrafficEvidence {
+    let parsed = url::Url::parse(referrer).ok();
+    let landing = parse_landing_url(landing_url);
+    let source = (!crawler_name.is_empty() && visitor_kind.ends_with("_crawler"))
+        .then(|| crawler_name.to_owned())
+        .or_else(|| {
+            parsed
+                .as_ref()
+                .and_then(url::Url::host_str)
+                .map(|host| host.trim_start_matches("www.").to_owned())
+        })
+        .or_else(|| landing_query_value(landing.as_ref(), &["utm_source"]))
+        .unwrap_or_else(|| {
+            if !crawler_name.is_empty() {
+                crawler_name.to_owned()
+            } else if visitor_kind.ends_with("_crawler") {
+                visitor_kind.replace('_', " ")
+            } else {
+                referrer_kind.replace('_', " ")
+            }
+        });
+    let agent = display_agent_name(&source);
+    let keyword = parsed.as_ref().and_then(|url| {
+        ["q", "query", "search", "text", "wd"]
+            .into_iter()
+            .find_map(|key| {
+                url.query_pairs()
+                    .find(|(name, _)| name == key)
+                    .map(|(_, value)| value.into_owned())
+            })
+    });
+    let attribution_topic = landing_query_value(
+        landing.as_ref(),
+        &["geo_query", "prompt_topic", "utm_campaign", "utm_content"],
+    );
+    let page = landing.as_ref().map(page_topic);
+    let (event, subject_kind, subject) = match kind {
+        AcquisitionKind::Geo if visitor_kind == "ai_crawler" => {
+            let event = match crawler_name.to_ascii_lowercase().as_str() {
+                "chatgpt-user" => "User-requested fetch",
+                "oai-searchbot" => "Search indexing",
+                "gptbot" => "Model training crawl",
+                _ => "AI crawl",
+            };
+            (
+                event.to_owned(),
+                attribution_topic
+                    .as_ref()
+                    .map(|_| "attributed_topic".to_owned())
+                    .or_else(|| page.as_ref().map(|_| "page".to_owned())),
+                attribution_topic.or(page),
+            )
+        }
+        AcquisitionKind::Geo => (
+            "Referral click".to_owned(),
+            attribution_topic
+                .as_ref()
+                .map(|_| "attributed_topic".to_owned())
+                .or_else(|| page.as_ref().map(|_| "landing_page".to_owned())),
+            attribution_topic.or(page),
+        ),
+        AcquisitionKind::Seo => (
+            if visitor_kind == "search_crawler" {
+                "Search indexing"
+            } else {
+                "Search referral"
+            }
+            .to_owned(),
+            keyword
+                .as_ref()
+                .map(|_| "search_query".to_owned())
+                .or_else(|| page.as_ref().map(|_| "landing_page".to_owned())),
+            keyword.or(page),
+        ),
+        AcquisitionKind::Human => ("Visit".to_owned(), None, None),
+    };
+    TrafficEvidence {
+        agent,
+        event,
+        subject_kind,
+        subject,
+        visits,
+    }
+}
+
+fn parse_landing_url(raw: &str) -> Option<url::Url> {
+    if raw.trim().is_empty() {
+        return None;
+    }
+    url::Url::parse(raw).ok().or_else(|| {
+        let base = url::Url::parse("https://silan.tech").ok()?;
+        base.join(raw).ok()
+    })
+}
+
+fn page_topic(url: &url::Url) -> String {
+    let segments = url
+        .path_segments()
+        .map(|parts| parts.filter(|part| !part.is_empty()).collect::<Vec<_>>())
+        .unwrap_or_default();
+    match segments.as_slice() {
+        [] | ["index.html"] => "Homepage".to_owned(),
+        ["blog"] => "Blog".to_owned(),
+        ["projects"] => "Projects".to_owned(),
+        ["ideas"] => "Ideas".to_owned(),
+        ["recent-updates"] => "Recent updates".to_owned(),
+        ["blog", slug] => format!("Blog · {}", humanize_topic(slug)),
+        ["projects", slug] => format!("Project · {}", humanize_topic(slug)),
+        ["ideas", slug] => format!("Idea · {}", humanize_topic(slug)),
+        _ => humanize_topic(segments.last().copied().unwrap_or("unknown")),
+    }
+}
+
+fn humanize_topic(value: &str) -> String {
+    value
+        .split(['-', '_'])
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            chars
+                .next()
+                .map(|first| first.to_uppercase().collect::<String>() + chars.as_str())
+                .unwrap_or_default()
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn display_agent_name(source: &str) -> String {
+    match source.to_ascii_lowercase().as_str() {
+        "chatgpt-user" => "ChatGPT User".to_owned(),
+        "chatgpt.com" | "chatgpt" => "ChatGPT Referral".to_owned(),
+        "oai-searchbot" => "OAI SearchBot".to_owned(),
+        "gptbot" => "GPTBot".to_owned(),
+        "claudebot" | "claude.ai" | "claude" => "Claude".to_owned(),
+        "perplexitybot" | "perplexity.ai" | "perplexity" => "Perplexity".to_owned(),
+        "google-extended" | "gemini.google.com" | "gemini" => "Gemini".to_owned(),
+        _ => source.to_owned(),
+    }
+}
+
+fn landing_query_value(url: Option<&url::Url>, keys: &[&str]) -> Option<String> {
+    let url = url?;
+    keys.iter().find_map(|key| {
+        url.query_pairs()
+            .find(|(name, _)| name == *key)
+            .map(|(_, value)| value.into_owned())
+            .filter(|value| !value.trim().is_empty())
     })
 }
 
@@ -590,5 +928,91 @@ mod tests {
         );
         assert_eq!(snapshot.comments.pending, 1);
         assert_eq!(snapshot.freshness.state, FreshnessState::Current);
+    }
+
+    #[test]
+    fn acquisition_evidence_extracts_search_keywords_and_ai_sources() {
+        let search = acquisition_evidence(
+            AcquisitionKind::Seo,
+            "human",
+            "search",
+            "https://www.google.com/search?q=personal+context+system",
+            "",
+            "",
+            3,
+        );
+        assert_eq!(search.agent, "google.com");
+        assert_eq!(search.event, "Search referral");
+        assert_eq!(search.subject.as_deref(), Some("personal context system"));
+        assert_eq!(search.visits, 3);
+
+        let geo = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "human",
+            "ai_chat",
+            "https://chatgpt.com/",
+            "",
+            "",
+            1,
+        );
+        assert_eq!(geo.agent, "ChatGPT Referral");
+        assert_eq!(geo.event, "Referral click");
+        assert_eq!(geo.subject, None);
+
+        let crawler = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "ai_crawler",
+            "direct",
+            "",
+            "",
+            "GPTBot",
+            2,
+        );
+        assert_eq!(crawler.agent, "GPTBot");
+        assert_eq!(crawler.event, "Model training crawl");
+        assert_eq!(crawler.subject, None);
+
+        let crawler_with_self_referrer = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "ai_crawler",
+            "direct",
+            "https://silan.tech/ideas",
+            "/",
+            "GPTBot",
+            38,
+        );
+        assert_eq!(crawler_with_self_referrer.agent, "GPTBot");
+        assert_eq!(crawler_with_self_referrer.event, "Model training crawl");
+
+        let attributed_geo = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "human",
+            "ai_chat",
+            "",
+            "https://silan.tech/?utm_source=chatgpt&utm_medium=ai&prompt_topic=agent+memory",
+            "",
+            1,
+        );
+        assert_eq!(attributed_geo.agent, "ChatGPT Referral");
+        assert_eq!(attributed_geo.event, "Referral click");
+        assert_eq!(
+            attributed_geo.subject_kind.as_deref(),
+            Some("attributed_topic")
+        );
+        assert_eq!(attributed_geo.subject.as_deref(), Some("agent memory"));
+
+        let chatgpt_page = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "ai_crawler",
+            "direct",
+            "",
+            "/recent-updates/",
+            "chatgpt-user",
+            2,
+        );
+        assert_eq!(chatgpt_page.agent, "ChatGPT User");
+        assert_eq!(chatgpt_page.event, "User-requested fetch");
+        assert_eq!(chatgpt_page.subject_kind.as_deref(), Some("page"));
+        assert_eq!(chatgpt_page.subject.as_deref(), Some("Recent updates"));
     }
 }

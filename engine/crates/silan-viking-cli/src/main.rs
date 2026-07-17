@@ -1,6 +1,7 @@
 //! `silan-viking` CLI binary — M8 command surface.
 
 mod banner;
+mod credentials;
 mod scaffold;
 mod skill;
 
@@ -108,6 +109,10 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
         "uninstall" => &["uninstall [--purge] [--dry-run|--yes]"],
         "skill" => &["skill emit|status [--path PATH]", "skill rm [--path PATH]"],
         "config" => &["config · config edit [--global]"],
+        "credentials" => &[
+            "credentials openai set|rotate",
+            "credentials openai status|test|remove",
+        ],
         "completion" => &["completion bash|zsh|fish"],
         _ => return None,
     })
@@ -204,6 +209,12 @@ fn run(args: Vec<String>) -> Result<(), String> {
         }
         ["config", "edit"] => config_edit(&opts.content_root, false),
         ["config", "edit", "--global"] => config_edit(&opts.content_root, true),
+        ["credentials", "openai", "set"] | ["credentials", "openai", "rotate"] => {
+            credentials::openai_set()
+        }
+        ["credentials", "openai", "status"] => credentials::openai_status(),
+        ["credentials", "openai", "test"] => credentials::openai_test(),
+        ["credentials", "openai", "remove"] => credentials::openai_remove(),
         ["desktop", flags @ ..] | ["destop", flags @ ..] => {
             desktop_editor(&opts.content_root, &opts.db_path, flags)
         }
@@ -1955,7 +1966,10 @@ fn stats_sync(content_root: &Path, db_path: &Path, uri: &str) -> Result<(), Stri
         .map_err(|e| format!("open local db {}: {e}", db_path.display()))?;
     let filter = resolve_stats_filter(&conn, uri)?;
     let base = silan_viking_app::api_base_url(content_root).map_err(|e| e.to_string())?;
-    let sync = silan_viking_app::StatsSync::new(base, db_path);
+    let mut sync = silan_viking_app::StatsSync::new(base, db_path);
+    if let Some(token) = silan_viking_app::workspace_stats_sync_token(content_root) {
+        sync = sync.with_bearer_token(token);
+    }
     sync.sync_item(&filter.entity_type, &filter.entity_id)
         .map_err(|e| e.to_string())?;
     println!(
@@ -2170,7 +2184,7 @@ fn desktop_editor(content_root: &Path, db_path: &Path, args: &[&str]) -> Result<
         .sync(&db_path)
         .map_err(|error| format!("desktop: refresh SQLite projection: {error}"))?;
 
-    println!("desktop editor: Silan Desktop Tauri app");
+    println!("desktop editor: Silan Context System Tauri app");
     println!("content root: {}", content_root.display());
     println!("database: {}", db_path.display());
     println!(
@@ -2432,7 +2446,49 @@ fn build_frontend_target(
             dist.display(),
         ));
     }
+    if target.is_default() {
+        assert_seo_prerender(&dist)?;
+    }
     Ok(dist)
+}
+
+fn assert_seo_prerender(dist: &Path) -> Result<(), String> {
+    let index = dist.join("index.html");
+    let html = fs::read_to_string(&index)
+        .map_err(|error| format!("[frontend] cannot read {}: {error}", index.display()))?;
+    for needle in [
+        "<div id=\"root\"><div",
+        "I am an NUS PhD student",
+        "Silan Hu",
+        "GEM-Bench",
+        "AI crawlers and tools",
+    ] {
+        if !html.contains(needle) {
+            return Err(format!(
+                "[frontend] SEO prerender check failed: {} does not contain `{needle}`; refusing to deploy a shell-only build",
+                index.display()
+            ));
+        }
+    }
+    if html.contains("You need to enable JavaScript to run this app") {
+        return Err(format!(
+            "[frontend] SEO prerender check failed: {} still contains the default no-JS shell message",
+            index.display()
+        ));
+    }
+    let about = dist.join("about.txt");
+    let about_text = fs::read_to_string(&about)
+        .map_err(|error| format!("[frontend] cannot read {}: {error}", about.display()))?;
+    for needle in ["Silan Hu", "GEM-Bench", "Machine-readable context"] {
+        if !about_text.contains(needle) {
+            return Err(format!(
+                "[frontend] SEO prerender check failed: {} does not contain `{needle}`",
+                about.display()
+            ));
+        }
+    }
+    println!("[frontend] SEO prerender check passed");
+    Ok(())
 }
 
 fn site_check(content_root: &Path) -> Result<(), String> {
@@ -2583,10 +2639,8 @@ struct DeployConfig {
     /// `silan-backend`; `systemctl restart <unit>` runs after each push.
     systemd_unit: String,
     /// Where to drop the BaoTa-style `extension/<host>/silan-viking.conf`
-    /// snippet. Optional — if absent, the deploy assumes a sysadmin
-    /// wired Nginx by hand. Parsed and held here for the future auto-
-    /// nginx-conf path; clippy's dead-code lint would block CI otherwise.
-    #[allow(dead_code)]
+    /// snippet. Optional — if absent, the deploy assumes a sysadmin wired
+    /// Nginx by hand.
     nginx_extension_dir: Option<String>,
 }
 
@@ -3160,6 +3214,7 @@ fn run_nginx_deploy(
     }
     if what.does_backend() {
         deploy_nginx_backend(project_root, cfg)?;
+        deploy_nginx_extension(cfg)?;
         did_work = true;
     }
     if what.does_backend() {
@@ -3193,6 +3248,92 @@ fn run_nginx_deploy(
     println!("[health] {health_base}/api/v1/health");
     deploy_health_check(cfg)?;
     println!("done.");
+    Ok(())
+}
+
+fn deploy_nginx_extension(cfg: &DeployConfig) -> Result<(), String> {
+    let Some(extension_dir) = cfg.nginx_extension_dir.as_deref() else {
+        return Ok(());
+    };
+    let configuration = format!(
+        r#"# silan-viking — backend reverse proxy, crawler capture, SPA fallback
+# Generated by silan-viking deploy. Local edits will be replaced.
+
+location /api/ {{
+    client_max_body_size 128m;
+    proxy_read_timeout 130s;
+    proxy_send_timeout 130s;
+    proxy_pass http://127.0.0.1:{port};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}}
+
+location = /api/v1/analytics/crawler-hit {{
+    return 404;
+}}
+
+location = /index.html {{
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+    try_files /index.html =404;
+}}
+
+location = /about.txt {{
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+    try_files /about.txt =404;
+}}
+
+location = /llms.txt {{
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+    try_files /llms.txt =404;
+}}
+
+location = /_silan_crawler_hit {{
+    internal;
+    proxy_pass http://127.0.0.1:{port}/api/v1/analytics/crawler-hit;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header X-Silan-Original-URI $request_uri;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header User-Agent $http_user_agent;
+    proxy_set_header Referer $http_referer;
+}}
+
+location / {{
+    mirror /_silan_crawler_hit;
+    mirror_request_body off;
+    add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+    try_files $uri $uri/ /index.html;
+}}
+"#,
+        port = cfg.backend_port,
+    );
+    let encoded = base64_encode(configuration.as_bytes());
+    let target = format!("{extension_dir}/silan-viking.conf");
+    println!("[nginx] install {target}");
+    ssh_exec(
+        cfg,
+        &format!(
+            "set -e && mkdir -p {dir} && \
+             test ! -f {target} || cp {target} {target}.prev && \
+             echo {encoded} | base64 -d > {target}.next && \
+             mv {target}.next {target} && \
+             nginx -t && nginx -s reload",
+            dir = extension_dir,
+            target = target,
+        ),
+    )?;
     Ok(())
 }
 
@@ -3316,9 +3457,13 @@ fn deploy_nginx_content(
         ssh_exec(cfg, &format!("rm -f {remote_db}-wal {remote_db}-shm"))?;
     }
 
-    // Never ship the derived snapshot over the live DB. The live file owns
-    // all runtime facts; pull it, replace only the derived-table whitelist in
-    // one local transaction, then ship that promoted generation back.
+    // SQLite and PostgreSQL have different ownership boundaries:
+    //
+    // - SQLite serves this file directly, so its runtime rows must be pulled
+    //   back and preserved while derived tables are promoted.
+    // - PostgreSQL owns runtime rows independently. Its importer replaces
+    //   projection tables transactionally and explicitly skips runtime tables,
+    //   so pulling the old offline SQLite artifact back first is redundant.
     let live_snapshot = std::env::temp_dir().join(format!(
         "silan-viking-nginx-live-{}-{}.db",
         std::process::id(),
@@ -3328,27 +3473,38 @@ fn deploy_nginx_content(
             .as_nanos(),
     ));
     let promotion = (|| -> Result<(), String> {
-        let remote_exists = ssh_exec(
-            cfg,
-            &format!("if [ -f {remote_db} ]; then printf present; fi"),
-        )?;
-        if remote_exists.trim() == "present" {
-            println!("[content] pull live DB → {}", live_snapshot.display());
-            scp_from(cfg, &remote_db, &live_snapshot)?;
-        } else {
-            println!("[content] first deploy — seed live DB from derived snapshot");
+        let content_commit = git_head_commit(content_root).unwrap_or_else(|| "unknown".into());
+        if database_mode == RemoteDatabaseMode::Postgres {
+            println!("[content] PostgreSQL fast path — stage local projection directly");
             fs::copy(db_path, &live_snapshot).map_err(|e| {
                 format!(
-                    "[content] seed {} from {}: {e}",
+                    "[content] stage {} from {}: {e}",
                     live_snapshot.display(),
                     db_path.display()
                 )
             })?;
+            stamp_content_commit(&live_snapshot, &content_commit)?;
+        } else {
+            let remote_exists = ssh_exec(
+                cfg,
+                &format!("if [ -f {remote_db} ]; then printf present; fi"),
+            )?;
+            if remote_exists.trim() == "present" {
+                println!("[content] pull live DB → {}", live_snapshot.display());
+                scp_from(cfg, &remote_db, &live_snapshot)?;
+            } else {
+                println!("[content] first deploy — seed live DB from derived snapshot");
+                fs::copy(db_path, &live_snapshot).map_err(|e| {
+                    format!(
+                        "[content] seed {} from {}: {e}",
+                        live_snapshot.display(),
+                        db_path.display()
+                    )
+                })?;
+            }
+            println!("[content] promote derived tables (runtime facts stay live)");
+            promote_db(&live_snapshot, db_path, &content_commit)?;
         }
-
-        let content_commit = git_head_commit(content_root).unwrap_or_else(|| "unknown".into());
-        println!("[content] promote derived tables (runtime facts stay live)");
-        promote_db(&live_snapshot, db_path, &content_commit)?;
 
         println!("[content] scp {} → {remote_db}", live_snapshot.display());
         scp_to(cfg, &live_snapshot, &remote_db)?;
@@ -3476,6 +3632,31 @@ fn deploy_nginx_content(
     let _ = fs::remove_dir_all(&staging);
     publish_media?;
     Ok(backend_stopped)
+}
+
+/// Stamp the projection provenance before a PostgreSQL fast-path import.
+///
+/// `Workspace::sync` owns the content hash and item count. Deployment owns
+/// the Git commit that made that projection releasable, so it updates only
+/// `content_commit` and leaves the rest of the generated metadata intact.
+fn stamp_content_commit(db_path: &Path, content_commit: &str) -> Result<(), String> {
+    let connection = rusqlite::Connection::open(db_path)
+        .map_err(|error| format!("[content] open staged projection metadata: {error}"))?;
+    let updated = connection
+        .execute(
+            "UPDATE sync_meta SET content_commit = ?1",
+            rusqlite::params![content_commit],
+        )
+        .map_err(|error| format!("[content] stamp staged projection commit: {error}"))?;
+    if updated == 0 {
+        connection
+            .execute(
+                "INSERT INTO sync_meta(content_commit) VALUES (?1)",
+                rusqlite::params![content_commit],
+            )
+            .map_err(|error| format!("[content] create staged projection metadata: {error}"))?;
+    }
+    Ok(())
 }
 
 fn media_generation_hash(assets: &[ScannedAsset]) -> String {
@@ -3674,6 +3855,7 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
     println!("[backend] tar source → {}", tarball.display());
     let status = Command::new("tar")
         .args([
+            "--no-xattrs",
             "--exclude=.git",
             "--exclude=*.log",
             "--exclude=silan-backend",
@@ -5397,9 +5579,10 @@ fn resume_add_part(content_root: &Path, role: &str) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{media_generation_hash, validate_private_api_deploy_token};
+    use super::{media_generation_hash, stamp_content_commit, validate_private_api_deploy_token};
     use silan_viking_app::ScannedAsset;
     use silan_viking_base::ContentHash;
+    use std::fs;
     use std::path::PathBuf;
 
     #[test]
@@ -5433,5 +5616,47 @@ mod tests {
                 asset("projects/b/assets/b.png", b"b"),
             ])
         );
+    }
+
+    #[test]
+    fn stamp_content_commit_preserves_projection_metadata() {
+        let path = std::env::temp_dir().join(format!(
+            "silan-viking-stamp-content-{}-{}.db",
+            std::process::id(),
+            time::OffsetDateTime::now_utc().unix_timestamp_nanos()
+        ));
+        let connection = rusqlite::Connection::open(&path).expect("open test db");
+        connection
+            .execute_batch(
+                "CREATE TABLE sync_meta(
+                    content_commit TEXT,
+                    content_hash TEXT,
+                    items_total INTEGER,
+                    generated_at TEXT
+                 );
+                 INSERT INTO sync_meta VALUES('old', 'hash-1', 7, 'now');",
+            )
+            .expect("seed metadata");
+        drop(connection);
+
+        stamp_content_commit(&path, "commit-new").expect("stamp commit");
+
+        let connection = rusqlite::Connection::open(&path).expect("reopen test db");
+        let row = connection
+            .query_row(
+                "SELECT content_commit, content_hash, items_total FROM sync_meta",
+                [],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, i64>(2)?,
+                    ))
+                },
+            )
+            .expect("read metadata");
+        assert_eq!(row, ("commit-new".to_owned(), "hash-1".to_owned(), 7));
+        drop(connection);
+        fs::remove_file(path).expect("remove test db");
     }
 }

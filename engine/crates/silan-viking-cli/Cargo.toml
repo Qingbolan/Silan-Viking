@@ -20,6 +20,10 @@ rusqlite          = { workspace = true }
 time              = { workspace = true }
 toml              = { workspace = true }
 md5               = { workspace = true }
+rpassword         = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
 
 [dev-dependencies]
 # The CLI integration tests parse the binary's JSON output.

@@ -84,6 +84,7 @@ pub struct SaveLifecycleInput {
     pub translation_id: String,
     pub status: String,
     pub visibility: String,
+    pub pinned: Option<bool>,
     pub expected_revision: String,
 }
 
@@ -342,12 +343,17 @@ impl WorkspaceContent {
     ) -> Result<EditableDocument, WorkspaceContentError> {
         let (document, part, translation) = self.translation(&input.translation_id)?;
         let locator = locator(&document, &part, &translation.language)?;
+        let pinned = input.pinned.map(|value| value.to_string());
+        let mut fields = vec![
+            ("status", input.status.as_str()),
+            ("visibility", input.visibility.as_str()),
+        ];
+        if let Some(value) = pinned.as_deref() {
+            fields.push(("pinned", value));
+        }
         self.editor.save_frontmatter_fields_and_sync(
             &locator,
-            &[
-                ("status", input.status.as_str()),
-                ("visibility", input.visibility.as_str()),
-            ],
+            &fields,
             &input.expected_revision,
             db_path,
         )?;

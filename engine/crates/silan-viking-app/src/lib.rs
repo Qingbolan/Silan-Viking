@@ -26,6 +26,7 @@ pub mod delivery_control;
 pub mod editor;
 pub mod geo_advisor;
 pub mod media_library;
+pub mod openai_credentials;
 pub mod parser;
 pub mod proposal;
 pub mod query;
@@ -40,8 +41,9 @@ pub mod workspace_sync;
 
 pub use capture::{CaptureError, CapturedContent, ContentCreator, IdeaCategory};
 pub use delivery_control::{
-    DeliveryControl, DeliveryControlError, DeployRunStatus, DeployVerificationResult,
-    DeploymentPlan, ReleaseScope, RemoteContentVersion, ScopeReleaseStatus,
+    DeliveryControl, DeliveryControlError, DeliverySyncStatus, DeployRunStatus,
+    DeployVerificationResult, DeploymentPlan, ReleaseScope, RemoteContentVersion,
+    ScopeReleaseStatus,
 };
 pub use editor::{
     ContentEditor, EditorError, ResumeProfileSource, SeriesMetadataSource, SourceDocument,
@@ -52,6 +54,10 @@ pub use geo_advisor::{
     GeoMetric,
 };
 pub use media_library::{MediaAssetRef, MediaLibrary, MediaLibraryError, MediaReferenceStatus};
+pub use openai_credentials::{
+    OpenAiApiKey, OpenAiCredentialError, OpenAiCredentialVerifier, OpenAiVerification,
+    OPENAI_KEYCHAIN_ACCOUNT, OPENAI_KEYCHAIN_SERVICE,
+};
 pub use proposal::store::ProposalKind;
 pub use proposal::{
     canonicalize, AcceptOutcome, AcceptReport, GitRepo, ProposalError, ProposalId, ProposalLock,
@@ -60,13 +66,13 @@ pub use proposal::{
 pub use query::{EmbedderMode, QueryDocument, QueryError, QueryHit, QueryIndex};
 pub use schema::{Schema, SchemaError};
 pub use stats::{
-    api_base_url, CountRow, ItemStats, StatsCache, StatsError, StatsSync, StatsSyncResult,
-    VisitorRow,
+    api_base_url, workspace_stats_sync_token, CountRow, ItemStats, StatsCache, StatsError,
+    StatsSync, StatsSyncResult, VisitorRow,
 };
 pub use website_insights::{
     AiReferralSummary, AttentionItem, AttentionKind, AttentionSeverity, CommentSummary,
-    CrawlerSummary, DashboardSnapshot, FreshnessState, RecentContentItem, StatsFreshness,
-    StatsSummary, WebsiteInsights, WebsiteInsightsError,
+    CrawlerSummary, DailyTraffic, DashboardSnapshot, FreshnessState, RecentContentItem,
+    StatsFreshness, StatsSummary, TrafficEvidence, WebsiteInsights, WebsiteInsightsError,
 };
 pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
 pub use workspace_content::{

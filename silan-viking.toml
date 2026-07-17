@@ -38,3 +38,4 @@ remote_dir   = "/www/wwwroot/silan.tech"
 public_url   = "https://silan.tech"
 backend_port = 5200
 systemd_unit = "silan-backend"
+nginx_extension_dir = "/www/server/panel/vhost/nginx/extension/silan.tech"

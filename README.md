@@ -166,7 +166,8 @@ Private analytics and deployed-content verification use one machine
 credential without restricting public pages or crawler access. Generate a
 high-entropy token, store it as `STATS_SYNC_TOKEN` in `.env` beside the
 server's deployed `docker-compose.yml`, and expose the same value as
-`SILAN_STATS_SYNC_TOKEN` only to the local CLI/Desktop process:
+`SILAN_STATS_SYNC_TOKEN` to the local CLI/Desktop process, or keep either
+name in the project-root `.env`:
 
 ```sh
 token="$(openssl rand -hex 32)"
@@ -174,6 +175,8 @@ printf 'STATS_SYNC_TOKEN=%s\n' "$token" > .env
 export SILAN_STATS_SYNC_TOKEN="$token"
 ```
 
+The CLI and Desktop read only `SILAN_STATS_SYNC_TOKEN`/`STATS_SYNC_TOKEN` from
+the project `.env`; they do not import unrelated values into the process.
 `.env` is ignored by git; `deploy/.env.example` documents the required
 variable and can be copied into the configured remote deployment directory.
 The token protects full-site statistics, crawler/visitor details, and

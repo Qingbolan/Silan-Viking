@@ -109,16 +109,31 @@ impl SiteProjector {
 
     fn robots(&self) -> String {
         format!(
-            "User-agent: *\n\
-             Allow: /\n\
-             Disallow: /api/v1/stats/snapshot\n\
-             Disallow: /api/v1/stats/bots\n\
-             Disallow: /api/v1/stats/crawlers\n\
-             Disallow: /api/v1/stats/sources\n\
-             Disallow: /api/v1/stats/visitors\n\
-             Disallow: /api/v1/content/status\n\
-             Disallow: /api/v1/auth/\n\
+            "{}\
              Sitemap: {}/sitemap.xml\n",
+            [
+                "*",
+                "ClaudeBot",
+                "Claude-User",
+                "Claude-SearchBot",
+                "Claude-Code",
+                "claude-code",
+                "Claude-Web",
+                "anthropic-ai",
+            ]
+            .iter()
+            .map(|agent| format!(
+                "User-agent: {agent}\n\
+                 Allow: /\n\
+                 Disallow: /api/v1/stats/snapshot\n\
+                 Disallow: /api/v1/stats/bots\n\
+                 Disallow: /api/v1/stats/crawlers\n\
+                 Disallow: /api/v1/stats/sources\n\
+                 Disallow: /api/v1/stats/visitors\n\
+                 Disallow: /api/v1/content/status\n\
+                 Disallow: /api/v1/auth/\n\n",
+            ))
+            .collect::<String>(),
             self.base_url
         )
     }
