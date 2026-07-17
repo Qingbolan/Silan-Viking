@@ -13,9 +13,9 @@
 use super::blog::BlogMapper;
 use super::episode::EpisodeMapper;
 use super::idea::IdeaMapper;
+use super::moment::MomentMapper;
 use super::project::ProjectMapper;
 use super::resume::ResumeMapper;
-use super::update::UpdateMapper;
 use super::Mapper;
 use crate::parser::Parsed;
 use crate::sync::error::MapError;
@@ -29,7 +29,7 @@ pub struct MapperRegistry {
     project: ProjectMapper,
     episode: EpisodeMapper,
     resume: ResumeMapper,
-    update: UpdateMapper,
+    moment: MomentMapper,
 }
 
 impl MapperRegistry {
@@ -47,7 +47,7 @@ impl MapperRegistry {
             ContentKind::Project => &self.project,
             ContentKind::Episode => &self.episode,
             ContentKind::Resume => &self.resume,
-            ContentKind::Update => &self.update,
+            ContentKind::Moment => &self.moment,
         })
     }
 

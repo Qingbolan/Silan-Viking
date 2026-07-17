@@ -3,6 +3,7 @@ package svc
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 
@@ -35,6 +36,9 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
+	if err := migrateMomentDomain(c.Database.Driver, c.Database.Source); err != nil {
+		log.Fatalf("failed migrating Updates to Moments: %v", err)
+	}
 	client, err := ent.Open(c.Database.Driver, c.Database.Source)
 	if err != nil {
 		log.Fatalf("failed opening connection to database: %v", err)
@@ -255,6 +259,140 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			MaxBundleBytes: c.ContentDeployMaxBundleBytes(),
 		}, rawDB),
 	}
+}
+
+// migrateMomentDomain performs the one-way domain rename before Ent inspects
+// the schema. It preserves all authored content and runtime interaction rows;
+// the application never operates with both Updates and Moments models.
+func migrateMomentDomain(driver, source string) error {
+	db, err := sql.Open(driver, source)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	hasUpdates, err := databaseTableExists(db, driver, "recent_updates")
+	if err != nil {
+		return err
+	}
+	hasMoments, err := databaseTableExists(db, driver, "moments")
+	if err != nil {
+		return err
+	}
+	if hasUpdates && !hasMoments {
+		if _, err := db.Exec("ALTER TABLE recent_updates RENAME TO moments"); err != nil {
+			return err
+		}
+	}
+
+	hasTranslations, err := databaseTableExists(db, driver, "recent_update_translations")
+	if err != nil {
+		return err
+	}
+	hasMomentTranslations, err := databaseTableExists(db, driver, "moment_translations")
+	if err != nil {
+		return err
+	}
+	if hasTranslations && !hasMomentTranslations {
+		if _, err := db.Exec("ALTER TABLE recent_update_translations RENAME TO moment_translations"); err != nil {
+			return err
+		}
+	}
+
+	for oldColumn, newColumn := range map[string]string{
+		"recent_update_id": "moment_id",
+		"update_type":      "moment_type",
+	} {
+		hasOld, err := databaseColumnExists(db, driver, "moment_translations", oldColumn)
+		if oldColumn == "update_type" {
+			hasOld, err = databaseColumnExists(db, driver, "moments", oldColumn)
+		}
+		if err != nil {
+			return err
+		}
+		table := "moment_translations"
+		if oldColumn == "update_type" {
+			table = "moments"
+		}
+		hasNew, err := databaseColumnExists(db, driver, table, newColumn)
+		if err != nil {
+			return err
+		}
+		if hasOld && !hasNew {
+			if _, err := db.Exec(fmt.Sprintf("ALTER TABLE %s RENAME COLUMN %s TO %s", table, oldColumn, newColumn)); err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, table := range []string{
+		"content_interaction", "comments", "content_tags", "item_parts", "annotations",
+		"stats_cache_item", "stats_cache_visitor", "stats_cache_crawler", "stats_cache_source",
+	} {
+		exists, err := databaseTableExists(db, driver, table)
+		if err != nil {
+			return err
+		}
+		if exists {
+			if _, err := db.Exec(fmt.Sprintf("UPDATE %s SET entity_type = 'moment' WHERE entity_type = 'update'", table)); err != nil {
+				return err
+			}
+		}
+	}
+	if exists, err := databaseTableExists(db, driver, "content_relations"); err != nil {
+		return err
+	} else if exists {
+		if _, err := db.Exec("UPDATE content_relations SET from_type = 'moment' WHERE from_type = 'update'"); err != nil {
+			return err
+		}
+		if _, err := db.Exec("UPDATE content_relations SET to_type = 'moment' WHERE to_type = 'update'"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func databaseTableExists(db *sql.DB, driver, table string) (bool, error) {
+	var count int
+	if driver == "postgres" || driver == "postgresql" {
+		err := db.QueryRow(
+			"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = $1",
+			table,
+		).Scan(&count)
+		return count > 0, err
+	}
+	err := db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&count)
+	return count > 0, err
+}
+
+func databaseColumnExists(db *sql.DB, driver, table, column string) (bool, error) {
+	var count int
+	if driver == "postgres" || driver == "postgresql" {
+		err := db.QueryRow(
+			"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = $1 AND column_name = $2",
+			table,
+			column,
+		).Scan(&count)
+		return count > 0, err
+	}
+	rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var name, dataType string
+		var notNull, primaryKey int
+		var defaultValue any
+		if err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultValue, &primaryKey); err != nil {
+			return false, err
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }
 
 // dropContentForeignKeys rebuilds the runtime analytics tables that an older

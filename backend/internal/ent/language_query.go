@@ -15,13 +15,13 @@ import (
 	"silan-backend/internal/ent/ideadetailtranslation"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/momenttranslation"
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/projectdetailtranslation"
 	"silan-backend/internal/ent/projectimagetranslation"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/recentupdatetranslation"
 	"silan-backend/internal/ent/researchprojectdetailtranslation"
 	"silan-backend/internal/ent/researchprojecttranslation"
 	"silan-backend/internal/ent/workexperiencedetailtranslation"
@@ -56,7 +56,7 @@ type LanguageQuery struct {
 	withResearchProjectDetailTranslations *ResearchProjectDetailTranslationQuery
 	withPublicationTranslations           *PublicationTranslationQuery
 	withAwardTranslations                 *AwardTranslationQuery
-	withRecentUpdateTranslations          *RecentUpdateTranslationQuery
+	withMomentTranslations                *MomentTranslationQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -445,9 +445,9 @@ func (lq *LanguageQuery) QueryAwardTranslations() *AwardTranslationQuery {
 	return query
 }
 
-// QueryRecentUpdateTranslations chains the current query on the "recent_update_translations" edge.
-func (lq *LanguageQuery) QueryRecentUpdateTranslations() *RecentUpdateTranslationQuery {
-	query := (&RecentUpdateTranslationClient{config: lq.config}).Query()
+// QueryMomentTranslations chains the current query on the "moment_translations" edge.
+func (lq *LanguageQuery) QueryMomentTranslations() *MomentTranslationQuery {
+	query := (&MomentTranslationClient{config: lq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := lq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -458,8 +458,8 @@ func (lq *LanguageQuery) QueryRecentUpdateTranslations() *RecentUpdateTranslatio
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(language.Table, language.FieldID, selector),
-			sqlgraph.To(recentupdatetranslation.Table, recentupdatetranslation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, language.RecentUpdateTranslationsTable, language.RecentUpdateTranslationsColumn),
+			sqlgraph.To(momenttranslation.Table, momenttranslation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, language.MomentTranslationsTable, language.MomentTranslationsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(lq.driver.Dialect(), step)
 		return fromU, nil
@@ -675,7 +675,7 @@ func (lq *LanguageQuery) Clone() *LanguageQuery {
 		withResearchProjectDetailTranslations: lq.withResearchProjectDetailTranslations.Clone(),
 		withPublicationTranslations:           lq.withPublicationTranslations.Clone(),
 		withAwardTranslations:                 lq.withAwardTranslations.Clone(),
-		withRecentUpdateTranslations:          lq.withRecentUpdateTranslations.Clone(),
+		withMomentTranslations:                lq.withMomentTranslations.Clone(),
 		// clone intermediate query.
 		sql:  lq.sql.Clone(),
 		path: lq.path,
@@ -858,14 +858,14 @@ func (lq *LanguageQuery) WithAwardTranslations(opts ...func(*AwardTranslationQue
 	return lq
 }
 
-// WithRecentUpdateTranslations tells the query-builder to eager-load the nodes that are connected to
-// the "recent_update_translations" edge. The optional arguments are used to configure the query builder of the edge.
-func (lq *LanguageQuery) WithRecentUpdateTranslations(opts ...func(*RecentUpdateTranslationQuery)) *LanguageQuery {
-	query := (&RecentUpdateTranslationClient{config: lq.config}).Query()
+// WithMomentTranslations tells the query-builder to eager-load the nodes that are connected to
+// the "moment_translations" edge. The optional arguments are used to configure the query builder of the edge.
+func (lq *LanguageQuery) WithMomentTranslations(opts ...func(*MomentTranslationQuery)) *LanguageQuery {
+	query := (&MomentTranslationClient{config: lq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	lq.withRecentUpdateTranslations = query
+	lq.withMomentTranslations = query
 	return lq
 }
 
@@ -964,7 +964,7 @@ func (lq *LanguageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lan
 			lq.withResearchProjectDetailTranslations != nil,
 			lq.withPublicationTranslations != nil,
 			lq.withAwardTranslations != nil,
-			lq.withRecentUpdateTranslations != nil,
+			lq.withMomentTranslations != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -1127,11 +1127,11 @@ func (lq *LanguageQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Lan
 			return nil, err
 		}
 	}
-	if query := lq.withRecentUpdateTranslations; query != nil {
-		if err := lq.loadRecentUpdateTranslations(ctx, query, nodes,
-			func(n *Language) { n.Edges.RecentUpdateTranslations = []*RecentUpdateTranslation{} },
-			func(n *Language, e *RecentUpdateTranslation) {
-				n.Edges.RecentUpdateTranslations = append(n.Edges.RecentUpdateTranslations, e)
+	if query := lq.withMomentTranslations; query != nil {
+		if err := lq.loadMomentTranslations(ctx, query, nodes,
+			func(n *Language) { n.Edges.MomentTranslations = []*MomentTranslation{} },
+			func(n *Language, e *MomentTranslation) {
+				n.Edges.MomentTranslations = append(n.Edges.MomentTranslations, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -1619,7 +1619,7 @@ func (lq *LanguageQuery) loadAwardTranslations(ctx context.Context, query *Award
 	}
 	return nil
 }
-func (lq *LanguageQuery) loadRecentUpdateTranslations(ctx context.Context, query *RecentUpdateTranslationQuery, nodes []*Language, init func(*Language), assign func(*Language, *RecentUpdateTranslation)) error {
+func (lq *LanguageQuery) loadMomentTranslations(ctx context.Context, query *MomentTranslationQuery, nodes []*Language, init func(*Language), assign func(*Language, *MomentTranslation)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Language)
 	for i := range nodes {
@@ -1630,10 +1630,10 @@ func (lq *LanguageQuery) loadRecentUpdateTranslations(ctx context.Context, query
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(recentupdatetranslation.FieldLanguageCode)
+		query.ctx.AppendFieldOnce(momenttranslation.FieldLanguageCode)
 	}
-	query.Where(predicate.RecentUpdateTranslation(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(language.RecentUpdateTranslationsColumn), fks...))
+	query.Where(predicate.MomentTranslation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(language.MomentTranslationsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

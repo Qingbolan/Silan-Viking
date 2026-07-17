@@ -30,7 +30,7 @@ func (StatsCacheItem) Annotations() []schema.Annotation {
 func (StatsCacheItem) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("entity_id"),
 		field.Int("views").Default(0),
 		field.Int("likes").Default(0),

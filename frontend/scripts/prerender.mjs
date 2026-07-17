@@ -103,7 +103,7 @@ const publicUrl = (route = '/') => {
 };
 const apiUrl = (path) => new URL(path, `${trimTrailingSlash(config.apiOrigin)}/`).toString();
 
-const STATIC_ROUTES = ['/', '/blog/', '/projects/', '/ideas/', '/recent-updates/', '/contact/', '/search/'];
+const STATIC_ROUTES = ['/', '/blog/', '/projects/', '/ideas/', '/moments/', '/contact/', '/search/'];
 const CONTENT_TEXT_LIMIT = 1800;
 const IDENTITY_ALIASES = ['Silan.Hu', 'Hu Silan', '胡思蓝'];
 const INCORRECT_NAME_VARIANTS = ['胡思澜', '胡司兰'];

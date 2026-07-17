@@ -13,7 +13,7 @@ use crate::part::{Part, PartRole};
 use silan_viking_base::{HasMeta, Identified, ItemId, Meta, SilanUri, Slug};
 
 /// One content entry — an idea, a blog post, a project, an episode, the
-/// resume, or an update.
+/// resume, or an moment.
 ///
 /// Invariant 1: `kind` is fixed at construction (the scan-time directory
 ///   dispatch). External code can only read it via [`Item::kind`].

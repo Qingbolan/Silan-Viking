@@ -26,7 +26,7 @@ func (StatsCacheSource) Annotations() []schema.Annotation {
 func (StatsCacheSource) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("entity_id"),
 		field.Enum("source").
 			Values("search", "social", "ai_chat", "direct", "internal", "unknown"),

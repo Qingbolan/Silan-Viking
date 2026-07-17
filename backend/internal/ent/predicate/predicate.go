@@ -90,6 +90,12 @@ type ItemPartTranslation func(*sql.Selector)
 // Language is the predicate function for language builders.
 type Language func(*sql.Selector)
 
+// Moment is the predicate function for moment builders.
+type Moment func(*sql.Selector)
+
+// MomentTranslation is the predicate function for momenttranslation builders.
+type MomentTranslation func(*sql.Selector)
+
 // PartEntry is the predicate function for partentry builders.
 type PartEntry func(*sql.Selector)
 
@@ -137,12 +143,6 @@ type PublicationAuthor func(*sql.Selector)
 
 // PublicationTranslation is the predicate function for publicationtranslation builders.
 type PublicationTranslation func(*sql.Selector)
-
-// RecentUpdate is the predicate function for recentupdate builders.
-type RecentUpdate func(*sql.Selector)
-
-// RecentUpdateTranslation is the predicate function for recentupdatetranslation builders.
-type RecentUpdateTranslation func(*sql.Selector)
 
 // RequestLog is the predicate function for requestlog builders.
 type RequestLog func(*sql.Selector)

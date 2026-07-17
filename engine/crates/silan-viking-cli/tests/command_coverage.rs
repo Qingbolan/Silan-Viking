@@ -122,20 +122,20 @@ fn project_group_every_verb() {
 }
 
 #[test]
-fn update_group_every_verb() {
+fn moment_group_every_verb() {
     let c = fresh_project();
-    ok(&c, &["update", "new", "an-update"]);
-    ok(&c, &["update", "list"]);
-    ok(&c, &["update", "show", "an-update"]);
-    ok(&c, &["update", "edit", "an-update"]);
-    ok(&c, &["update", "status", "an-update", "ongoing"]);
-    ok(&c, &["update", "set-type", "an-update", "milestone"]);
-    let md = std::fs::read_to_string(c.join("resources/update/an-update/parts/body/en.md"))
+    ok(&c, &["moment", "new", "an-update"]);
+    ok(&c, &["moment", "list"]);
+    ok(&c, &["moment", "show", "an-update"]);
+    ok(&c, &["moment", "edit", "an-update"]);
+    ok(&c, &["moment", "status", "an-update", "ongoing"]);
+    ok(&c, &["moment", "set-type", "an-update", "milestone"]);
+    let md = std::fs::read_to_string(c.join("resources/moment/an-update/parts/body/en.md"))
         .expect("read");
-    assert!(md.contains("update_type: milestone"));
-    ok(&c, &["update", "add-lang", "an-update", "zh"]);
-    ok(&c, &["update", "archive", "an-update"]);
-    ok(&c, &["update", "rm", "an-update"]);
+    assert!(md.contains("moment_type: milestone"));
+    ok(&c, &["moment", "add-lang", "an-update", "zh"]);
+    ok(&c, &["moment", "archive", "an-update"]);
+    ok(&c, &["moment", "rm", "an-update"]);
     let _ = std::fs::remove_dir_all(c.parent().expect("root"));
 }
 
@@ -203,14 +203,14 @@ fn everything_synced_passes_validation() {
     //
     // `init` already scaffolds 4 Items (1 resume + 3 seed items: a welcome
     // blog, one idea, one project — `06` §6.2.1). This test then creates 5
-    // more (idea / blog / project / update / episode; the episode *series*
+    // more (idea / blog / project / moment / episode; the episode *series*
     // is not itself an Item). So a full sync covers 4 + 5 = 9 Items.
     let c = fresh_project();
     ok(&c, &["idea", "new", "x-idea"]);
     ok(&c, &["blog", "new", "x-blog"]);
     ok(&c, &["project", "new", "x-proj"]);
-    ok(&c, &["update", "new", "x-update"]);
-    ok(&c, &["update", "set-type", "x-update", "release"]);
+    ok(&c, &["moment", "new", "x-update"]);
+    ok(&c, &["moment", "set-type", "x-update", "release"]);
     ok(&c, &["episode", "series", "new", "x-series"]);
     ok(&c, &["episode", "new", "x-series", "x-ep"]);
     let sync = ok(&c, &["index", "sync"]);

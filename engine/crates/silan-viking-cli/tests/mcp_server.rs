@@ -134,7 +134,7 @@ fn tools_list_advertises_all_eighteen_tools() {
         "ctx_brief",
         "reflect",
         "propose",
-        "summarize_updates",
+        "summarize_moments",
     ] {
         assert!(
             names.contains(&required),

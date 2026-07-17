@@ -344,6 +344,30 @@ func (f LanguageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LanguageMutation", m)
 }
 
+// The MomentFunc type is an adapter to allow the use of ordinary
+// function as Moment mutator.
+type MomentFunc func(context.Context, *ent.MomentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MomentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MomentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MomentMutation", m)
+}
+
+// The MomentTranslationFunc type is an adapter to allow the use of ordinary
+// function as MomentTranslation mutator.
+type MomentTranslationFunc func(context.Context, *ent.MomentTranslationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f MomentTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.MomentTranslationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.MomentTranslationMutation", m)
+}
+
 // The PartEntryFunc type is an adapter to allow the use of ordinary
 // function as PartEntry mutator.
 type PartEntryFunc func(context.Context, *ent.PartEntryMutation) (ent.Value, error)
@@ -534,30 +558,6 @@ func (f PublicationTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) 
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PublicationTranslationMutation", m)
-}
-
-// The RecentUpdateFunc type is an adapter to allow the use of ordinary
-// function as RecentUpdate mutator.
-type RecentUpdateFunc func(context.Context, *ent.RecentUpdateMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f RecentUpdateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.RecentUpdateMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RecentUpdateMutation", m)
-}
-
-// The RecentUpdateTranslationFunc type is an adapter to allow the use of ordinary
-// function as RecentUpdateTranslation mutator.
-type RecentUpdateTranslationFunc func(context.Context, *ent.RecentUpdateTranslationMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f RecentUpdateTranslationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.RecentUpdateTranslationMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RecentUpdateTranslationMutation", m)
 }
 
 // The RequestLogFunc type is an adapter to allow the use of ordinary

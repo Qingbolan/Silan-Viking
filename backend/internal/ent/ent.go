@@ -35,6 +35,8 @@ import (
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/moment"
+	"silan-backend/internal/ent/momenttranslation"
 	"silan-backend/internal/ent/partentry"
 	"silan-backend/internal/ent/partentrytranslation"
 	"silan-backend/internal/ent/personalinfo"
@@ -51,8 +53,6 @@ import (
 	"silan-backend/internal/ent/publication"
 	"silan-backend/internal/ent/publicationauthor"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/recentupdate"
-	"silan-backend/internal/ent/recentupdatetranslation"
 	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
@@ -163,6 +163,8 @@ func checkColumn(table, column string) error {
 			itempart.Table:                         itempart.ValidColumn,
 			itemparttranslation.Table:              itemparttranslation.ValidColumn,
 			language.Table:                         language.ValidColumn,
+			moment.Table:                           moment.ValidColumn,
+			momenttranslation.Table:                momenttranslation.ValidColumn,
 			partentry.Table:                        partentry.ValidColumn,
 			partentrytranslation.Table:             partentrytranslation.ValidColumn,
 			personalinfo.Table:                     personalinfo.ValidColumn,
@@ -179,8 +181,6 @@ func checkColumn(table, column string) error {
 			publication.Table:                      publication.ValidColumn,
 			publicationauthor.Table:                publicationauthor.ValidColumn,
 			publicationtranslation.Table:           publicationtranslation.ValidColumn,
-			recentupdate.Table:                     recentupdate.ValidColumn,
-			recentupdatetranslation.Table:          recentupdatetranslation.ValidColumn,
 			requestlog.Table:                       requestlog.ValidColumn,
 			researchproject.Table:                  researchproject.ValidColumn,
 			researchprojectdetail.Table:            researchprojectdetail.ValidColumn,

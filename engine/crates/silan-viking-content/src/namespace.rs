@@ -47,7 +47,7 @@ pub trait Namespace {
 }
 
 /// `silan://resources/` — published content (blog/ideas/projects/episode/
-/// resume/update).
+/// resume/moment).
 ///
 /// Invariant: `is_publishable() == true` and `accepts_direct_write() == false`.
 /// These are constants, not fields, so they cannot be misconfigured.

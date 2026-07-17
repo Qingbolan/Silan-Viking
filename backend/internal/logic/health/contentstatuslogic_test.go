@@ -27,7 +27,7 @@ func TestContentStatusReportsPromotedProvenance(t *testing.T) {
 	}
 	media := t.TempDir()
 	ctx := &svc.ServiceContext{
-		RawDB: db,
+		RawDB:  db,
 		Config: config.Config{Media: config.MediaConfig{Root: media}},
 	}
 	status, err := ContentStatus(context.Background(), ctx)

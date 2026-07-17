@@ -230,9 +230,9 @@ export function CaptureSheet({
           <button
             type="button"
             role="tab"
-            aria-selected={target === 'update'}
-            className={target === 'update' ? 'active' : ''}
-            onClick={() => onTargetChange('update')}
+            aria-selected={target === 'moment'}
+            className={target === 'moment' ? 'active' : ''}
+            onClick={() => onTargetChange('moment')}
             disabled={phase === 'submitting'}
           >
             记录事件
@@ -251,7 +251,7 @@ export function CaptureSheet({
       </header>
 
       <div className="capture-workspace">
-        {target !== 'update' && (
+        {target !== 'moment' && (
           <div className="capture-categories" role="radiogroup" aria-label="Idea category">
             {categories.map(({ value, label, Icon }) => (
               <button
@@ -277,12 +277,12 @@ export function CaptureSheet({
             onChange={(event) => onNoteChange(event.target.value)}
             onKeyDown={onKeyDown}
             disabled={phase === 'submitting'}
-            placeholder={target === 'update'
+            placeholder={target === 'moment'
               ? '记录刚发生的进展、事件或状态变化...'
               : target === 'idea'
                 ? '把你现在想到的先说清楚...'
                 : '先把文章草稿写下来...'}
-            aria-label={target === 'update' ? '事件内容' : target === 'idea' ? '想法内容' : '文章草稿'}
+            aria-label={target === 'moment' ? '事件内容' : target === 'idea' ? '想法内容' : '文章草稿'}
           />
         </div>
 
@@ -323,7 +323,7 @@ export function CaptureSheet({
           className="capture-confirm"
           disabled={!note.trim() || phase === 'submitting' || voicePhase !== 'idle'}
           onClick={onSubmit}
-          title={target === 'update' ? '记录事件' : target === 'idea' ? '记录想法' : '保存文章草稿'}
+          title={target === 'moment' ? '记录事件' : target === 'idea' ? '记录想法' : '保存文章草稿'}
         >
           {phase === 'submitting' ? <LoaderCircle size={16} /> : <Check size={16} />}
           {phase === 'submitting' ? 'Saving' : 'Confirm'}

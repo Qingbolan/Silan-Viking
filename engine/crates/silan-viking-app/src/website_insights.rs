@@ -478,7 +478,10 @@ fn daily_acquisition(
             city,
             latitude: format_coordinate(latitude),
             longitude: format_coordinate(longitude),
-            ip_addresses: (!ip_masked.is_empty()).then_some(ip_masked).into_iter().collect(),
+            ip_addresses: (!ip_masked.is_empty())
+                .then_some(ip_masked)
+                .into_iter()
+                .collect(),
             visits,
         });
         if let Some(content) = content {
@@ -662,7 +665,7 @@ fn page_topic(url: &url::Url) -> String {
         ["blog"] => "Blog".to_owned(),
         ["projects"] => "Projects".to_owned(),
         ["ideas"] => "Ideas".to_owned(),
-        ["recent-updates"] => "Recent updates".to_owned(),
+        ["moments"] => "Moments".to_owned(),
         ["blog", slug] => format!("Blog · {}", humanize_topic(slug)),
         ["projects", slug] => format!("Project · {}", humanize_topic(slug)),
         ["ideas", slug] => format!("Idea · {}", humanize_topic(slug)),
@@ -1006,13 +1009,13 @@ mod tests {
             "ai_crawler",
             "direct",
             "",
-            "/recent-updates/",
+            "/moments/",
             "chatgpt-user",
             2,
         );
         assert_eq!(chatgpt_page.agent, "ChatGPT User");
         assert_eq!(chatgpt_page.event, "User-requested fetch");
         assert_eq!(chatgpt_page.subject_kind.as_deref(), Some("page"));
-        assert_eq!(chatgpt_page.subject.as_deref(), Some("Recent updates"));
+        assert_eq!(chatgpt_page.subject.as_deref(), Some("Moments"));
     }
 }

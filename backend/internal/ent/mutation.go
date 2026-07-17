@@ -34,6 +34,8 @@ import (
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/moment"
+	"silan-backend/internal/ent/momenttranslation"
 	"silan-backend/internal/ent/partentry"
 	"silan-backend/internal/ent/partentrytranslation"
 	"silan-backend/internal/ent/personalinfo"
@@ -51,8 +53,6 @@ import (
 	"silan-backend/internal/ent/publication"
 	"silan-backend/internal/ent/publicationauthor"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/recentupdate"
-	"silan-backend/internal/ent/recentupdatetranslation"
 	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
@@ -114,6 +114,8 @@ const (
 	TypeItemPart                         = "ItemPart"
 	TypeItemPartTranslation              = "ItemPartTranslation"
 	TypeLanguage                         = "Language"
+	TypeMoment                           = "Moment"
+	TypeMomentTranslation                = "MomentTranslation"
 	TypePartEntry                        = "PartEntry"
 	TypePartEntryTranslation             = "PartEntryTranslation"
 	TypePersonalInfo                     = "PersonalInfo"
@@ -130,8 +132,6 @@ const (
 	TypePublication                      = "Publication"
 	TypePublicationAuthor                = "PublicationAuthor"
 	TypePublicationTranslation           = "PublicationTranslation"
-	TypeRecentUpdate                     = "RecentUpdate"
-	TypeRecentUpdateTranslation          = "RecentUpdateTranslation"
 	TypeRequestLog                       = "RequestLog"
 	TypeResearchProject                  = "ResearchProject"
 	TypeResearchProjectDetail            = "ResearchProjectDetail"
@@ -26704,9 +26704,9 @@ type LanguageMutation struct {
 	award_translations                          map[string]struct{}
 	removedaward_translations                   map[string]struct{}
 	clearedaward_translations                   bool
-	recent_update_translations                  map[string]struct{}
-	removedrecent_update_translations           map[string]struct{}
-	clearedrecent_update_translations           bool
+	moment_translations                         map[string]struct{}
+	removedmoment_translations                  map[string]struct{}
+	clearedmoment_translations                  bool
 	done                                        bool
 	oldValue                                    func(context.Context) (*Language, error)
 	predicates                                  []predicate.Language
@@ -27837,58 +27837,58 @@ func (m *LanguageMutation) ResetAwardTranslations() {
 	m.removedaward_translations = nil
 }
 
-// AddRecentUpdateTranslationIDs adds the "recent_update_translations" edge to the RecentUpdateTranslation entity by ids.
-func (m *LanguageMutation) AddRecentUpdateTranslationIDs(ids ...string) {
-	if m.recent_update_translations == nil {
-		m.recent_update_translations = make(map[string]struct{})
+// AddMomentTranslationIDs adds the "moment_translations" edge to the MomentTranslation entity by ids.
+func (m *LanguageMutation) AddMomentTranslationIDs(ids ...string) {
+	if m.moment_translations == nil {
+		m.moment_translations = make(map[string]struct{})
 	}
 	for i := range ids {
-		m.recent_update_translations[ids[i]] = struct{}{}
+		m.moment_translations[ids[i]] = struct{}{}
 	}
 }
 
-// ClearRecentUpdateTranslations clears the "recent_update_translations" edge to the RecentUpdateTranslation entity.
-func (m *LanguageMutation) ClearRecentUpdateTranslations() {
-	m.clearedrecent_update_translations = true
+// ClearMomentTranslations clears the "moment_translations" edge to the MomentTranslation entity.
+func (m *LanguageMutation) ClearMomentTranslations() {
+	m.clearedmoment_translations = true
 }
 
-// RecentUpdateTranslationsCleared reports if the "recent_update_translations" edge to the RecentUpdateTranslation entity was cleared.
-func (m *LanguageMutation) RecentUpdateTranslationsCleared() bool {
-	return m.clearedrecent_update_translations
+// MomentTranslationsCleared reports if the "moment_translations" edge to the MomentTranslation entity was cleared.
+func (m *LanguageMutation) MomentTranslationsCleared() bool {
+	return m.clearedmoment_translations
 }
 
-// RemoveRecentUpdateTranslationIDs removes the "recent_update_translations" edge to the RecentUpdateTranslation entity by IDs.
-func (m *LanguageMutation) RemoveRecentUpdateTranslationIDs(ids ...string) {
-	if m.removedrecent_update_translations == nil {
-		m.removedrecent_update_translations = make(map[string]struct{})
+// RemoveMomentTranslationIDs removes the "moment_translations" edge to the MomentTranslation entity by IDs.
+func (m *LanguageMutation) RemoveMomentTranslationIDs(ids ...string) {
+	if m.removedmoment_translations == nil {
+		m.removedmoment_translations = make(map[string]struct{})
 	}
 	for i := range ids {
-		delete(m.recent_update_translations, ids[i])
-		m.removedrecent_update_translations[ids[i]] = struct{}{}
+		delete(m.moment_translations, ids[i])
+		m.removedmoment_translations[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedRecentUpdateTranslations returns the removed IDs of the "recent_update_translations" edge to the RecentUpdateTranslation entity.
-func (m *LanguageMutation) RemovedRecentUpdateTranslationsIDs() (ids []string) {
-	for id := range m.removedrecent_update_translations {
+// RemovedMomentTranslations returns the removed IDs of the "moment_translations" edge to the MomentTranslation entity.
+func (m *LanguageMutation) RemovedMomentTranslationsIDs() (ids []string) {
+	for id := range m.removedmoment_translations {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// RecentUpdateTranslationsIDs returns the "recent_update_translations" edge IDs in the mutation.
-func (m *LanguageMutation) RecentUpdateTranslationsIDs() (ids []string) {
-	for id := range m.recent_update_translations {
+// MomentTranslationsIDs returns the "moment_translations" edge IDs in the mutation.
+func (m *LanguageMutation) MomentTranslationsIDs() (ids []string) {
+	for id := range m.moment_translations {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetRecentUpdateTranslations resets all changes to the "recent_update_translations" edge.
-func (m *LanguageMutation) ResetRecentUpdateTranslations() {
-	m.recent_update_translations = nil
-	m.clearedrecent_update_translations = false
-	m.removedrecent_update_translations = nil
+// ResetMomentTranslations resets all changes to the "moment_translations" edge.
+func (m *LanguageMutation) ResetMomentTranslations() {
+	m.moment_translations = nil
+	m.clearedmoment_translations = false
+	m.removedmoment_translations = nil
 }
 
 // Where appends a list predicates to the LanguageMutation builder.
@@ -28133,8 +28133,8 @@ func (m *LanguageMutation) AddedEdges() []string {
 	if m.award_translations != nil {
 		edges = append(edges, language.EdgeAwardTranslations)
 	}
-	if m.recent_update_translations != nil {
-		edges = append(edges, language.EdgeRecentUpdateTranslations)
+	if m.moment_translations != nil {
+		edges = append(edges, language.EdgeMomentTranslations)
 	}
 	return edges
 }
@@ -28239,9 +28239,9 @@ func (m *LanguageMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case language.EdgeRecentUpdateTranslations:
-		ids := make([]ent.Value, 0, len(m.recent_update_translations))
-		for id := range m.recent_update_translations {
+	case language.EdgeMomentTranslations:
+		ids := make([]ent.Value, 0, len(m.moment_translations))
+		for id := range m.moment_translations {
 			ids = append(ids, id)
 		}
 		return ids
@@ -28300,8 +28300,8 @@ func (m *LanguageMutation) RemovedEdges() []string {
 	if m.removedaward_translations != nil {
 		edges = append(edges, language.EdgeAwardTranslations)
 	}
-	if m.removedrecent_update_translations != nil {
-		edges = append(edges, language.EdgeRecentUpdateTranslations)
+	if m.removedmoment_translations != nil {
+		edges = append(edges, language.EdgeMomentTranslations)
 	}
 	return edges
 }
@@ -28406,9 +28406,9 @@ func (m *LanguageMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case language.EdgeRecentUpdateTranslations:
-		ids := make([]ent.Value, 0, len(m.removedrecent_update_translations))
-		for id := range m.removedrecent_update_translations {
+	case language.EdgeMomentTranslations:
+		ids := make([]ent.Value, 0, len(m.removedmoment_translations))
+		for id := range m.removedmoment_translations {
 			ids = append(ids, id)
 		}
 		return ids
@@ -28467,8 +28467,8 @@ func (m *LanguageMutation) ClearedEdges() []string {
 	if m.clearedaward_translations {
 		edges = append(edges, language.EdgeAwardTranslations)
 	}
-	if m.clearedrecent_update_translations {
-		edges = append(edges, language.EdgeRecentUpdateTranslations)
+	if m.clearedmoment_translations {
+		edges = append(edges, language.EdgeMomentTranslations)
 	}
 	return edges
 }
@@ -28509,8 +28509,8 @@ func (m *LanguageMutation) EdgeCleared(name string) bool {
 		return m.clearedpublication_translations
 	case language.EdgeAwardTranslations:
 		return m.clearedaward_translations
-	case language.EdgeRecentUpdateTranslations:
-		return m.clearedrecent_update_translations
+	case language.EdgeMomentTranslations:
+		return m.clearedmoment_translations
 	}
 	return false
 }
@@ -28575,11 +28575,2956 @@ func (m *LanguageMutation) ResetEdge(name string) error {
 	case language.EdgeAwardTranslations:
 		m.ResetAwardTranslations()
 		return nil
-	case language.EdgeRecentUpdateTranslations:
-		m.ResetRecentUpdateTranslations()
+	case language.EdgeMomentTranslations:
+		m.ResetMomentTranslations()
 		return nil
 	}
 	return fmt.Errorf("unknown Language edge %s", name)
+}
+
+// MomentMutation represents an operation that mutates the Moment nodes in the graph.
+type MomentMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *string
+	user_id             *string
+	slug                *string
+	subject_kind        *moment.SubjectKind
+	moment_type         *moment.MomentType
+	visibility          *moment.Visibility
+	title               *string
+	description         *string
+	date                *string
+	tags                *[]string
+	appendtags          []string
+	status              *moment.Status
+	priority            *moment.Priority
+	pinned              *bool
+	external_id         *string
+	image_url           *string
+	video_url           *string
+	document_url        *string
+	gallery             *[]string
+	appendgallery       []string
+	attachments         *[]map[string]interface{}
+	appendattachments   []map[string]interface{}
+	media_metadata      *map[string]interface{}
+	demo_url            *string
+	github_url          *string
+	external_url        *string
+	social_links        *[]map[string]interface{}
+	appendsocial_links  []map[string]interface{}
+	sort_order          *int
+	addsort_order       *int
+	created_at          *time.Time
+	updated_at          *time.Time
+	clearedFields       map[string]struct{}
+	translations        map[string]struct{}
+	removedtranslations map[string]struct{}
+	clearedtranslations bool
+	done                bool
+	oldValue            func(context.Context) (*Moment, error)
+	predicates          []predicate.Moment
+}
+
+var _ ent.Mutation = (*MomentMutation)(nil)
+
+// momentOption allows management of the mutation configuration using functional options.
+type momentOption func(*MomentMutation)
+
+// newMomentMutation creates new mutation for the Moment entity.
+func newMomentMutation(c config, op Op, opts ...momentOption) *MomentMutation {
+	m := &MomentMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMoment,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMomentID sets the ID field of the mutation.
+func withMomentID(id string) momentOption {
+	return func(m *MomentMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Moment
+		)
+		m.oldValue = func(ctx context.Context) (*Moment, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Moment.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMoment sets the old Moment of the mutation.
+func withMoment(node *Moment) momentOption {
+	return func(m *MomentMutation) {
+		m.oldValue = func(context.Context) (*Moment, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MomentMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MomentMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Moment entities.
+func (m *MomentMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MomentMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MomentMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Moment.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *MomentMutation) SetUserID(s string) {
+	m.user_id = &s
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *MomentMutation) UserID() (r string, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldUserID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (m *MomentMutation) ClearUserID() {
+	m.user_id = nil
+	m.clearedFields[moment.FieldUserID] = struct{}{}
+}
+
+// UserIDCleared returns if the "user_id" field was cleared in this mutation.
+func (m *MomentMutation) UserIDCleared() bool {
+	_, ok := m.clearedFields[moment.FieldUserID]
+	return ok
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *MomentMutation) ResetUserID() {
+	m.user_id = nil
+	delete(m.clearedFields, moment.FieldUserID)
+}
+
+// SetSlug sets the "slug" field.
+func (m *MomentMutation) SetSlug(s string) {
+	m.slug = &s
+}
+
+// Slug returns the value of the "slug" field in the mutation.
+func (m *MomentMutation) Slug() (r string, exists bool) {
+	v := m.slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSlug returns the old "slug" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldSlug(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
+	}
+	return oldValue.Slug, nil
+}
+
+// ResetSlug resets all changes to the "slug" field.
+func (m *MomentMutation) ResetSlug() {
+	m.slug = nil
+}
+
+// SetSubjectKind sets the "subject_kind" field.
+func (m *MomentMutation) SetSubjectKind(mk moment.SubjectKind) {
+	m.subject_kind = &mk
+}
+
+// SubjectKind returns the value of the "subject_kind" field in the mutation.
+func (m *MomentMutation) SubjectKind() (r moment.SubjectKind, exists bool) {
+	v := m.subject_kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubjectKind returns the old "subject_kind" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldSubjectKind(ctx context.Context) (v moment.SubjectKind, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubjectKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectKind: %w", err)
+	}
+	return oldValue.SubjectKind, nil
+}
+
+// ResetSubjectKind resets all changes to the "subject_kind" field.
+func (m *MomentMutation) ResetSubjectKind() {
+	m.subject_kind = nil
+}
+
+// SetMomentType sets the "moment_type" field.
+func (m *MomentMutation) SetMomentType(mt moment.MomentType) {
+	m.moment_type = &mt
+}
+
+// MomentType returns the value of the "moment_type" field in the mutation.
+func (m *MomentMutation) MomentType() (r moment.MomentType, exists bool) {
+	v := m.moment_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMomentType returns the old "moment_type" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldMomentType(ctx context.Context) (v moment.MomentType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMomentType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMomentType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMomentType: %w", err)
+	}
+	return oldValue.MomentType, nil
+}
+
+// ResetMomentType resets all changes to the "moment_type" field.
+func (m *MomentMutation) ResetMomentType() {
+	m.moment_type = nil
+}
+
+// SetVisibility sets the "visibility" field.
+func (m *MomentMutation) SetVisibility(value moment.Visibility) {
+	m.visibility = &value
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *MomentMutation) Visibility() (r moment.Visibility, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibility returns the old "visibility" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldVisibility(ctx context.Context) (v moment.Visibility, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *MomentMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *MomentMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *MomentMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ClearTitle clears the value of the "title" field.
+func (m *MomentMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[moment.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *MomentMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[moment.FieldTitle]
+	return ok
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *MomentMutation) ResetTitle() {
+	m.title = nil
+	delete(m.clearedFields, moment.FieldTitle)
+}
+
+// SetDescription sets the "description" field.
+func (m *MomentMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *MomentMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *MomentMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[moment.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *MomentMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[moment.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *MomentMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, moment.FieldDescription)
+}
+
+// SetDate sets the "date" field.
+func (m *MomentMutation) SetDate(s string) {
+	m.date = &s
+}
+
+// Date returns the value of the "date" field in the mutation.
+func (m *MomentMutation) Date() (r string, exists bool) {
+	v := m.date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDate returns the old "date" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldDate(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDate: %w", err)
+	}
+	return oldValue.Date, nil
+}
+
+// ClearDate clears the value of the "date" field.
+func (m *MomentMutation) ClearDate() {
+	m.date = nil
+	m.clearedFields[moment.FieldDate] = struct{}{}
+}
+
+// DateCleared returns if the "date" field was cleared in this mutation.
+func (m *MomentMutation) DateCleared() bool {
+	_, ok := m.clearedFields[moment.FieldDate]
+	return ok
+}
+
+// ResetDate resets all changes to the "date" field.
+func (m *MomentMutation) ResetDate() {
+	m.date = nil
+	delete(m.clearedFields, moment.FieldDate)
+}
+
+// SetTags sets the "tags" field.
+func (m *MomentMutation) SetTags(s []string) {
+	m.tags = &s
+	m.appendtags = nil
+}
+
+// Tags returns the value of the "tags" field in the mutation.
+func (m *MomentMutation) Tags() (r []string, exists bool) {
+	v := m.tags
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTags returns the old "tags" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldTags(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTags is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTags requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTags: %w", err)
+	}
+	return oldValue.Tags, nil
+}
+
+// AppendTags adds s to the "tags" field.
+func (m *MomentMutation) AppendTags(s []string) {
+	m.appendtags = append(m.appendtags, s...)
+}
+
+// AppendedTags returns the list of values that were appended to the "tags" field in this mutation.
+func (m *MomentMutation) AppendedTags() ([]string, bool) {
+	if len(m.appendtags) == 0 {
+		return nil, false
+	}
+	return m.appendtags, true
+}
+
+// ClearTags clears the value of the "tags" field.
+func (m *MomentMutation) ClearTags() {
+	m.tags = nil
+	m.appendtags = nil
+	m.clearedFields[moment.FieldTags] = struct{}{}
+}
+
+// TagsCleared returns if the "tags" field was cleared in this mutation.
+func (m *MomentMutation) TagsCleared() bool {
+	_, ok := m.clearedFields[moment.FieldTags]
+	return ok
+}
+
+// ResetTags resets all changes to the "tags" field.
+func (m *MomentMutation) ResetTags() {
+	m.tags = nil
+	m.appendtags = nil
+	delete(m.clearedFields, moment.FieldTags)
+}
+
+// SetStatus sets the "status" field.
+func (m *MomentMutation) SetStatus(value moment.Status) {
+	m.status = &value
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *MomentMutation) Status() (r moment.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldStatus(ctx context.Context) (v moment.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *MomentMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetPriority sets the "priority" field.
+func (m *MomentMutation) SetPriority(value moment.Priority) {
+	m.priority = &value
+}
+
+// Priority returns the value of the "priority" field in the mutation.
+func (m *MomentMutation) Priority() (r moment.Priority, exists bool) {
+	v := m.priority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPriority returns the old "priority" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldPriority(ctx context.Context) (v moment.Priority, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPriority is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPriority requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPriority: %w", err)
+	}
+	return oldValue.Priority, nil
+}
+
+// ResetPriority resets all changes to the "priority" field.
+func (m *MomentMutation) ResetPriority() {
+	m.priority = nil
+}
+
+// SetPinned sets the "pinned" field.
+func (m *MomentMutation) SetPinned(b bool) {
+	m.pinned = &b
+}
+
+// Pinned returns the value of the "pinned" field in the mutation.
+func (m *MomentMutation) Pinned() (r bool, exists bool) {
+	v := m.pinned
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPinned returns the old "pinned" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldPinned(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPinned is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPinned requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPinned: %w", err)
+	}
+	return oldValue.Pinned, nil
+}
+
+// ResetPinned resets all changes to the "pinned" field.
+func (m *MomentMutation) ResetPinned() {
+	m.pinned = nil
+}
+
+// SetExternalID sets the "external_id" field.
+func (m *MomentMutation) SetExternalID(s string) {
+	m.external_id = &s
+}
+
+// ExternalID returns the value of the "external_id" field in the mutation.
+func (m *MomentMutation) ExternalID() (r string, exists bool) {
+	v := m.external_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalID returns the old "external_id" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldExternalID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalID: %w", err)
+	}
+	return oldValue.ExternalID, nil
+}
+
+// ClearExternalID clears the value of the "external_id" field.
+func (m *MomentMutation) ClearExternalID() {
+	m.external_id = nil
+	m.clearedFields[moment.FieldExternalID] = struct{}{}
+}
+
+// ExternalIDCleared returns if the "external_id" field was cleared in this mutation.
+func (m *MomentMutation) ExternalIDCleared() bool {
+	_, ok := m.clearedFields[moment.FieldExternalID]
+	return ok
+}
+
+// ResetExternalID resets all changes to the "external_id" field.
+func (m *MomentMutation) ResetExternalID() {
+	m.external_id = nil
+	delete(m.clearedFields, moment.FieldExternalID)
+}
+
+// SetImageURL sets the "image_url" field.
+func (m *MomentMutation) SetImageURL(s string) {
+	m.image_url = &s
+}
+
+// ImageURL returns the value of the "image_url" field in the mutation.
+func (m *MomentMutation) ImageURL() (r string, exists bool) {
+	v := m.image_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageURL returns the old "image_url" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldImageURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageURL: %w", err)
+	}
+	return oldValue.ImageURL, nil
+}
+
+// ClearImageURL clears the value of the "image_url" field.
+func (m *MomentMutation) ClearImageURL() {
+	m.image_url = nil
+	m.clearedFields[moment.FieldImageURL] = struct{}{}
+}
+
+// ImageURLCleared returns if the "image_url" field was cleared in this mutation.
+func (m *MomentMutation) ImageURLCleared() bool {
+	_, ok := m.clearedFields[moment.FieldImageURL]
+	return ok
+}
+
+// ResetImageURL resets all changes to the "image_url" field.
+func (m *MomentMutation) ResetImageURL() {
+	m.image_url = nil
+	delete(m.clearedFields, moment.FieldImageURL)
+}
+
+// SetVideoURL sets the "video_url" field.
+func (m *MomentMutation) SetVideoURL(s string) {
+	m.video_url = &s
+}
+
+// VideoURL returns the value of the "video_url" field in the mutation.
+func (m *MomentMutation) VideoURL() (r string, exists bool) {
+	v := m.video_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVideoURL returns the old "video_url" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldVideoURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVideoURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVideoURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVideoURL: %w", err)
+	}
+	return oldValue.VideoURL, nil
+}
+
+// ClearVideoURL clears the value of the "video_url" field.
+func (m *MomentMutation) ClearVideoURL() {
+	m.video_url = nil
+	m.clearedFields[moment.FieldVideoURL] = struct{}{}
+}
+
+// VideoURLCleared returns if the "video_url" field was cleared in this mutation.
+func (m *MomentMutation) VideoURLCleared() bool {
+	_, ok := m.clearedFields[moment.FieldVideoURL]
+	return ok
+}
+
+// ResetVideoURL resets all changes to the "video_url" field.
+func (m *MomentMutation) ResetVideoURL() {
+	m.video_url = nil
+	delete(m.clearedFields, moment.FieldVideoURL)
+}
+
+// SetDocumentURL sets the "document_url" field.
+func (m *MomentMutation) SetDocumentURL(s string) {
+	m.document_url = &s
+}
+
+// DocumentURL returns the value of the "document_url" field in the mutation.
+func (m *MomentMutation) DocumentURL() (r string, exists bool) {
+	v := m.document_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDocumentURL returns the old "document_url" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldDocumentURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDocumentURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDocumentURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDocumentURL: %w", err)
+	}
+	return oldValue.DocumentURL, nil
+}
+
+// ClearDocumentURL clears the value of the "document_url" field.
+func (m *MomentMutation) ClearDocumentURL() {
+	m.document_url = nil
+	m.clearedFields[moment.FieldDocumentURL] = struct{}{}
+}
+
+// DocumentURLCleared returns if the "document_url" field was cleared in this mutation.
+func (m *MomentMutation) DocumentURLCleared() bool {
+	_, ok := m.clearedFields[moment.FieldDocumentURL]
+	return ok
+}
+
+// ResetDocumentURL resets all changes to the "document_url" field.
+func (m *MomentMutation) ResetDocumentURL() {
+	m.document_url = nil
+	delete(m.clearedFields, moment.FieldDocumentURL)
+}
+
+// SetGallery sets the "gallery" field.
+func (m *MomentMutation) SetGallery(s []string) {
+	m.gallery = &s
+	m.appendgallery = nil
+}
+
+// Gallery returns the value of the "gallery" field in the mutation.
+func (m *MomentMutation) Gallery() (r []string, exists bool) {
+	v := m.gallery
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGallery returns the old "gallery" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldGallery(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGallery is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGallery requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGallery: %w", err)
+	}
+	return oldValue.Gallery, nil
+}
+
+// AppendGallery adds s to the "gallery" field.
+func (m *MomentMutation) AppendGallery(s []string) {
+	m.appendgallery = append(m.appendgallery, s...)
+}
+
+// AppendedGallery returns the list of values that were appended to the "gallery" field in this mutation.
+func (m *MomentMutation) AppendedGallery() ([]string, bool) {
+	if len(m.appendgallery) == 0 {
+		return nil, false
+	}
+	return m.appendgallery, true
+}
+
+// ClearGallery clears the value of the "gallery" field.
+func (m *MomentMutation) ClearGallery() {
+	m.gallery = nil
+	m.appendgallery = nil
+	m.clearedFields[moment.FieldGallery] = struct{}{}
+}
+
+// GalleryCleared returns if the "gallery" field was cleared in this mutation.
+func (m *MomentMutation) GalleryCleared() bool {
+	_, ok := m.clearedFields[moment.FieldGallery]
+	return ok
+}
+
+// ResetGallery resets all changes to the "gallery" field.
+func (m *MomentMutation) ResetGallery() {
+	m.gallery = nil
+	m.appendgallery = nil
+	delete(m.clearedFields, moment.FieldGallery)
+}
+
+// SetAttachments sets the "attachments" field.
+func (m *MomentMutation) SetAttachments(value []map[string]interface{}) {
+	m.attachments = &value
+	m.appendattachments = nil
+}
+
+// Attachments returns the value of the "attachments" field in the mutation.
+func (m *MomentMutation) Attachments() (r []map[string]interface{}, exists bool) {
+	v := m.attachments
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttachments returns the old "attachments" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldAttachments(ctx context.Context) (v []map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttachments is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttachments requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttachments: %w", err)
+	}
+	return oldValue.Attachments, nil
+}
+
+// AppendAttachments adds value to the "attachments" field.
+func (m *MomentMutation) AppendAttachments(value []map[string]interface{}) {
+	m.appendattachments = append(m.appendattachments, value...)
+}
+
+// AppendedAttachments returns the list of values that were appended to the "attachments" field in this mutation.
+func (m *MomentMutation) AppendedAttachments() ([]map[string]interface{}, bool) {
+	if len(m.appendattachments) == 0 {
+		return nil, false
+	}
+	return m.appendattachments, true
+}
+
+// ClearAttachments clears the value of the "attachments" field.
+func (m *MomentMutation) ClearAttachments() {
+	m.attachments = nil
+	m.appendattachments = nil
+	m.clearedFields[moment.FieldAttachments] = struct{}{}
+}
+
+// AttachmentsCleared returns if the "attachments" field was cleared in this mutation.
+func (m *MomentMutation) AttachmentsCleared() bool {
+	_, ok := m.clearedFields[moment.FieldAttachments]
+	return ok
+}
+
+// ResetAttachments resets all changes to the "attachments" field.
+func (m *MomentMutation) ResetAttachments() {
+	m.attachments = nil
+	m.appendattachments = nil
+	delete(m.clearedFields, moment.FieldAttachments)
+}
+
+// SetMediaMetadata sets the "media_metadata" field.
+func (m *MomentMutation) SetMediaMetadata(value map[string]interface{}) {
+	m.media_metadata = &value
+}
+
+// MediaMetadata returns the value of the "media_metadata" field in the mutation.
+func (m *MomentMutation) MediaMetadata() (r map[string]interface{}, exists bool) {
+	v := m.media_metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMediaMetadata returns the old "media_metadata" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldMediaMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMediaMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMediaMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMediaMetadata: %w", err)
+	}
+	return oldValue.MediaMetadata, nil
+}
+
+// ClearMediaMetadata clears the value of the "media_metadata" field.
+func (m *MomentMutation) ClearMediaMetadata() {
+	m.media_metadata = nil
+	m.clearedFields[moment.FieldMediaMetadata] = struct{}{}
+}
+
+// MediaMetadataCleared returns if the "media_metadata" field was cleared in this mutation.
+func (m *MomentMutation) MediaMetadataCleared() bool {
+	_, ok := m.clearedFields[moment.FieldMediaMetadata]
+	return ok
+}
+
+// ResetMediaMetadata resets all changes to the "media_metadata" field.
+func (m *MomentMutation) ResetMediaMetadata() {
+	m.media_metadata = nil
+	delete(m.clearedFields, moment.FieldMediaMetadata)
+}
+
+// SetDemoURL sets the "demo_url" field.
+func (m *MomentMutation) SetDemoURL(s string) {
+	m.demo_url = &s
+}
+
+// DemoURL returns the value of the "demo_url" field in the mutation.
+func (m *MomentMutation) DemoURL() (r string, exists bool) {
+	v := m.demo_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDemoURL returns the old "demo_url" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldDemoURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDemoURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDemoURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDemoURL: %w", err)
+	}
+	return oldValue.DemoURL, nil
+}
+
+// ClearDemoURL clears the value of the "demo_url" field.
+func (m *MomentMutation) ClearDemoURL() {
+	m.demo_url = nil
+	m.clearedFields[moment.FieldDemoURL] = struct{}{}
+}
+
+// DemoURLCleared returns if the "demo_url" field was cleared in this mutation.
+func (m *MomentMutation) DemoURLCleared() bool {
+	_, ok := m.clearedFields[moment.FieldDemoURL]
+	return ok
+}
+
+// ResetDemoURL resets all changes to the "demo_url" field.
+func (m *MomentMutation) ResetDemoURL() {
+	m.demo_url = nil
+	delete(m.clearedFields, moment.FieldDemoURL)
+}
+
+// SetGithubURL sets the "github_url" field.
+func (m *MomentMutation) SetGithubURL(s string) {
+	m.github_url = &s
+}
+
+// GithubURL returns the value of the "github_url" field in the mutation.
+func (m *MomentMutation) GithubURL() (r string, exists bool) {
+	v := m.github_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGithubURL returns the old "github_url" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldGithubURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGithubURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGithubURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGithubURL: %w", err)
+	}
+	return oldValue.GithubURL, nil
+}
+
+// ClearGithubURL clears the value of the "github_url" field.
+func (m *MomentMutation) ClearGithubURL() {
+	m.github_url = nil
+	m.clearedFields[moment.FieldGithubURL] = struct{}{}
+}
+
+// GithubURLCleared returns if the "github_url" field was cleared in this mutation.
+func (m *MomentMutation) GithubURLCleared() bool {
+	_, ok := m.clearedFields[moment.FieldGithubURL]
+	return ok
+}
+
+// ResetGithubURL resets all changes to the "github_url" field.
+func (m *MomentMutation) ResetGithubURL() {
+	m.github_url = nil
+	delete(m.clearedFields, moment.FieldGithubURL)
+}
+
+// SetExternalURL sets the "external_url" field.
+func (m *MomentMutation) SetExternalURL(s string) {
+	m.external_url = &s
+}
+
+// ExternalURL returns the value of the "external_url" field in the mutation.
+func (m *MomentMutation) ExternalURL() (r string, exists bool) {
+	v := m.external_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternalURL returns the old "external_url" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldExternalURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternalURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternalURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternalURL: %w", err)
+	}
+	return oldValue.ExternalURL, nil
+}
+
+// ClearExternalURL clears the value of the "external_url" field.
+func (m *MomentMutation) ClearExternalURL() {
+	m.external_url = nil
+	m.clearedFields[moment.FieldExternalURL] = struct{}{}
+}
+
+// ExternalURLCleared returns if the "external_url" field was cleared in this mutation.
+func (m *MomentMutation) ExternalURLCleared() bool {
+	_, ok := m.clearedFields[moment.FieldExternalURL]
+	return ok
+}
+
+// ResetExternalURL resets all changes to the "external_url" field.
+func (m *MomentMutation) ResetExternalURL() {
+	m.external_url = nil
+	delete(m.clearedFields, moment.FieldExternalURL)
+}
+
+// SetSocialLinks sets the "social_links" field.
+func (m *MomentMutation) SetSocialLinks(value []map[string]interface{}) {
+	m.social_links = &value
+	m.appendsocial_links = nil
+}
+
+// SocialLinks returns the value of the "social_links" field in the mutation.
+func (m *MomentMutation) SocialLinks() (r []map[string]interface{}, exists bool) {
+	v := m.social_links
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSocialLinks returns the old "social_links" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldSocialLinks(ctx context.Context) (v []map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSocialLinks is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSocialLinks requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSocialLinks: %w", err)
+	}
+	return oldValue.SocialLinks, nil
+}
+
+// AppendSocialLinks adds value to the "social_links" field.
+func (m *MomentMutation) AppendSocialLinks(value []map[string]interface{}) {
+	m.appendsocial_links = append(m.appendsocial_links, value...)
+}
+
+// AppendedSocialLinks returns the list of values that were appended to the "social_links" field in this mutation.
+func (m *MomentMutation) AppendedSocialLinks() ([]map[string]interface{}, bool) {
+	if len(m.appendsocial_links) == 0 {
+		return nil, false
+	}
+	return m.appendsocial_links, true
+}
+
+// ClearSocialLinks clears the value of the "social_links" field.
+func (m *MomentMutation) ClearSocialLinks() {
+	m.social_links = nil
+	m.appendsocial_links = nil
+	m.clearedFields[moment.FieldSocialLinks] = struct{}{}
+}
+
+// SocialLinksCleared returns if the "social_links" field was cleared in this mutation.
+func (m *MomentMutation) SocialLinksCleared() bool {
+	_, ok := m.clearedFields[moment.FieldSocialLinks]
+	return ok
+}
+
+// ResetSocialLinks resets all changes to the "social_links" field.
+func (m *MomentMutation) ResetSocialLinks() {
+	m.social_links = nil
+	m.appendsocial_links = nil
+	delete(m.clearedFields, moment.FieldSocialLinks)
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *MomentMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *MomentMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *MomentMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *MomentMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *MomentMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MomentMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MomentMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *MomentMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[moment.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *MomentMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[moment.FieldCreatedAt]
+	return ok
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MomentMutation) ResetCreatedAt() {
+	m.created_at = nil
+	delete(m.clearedFields, moment.FieldCreatedAt)
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *MomentMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *MomentMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Moment entity.
+// If the Moment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *MomentMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[moment.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *MomentMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[moment.FieldUpdatedAt]
+	return ok
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *MomentMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+	delete(m.clearedFields, moment.FieldUpdatedAt)
+}
+
+// AddTranslationIDs adds the "translations" edge to the MomentTranslation entity by ids.
+func (m *MomentMutation) AddTranslationIDs(ids ...string) {
+	if m.translations == nil {
+		m.translations = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.translations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTranslations clears the "translations" edge to the MomentTranslation entity.
+func (m *MomentMutation) ClearTranslations() {
+	m.clearedtranslations = true
+}
+
+// TranslationsCleared reports if the "translations" edge to the MomentTranslation entity was cleared.
+func (m *MomentMutation) TranslationsCleared() bool {
+	return m.clearedtranslations
+}
+
+// RemoveTranslationIDs removes the "translations" edge to the MomentTranslation entity by IDs.
+func (m *MomentMutation) RemoveTranslationIDs(ids ...string) {
+	if m.removedtranslations == nil {
+		m.removedtranslations = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.translations, ids[i])
+		m.removedtranslations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTranslations returns the removed IDs of the "translations" edge to the MomentTranslation entity.
+func (m *MomentMutation) RemovedTranslationsIDs() (ids []string) {
+	for id := range m.removedtranslations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TranslationsIDs returns the "translations" edge IDs in the mutation.
+func (m *MomentMutation) TranslationsIDs() (ids []string) {
+	for id := range m.translations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTranslations resets all changes to the "translations" edge.
+func (m *MomentMutation) ResetTranslations() {
+	m.translations = nil
+	m.clearedtranslations = false
+	m.removedtranslations = nil
+}
+
+// Where appends a list predicates to the MomentMutation builder.
+func (m *MomentMutation) Where(ps ...predicate.Moment) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MomentMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MomentMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Moment, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MomentMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MomentMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Moment).
+func (m *MomentMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MomentMutation) Fields() []string {
+	fields := make([]string, 0, 26)
+	if m.user_id != nil {
+		fields = append(fields, moment.FieldUserID)
+	}
+	if m.slug != nil {
+		fields = append(fields, moment.FieldSlug)
+	}
+	if m.subject_kind != nil {
+		fields = append(fields, moment.FieldSubjectKind)
+	}
+	if m.moment_type != nil {
+		fields = append(fields, moment.FieldMomentType)
+	}
+	if m.visibility != nil {
+		fields = append(fields, moment.FieldVisibility)
+	}
+	if m.title != nil {
+		fields = append(fields, moment.FieldTitle)
+	}
+	if m.description != nil {
+		fields = append(fields, moment.FieldDescription)
+	}
+	if m.date != nil {
+		fields = append(fields, moment.FieldDate)
+	}
+	if m.tags != nil {
+		fields = append(fields, moment.FieldTags)
+	}
+	if m.status != nil {
+		fields = append(fields, moment.FieldStatus)
+	}
+	if m.priority != nil {
+		fields = append(fields, moment.FieldPriority)
+	}
+	if m.pinned != nil {
+		fields = append(fields, moment.FieldPinned)
+	}
+	if m.external_id != nil {
+		fields = append(fields, moment.FieldExternalID)
+	}
+	if m.image_url != nil {
+		fields = append(fields, moment.FieldImageURL)
+	}
+	if m.video_url != nil {
+		fields = append(fields, moment.FieldVideoURL)
+	}
+	if m.document_url != nil {
+		fields = append(fields, moment.FieldDocumentURL)
+	}
+	if m.gallery != nil {
+		fields = append(fields, moment.FieldGallery)
+	}
+	if m.attachments != nil {
+		fields = append(fields, moment.FieldAttachments)
+	}
+	if m.media_metadata != nil {
+		fields = append(fields, moment.FieldMediaMetadata)
+	}
+	if m.demo_url != nil {
+		fields = append(fields, moment.FieldDemoURL)
+	}
+	if m.github_url != nil {
+		fields = append(fields, moment.FieldGithubURL)
+	}
+	if m.external_url != nil {
+		fields = append(fields, moment.FieldExternalURL)
+	}
+	if m.social_links != nil {
+		fields = append(fields, moment.FieldSocialLinks)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, moment.FieldSortOrder)
+	}
+	if m.created_at != nil {
+		fields = append(fields, moment.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, moment.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MomentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case moment.FieldUserID:
+		return m.UserID()
+	case moment.FieldSlug:
+		return m.Slug()
+	case moment.FieldSubjectKind:
+		return m.SubjectKind()
+	case moment.FieldMomentType:
+		return m.MomentType()
+	case moment.FieldVisibility:
+		return m.Visibility()
+	case moment.FieldTitle:
+		return m.Title()
+	case moment.FieldDescription:
+		return m.Description()
+	case moment.FieldDate:
+		return m.Date()
+	case moment.FieldTags:
+		return m.Tags()
+	case moment.FieldStatus:
+		return m.Status()
+	case moment.FieldPriority:
+		return m.Priority()
+	case moment.FieldPinned:
+		return m.Pinned()
+	case moment.FieldExternalID:
+		return m.ExternalID()
+	case moment.FieldImageURL:
+		return m.ImageURL()
+	case moment.FieldVideoURL:
+		return m.VideoURL()
+	case moment.FieldDocumentURL:
+		return m.DocumentURL()
+	case moment.FieldGallery:
+		return m.Gallery()
+	case moment.FieldAttachments:
+		return m.Attachments()
+	case moment.FieldMediaMetadata:
+		return m.MediaMetadata()
+	case moment.FieldDemoURL:
+		return m.DemoURL()
+	case moment.FieldGithubURL:
+		return m.GithubURL()
+	case moment.FieldExternalURL:
+		return m.ExternalURL()
+	case moment.FieldSocialLinks:
+		return m.SocialLinks()
+	case moment.FieldSortOrder:
+		return m.SortOrder()
+	case moment.FieldCreatedAt:
+		return m.CreatedAt()
+	case moment.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MomentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case moment.FieldUserID:
+		return m.OldUserID(ctx)
+	case moment.FieldSlug:
+		return m.OldSlug(ctx)
+	case moment.FieldSubjectKind:
+		return m.OldSubjectKind(ctx)
+	case moment.FieldMomentType:
+		return m.OldMomentType(ctx)
+	case moment.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case moment.FieldTitle:
+		return m.OldTitle(ctx)
+	case moment.FieldDescription:
+		return m.OldDescription(ctx)
+	case moment.FieldDate:
+		return m.OldDate(ctx)
+	case moment.FieldTags:
+		return m.OldTags(ctx)
+	case moment.FieldStatus:
+		return m.OldStatus(ctx)
+	case moment.FieldPriority:
+		return m.OldPriority(ctx)
+	case moment.FieldPinned:
+		return m.OldPinned(ctx)
+	case moment.FieldExternalID:
+		return m.OldExternalID(ctx)
+	case moment.FieldImageURL:
+		return m.OldImageURL(ctx)
+	case moment.FieldVideoURL:
+		return m.OldVideoURL(ctx)
+	case moment.FieldDocumentURL:
+		return m.OldDocumentURL(ctx)
+	case moment.FieldGallery:
+		return m.OldGallery(ctx)
+	case moment.FieldAttachments:
+		return m.OldAttachments(ctx)
+	case moment.FieldMediaMetadata:
+		return m.OldMediaMetadata(ctx)
+	case moment.FieldDemoURL:
+		return m.OldDemoURL(ctx)
+	case moment.FieldGithubURL:
+		return m.OldGithubURL(ctx)
+	case moment.FieldExternalURL:
+		return m.OldExternalURL(ctx)
+	case moment.FieldSocialLinks:
+		return m.OldSocialLinks(ctx)
+	case moment.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	case moment.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case moment.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Moment field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MomentMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case moment.FieldUserID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case moment.FieldSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSlug(v)
+		return nil
+	case moment.FieldSubjectKind:
+		v, ok := value.(moment.SubjectKind)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubjectKind(v)
+		return nil
+	case moment.FieldMomentType:
+		v, ok := value.(moment.MomentType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMomentType(v)
+		return nil
+	case moment.FieldVisibility:
+		v, ok := value.(moment.Visibility)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
+	case moment.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case moment.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case moment.FieldDate:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDate(v)
+		return nil
+	case moment.FieldTags:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTags(v)
+		return nil
+	case moment.FieldStatus:
+		v, ok := value.(moment.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case moment.FieldPriority:
+		v, ok := value.(moment.Priority)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPriority(v)
+		return nil
+	case moment.FieldPinned:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPinned(v)
+		return nil
+	case moment.FieldExternalID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalID(v)
+		return nil
+	case moment.FieldImageURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageURL(v)
+		return nil
+	case moment.FieldVideoURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVideoURL(v)
+		return nil
+	case moment.FieldDocumentURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDocumentURL(v)
+		return nil
+	case moment.FieldGallery:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGallery(v)
+		return nil
+	case moment.FieldAttachments:
+		v, ok := value.([]map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttachments(v)
+		return nil
+	case moment.FieldMediaMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMediaMetadata(v)
+		return nil
+	case moment.FieldDemoURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDemoURL(v)
+		return nil
+	case moment.FieldGithubURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGithubURL(v)
+		return nil
+	case moment.FieldExternalURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternalURL(v)
+		return nil
+	case moment.FieldSocialLinks:
+		v, ok := value.([]map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSocialLinks(v)
+		return nil
+	case moment.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	case moment.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case moment.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Moment field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MomentMutation) AddedFields() []string {
+	var fields []string
+	if m.addsort_order != nil {
+		fields = append(fields, moment.FieldSortOrder)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MomentMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case moment.FieldSortOrder:
+		return m.AddedSortOrder()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MomentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case moment.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Moment numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MomentMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(moment.FieldUserID) {
+		fields = append(fields, moment.FieldUserID)
+	}
+	if m.FieldCleared(moment.FieldTitle) {
+		fields = append(fields, moment.FieldTitle)
+	}
+	if m.FieldCleared(moment.FieldDescription) {
+		fields = append(fields, moment.FieldDescription)
+	}
+	if m.FieldCleared(moment.FieldDate) {
+		fields = append(fields, moment.FieldDate)
+	}
+	if m.FieldCleared(moment.FieldTags) {
+		fields = append(fields, moment.FieldTags)
+	}
+	if m.FieldCleared(moment.FieldExternalID) {
+		fields = append(fields, moment.FieldExternalID)
+	}
+	if m.FieldCleared(moment.FieldImageURL) {
+		fields = append(fields, moment.FieldImageURL)
+	}
+	if m.FieldCleared(moment.FieldVideoURL) {
+		fields = append(fields, moment.FieldVideoURL)
+	}
+	if m.FieldCleared(moment.FieldDocumentURL) {
+		fields = append(fields, moment.FieldDocumentURL)
+	}
+	if m.FieldCleared(moment.FieldGallery) {
+		fields = append(fields, moment.FieldGallery)
+	}
+	if m.FieldCleared(moment.FieldAttachments) {
+		fields = append(fields, moment.FieldAttachments)
+	}
+	if m.FieldCleared(moment.FieldMediaMetadata) {
+		fields = append(fields, moment.FieldMediaMetadata)
+	}
+	if m.FieldCleared(moment.FieldDemoURL) {
+		fields = append(fields, moment.FieldDemoURL)
+	}
+	if m.FieldCleared(moment.FieldGithubURL) {
+		fields = append(fields, moment.FieldGithubURL)
+	}
+	if m.FieldCleared(moment.FieldExternalURL) {
+		fields = append(fields, moment.FieldExternalURL)
+	}
+	if m.FieldCleared(moment.FieldSocialLinks) {
+		fields = append(fields, moment.FieldSocialLinks)
+	}
+	if m.FieldCleared(moment.FieldCreatedAt) {
+		fields = append(fields, moment.FieldCreatedAt)
+	}
+	if m.FieldCleared(moment.FieldUpdatedAt) {
+		fields = append(fields, moment.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MomentMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MomentMutation) ClearField(name string) error {
+	switch name {
+	case moment.FieldUserID:
+		m.ClearUserID()
+		return nil
+	case moment.FieldTitle:
+		m.ClearTitle()
+		return nil
+	case moment.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case moment.FieldDate:
+		m.ClearDate()
+		return nil
+	case moment.FieldTags:
+		m.ClearTags()
+		return nil
+	case moment.FieldExternalID:
+		m.ClearExternalID()
+		return nil
+	case moment.FieldImageURL:
+		m.ClearImageURL()
+		return nil
+	case moment.FieldVideoURL:
+		m.ClearVideoURL()
+		return nil
+	case moment.FieldDocumentURL:
+		m.ClearDocumentURL()
+		return nil
+	case moment.FieldGallery:
+		m.ClearGallery()
+		return nil
+	case moment.FieldAttachments:
+		m.ClearAttachments()
+		return nil
+	case moment.FieldMediaMetadata:
+		m.ClearMediaMetadata()
+		return nil
+	case moment.FieldDemoURL:
+		m.ClearDemoURL()
+		return nil
+	case moment.FieldGithubURL:
+		m.ClearGithubURL()
+		return nil
+	case moment.FieldExternalURL:
+		m.ClearExternalURL()
+		return nil
+	case moment.FieldSocialLinks:
+		m.ClearSocialLinks()
+		return nil
+	case moment.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	case moment.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Moment nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MomentMutation) ResetField(name string) error {
+	switch name {
+	case moment.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case moment.FieldSlug:
+		m.ResetSlug()
+		return nil
+	case moment.FieldSubjectKind:
+		m.ResetSubjectKind()
+		return nil
+	case moment.FieldMomentType:
+		m.ResetMomentType()
+		return nil
+	case moment.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case moment.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case moment.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case moment.FieldDate:
+		m.ResetDate()
+		return nil
+	case moment.FieldTags:
+		m.ResetTags()
+		return nil
+	case moment.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case moment.FieldPriority:
+		m.ResetPriority()
+		return nil
+	case moment.FieldPinned:
+		m.ResetPinned()
+		return nil
+	case moment.FieldExternalID:
+		m.ResetExternalID()
+		return nil
+	case moment.FieldImageURL:
+		m.ResetImageURL()
+		return nil
+	case moment.FieldVideoURL:
+		m.ResetVideoURL()
+		return nil
+	case moment.FieldDocumentURL:
+		m.ResetDocumentURL()
+		return nil
+	case moment.FieldGallery:
+		m.ResetGallery()
+		return nil
+	case moment.FieldAttachments:
+		m.ResetAttachments()
+		return nil
+	case moment.FieldMediaMetadata:
+		m.ResetMediaMetadata()
+		return nil
+	case moment.FieldDemoURL:
+		m.ResetDemoURL()
+		return nil
+	case moment.FieldGithubURL:
+		m.ResetGithubURL()
+		return nil
+	case moment.FieldExternalURL:
+		m.ResetExternalURL()
+		return nil
+	case moment.FieldSocialLinks:
+		m.ResetSocialLinks()
+		return nil
+	case moment.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	case moment.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case moment.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Moment field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MomentMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.translations != nil {
+		edges = append(edges, moment.EdgeTranslations)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MomentMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case moment.EdgeTranslations:
+		ids := make([]ent.Value, 0, len(m.translations))
+		for id := range m.translations {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MomentMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedtranslations != nil {
+		edges = append(edges, moment.EdgeTranslations)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MomentMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case moment.EdgeTranslations:
+		ids := make([]ent.Value, 0, len(m.removedtranslations))
+		for id := range m.removedtranslations {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MomentMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedtranslations {
+		edges = append(edges, moment.EdgeTranslations)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MomentMutation) EdgeCleared(name string) bool {
+	switch name {
+	case moment.EdgeTranslations:
+		return m.clearedtranslations
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MomentMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Moment unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MomentMutation) ResetEdge(name string) error {
+	switch name {
+	case moment.EdgeTranslations:
+		m.ResetTranslations()
+		return nil
+	}
+	return fmt.Errorf("unknown Moment edge %s", name)
+}
+
+// MomentTranslationMutation represents an operation that mutates the MomentTranslation nodes in the graph.
+type MomentTranslationMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *string
+	title           *string
+	description     *string
+	created_at      *time.Time
+	clearedFields   map[string]struct{}
+	moment          *string
+	clearedmoment   bool
+	language        *string
+	clearedlanguage bool
+	done            bool
+	oldValue        func(context.Context) (*MomentTranslation, error)
+	predicates      []predicate.MomentTranslation
+}
+
+var _ ent.Mutation = (*MomentTranslationMutation)(nil)
+
+// momenttranslationOption allows management of the mutation configuration using functional options.
+type momenttranslationOption func(*MomentTranslationMutation)
+
+// newMomentTranslationMutation creates new mutation for the MomentTranslation entity.
+func newMomentTranslationMutation(c config, op Op, opts ...momenttranslationOption) *MomentTranslationMutation {
+	m := &MomentTranslationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeMomentTranslation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withMomentTranslationID sets the ID field of the mutation.
+func withMomentTranslationID(id string) momenttranslationOption {
+	return func(m *MomentTranslationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *MomentTranslation
+		)
+		m.oldValue = func(ctx context.Context) (*MomentTranslation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().MomentTranslation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withMomentTranslation sets the old MomentTranslation of the mutation.
+func withMomentTranslation(node *MomentTranslation) momenttranslationOption {
+	return func(m *MomentTranslationMutation) {
+		m.oldValue = func(context.Context) (*MomentTranslation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m MomentTranslationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m MomentTranslationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of MomentTranslation entities.
+func (m *MomentTranslationMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *MomentTranslationMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *MomentTranslationMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().MomentTranslation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetMomentID sets the "moment_id" field.
+func (m *MomentTranslationMutation) SetMomentID(s string) {
+	m.moment = &s
+}
+
+// MomentID returns the value of the "moment_id" field in the mutation.
+func (m *MomentTranslationMutation) MomentID() (r string, exists bool) {
+	v := m.moment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMomentID returns the old "moment_id" field's value of the MomentTranslation entity.
+// If the MomentTranslation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentTranslationMutation) OldMomentID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMomentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMomentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMomentID: %w", err)
+	}
+	return oldValue.MomentID, nil
+}
+
+// ResetMomentID resets all changes to the "moment_id" field.
+func (m *MomentTranslationMutation) ResetMomentID() {
+	m.moment = nil
+}
+
+// SetLanguageCode sets the "language_code" field.
+func (m *MomentTranslationMutation) SetLanguageCode(s string) {
+	m.language = &s
+}
+
+// LanguageCode returns the value of the "language_code" field in the mutation.
+func (m *MomentTranslationMutation) LanguageCode() (r string, exists bool) {
+	v := m.language
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLanguageCode returns the old "language_code" field's value of the MomentTranslation entity.
+// If the MomentTranslation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentTranslationMutation) OldLanguageCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLanguageCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLanguageCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLanguageCode: %w", err)
+	}
+	return oldValue.LanguageCode, nil
+}
+
+// ResetLanguageCode resets all changes to the "language_code" field.
+func (m *MomentTranslationMutation) ResetLanguageCode() {
+	m.language = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *MomentTranslationMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *MomentTranslationMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the MomentTranslation entity.
+// If the MomentTranslation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentTranslationMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ClearTitle clears the value of the "title" field.
+func (m *MomentTranslationMutation) ClearTitle() {
+	m.title = nil
+	m.clearedFields[momenttranslation.FieldTitle] = struct{}{}
+}
+
+// TitleCleared returns if the "title" field was cleared in this mutation.
+func (m *MomentTranslationMutation) TitleCleared() bool {
+	_, ok := m.clearedFields[momenttranslation.FieldTitle]
+	return ok
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *MomentTranslationMutation) ResetTitle() {
+	m.title = nil
+	delete(m.clearedFields, momenttranslation.FieldTitle)
+}
+
+// SetDescription sets the "description" field.
+func (m *MomentTranslationMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *MomentTranslationMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the MomentTranslation entity.
+// If the MomentTranslation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentTranslationMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *MomentTranslationMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[momenttranslation.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *MomentTranslationMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[momenttranslation.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *MomentTranslationMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, momenttranslation.FieldDescription)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *MomentTranslationMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *MomentTranslationMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the MomentTranslation entity.
+// If the MomentTranslation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MomentTranslationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ClearCreatedAt clears the value of the "created_at" field.
+func (m *MomentTranslationMutation) ClearCreatedAt() {
+	m.created_at = nil
+	m.clearedFields[momenttranslation.FieldCreatedAt] = struct{}{}
+}
+
+// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
+func (m *MomentTranslationMutation) CreatedAtCleared() bool {
+	_, ok := m.clearedFields[momenttranslation.FieldCreatedAt]
+	return ok
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *MomentTranslationMutation) ResetCreatedAt() {
+	m.created_at = nil
+	delete(m.clearedFields, momenttranslation.FieldCreatedAt)
+}
+
+// ClearMoment clears the "moment" edge to the Moment entity.
+func (m *MomentTranslationMutation) ClearMoment() {
+	m.clearedmoment = true
+	m.clearedFields[momenttranslation.FieldMomentID] = struct{}{}
+}
+
+// MomentCleared reports if the "moment" edge to the Moment entity was cleared.
+func (m *MomentTranslationMutation) MomentCleared() bool {
+	return m.clearedmoment
+}
+
+// MomentIDs returns the "moment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MomentID instead. It exists only for internal usage by the builders.
+func (m *MomentTranslationMutation) MomentIDs() (ids []string) {
+	if id := m.moment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMoment resets all changes to the "moment" edge.
+func (m *MomentTranslationMutation) ResetMoment() {
+	m.moment = nil
+	m.clearedmoment = false
+}
+
+// SetLanguageID sets the "language" edge to the Language entity by id.
+func (m *MomentTranslationMutation) SetLanguageID(id string) {
+	m.language = &id
+}
+
+// ClearLanguage clears the "language" edge to the Language entity.
+func (m *MomentTranslationMutation) ClearLanguage() {
+	m.clearedlanguage = true
+	m.clearedFields[momenttranslation.FieldLanguageCode] = struct{}{}
+}
+
+// LanguageCleared reports if the "language" edge to the Language entity was cleared.
+func (m *MomentTranslationMutation) LanguageCleared() bool {
+	return m.clearedlanguage
+}
+
+// LanguageID returns the "language" edge ID in the mutation.
+func (m *MomentTranslationMutation) LanguageID() (id string, exists bool) {
+	if m.language != nil {
+		return *m.language, true
+	}
+	return
+}
+
+// LanguageIDs returns the "language" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// LanguageID instead. It exists only for internal usage by the builders.
+func (m *MomentTranslationMutation) LanguageIDs() (ids []string) {
+	if id := m.language; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetLanguage resets all changes to the "language" edge.
+func (m *MomentTranslationMutation) ResetLanguage() {
+	m.language = nil
+	m.clearedlanguage = false
+}
+
+// Where appends a list predicates to the MomentTranslationMutation builder.
+func (m *MomentTranslationMutation) Where(ps ...predicate.MomentTranslation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the MomentTranslationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *MomentTranslationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.MomentTranslation, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *MomentTranslationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *MomentTranslationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (MomentTranslation).
+func (m *MomentTranslationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *MomentTranslationMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.moment != nil {
+		fields = append(fields, momenttranslation.FieldMomentID)
+	}
+	if m.language != nil {
+		fields = append(fields, momenttranslation.FieldLanguageCode)
+	}
+	if m.title != nil {
+		fields = append(fields, momenttranslation.FieldTitle)
+	}
+	if m.description != nil {
+		fields = append(fields, momenttranslation.FieldDescription)
+	}
+	if m.created_at != nil {
+		fields = append(fields, momenttranslation.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *MomentTranslationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case momenttranslation.FieldMomentID:
+		return m.MomentID()
+	case momenttranslation.FieldLanguageCode:
+		return m.LanguageCode()
+	case momenttranslation.FieldTitle:
+		return m.Title()
+	case momenttranslation.FieldDescription:
+		return m.Description()
+	case momenttranslation.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *MomentTranslationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case momenttranslation.FieldMomentID:
+		return m.OldMomentID(ctx)
+	case momenttranslation.FieldLanguageCode:
+		return m.OldLanguageCode(ctx)
+	case momenttranslation.FieldTitle:
+		return m.OldTitle(ctx)
+	case momenttranslation.FieldDescription:
+		return m.OldDescription(ctx)
+	case momenttranslation.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown MomentTranslation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MomentTranslationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case momenttranslation.FieldMomentID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMomentID(v)
+		return nil
+	case momenttranslation.FieldLanguageCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLanguageCode(v)
+		return nil
+	case momenttranslation.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case momenttranslation.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case momenttranslation.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown MomentTranslation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *MomentTranslationMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *MomentTranslationMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *MomentTranslationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown MomentTranslation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *MomentTranslationMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(momenttranslation.FieldTitle) {
+		fields = append(fields, momenttranslation.FieldTitle)
+	}
+	if m.FieldCleared(momenttranslation.FieldDescription) {
+		fields = append(fields, momenttranslation.FieldDescription)
+	}
+	if m.FieldCleared(momenttranslation.FieldCreatedAt) {
+		fields = append(fields, momenttranslation.FieldCreatedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *MomentTranslationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *MomentTranslationMutation) ClearField(name string) error {
+	switch name {
+	case momenttranslation.FieldTitle:
+		m.ClearTitle()
+		return nil
+	case momenttranslation.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case momenttranslation.FieldCreatedAt:
+		m.ClearCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown MomentTranslation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *MomentTranslationMutation) ResetField(name string) error {
+	switch name {
+	case momenttranslation.FieldMomentID:
+		m.ResetMomentID()
+		return nil
+	case momenttranslation.FieldLanguageCode:
+		m.ResetLanguageCode()
+		return nil
+	case momenttranslation.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case momenttranslation.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case momenttranslation.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown MomentTranslation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *MomentTranslationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.moment != nil {
+		edges = append(edges, momenttranslation.EdgeMoment)
+	}
+	if m.language != nil {
+		edges = append(edges, momenttranslation.EdgeLanguage)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *MomentTranslationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case momenttranslation.EdgeMoment:
+		if id := m.moment; id != nil {
+			return []ent.Value{*id}
+		}
+	case momenttranslation.EdgeLanguage:
+		if id := m.language; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *MomentTranslationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *MomentTranslationMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *MomentTranslationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedmoment {
+		edges = append(edges, momenttranslation.EdgeMoment)
+	}
+	if m.clearedlanguage {
+		edges = append(edges, momenttranslation.EdgeLanguage)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *MomentTranslationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case momenttranslation.EdgeMoment:
+		return m.clearedmoment
+	case momenttranslation.EdgeLanguage:
+		return m.clearedlanguage
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *MomentTranslationMutation) ClearEdge(name string) error {
+	switch name {
+	case momenttranslation.EdgeMoment:
+		m.ClearMoment()
+		return nil
+	case momenttranslation.EdgeLanguage:
+		m.ClearLanguage()
+		return nil
+	}
+	return fmt.Errorf("unknown MomentTranslation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *MomentTranslationMutation) ResetEdge(name string) error {
+	switch name {
+	case momenttranslation.EdgeMoment:
+		m.ResetMoment()
+		return nil
+	case momenttranslation.EdgeLanguage:
+		m.ResetLanguage()
+		return nil
+	}
+	return fmt.Errorf("unknown MomentTranslation edge %s", name)
 }
 
 // PartEntryMutation represents an operation that mutates the PartEntry nodes in the graph.
@@ -43985,2951 +46930,6 @@ func (m *PublicationTranslationMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown PublicationTranslation edge %s", name)
-}
-
-// RecentUpdateMutation represents an operation that mutates the RecentUpdate nodes in the graph.
-type RecentUpdateMutation struct {
-	config
-	op                  Op
-	typ                 string
-	id                  *string
-	user_id             *string
-	slug                *string
-	subject_kind        *recentupdate.SubjectKind
-	update_type         *recentupdate.UpdateType
-	visibility          *recentupdate.Visibility
-	title               *string
-	description         *string
-	date                *string
-	tags                *[]string
-	appendtags          []string
-	status              *recentupdate.Status
-	priority            *recentupdate.Priority
-	pinned              *bool
-	external_id         *string
-	image_url           *string
-	video_url           *string
-	document_url        *string
-	gallery             *[]string
-	appendgallery       []string
-	attachments         *[]map[string]interface{}
-	appendattachments   []map[string]interface{}
-	media_metadata      *map[string]interface{}
-	demo_url            *string
-	github_url          *string
-	external_url        *string
-	social_links        *[]map[string]interface{}
-	appendsocial_links  []map[string]interface{}
-	sort_order          *int
-	addsort_order       *int
-	created_at          *time.Time
-	updated_at          *time.Time
-	clearedFields       map[string]struct{}
-	translations        map[string]struct{}
-	removedtranslations map[string]struct{}
-	clearedtranslations bool
-	done                bool
-	oldValue            func(context.Context) (*RecentUpdate, error)
-	predicates          []predicate.RecentUpdate
-}
-
-var _ ent.Mutation = (*RecentUpdateMutation)(nil)
-
-// recentupdateOption allows management of the mutation configuration using functional options.
-type recentupdateOption func(*RecentUpdateMutation)
-
-// newRecentUpdateMutation creates new mutation for the RecentUpdate entity.
-func newRecentUpdateMutation(c config, op Op, opts ...recentupdateOption) *RecentUpdateMutation {
-	m := &RecentUpdateMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeRecentUpdate,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withRecentUpdateID sets the ID field of the mutation.
-func withRecentUpdateID(id string) recentupdateOption {
-	return func(m *RecentUpdateMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *RecentUpdate
-		)
-		m.oldValue = func(ctx context.Context) (*RecentUpdate, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().RecentUpdate.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withRecentUpdate sets the old RecentUpdate of the mutation.
-func withRecentUpdate(node *RecentUpdate) recentupdateOption {
-	return func(m *RecentUpdateMutation) {
-		m.oldValue = func(context.Context) (*RecentUpdate, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m RecentUpdateMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m RecentUpdateMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of RecentUpdate entities.
-func (m *RecentUpdateMutation) SetID(id string) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *RecentUpdateMutation) ID() (id string, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *RecentUpdateMutation) IDs(ctx context.Context) ([]string, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []string{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().RecentUpdate.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetUserID sets the "user_id" field.
-func (m *RecentUpdateMutation) SetUserID(s string) {
-	m.user_id = &s
-}
-
-// UserID returns the value of the "user_id" field in the mutation.
-func (m *RecentUpdateMutation) UserID() (r string, exists bool) {
-	v := m.user_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUserID returns the old "user_id" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldUserID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUserID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
-	}
-	return oldValue.UserID, nil
-}
-
-// ClearUserID clears the value of the "user_id" field.
-func (m *RecentUpdateMutation) ClearUserID() {
-	m.user_id = nil
-	m.clearedFields[recentupdate.FieldUserID] = struct{}{}
-}
-
-// UserIDCleared returns if the "user_id" field was cleared in this mutation.
-func (m *RecentUpdateMutation) UserIDCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldUserID]
-	return ok
-}
-
-// ResetUserID resets all changes to the "user_id" field.
-func (m *RecentUpdateMutation) ResetUserID() {
-	m.user_id = nil
-	delete(m.clearedFields, recentupdate.FieldUserID)
-}
-
-// SetSlug sets the "slug" field.
-func (m *RecentUpdateMutation) SetSlug(s string) {
-	m.slug = &s
-}
-
-// Slug returns the value of the "slug" field in the mutation.
-func (m *RecentUpdateMutation) Slug() (r string, exists bool) {
-	v := m.slug
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSlug returns the old "slug" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldSlug(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSlug requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
-	}
-	return oldValue.Slug, nil
-}
-
-// ResetSlug resets all changes to the "slug" field.
-func (m *RecentUpdateMutation) ResetSlug() {
-	m.slug = nil
-}
-
-// SetSubjectKind sets the "subject_kind" field.
-func (m *RecentUpdateMutation) SetSubjectKind(rk recentupdate.SubjectKind) {
-	m.subject_kind = &rk
-}
-
-// SubjectKind returns the value of the "subject_kind" field in the mutation.
-func (m *RecentUpdateMutation) SubjectKind() (r recentupdate.SubjectKind, exists bool) {
-	v := m.subject_kind
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSubjectKind returns the old "subject_kind" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldSubjectKind(ctx context.Context) (v recentupdate.SubjectKind, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSubjectKind is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSubjectKind requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSubjectKind: %w", err)
-	}
-	return oldValue.SubjectKind, nil
-}
-
-// ResetSubjectKind resets all changes to the "subject_kind" field.
-func (m *RecentUpdateMutation) ResetSubjectKind() {
-	m.subject_kind = nil
-}
-
-// SetUpdateType sets the "update_type" field.
-func (m *RecentUpdateMutation) SetUpdateType(rt recentupdate.UpdateType) {
-	m.update_type = &rt
-}
-
-// UpdateType returns the value of the "update_type" field in the mutation.
-func (m *RecentUpdateMutation) UpdateType() (r recentupdate.UpdateType, exists bool) {
-	v := m.update_type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdateType returns the old "update_type" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldUpdateType(ctx context.Context) (v recentupdate.UpdateType, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdateType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdateType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdateType: %w", err)
-	}
-	return oldValue.UpdateType, nil
-}
-
-// ResetUpdateType resets all changes to the "update_type" field.
-func (m *RecentUpdateMutation) ResetUpdateType() {
-	m.update_type = nil
-}
-
-// SetVisibility sets the "visibility" field.
-func (m *RecentUpdateMutation) SetVisibility(r recentupdate.Visibility) {
-	m.visibility = &r
-}
-
-// Visibility returns the value of the "visibility" field in the mutation.
-func (m *RecentUpdateMutation) Visibility() (r recentupdate.Visibility, exists bool) {
-	v := m.visibility
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldVisibility returns the old "visibility" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldVisibility(ctx context.Context) (v recentupdate.Visibility, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldVisibility requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
-	}
-	return oldValue.Visibility, nil
-}
-
-// ResetVisibility resets all changes to the "visibility" field.
-func (m *RecentUpdateMutation) ResetVisibility() {
-	m.visibility = nil
-}
-
-// SetTitle sets the "title" field.
-func (m *RecentUpdateMutation) SetTitle(s string) {
-	m.title = &s
-}
-
-// Title returns the value of the "title" field in the mutation.
-func (m *RecentUpdateMutation) Title() (r string, exists bool) {
-	v := m.title
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTitle returns the old "title" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldTitle(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTitle requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
-	}
-	return oldValue.Title, nil
-}
-
-// ClearTitle clears the value of the "title" field.
-func (m *RecentUpdateMutation) ClearTitle() {
-	m.title = nil
-	m.clearedFields[recentupdate.FieldTitle] = struct{}{}
-}
-
-// TitleCleared returns if the "title" field was cleared in this mutation.
-func (m *RecentUpdateMutation) TitleCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldTitle]
-	return ok
-}
-
-// ResetTitle resets all changes to the "title" field.
-func (m *RecentUpdateMutation) ResetTitle() {
-	m.title = nil
-	delete(m.clearedFields, recentupdate.FieldTitle)
-}
-
-// SetDescription sets the "description" field.
-func (m *RecentUpdateMutation) SetDescription(s string) {
-	m.description = &s
-}
-
-// Description returns the value of the "description" field in the mutation.
-func (m *RecentUpdateMutation) Description() (r string, exists bool) {
-	v := m.description
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDescription returns the old "description" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldDescription(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDescription requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
-	}
-	return oldValue.Description, nil
-}
-
-// ClearDescription clears the value of the "description" field.
-func (m *RecentUpdateMutation) ClearDescription() {
-	m.description = nil
-	m.clearedFields[recentupdate.FieldDescription] = struct{}{}
-}
-
-// DescriptionCleared returns if the "description" field was cleared in this mutation.
-func (m *RecentUpdateMutation) DescriptionCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldDescription]
-	return ok
-}
-
-// ResetDescription resets all changes to the "description" field.
-func (m *RecentUpdateMutation) ResetDescription() {
-	m.description = nil
-	delete(m.clearedFields, recentupdate.FieldDescription)
-}
-
-// SetDate sets the "date" field.
-func (m *RecentUpdateMutation) SetDate(s string) {
-	m.date = &s
-}
-
-// Date returns the value of the "date" field in the mutation.
-func (m *RecentUpdateMutation) Date() (r string, exists bool) {
-	v := m.date
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDate returns the old "date" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldDate(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDate is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDate requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDate: %w", err)
-	}
-	return oldValue.Date, nil
-}
-
-// ClearDate clears the value of the "date" field.
-func (m *RecentUpdateMutation) ClearDate() {
-	m.date = nil
-	m.clearedFields[recentupdate.FieldDate] = struct{}{}
-}
-
-// DateCleared returns if the "date" field was cleared in this mutation.
-func (m *RecentUpdateMutation) DateCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldDate]
-	return ok
-}
-
-// ResetDate resets all changes to the "date" field.
-func (m *RecentUpdateMutation) ResetDate() {
-	m.date = nil
-	delete(m.clearedFields, recentupdate.FieldDate)
-}
-
-// SetTags sets the "tags" field.
-func (m *RecentUpdateMutation) SetTags(s []string) {
-	m.tags = &s
-	m.appendtags = nil
-}
-
-// Tags returns the value of the "tags" field in the mutation.
-func (m *RecentUpdateMutation) Tags() (r []string, exists bool) {
-	v := m.tags
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTags returns the old "tags" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldTags(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTags is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTags requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTags: %w", err)
-	}
-	return oldValue.Tags, nil
-}
-
-// AppendTags adds s to the "tags" field.
-func (m *RecentUpdateMutation) AppendTags(s []string) {
-	m.appendtags = append(m.appendtags, s...)
-}
-
-// AppendedTags returns the list of values that were appended to the "tags" field in this mutation.
-func (m *RecentUpdateMutation) AppendedTags() ([]string, bool) {
-	if len(m.appendtags) == 0 {
-		return nil, false
-	}
-	return m.appendtags, true
-}
-
-// ClearTags clears the value of the "tags" field.
-func (m *RecentUpdateMutation) ClearTags() {
-	m.tags = nil
-	m.appendtags = nil
-	m.clearedFields[recentupdate.FieldTags] = struct{}{}
-}
-
-// TagsCleared returns if the "tags" field was cleared in this mutation.
-func (m *RecentUpdateMutation) TagsCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldTags]
-	return ok
-}
-
-// ResetTags resets all changes to the "tags" field.
-func (m *RecentUpdateMutation) ResetTags() {
-	m.tags = nil
-	m.appendtags = nil
-	delete(m.clearedFields, recentupdate.FieldTags)
-}
-
-// SetStatus sets the "status" field.
-func (m *RecentUpdateMutation) SetStatus(r recentupdate.Status) {
-	m.status = &r
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *RecentUpdateMutation) Status() (r recentupdate.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldStatus(ctx context.Context) (v recentupdate.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *RecentUpdateMutation) ResetStatus() {
-	m.status = nil
-}
-
-// SetPriority sets the "priority" field.
-func (m *RecentUpdateMutation) SetPriority(r recentupdate.Priority) {
-	m.priority = &r
-}
-
-// Priority returns the value of the "priority" field in the mutation.
-func (m *RecentUpdateMutation) Priority() (r recentupdate.Priority, exists bool) {
-	v := m.priority
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldPriority returns the old "priority" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldPriority(ctx context.Context) (v recentupdate.Priority, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPriority is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPriority requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPriority: %w", err)
-	}
-	return oldValue.Priority, nil
-}
-
-// ResetPriority resets all changes to the "priority" field.
-func (m *RecentUpdateMutation) ResetPriority() {
-	m.priority = nil
-}
-
-// SetPinned sets the "pinned" field.
-func (m *RecentUpdateMutation) SetPinned(b bool) {
-	m.pinned = &b
-}
-
-// Pinned returns the value of the "pinned" field in the mutation.
-func (m *RecentUpdateMutation) Pinned() (r bool, exists bool) {
-	v := m.pinned
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldPinned returns the old "pinned" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldPinned(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPinned is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPinned requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPinned: %w", err)
-	}
-	return oldValue.Pinned, nil
-}
-
-// ResetPinned resets all changes to the "pinned" field.
-func (m *RecentUpdateMutation) ResetPinned() {
-	m.pinned = nil
-}
-
-// SetExternalID sets the "external_id" field.
-func (m *RecentUpdateMutation) SetExternalID(s string) {
-	m.external_id = &s
-}
-
-// ExternalID returns the value of the "external_id" field in the mutation.
-func (m *RecentUpdateMutation) ExternalID() (r string, exists bool) {
-	v := m.external_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldExternalID returns the old "external_id" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldExternalID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldExternalID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldExternalID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldExternalID: %w", err)
-	}
-	return oldValue.ExternalID, nil
-}
-
-// ClearExternalID clears the value of the "external_id" field.
-func (m *RecentUpdateMutation) ClearExternalID() {
-	m.external_id = nil
-	m.clearedFields[recentupdate.FieldExternalID] = struct{}{}
-}
-
-// ExternalIDCleared returns if the "external_id" field was cleared in this mutation.
-func (m *RecentUpdateMutation) ExternalIDCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldExternalID]
-	return ok
-}
-
-// ResetExternalID resets all changes to the "external_id" field.
-func (m *RecentUpdateMutation) ResetExternalID() {
-	m.external_id = nil
-	delete(m.clearedFields, recentupdate.FieldExternalID)
-}
-
-// SetImageURL sets the "image_url" field.
-func (m *RecentUpdateMutation) SetImageURL(s string) {
-	m.image_url = &s
-}
-
-// ImageURL returns the value of the "image_url" field in the mutation.
-func (m *RecentUpdateMutation) ImageURL() (r string, exists bool) {
-	v := m.image_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldImageURL returns the old "image_url" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldImageURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldImageURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldImageURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldImageURL: %w", err)
-	}
-	return oldValue.ImageURL, nil
-}
-
-// ClearImageURL clears the value of the "image_url" field.
-func (m *RecentUpdateMutation) ClearImageURL() {
-	m.image_url = nil
-	m.clearedFields[recentupdate.FieldImageURL] = struct{}{}
-}
-
-// ImageURLCleared returns if the "image_url" field was cleared in this mutation.
-func (m *RecentUpdateMutation) ImageURLCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldImageURL]
-	return ok
-}
-
-// ResetImageURL resets all changes to the "image_url" field.
-func (m *RecentUpdateMutation) ResetImageURL() {
-	m.image_url = nil
-	delete(m.clearedFields, recentupdate.FieldImageURL)
-}
-
-// SetVideoURL sets the "video_url" field.
-func (m *RecentUpdateMutation) SetVideoURL(s string) {
-	m.video_url = &s
-}
-
-// VideoURL returns the value of the "video_url" field in the mutation.
-func (m *RecentUpdateMutation) VideoURL() (r string, exists bool) {
-	v := m.video_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldVideoURL returns the old "video_url" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldVideoURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldVideoURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldVideoURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldVideoURL: %w", err)
-	}
-	return oldValue.VideoURL, nil
-}
-
-// ClearVideoURL clears the value of the "video_url" field.
-func (m *RecentUpdateMutation) ClearVideoURL() {
-	m.video_url = nil
-	m.clearedFields[recentupdate.FieldVideoURL] = struct{}{}
-}
-
-// VideoURLCleared returns if the "video_url" field was cleared in this mutation.
-func (m *RecentUpdateMutation) VideoURLCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldVideoURL]
-	return ok
-}
-
-// ResetVideoURL resets all changes to the "video_url" field.
-func (m *RecentUpdateMutation) ResetVideoURL() {
-	m.video_url = nil
-	delete(m.clearedFields, recentupdate.FieldVideoURL)
-}
-
-// SetDocumentURL sets the "document_url" field.
-func (m *RecentUpdateMutation) SetDocumentURL(s string) {
-	m.document_url = &s
-}
-
-// DocumentURL returns the value of the "document_url" field in the mutation.
-func (m *RecentUpdateMutation) DocumentURL() (r string, exists bool) {
-	v := m.document_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDocumentURL returns the old "document_url" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldDocumentURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDocumentURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDocumentURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDocumentURL: %w", err)
-	}
-	return oldValue.DocumentURL, nil
-}
-
-// ClearDocumentURL clears the value of the "document_url" field.
-func (m *RecentUpdateMutation) ClearDocumentURL() {
-	m.document_url = nil
-	m.clearedFields[recentupdate.FieldDocumentURL] = struct{}{}
-}
-
-// DocumentURLCleared returns if the "document_url" field was cleared in this mutation.
-func (m *RecentUpdateMutation) DocumentURLCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldDocumentURL]
-	return ok
-}
-
-// ResetDocumentURL resets all changes to the "document_url" field.
-func (m *RecentUpdateMutation) ResetDocumentURL() {
-	m.document_url = nil
-	delete(m.clearedFields, recentupdate.FieldDocumentURL)
-}
-
-// SetGallery sets the "gallery" field.
-func (m *RecentUpdateMutation) SetGallery(s []string) {
-	m.gallery = &s
-	m.appendgallery = nil
-}
-
-// Gallery returns the value of the "gallery" field in the mutation.
-func (m *RecentUpdateMutation) Gallery() (r []string, exists bool) {
-	v := m.gallery
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGallery returns the old "gallery" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldGallery(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGallery is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGallery requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGallery: %w", err)
-	}
-	return oldValue.Gallery, nil
-}
-
-// AppendGallery adds s to the "gallery" field.
-func (m *RecentUpdateMutation) AppendGallery(s []string) {
-	m.appendgallery = append(m.appendgallery, s...)
-}
-
-// AppendedGallery returns the list of values that were appended to the "gallery" field in this mutation.
-func (m *RecentUpdateMutation) AppendedGallery() ([]string, bool) {
-	if len(m.appendgallery) == 0 {
-		return nil, false
-	}
-	return m.appendgallery, true
-}
-
-// ClearGallery clears the value of the "gallery" field.
-func (m *RecentUpdateMutation) ClearGallery() {
-	m.gallery = nil
-	m.appendgallery = nil
-	m.clearedFields[recentupdate.FieldGallery] = struct{}{}
-}
-
-// GalleryCleared returns if the "gallery" field was cleared in this mutation.
-func (m *RecentUpdateMutation) GalleryCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldGallery]
-	return ok
-}
-
-// ResetGallery resets all changes to the "gallery" field.
-func (m *RecentUpdateMutation) ResetGallery() {
-	m.gallery = nil
-	m.appendgallery = nil
-	delete(m.clearedFields, recentupdate.FieldGallery)
-}
-
-// SetAttachments sets the "attachments" field.
-func (m *RecentUpdateMutation) SetAttachments(value []map[string]interface{}) {
-	m.attachments = &value
-	m.appendattachments = nil
-}
-
-// Attachments returns the value of the "attachments" field in the mutation.
-func (m *RecentUpdateMutation) Attachments() (r []map[string]interface{}, exists bool) {
-	v := m.attachments
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldAttachments returns the old "attachments" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldAttachments(ctx context.Context) (v []map[string]interface{}, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAttachments is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAttachments requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAttachments: %w", err)
-	}
-	return oldValue.Attachments, nil
-}
-
-// AppendAttachments adds value to the "attachments" field.
-func (m *RecentUpdateMutation) AppendAttachments(value []map[string]interface{}) {
-	m.appendattachments = append(m.appendattachments, value...)
-}
-
-// AppendedAttachments returns the list of values that were appended to the "attachments" field in this mutation.
-func (m *RecentUpdateMutation) AppendedAttachments() ([]map[string]interface{}, bool) {
-	if len(m.appendattachments) == 0 {
-		return nil, false
-	}
-	return m.appendattachments, true
-}
-
-// ClearAttachments clears the value of the "attachments" field.
-func (m *RecentUpdateMutation) ClearAttachments() {
-	m.attachments = nil
-	m.appendattachments = nil
-	m.clearedFields[recentupdate.FieldAttachments] = struct{}{}
-}
-
-// AttachmentsCleared returns if the "attachments" field was cleared in this mutation.
-func (m *RecentUpdateMutation) AttachmentsCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldAttachments]
-	return ok
-}
-
-// ResetAttachments resets all changes to the "attachments" field.
-func (m *RecentUpdateMutation) ResetAttachments() {
-	m.attachments = nil
-	m.appendattachments = nil
-	delete(m.clearedFields, recentupdate.FieldAttachments)
-}
-
-// SetMediaMetadata sets the "media_metadata" field.
-func (m *RecentUpdateMutation) SetMediaMetadata(value map[string]interface{}) {
-	m.media_metadata = &value
-}
-
-// MediaMetadata returns the value of the "media_metadata" field in the mutation.
-func (m *RecentUpdateMutation) MediaMetadata() (r map[string]interface{}, exists bool) {
-	v := m.media_metadata
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldMediaMetadata returns the old "media_metadata" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldMediaMetadata(ctx context.Context) (v map[string]interface{}, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldMediaMetadata is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldMediaMetadata requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldMediaMetadata: %w", err)
-	}
-	return oldValue.MediaMetadata, nil
-}
-
-// ClearMediaMetadata clears the value of the "media_metadata" field.
-func (m *RecentUpdateMutation) ClearMediaMetadata() {
-	m.media_metadata = nil
-	m.clearedFields[recentupdate.FieldMediaMetadata] = struct{}{}
-}
-
-// MediaMetadataCleared returns if the "media_metadata" field was cleared in this mutation.
-func (m *RecentUpdateMutation) MediaMetadataCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldMediaMetadata]
-	return ok
-}
-
-// ResetMediaMetadata resets all changes to the "media_metadata" field.
-func (m *RecentUpdateMutation) ResetMediaMetadata() {
-	m.media_metadata = nil
-	delete(m.clearedFields, recentupdate.FieldMediaMetadata)
-}
-
-// SetDemoURL sets the "demo_url" field.
-func (m *RecentUpdateMutation) SetDemoURL(s string) {
-	m.demo_url = &s
-}
-
-// DemoURL returns the value of the "demo_url" field in the mutation.
-func (m *RecentUpdateMutation) DemoURL() (r string, exists bool) {
-	v := m.demo_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDemoURL returns the old "demo_url" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldDemoURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDemoURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDemoURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDemoURL: %w", err)
-	}
-	return oldValue.DemoURL, nil
-}
-
-// ClearDemoURL clears the value of the "demo_url" field.
-func (m *RecentUpdateMutation) ClearDemoURL() {
-	m.demo_url = nil
-	m.clearedFields[recentupdate.FieldDemoURL] = struct{}{}
-}
-
-// DemoURLCleared returns if the "demo_url" field was cleared in this mutation.
-func (m *RecentUpdateMutation) DemoURLCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldDemoURL]
-	return ok
-}
-
-// ResetDemoURL resets all changes to the "demo_url" field.
-func (m *RecentUpdateMutation) ResetDemoURL() {
-	m.demo_url = nil
-	delete(m.clearedFields, recentupdate.FieldDemoURL)
-}
-
-// SetGithubURL sets the "github_url" field.
-func (m *RecentUpdateMutation) SetGithubURL(s string) {
-	m.github_url = &s
-}
-
-// GithubURL returns the value of the "github_url" field in the mutation.
-func (m *RecentUpdateMutation) GithubURL() (r string, exists bool) {
-	v := m.github_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGithubURL returns the old "github_url" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldGithubURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGithubURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGithubURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGithubURL: %w", err)
-	}
-	return oldValue.GithubURL, nil
-}
-
-// ClearGithubURL clears the value of the "github_url" field.
-func (m *RecentUpdateMutation) ClearGithubURL() {
-	m.github_url = nil
-	m.clearedFields[recentupdate.FieldGithubURL] = struct{}{}
-}
-
-// GithubURLCleared returns if the "github_url" field was cleared in this mutation.
-func (m *RecentUpdateMutation) GithubURLCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldGithubURL]
-	return ok
-}
-
-// ResetGithubURL resets all changes to the "github_url" field.
-func (m *RecentUpdateMutation) ResetGithubURL() {
-	m.github_url = nil
-	delete(m.clearedFields, recentupdate.FieldGithubURL)
-}
-
-// SetExternalURL sets the "external_url" field.
-func (m *RecentUpdateMutation) SetExternalURL(s string) {
-	m.external_url = &s
-}
-
-// ExternalURL returns the value of the "external_url" field in the mutation.
-func (m *RecentUpdateMutation) ExternalURL() (r string, exists bool) {
-	v := m.external_url
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldExternalURL returns the old "external_url" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldExternalURL(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldExternalURL is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldExternalURL requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldExternalURL: %w", err)
-	}
-	return oldValue.ExternalURL, nil
-}
-
-// ClearExternalURL clears the value of the "external_url" field.
-func (m *RecentUpdateMutation) ClearExternalURL() {
-	m.external_url = nil
-	m.clearedFields[recentupdate.FieldExternalURL] = struct{}{}
-}
-
-// ExternalURLCleared returns if the "external_url" field was cleared in this mutation.
-func (m *RecentUpdateMutation) ExternalURLCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldExternalURL]
-	return ok
-}
-
-// ResetExternalURL resets all changes to the "external_url" field.
-func (m *RecentUpdateMutation) ResetExternalURL() {
-	m.external_url = nil
-	delete(m.clearedFields, recentupdate.FieldExternalURL)
-}
-
-// SetSocialLinks sets the "social_links" field.
-func (m *RecentUpdateMutation) SetSocialLinks(value []map[string]interface{}) {
-	m.social_links = &value
-	m.appendsocial_links = nil
-}
-
-// SocialLinks returns the value of the "social_links" field in the mutation.
-func (m *RecentUpdateMutation) SocialLinks() (r []map[string]interface{}, exists bool) {
-	v := m.social_links
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSocialLinks returns the old "social_links" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldSocialLinks(ctx context.Context) (v []map[string]interface{}, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSocialLinks is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSocialLinks requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSocialLinks: %w", err)
-	}
-	return oldValue.SocialLinks, nil
-}
-
-// AppendSocialLinks adds value to the "social_links" field.
-func (m *RecentUpdateMutation) AppendSocialLinks(value []map[string]interface{}) {
-	m.appendsocial_links = append(m.appendsocial_links, value...)
-}
-
-// AppendedSocialLinks returns the list of values that were appended to the "social_links" field in this mutation.
-func (m *RecentUpdateMutation) AppendedSocialLinks() ([]map[string]interface{}, bool) {
-	if len(m.appendsocial_links) == 0 {
-		return nil, false
-	}
-	return m.appendsocial_links, true
-}
-
-// ClearSocialLinks clears the value of the "social_links" field.
-func (m *RecentUpdateMutation) ClearSocialLinks() {
-	m.social_links = nil
-	m.appendsocial_links = nil
-	m.clearedFields[recentupdate.FieldSocialLinks] = struct{}{}
-}
-
-// SocialLinksCleared returns if the "social_links" field was cleared in this mutation.
-func (m *RecentUpdateMutation) SocialLinksCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldSocialLinks]
-	return ok
-}
-
-// ResetSocialLinks resets all changes to the "social_links" field.
-func (m *RecentUpdateMutation) ResetSocialLinks() {
-	m.social_links = nil
-	m.appendsocial_links = nil
-	delete(m.clearedFields, recentupdate.FieldSocialLinks)
-}
-
-// SetSortOrder sets the "sort_order" field.
-func (m *RecentUpdateMutation) SetSortOrder(i int) {
-	m.sort_order = &i
-	m.addsort_order = nil
-}
-
-// SortOrder returns the value of the "sort_order" field in the mutation.
-func (m *RecentUpdateMutation) SortOrder() (r int, exists bool) {
-	v := m.sort_order
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSortOrder returns the old "sort_order" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldSortOrder(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSortOrder requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
-	}
-	return oldValue.SortOrder, nil
-}
-
-// AddSortOrder adds i to the "sort_order" field.
-func (m *RecentUpdateMutation) AddSortOrder(i int) {
-	if m.addsort_order != nil {
-		*m.addsort_order += i
-	} else {
-		m.addsort_order = &i
-	}
-}
-
-// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
-func (m *RecentUpdateMutation) AddedSortOrder() (r int, exists bool) {
-	v := m.addsort_order
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetSortOrder resets all changes to the "sort_order" field.
-func (m *RecentUpdateMutation) ResetSortOrder() {
-	m.sort_order = nil
-	m.addsort_order = nil
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *RecentUpdateMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *RecentUpdateMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ClearCreatedAt clears the value of the "created_at" field.
-func (m *RecentUpdateMutation) ClearCreatedAt() {
-	m.created_at = nil
-	m.clearedFields[recentupdate.FieldCreatedAt] = struct{}{}
-}
-
-// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
-func (m *RecentUpdateMutation) CreatedAtCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldCreatedAt]
-	return ok
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *RecentUpdateMutation) ResetCreatedAt() {
-	m.created_at = nil
-	delete(m.clearedFields, recentupdate.FieldCreatedAt)
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (m *RecentUpdateMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
-}
-
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *RecentUpdateMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdatedAt returns the old "updated_at" field's value of the RecentUpdate entity.
-// If the RecentUpdate object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
-}
-
-// ClearUpdatedAt clears the value of the "updated_at" field.
-func (m *RecentUpdateMutation) ClearUpdatedAt() {
-	m.updated_at = nil
-	m.clearedFields[recentupdate.FieldUpdatedAt] = struct{}{}
-}
-
-// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
-func (m *RecentUpdateMutation) UpdatedAtCleared() bool {
-	_, ok := m.clearedFields[recentupdate.FieldUpdatedAt]
-	return ok
-}
-
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *RecentUpdateMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-	delete(m.clearedFields, recentupdate.FieldUpdatedAt)
-}
-
-// AddTranslationIDs adds the "translations" edge to the RecentUpdateTranslation entity by ids.
-func (m *RecentUpdateMutation) AddTranslationIDs(ids ...string) {
-	if m.translations == nil {
-		m.translations = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.translations[ids[i]] = struct{}{}
-	}
-}
-
-// ClearTranslations clears the "translations" edge to the RecentUpdateTranslation entity.
-func (m *RecentUpdateMutation) ClearTranslations() {
-	m.clearedtranslations = true
-}
-
-// TranslationsCleared reports if the "translations" edge to the RecentUpdateTranslation entity was cleared.
-func (m *RecentUpdateMutation) TranslationsCleared() bool {
-	return m.clearedtranslations
-}
-
-// RemoveTranslationIDs removes the "translations" edge to the RecentUpdateTranslation entity by IDs.
-func (m *RecentUpdateMutation) RemoveTranslationIDs(ids ...string) {
-	if m.removedtranslations == nil {
-		m.removedtranslations = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.translations, ids[i])
-		m.removedtranslations[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedTranslations returns the removed IDs of the "translations" edge to the RecentUpdateTranslation entity.
-func (m *RecentUpdateMutation) RemovedTranslationsIDs() (ids []string) {
-	for id := range m.removedtranslations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// TranslationsIDs returns the "translations" edge IDs in the mutation.
-func (m *RecentUpdateMutation) TranslationsIDs() (ids []string) {
-	for id := range m.translations {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetTranslations resets all changes to the "translations" edge.
-func (m *RecentUpdateMutation) ResetTranslations() {
-	m.translations = nil
-	m.clearedtranslations = false
-	m.removedtranslations = nil
-}
-
-// Where appends a list predicates to the RecentUpdateMutation builder.
-func (m *RecentUpdateMutation) Where(ps ...predicate.RecentUpdate) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the RecentUpdateMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *RecentUpdateMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.RecentUpdate, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *RecentUpdateMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *RecentUpdateMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (RecentUpdate).
-func (m *RecentUpdateMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *RecentUpdateMutation) Fields() []string {
-	fields := make([]string, 0, 26)
-	if m.user_id != nil {
-		fields = append(fields, recentupdate.FieldUserID)
-	}
-	if m.slug != nil {
-		fields = append(fields, recentupdate.FieldSlug)
-	}
-	if m.subject_kind != nil {
-		fields = append(fields, recentupdate.FieldSubjectKind)
-	}
-	if m.update_type != nil {
-		fields = append(fields, recentupdate.FieldUpdateType)
-	}
-	if m.visibility != nil {
-		fields = append(fields, recentupdate.FieldVisibility)
-	}
-	if m.title != nil {
-		fields = append(fields, recentupdate.FieldTitle)
-	}
-	if m.description != nil {
-		fields = append(fields, recentupdate.FieldDescription)
-	}
-	if m.date != nil {
-		fields = append(fields, recentupdate.FieldDate)
-	}
-	if m.tags != nil {
-		fields = append(fields, recentupdate.FieldTags)
-	}
-	if m.status != nil {
-		fields = append(fields, recentupdate.FieldStatus)
-	}
-	if m.priority != nil {
-		fields = append(fields, recentupdate.FieldPriority)
-	}
-	if m.pinned != nil {
-		fields = append(fields, recentupdate.FieldPinned)
-	}
-	if m.external_id != nil {
-		fields = append(fields, recentupdate.FieldExternalID)
-	}
-	if m.image_url != nil {
-		fields = append(fields, recentupdate.FieldImageURL)
-	}
-	if m.video_url != nil {
-		fields = append(fields, recentupdate.FieldVideoURL)
-	}
-	if m.document_url != nil {
-		fields = append(fields, recentupdate.FieldDocumentURL)
-	}
-	if m.gallery != nil {
-		fields = append(fields, recentupdate.FieldGallery)
-	}
-	if m.attachments != nil {
-		fields = append(fields, recentupdate.FieldAttachments)
-	}
-	if m.media_metadata != nil {
-		fields = append(fields, recentupdate.FieldMediaMetadata)
-	}
-	if m.demo_url != nil {
-		fields = append(fields, recentupdate.FieldDemoURL)
-	}
-	if m.github_url != nil {
-		fields = append(fields, recentupdate.FieldGithubURL)
-	}
-	if m.external_url != nil {
-		fields = append(fields, recentupdate.FieldExternalURL)
-	}
-	if m.social_links != nil {
-		fields = append(fields, recentupdate.FieldSocialLinks)
-	}
-	if m.sort_order != nil {
-		fields = append(fields, recentupdate.FieldSortOrder)
-	}
-	if m.created_at != nil {
-		fields = append(fields, recentupdate.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, recentupdate.FieldUpdatedAt)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *RecentUpdateMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case recentupdate.FieldUserID:
-		return m.UserID()
-	case recentupdate.FieldSlug:
-		return m.Slug()
-	case recentupdate.FieldSubjectKind:
-		return m.SubjectKind()
-	case recentupdate.FieldUpdateType:
-		return m.UpdateType()
-	case recentupdate.FieldVisibility:
-		return m.Visibility()
-	case recentupdate.FieldTitle:
-		return m.Title()
-	case recentupdate.FieldDescription:
-		return m.Description()
-	case recentupdate.FieldDate:
-		return m.Date()
-	case recentupdate.FieldTags:
-		return m.Tags()
-	case recentupdate.FieldStatus:
-		return m.Status()
-	case recentupdate.FieldPriority:
-		return m.Priority()
-	case recentupdate.FieldPinned:
-		return m.Pinned()
-	case recentupdate.FieldExternalID:
-		return m.ExternalID()
-	case recentupdate.FieldImageURL:
-		return m.ImageURL()
-	case recentupdate.FieldVideoURL:
-		return m.VideoURL()
-	case recentupdate.FieldDocumentURL:
-		return m.DocumentURL()
-	case recentupdate.FieldGallery:
-		return m.Gallery()
-	case recentupdate.FieldAttachments:
-		return m.Attachments()
-	case recentupdate.FieldMediaMetadata:
-		return m.MediaMetadata()
-	case recentupdate.FieldDemoURL:
-		return m.DemoURL()
-	case recentupdate.FieldGithubURL:
-		return m.GithubURL()
-	case recentupdate.FieldExternalURL:
-		return m.ExternalURL()
-	case recentupdate.FieldSocialLinks:
-		return m.SocialLinks()
-	case recentupdate.FieldSortOrder:
-		return m.SortOrder()
-	case recentupdate.FieldCreatedAt:
-		return m.CreatedAt()
-	case recentupdate.FieldUpdatedAt:
-		return m.UpdatedAt()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *RecentUpdateMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case recentupdate.FieldUserID:
-		return m.OldUserID(ctx)
-	case recentupdate.FieldSlug:
-		return m.OldSlug(ctx)
-	case recentupdate.FieldSubjectKind:
-		return m.OldSubjectKind(ctx)
-	case recentupdate.FieldUpdateType:
-		return m.OldUpdateType(ctx)
-	case recentupdate.FieldVisibility:
-		return m.OldVisibility(ctx)
-	case recentupdate.FieldTitle:
-		return m.OldTitle(ctx)
-	case recentupdate.FieldDescription:
-		return m.OldDescription(ctx)
-	case recentupdate.FieldDate:
-		return m.OldDate(ctx)
-	case recentupdate.FieldTags:
-		return m.OldTags(ctx)
-	case recentupdate.FieldStatus:
-		return m.OldStatus(ctx)
-	case recentupdate.FieldPriority:
-		return m.OldPriority(ctx)
-	case recentupdate.FieldPinned:
-		return m.OldPinned(ctx)
-	case recentupdate.FieldExternalID:
-		return m.OldExternalID(ctx)
-	case recentupdate.FieldImageURL:
-		return m.OldImageURL(ctx)
-	case recentupdate.FieldVideoURL:
-		return m.OldVideoURL(ctx)
-	case recentupdate.FieldDocumentURL:
-		return m.OldDocumentURL(ctx)
-	case recentupdate.FieldGallery:
-		return m.OldGallery(ctx)
-	case recentupdate.FieldAttachments:
-		return m.OldAttachments(ctx)
-	case recentupdate.FieldMediaMetadata:
-		return m.OldMediaMetadata(ctx)
-	case recentupdate.FieldDemoURL:
-		return m.OldDemoURL(ctx)
-	case recentupdate.FieldGithubURL:
-		return m.OldGithubURL(ctx)
-	case recentupdate.FieldExternalURL:
-		return m.OldExternalURL(ctx)
-	case recentupdate.FieldSocialLinks:
-		return m.OldSocialLinks(ctx)
-	case recentupdate.FieldSortOrder:
-		return m.OldSortOrder(ctx)
-	case recentupdate.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case recentupdate.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
-	}
-	return nil, fmt.Errorf("unknown RecentUpdate field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *RecentUpdateMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case recentupdate.FieldUserID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUserID(v)
-		return nil
-	case recentupdate.FieldSlug:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSlug(v)
-		return nil
-	case recentupdate.FieldSubjectKind:
-		v, ok := value.(recentupdate.SubjectKind)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSubjectKind(v)
-		return nil
-	case recentupdate.FieldUpdateType:
-		v, ok := value.(recentupdate.UpdateType)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdateType(v)
-		return nil
-	case recentupdate.FieldVisibility:
-		v, ok := value.(recentupdate.Visibility)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetVisibility(v)
-		return nil
-	case recentupdate.FieldTitle:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTitle(v)
-		return nil
-	case recentupdate.FieldDescription:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDescription(v)
-		return nil
-	case recentupdate.FieldDate:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDate(v)
-		return nil
-	case recentupdate.FieldTags:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTags(v)
-		return nil
-	case recentupdate.FieldStatus:
-		v, ok := value.(recentupdate.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
-		return nil
-	case recentupdate.FieldPriority:
-		v, ok := value.(recentupdate.Priority)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPriority(v)
-		return nil
-	case recentupdate.FieldPinned:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPinned(v)
-		return nil
-	case recentupdate.FieldExternalID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetExternalID(v)
-		return nil
-	case recentupdate.FieldImageURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetImageURL(v)
-		return nil
-	case recentupdate.FieldVideoURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetVideoURL(v)
-		return nil
-	case recentupdate.FieldDocumentURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDocumentURL(v)
-		return nil
-	case recentupdate.FieldGallery:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGallery(v)
-		return nil
-	case recentupdate.FieldAttachments:
-		v, ok := value.([]map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetAttachments(v)
-		return nil
-	case recentupdate.FieldMediaMetadata:
-		v, ok := value.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetMediaMetadata(v)
-		return nil
-	case recentupdate.FieldDemoURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDemoURL(v)
-		return nil
-	case recentupdate.FieldGithubURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGithubURL(v)
-		return nil
-	case recentupdate.FieldExternalURL:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetExternalURL(v)
-		return nil
-	case recentupdate.FieldSocialLinks:
-		v, ok := value.([]map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSocialLinks(v)
-		return nil
-	case recentupdate.FieldSortOrder:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSortOrder(v)
-		return nil
-	case recentupdate.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case recentupdate.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdate field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *RecentUpdateMutation) AddedFields() []string {
-	var fields []string
-	if m.addsort_order != nil {
-		fields = append(fields, recentupdate.FieldSortOrder)
-	}
-	return fields
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *RecentUpdateMutation) AddedField(name string) (ent.Value, bool) {
-	switch name {
-	case recentupdate.FieldSortOrder:
-		return m.AddedSortOrder()
-	}
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *RecentUpdateMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	case recentupdate.FieldSortOrder:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddSortOrder(v)
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdate numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *RecentUpdateMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(recentupdate.FieldUserID) {
-		fields = append(fields, recentupdate.FieldUserID)
-	}
-	if m.FieldCleared(recentupdate.FieldTitle) {
-		fields = append(fields, recentupdate.FieldTitle)
-	}
-	if m.FieldCleared(recentupdate.FieldDescription) {
-		fields = append(fields, recentupdate.FieldDescription)
-	}
-	if m.FieldCleared(recentupdate.FieldDate) {
-		fields = append(fields, recentupdate.FieldDate)
-	}
-	if m.FieldCleared(recentupdate.FieldTags) {
-		fields = append(fields, recentupdate.FieldTags)
-	}
-	if m.FieldCleared(recentupdate.FieldExternalID) {
-		fields = append(fields, recentupdate.FieldExternalID)
-	}
-	if m.FieldCleared(recentupdate.FieldImageURL) {
-		fields = append(fields, recentupdate.FieldImageURL)
-	}
-	if m.FieldCleared(recentupdate.FieldVideoURL) {
-		fields = append(fields, recentupdate.FieldVideoURL)
-	}
-	if m.FieldCleared(recentupdate.FieldDocumentURL) {
-		fields = append(fields, recentupdate.FieldDocumentURL)
-	}
-	if m.FieldCleared(recentupdate.FieldGallery) {
-		fields = append(fields, recentupdate.FieldGallery)
-	}
-	if m.FieldCleared(recentupdate.FieldAttachments) {
-		fields = append(fields, recentupdate.FieldAttachments)
-	}
-	if m.FieldCleared(recentupdate.FieldMediaMetadata) {
-		fields = append(fields, recentupdate.FieldMediaMetadata)
-	}
-	if m.FieldCleared(recentupdate.FieldDemoURL) {
-		fields = append(fields, recentupdate.FieldDemoURL)
-	}
-	if m.FieldCleared(recentupdate.FieldGithubURL) {
-		fields = append(fields, recentupdate.FieldGithubURL)
-	}
-	if m.FieldCleared(recentupdate.FieldExternalURL) {
-		fields = append(fields, recentupdate.FieldExternalURL)
-	}
-	if m.FieldCleared(recentupdate.FieldSocialLinks) {
-		fields = append(fields, recentupdate.FieldSocialLinks)
-	}
-	if m.FieldCleared(recentupdate.FieldCreatedAt) {
-		fields = append(fields, recentupdate.FieldCreatedAt)
-	}
-	if m.FieldCleared(recentupdate.FieldUpdatedAt) {
-		fields = append(fields, recentupdate.FieldUpdatedAt)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *RecentUpdateMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *RecentUpdateMutation) ClearField(name string) error {
-	switch name {
-	case recentupdate.FieldUserID:
-		m.ClearUserID()
-		return nil
-	case recentupdate.FieldTitle:
-		m.ClearTitle()
-		return nil
-	case recentupdate.FieldDescription:
-		m.ClearDescription()
-		return nil
-	case recentupdate.FieldDate:
-		m.ClearDate()
-		return nil
-	case recentupdate.FieldTags:
-		m.ClearTags()
-		return nil
-	case recentupdate.FieldExternalID:
-		m.ClearExternalID()
-		return nil
-	case recentupdate.FieldImageURL:
-		m.ClearImageURL()
-		return nil
-	case recentupdate.FieldVideoURL:
-		m.ClearVideoURL()
-		return nil
-	case recentupdate.FieldDocumentURL:
-		m.ClearDocumentURL()
-		return nil
-	case recentupdate.FieldGallery:
-		m.ClearGallery()
-		return nil
-	case recentupdate.FieldAttachments:
-		m.ClearAttachments()
-		return nil
-	case recentupdate.FieldMediaMetadata:
-		m.ClearMediaMetadata()
-		return nil
-	case recentupdate.FieldDemoURL:
-		m.ClearDemoURL()
-		return nil
-	case recentupdate.FieldGithubURL:
-		m.ClearGithubURL()
-		return nil
-	case recentupdate.FieldExternalURL:
-		m.ClearExternalURL()
-		return nil
-	case recentupdate.FieldSocialLinks:
-		m.ClearSocialLinks()
-		return nil
-	case recentupdate.FieldCreatedAt:
-		m.ClearCreatedAt()
-		return nil
-	case recentupdate.FieldUpdatedAt:
-		m.ClearUpdatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdate nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *RecentUpdateMutation) ResetField(name string) error {
-	switch name {
-	case recentupdate.FieldUserID:
-		m.ResetUserID()
-		return nil
-	case recentupdate.FieldSlug:
-		m.ResetSlug()
-		return nil
-	case recentupdate.FieldSubjectKind:
-		m.ResetSubjectKind()
-		return nil
-	case recentupdate.FieldUpdateType:
-		m.ResetUpdateType()
-		return nil
-	case recentupdate.FieldVisibility:
-		m.ResetVisibility()
-		return nil
-	case recentupdate.FieldTitle:
-		m.ResetTitle()
-		return nil
-	case recentupdate.FieldDescription:
-		m.ResetDescription()
-		return nil
-	case recentupdate.FieldDate:
-		m.ResetDate()
-		return nil
-	case recentupdate.FieldTags:
-		m.ResetTags()
-		return nil
-	case recentupdate.FieldStatus:
-		m.ResetStatus()
-		return nil
-	case recentupdate.FieldPriority:
-		m.ResetPriority()
-		return nil
-	case recentupdate.FieldPinned:
-		m.ResetPinned()
-		return nil
-	case recentupdate.FieldExternalID:
-		m.ResetExternalID()
-		return nil
-	case recentupdate.FieldImageURL:
-		m.ResetImageURL()
-		return nil
-	case recentupdate.FieldVideoURL:
-		m.ResetVideoURL()
-		return nil
-	case recentupdate.FieldDocumentURL:
-		m.ResetDocumentURL()
-		return nil
-	case recentupdate.FieldGallery:
-		m.ResetGallery()
-		return nil
-	case recentupdate.FieldAttachments:
-		m.ResetAttachments()
-		return nil
-	case recentupdate.FieldMediaMetadata:
-		m.ResetMediaMetadata()
-		return nil
-	case recentupdate.FieldDemoURL:
-		m.ResetDemoURL()
-		return nil
-	case recentupdate.FieldGithubURL:
-		m.ResetGithubURL()
-		return nil
-	case recentupdate.FieldExternalURL:
-		m.ResetExternalURL()
-		return nil
-	case recentupdate.FieldSocialLinks:
-		m.ResetSocialLinks()
-		return nil
-	case recentupdate.FieldSortOrder:
-		m.ResetSortOrder()
-		return nil
-	case recentupdate.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case recentupdate.FieldUpdatedAt:
-		m.ResetUpdatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdate field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *RecentUpdateMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.translations != nil {
-		edges = append(edges, recentupdate.EdgeTranslations)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *RecentUpdateMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case recentupdate.EdgeTranslations:
-		ids := make([]ent.Value, 0, len(m.translations))
-		for id := range m.translations {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *RecentUpdateMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedtranslations != nil {
-		edges = append(edges, recentupdate.EdgeTranslations)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *RecentUpdateMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case recentupdate.EdgeTranslations:
-		ids := make([]ent.Value, 0, len(m.removedtranslations))
-		for id := range m.removedtranslations {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *RecentUpdateMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedtranslations {
-		edges = append(edges, recentupdate.EdgeTranslations)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *RecentUpdateMutation) EdgeCleared(name string) bool {
-	switch name {
-	case recentupdate.EdgeTranslations:
-		return m.clearedtranslations
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *RecentUpdateMutation) ClearEdge(name string) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown RecentUpdate unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *RecentUpdateMutation) ResetEdge(name string) error {
-	switch name {
-	case recentupdate.EdgeTranslations:
-		m.ResetTranslations()
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdate edge %s", name)
-}
-
-// RecentUpdateTranslationMutation represents an operation that mutates the RecentUpdateTranslation nodes in the graph.
-type RecentUpdateTranslationMutation struct {
-	config
-	op                   Op
-	typ                  string
-	id                   *string
-	title                *string
-	description          *string
-	created_at           *time.Time
-	clearedFields        map[string]struct{}
-	recent_update        *string
-	clearedrecent_update bool
-	language             *string
-	clearedlanguage      bool
-	done                 bool
-	oldValue             func(context.Context) (*RecentUpdateTranslation, error)
-	predicates           []predicate.RecentUpdateTranslation
-}
-
-var _ ent.Mutation = (*RecentUpdateTranslationMutation)(nil)
-
-// recentupdatetranslationOption allows management of the mutation configuration using functional options.
-type recentupdatetranslationOption func(*RecentUpdateTranslationMutation)
-
-// newRecentUpdateTranslationMutation creates new mutation for the RecentUpdateTranslation entity.
-func newRecentUpdateTranslationMutation(c config, op Op, opts ...recentupdatetranslationOption) *RecentUpdateTranslationMutation {
-	m := &RecentUpdateTranslationMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeRecentUpdateTranslation,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withRecentUpdateTranslationID sets the ID field of the mutation.
-func withRecentUpdateTranslationID(id string) recentupdatetranslationOption {
-	return func(m *RecentUpdateTranslationMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *RecentUpdateTranslation
-		)
-		m.oldValue = func(ctx context.Context) (*RecentUpdateTranslation, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().RecentUpdateTranslation.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withRecentUpdateTranslation sets the old RecentUpdateTranslation of the mutation.
-func withRecentUpdateTranslation(node *RecentUpdateTranslation) recentupdatetranslationOption {
-	return func(m *RecentUpdateTranslationMutation) {
-		m.oldValue = func(context.Context) (*RecentUpdateTranslation, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m RecentUpdateTranslationMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m RecentUpdateTranslationMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of RecentUpdateTranslation entities.
-func (m *RecentUpdateTranslationMutation) SetID(id string) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *RecentUpdateTranslationMutation) ID() (id string, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *RecentUpdateTranslationMutation) IDs(ctx context.Context) ([]string, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []string{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().RecentUpdateTranslation.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetRecentUpdateID sets the "recent_update_id" field.
-func (m *RecentUpdateTranslationMutation) SetRecentUpdateID(s string) {
-	m.recent_update = &s
-}
-
-// RecentUpdateID returns the value of the "recent_update_id" field in the mutation.
-func (m *RecentUpdateTranslationMutation) RecentUpdateID() (r string, exists bool) {
-	v := m.recent_update
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRecentUpdateID returns the old "recent_update_id" field's value of the RecentUpdateTranslation entity.
-// If the RecentUpdateTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateTranslationMutation) OldRecentUpdateID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRecentUpdateID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRecentUpdateID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRecentUpdateID: %w", err)
-	}
-	return oldValue.RecentUpdateID, nil
-}
-
-// ResetRecentUpdateID resets all changes to the "recent_update_id" field.
-func (m *RecentUpdateTranslationMutation) ResetRecentUpdateID() {
-	m.recent_update = nil
-}
-
-// SetLanguageCode sets the "language_code" field.
-func (m *RecentUpdateTranslationMutation) SetLanguageCode(s string) {
-	m.language = &s
-}
-
-// LanguageCode returns the value of the "language_code" field in the mutation.
-func (m *RecentUpdateTranslationMutation) LanguageCode() (r string, exists bool) {
-	v := m.language
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLanguageCode returns the old "language_code" field's value of the RecentUpdateTranslation entity.
-// If the RecentUpdateTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateTranslationMutation) OldLanguageCode(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLanguageCode is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLanguageCode requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLanguageCode: %w", err)
-	}
-	return oldValue.LanguageCode, nil
-}
-
-// ResetLanguageCode resets all changes to the "language_code" field.
-func (m *RecentUpdateTranslationMutation) ResetLanguageCode() {
-	m.language = nil
-}
-
-// SetTitle sets the "title" field.
-func (m *RecentUpdateTranslationMutation) SetTitle(s string) {
-	m.title = &s
-}
-
-// Title returns the value of the "title" field in the mutation.
-func (m *RecentUpdateTranslationMutation) Title() (r string, exists bool) {
-	v := m.title
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTitle returns the old "title" field's value of the RecentUpdateTranslation entity.
-// If the RecentUpdateTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateTranslationMutation) OldTitle(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTitle requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
-	}
-	return oldValue.Title, nil
-}
-
-// ClearTitle clears the value of the "title" field.
-func (m *RecentUpdateTranslationMutation) ClearTitle() {
-	m.title = nil
-	m.clearedFields[recentupdatetranslation.FieldTitle] = struct{}{}
-}
-
-// TitleCleared returns if the "title" field was cleared in this mutation.
-func (m *RecentUpdateTranslationMutation) TitleCleared() bool {
-	_, ok := m.clearedFields[recentupdatetranslation.FieldTitle]
-	return ok
-}
-
-// ResetTitle resets all changes to the "title" field.
-func (m *RecentUpdateTranslationMutation) ResetTitle() {
-	m.title = nil
-	delete(m.clearedFields, recentupdatetranslation.FieldTitle)
-}
-
-// SetDescription sets the "description" field.
-func (m *RecentUpdateTranslationMutation) SetDescription(s string) {
-	m.description = &s
-}
-
-// Description returns the value of the "description" field in the mutation.
-func (m *RecentUpdateTranslationMutation) Description() (r string, exists bool) {
-	v := m.description
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDescription returns the old "description" field's value of the RecentUpdateTranslation entity.
-// If the RecentUpdateTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateTranslationMutation) OldDescription(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDescription requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
-	}
-	return oldValue.Description, nil
-}
-
-// ClearDescription clears the value of the "description" field.
-func (m *RecentUpdateTranslationMutation) ClearDescription() {
-	m.description = nil
-	m.clearedFields[recentupdatetranslation.FieldDescription] = struct{}{}
-}
-
-// DescriptionCleared returns if the "description" field was cleared in this mutation.
-func (m *RecentUpdateTranslationMutation) DescriptionCleared() bool {
-	_, ok := m.clearedFields[recentupdatetranslation.FieldDescription]
-	return ok
-}
-
-// ResetDescription resets all changes to the "description" field.
-func (m *RecentUpdateTranslationMutation) ResetDescription() {
-	m.description = nil
-	delete(m.clearedFields, recentupdatetranslation.FieldDescription)
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *RecentUpdateTranslationMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *RecentUpdateTranslationMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the RecentUpdateTranslation entity.
-// If the RecentUpdateTranslation object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RecentUpdateTranslationMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ClearCreatedAt clears the value of the "created_at" field.
-func (m *RecentUpdateTranslationMutation) ClearCreatedAt() {
-	m.created_at = nil
-	m.clearedFields[recentupdatetranslation.FieldCreatedAt] = struct{}{}
-}
-
-// CreatedAtCleared returns if the "created_at" field was cleared in this mutation.
-func (m *RecentUpdateTranslationMutation) CreatedAtCleared() bool {
-	_, ok := m.clearedFields[recentupdatetranslation.FieldCreatedAt]
-	return ok
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *RecentUpdateTranslationMutation) ResetCreatedAt() {
-	m.created_at = nil
-	delete(m.clearedFields, recentupdatetranslation.FieldCreatedAt)
-}
-
-// ClearRecentUpdate clears the "recent_update" edge to the RecentUpdate entity.
-func (m *RecentUpdateTranslationMutation) ClearRecentUpdate() {
-	m.clearedrecent_update = true
-	m.clearedFields[recentupdatetranslation.FieldRecentUpdateID] = struct{}{}
-}
-
-// RecentUpdateCleared reports if the "recent_update" edge to the RecentUpdate entity was cleared.
-func (m *RecentUpdateTranslationMutation) RecentUpdateCleared() bool {
-	return m.clearedrecent_update
-}
-
-// RecentUpdateIDs returns the "recent_update" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// RecentUpdateID instead. It exists only for internal usage by the builders.
-func (m *RecentUpdateTranslationMutation) RecentUpdateIDs() (ids []string) {
-	if id := m.recent_update; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetRecentUpdate resets all changes to the "recent_update" edge.
-func (m *RecentUpdateTranslationMutation) ResetRecentUpdate() {
-	m.recent_update = nil
-	m.clearedrecent_update = false
-}
-
-// SetLanguageID sets the "language" edge to the Language entity by id.
-func (m *RecentUpdateTranslationMutation) SetLanguageID(id string) {
-	m.language = &id
-}
-
-// ClearLanguage clears the "language" edge to the Language entity.
-func (m *RecentUpdateTranslationMutation) ClearLanguage() {
-	m.clearedlanguage = true
-	m.clearedFields[recentupdatetranslation.FieldLanguageCode] = struct{}{}
-}
-
-// LanguageCleared reports if the "language" edge to the Language entity was cleared.
-func (m *RecentUpdateTranslationMutation) LanguageCleared() bool {
-	return m.clearedlanguage
-}
-
-// LanguageID returns the "language" edge ID in the mutation.
-func (m *RecentUpdateTranslationMutation) LanguageID() (id string, exists bool) {
-	if m.language != nil {
-		return *m.language, true
-	}
-	return
-}
-
-// LanguageIDs returns the "language" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// LanguageID instead. It exists only for internal usage by the builders.
-func (m *RecentUpdateTranslationMutation) LanguageIDs() (ids []string) {
-	if id := m.language; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetLanguage resets all changes to the "language" edge.
-func (m *RecentUpdateTranslationMutation) ResetLanguage() {
-	m.language = nil
-	m.clearedlanguage = false
-}
-
-// Where appends a list predicates to the RecentUpdateTranslationMutation builder.
-func (m *RecentUpdateTranslationMutation) Where(ps ...predicate.RecentUpdateTranslation) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the RecentUpdateTranslationMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *RecentUpdateTranslationMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.RecentUpdateTranslation, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *RecentUpdateTranslationMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *RecentUpdateTranslationMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (RecentUpdateTranslation).
-func (m *RecentUpdateTranslationMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *RecentUpdateTranslationMutation) Fields() []string {
-	fields := make([]string, 0, 5)
-	if m.recent_update != nil {
-		fields = append(fields, recentupdatetranslation.FieldRecentUpdateID)
-	}
-	if m.language != nil {
-		fields = append(fields, recentupdatetranslation.FieldLanguageCode)
-	}
-	if m.title != nil {
-		fields = append(fields, recentupdatetranslation.FieldTitle)
-	}
-	if m.description != nil {
-		fields = append(fields, recentupdatetranslation.FieldDescription)
-	}
-	if m.created_at != nil {
-		fields = append(fields, recentupdatetranslation.FieldCreatedAt)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *RecentUpdateTranslationMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case recentupdatetranslation.FieldRecentUpdateID:
-		return m.RecentUpdateID()
-	case recentupdatetranslation.FieldLanguageCode:
-		return m.LanguageCode()
-	case recentupdatetranslation.FieldTitle:
-		return m.Title()
-	case recentupdatetranslation.FieldDescription:
-		return m.Description()
-	case recentupdatetranslation.FieldCreatedAt:
-		return m.CreatedAt()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *RecentUpdateTranslationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case recentupdatetranslation.FieldRecentUpdateID:
-		return m.OldRecentUpdateID(ctx)
-	case recentupdatetranslation.FieldLanguageCode:
-		return m.OldLanguageCode(ctx)
-	case recentupdatetranslation.FieldTitle:
-		return m.OldTitle(ctx)
-	case recentupdatetranslation.FieldDescription:
-		return m.OldDescription(ctx)
-	case recentupdatetranslation.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	}
-	return nil, fmt.Errorf("unknown RecentUpdateTranslation field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *RecentUpdateTranslationMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case recentupdatetranslation.FieldRecentUpdateID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRecentUpdateID(v)
-		return nil
-	case recentupdatetranslation.FieldLanguageCode:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLanguageCode(v)
-		return nil
-	case recentupdatetranslation.FieldTitle:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTitle(v)
-		return nil
-	case recentupdatetranslation.FieldDescription:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDescription(v)
-		return nil
-	case recentupdatetranslation.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdateTranslation field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *RecentUpdateTranslationMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *RecentUpdateTranslationMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *RecentUpdateTranslationMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown RecentUpdateTranslation numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *RecentUpdateTranslationMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(recentupdatetranslation.FieldTitle) {
-		fields = append(fields, recentupdatetranslation.FieldTitle)
-	}
-	if m.FieldCleared(recentupdatetranslation.FieldDescription) {
-		fields = append(fields, recentupdatetranslation.FieldDescription)
-	}
-	if m.FieldCleared(recentupdatetranslation.FieldCreatedAt) {
-		fields = append(fields, recentupdatetranslation.FieldCreatedAt)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *RecentUpdateTranslationMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *RecentUpdateTranslationMutation) ClearField(name string) error {
-	switch name {
-	case recentupdatetranslation.FieldTitle:
-		m.ClearTitle()
-		return nil
-	case recentupdatetranslation.FieldDescription:
-		m.ClearDescription()
-		return nil
-	case recentupdatetranslation.FieldCreatedAt:
-		m.ClearCreatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdateTranslation nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *RecentUpdateTranslationMutation) ResetField(name string) error {
-	switch name {
-	case recentupdatetranslation.FieldRecentUpdateID:
-		m.ResetRecentUpdateID()
-		return nil
-	case recentupdatetranslation.FieldLanguageCode:
-		m.ResetLanguageCode()
-		return nil
-	case recentupdatetranslation.FieldTitle:
-		m.ResetTitle()
-		return nil
-	case recentupdatetranslation.FieldDescription:
-		m.ResetDescription()
-		return nil
-	case recentupdatetranslation.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdateTranslation field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *RecentUpdateTranslationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.recent_update != nil {
-		edges = append(edges, recentupdatetranslation.EdgeRecentUpdate)
-	}
-	if m.language != nil {
-		edges = append(edges, recentupdatetranslation.EdgeLanguage)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *RecentUpdateTranslationMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case recentupdatetranslation.EdgeRecentUpdate:
-		if id := m.recent_update; id != nil {
-			return []ent.Value{*id}
-		}
-	case recentupdatetranslation.EdgeLanguage:
-		if id := m.language; id != nil {
-			return []ent.Value{*id}
-		}
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *RecentUpdateTranslationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *RecentUpdateTranslationMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *RecentUpdateTranslationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedrecent_update {
-		edges = append(edges, recentupdatetranslation.EdgeRecentUpdate)
-	}
-	if m.clearedlanguage {
-		edges = append(edges, recentupdatetranslation.EdgeLanguage)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *RecentUpdateTranslationMutation) EdgeCleared(name string) bool {
-	switch name {
-	case recentupdatetranslation.EdgeRecentUpdate:
-		return m.clearedrecent_update
-	case recentupdatetranslation.EdgeLanguage:
-		return m.clearedlanguage
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *RecentUpdateTranslationMutation) ClearEdge(name string) error {
-	switch name {
-	case recentupdatetranslation.EdgeRecentUpdate:
-		m.ClearRecentUpdate()
-		return nil
-	case recentupdatetranslation.EdgeLanguage:
-		m.ClearLanguage()
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdateTranslation unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *RecentUpdateTranslationMutation) ResetEdge(name string) error {
-	switch name {
-	case recentupdatetranslation.EdgeRecentUpdate:
-		m.ResetRecentUpdate()
-		return nil
-	case recentupdatetranslation.EdgeLanguage:
-		m.ResetLanguage()
-		return nil
-	}
-	return fmt.Errorf("unknown RecentUpdateTranslation edge %s", name)
 }
 
 // RequestLogMutation represents an operation that mutates the RequestLog nodes in the graph.

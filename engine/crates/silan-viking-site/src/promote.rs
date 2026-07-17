@@ -31,7 +31,7 @@ pub const DERIVED_TABLES: &[&str] = &[
     "ideas",
     "projects",
     "personal_info",
-    "recent_updates",
+    "moments",
     "episode_series",
     "episodes",
     // part bodies and entries
@@ -54,7 +54,7 @@ pub const DERIVED_TABLES: &[&str] = &[
     "idea_translations",
     "project_translations",
     "personal_info_translations",
-    "recent_update_translations",
+    "moment_translations",
     "episode_translations",
     "episode_series_translations",
     // provenance — the single-row sync digest; promote stamps content_commit

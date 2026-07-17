@@ -39,6 +39,8 @@ import (
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/moment"
+	"silan-backend/internal/ent/momenttranslation"
 	"silan-backend/internal/ent/partentry"
 	"silan-backend/internal/ent/partentrytranslation"
 	"silan-backend/internal/ent/personalinfo"
@@ -55,8 +57,6 @@ import (
 	"silan-backend/internal/ent/publication"
 	"silan-backend/internal/ent/publicationauthor"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/recentupdate"
-	"silan-backend/internal/ent/recentupdatetranslation"
 	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
@@ -142,6 +142,10 @@ type Client struct {
 	ItemPartTranslation *ItemPartTranslationClient
 	// Language is the client for interacting with the Language builders.
 	Language *LanguageClient
+	// Moment is the client for interacting with the Moment builders.
+	Moment *MomentClient
+	// MomentTranslation is the client for interacting with the MomentTranslation builders.
+	MomentTranslation *MomentTranslationClient
 	// PartEntry is the client for interacting with the PartEntry builders.
 	PartEntry *PartEntryClient
 	// PartEntryTranslation is the client for interacting with the PartEntryTranslation builders.
@@ -174,10 +178,6 @@ type Client struct {
 	PublicationAuthor *PublicationAuthorClient
 	// PublicationTranslation is the client for interacting with the PublicationTranslation builders.
 	PublicationTranslation *PublicationTranslationClient
-	// RecentUpdate is the client for interacting with the RecentUpdate builders.
-	RecentUpdate *RecentUpdateClient
-	// RecentUpdateTranslation is the client for interacting with the RecentUpdateTranslation builders.
-	RecentUpdateTranslation *RecentUpdateTranslationClient
 	// RequestLog is the client for interacting with the RequestLog builders.
 	RequestLog *RequestLogClient
 	// ResearchProject is the client for interacting with the ResearchProject builders.
@@ -251,6 +251,8 @@ func (c *Client) init() {
 	c.ItemPart = NewItemPartClient(c.config)
 	c.ItemPartTranslation = NewItemPartTranslationClient(c.config)
 	c.Language = NewLanguageClient(c.config)
+	c.Moment = NewMomentClient(c.config)
+	c.MomentTranslation = NewMomentTranslationClient(c.config)
 	c.PartEntry = NewPartEntryClient(c.config)
 	c.PartEntryTranslation = NewPartEntryTranslationClient(c.config)
 	c.PersonalInfo = NewPersonalInfoClient(c.config)
@@ -267,8 +269,6 @@ func (c *Client) init() {
 	c.Publication = NewPublicationClient(c.config)
 	c.PublicationAuthor = NewPublicationAuthorClient(c.config)
 	c.PublicationTranslation = NewPublicationTranslationClient(c.config)
-	c.RecentUpdate = NewRecentUpdateClient(c.config)
-	c.RecentUpdateTranslation = NewRecentUpdateTranslationClient(c.config)
 	c.RequestLog = NewRequestLogClient(c.config)
 	c.ResearchProject = NewResearchProjectClient(c.config)
 	c.ResearchProjectDetail = NewResearchProjectDetailClient(c.config)
@@ -406,6 +406,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ItemPart:                         NewItemPartClient(cfg),
 		ItemPartTranslation:              NewItemPartTranslationClient(cfg),
 		Language:                         NewLanguageClient(cfg),
+		Moment:                           NewMomentClient(cfg),
+		MomentTranslation:                NewMomentTranslationClient(cfg),
 		PartEntry:                        NewPartEntryClient(cfg),
 		PartEntryTranslation:             NewPartEntryTranslationClient(cfg),
 		PersonalInfo:                     NewPersonalInfoClient(cfg),
@@ -422,8 +424,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Publication:                      NewPublicationClient(cfg),
 		PublicationAuthor:                NewPublicationAuthorClient(cfg),
 		PublicationTranslation:           NewPublicationTranslationClient(cfg),
-		RecentUpdate:                     NewRecentUpdateClient(cfg),
-		RecentUpdateTranslation:          NewRecentUpdateTranslationClient(cfg),
 		RequestLog:                       NewRequestLogClient(cfg),
 		ResearchProject:                  NewResearchProjectClient(cfg),
 		ResearchProjectDetail:            NewResearchProjectDetailClient(cfg),
@@ -488,6 +488,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ItemPart:                         NewItemPartClient(cfg),
 		ItemPartTranslation:              NewItemPartTranslationClient(cfg),
 		Language:                         NewLanguageClient(cfg),
+		Moment:                           NewMomentClient(cfg),
+		MomentTranslation:                NewMomentTranslationClient(cfg),
 		PartEntry:                        NewPartEntryClient(cfg),
 		PartEntryTranslation:             NewPartEntryTranslationClient(cfg),
 		PersonalInfo:                     NewPersonalInfoClient(cfg),
@@ -504,8 +506,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Publication:                      NewPublicationClient(cfg),
 		PublicationAuthor:                NewPublicationAuthorClient(cfg),
 		PublicationTranslation:           NewPublicationTranslationClient(cfg),
-		RecentUpdate:                     NewRecentUpdateClient(cfg),
-		RecentUpdateTranslation:          NewRecentUpdateTranslationClient(cfg),
 		RequestLog:                       NewRequestLogClient(cfg),
 		ResearchProject:                  NewResearchProjectClient(cfg),
 		ResearchProjectDetail:            NewResearchProjectDetailClient(cfg),
@@ -558,16 +558,16 @@ func (c *Client) Use(hooks ...Hook) {
 		c.ContentTag, c.Education, c.EducationDetail, c.EducationDetailTranslation,
 		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
 		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation,
-		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
-		c.PartEntryTranslation, c.PersonalInfo, c.PersonalInfoTranslation, c.Project,
-		c.ProjectDetail, c.ProjectDetailTranslation, c.ProjectImage,
-		c.ProjectImageTranslation, c.ProjectLike, c.ProjectTechnology,
-		c.ProjectTranslation, c.ProjectView, c.Publication, c.PublicationAuthor,
-		c.PublicationTranslation, c.RecentUpdate, c.RecentUpdateTranslation,
-		c.RequestLog, c.ResearchProject, c.ResearchProjectDetail,
-		c.ResearchProjectDetailTranslation, c.ResearchProjectTranslation, c.SocialLink,
-		c.StatsCacheCrawler, c.StatsCacheItem, c.StatsCacheSource, c.StatsCacheVisitor,
-		c.Tag, c.User, c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
+		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.Moment,
+		c.MomentTranslation, c.PartEntry, c.PartEntryTranslation, c.PersonalInfo,
+		c.PersonalInfoTranslation, c.Project, c.ProjectDetail,
+		c.ProjectDetailTranslation, c.ProjectImage, c.ProjectImageTranslation,
+		c.ProjectLike, c.ProjectTechnology, c.ProjectTranslation, c.ProjectView,
+		c.Publication, c.PublicationAuthor, c.PublicationTranslation, c.RequestLog,
+		c.ResearchProject, c.ResearchProjectDetail, c.ResearchProjectDetailTranslation,
+		c.ResearchProjectTranslation, c.SocialLink, c.StatsCacheCrawler,
+		c.StatsCacheItem, c.StatsCacheSource, c.StatsCacheVisitor, c.Tag, c.User,
+		c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
 		c.WorkExperienceDetailTranslation, c.WorkExperienceTranslation,
 	} {
 		n.Use(hooks...)
@@ -584,16 +584,16 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.ContentTag, c.Education, c.EducationDetail, c.EducationDetailTranslation,
 		c.EducationTranslation, c.Episode, c.EpisodeSeries, c.EpisodeSeriesTranslation,
 		c.EpisodeTranslation, c.Idea, c.IdeaDetail, c.IdeaDetailTranslation,
-		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.PartEntry,
-		c.PartEntryTranslation, c.PersonalInfo, c.PersonalInfoTranslation, c.Project,
-		c.ProjectDetail, c.ProjectDetailTranslation, c.ProjectImage,
-		c.ProjectImageTranslation, c.ProjectLike, c.ProjectTechnology,
-		c.ProjectTranslation, c.ProjectView, c.Publication, c.PublicationAuthor,
-		c.PublicationTranslation, c.RecentUpdate, c.RecentUpdateTranslation,
-		c.RequestLog, c.ResearchProject, c.ResearchProjectDetail,
-		c.ResearchProjectDetailTranslation, c.ResearchProjectTranslation, c.SocialLink,
-		c.StatsCacheCrawler, c.StatsCacheItem, c.StatsCacheSource, c.StatsCacheVisitor,
-		c.Tag, c.User, c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
+		c.IdeaTranslation, c.ItemPart, c.ItemPartTranslation, c.Language, c.Moment,
+		c.MomentTranslation, c.PartEntry, c.PartEntryTranslation, c.PersonalInfo,
+		c.PersonalInfoTranslation, c.Project, c.ProjectDetail,
+		c.ProjectDetailTranslation, c.ProjectImage, c.ProjectImageTranslation,
+		c.ProjectLike, c.ProjectTechnology, c.ProjectTranslation, c.ProjectView,
+		c.Publication, c.PublicationAuthor, c.PublicationTranslation, c.RequestLog,
+		c.ResearchProject, c.ResearchProjectDetail, c.ResearchProjectDetailTranslation,
+		c.ResearchProjectTranslation, c.SocialLink, c.StatsCacheCrawler,
+		c.StatsCacheItem, c.StatsCacheSource, c.StatsCacheVisitor, c.Tag, c.User,
+		c.UserIdentity, c.WorkExperience, c.WorkExperienceDetail,
 		c.WorkExperienceDetailTranslation, c.WorkExperienceTranslation,
 	} {
 		n.Intercept(interceptors...)
@@ -659,6 +659,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ItemPartTranslation.mutate(ctx, m)
 	case *LanguageMutation:
 		return c.Language.mutate(ctx, m)
+	case *MomentMutation:
+		return c.Moment.mutate(ctx, m)
+	case *MomentTranslationMutation:
+		return c.MomentTranslation.mutate(ctx, m)
 	case *PartEntryMutation:
 		return c.PartEntry.mutate(ctx, m)
 	case *PartEntryTranslationMutation:
@@ -691,10 +695,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PublicationAuthor.mutate(ctx, m)
 	case *PublicationTranslationMutation:
 		return c.PublicationTranslation.mutate(ctx, m)
-	case *RecentUpdateMutation:
-		return c.RecentUpdate.mutate(ctx, m)
-	case *RecentUpdateTranslationMutation:
-		return c.RecentUpdateTranslation.mutate(ctx, m)
 	case *RequestLogMutation:
 		return c.RequestLog.mutate(ctx, m)
 	case *ResearchProjectMutation:
@@ -5297,15 +5297,15 @@ func (c *LanguageClient) QueryAwardTranslations(l *Language) *AwardTranslationQu
 	return query
 }
 
-// QueryRecentUpdateTranslations queries the recent_update_translations edge of a Language.
-func (c *LanguageClient) QueryRecentUpdateTranslations(l *Language) *RecentUpdateTranslationQuery {
-	query := (&RecentUpdateTranslationClient{config: c.config}).Query()
+// QueryMomentTranslations queries the moment_translations edge of a Language.
+func (c *LanguageClient) QueryMomentTranslations(l *Language) *MomentTranslationQuery {
+	query := (&MomentTranslationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := l.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(language.Table, language.FieldID, id),
-			sqlgraph.To(recentupdatetranslation.Table, recentupdatetranslation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, language.RecentUpdateTranslationsTable, language.RecentUpdateTranslationsColumn),
+			sqlgraph.To(momenttranslation.Table, momenttranslation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, language.MomentTranslationsTable, language.MomentTranslationsColumn),
 		)
 		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
 		return fromV, nil
@@ -5335,6 +5335,320 @@ func (c *LanguageClient) mutate(ctx context.Context, m *LanguageMutation) (Value
 		return (&LanguageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Language mutation op: %q", m.Op())
+	}
+}
+
+// MomentClient is a client for the Moment schema.
+type MomentClient struct {
+	config
+}
+
+// NewMomentClient returns a client for the Moment from the given config.
+func NewMomentClient(c config) *MomentClient {
+	return &MomentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `moment.Hooks(f(g(h())))`.
+func (c *MomentClient) Use(hooks ...Hook) {
+	c.hooks.Moment = append(c.hooks.Moment, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `moment.Intercept(f(g(h())))`.
+func (c *MomentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Moment = append(c.inters.Moment, interceptors...)
+}
+
+// Create returns a builder for creating a Moment entity.
+func (c *MomentClient) Create() *MomentCreate {
+	mutation := newMomentMutation(c.config, OpCreate)
+	return &MomentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Moment entities.
+func (c *MomentClient) CreateBulk(builders ...*MomentCreate) *MomentCreateBulk {
+	return &MomentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MomentClient) MapCreateBulk(slice any, setFunc func(*MomentCreate, int)) *MomentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MomentCreateBulk{err: fmt.Errorf("calling to MomentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MomentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MomentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Moment.
+func (c *MomentClient) Update() *MomentUpdate {
+	mutation := newMomentMutation(c.config, OpUpdate)
+	return &MomentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MomentClient) UpdateOne(m *Moment) *MomentUpdateOne {
+	mutation := newMomentMutation(c.config, OpUpdateOne, withMoment(m))
+	return &MomentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MomentClient) UpdateOneID(id string) *MomentUpdateOne {
+	mutation := newMomentMutation(c.config, OpUpdateOne, withMomentID(id))
+	return &MomentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Moment.
+func (c *MomentClient) Delete() *MomentDelete {
+	mutation := newMomentMutation(c.config, OpDelete)
+	return &MomentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MomentClient) DeleteOne(m *Moment) *MomentDeleteOne {
+	return c.DeleteOneID(m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MomentClient) DeleteOneID(id string) *MomentDeleteOne {
+	builder := c.Delete().Where(moment.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MomentDeleteOne{builder}
+}
+
+// Query returns a query builder for Moment.
+func (c *MomentClient) Query() *MomentQuery {
+	return &MomentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMoment},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Moment entity by its id.
+func (c *MomentClient) Get(ctx context.Context, id string) (*Moment, error) {
+	return c.Query().Where(moment.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MomentClient) GetX(ctx context.Context, id string) *Moment {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTranslations queries the translations edge of a Moment.
+func (c *MomentClient) QueryTranslations(m *Moment) *MomentTranslationQuery {
+	query := (&MomentTranslationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(moment.Table, moment.FieldID, id),
+			sqlgraph.To(momenttranslation.Table, momenttranslation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, moment.TranslationsTable, moment.TranslationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MomentClient) Hooks() []Hook {
+	return c.hooks.Moment
+}
+
+// Interceptors returns the client interceptors.
+func (c *MomentClient) Interceptors() []Interceptor {
+	return c.inters.Moment
+}
+
+func (c *MomentClient) mutate(ctx context.Context, m *MomentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MomentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MomentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MomentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MomentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Moment mutation op: %q", m.Op())
+	}
+}
+
+// MomentTranslationClient is a client for the MomentTranslation schema.
+type MomentTranslationClient struct {
+	config
+}
+
+// NewMomentTranslationClient returns a client for the MomentTranslation from the given config.
+func NewMomentTranslationClient(c config) *MomentTranslationClient {
+	return &MomentTranslationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `momenttranslation.Hooks(f(g(h())))`.
+func (c *MomentTranslationClient) Use(hooks ...Hook) {
+	c.hooks.MomentTranslation = append(c.hooks.MomentTranslation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `momenttranslation.Intercept(f(g(h())))`.
+func (c *MomentTranslationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.MomentTranslation = append(c.inters.MomentTranslation, interceptors...)
+}
+
+// Create returns a builder for creating a MomentTranslation entity.
+func (c *MomentTranslationClient) Create() *MomentTranslationCreate {
+	mutation := newMomentTranslationMutation(c.config, OpCreate)
+	return &MomentTranslationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of MomentTranslation entities.
+func (c *MomentTranslationClient) CreateBulk(builders ...*MomentTranslationCreate) *MomentTranslationCreateBulk {
+	return &MomentTranslationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *MomentTranslationClient) MapCreateBulk(slice any, setFunc func(*MomentTranslationCreate, int)) *MomentTranslationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &MomentTranslationCreateBulk{err: fmt.Errorf("calling to MomentTranslationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*MomentTranslationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &MomentTranslationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for MomentTranslation.
+func (c *MomentTranslationClient) Update() *MomentTranslationUpdate {
+	mutation := newMomentTranslationMutation(c.config, OpUpdate)
+	return &MomentTranslationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MomentTranslationClient) UpdateOne(mt *MomentTranslation) *MomentTranslationUpdateOne {
+	mutation := newMomentTranslationMutation(c.config, OpUpdateOne, withMomentTranslation(mt))
+	return &MomentTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MomentTranslationClient) UpdateOneID(id string) *MomentTranslationUpdateOne {
+	mutation := newMomentTranslationMutation(c.config, OpUpdateOne, withMomentTranslationID(id))
+	return &MomentTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for MomentTranslation.
+func (c *MomentTranslationClient) Delete() *MomentTranslationDelete {
+	mutation := newMomentTranslationMutation(c.config, OpDelete)
+	return &MomentTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MomentTranslationClient) DeleteOne(mt *MomentTranslation) *MomentTranslationDeleteOne {
+	return c.DeleteOneID(mt.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MomentTranslationClient) DeleteOneID(id string) *MomentTranslationDeleteOne {
+	builder := c.Delete().Where(momenttranslation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MomentTranslationDeleteOne{builder}
+}
+
+// Query returns a query builder for MomentTranslation.
+func (c *MomentTranslationClient) Query() *MomentTranslationQuery {
+	return &MomentTranslationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeMomentTranslation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a MomentTranslation entity by its id.
+func (c *MomentTranslationClient) Get(ctx context.Context, id string) (*MomentTranslation, error) {
+	return c.Query().Where(momenttranslation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MomentTranslationClient) GetX(ctx context.Context, id string) *MomentTranslation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryMoment queries the moment edge of a MomentTranslation.
+func (c *MomentTranslationClient) QueryMoment(mt *MomentTranslation) *MomentQuery {
+	query := (&MomentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := mt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(momenttranslation.Table, momenttranslation.FieldID, id),
+			sqlgraph.To(moment.Table, moment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, momenttranslation.MomentTable, momenttranslation.MomentColumn),
+		)
+		fromV = sqlgraph.Neighbors(mt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLanguage queries the language edge of a MomentTranslation.
+func (c *MomentTranslationClient) QueryLanguage(mt *MomentTranslation) *LanguageQuery {
+	query := (&LanguageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := mt.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(momenttranslation.Table, momenttranslation.FieldID, id),
+			sqlgraph.To(language.Table, language.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, momenttranslation.LanguageTable, momenttranslation.LanguageColumn),
+		)
+		fromV = sqlgraph.Neighbors(mt.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *MomentTranslationClient) Hooks() []Hook {
+	return c.hooks.MomentTranslation
+}
+
+// Interceptors returns the client interceptors.
+func (c *MomentTranslationClient) Interceptors() []Interceptor {
+	return c.inters.MomentTranslation
+}
+
+func (c *MomentTranslationClient) mutate(ctx context.Context, m *MomentTranslationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&MomentTranslationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&MomentTranslationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&MomentTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&MomentTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown MomentTranslation mutation op: %q", m.Op())
 	}
 }
 
@@ -7930,320 +8244,6 @@ func (c *PublicationTranslationClient) mutate(ctx context.Context, m *Publicatio
 	}
 }
 
-// RecentUpdateClient is a client for the RecentUpdate schema.
-type RecentUpdateClient struct {
-	config
-}
-
-// NewRecentUpdateClient returns a client for the RecentUpdate from the given config.
-func NewRecentUpdateClient(c config) *RecentUpdateClient {
-	return &RecentUpdateClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `recentupdate.Hooks(f(g(h())))`.
-func (c *RecentUpdateClient) Use(hooks ...Hook) {
-	c.hooks.RecentUpdate = append(c.hooks.RecentUpdate, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `recentupdate.Intercept(f(g(h())))`.
-func (c *RecentUpdateClient) Intercept(interceptors ...Interceptor) {
-	c.inters.RecentUpdate = append(c.inters.RecentUpdate, interceptors...)
-}
-
-// Create returns a builder for creating a RecentUpdate entity.
-func (c *RecentUpdateClient) Create() *RecentUpdateCreate {
-	mutation := newRecentUpdateMutation(c.config, OpCreate)
-	return &RecentUpdateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of RecentUpdate entities.
-func (c *RecentUpdateClient) CreateBulk(builders ...*RecentUpdateCreate) *RecentUpdateCreateBulk {
-	return &RecentUpdateCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *RecentUpdateClient) MapCreateBulk(slice any, setFunc func(*RecentUpdateCreate, int)) *RecentUpdateCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &RecentUpdateCreateBulk{err: fmt.Errorf("calling to RecentUpdateClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*RecentUpdateCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &RecentUpdateCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for RecentUpdate.
-func (c *RecentUpdateClient) Update() *RecentUpdateUpdate {
-	mutation := newRecentUpdateMutation(c.config, OpUpdate)
-	return &RecentUpdateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *RecentUpdateClient) UpdateOne(ru *RecentUpdate) *RecentUpdateUpdateOne {
-	mutation := newRecentUpdateMutation(c.config, OpUpdateOne, withRecentUpdate(ru))
-	return &RecentUpdateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *RecentUpdateClient) UpdateOneID(id string) *RecentUpdateUpdateOne {
-	mutation := newRecentUpdateMutation(c.config, OpUpdateOne, withRecentUpdateID(id))
-	return &RecentUpdateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for RecentUpdate.
-func (c *RecentUpdateClient) Delete() *RecentUpdateDelete {
-	mutation := newRecentUpdateMutation(c.config, OpDelete)
-	return &RecentUpdateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *RecentUpdateClient) DeleteOne(ru *RecentUpdate) *RecentUpdateDeleteOne {
-	return c.DeleteOneID(ru.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *RecentUpdateClient) DeleteOneID(id string) *RecentUpdateDeleteOne {
-	builder := c.Delete().Where(recentupdate.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &RecentUpdateDeleteOne{builder}
-}
-
-// Query returns a query builder for RecentUpdate.
-func (c *RecentUpdateClient) Query() *RecentUpdateQuery {
-	return &RecentUpdateQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeRecentUpdate},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a RecentUpdate entity by its id.
-func (c *RecentUpdateClient) Get(ctx context.Context, id string) (*RecentUpdate, error) {
-	return c.Query().Where(recentupdate.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *RecentUpdateClient) GetX(ctx context.Context, id string) *RecentUpdate {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryTranslations queries the translations edge of a RecentUpdate.
-func (c *RecentUpdateClient) QueryTranslations(ru *RecentUpdate) *RecentUpdateTranslationQuery {
-	query := (&RecentUpdateTranslationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ru.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(recentupdate.Table, recentupdate.FieldID, id),
-			sqlgraph.To(recentupdatetranslation.Table, recentupdatetranslation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, recentupdate.TranslationsTable, recentupdate.TranslationsColumn),
-		)
-		fromV = sqlgraph.Neighbors(ru.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *RecentUpdateClient) Hooks() []Hook {
-	return c.hooks.RecentUpdate
-}
-
-// Interceptors returns the client interceptors.
-func (c *RecentUpdateClient) Interceptors() []Interceptor {
-	return c.inters.RecentUpdate
-}
-
-func (c *RecentUpdateClient) mutate(ctx context.Context, m *RecentUpdateMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&RecentUpdateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&RecentUpdateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&RecentUpdateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&RecentUpdateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown RecentUpdate mutation op: %q", m.Op())
-	}
-}
-
-// RecentUpdateTranslationClient is a client for the RecentUpdateTranslation schema.
-type RecentUpdateTranslationClient struct {
-	config
-}
-
-// NewRecentUpdateTranslationClient returns a client for the RecentUpdateTranslation from the given config.
-func NewRecentUpdateTranslationClient(c config) *RecentUpdateTranslationClient {
-	return &RecentUpdateTranslationClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `recentupdatetranslation.Hooks(f(g(h())))`.
-func (c *RecentUpdateTranslationClient) Use(hooks ...Hook) {
-	c.hooks.RecentUpdateTranslation = append(c.hooks.RecentUpdateTranslation, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `recentupdatetranslation.Intercept(f(g(h())))`.
-func (c *RecentUpdateTranslationClient) Intercept(interceptors ...Interceptor) {
-	c.inters.RecentUpdateTranslation = append(c.inters.RecentUpdateTranslation, interceptors...)
-}
-
-// Create returns a builder for creating a RecentUpdateTranslation entity.
-func (c *RecentUpdateTranslationClient) Create() *RecentUpdateTranslationCreate {
-	mutation := newRecentUpdateTranslationMutation(c.config, OpCreate)
-	return &RecentUpdateTranslationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of RecentUpdateTranslation entities.
-func (c *RecentUpdateTranslationClient) CreateBulk(builders ...*RecentUpdateTranslationCreate) *RecentUpdateTranslationCreateBulk {
-	return &RecentUpdateTranslationCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *RecentUpdateTranslationClient) MapCreateBulk(slice any, setFunc func(*RecentUpdateTranslationCreate, int)) *RecentUpdateTranslationCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &RecentUpdateTranslationCreateBulk{err: fmt.Errorf("calling to RecentUpdateTranslationClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*RecentUpdateTranslationCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &RecentUpdateTranslationCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for RecentUpdateTranslation.
-func (c *RecentUpdateTranslationClient) Update() *RecentUpdateTranslationUpdate {
-	mutation := newRecentUpdateTranslationMutation(c.config, OpUpdate)
-	return &RecentUpdateTranslationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *RecentUpdateTranslationClient) UpdateOne(rut *RecentUpdateTranslation) *RecentUpdateTranslationUpdateOne {
-	mutation := newRecentUpdateTranslationMutation(c.config, OpUpdateOne, withRecentUpdateTranslation(rut))
-	return &RecentUpdateTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *RecentUpdateTranslationClient) UpdateOneID(id string) *RecentUpdateTranslationUpdateOne {
-	mutation := newRecentUpdateTranslationMutation(c.config, OpUpdateOne, withRecentUpdateTranslationID(id))
-	return &RecentUpdateTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for RecentUpdateTranslation.
-func (c *RecentUpdateTranslationClient) Delete() *RecentUpdateTranslationDelete {
-	mutation := newRecentUpdateTranslationMutation(c.config, OpDelete)
-	return &RecentUpdateTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *RecentUpdateTranslationClient) DeleteOne(rut *RecentUpdateTranslation) *RecentUpdateTranslationDeleteOne {
-	return c.DeleteOneID(rut.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *RecentUpdateTranslationClient) DeleteOneID(id string) *RecentUpdateTranslationDeleteOne {
-	builder := c.Delete().Where(recentupdatetranslation.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &RecentUpdateTranslationDeleteOne{builder}
-}
-
-// Query returns a query builder for RecentUpdateTranslation.
-func (c *RecentUpdateTranslationClient) Query() *RecentUpdateTranslationQuery {
-	return &RecentUpdateTranslationQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeRecentUpdateTranslation},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a RecentUpdateTranslation entity by its id.
-func (c *RecentUpdateTranslationClient) Get(ctx context.Context, id string) (*RecentUpdateTranslation, error) {
-	return c.Query().Where(recentupdatetranslation.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *RecentUpdateTranslationClient) GetX(ctx context.Context, id string) *RecentUpdateTranslation {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryRecentUpdate queries the recent_update edge of a RecentUpdateTranslation.
-func (c *RecentUpdateTranslationClient) QueryRecentUpdate(rut *RecentUpdateTranslation) *RecentUpdateQuery {
-	query := (&RecentUpdateClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := rut.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(recentupdatetranslation.Table, recentupdatetranslation.FieldID, id),
-			sqlgraph.To(recentupdate.Table, recentupdate.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, recentupdatetranslation.RecentUpdateTable, recentupdatetranslation.RecentUpdateColumn),
-		)
-		fromV = sqlgraph.Neighbors(rut.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryLanguage queries the language edge of a RecentUpdateTranslation.
-func (c *RecentUpdateTranslationClient) QueryLanguage(rut *RecentUpdateTranslation) *LanguageQuery {
-	query := (&LanguageClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := rut.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(recentupdatetranslation.Table, recentupdatetranslation.FieldID, id),
-			sqlgraph.To(language.Table, language.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, recentupdatetranslation.LanguageTable, recentupdatetranslation.LanguageColumn),
-		)
-		fromV = sqlgraph.Neighbors(rut.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *RecentUpdateTranslationClient) Hooks() []Hook {
-	return c.hooks.RecentUpdateTranslation
-}
-
-// Interceptors returns the client interceptors.
-func (c *RecentUpdateTranslationClient) Interceptors() []Interceptor {
-	return c.inters.RecentUpdateTranslation
-}
-
-func (c *RecentUpdateTranslationClient) mutate(ctx context.Context, m *RecentUpdateTranslationMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&RecentUpdateTranslationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&RecentUpdateTranslationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&RecentUpdateTranslationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&RecentUpdateTranslationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown RecentUpdateTranslation mutation op: %q", m.Op())
-	}
-}
-
 // RequestLogClient is a client for the RequestLog schema.
 type RequestLogClient struct {
 	config
@@ -10786,12 +10786,12 @@ type (
 		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
 		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
 		IdeaDetailTranslation, IdeaTranslation, ItemPart, ItemPartTranslation,
-		Language, PartEntry, PartEntryTranslation, PersonalInfo,
-		PersonalInfoTranslation, Project, ProjectDetail, ProjectDetailTranslation,
-		ProjectImage, ProjectImageTranslation, ProjectLike, ProjectTechnology,
-		ProjectTranslation, ProjectView, Publication, PublicationAuthor,
-		PublicationTranslation, RecentUpdate, RecentUpdateTranslation, RequestLog,
-		ResearchProject, ResearchProjectDetail, ResearchProjectDetailTranslation,
+		Language, Moment, MomentTranslation, PartEntry, PartEntryTranslation,
+		PersonalInfo, PersonalInfoTranslation, Project, ProjectDetail,
+		ProjectDetailTranslation, ProjectImage, ProjectImageTranslation, ProjectLike,
+		ProjectTechnology, ProjectTranslation, ProjectView, Publication,
+		PublicationAuthor, PublicationTranslation, RequestLog, ResearchProject,
+		ResearchProjectDetail, ResearchProjectDetailTranslation,
 		ResearchProjectTranslation, SocialLink, StatsCacheCrawler, StatsCacheItem,
 		StatsCacheSource, StatsCacheVisitor, Tag, User, UserIdentity, WorkExperience,
 		WorkExperienceDetail, WorkExperienceDetailTranslation,
@@ -10804,12 +10804,12 @@ type (
 		EducationDetailTranslation, EducationTranslation, Episode, EpisodeSeries,
 		EpisodeSeriesTranslation, EpisodeTranslation, Idea, IdeaDetail,
 		IdeaDetailTranslation, IdeaTranslation, ItemPart, ItemPartTranslation,
-		Language, PartEntry, PartEntryTranslation, PersonalInfo,
-		PersonalInfoTranslation, Project, ProjectDetail, ProjectDetailTranslation,
-		ProjectImage, ProjectImageTranslation, ProjectLike, ProjectTechnology,
-		ProjectTranslation, ProjectView, Publication, PublicationAuthor,
-		PublicationTranslation, RecentUpdate, RecentUpdateTranslation, RequestLog,
-		ResearchProject, ResearchProjectDetail, ResearchProjectDetailTranslation,
+		Language, Moment, MomentTranslation, PartEntry, PartEntryTranslation,
+		PersonalInfo, PersonalInfoTranslation, Project, ProjectDetail,
+		ProjectDetailTranslation, ProjectImage, ProjectImageTranslation, ProjectLike,
+		ProjectTechnology, ProjectTranslation, ProjectView, Publication,
+		PublicationAuthor, PublicationTranslation, RequestLog, ResearchProject,
+		ResearchProjectDetail, ResearchProjectDetailTranslation,
 		ResearchProjectTranslation, SocialLink, StatsCacheCrawler, StatsCacheItem,
 		StatsCacheSource, StatsCacheVisitor, Tag, User, UserIdentity, WorkExperience,
 		WorkExperienceDetail, WorkExperienceDetailTranslation,

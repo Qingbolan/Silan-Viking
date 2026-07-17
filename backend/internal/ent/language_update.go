@@ -14,13 +14,13 @@ import (
 	"silan-backend/internal/ent/ideadetailtranslation"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/momenttranslation"
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/predicate"
 	"silan-backend/internal/ent/projectdetailtranslation"
 	"silan-backend/internal/ent/projectimagetranslation"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/recentupdatetranslation"
 	"silan-backend/internal/ent/researchprojectdetailtranslation"
 	"silan-backend/internal/ent/researchprojecttranslation"
 	"silan-backend/internal/ent/workexperiencedetailtranslation"
@@ -326,19 +326,19 @@ func (lu *LanguageUpdate) AddAwardTranslations(a ...*AwardTranslation) *Language
 	return lu.AddAwardTranslationIDs(ids...)
 }
 
-// AddRecentUpdateTranslationIDs adds the "recent_update_translations" edge to the RecentUpdateTranslation entity by IDs.
-func (lu *LanguageUpdate) AddRecentUpdateTranslationIDs(ids ...string) *LanguageUpdate {
-	lu.mutation.AddRecentUpdateTranslationIDs(ids...)
+// AddMomentTranslationIDs adds the "moment_translations" edge to the MomentTranslation entity by IDs.
+func (lu *LanguageUpdate) AddMomentTranslationIDs(ids ...string) *LanguageUpdate {
+	lu.mutation.AddMomentTranslationIDs(ids...)
 	return lu
 }
 
-// AddRecentUpdateTranslations adds the "recent_update_translations" edges to the RecentUpdateTranslation entity.
-func (lu *LanguageUpdate) AddRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdate {
-	ids := make([]string, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddMomentTranslations adds the "moment_translations" edges to the MomentTranslation entity.
+func (lu *LanguageUpdate) AddMomentTranslations(m ...*MomentTranslation) *LanguageUpdate {
+	ids := make([]string, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
 	}
-	return lu.AddRecentUpdateTranslationIDs(ids...)
+	return lu.AddMomentTranslationIDs(ids...)
 }
 
 // Mutation returns the LanguageMutation object of the builder.
@@ -682,25 +682,25 @@ func (lu *LanguageUpdate) RemoveAwardTranslations(a ...*AwardTranslation) *Langu
 	return lu.RemoveAwardTranslationIDs(ids...)
 }
 
-// ClearRecentUpdateTranslations clears all "recent_update_translations" edges to the RecentUpdateTranslation entity.
-func (lu *LanguageUpdate) ClearRecentUpdateTranslations() *LanguageUpdate {
-	lu.mutation.ClearRecentUpdateTranslations()
+// ClearMomentTranslations clears all "moment_translations" edges to the MomentTranslation entity.
+func (lu *LanguageUpdate) ClearMomentTranslations() *LanguageUpdate {
+	lu.mutation.ClearMomentTranslations()
 	return lu
 }
 
-// RemoveRecentUpdateTranslationIDs removes the "recent_update_translations" edge to RecentUpdateTranslation entities by IDs.
-func (lu *LanguageUpdate) RemoveRecentUpdateTranslationIDs(ids ...string) *LanguageUpdate {
-	lu.mutation.RemoveRecentUpdateTranslationIDs(ids...)
+// RemoveMomentTranslationIDs removes the "moment_translations" edge to MomentTranslation entities by IDs.
+func (lu *LanguageUpdate) RemoveMomentTranslationIDs(ids ...string) *LanguageUpdate {
+	lu.mutation.RemoveMomentTranslationIDs(ids...)
 	return lu
 }
 
-// RemoveRecentUpdateTranslations removes "recent_update_translations" edges to RecentUpdateTranslation entities.
-func (lu *LanguageUpdate) RemoveRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdate {
-	ids := make([]string, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// RemoveMomentTranslations removes "moment_translations" edges to MomentTranslation entities.
+func (lu *LanguageUpdate) RemoveMomentTranslations(m ...*MomentTranslation) *LanguageUpdate {
+	ids := make([]string, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
 	}
-	return lu.RemoveRecentUpdateTranslationIDs(ids...)
+	return lu.RemoveMomentTranslationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1489,28 +1489,28 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if lu.mutation.RecentUpdateTranslationsCleared() {
+	if lu.mutation.MomentTranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   language.RecentUpdateTranslationsTable,
-			Columns: []string{language.RecentUpdateTranslationsColumn},
+			Table:   language.MomentTranslationsTable,
+			Columns: []string{language.MomentTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(momenttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := lu.mutation.RemovedRecentUpdateTranslationsIDs(); len(nodes) > 0 && !lu.mutation.RecentUpdateTranslationsCleared() {
+	if nodes := lu.mutation.RemovedMomentTranslationsIDs(); len(nodes) > 0 && !lu.mutation.MomentTranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   language.RecentUpdateTranslationsTable,
-			Columns: []string{language.RecentUpdateTranslationsColumn},
+			Table:   language.MomentTranslationsTable,
+			Columns: []string{language.MomentTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(momenttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1518,15 +1518,15 @@ func (lu *LanguageUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := lu.mutation.RecentUpdateTranslationsIDs(); len(nodes) > 0 {
+	if nodes := lu.mutation.MomentTranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   language.RecentUpdateTranslationsTable,
-			Columns: []string{language.RecentUpdateTranslationsColumn},
+			Table:   language.MomentTranslationsTable,
+			Columns: []string{language.MomentTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(momenttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -1836,19 +1836,19 @@ func (luo *LanguageUpdateOne) AddAwardTranslations(a ...*AwardTranslation) *Lang
 	return luo.AddAwardTranslationIDs(ids...)
 }
 
-// AddRecentUpdateTranslationIDs adds the "recent_update_translations" edge to the RecentUpdateTranslation entity by IDs.
-func (luo *LanguageUpdateOne) AddRecentUpdateTranslationIDs(ids ...string) *LanguageUpdateOne {
-	luo.mutation.AddRecentUpdateTranslationIDs(ids...)
+// AddMomentTranslationIDs adds the "moment_translations" edge to the MomentTranslation entity by IDs.
+func (luo *LanguageUpdateOne) AddMomentTranslationIDs(ids ...string) *LanguageUpdateOne {
+	luo.mutation.AddMomentTranslationIDs(ids...)
 	return luo
 }
 
-// AddRecentUpdateTranslations adds the "recent_update_translations" edges to the RecentUpdateTranslation entity.
-func (luo *LanguageUpdateOne) AddRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdateOne {
-	ids := make([]string, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddMomentTranslations adds the "moment_translations" edges to the MomentTranslation entity.
+func (luo *LanguageUpdateOne) AddMomentTranslations(m ...*MomentTranslation) *LanguageUpdateOne {
+	ids := make([]string, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
 	}
-	return luo.AddRecentUpdateTranslationIDs(ids...)
+	return luo.AddMomentTranslationIDs(ids...)
 }
 
 // Mutation returns the LanguageMutation object of the builder.
@@ -2192,25 +2192,25 @@ func (luo *LanguageUpdateOne) RemoveAwardTranslations(a ...*AwardTranslation) *L
 	return luo.RemoveAwardTranslationIDs(ids...)
 }
 
-// ClearRecentUpdateTranslations clears all "recent_update_translations" edges to the RecentUpdateTranslation entity.
-func (luo *LanguageUpdateOne) ClearRecentUpdateTranslations() *LanguageUpdateOne {
-	luo.mutation.ClearRecentUpdateTranslations()
+// ClearMomentTranslations clears all "moment_translations" edges to the MomentTranslation entity.
+func (luo *LanguageUpdateOne) ClearMomentTranslations() *LanguageUpdateOne {
+	luo.mutation.ClearMomentTranslations()
 	return luo
 }
 
-// RemoveRecentUpdateTranslationIDs removes the "recent_update_translations" edge to RecentUpdateTranslation entities by IDs.
-func (luo *LanguageUpdateOne) RemoveRecentUpdateTranslationIDs(ids ...string) *LanguageUpdateOne {
-	luo.mutation.RemoveRecentUpdateTranslationIDs(ids...)
+// RemoveMomentTranslationIDs removes the "moment_translations" edge to MomentTranslation entities by IDs.
+func (luo *LanguageUpdateOne) RemoveMomentTranslationIDs(ids ...string) *LanguageUpdateOne {
+	luo.mutation.RemoveMomentTranslationIDs(ids...)
 	return luo
 }
 
-// RemoveRecentUpdateTranslations removes "recent_update_translations" edges to RecentUpdateTranslation entities.
-func (luo *LanguageUpdateOne) RemoveRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageUpdateOne {
-	ids := make([]string, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// RemoveMomentTranslations removes "moment_translations" edges to MomentTranslation entities.
+func (luo *LanguageUpdateOne) RemoveMomentTranslations(m ...*MomentTranslation) *LanguageUpdateOne {
+	ids := make([]string, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
 	}
-	return luo.RemoveRecentUpdateTranslationIDs(ids...)
+	return luo.RemoveMomentTranslationIDs(ids...)
 }
 
 // Where appends a list predicates to the LanguageUpdate builder.
@@ -3029,28 +3029,28 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if luo.mutation.RecentUpdateTranslationsCleared() {
+	if luo.mutation.MomentTranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   language.RecentUpdateTranslationsTable,
-			Columns: []string{language.RecentUpdateTranslationsColumn},
+			Table:   language.MomentTranslationsTable,
+			Columns: []string{language.MomentTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(momenttranslation.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := luo.mutation.RemovedRecentUpdateTranslationsIDs(); len(nodes) > 0 && !luo.mutation.RecentUpdateTranslationsCleared() {
+	if nodes := luo.mutation.RemovedMomentTranslationsIDs(); len(nodes) > 0 && !luo.mutation.MomentTranslationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   language.RecentUpdateTranslationsTable,
-			Columns: []string{language.RecentUpdateTranslationsColumn},
+			Table:   language.MomentTranslationsTable,
+			Columns: []string{language.MomentTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(momenttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -3058,15 +3058,15 @@ func (luo *LanguageUpdateOne) sqlSave(ctx context.Context) (_node *Language, err
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := luo.mutation.RecentUpdateTranslationsIDs(); len(nodes) > 0 {
+	if nodes := luo.mutation.MomentTranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   language.RecentUpdateTranslationsTable,
-			Columns: []string{language.RecentUpdateTranslationsColumn},
+			Table:   language.MomentTranslationsTable,
+			Columns: []string{language.MomentTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(momenttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

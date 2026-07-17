@@ -70,7 +70,7 @@ fn empty_project_to_skill_full_chain() {
     ok_in(&root, &["idea", "new", "rust-context-engine"]);
     ok_in(&root, &["blog", "new", "hello-silan"]);
     ok_in(&root, &["project", "new", "viking-engine"]);
-    ok_in(&root, &["update", "new", "q2-progress"]);
+    ok_in(&root, &["moment", "new", "q2-progress"]);
     ok_in(&root, &["episode", "series", "new", "rust-tales"]);
     ok_in(&root, &["episode", "new", "rust-tales", "episode-01"]);
 
@@ -90,7 +90,7 @@ fn empty_project_to_skill_full_chain() {
     );
 
     // 5. sync — parse + map + write the derived DB. Every Item must pass
-    //    validation (this is what caught the missing `update.date` field).
+    //    validation (this is what caught the missing `moment.date` field).
     //    `init` scaffolds 4 Items (resume + 3 seed items, `06` §6.2.1) and
     //    this test creates 5 more (idea/blog/project/update/episode — the
     //    episode series is not an Item) → 9 Items in all.
@@ -106,7 +106,7 @@ fn empty_project_to_skill_full_chain() {
         "silan://resources/ideas/rust-context-engine",
         "silan://resources/blog/hello-silan",
         "silan://resources/projects/viking-engine",
-        "silan://resources/update/q2-progress",
+        "silan://resources/moment/q2-progress",
         "silan://resources/episode/episode-01",
         "silan://resources/resume/resume",
     ] {

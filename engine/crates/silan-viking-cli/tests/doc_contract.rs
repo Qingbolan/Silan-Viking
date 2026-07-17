@@ -52,7 +52,7 @@ fn fresh_init() -> PathBuf {
 fn init_scaffolds_the_six_type_directories() {
     let c = fresh_init();
     // `06` §6.2.1: all six content-type collection directories exist.
-    for type_dir in ["blog", "ideas", "projects", "episode", "resume", "update"] {
+    for type_dir in ["blog", "ideas", "projects", "episode", "resume", "moment"] {
         assert!(
             c.join("resources").join(type_dir).is_dir(),
             "`06` §6.2.1: init must scaffold resources/{type_dir}/"
@@ -182,7 +182,7 @@ fn help_lists_all_six_type_command_groups() {
     let out = Command::new(bin()).arg("--help").output().expect("help");
     let help = String::from_utf8_lossy(&out.stdout);
     // `02`: six type-specific command groups.
-    for group in ["idea", "blog", "project", "episode", "resume", "update"] {
+    for group in ["idea", "blog", "project", "episode", "resume", "moment"] {
         assert!(
             help.contains(group),
             "`02`: --help must list the `{group}` command group"

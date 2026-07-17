@@ -37,10 +37,10 @@ const ROUTES = (zh: boolean): Route[] => [
 /**
  * Standalone sub-pages that aren't in the primary nav but still need a
  * breadcrumb. Each maps its path to a parent route + a display label,
- * so the address bar can render e.g. `Home / Recent Updates`.
+ * so the address bar can render e.g. `Home / Recent Moments`.
  */
 const SUBROUTES = (zh: boolean): Record<string, { parent: string; label: string }> => ({
-  '/recent-updates': { parent: '/', label: zh ? '近期更新' : 'Recent Updates' },
+  '/moments': { parent: '/', label: zh ? '近期更新' : 'Recent Moments' },
   '/search': { parent: '/', label: zh ? '搜索结果' : 'Search Results' },
 });
 
@@ -416,7 +416,7 @@ const TopNavigation: React.FC = () => {
     ];
 
     if (subroute) {
-      // A standalone sub-page (e.g. /recent-updates): show its own label.
+      // A standalone sub-page (e.g. /moments): show its own label.
       trail.push({ label: subroute.label });
     } else {
       // A detail route is the section path + one more segment (/blog/:id).

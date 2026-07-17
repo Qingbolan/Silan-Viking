@@ -32,11 +32,11 @@ func (ContentRelation) Fields() []ent.Field {
 			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.Enum("from_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("from_id").
 			StorageKey("from_id"),
 		field.Enum("to_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("to_id").
 			StorageKey("to_id"),
 		// Only canonical directions are stored; evolved_from is the flip of

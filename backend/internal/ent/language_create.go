@@ -14,12 +14,12 @@ import (
 	"silan-backend/internal/ent/ideadetailtranslation"
 	"silan-backend/internal/ent/ideatranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/momenttranslation"
 	"silan-backend/internal/ent/personalinfotranslation"
 	"silan-backend/internal/ent/projectdetailtranslation"
 	"silan-backend/internal/ent/projectimagetranslation"
 	"silan-backend/internal/ent/projecttranslation"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/recentupdatetranslation"
 	"silan-backend/internal/ent/researchprojectdetailtranslation"
 	"silan-backend/internal/ent/researchprojecttranslation"
 	"silan-backend/internal/ent/workexperiencedetailtranslation"
@@ -323,19 +323,19 @@ func (lc *LanguageCreate) AddAwardTranslations(a ...*AwardTranslation) *Language
 	return lc.AddAwardTranslationIDs(ids...)
 }
 
-// AddRecentUpdateTranslationIDs adds the "recent_update_translations" edge to the RecentUpdateTranslation entity by IDs.
-func (lc *LanguageCreate) AddRecentUpdateTranslationIDs(ids ...string) *LanguageCreate {
-	lc.mutation.AddRecentUpdateTranslationIDs(ids...)
+// AddMomentTranslationIDs adds the "moment_translations" edge to the MomentTranslation entity by IDs.
+func (lc *LanguageCreate) AddMomentTranslationIDs(ids ...string) *LanguageCreate {
+	lc.mutation.AddMomentTranslationIDs(ids...)
 	return lc
 }
 
-// AddRecentUpdateTranslations adds the "recent_update_translations" edges to the RecentUpdateTranslation entity.
-func (lc *LanguageCreate) AddRecentUpdateTranslations(r ...*RecentUpdateTranslation) *LanguageCreate {
-	ids := make([]string, len(r))
-	for i := range r {
-		ids[i] = r[i].ID
+// AddMomentTranslations adds the "moment_translations" edges to the MomentTranslation entity.
+func (lc *LanguageCreate) AddMomentTranslations(m ...*MomentTranslation) *LanguageCreate {
+	ids := make([]string, len(m))
+	for i := range m {
+		ids[i] = m[i].ID
 	}
-	return lc.AddRecentUpdateTranslationIDs(ids...)
+	return lc.AddMomentTranslationIDs(ids...)
 }
 
 // Mutation returns the LanguageMutation object of the builder.
@@ -716,15 +716,15 @@ func (lc *LanguageCreate) createSpec() (*Language, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := lc.mutation.RecentUpdateTranslationsIDs(); len(nodes) > 0 {
+	if nodes := lc.mutation.MomentTranslationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   language.RecentUpdateTranslationsTable,
-			Columns: []string{language.RecentUpdateTranslationsColumn},
+			Table:   language.MomentTranslationsTable,
+			Columns: []string{language.MomentTranslationsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(recentupdatetranslation.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(momenttranslation.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

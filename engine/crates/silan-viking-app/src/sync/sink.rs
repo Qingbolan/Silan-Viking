@@ -188,6 +188,12 @@ impl Sink for SqliteSink {
             insert_row(&tx, row)?;
         }
 
+        // Moments is a one-way domain migration. Once the new projection is
+        // complete, remove the obsolete legacy tables in the same
+        // transaction so readers can never observe two competing models.
+        tx.execute("DROP TABLE IF EXISTS recent_update_translations", [])?;
+        tx.execute("DROP TABLE IF EXISTS recent_updates", [])?;
+
         tx.commit()?;
         Ok(())
     }

@@ -103,7 +103,7 @@ func graphGroup(entityType string) int {
 		return 3
 	case "episode":
 		return 4
-	case "update":
+	case "moment":
 		return 5
 	default:
 		return 9

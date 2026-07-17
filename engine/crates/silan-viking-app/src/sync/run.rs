@@ -231,7 +231,7 @@ const IDENTITY_COLUMNS: &[&str] = &[
     "idea_id",
     "project_id",
     "episode_id",
-    "recent_update_id",
+    "moment_id",
     "personal_info_id",
 ];
 

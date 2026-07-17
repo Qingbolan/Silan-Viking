@@ -1252,7 +1252,7 @@ fn validate_document_state(kind: &str, state: &DocumentStateInput) -> Result<(),
             "published",
             "concluded",
         ][..],
-        "update" => &["active", "ongoing", "completed"][..],
+        "moment" => &["active", "ongoing", "completed"][..],
         other => return Err(format!("state controls are not supported for `{other}`")),
     };
     if !allowed_status.contains(&state.status.as_str()) {

@@ -36,7 +36,7 @@ func (ItemPart) Fields() []ent.Field {
 		// p_<ulid>, sourced from meta.toml, stable across syncs.
 		field.String("part_id"),
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("entity_id").
 			StorageKey("entity_id"),
 		// overview/progress/body/...

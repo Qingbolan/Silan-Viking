@@ -17,7 +17,7 @@ pub enum ContentError {
 
     /// A directory name did not correspond to one of the 6 content types.
     #[error(
-        "unknown content type `{name}`; expected one of blog/project/idea/episode/resume/update"
+        "unknown content type `{name}`; expected one of blog/project/idea/episode/resume/moment"
     )]
     UnknownContentKind { name: String },
 

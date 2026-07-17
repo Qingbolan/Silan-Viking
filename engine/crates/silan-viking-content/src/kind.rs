@@ -27,8 +27,8 @@ pub enum ContentKind {
     Episode,
     /// The owner's resume — a single Item with multiple Parts (`resume/`).
     Resume,
-    /// A timestamped update / changelog entry (`update/`).
-    Update,
+    /// A timestamped moment / changelog entry (`moment/`).
+    Moment,
 }
 
 impl ContentKind {
@@ -40,7 +40,7 @@ impl ContentKind {
         ContentKind::Project,
         ContentKind::Episode,
         ContentKind::Resume,
-        ContentKind::Update,
+        ContentKind::Moment,
     ];
 
     /// The `content/resources/{dir}/` directory name for this kind.
@@ -54,7 +54,7 @@ impl ContentKind {
             ContentKind::Project => "projects",
             ContentKind::Episode => "episode",
             ContentKind::Resume => "resume",
-            ContentKind::Update => "update",
+            ContentKind::Moment => "moment",
         }
     }
 
@@ -69,7 +69,7 @@ impl ContentKind {
             ContentKind::Project => "project",
             ContentKind::Episode => "episode",
             ContentKind::Resume => "resume",
-            ContentKind::Update => "update",
+            ContentKind::Moment => "moment",
         }
     }
 

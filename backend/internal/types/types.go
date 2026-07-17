@@ -828,12 +828,12 @@ type ProjectTimeline struct {
 	Duration string `json:"duration"`
 }
 
-type RecentUpdate struct {
+type Moment struct {
 	ID          string   `json:"id"`
 	UserID      string   `json:"user_id"`
 	Slug        string   `json:"slug"`
 	Type        string   `json:"type"`
-	UpdateType  string   `json:"update_type"`
+	MomentType  string   `json:"moment_type"`
 	Visibility  string   `json:"visibility"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
@@ -1038,13 +1038,13 @@ type UpdateIdeaRequest struct {
 	CodeRepository       string   `json:"code_repository,optional"`
 }
 
-type UpdateListRequest struct {
+type MomentListRequest struct {
 	Language string `form:"lang,default=en"`
 }
 
-type UpdateListResponse struct {
-	Updates []RecentUpdate `json:"updates"`
-	Total   int            `json:"total"`
+type MomentListResponse struct {
+	Moments []Moment `json:"moments"`
+	Total   int      `json:"total"`
 }
 
 type UpdatePersonalInfoRequest struct {
@@ -1068,7 +1068,7 @@ type UpdateProjectRequest struct {
 	Year        int      `json:"year,optional"`
 }
 
-type UpdateRequest struct {
+type MomentRequest struct {
 	Slug     string `path:"slug"`
 	Language string `form:"lang,default=en"`
 }

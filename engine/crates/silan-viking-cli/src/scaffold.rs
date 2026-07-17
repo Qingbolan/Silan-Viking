@@ -29,7 +29,7 @@ pub fn type_dir_name(kind: &str) -> Result<&'static str, ScaffoldError> {
         "blog" => Ok("blog"),
         "project" => Ok("projects"),
         "episode" => Ok("episode"),
-        "update" => Ok("update"),
+        "moment" => Ok("moment"),
         "resume" => Ok("resume"),
         other => Err(ScaffoldError(format!("unknown content type `{other}`"))),
     }
@@ -77,7 +77,7 @@ fn validate_slug(slug: &str) -> Result<(), ScaffoldError> {
     }
 }
 
-/// Today's date as `YYYY-MM-DD` (UTC) — the default for an `update`'s
+/// Today's date as `YYYY-MM-DD` (UTC) — the default for an `moment`'s
 /// required `date` field. The author edits it afterwards.
 fn today_iso8601() -> String {
     let now = time::OffsetDateTime::now_utc().date();
@@ -164,12 +164,12 @@ fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
             lines.push("status: draft".to_owned());
             lines.push("visibility: private".to_owned());
         }
-        "update" => {
-            lines.push("kind: update".to_owned());
-            lines.push("update_type: progress".to_owned());
+        "moment" => {
+            lines.push("kind: moment".to_owned());
+            lines.push("moment_type: progress".to_owned());
             lines.push("status: active".to_owned());
             lines.push("visibility: private".to_owned());
-            // `date` is a required field for `update` (content/SCHEMA.md).
+            // `date` is a required field for `moment` (content/SCHEMA.md).
             lines.push(format!("date: {}", today_iso8601()));
         }
         _ => {}
@@ -180,7 +180,7 @@ fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
     format!("---\n{}\n---\n", lines.join("\n"))
 }
 
-/// Scaffold a new flat-type Item (idea / blog / project / update).
+/// Scaffold a new flat-type Item (idea / blog / project / moment).
 ///
 /// Lays down `resources/<kind>/<slug>/parts/<primary-role>/{meta.toml,en.md}`.
 pub fn new_item(content_root: &Path, kind: &str, slug: &str) -> Result<Scaffolded, ScaffoldError> {
@@ -443,7 +443,7 @@ pub fn episode_dir(
 fn primary_role(kind: &str) -> Result<&'static str, ScaffoldError> {
     match kind {
         "idea" | "project" => Ok("overview"),
-        "blog" | "update" | "episode" => Ok("body"),
+        "blog" | "moment" | "episode" => Ok("body"),
         other => Err(ScaffoldError(format!(
             "`{other}` is not a scaffoldable flat type"
         ))),

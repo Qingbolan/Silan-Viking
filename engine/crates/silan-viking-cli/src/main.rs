@@ -62,11 +62,11 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "project progress <slug>",
             "project list [--status <status>|--tag <tag>]",
         ],
-        "update" => &[
-            "update new|list|show|edit|archive|rm <slug>",
-            "update add-part <slug> <role> · update add-lang <slug> <lang>",
-            "update status <slug> <state> · update set-type <slug> <update-type>",
-            "update list [--status <status>|--tag <tag>]",
+        "moment" => &[
+            "moment new|list|show|edit|archive|rm <slug>",
+            "moment add-part <slug> <role> · moment add-lang <slug> <lang>",
+            "moment status <slug> <state> · moment set-type <slug> <moment-type>",
+            "moment list [--status <status>|--tag <tag>]",
         ],
         "episode" => &[
             "episode series new|list|show|reorder|archive|rm <series>",
@@ -355,14 +355,14 @@ fn run(args: Vec<String>) -> Result<(), String> {
             type_set_publish(&opts.content_root, "blog", slug, "draft", "private")
         }
         ["project", "progress", slug] => project_progress(&opts.content_root, slug),
-        ["update", "status", slug, state] => {
-            type_set_field(&opts.content_root, "update", slug, "status", state)
+        ["moment", "status", slug, state] => {
+            type_set_field(&opts.content_root, "moment", slug, "status", state)
         }
-        ["update", "set-type", slug, ut] => {
-            type_set_field(&opts.content_root, "update", slug, "update_type", ut)
+        ["moment", "set-type", slug, ut] => {
+            type_set_field(&opts.content_root, "moment", slug, "moment_type", ut)
         }
 
-        // -- flat-type write verbs (idea / blog / project / update) --
+        // -- flat-type write verbs (idea / blog / project / moment) --
         [kind, "new", slug] if is_flat_kind(kind) => type_new(&opts.content_root, kind, slug),
         [kind, "add-part", slug, role] if is_flat_kind(kind) => {
             type_add_part(&opts.content_root, kind, slug, role)
@@ -754,7 +754,7 @@ fn print_help(content_root: &Path) {
 
     println!("  {}", h("[Content]"));
     row(
-        "idea|blog|project|update",
+        "idea|blog|project|moment",
         "Create / edit / list a content item",
     );
     row("episode", "Manage episode series and per-episode entries");
@@ -807,11 +807,11 @@ fn print_help(content_root: &Path) {
     println!("{}", h("Content verbs:"));
     println!(
         "  {}",
-        d("idea|blog|project|update new|list|show|edit|archive|rm <slug>")
+        d("idea|blog|project|moment new|list|show|edit|archive|rm <slug>")
     );
     println!(
         "  {}",
-        d("idea|blog|project|update add-part <slug> <role> · add-lang <slug> <lang>")
+        d("idea|blog|project|moment add-part <slug> <role> · add-lang <slug> <lang>")
     );
     println!(
         "  {}",
@@ -823,7 +823,7 @@ fn print_help(content_root: &Path) {
     );
     println!(
         "  {}",
-        d("update status <slug> <state> · update set-type <slug> <update-type>")
+        d("moment status <slug> <state> · moment set-type <slug> <moment-type>")
     );
     println!(
         "  {}",
@@ -970,11 +970,11 @@ fn init_content(content_root: &Path) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
     }
 
-    // The six content-type directories (`06` §6.2.1). `episode` / `update`
+    // The six content-type directories (`06` §6.2.1). `episode` / `moment`
     // stay empty collections — no seed item, just the directory so the
     // collection exists. `blog` / `ideas` / `projects` each get one seed
     // item below; `resume` is already scaffolded above.
-    for type_dir in ["blog", "ideas", "projects", "episode", "update"] {
+    for type_dir in ["blog", "ideas", "projects", "episode", "moment"] {
         fs::create_dir_all(content_root.join("resources").join(type_dir))
             .map_err(|e| e.to_string())?;
     }
@@ -1637,7 +1637,7 @@ fn relation_item_file(content_root: &Path, uri: &str) -> Result<PathBuf, String>
         "project" | "projects" => "projects",
         "blog" | "blogs" => "blog",
         "episode" | "episodes" => "episode",
-        "update" | "updates" => "update",
+        "moment" | "moments" => "moment",
         "resume" => "resume",
         other => return Err(format!("unsupported relation kind `{other}` in {uri}")),
     };
@@ -1919,7 +1919,7 @@ fn resolve_stats_filter(conn: &Connection, uri: &str) -> Result<StatsFilter, Str
         "project" | "projects" => ("project", "projects"),
         "idea" | "ideas" => ("idea", "ideas"),
         "episode" | "episodes" => ("episode", "episodes"),
-        "update" | "updates" => ("update", "recent_updates"),
+        "moment" | "moments" => ("moment", "moments"),
         "resume" => {
             let entity_id = conn
                 .query_row("SELECT id FROM personal_info LIMIT 1", [], |row| {
@@ -2222,7 +2222,7 @@ fn completion(shell: &str) -> Result<(), String> {
                 "# silan bash completion — source this, or add to ~/.bashrc:\n\
                  #   eval \"$(silan completion bash)\"\n\
                  _silan() {{\n  \
-                   local groups=\"idea blog project episode resume update content index \\\n    \
+                   local groups=\"idea blog project episode resume moment content index \\\n    \
                      relation site stats proposal mcp skill init config doctor completion\"\n  \
                    COMPREPLY=( $(compgen -W \"$groups\" -- \"${{COMP_WORDS[COMP_CWORD]}}\") )\n\
                  }}\n\
@@ -2237,7 +2237,7 @@ fn completion(shell: &str) -> Result<(), String> {
                  #compdef silan\n\
                  _silan() {{\n  \
                    local -a groups\n  \
-                   groups=(idea blog project episode resume update content index \\\n    \
+                   groups=(idea blog project episode resume moment content index \\\n    \
                      relation site stats proposal mcp skill init config doctor completion)\n  \
                    compadd -- $groups\n\
                  }}\n\
@@ -2249,7 +2249,7 @@ fn completion(shell: &str) -> Result<(), String> {
             println!(
                 "# silan fish completion — save to ~/.config/fish/completions/silan.fish\n\
                  complete -c silan -f -n __fish_use_subcommand -a \\\n  \
-                 'idea blog project episode resume update content index relation site \\\n   \
+                 'idea blog project episode resume moment content index relation site \\\n   \
                  stats proposal mcp skill init config doctor completion'"
             );
             Ok(())
@@ -2534,7 +2534,7 @@ fn site_publish(content_root: &Path, uri: &str) -> Result<(), String> {
         "projects" => "project",
         "blogs" => "blog",
         "episodes" => "episode",
-        "updates" => "update",
+        "moments" => "moment",
         other => other,
     };
     type_set_field(content_root, kind, slug, "visibility", "public")?;
@@ -4763,7 +4763,7 @@ fn parse_kind(kind: &str) -> Option<ContentKind> {
         "project" => Some(ContentKind::Project),
         "episode" => Some(ContentKind::Episode),
         "resume" => Some(ContentKind::Resume),
-        "update" => Some(ContentKind::Update),
+        "moment" => Some(ContentKind::Moment),
         _ => None,
     }
 }
@@ -4772,7 +4772,7 @@ fn parse_kind(kind: &str) -> Option<ContentKind> {
 /// type except `episode`, which nests under a series, and `resume`, the
 /// single Item created by `init`).
 fn is_flat_kind(kind: &str) -> bool {
-    matches!(kind, "idea" | "blog" | "project" | "update")
+    matches!(kind, "idea" | "blog" | "project" | "moment")
 }
 
 // ── content scaffolding verbs (`02` §一) ────────────────────────────────────
@@ -4833,9 +4833,9 @@ fn type_edit(
 
 /// `archive` takes an Item off the site (`02` §一). Its mechanism depends on
 /// the type: blog/episode have an `archived` value in their `status` enum, so
-/// archive sets that. idea/project/update have no `archived` status, so
+/// archive sets that. idea/project/moment have no `archived` status, so
 /// archive sets `visibility` to `unlisted` instead (`10` rule 6: only
-/// `visibility=public` is projected). update's `status` is explicitly left
+/// `visibility=public` is projected). moment's `status` is explicitly left
 /// unchanged (`02` §一: "归档:status 不变").
 fn type_archive(content_root: &Path, kind: &str, slug: &str) -> Result<(), String> {
     let content_kind = parse_kind(kind).ok_or_else(|| format!("unknown type `{kind}`"))?;
@@ -4917,7 +4917,7 @@ fn find_incoming_relations(content_root: &Path, target_uri: &str) -> Vec<(String
     if !resources.exists() {
         return out;
     }
-    let kinds = ["ideas", "blog", "projects", "episode", "resume", "update"];
+    let kinds = ["ideas", "blog", "projects", "episode", "resume", "moment"];
     for kind_dir in kinds {
         let dir = resources.join(kind_dir);
         if !dir.exists() {
@@ -5051,7 +5051,7 @@ fn primary_role(kind: &str) -> &'static str {
 
 /// Set a frontmatter field of a flat-type Item, validating the value against
 /// the SCHEMA enum if the field is enumerated. This backs `idea status`,
-/// `blog publish/unpublish`, `update status/set-type`, and `archive`
+/// `blog publish/unpublish`, `moment status/set-type`, and `archive`
 /// (`02` §一 type-specific verbs). The frontmatter lives in the canonical
 /// `en.md` of the type's primary Part (`01` §1.3.1).
 fn type_set_field(
@@ -5095,7 +5095,7 @@ fn type_set_field(
     Ok(())
 }
 
-/// Type-specific `publish` / `unpublish` for flat-type Items (blog, update,
+/// Type-specific `publish` / `unpublish` for flat-type Items (blog, moment,
 /// idea, project). `status` is the lifecycle field; `visibility` is the
 /// website-projection field — `01` §1.7 / `10` §10.3 keep them separate, but
 /// the user-visible `publish` verb (USAGE §3 table; `02` §一) sets BOTH in

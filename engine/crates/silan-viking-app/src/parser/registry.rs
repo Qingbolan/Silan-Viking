@@ -12,9 +12,9 @@ use super::blog::BlogParser;
 use super::episode::EpisodeParser;
 use super::error::ParseError;
 use super::idea::IdeaParser;
+use super::moment::MomentParser;
 use super::project::ProjectParser;
 use super::resume::ResumeParser;
-use super::update::UpdateParser;
 use super::Parser;
 use crate::schema::Schema;
 use silan_viking_content::{ContentKind, Item};
@@ -27,7 +27,7 @@ pub struct ParserRegistry {
     project: ProjectParser,
     episode: EpisodeParser,
     resume: ResumeParser,
-    update: UpdateParser,
+    moment: MomentParser,
 }
 
 impl ParserRegistry {
@@ -40,7 +40,7 @@ impl ParserRegistry {
             project: ProjectParser::new(Arc::clone(&schema)),
             episode: EpisodeParser::new(Arc::clone(&schema)),
             resume: ResumeParser::new(Arc::clone(&schema)),
-            update: UpdateParser::new(schema),
+            moment: MomentParser::new(schema),
         }
     }
 
@@ -54,7 +54,7 @@ impl ParserRegistry {
             ContentKind::Project => &self.project,
             ContentKind::Episode => &self.episode,
             ContentKind::Resume => &self.resume,
-            ContentKind::Update => &self.update,
+            ContentKind::Moment => &self.moment,
         })
     }
 

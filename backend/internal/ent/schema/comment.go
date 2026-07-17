@@ -31,7 +31,7 @@ func (Comment) Fields() []ent.Field {
 			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update").
+			Values("blog", "project", "idea", "episode", "resume", "moment").
 			Comment("Type of the commented entity (M0.5a §11.6: enum)"),
 		field.String("entity_id").
 			StorageKey("entity_id").

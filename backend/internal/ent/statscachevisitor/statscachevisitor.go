@@ -72,7 +72,7 @@ const (
 	EntityTypeIdea    EntityType = "idea"
 	EntityTypeEpisode EntityType = "episode"
 	EntityTypeResume  EntityType = "resume"
-	EntityTypeUpdate  EntityType = "update"
+	EntityTypeMoment  EntityType = "moment"
 )
 
 func (et EntityType) String() string {
@@ -82,7 +82,7 @@ func (et EntityType) String() string {
 // EntityTypeValidator is a validator for the "entity_type" field enum values. It is called by the builders before save.
 func EntityTypeValidator(et EntityType) error {
 	switch et {
-	case EntityTypeBlog, EntityTypeProject, EntityTypeIdea, EntityTypeEpisode, EntityTypeResume, EntityTypeUpdate:
+	case EntityTypeBlog, EntityTypeProject, EntityTypeIdea, EntityTypeEpisode, EntityTypeResume, EntityTypeMoment:
 		return nil
 	default:
 		return fmt.Errorf("statscachevisitor: invalid enum value for entity_type field: %q", et)

@@ -63,7 +63,7 @@ const Footer: React.FC = () => {
   ];
   const research: InternalLink[] = [
     { label: zh ? '研究想法' : 'Research ideas', to: '/ideas' },
-    { label: zh ? '近期更新' : 'Recent updates', to: '/recent-updates' },
+    { label: zh ? '近期更新' : 'Recent moments', to: '/moments' },
     { label: zh ? '联系' : 'Contact', to: '/contact' },
   ];
 

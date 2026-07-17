@@ -30,6 +30,8 @@ import (
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
 	"silan-backend/internal/ent/language"
+	"silan-backend/internal/ent/moment"
+	"silan-backend/internal/ent/momenttranslation"
 	"silan-backend/internal/ent/partentry"
 	"silan-backend/internal/ent/partentrytranslation"
 	"silan-backend/internal/ent/personalinfo"
@@ -46,8 +48,6 @@ import (
 	"silan-backend/internal/ent/publication"
 	"silan-backend/internal/ent/publicationauthor"
 	"silan-backend/internal/ent/publicationtranslation"
-	"silan-backend/internal/ent/recentupdate"
-	"silan-backend/internal/ent/recentupdatetranslation"
 	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/ent/researchproject"
 	"silan-backend/internal/ent/researchprojectdetail"
@@ -1078,6 +1078,112 @@ func init() {
 			return nil
 		}
 	}()
+	momentFields := schema.Moment{}.Fields()
+	_ = momentFields
+	// momentDescSlug is the schema descriptor for slug field.
+	momentDescSlug := momentFields[2].Descriptor()
+	// moment.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
+	moment.SlugValidator = func() func(string) error {
+		validators := momentDescSlug.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(slug string) error {
+			for _, fn := range fns {
+				if err := fn(slug); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// momentDescTitle is the schema descriptor for title field.
+	momentDescTitle := momentFields[6].Descriptor()
+	// moment.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	moment.TitleValidator = momentDescTitle.Validators[0].(func(string) error)
+	// momentDescPinned is the schema descriptor for pinned field.
+	momentDescPinned := momentFields[12].Descriptor()
+	// moment.DefaultPinned holds the default value on creation for the pinned field.
+	moment.DefaultPinned = momentDescPinned.Default.(bool)
+	// momentDescExternalID is the schema descriptor for external_id field.
+	momentDescExternalID := momentFields[13].Descriptor()
+	// moment.ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
+	moment.ExternalIDValidator = momentDescExternalID.Validators[0].(func(string) error)
+	// momentDescImageURL is the schema descriptor for image_url field.
+	momentDescImageURL := momentFields[14].Descriptor()
+	// moment.ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
+	moment.ImageURLValidator = momentDescImageURL.Validators[0].(func(string) error)
+	// momentDescVideoURL is the schema descriptor for video_url field.
+	momentDescVideoURL := momentFields[15].Descriptor()
+	// moment.VideoURLValidator is a validator for the "video_url" field. It is called by the builders before save.
+	moment.VideoURLValidator = momentDescVideoURL.Validators[0].(func(string) error)
+	// momentDescDocumentURL is the schema descriptor for document_url field.
+	momentDescDocumentURL := momentFields[16].Descriptor()
+	// moment.DocumentURLValidator is a validator for the "document_url" field. It is called by the builders before save.
+	moment.DocumentURLValidator = momentDescDocumentURL.Validators[0].(func(string) error)
+	// momentDescDemoURL is the schema descriptor for demo_url field.
+	momentDescDemoURL := momentFields[20].Descriptor()
+	// moment.DemoURLValidator is a validator for the "demo_url" field. It is called by the builders before save.
+	moment.DemoURLValidator = momentDescDemoURL.Validators[0].(func(string) error)
+	// momentDescGithubURL is the schema descriptor for github_url field.
+	momentDescGithubURL := momentFields[21].Descriptor()
+	// moment.GithubURLValidator is a validator for the "github_url" field. It is called by the builders before save.
+	moment.GithubURLValidator = momentDescGithubURL.Validators[0].(func(string) error)
+	// momentDescExternalURL is the schema descriptor for external_url field.
+	momentDescExternalURL := momentFields[22].Descriptor()
+	// moment.ExternalURLValidator is a validator for the "external_url" field. It is called by the builders before save.
+	moment.ExternalURLValidator = momentDescExternalURL.Validators[0].(func(string) error)
+	// momentDescSortOrder is the schema descriptor for sort_order field.
+	momentDescSortOrder := momentFields[24].Descriptor()
+	// moment.DefaultSortOrder holds the default value on creation for the sort_order field.
+	moment.DefaultSortOrder = momentDescSortOrder.Default.(int)
+	// momentDescCreatedAt is the schema descriptor for created_at field.
+	momentDescCreatedAt := momentFields[25].Descriptor()
+	// moment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	moment.DefaultCreatedAt = momentDescCreatedAt.Default.(func() time.Time)
+	// momentDescUpdatedAt is the schema descriptor for updated_at field.
+	momentDescUpdatedAt := momentFields[26].Descriptor()
+	// moment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	moment.DefaultUpdatedAt = momentDescUpdatedAt.Default.(func() time.Time)
+	// moment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	moment.UpdateDefaultUpdatedAt = momentDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// momentDescID is the schema descriptor for id field.
+	momentDescID := momentFields[0].Descriptor()
+	// moment.DefaultID holds the default value on creation for the id field.
+	moment.DefaultID = momentDescID.Default.(func() string)
+	momenttranslationFields := schema.MomentTranslation{}.Fields()
+	_ = momenttranslationFields
+	// momenttranslationDescLanguageCode is the schema descriptor for language_code field.
+	momenttranslationDescLanguageCode := momenttranslationFields[2].Descriptor()
+	// momenttranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
+	momenttranslation.LanguageCodeValidator = func() func(string) error {
+		validators := momenttranslationDescLanguageCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(language string) error {
+			for _, fn := range fns {
+				if err := fn(language); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// momenttranslationDescTitle is the schema descriptor for title field.
+	momenttranslationDescTitle := momenttranslationFields[3].Descriptor()
+	// momenttranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	momenttranslation.TitleValidator = momenttranslationDescTitle.Validators[0].(func(string) error)
+	// momenttranslationDescCreatedAt is the schema descriptor for created_at field.
+	momenttranslationDescCreatedAt := momenttranslationFields[5].Descriptor()
+	// momenttranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	momenttranslation.DefaultCreatedAt = momenttranslationDescCreatedAt.Default.(func() time.Time)
+	// momenttranslationDescID is the schema descriptor for id field.
+	momenttranslationDescID := momenttranslationFields[0].Descriptor()
+	// momenttranslation.DefaultID holds the default value on creation for the id field.
+	momenttranslation.DefaultID = momenttranslationDescID.Default.(func() string)
 	partentryFields := schema.PartEntry{}.Fields()
 	_ = partentryFields
 	// partentryDescSortOrder is the schema descriptor for sort_order field.
@@ -1642,112 +1748,6 @@ func init() {
 	publicationtranslationDescID := publicationtranslationFields[0].Descriptor()
 	// publicationtranslation.DefaultID holds the default value on creation for the id field.
 	publicationtranslation.DefaultID = publicationtranslationDescID.Default.(func() string)
-	recentupdateFields := schema.RecentUpdate{}.Fields()
-	_ = recentupdateFields
-	// recentupdateDescSlug is the schema descriptor for slug field.
-	recentupdateDescSlug := recentupdateFields[2].Descriptor()
-	// recentupdate.SlugValidator is a validator for the "slug" field. It is called by the builders before save.
-	recentupdate.SlugValidator = func() func(string) error {
-		validators := recentupdateDescSlug.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(slug string) error {
-			for _, fn := range fns {
-				if err := fn(slug); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// recentupdateDescTitle is the schema descriptor for title field.
-	recentupdateDescTitle := recentupdateFields[6].Descriptor()
-	// recentupdate.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	recentupdate.TitleValidator = recentupdateDescTitle.Validators[0].(func(string) error)
-	// recentupdateDescPinned is the schema descriptor for pinned field.
-	recentupdateDescPinned := recentupdateFields[12].Descriptor()
-	// recentupdate.DefaultPinned holds the default value on creation for the pinned field.
-	recentupdate.DefaultPinned = recentupdateDescPinned.Default.(bool)
-	// recentupdateDescExternalID is the schema descriptor for external_id field.
-	recentupdateDescExternalID := recentupdateFields[13].Descriptor()
-	// recentupdate.ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
-	recentupdate.ExternalIDValidator = recentupdateDescExternalID.Validators[0].(func(string) error)
-	// recentupdateDescImageURL is the schema descriptor for image_url field.
-	recentupdateDescImageURL := recentupdateFields[14].Descriptor()
-	// recentupdate.ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
-	recentupdate.ImageURLValidator = recentupdateDescImageURL.Validators[0].(func(string) error)
-	// recentupdateDescVideoURL is the schema descriptor for video_url field.
-	recentupdateDescVideoURL := recentupdateFields[15].Descriptor()
-	// recentupdate.VideoURLValidator is a validator for the "video_url" field. It is called by the builders before save.
-	recentupdate.VideoURLValidator = recentupdateDescVideoURL.Validators[0].(func(string) error)
-	// recentupdateDescDocumentURL is the schema descriptor for document_url field.
-	recentupdateDescDocumentURL := recentupdateFields[16].Descriptor()
-	// recentupdate.DocumentURLValidator is a validator for the "document_url" field. It is called by the builders before save.
-	recentupdate.DocumentURLValidator = recentupdateDescDocumentURL.Validators[0].(func(string) error)
-	// recentupdateDescDemoURL is the schema descriptor for demo_url field.
-	recentupdateDescDemoURL := recentupdateFields[20].Descriptor()
-	// recentupdate.DemoURLValidator is a validator for the "demo_url" field. It is called by the builders before save.
-	recentupdate.DemoURLValidator = recentupdateDescDemoURL.Validators[0].(func(string) error)
-	// recentupdateDescGithubURL is the schema descriptor for github_url field.
-	recentupdateDescGithubURL := recentupdateFields[21].Descriptor()
-	// recentupdate.GithubURLValidator is a validator for the "github_url" field. It is called by the builders before save.
-	recentupdate.GithubURLValidator = recentupdateDescGithubURL.Validators[0].(func(string) error)
-	// recentupdateDescExternalURL is the schema descriptor for external_url field.
-	recentupdateDescExternalURL := recentupdateFields[22].Descriptor()
-	// recentupdate.ExternalURLValidator is a validator for the "external_url" field. It is called by the builders before save.
-	recentupdate.ExternalURLValidator = recentupdateDescExternalURL.Validators[0].(func(string) error)
-	// recentupdateDescSortOrder is the schema descriptor for sort_order field.
-	recentupdateDescSortOrder := recentupdateFields[24].Descriptor()
-	// recentupdate.DefaultSortOrder holds the default value on creation for the sort_order field.
-	recentupdate.DefaultSortOrder = recentupdateDescSortOrder.Default.(int)
-	// recentupdateDescCreatedAt is the schema descriptor for created_at field.
-	recentupdateDescCreatedAt := recentupdateFields[25].Descriptor()
-	// recentupdate.DefaultCreatedAt holds the default value on creation for the created_at field.
-	recentupdate.DefaultCreatedAt = recentupdateDescCreatedAt.Default.(func() time.Time)
-	// recentupdateDescUpdatedAt is the schema descriptor for updated_at field.
-	recentupdateDescUpdatedAt := recentupdateFields[26].Descriptor()
-	// recentupdate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	recentupdate.DefaultUpdatedAt = recentupdateDescUpdatedAt.Default.(func() time.Time)
-	// recentupdate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	recentupdate.UpdateDefaultUpdatedAt = recentupdateDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// recentupdateDescID is the schema descriptor for id field.
-	recentupdateDescID := recentupdateFields[0].Descriptor()
-	// recentupdate.DefaultID holds the default value on creation for the id field.
-	recentupdate.DefaultID = recentupdateDescID.Default.(func() string)
-	recentupdatetranslationFields := schema.RecentUpdateTranslation{}.Fields()
-	_ = recentupdatetranslationFields
-	// recentupdatetranslationDescLanguageCode is the schema descriptor for language_code field.
-	recentupdatetranslationDescLanguageCode := recentupdatetranslationFields[2].Descriptor()
-	// recentupdatetranslation.LanguageCodeValidator is a validator for the "language_code" field. It is called by the builders before save.
-	recentupdatetranslation.LanguageCodeValidator = func() func(string) error {
-		validators := recentupdatetranslationDescLanguageCode.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(language string) error {
-			for _, fn := range fns {
-				if err := fn(language); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// recentupdatetranslationDescTitle is the schema descriptor for title field.
-	recentupdatetranslationDescTitle := recentupdatetranslationFields[3].Descriptor()
-	// recentupdatetranslation.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	recentupdatetranslation.TitleValidator = recentupdatetranslationDescTitle.Validators[0].(func(string) error)
-	// recentupdatetranslationDescCreatedAt is the schema descriptor for created_at field.
-	recentupdatetranslationDescCreatedAt := recentupdatetranslationFields[5].Descriptor()
-	// recentupdatetranslation.DefaultCreatedAt holds the default value on creation for the created_at field.
-	recentupdatetranslation.DefaultCreatedAt = recentupdatetranslationDescCreatedAt.Default.(func() time.Time)
-	// recentupdatetranslationDescID is the schema descriptor for id field.
-	recentupdatetranslationDescID := recentupdatetranslationFields[0].Descriptor()
-	// recentupdatetranslation.DefaultID holds the default value on creation for the id field.
-	recentupdatetranslation.DefaultID = recentupdatetranslationDescID.Default.(func() string)
 	requestlogFields := schema.RequestLog{}.Fields()
 	_ = requestlogFields
 	// requestlogDescMethod is the schema descriptor for method field.

@@ -9,7 +9,7 @@
 //!   prose body;
 //! - one **`content_relation` row per declared relation**.
 //!
-//! All five prose types (idea / blog / project / episode / update) share
+//! All five prose types (idea / blog / project / episode / moment) share
 //! this engine; resume has its own mapper.
 
 use super::media_uri;

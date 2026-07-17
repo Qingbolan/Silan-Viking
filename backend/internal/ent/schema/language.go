@@ -66,6 +66,6 @@ func (Language) Edges() []ent.Edge {
 		edge.To("research_project_detail_translations", ResearchProjectDetailTranslation.Type),
 		edge.To("publication_translations", PublicationTranslation.Type),
 		edge.To("award_translations", AwardTranslation.Type),
-		edge.To("recent_update_translations", RecentUpdateTranslation.Type),
+		edge.To("moment_translations", MomentTranslation.Type),
 	}
 }

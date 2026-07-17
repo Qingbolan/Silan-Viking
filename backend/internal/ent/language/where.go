@@ -643,21 +643,21 @@ func HasAwardTranslationsWith(preds ...predicate.AwardTranslation) predicate.Lan
 	})
 }
 
-// HasRecentUpdateTranslations applies the HasEdge predicate on the "recent_update_translations" edge.
-func HasRecentUpdateTranslations() predicate.Language {
+// HasMomentTranslations applies the HasEdge predicate on the "moment_translations" edge.
+func HasMomentTranslations() predicate.Language {
 	return predicate.Language(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, RecentUpdateTranslationsTable, RecentUpdateTranslationsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, MomentTranslationsTable, MomentTranslationsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasRecentUpdateTranslationsWith applies the HasEdge predicate on the "recent_update_translations" edge with a given conditions (other predicates).
-func HasRecentUpdateTranslationsWith(preds ...predicate.RecentUpdateTranslation) predicate.Language {
+// HasMomentTranslationsWith applies the HasEdge predicate on the "moment_translations" edge with a given conditions (other predicates).
+func HasMomentTranslationsWith(preds ...predicate.MomentTranslation) predicate.Language {
 	return predicate.Language(func(s *sql.Selector) {
-		step := newRecentUpdateTranslationsStep()
+		step := newMomentTranslationsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

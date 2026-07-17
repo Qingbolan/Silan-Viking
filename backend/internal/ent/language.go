@@ -65,8 +65,8 @@ type LanguageEdges struct {
 	PublicationTranslations []*PublicationTranslation `json:"publication_translations,omitempty"`
 	// AwardTranslations holds the value of the award_translations edge.
 	AwardTranslations []*AwardTranslation `json:"award_translations,omitempty"`
-	// RecentUpdateTranslations holds the value of the recent_update_translations edge.
-	RecentUpdateTranslations []*RecentUpdateTranslation `json:"recent_update_translations,omitempty"`
+	// MomentTranslations holds the value of the moment_translations edge.
+	MomentTranslations []*MomentTranslation `json:"moment_translations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [17]bool
@@ -216,13 +216,13 @@ func (e LanguageEdges) AwardTranslationsOrErr() ([]*AwardTranslation, error) {
 	return nil, &NotLoadedError{edge: "award_translations"}
 }
 
-// RecentUpdateTranslationsOrErr returns the RecentUpdateTranslations value or an error if the edge
+// MomentTranslationsOrErr returns the MomentTranslations value or an error if the edge
 // was not loaded in eager-loading.
-func (e LanguageEdges) RecentUpdateTranslationsOrErr() ([]*RecentUpdateTranslation, error) {
+func (e LanguageEdges) MomentTranslationsOrErr() ([]*MomentTranslation, error) {
 	if e.loadedTypes[16] {
-		return e.RecentUpdateTranslations, nil
+		return e.MomentTranslations, nil
 	}
-	return nil, &NotLoadedError{edge: "recent_update_translations"}
+	return nil, &NotLoadedError{edge: "moment_translations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -374,9 +374,9 @@ func (l *Language) QueryAwardTranslations() *AwardTranslationQuery {
 	return NewLanguageClient(l.config).QueryAwardTranslations(l)
 }
 
-// QueryRecentUpdateTranslations queries the "recent_update_translations" edge of the Language entity.
-func (l *Language) QueryRecentUpdateTranslations() *RecentUpdateTranslationQuery {
-	return NewLanguageClient(l.config).QueryRecentUpdateTranslations(l)
+// QueryMomentTranslations queries the "moment_translations" edge of the Language entity.
+func (l *Language) QueryMomentTranslations() *MomentTranslationQuery {
+	return NewLanguageClient(l.config).QueryMomentTranslations(l)
 }
 
 // Update returns a builder for updating this Language.

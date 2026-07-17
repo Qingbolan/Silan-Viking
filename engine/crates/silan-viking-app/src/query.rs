@@ -310,7 +310,7 @@ mod tests {
         assert!(
             hits.iter()
                 .any(|hit| hit.document.slug == "changelog-2026-q2"),
-            "update fixture should be recalled by body text"
+            "moment fixture should be recalled by body text"
         );
     }
 

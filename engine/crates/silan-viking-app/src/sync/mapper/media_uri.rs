@@ -51,7 +51,7 @@ fn rewrite_item_reference(tail: &str) -> Option<String> {
         ["projects", slug, ..] => Some(format!("/projects/{slug}")),
         ["blog", slug, ..] => Some(format!("/blog/{slug}")),
         ["episode", _series, slug, ..] => Some(format!("/episodes/{slug}")),
-        ["update", ..] => Some("/recent-updates".to_owned()),
+        ["moment", ..] => Some("/moments".to_owned()),
         ["resume", ..] => Some("/".to_owned()),
         _ => None,
     }

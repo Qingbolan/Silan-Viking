@@ -189,7 +189,7 @@ pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
     })
 }
 
-/// Scan a flat content type (`blog` / `ideas` / `projects` / `update` /
+/// Scan a flat content type (`blog` / `ideas` / `projects` / `moment` /
 /// `resume`): each immediate subdirectory is one Item.
 fn scan_flat_type(
     kind: ContentKind,

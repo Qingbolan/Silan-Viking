@@ -17,10 +17,10 @@ import (
 // keyed by slug. This helper is the bridge.
 //
 // Resolution order:
-//   1. treat the input as a slug; if an idea with that slug exists,
-//      return its UUID.
-//   2. fall through to treating the input as a UUID directly, so
-//      bookmarked or cached UUID-shaped URLs still work.
+//  1. treat the input as a slug; if an idea with that slug exists,
+//     return its UUID.
+//  2. fall through to treating the input as a UUID directly, so
+//     bookmarked or cached UUID-shaped URLs still work.
 //
 // Returns the resolved UUID and ok=true on success.
 func resolveIdeaID(ctx context.Context, svcCtx *svc.ServiceContext, ref string) (string, bool) {

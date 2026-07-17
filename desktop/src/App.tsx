@@ -52,7 +52,7 @@ import { NewProjectDialog } from './components/NewProjectDialog';
 import { ResumePage } from './components/ResumePage';
 import { RefreshConfirmDialog } from './components/RefreshConfirmDialog';
 import { SeriesDetail } from './components/SeriesDetail';
-import { UpdateFeed } from './components/UpdateFeed';
+import { MomentFeed } from './components/MomentFeed';
 import {
   arrangeBlogGroupsForGrid,
   badgeClass,
@@ -98,8 +98,8 @@ import type {
 } from './types';
 
 const masonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea']);
-const editableMasonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'resume', 'update']);
-const versionScopeFilters = new Set<EntityFilter>(['resume', 'blog', 'project', 'idea', 'update']);
+const editableMasonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'resume', 'moment']);
+const versionScopeFilters = new Set<EntityFilter>(['resume', 'blog', 'project', 'idea', 'moment']);
 
 const isVersionScope = (filter: EntityFilter): filter is VersionScope => (
   versionScopeFilters.has(filter)
@@ -112,10 +112,10 @@ const entityMeta: Record<EntityFilter, { label: string; eyebrow: string; empty: 
   idea: { label: 'Ideas', eyebrow: 'Half-formed thoughts', empty: 'No ideas yet. Record the first one.', Icon: Lightbulb },
   resume: { label: 'Resume', eyebrow: 'Structured record', empty: 'No resume parts found.', Icon: UserRound },
   episode: { label: 'Episodes', eyebrow: 'Series & episodes', empty: 'No episodes yet.', Icon: Radio },
-  update: { label: 'Updates', eyebrow: 'Changelog', empty: 'No updates yet.', Icon: Clock3 },
+  moment: { label: 'Moments', eyebrow: 'Timeline', empty: 'No moments yet.', Icon: Clock3 },
 };
 
-const navigationEntityFilters: EntityFilter[] = ['resume', 'update', 'blog', 'project', 'idea'];
+const navigationEntityFilters: EntityFilter[] = ['resume', 'moment', 'blog', 'project', 'idea'];
 
 const isTechnicalTrafficSubject = (subject: string) => (
   /\.(?:js|css)\.map(?:$|[?#])/i.test(subject)
@@ -180,7 +180,7 @@ const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof S
   { value: 'event', label: '事件', Icon: CalendarDays },
 ];
 
-const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'update']);
+const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'moment']);
 
 const destroyVditor = (editor: Vditor | null) => {
   if (!editor) return;
@@ -725,7 +725,7 @@ export default function App() {
   }, [screen]);
 
   React.useEffect(() => {
-    if (screen === 'content' && entityFilter === 'update') void loadMomentsSettings();
+    if (screen === 'content' && entityFilter === 'moment') void loadMomentsSettings();
   }, [screen, entityFilter, loadMomentsSettings]);
 
   React.useEffect(() => {
@@ -916,7 +916,7 @@ export default function App() {
         await Promise.all([loadDocuments(), loadDashboard(), loadDeploymentPlan(), loadDeliverySyncStatus()]);
       } else {
         await loadDocuments();
-        if (entityFilter === 'update') await loadMomentsSettings();
+        if (entityFilter === 'moment') await loadMomentsSettings();
       }
     } catch (reason) {
       if (screen === 'dashboard') setStatsSyncError(String(reason));
@@ -969,7 +969,7 @@ export default function App() {
     setCapturePhase('submitting');
     setCaptureError(null);
     try {
-      const created = captureTarget === 'update'
+      const created = captureTarget === 'moment'
         ? await invoke<EditorDocument>('capture_update', { event: note })
         : captureTarget === 'idea'
           ? await invoke<EditorDocument>('capture_idea', { note, category: captureCategory })
@@ -1316,7 +1316,7 @@ export default function App() {
     const savingState = stateSavingId === group.id;
     const disabled = savingState || stateDirty || !translation;
     const lifecycle = contentLifecycleFor(group.kind, group.status, group.visibility);
-    if (lifecycle.actions.length === 0 && group.kind !== 'update') return null;
+    if (lifecycle.actions.length === 0 && group.kind !== 'moment') return null;
 
     return (
       <div
@@ -1340,12 +1340,12 @@ export default function App() {
             {action.label}
           </button>
         ))}
-        {group.kind === 'update' && (
+        {group.kind === 'moment' && (
           <button
             type="button"
             disabled={disabled}
             className={`state-action state-action--secondary ${group.pinned ? 'active' : ''}`}
-            title={group.pinned ? 'Remove this update from the top' : 'Keep this update at the top'}
+            title={group.pinned ? 'Remove this moment from the top' : 'Keep this moment at the top'}
             onClick={() => void saveGroupState(group, {
               status: group.status,
               visibility: group.visibility,
@@ -1483,7 +1483,7 @@ export default function App() {
 
   const isMasonryShelf = masonryContentKinds.has(entityFilter as ContentKind);
   const isResumeShelf = entityFilter === 'resume';
-  const isUpdateShelf = entityFilter === 'update';
+  const isUpdateShelf = entityFilter === 'moment';
   const resumeOverview = filtered.find((document) => document.entity_type === 'resume' && document.role === 'summary')
     || filtered.find((document) => document.entity_type === 'resume' && document.role === 'overview')
     || null;
@@ -1507,10 +1507,10 @@ export default function App() {
       : contentGroups.filter((group) => group.kind === entityFilter)
     : [];
   const updateGroups = isUpdateShelf
-    ? contentGroups.filter((group) => group.kind === 'update')
+    ? contentGroups.filter((group) => group.kind === 'moment')
     : [];
   const updatesShellActive = screen === 'content' && isUpdateShelf && !contentEditorOpen;
-  const shelfDockMode = versionScope && versionScope !== 'update'
+  const shelfDockMode = versionScope && versionScope !== 'moment'
     ? versionScope
     : null;
   const momentsCoverImage = cssBackgroundImage(momentsSettings?.cover.background_image_url);
@@ -1614,7 +1614,7 @@ export default function App() {
       </aside>
 
       <main
-        className={`main ${updatesShellActive ? 'main-updates' : ''}`}
+        className={`main ${updatesShellActive ? 'main-moments' : ''}`}
         data-has-moments-background={updatesShellActive && momentsCoverImage ? 'true' : undefined}
         style={mainStyle}
       >
@@ -1628,7 +1628,7 @@ export default function App() {
                   <>
                     <span>{displayedHumanInteractions} human interactions</span>
                     <span>{displayedAiCrawlerInteractions} AI · {displayedSearchCrawlerInteractions} search crawler hits</span>
-                    <span>{attentionCount} delivery updates</span>
+                    <span>{attentionCount} delivery moments</span>
                     <span>{workspaceChangeCount} uncommitted workspace changes</span>
                     <span>{dirtyIds.size} unsaved Markdown files</span>
                   </>
@@ -1774,9 +1774,9 @@ export default function App() {
                     : workspaceChangeCount > 0
                       ? `${workspaceChangeCount} uncommitted ${workspaceChangeCount === 1 ? 'change' : 'changes'} must be committed first`
                       : localDeliveryCount > 0
-                        ? `${localDeliveryCount} committed ${localDeliveryCount === 1 ? 'update' : 'updates'} ready to deploy`
+                        ? `${localDeliveryCount} committed ${localDeliveryCount === 1 ? 'moment' : 'moments'} ready to deploy`
                         : remoteDeliveryCount > 0
-                          ? `${remoteDeliveryCount} ${remoteDeliveryCount === 1 ? 'update exists' : 'updates exist'} on the deployed version`
+                          ? `${remoteDeliveryCount} ${remoteDeliveryCount === 1 ? 'moment exists' : 'moments exist'} on the deployed version`
                           : 'Local and deployed content match'}
                 </p>
                 {deliverySyncStatus && (
@@ -2029,11 +2029,11 @@ export default function App() {
             />
           </section>
         ) : isUpdateShelf && !contentEditorOpen ? (
-          <section className="editor-area updates-editor-area">
+          <section className="editor-area moments-editor-area">
             {loading ? (
-              <div className="empty">Reading updates...</div>
+              <div className="empty">Reading moments...</div>
             ) : (
-              <UpdateFeed
+              <MomentFeed
                 groups={updateGroups}
                 empty={currentShelf.empty}
                 query={query}
@@ -2212,29 +2212,29 @@ export default function App() {
               {refreshingWorkspace ? 'Refreshing' : workspaceRefreshLabel}
             </button>
             <button type="button" className="idea-trigger" onClick={(event) => openCaptureFromTrigger('idea', event)}><Lightbulb size={15} />Record idea</button>
-            <button type="button" onClick={(event) => openCaptureFromTrigger('update', event)}><Clock3 size={15} />New update</button>
+            <button type="button" onClick={(event) => openCaptureFromTrigger('moment', event)}><Clock3 size={15} />New moment</button>
             <button type="button" onClick={openNewProject}><Plus size={15} />New project</button>
             <button type="button" onClick={(event) => openCaptureFromTrigger('blog', event)}><PencilLine size={15} />Write blog</button>
           </div>
         ) : isUpdateShelf && !contentEditorOpen ? (
           <div className="quick-dock moment-dock" aria-label="Moment shortcuts">
             <button type="button" className="idea-trigger" onClick={() => openCapture('idea')}><Lightbulb size={15} />Catch idea</button>
-            <button type="button" onClick={() => openCapture('update')}><Clock3 size={15} />New update</button>
+            <button type="button" onClick={() => openCapture('moment')}><Clock3 size={15} />New moment</button>
             <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
-            <button type="button" onClick={() => void openVersionPanel('update')} title="Open Updates Git version status">
+            <button type="button" onClick={() => void openVersionPanel('moment')} title="Open Moments Git version status">
               <GitBranch size={15} />
               Version
             </button>
-            {versionScope === 'update' && scopedReleaseVisible && (
+            {versionScope === 'moment' && scopedReleaseVisible && (
               <button
                 type="button"
                 className="dock-release"
-                disabled={releasingScope === 'update'}
-                onClick={() => void releaseCurrentScope('update')}
-                title="Commit Updates changes locally; use Deploy content to update the website"
+                disabled={releasingScope === 'moment'}
+                onClick={() => void releaseCurrentScope('moment')}
+                title="Commit Moments changes locally; use Deploy content to update the website"
               >
-                {releasingScope === 'update' ? <LoaderCircle size={15} /> : <Send size={15} />}
-                {releasingScope === 'update' ? 'Committing' : 'Commit'}
+                {releasingScope === 'moment' ? <LoaderCircle size={15} /> : <Send size={15} />}
+                {releasingScope === 'moment' ? 'Committing' : 'Commit'}
               </button>
             )}
           </div>

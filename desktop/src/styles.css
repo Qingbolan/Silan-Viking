@@ -325,7 +325,7 @@ textarea:focus-visible {
   background: var(--ds-color-canvas);
 }
 
-.main-updates {
+.main-moments {
   --moments-cover-height: 420px;
   --moments-cover-image: linear-gradient(180deg, #f7f7f6 0%, #efefee 100%);
   --moments-cover-position: center 42%;
@@ -1956,17 +1956,17 @@ h1 {
   }
 }
 
-.updates-editor-area {
+.moments-editor-area {
   padding: 0;
   overflow: hidden;
   background: #fff;
 }
 
-.main-updates .updates-editor-area {
+.main-moments .moments-editor-area {
   background: transparent;
 }
 
-.updates-feed {
+.moments-feed {
   width: 100%;
   height: 100%;
   margin: 0;
@@ -1975,22 +1975,22 @@ h1 {
   color: var(--ink);
 }
 
-.main-updates .updates-feed {
+.main-moments .moments-feed {
   background: transparent;
 }
 
-.updates-cover {
+.moments-cover {
   position: relative;
   min-height: 260px;
   overflow: visible;
 }
 
-.main-updates .updates-cover {
+.main-moments .moments-cover {
   height: var(--moments-cover-height);
   min-height: var(--moments-cover-height);
 }
 
-.updates-cover-art {
+.moments-cover-art {
   position: absolute;
   inset: 0;
   background:
@@ -2000,7 +2000,7 @@ h1 {
   background-size: 118px 118px, 96px 96px, auto;
 }
 
-.main-updates[data-has-moments-background="true"] .updates-cover-art {
+.main-moments[data-has-moments-background="true"] .moments-cover-art {
   background-image:
     linear-gradient(180deg, rgba(0, 0, 0, 0.48) 0%, rgba(0, 0, 0, 0.16) 45%, rgba(255, 255, 255, 0.95) 100%),
     var(--moments-cover-image);
@@ -2009,36 +2009,36 @@ h1 {
   background-repeat: no-repeat;
 }
 
-.updates-cover-title {
+.moments-cover-title {
   position: absolute;
   top: 28px;
   left: 42px;
   max-width: min(980px, calc(100% - 84px));
 }
 
-.updates-cover-title h1 {
+.moments-cover-title h1 {
   font-size: 29px;
   white-space: normal;
 }
 
-.updates-cover-title .eyebrow,
-.updates-cover-title h1,
-.updates-cover-title .meta {
+.moments-cover-title .eyebrow,
+.moments-cover-title h1,
+.moments-cover-title .meta {
   color: var(--ink);
 }
 
-.main-updates[data-has-moments-background="true"] .updates-cover-title .eyebrow,
-.main-updates[data-has-moments-background="true"] .updates-cover-title h1,
-.main-updates[data-has-moments-background="true"] .updates-cover-title .meta {
+.main-moments[data-has-moments-background="true"] .moments-cover-title .eyebrow,
+.main-moments[data-has-moments-background="true"] .moments-cover-title h1,
+.main-moments[data-has-moments-background="true"] .moments-cover-title .meta {
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 18px rgba(0, 0, 0, 0.38);
 }
 
-.main-updates[data-has-moments-background="true"] .updates-cover-title .meta {
+.main-moments[data-has-moments-background="true"] .moments-cover-title .meta {
   color: rgba(255, 255, 255, 0.74);
 }
 
-.updates-profile {
+.moments-profile {
   position: absolute;
   bottom: 36px;
   display: flex;
@@ -2046,27 +2046,27 @@ h1 {
   align-items: center;
 }
 
-.updates-profile[data-align="right"] {
+.moments-profile[data-align="right"] {
   right: 36px;
 }
 
-.updates-profile[data-align="left"] {
+.moments-profile[data-align="left"] {
   left: 36px;
   flex-direction: row-reverse;
 }
 
-.updates-profile strong {
+.moments-profile strong {
   color: var(--ink);
   font-size: 20px;
   font-weight: 680;
 }
 
-.main-updates[data-has-moments-background="true"] .updates-profile strong {
+.main-moments[data-has-moments-background="true"] .moments-profile strong {
   color: var(--ink);
   text-shadow: 0 1px 18px rgba(255, 255, 255, 0.58);
 }
 
-.updates-avatar {
+.moments-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2081,7 +2081,7 @@ h1 {
   font-weight: 650;
 }
 
-.updates-avatar img {
+.moments-avatar img {
   display: block;
   width: 100%;
   height: 100%;
@@ -2089,7 +2089,7 @@ h1 {
   object-fit: cover;
 }
 
-.updates-pin {
+.moments-pin {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr) 34px;
   gap: 20px;
@@ -2098,25 +2098,25 @@ h1 {
   margin: 0 auto 62px;
 }
 
-.updates-cover + .updates-pin,
-.updates-cover + .updates-timeline {
+.moments-cover + .moments-pin,
+.moments-cover + .moments-timeline {
   margin-top: 32px;
 }
 
-.updates-pin h2 {
+.moments-pin h2 {
   margin: 0;
   color: var(--ink);
   font-size: 32px;
   font-weight: 460;
 }
 
-.updates-pin-gallery {
+.moments-pin-gallery {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
-.updates-pin-card {
+.moments-pin-card {
   display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -2129,14 +2129,14 @@ h1 {
   text-align: left;
 }
 
-.updates-pin-card img {
+.moments-pin-card img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.updates-pin-card span {
+.moments-pin-card span {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
@@ -2146,18 +2146,18 @@ h1 {
   line-height: 1.45;
 }
 
-.updates-pin > svg {
+.moments-pin > svg {
   color: var(--faint);
 }
 
-.updates-timeline {
+.moments-timeline {
   width: min(920px, calc(100% - 64px));
   margin: 0 auto;
   border-top: 1px solid var(--line);
   padding: 54px 0 90px;
 }
 
-.updates-timeline-row {
+.moments-timeline-row {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   gap: 20px;
@@ -2165,14 +2165,14 @@ h1 {
   margin-bottom: 28px;
 }
 
-.updates-date {
+.moments-date {
   display: flex;
   gap: 3px;
   align-items: baseline;
   color: var(--ink);
 }
 
-.updates-date em {
+.moments-date em {
   align-self: center;
   margin-right: 8px;
   color: var(--accent);
@@ -2182,17 +2182,17 @@ h1 {
   letter-spacing: 0.12em;
 }
 
-.updates-date strong {
+.moments-date strong {
   font-size: 28px;
   font-weight: 430;
   line-height: 1;
 }
 
-.updates-date span {
+.moments-date span {
   font-size: 16px;
 }
 
-.updates-entry {
+.moments-entry {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 22px;
   gap: 16px;
@@ -2206,11 +2206,11 @@ h1 {
   text-align: left;
 }
 
-.updates-entry:hover {
+.moments-entry:hover {
   background: #ededec;
 }
 
-.updates-entry p {
+.moments-entry p {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
@@ -2221,23 +2221,23 @@ h1 {
   line-height: 1.55;
 }
 
-.updates-tags {
+.moments-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }
 
-.updates-tags span {
+.moments-tags span {
   color: var(--muted);
   font-size: 12px;
 }
 
-.updates-entry svg {
+.moments-entry svg {
   color: var(--faint);
 }
 
-.updates-feed-empty {
+.moments-feed-empty {
   display: grid;
   width: min(760px, 100%);
   min-height: 420px;
@@ -4933,42 +4933,42 @@ h1 {
     padding: 28px 20px 72px;
   }
 
-  .updates-feed {
+  .moments-feed {
     border-radius: 0;
   }
 
-  .updates-cover {
+  .moments-cover {
     min-height: 220px;
   }
 
-  .updates-profile {
+  .moments-profile {
     bottom: -40px;
   }
 
-  .updates-profile[data-align="right"] {
+  .moments-profile[data-align="right"] {
     right: 20px;
   }
 
-  .updates-profile[data-align="left"] {
+  .moments-profile[data-align="left"] {
     left: 20px;
   }
 
-  .updates-avatar {
+  .moments-avatar {
     width: 72px;
     height: 72px;
   }
 
-  .updates-pin,
-  .updates-timeline {
+  .moments-pin,
+  .moments-timeline {
     width: calc(100% - 32px);
   }
 
-  .updates-pin,
-  .updates-timeline-row {
+  .moments-pin,
+  .moments-timeline-row {
     grid-template-columns: 1fr;
   }
 
-  .updates-pin-gallery {
+  .moments-pin-gallery {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

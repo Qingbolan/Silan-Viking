@@ -1,7 +1,7 @@
 // src/components/Resume/RecentSection.tsx
 //
-// Résumé "recent updates" panel — a year/month grouped activity timeline.
-// The homepage and dedicated updates page share the same chronological model;
+// Résumé "recent moments" panel — a year/month grouped activity timeline.
+// The homepage and dedicated moments page share the same chronological model;
 // filtering changes the entries, never the layout mode.
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -189,7 +189,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
           <div
             className="space-y-10"
             role="list"
-            aria-label={t('resume.recent_updates', { defaultValue: 'Recent updates' })}
+            aria-label={t('resume.moments', { defaultValue: 'Recent moments' })}
           >
             {groupedData.map((group) => (
               <section key={`${group.year}-${group.month}`} aria-label={group.label}>
@@ -208,11 +208,11 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.16) }}
-                        onClick={() => navigate(`/recent-updates?id=${encodeURIComponent(item.id)}`)}
+                        onClick={() => navigate(`/moments?id=${encodeURIComponent(item.id)}`)}
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
-                            navigate(`/recent-updates?id=${encodeURIComponent(item.id)}`);
+                            navigate(`/moments?id=${encodeURIComponent(item.id)}`);
                           }
                         }}
                         aria-label={`${t('resume.view_details', { defaultValue: 'View details' })}: ${item.title}`}

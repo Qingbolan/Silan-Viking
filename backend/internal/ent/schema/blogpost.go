@@ -82,13 +82,13 @@ func (BlogPost) Fields() []ent.Field {
 			Optional(),
 		field.Time("created_at").
 			Default(time.Now).
-		Optional().
-				Optional().
+			Optional().
+			Optional().
 			Immutable(),
 		field.Time("updated_at").
 			Default(time.Now).
-		Optional().
-				Optional().
+			Optional().
+			Optional().
 			UpdateDefault(time.Now),
 	}
 }

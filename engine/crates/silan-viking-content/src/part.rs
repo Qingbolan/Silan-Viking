@@ -19,7 +19,7 @@ use std::fmt;
 /// The shape decides the file extension and the parsing strategy:
 /// `Prose` files are `<lang>.md`; `EntryList` and `KeyValueList` files are
 /// `<lang>.toml`. Only `resume` uses the two TOML shapes — every Part of
-/// `blog` / `idea` / `project` / `episode` / `update` is `Prose`.
+/// `blog` / `idea` / `project` / `episode` / `moment` is `Prose`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum PartShape {
     /// Free markdown prose — `<lang>.md`. Lands in `item_part`.

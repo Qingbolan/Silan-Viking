@@ -14,10 +14,10 @@ import (
 	health "silan-backend/internal/handler/health"
 	ideas "silan-backend/internal/handler/ideas"
 	media "silan-backend/internal/handler/media"
+	moments "silan-backend/internal/handler/moments"
 	projects "silan-backend/internal/handler/projects"
 	resume "silan-backend/internal/handler/resume"
 	stats "silan-backend/internal/handler/stats"
-	updates "silan-backend/internal/handler/updates"
 	"silan-backend/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -442,26 +442,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
 			[]rest.Route{
 				{
-					// Get recent updates list
+					// Get moments list
 					Method:  http.MethodGet,
 					Path:    "/",
-					Handler: updates.GetUpdatesHandler(serverCtx),
+					Handler: moments.GetMomentsHandler(serverCtx),
 				},
 				{
-					// Get recent update by slug
+					// Get moment by slug
 					Method:  http.MethodGet,
 					Path:    "/:slug",
-					Handler: updates.GetUpdateHandler(serverCtx),
+					Handler: moments.GetMomentHandler(serverCtx),
 				},
-				{Method: http.MethodGet, Path: "/:slug/engagement", Handler: updates.GetEngagementHandler(serverCtx)},
-				{Method: http.MethodPost, Path: "/:id/like", Handler: updates.ToggleLikeHandler(serverCtx)},
-				{Method: http.MethodGet, Path: "/:slug/comments", Handler: updates.ListCommentsHandler(serverCtx)},
-				{Method: http.MethodPost, Path: "/:id/comments", Handler: updates.CreateCommentHandler(serverCtx)},
-				{Method: http.MethodPost, Path: "/comments/:comment_id/like", Handler: updates.ToggleCommentLikeHandler(serverCtx)},
-				{Method: http.MethodDelete, Path: "/comments/:comment_id", Handler: updates.DeleteCommentHandler(serverCtx)},
+				{Method: http.MethodGet, Path: "/:slug/engagement", Handler: moments.GetEngagementHandler(serverCtx)},
+				{Method: http.MethodPost, Path: "/:id/like", Handler: moments.ToggleLikeHandler(serverCtx)},
+				{Method: http.MethodGet, Path: "/:slug/comments", Handler: moments.ListCommentsHandler(serverCtx)},
+				{Method: http.MethodPost, Path: "/:id/comments", Handler: moments.CreateCommentHandler(serverCtx)},
+				{Method: http.MethodPost, Path: "/comments/:comment_id/like", Handler: moments.ToggleCommentLikeHandler(serverCtx)},
+				{Method: http.MethodDelete, Path: "/comments/:comment_id", Handler: moments.DeleteCommentHandler(serverCtx)},
 			}...,
 		),
-		rest.WithPrefix("/api/v1/updates"),
+		rest.WithPrefix("/api/v1/moments"),
 	)
 }
 

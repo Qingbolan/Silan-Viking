@@ -43,7 +43,7 @@ pub enum ReleaseScope {
     Blog,
     Project,
     Idea,
-    Update,
+    Moment,
 }
 
 impl ReleaseScope {
@@ -53,7 +53,7 @@ impl ReleaseScope {
             "blog" => Ok(Self::Blog),
             "project" => Ok(Self::Project),
             "idea" => Ok(Self::Idea),
-            "update" => Ok(Self::Update),
+            "moment" => Ok(Self::Moment),
             other => Err(DeliveryControlError::UnsupportedScope(other.to_owned())),
         }
     }
@@ -63,7 +63,7 @@ impl ReleaseScope {
             Self::Blog => "blog",
             Self::Project => "project",
             Self::Idea => "idea",
-            Self::Update => "update",
+            Self::Moment => "moment",
         }
     }
     fn label(self) -> &'static str {
@@ -72,7 +72,7 @@ impl ReleaseScope {
             Self::Blog => "Blog",
             Self::Project => "Projects",
             Self::Idea => "Ideas",
-            Self::Update => "Updates",
+            Self::Moment => "Moments",
         }
     }
     fn paths(self) -> &'static [&'static str] {
@@ -81,7 +81,7 @@ impl ReleaseScope {
             Self::Blog => &["resources/blog", "resources/episode"],
             Self::Project => &["resources/projects"],
             Self::Idea => &["resources/ideas"],
-            Self::Update => &["resources/update"],
+            Self::Moment => &["resources/moment"],
         }
     }
 }
@@ -268,7 +268,7 @@ impl DeliveryControl {
             ReleaseScope::Blog,
             ReleaseScope::Project,
             ReleaseScope::Idea,
-            ReleaseScope::Update,
+            ReleaseScope::Moment,
         ];
         let repo = self.repo()?;
         let branch = run(&repo, ["branch", "--show-current"])?;

@@ -13,12 +13,12 @@ mod blog;
 mod episode;
 mod idea;
 pub(crate) mod media_uri;
+mod moment;
 mod project;
 mod prose_mapper;
 mod registry;
 mod resume;
 mod table_names;
-mod update;
 
 pub use registry::MapperRegistry;
 

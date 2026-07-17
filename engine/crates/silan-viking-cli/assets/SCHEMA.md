@@ -173,18 +173,18 @@ types:
     parts:
       - { role: body, required: true, order: 10, shape: prose }
 
-  # -- update — the 6th type (per 10 §10.4.6 ruling #3) -----------------------
-  update:
-    main_table: recent_updates
+  # -- moment — the 6th type (per 10 §10.4.6 ruling #3) -----------------------
+  moment:
+    main_table: moments
     fields:
-      - { name: slug,        type: slug,                                                                  required: true,  default: null,    source: py,       column: "recent_updates.slug" }
-      - { name: title,       type: string,                                                                required: true,  default: null,    source: "py,ent", column: "recent_updates.title" }
-      - { name: kind,        type: "enum(update)",                                                        required: true,  default: update,  source: new,      column: null }
-      - { name: update_type, type: "enum(milestone,achievement,progress,release,announcement,insight,learning,reflection)", required: true, default: progress, source: py, column: "recent_updates.update_type" }
-      - { name: status,      type: "enum(active,ongoing,completed)",                                      required: true,  default: active,  source: "py,ent", column: "recent_updates.status" }
-      - { name: priority,    type: "enum(high,medium,low)",                                               required: false, default: medium,  source: "py,ent", column: "recent_updates.priority" }
-      - { name: visibility,  type: "enum(private,unlisted,public)",                                       required: true,  default: private, source: new,      column: "recent_updates.visibility" }
-      - { name: date,        type: date,                                                                  required: true,  default: null,    source: "py,ent", column: "recent_updates.date" }
+      - { name: slug,        type: slug,                                                                  required: true,  default: null,    source: py,       column: "moments.slug" }
+      - { name: title,       type: string,                                                                required: true,  default: null,    source: "py,ent", column: "moments.title" }
+      - { name: kind,        type: "enum(moment)",                                                        required: true,  default: moment,  source: new,      column: null }
+      - { name: moment_type, type: "enum(milestone,achievement,progress,release,announcement,insight,learning,reflection)", required: true, default: progress, source: py, column: "moments.moment_type" }
+      - { name: status,      type: "enum(active,ongoing,completed)",                                      required: true,  default: active,  source: "py,ent", column: "moments.status" }
+      - { name: priority,    type: "enum(high,medium,low)",                                               required: false, default: medium,  source: "py,ent", column: "moments.priority" }
+      - { name: visibility,  type: "enum(private,unlisted,public)",                                       required: true,  default: private, source: new,      column: "moments.visibility" }
+      - { name: date,        type: date,                                                                  required: true,  default: null,    source: "py,ent", column: "moments.date" }
       - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: relations,   type: "list<relation>",                                                     required: false, default: [],      source: new,      column: "content_relation" }
     parts:

@@ -50,8 +50,8 @@ pub enum Relation {
     Projects,
     #[sea_orm(has_many = "super::publications::Entity")]
     Publications,
-    #[sea_orm(has_many = "super::recent_updates::Entity")]
-    RecentUpdates,
+    #[sea_orm(has_many = "super::moments::Entity")]
+    Moments,
     #[sea_orm(has_many = "super::research_projects::Entity")]
     ResearchProjects,
     #[sea_orm(has_many = "super::work_experience::Entity")]
@@ -100,9 +100,9 @@ impl Related<super::publications::Entity> for Entity {
     }
 }
 
-impl Related<super::recent_updates::Entity> for Entity {
+impl Related<super::moments::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::RecentUpdates.def()
+        Relation::Moments.def()
     }
 }
 

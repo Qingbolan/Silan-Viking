@@ -38,13 +38,13 @@ type (
 		IsActive    bool   `json:"is_active"`
 		SortOrder   int    `json:"sort_order"`
 	}
-	// Recent Update types
-	RecentUpdate {
+	// Moment types
+	Moment {
 		ID          string   `json:"id"`
 		UserID      string   `json:"user_id"`
 		Slug        string   `json:"slug"`
 		Type        string   `json:"type"`
-		UpdateType  string   `json:"update_type"`
+		MomentType  string   `json:"moment_type"`
 		Visibility  string   `json:"visibility"`
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
@@ -55,16 +55,16 @@ type (
 		CreatedAt   string   `json:"created_at"`
 		UpdatedAt   string   `json:"updated_at"`
 	}
-	UpdateListRequest {
+	MomentListRequest {
 		Language string `form:"lang,default=en"`
 	}
-	UpdateRequest {
+	MomentRequest {
 		Slug     string `path:"slug"`
 		Language string `form:"lang,default=en"`
 	}
-	UpdateListResponse {
-		Updates []RecentUpdate `json:"updates"`
-		Total   int            `json:"total"`
+	MomentListResponse {
+		Moments []Moment `json:"moments"`
+		Total   int      `json:"total"`
 	}
 	// Resume Data aggregation
 	ResumeData {
@@ -1006,20 +1006,20 @@ service backend-api {
 	get /:slug (EpisodeRequest) returns (EpisodeData)
 }
 
-// ========== UPDATES GROUP ==========
+// ========== MOMENTS GROUP ==========
 @server (
-	group:      updates
-	prefix:     /api/v1/updates
+	group:      moments
+	prefix:     /api/v1/moments
 	middleware: Cors,Analytics
 )
 service backend-api {
-	@doc "Get recent updates list"
-	@handler GetUpdates
-	get / (UpdateListRequest) returns (UpdateListResponse)
+	@doc "Get moments list"
+	@handler GetMoments
+	get / (MomentListRequest) returns (MomentListResponse)
 
-	@doc "Get recent update by slug"
-	@handler GetUpdate
-	get /:slug (UpdateRequest) returns (RecentUpdate)
+	@doc "Get moment by slug"
+	@handler GetMoment
+	get /:slug (MomentRequest) returns (Moment)
 }
 
 // ========== IDEAS PAGE GROUP ==========

@@ -15,7 +15,7 @@ pub fn main_table(kind: ContentKind) -> &'static str {
         ContentKind::Project => "projects",
         ContentKind::Episode => "episodes",
         ContentKind::Resume => "personal_info",
-        ContentKind::Update => "recent_updates",
+        ContentKind::Moment => "moments",
     }
 }
 
@@ -27,7 +27,7 @@ pub fn translation_table(kind: ContentKind) -> &'static str {
         ContentKind::Project => "project_translations",
         ContentKind::Episode => "episode_translations",
         ContentKind::Resume => "personal_info_translations",
-        ContentKind::Update => "recent_update_translations",
+        ContentKind::Moment => "moment_translations",
     }
 }
 
@@ -42,7 +42,7 @@ pub fn translation_fk(kind: ContentKind) -> &'static str {
         ContentKind::Project => "project_id",
         ContentKind::Episode => "episode_id",
         ContentKind::Resume => "personal_info_id",
-        ContentKind::Update => "recent_update_id",
+        ContentKind::Moment => "moment_id",
     }
 }
 

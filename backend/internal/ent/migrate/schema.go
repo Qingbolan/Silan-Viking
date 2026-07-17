@@ -12,7 +12,7 @@ var (
 	// AnnotationColumns holds the columns for the "annotation" table.
 	AnnotationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "part_role", Type: field.TypeString, Nullable: true},
 		{Name: "anchor", Type: field.TypeString, Nullable: true},
@@ -196,7 +196,7 @@ var (
 	// CommentsColumns holds the columns for the "comments" table.
 	CommentsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "author_name", Type: field.TypeString, Size: 100},
 		{Name: "author_email", Type: field.TypeString, Size: 255},
@@ -341,7 +341,7 @@ var (
 	// ContentInteractionColumns holds the columns for the "content_interaction" table.
 	ContentInteractionColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "section_anchor", Type: field.TypeString, Nullable: true},
 		{Name: "kind", Type: field.TypeEnum, Enums: []string{"view", "like"}},
@@ -398,9 +398,9 @@ var (
 	// ContentRelationColumns holds the columns for the "content_relation" table.
 	ContentRelationColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "from_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "from_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "from_id", Type: field.TypeString},
-		{Name: "to_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "to_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "to_id", Type: field.TypeString},
 		{Name: "relation_type", Type: field.TypeEnum, Enums: []string{"evolved_into", "documents", "references", "supersedes", "part_of"}},
 		{Name: "sort_order", Type: field.TypeInt, Nullable: true},
@@ -433,7 +433,7 @@ var (
 	ContentTagColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "tag_id", Type: field.TypeString},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "entity_slug", Type: field.TypeString},
 	}
@@ -796,7 +796,7 @@ var (
 	ItemPartColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "part_id", Type: field.TypeString},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "role", Type: field.TypeString},
 		{Name: "sort_order", Type: field.TypeInt, Default: 0},
@@ -869,6 +869,83 @@ var (
 		Name:       "languages",
 		Columns:    LanguagesColumns,
 		PrimaryKey: []*schema.Column{LanguagesColumns[0]},
+	}
+	// MomentsColumns holds the columns for the "moments" table.
+	MomentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "user_id", Type: field.TypeString, Nullable: true},
+		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"work", "education", "research", "publication", "project"}, Default: "project"},
+		{Name: "moment_type", Type: field.TypeEnum, Enums: []string{"milestone", "achievement", "progress", "release", "announcement", "insight", "learning", "reflection"}, Default: "progress"},
+		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 200},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "date", Type: field.TypeString, Nullable: true},
+		{Name: "tags", Type: field.TypeJSON, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "ongoing", "completed"}, Default: "active"},
+		{Name: "priority", Type: field.TypeEnum, Enums: []string{"high", "medium", "low"}, Default: "medium"},
+		{Name: "pinned", Type: field.TypeBool, Default: false},
+		{Name: "external_id", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "image_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "video_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "document_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "gallery", Type: field.TypeJSON, Nullable: true},
+		{Name: "attachments", Type: field.TypeJSON, Nullable: true},
+		{Name: "media_metadata", Type: field.TypeJSON, Nullable: true},
+		{Name: "demo_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "github_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "external_url", Type: field.TypeString, Nullable: true, Size: 500},
+		{Name: "social_links", Type: field.TypeJSON, Nullable: true},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+	}
+	// MomentsTable holds the schema information for the "moments" table.
+	MomentsTable = &schema.Table{
+		Name:       "moments",
+		Columns:    MomentsColumns,
+		PrimaryKey: []*schema.Column{MomentsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "moment_moment_type",
+				Unique:  false,
+				Columns: []*schema.Column{MomentsColumns[4]},
+			},
+			{
+				Name:    "moment_visibility",
+				Unique:  false,
+				Columns: []*schema.Column{MomentsColumns[5]},
+			},
+		},
+	}
+	// MomentTranslationsColumns holds the columns for the "moment_translations" table.
+	MomentTranslationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "title", Type: field.TypeString, Nullable: true, Size: 200},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "created_at", Type: field.TypeTime, Nullable: true},
+		{Name: "language_code", Type: field.TypeString, Size: 5},
+		{Name: "moment_id", Type: field.TypeString},
+	}
+	// MomentTranslationsTable holds the schema information for the "moment_translations" table.
+	MomentTranslationsTable = &schema.Table{
+		Name:       "moment_translations",
+		Columns:    MomentTranslationsColumns,
+		PrimaryKey: []*schema.Column{MomentTranslationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "moment_translations_languages_moment_translations",
+				Columns:    []*schema.Column{MomentTranslationsColumns[4]},
+				RefColumns: []*schema.Column{LanguagesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "moment_translations_moments_translations",
+				Columns:    []*schema.Column{MomentTranslationsColumns[5]},
+				RefColumns: []*schema.Column{MomentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// PartEntryColumns holds the columns for the "part_entry" table.
 	PartEntryColumns = []*schema.Column{
@@ -1372,83 +1449,6 @@ var (
 			},
 		},
 	}
-	// RecentUpdatesColumns holds the columns for the "recent_updates" table.
-	RecentUpdatesColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
-		{Name: "user_id", Type: field.TypeString, Nullable: true},
-		{Name: "slug", Type: field.TypeString, Unique: true, Size: 200},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"work", "education", "research", "publication", "project"}, Default: "project"},
-		{Name: "update_type", Type: field.TypeEnum, Enums: []string{"milestone", "achievement", "progress", "release", "announcement", "insight", "learning", "reflection"}, Default: "progress"},
-		{Name: "visibility", Type: field.TypeEnum, Enums: []string{"private", "unlisted", "public"}, Default: "private"},
-		{Name: "title", Type: field.TypeString, Nullable: true, Size: 200},
-		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "date", Type: field.TypeString, Nullable: true},
-		{Name: "tags", Type: field.TypeJSON, Nullable: true},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "ongoing", "completed"}, Default: "active"},
-		{Name: "priority", Type: field.TypeEnum, Enums: []string{"high", "medium", "low"}, Default: "medium"},
-		{Name: "pinned", Type: field.TypeBool, Default: false},
-		{Name: "external_id", Type: field.TypeString, Nullable: true, Size: 100},
-		{Name: "image_url", Type: field.TypeString, Nullable: true, Size: 500},
-		{Name: "video_url", Type: field.TypeString, Nullable: true, Size: 500},
-		{Name: "document_url", Type: field.TypeString, Nullable: true, Size: 500},
-		{Name: "gallery", Type: field.TypeJSON, Nullable: true},
-		{Name: "attachments", Type: field.TypeJSON, Nullable: true},
-		{Name: "media_metadata", Type: field.TypeJSON, Nullable: true},
-		{Name: "demo_url", Type: field.TypeString, Nullable: true, Size: 500},
-		{Name: "github_url", Type: field.TypeString, Nullable: true, Size: 500},
-		{Name: "external_url", Type: field.TypeString, Nullable: true, Size: 500},
-		{Name: "social_links", Type: field.TypeJSON, Nullable: true},
-		{Name: "sort_order", Type: field.TypeInt, Default: 0},
-		{Name: "created_at", Type: field.TypeTime, Nullable: true},
-		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-	}
-	// RecentUpdatesTable holds the schema information for the "recent_updates" table.
-	RecentUpdatesTable = &schema.Table{
-		Name:       "recent_updates",
-		Columns:    RecentUpdatesColumns,
-		PrimaryKey: []*schema.Column{RecentUpdatesColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "recentupdate_update_type",
-				Unique:  false,
-				Columns: []*schema.Column{RecentUpdatesColumns[4]},
-			},
-			{
-				Name:    "recentupdate_visibility",
-				Unique:  false,
-				Columns: []*schema.Column{RecentUpdatesColumns[5]},
-			},
-		},
-	}
-	// RecentUpdateTranslationsColumns holds the columns for the "recent_update_translations" table.
-	RecentUpdateTranslationsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
-		{Name: "title", Type: field.TypeString, Nullable: true, Size: 200},
-		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
-		{Name: "created_at", Type: field.TypeTime, Nullable: true},
-		{Name: "language_code", Type: field.TypeString, Size: 5},
-		{Name: "recent_update_id", Type: field.TypeString},
-	}
-	// RecentUpdateTranslationsTable holds the schema information for the "recent_update_translations" table.
-	RecentUpdateTranslationsTable = &schema.Table{
-		Name:       "recent_update_translations",
-		Columns:    RecentUpdateTranslationsColumns,
-		PrimaryKey: []*schema.Column{RecentUpdateTranslationsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "recent_update_translations_languages_recent_update_translations",
-				Columns:    []*schema.Column{RecentUpdateTranslationsColumns[4]},
-				RefColumns: []*schema.Column{LanguagesColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-			{
-				Symbol:     "recent_update_translations_recent_updates_translations",
-				Columns:    []*schema.Column{RecentUpdateTranslationsColumns[5]},
-				RefColumns: []*schema.Column{RecentUpdatesColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-	}
 	// RequestLogsColumns holds the columns for the "request_logs" table.
 	RequestLogsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -1624,7 +1624,7 @@ var (
 	// StatsCacheCrawlerColumns holds the columns for the "stats_cache_crawler" table.
 	StatsCacheCrawlerColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "visitor_kind", Type: field.TypeEnum, Enums: []string{"human", "search_bot", "ai_bot", "unknown"}},
 		{Name: "count", Type: field.TypeInt, Default: 0},
@@ -1646,7 +1646,7 @@ var (
 	// StatsCacheItemColumns holds the columns for the "stats_cache_item" table.
 	StatsCacheItemColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "views", Type: field.TypeInt, Default: 0},
 		{Name: "likes", Type: field.TypeInt, Default: 0},
@@ -1662,7 +1662,7 @@ var (
 	// StatsCacheSourceColumns holds the columns for the "stats_cache_source" table.
 	StatsCacheSourceColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "source", Type: field.TypeEnum, Enums: []string{"search", "social", "ai_chat", "direct", "internal", "unknown"}},
 		{Name: "count", Type: field.TypeInt, Default: 0},
@@ -1684,7 +1684,7 @@ var (
 	// StatsCacheVisitorColumns holds the columns for the "stats_cache_visitor" table.
 	StatsCacheVisitorColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "update"}},
+		{Name: "entity_type", Type: field.TypeEnum, Enums: []string{"blog", "project", "idea", "episode", "resume", "moment"}},
 		{Name: "entity_id", Type: field.TypeString},
 		{Name: "fingerprint", Type: field.TypeString},
 		{Name: "ip_masked", Type: field.TypeString},
@@ -1915,6 +1915,8 @@ var (
 		ItemPartTable,
 		ItemPartTranslationTable,
 		LanguagesTable,
+		MomentsTable,
+		MomentTranslationsTable,
 		PartEntryTable,
 		PartEntryTranslationTable,
 		PersonalInfoTable,
@@ -1931,8 +1933,6 @@ var (
 		PublicationsTable,
 		PublicationAuthorsTable,
 		PublicationTranslationsTable,
-		RecentUpdatesTable,
-		RecentUpdateTranslationsTable,
 		RequestLogsTable,
 		ResearchProjectsTable,
 		ResearchProjectDetailsTable,
@@ -2061,6 +2061,14 @@ func init() {
 	LanguagesTable.Annotation = &entsql.Annotation{
 		Table: "languages",
 	}
+	MomentsTable.Annotation = &entsql.Annotation{
+		Table: "moments",
+	}
+	MomentTranslationsTable.ForeignKeys[0].RefTable = LanguagesTable
+	MomentTranslationsTable.ForeignKeys[1].RefTable = MomentsTable
+	MomentTranslationsTable.Annotation = &entsql.Annotation{
+		Table: "moment_translations",
+	}
 	PartEntryTable.ForeignKeys[0].RefTable = ItemPartTable
 	PartEntryTable.Annotation = &entsql.Annotation{
 		Table: "part_entry",
@@ -2126,14 +2134,6 @@ func init() {
 	PublicationTranslationsTable.ForeignKeys[1].RefTable = PublicationsTable
 	PublicationTranslationsTable.Annotation = &entsql.Annotation{
 		Table: "publication_translations",
-	}
-	RecentUpdatesTable.Annotation = &entsql.Annotation{
-		Table: "recent_updates",
-	}
-	RecentUpdateTranslationsTable.ForeignKeys[0].RefTable = LanguagesTable
-	RecentUpdateTranslationsTable.ForeignKeys[1].RefTable = RecentUpdatesTable
-	RecentUpdateTranslationsTable.Annotation = &entsql.Annotation{
-		Table: "recent_update_translations",
 	}
 	RequestLogsTable.Annotation = &entsql.Annotation{
 		Table: "request_logs",

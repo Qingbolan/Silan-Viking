@@ -131,7 +131,7 @@ pub fn tool_specs() -> Vec<ToolSpec> {
             description: "structured list by content type and status",
             input_schema: serde_json::json!({
                 "type": "object",
-                "properties": {"type": {"type":"string","description":"content type: idea/blog/project/episode/update/resume"},"filter": {"type":"object","description":"optional {status, tag} filter","properties":{"status":{"type":"string"},"tag":{"type":"string"}}}},
+                "properties": {"type": {"type":"string","description":"content type: idea/blog/project/episode/moment/resume"},"filter": {"type":"object","description":"optional {status, tag} filter","properties":{"status":{"type":"string"},"tag":{"type":"string"}}}},
                 "required": [],
             }),
         },
@@ -141,7 +141,7 @@ pub fn tool_specs() -> Vec<ToolSpec> {
             description: "enumerate every tag used across the workspace, with the number of Items each tag appears on. Optional `type` scopes to one content kind. Answer for the owner / agent question \"what tags am I using\".",
             input_schema: serde_json::json!({
                 "type": "object",
-                "properties": {"type": {"type":"string","description":"optional content type: idea/blog/project/episode/update"}},
+                "properties": {"type": {"type":"string","description":"optional content type: idea/blog/project/episode/moment"}},
                 "required": [],
             }),
         },
@@ -231,12 +231,12 @@ pub fn tool_specs() -> Vec<ToolSpec> {
         ToolSpec {
             name: "capture",
             tier: Capture,
-            description: "capture a thought into a proposal. With no `type` (or `type=note`) the note lands in agent/notes/ for the agent's scratch space. With `type=idea|blog|project|episode|update` it opens a new Item under silan://resources/<type>/<slug>/ scaffolded with the note as the primary Part's body — this is the path the owner uses to grow a half-formed thought into a real content Item.",
+            description: "capture a thought into a proposal. With no `type` (or `type=note`) the note lands in agent/notes/ for the agent's scratch space. With `type=idea|blog|project|episode|moment` it opens a new Item under silan://resources/<type>/<slug>/ scaffolded with the note as the primary Part's body — this is the path the owner uses to grow a half-formed thought into a real content Item.",
             input_schema: serde_json::json!({
                 "type": "object",
                 "properties": {
                     "note": {"type":"string","description":"the free-text note to capture"},
-                    "type": {"type":"string","description":"optional content type: note (default) / idea / blog / project / episode / update. note → agent/notes/; the others scaffold a real Item under resources/"},
+                    "type": {"type":"string","description":"optional content type: note (default) / idea / blog / project / episode / moment. note → agent/notes/; the others scaffold a real Item under resources/"},
                     "slug": {"type":"string","description":"optional explicit slug; if omitted, derived from the first sentence of the note. Only used when type is a content kind."},
                     "title": {"type":"string","description":"optional explicit title; if omitted, derived from the first sentence of the note."}
                 },
@@ -294,12 +294,12 @@ pub fn tool_specs() -> Vec<ToolSpec> {
             }),
         },
         ToolSpec {
-            name: "summarize_updates",
+            name: "summarize_moments",
             tier: Proposal,
-            description: "draft update summary proposal",
+            description: "draft moment summary proposal",
             input_schema: serde_json::json!({
                 "type": "object",
-                "properties": {"summary": {"type":"string","description":"the update summary text"}},
+                "properties": {"summary": {"type":"string","description":"the moment summary text"}},
                 "required": [],
             }),
         },
@@ -603,7 +603,7 @@ pub fn read_resource(content_root: &Path, uri: &str) -> Result<String, McpError>
     }
 }
 
-// ── capture / propose — the agent update path (`03` §3.1) ───────────────────
+// ── capture / propose — the agent moment path (`03` §3.1) ───────────────────
 
 /// The result of a `capture` or `propose` — a registered proposal branch.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -957,9 +957,9 @@ fn propose_hint(
 ///   the proposal touches `silan://agent/notes/<id>`.
 ///
 /// * **`kind` is one of the six content kinds** (`idea` / `blog` / `project` /
-///   `episode` / `resume` / `update`) — open a real Item under
+///   `episode` / `resume` / `moment`) — open a real Item under
 ///   `silan://resources/<type>/<slug>/`. The proposal scaffolds the primary Part
-///   (`overview` for idea/project; `body` for blog/episode/update;
+///   (`overview` for idea/project; `body` for blog/episode/moment;
 ///   `summary` for resume) with the note as the body, frontmatter pre-filled
 ///   with `slug` / `title` / `kind` / `status: draft` / `visibility: private`.
 ///   The owner accepts → `silan index sync` and the Item is live in the db.
@@ -1017,7 +1017,7 @@ pub fn capture(
     }
     let content_kind = parse_kind(kind).ok_or_else(|| {
         McpError::InvalidRequest(format!(
-            "capture `type` must be one of note / idea / blog / project / episode / update; got `{kind}`"
+            "capture `type` must be one of note / idea / blog / project / episode / moment; got `{kind}`"
         ))
     })?;
 
@@ -1051,7 +1051,7 @@ pub fn capture(
         silan_viking_app::ContentKind::Project => "projects",
         silan_viking_app::ContentKind::Episode => "episode",
         silan_viking_app::ContentKind::Resume => "resume",
-        silan_viking_app::ContentKind::Update => "update",
+        silan_viking_app::ContentKind::Moment => "moment",
     };
 
     let part_dir_rel = format!(
@@ -1064,11 +1064,11 @@ pub fn capture(
 
     // The body file: frontmatter with the SCHEMA-required fields. Each
     // content type has its own `status` enum (`10` §10.4) — idea/blog/episode
-    // use `draft` as the initial value, project and update don't have a
+    // use `draft` as the initial value, project and moment don't have a
     // `draft` state and start at `active`. update additionally requires
-    // `update_type` and `date` (per `10` §10.4.6). resume has no `status`.
+    // `moment_type` and `date` (per `10` §10.4.6). resume has no `status`.
     let initial_status = match content_kind {
-        silan_viking_app::ContentKind::Project | silan_viking_app::ContentKind::Update => "active",
+        silan_viking_app::ContentKind::Project | silan_viking_app::ContentKind::Moment => "active",
         silan_viking_app::ContentKind::Resume => "", // no status field
         _ => "draft",
     };
@@ -1076,12 +1076,12 @@ pub fn capture(
     // Extra frontmatter lines specific to certain kinds — kept minimal so a
     // capture stays a single-call proposal, but still SCHEMA-valid.
     let extra_lines = match content_kind {
-        silan_viking_app::ContentKind::Update => {
-            // SCHEMA requires update_type + date for an update; without these,
+        silan_viking_app::ContentKind::Moment => {
+            // SCHEMA requires moment_type + date for a moment; without these,
             // sync's post-merge validation rejects the proposal. Pick safe
             // defaults the owner can refine after `proposal accept`.
             let today = today_iso_date();
-            format!("update_type: progress\ndate: {today}\n")
+            format!("moment_type: progress\ndate: {today}\n")
         }
         _ => String::new(),
     };
@@ -1155,7 +1155,7 @@ fn first_sentence(note: &str) -> String {
     }
 }
 
-/// Today's date as `YYYY-MM-DD` UTC — used by `capture(type=update)` to
+/// Today's date as `YYYY-MM-DD` UTC — used by `capture(type=moment)` to
 /// satisfy the SCHEMA `date` requirement without dragging in chrono.
 fn today_iso_date() -> String {
     let now = std::time::SystemTime::now()
@@ -1258,13 +1258,13 @@ fn maybe_inject_frontmatter<'a>(
 
     let title = humanize_slug(&slug);
     let status_line = match kind.as_str() {
-        "project" | "update" => "status: active\n",
+        "project" | "moment" => "status: active\n",
         "resume" => "",
         _ => "status: draft\n",
     };
-    let extra = if kind == "update" {
+    let extra = if kind == "moment" {
         let today = today_iso_date();
-        format!("update_type: progress\ndate: {today}\n")
+        format!("moment_type: progress\ndate: {today}\n")
     } else {
         String::new()
     };
@@ -1726,14 +1726,14 @@ pub fn reflect(content_root: &Path, session: &str) -> Result<String, McpError> {
     Ok(format!("silan://{rel}"))
 }
 
-/// `summarize_updates()` — draft a changelog/update summary as a proposal
-/// (`03` §3.2 档 3). It is `propose` specialised to the `update` type: the
-/// summary is written to a new `update` Item on a proposal branch.
-pub fn summarize_updates(content_root: &Path, summary: &str) -> Result<ProposalCreated, McpError> {
+/// `summarize_moments()` — draft a changelog/moment summary as a proposal
+/// (`03` §3.2 档 3). It is `propose` specialised to the `moment` type: the
+/// summary is written to a new `moment` Item on a proposal branch.
+pub fn summarize_moments(content_root: &Path, summary: &str) -> Result<ProposalCreated, McpError> {
     let slug = format!("changelog-{}", Ulid::new().to_string().to_ascii_lowercase());
-    let uri = format!("silan://resources/update/{slug}");
+    let uri = format!("silan://resources/moment/{slug}");
     let draft = format!(
-        "---\nslug: {slug}\ntitle: Update Summary\nkind: update\nupdate_type: progress\n\
+        "---\nslug: {slug}\ntitle: Moment Summary\nkind: moment\nmoment_type: progress\n\
          status: active\nvisibility: private\ndate: {}\n---\n\n{summary}\n",
         today_utc()
     );
@@ -1774,7 +1774,7 @@ fn resolve_stats_entity(db_path: &Path, uri: &str) -> Result<(String, String), M
         "project" | "projects" => ("project", "projects"),
         "idea" | "ideas" => ("idea", "ideas"),
         "episode" | "episodes" => ("episode", "episodes"),
-        "update" | "updates" => ("update", "recent_updates"),
+        "moment" | "moments" => ("moment", "moments"),
         "resume" => ("resume", "personal_info"),
         other => {
             return Err(McpError::InvalidRequest(format!(
@@ -2036,9 +2036,9 @@ pub fn call(
             let created = propose(content_root, &uri, draft.as_deref(), &lang, &extra_parts)?;
             Ok(json!({ "proposal_id": created.id, "branch": created.branch, "hint": created.hint }))
         }
-        "summarize_updates" => {
-            let summary = opt_str("summary").unwrap_or_else(|| "Recent updates.".to_owned());
-            let created = summarize_updates(content_root, &summary)?;
+        "summarize_moments" => {
+            let summary = opt_str("summary").unwrap_or_else(|| "Recent moments.".to_owned());
+            let created = summarize_moments(content_root, &summary)?;
             Ok(json!({ "proposal_id": created.id, "branch": created.branch, "hint": created.hint }))
         }
         // Deploy is a gated tool. `call()` answers the wire even when
@@ -2115,7 +2115,7 @@ fn parse_kind(name: &str) -> Option<ContentKind> {
         "project" => Some(ContentKind::Project),
         "episode" => Some(ContentKind::Episode),
         "resume" => Some(ContentKind::Resume),
-        "update" => Some(ContentKind::Update),
+        "moment" => Some(ContentKind::Moment),
         _ => None,
     }
 }
@@ -2165,7 +2165,7 @@ mod tests {
 
     /// Default gate hides Deploy + Evolve tools — the M9 default surface
     /// is the 18 non-gated tools (11 ReadOnly + 4 AgentContext +
-    /// capture + propose + summarize_updates). Counts include `list_tags`
+    /// capture + propose + summarize_moments). Counts include `list_tags`
     /// added by the 2026-05-22 audit follow-up.
     #[test]
     fn default_gate_advertises_18_tools() {

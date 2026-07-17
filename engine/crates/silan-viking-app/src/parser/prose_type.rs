@@ -1,5 +1,5 @@
 //! `ProseTypeParser` — the shared parsing engine for the 5 prose content
-//! types (idea / blog / project / episode / update).
+//! types (idea / blog / project / episode / moment).
 //!
 //! All five are structurally identical (`docs/silan-viking/01` §1.3): each is
 //! an Item whose every Part is `prose`. They differ only in *which* SCHEMA

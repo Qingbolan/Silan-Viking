@@ -26,7 +26,7 @@ func (StatsCacheCrawler) Annotations() []schema.Annotation {
 func (StatsCacheCrawler) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("entity_id"),
 		field.Enum("visitor_kind").
 			Values("human", "search_bot", "ai_bot", "unknown"),

@@ -70,12 +70,12 @@ export interface ExperienceItem {
   updated_at: string;
 }
 
-export interface RecentUpdate {
+export interface Moment {
   id: string;
   user_id: string;
   slug: string;
   type: string;
-  update_type: string;
+  moment_type: string;
   visibility: string;
   title: string;
   description: string;

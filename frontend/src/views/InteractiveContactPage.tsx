@@ -65,7 +65,7 @@ const InteractiveContactPageContent: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
 
-  // The three tab bodies are independent resources. A failure in updates,
+  // The three tab bodies are independent resources. A failure in moments,
   // for example, must not erase the email/social facts from personal_info.
   const loadThoughts = useCallback(
     async () => (await fetchIdeas({ page: 1, size: 3 }, language)).slice(0, 3).map((idea) => ({

@@ -5,12 +5,12 @@ import type {
   EducationItem,
   ResearchItem,
   ExperienceItem,
-  RecentUpdate,
+  Moment,
   Publication,
   Award,
 } from '../../types/api';
 import { get, formatLanguage, mediaUrl } from '../utils';
-import { fetchUpdates } from '../updates/updateApi';
+import { fetchMoments as fetchMomentsApi } from '../moments/momentApi';
 import { fetchProjects } from '../projects/projectApi';
 import { getClientFingerprint } from '../../utils/fingerprint';
 
@@ -81,7 +81,7 @@ const sectionTitle = (key: string, language: Language) => {
       publications: 'Publications',
       awards: 'Awards',
       skills: 'Skills',
-      recent: 'Recent Updates',
+      recent: 'Recent Moments',
     }[key] || key;
   }
 
@@ -246,9 +246,9 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           referrer: document.referrer,
           landing_url: window.location.href,
         };
-  const [response, updates, portfolioProjects] = await Promise.all([
+  const [response, moments, portfolioProjects] = await Promise.all([
     get<ResumeResponse>('/api/v1/resume', { lang: formatLanguage(language), ...acquisition }),
-    fetchUpdates(language),
+    fetchMomentsApi(language),
     fetchProjects({ status: 'active', size: 100 }, language),
   ]);
 
@@ -384,7 +384,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
       },
       recent: {
         title: sectionTitle('recent', language),
-        content: updates.map((update) => ({
+        content: moments.map((update) => ({
           id: update.id,
           title: update.title,
           description: update.description,
@@ -428,8 +428,8 @@ export const fetchAwards = async (language: Language = 'en'): Promise<Award[]> =
   return mapAwards(findPart(response.parts || [], ['award']));
 };
 
-export const fetchRecentUpdates = async (language: Language = 'en'): Promise<RecentUpdate[]> =>
-  fetchUpdates(language);
+export const fetchMoments = async (language: Language = 'en'): Promise<Moment[]> =>
+  fetchMomentsApi(language);
 
 /** One "open to" role from the résumé's `expectations` part. */
 export interface ExpectationItem {

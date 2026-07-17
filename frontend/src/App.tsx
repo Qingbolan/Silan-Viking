@@ -15,7 +15,7 @@ import { Seo } from './components/Seo';
 // discussions, contact workflow and résumé renderer before seeing the home
 // hero. Route boundaries are the natural ownership boundary for that code.
 const ResumeWebsite = React.lazy(() => import('./views/ResumeWebsite'));
-const RecentUpdates = React.lazy(() => import('./views/RecentUpdates'));
+const Moments = React.lazy(() => import('./views/Moments'));
 const InteractiveContactPage = React.lazy(() => import('./views/InteractiveContactPage'));
 const ProjectGallery = React.lazy(() => import('./views/ProjectGallery'));
 const ProjectDetail = React.lazy(() => import('./components/ProjectGallery/ProjectDetail'));
@@ -64,7 +64,7 @@ const LocalizedRoutes: React.FC = () => {
     >
       <Routes key={language}>
         <Route path="/" element={<ResumeWebsite />} />
-        <Route path="/recent-updates" element={<RecentUpdates />} />
+        <Route path="/moments" element={<Moments />} />
         <Route path="/contact" element={<InteractiveContactPage />} />
         <Route path="/projects" element={<ProjectGallery />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />

@@ -80,7 +80,7 @@ enum CaptureKind {
     Idea(IdeaCategory),
     Blog(IdeaCategory),
     Project,
-    Update,
+    Moment,
 }
 
 impl CaptureKind {
@@ -89,7 +89,7 @@ impl CaptureKind {
             Self::Idea(_) => "ideas",
             Self::Blog(_) => "blog",
             Self::Project => "projects",
-            Self::Update => "update",
+            Self::Moment => "moment",
         }
     }
 
@@ -98,13 +98,13 @@ impl CaptureKind {
             Self::Idea(_) => "idea",
             Self::Blog(_) => "blog",
             Self::Project => "project",
-            Self::Update => "update",
+            Self::Moment => "moment",
         }
     }
 
     fn role(self) -> &'static str {
         match self {
-            Self::Blog(_) | Self::Update => "body",
+            Self::Blog(_) | Self::Moment => "body",
             Self::Idea(_) | Self::Project => "overview",
         }
     }
@@ -112,7 +112,7 @@ impl CaptureKind {
     fn initial_status(self) -> &'static str {
         match self {
             Self::Project => "active",
-            Self::Update => "ongoing",
+            Self::Moment => "ongoing",
             Self::Idea(_) | Self::Blog(_) => "draft",
         }
     }
@@ -122,7 +122,7 @@ impl CaptureKind {
             Self::Idea(_) => ".idea-capture-",
             Self::Blog(_) => ".blog-capture-",
             Self::Project => ".project-capture-",
-            Self::Update => ".update-capture-",
+            Self::Moment => ".moment-capture-",
         }
     }
 }
@@ -192,9 +192,9 @@ impl ContentCreator {
         event: &str,
         db_path: impl AsRef<Path>,
     ) -> Result<CapturedContent, CaptureError> {
-        let event = required_text(event, "the update event is empty")?;
+        let event = required_text(event, "the moment event is empty")?;
         self.create_and_sync(
-            CaptureKind::Update,
+            CaptureKind::Moment,
             &derive_title(event),
             event,
             db_path.as_ref(),
@@ -354,8 +354,8 @@ fn build_files(
     if matches!(kind, CaptureKind::Blog(_)) {
         insert(&mut frontmatter, "content_type", "article");
     }
-    if matches!(kind, CaptureKind::Update) {
-        insert(&mut frontmatter, "update_type", "progress");
+    if matches!(kind, CaptureKind::Moment) {
+        insert(&mut frontmatter, "moment_type", "progress");
         insert(&mut frontmatter, "priority", "medium");
         insert(
             &mut frontmatter,
@@ -451,22 +451,22 @@ mod tests {
     }
 
     #[test]
-    fn update_capture_writes_timeline_frontmatter() {
+    fn moment_capture_writes_timeline_frontmatter() {
         let item_id = ItemId::generate();
         let part_id = PartId::generate();
         let files = build_files(
-            CaptureKind::Update,
+            CaptureKind::Moment,
             &item_id,
             &part_id,
-            "shipping-update",
-            "Shipping update",
+            "shipping-moment",
+            "Shipping moment",
             "Shipped the latest editor flow.",
         )
-        .expect("update files should be serializable");
+        .expect("moment files should be serializable");
 
         assert!(files.part.contains("type           = \"body\""));
-        assert!(files.markdown.contains("kind: update"));
-        assert!(files.markdown.contains("update_type: progress"));
+        assert!(files.markdown.contains("kind: moment"));
+        assert!(files.markdown.contains("moment_type: progress"));
         assert!(files.markdown.contains("status: ongoing"));
         assert!(files.markdown.contains("date: "));
     }

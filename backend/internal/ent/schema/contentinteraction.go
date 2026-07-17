@@ -34,7 +34,7 @@ func (ContentInteraction) Fields() []ent.Field {
 			DefaultFunc(func() string { return uuid.New().String() }).
 			StorageKey("id"),
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("entity_id").
 			StorageKey("entity_id"),
 		field.String("section_anchor").

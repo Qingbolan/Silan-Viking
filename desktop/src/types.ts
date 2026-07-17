@@ -1,4 +1,4 @@
-export type ContentKind = 'blog' | 'project' | 'idea' | 'resume' | 'episode' | 'update';
+export type ContentKind = 'blog' | 'project' | 'idea' | 'resume' | 'episode' | 'moment';
 
 export type EditorDocument = {
   id: string;
@@ -170,7 +170,7 @@ export type VersionStatus = {
   }>;
 };
 
-export type VersionScope = 'resume' | 'blog' | 'project' | 'idea' | 'update';
+export type VersionScope = 'resume' | 'blog' | 'project' | 'idea' | 'moment';
 
 export type DeploymentPlan = {
   branch: string;
@@ -239,7 +239,7 @@ export type EntityCount = {
 
 export type EntityFilter = 'all' | ContentKind;
 export type IdeaCategory = 'inspiration' | 'thought' | 'decision' | 'state' | 'event';
-export type CaptureTarget = 'blog' | 'idea' | 'update';
+export type CaptureTarget = 'blog' | 'idea' | 'moment';
 export type CapturePhase = 'closed' | 'opening' | 'editing' | 'confirming-close' | 'submitting' | 'failed' | 'closing';
 
 export type ContentGroup = {

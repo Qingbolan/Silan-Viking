@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"silan-backend/internal/ent/blogpost"
+	"silan-backend/internal/ent/moment"
 	"silan-backend/internal/ent/project"
-	"silan-backend/internal/ent/recentupdate"
 	"silan-backend/internal/svc"
 )
 
@@ -72,12 +72,12 @@ func resolveCrawlerTarget(ctx context.Context, svcCtx *svc.ServiceContext, reque
 		if queryErr == nil {
 			return "project", row.ID
 		}
-	case "recent-updates":
-		row, queryErr := svcCtx.DB.RecentUpdate.Query().
-			Where(recentupdate.Or(recentupdate.IDEQ(key), recentupdate.SlugEQ(key))).
+	case "moments":
+		row, queryErr := svcCtx.DB.Moment.Query().
+			Where(moment.Or(moment.IDEQ(key), moment.SlugEQ(key))).
 			Only(ctx)
 		if queryErr == nil {
-			return "update", row.ID
+			return "moment", row.ID
 		}
 	}
 	return "resume", "homepage"

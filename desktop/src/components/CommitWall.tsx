@@ -8,7 +8,7 @@ const scopeLabels: Record<VersionScope, string> = {
   blog: 'Blog',
   project: 'Projects',
   idea: 'Ideas',
-  update: 'Updates',
+  moment: 'Moments',
 };
 
 type CommitWallProps = {

@@ -7,7 +7,7 @@
 //!
 //! The 6 content types divide into two families:
 //!
-//! - **prose types** — idea / blog / project / episode / update. All five are
+//! - **prose types** — idea / blog / project / episode / moment. All five are
 //!   structurally identical, so they share [`prose_type::ProseTypeParser`]
 //!   and each `Parser` impl is a thin delegator.
 //! - **resume** — has `entry_list` / `key_value_list` Parts, so it has its
@@ -23,6 +23,7 @@ mod episode;
 mod error;
 pub(crate) mod frontmatter;
 mod idea;
+mod moment;
 mod parsed;
 mod project;
 mod prose_type;
@@ -30,7 +31,6 @@ mod registry;
 mod relations;
 mod resume;
 mod toml_entries;
-mod update;
 
 pub use entry::{EntryValue, PartEntry};
 pub use error::{Issue, IssuePolicy, ParseError, Severity};

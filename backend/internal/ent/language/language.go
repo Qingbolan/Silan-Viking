@@ -54,8 +54,8 @@ const (
 	EdgePublicationTranslations = "publication_translations"
 	// EdgeAwardTranslations holds the string denoting the award_translations edge name in mutations.
 	EdgeAwardTranslations = "award_translations"
-	// EdgeRecentUpdateTranslations holds the string denoting the recent_update_translations edge name in mutations.
-	EdgeRecentUpdateTranslations = "recent_update_translations"
+	// EdgeMomentTranslations holds the string denoting the moment_translations edge name in mutations.
+	EdgeMomentTranslations = "moment_translations"
 	// PersonalInfoTranslationFieldID holds the string denoting the ID field of the PersonalInfoTranslation.
 	PersonalInfoTranslationFieldID = "id"
 	// EducationTranslationFieldID holds the string denoting the ID field of the EducationTranslation.
@@ -88,8 +88,8 @@ const (
 	PublicationTranslationFieldID = "id"
 	// AwardTranslationFieldID holds the string denoting the ID field of the AwardTranslation.
 	AwardTranslationFieldID = "id"
-	// RecentUpdateTranslationFieldID holds the string denoting the ID field of the RecentUpdateTranslation.
-	RecentUpdateTranslationFieldID = "id"
+	// MomentTranslationFieldID holds the string denoting the ID field of the MomentTranslation.
+	MomentTranslationFieldID = "id"
 	// Table holds the table name of the language in the database.
 	Table = "languages"
 	// PersonalInfoTranslationsTable is the table that holds the personal_info_translations relation/edge.
@@ -204,13 +204,13 @@ const (
 	AwardTranslationsInverseTable = "award_translations"
 	// AwardTranslationsColumn is the table column denoting the award_translations relation/edge.
 	AwardTranslationsColumn = "language_code"
-	// RecentUpdateTranslationsTable is the table that holds the recent_update_translations relation/edge.
-	RecentUpdateTranslationsTable = "recent_update_translations"
-	// RecentUpdateTranslationsInverseTable is the table name for the RecentUpdateTranslation entity.
-	// It exists in this package in order to avoid circular dependency with the "recentupdatetranslation" package.
-	RecentUpdateTranslationsInverseTable = "recent_update_translations"
-	// RecentUpdateTranslationsColumn is the table column denoting the recent_update_translations relation/edge.
-	RecentUpdateTranslationsColumn = "language_code"
+	// MomentTranslationsTable is the table that holds the moment_translations relation/edge.
+	MomentTranslationsTable = "moment_translations"
+	// MomentTranslationsInverseTable is the table name for the MomentTranslation entity.
+	// It exists in this package in order to avoid circular dependency with the "momenttranslation" package.
+	MomentTranslationsInverseTable = "moment_translations"
+	// MomentTranslationsColumn is the table column denoting the moment_translations relation/edge.
+	MomentTranslationsColumn = "language_code"
 )
 
 // Columns holds all SQL columns for language fields.
@@ -497,17 +497,17 @@ func ByAwardTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption
 	}
 }
 
-// ByRecentUpdateTranslationsCount orders the results by recent_update_translations count.
-func ByRecentUpdateTranslationsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByMomentTranslationsCount orders the results by moment_translations count.
+func ByMomentTranslationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newRecentUpdateTranslationsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newMomentTranslationsStep(), opts...)
 	}
 }
 
-// ByRecentUpdateTranslations orders the results by recent_update_translations terms.
-func ByRecentUpdateTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByMomentTranslations orders the results by moment_translations terms.
+func ByMomentTranslations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newRecentUpdateTranslationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newMomentTranslationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newPersonalInfoTranslationsStep() *sqlgraph.Step {
@@ -622,10 +622,10 @@ func newAwardTranslationsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, AwardTranslationsTable, AwardTranslationsColumn),
 	)
 }
-func newRecentUpdateTranslationsStep() *sqlgraph.Step {
+func newMomentTranslationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RecentUpdateTranslationsInverseTable, RecentUpdateTranslationFieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, RecentUpdateTranslationsTable, RecentUpdateTranslationsColumn),
+		sqlgraph.To(MomentTranslationsInverseTable, MomentTranslationFieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MomentTranslationsTable, MomentTranslationsColumn),
 	)
 }

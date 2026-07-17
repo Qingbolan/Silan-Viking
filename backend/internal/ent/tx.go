@@ -68,6 +68,10 @@ type Tx struct {
 	ItemPartTranslation *ItemPartTranslationClient
 	// Language is the client for interacting with the Language builders.
 	Language *LanguageClient
+	// Moment is the client for interacting with the Moment builders.
+	Moment *MomentClient
+	// MomentTranslation is the client for interacting with the MomentTranslation builders.
+	MomentTranslation *MomentTranslationClient
 	// PartEntry is the client for interacting with the PartEntry builders.
 	PartEntry *PartEntryClient
 	// PartEntryTranslation is the client for interacting with the PartEntryTranslation builders.
@@ -100,10 +104,6 @@ type Tx struct {
 	PublicationAuthor *PublicationAuthorClient
 	// PublicationTranslation is the client for interacting with the PublicationTranslation builders.
 	PublicationTranslation *PublicationTranslationClient
-	// RecentUpdate is the client for interacting with the RecentUpdate builders.
-	RecentUpdate *RecentUpdateClient
-	// RecentUpdateTranslation is the client for interacting with the RecentUpdateTranslation builders.
-	RecentUpdateTranslation *RecentUpdateTranslationClient
 	// RequestLog is the client for interacting with the RequestLog builders.
 	RequestLog *RequestLogClient
 	// ResearchProject is the client for interacting with the ResearchProject builders.
@@ -297,6 +297,8 @@ func (tx *Tx) init() {
 	tx.ItemPart = NewItemPartClient(tx.config)
 	tx.ItemPartTranslation = NewItemPartTranslationClient(tx.config)
 	tx.Language = NewLanguageClient(tx.config)
+	tx.Moment = NewMomentClient(tx.config)
+	tx.MomentTranslation = NewMomentTranslationClient(tx.config)
 	tx.PartEntry = NewPartEntryClient(tx.config)
 	tx.PartEntryTranslation = NewPartEntryTranslationClient(tx.config)
 	tx.PersonalInfo = NewPersonalInfoClient(tx.config)
@@ -313,8 +315,6 @@ func (tx *Tx) init() {
 	tx.Publication = NewPublicationClient(tx.config)
 	tx.PublicationAuthor = NewPublicationAuthorClient(tx.config)
 	tx.PublicationTranslation = NewPublicationTranslationClient(tx.config)
-	tx.RecentUpdate = NewRecentUpdateClient(tx.config)
-	tx.RecentUpdateTranslation = NewRecentUpdateTranslationClient(tx.config)
 	tx.RequestLog = NewRequestLogClient(tx.config)
 	tx.ResearchProject = NewResearchProjectClient(tx.config)
 	tx.ResearchProjectDetail = NewResearchProjectDetailClient(tx.config)

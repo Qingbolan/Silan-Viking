@@ -71,7 +71,7 @@ const (
 	FromTypeIdea    FromType = "idea"
 	FromTypeEpisode FromType = "episode"
 	FromTypeResume  FromType = "resume"
-	FromTypeUpdate  FromType = "update"
+	FromTypeMoment  FromType = "moment"
 )
 
 func (ft FromType) String() string {
@@ -81,7 +81,7 @@ func (ft FromType) String() string {
 // FromTypeValidator is a validator for the "from_type" field enum values. It is called by the builders before save.
 func FromTypeValidator(ft FromType) error {
 	switch ft {
-	case FromTypeBlog, FromTypeProject, FromTypeIdea, FromTypeEpisode, FromTypeResume, FromTypeUpdate:
+	case FromTypeBlog, FromTypeProject, FromTypeIdea, FromTypeEpisode, FromTypeResume, FromTypeMoment:
 		return nil
 	default:
 		return fmt.Errorf("contentrelation: invalid enum value for from_type field: %q", ft)
@@ -98,7 +98,7 @@ const (
 	ToTypeIdea    ToType = "idea"
 	ToTypeEpisode ToType = "episode"
 	ToTypeResume  ToType = "resume"
-	ToTypeUpdate  ToType = "update"
+	ToTypeMoment  ToType = "moment"
 )
 
 func (tt ToType) String() string {
@@ -108,7 +108,7 @@ func (tt ToType) String() string {
 // ToTypeValidator is a validator for the "to_type" field enum values. It is called by the builders before save.
 func ToTypeValidator(tt ToType) error {
 	switch tt {
-	case ToTypeBlog, ToTypeProject, ToTypeIdea, ToTypeEpisode, ToTypeResume, ToTypeUpdate:
+	case ToTypeBlog, ToTypeProject, ToTypeIdea, ToTypeEpisode, ToTypeResume, ToTypeMoment:
 		return nil
 	default:
 		return fmt.Errorf("contentrelation: invalid enum value for to_type field: %q", tt)

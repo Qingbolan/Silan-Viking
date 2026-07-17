@@ -27,7 +27,7 @@ func (StatsCacheVisitor) Annotations() []schema.Annotation {
 func (StatsCacheVisitor) Fields() []ent.Field {
 	return []ent.Field{
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("entity_id"),
 		field.String("fingerprint"),
 		field.String("ip_masked").

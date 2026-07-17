@@ -30,7 +30,7 @@ func (ContentTag) Fields() []ent.Field {
 		field.String("tag_id").
 			Comment("slug of the Tag entity (Tag.id)"),
 		field.Enum("entity_type").
-			Values("blog", "project", "idea", "episode", "resume", "update"),
+			Values("blog", "project", "idea", "episode", "resume", "moment"),
 		field.String("entity_id").
 			Comment("stable id of the tagged Item"),
 		field.String("entity_slug").

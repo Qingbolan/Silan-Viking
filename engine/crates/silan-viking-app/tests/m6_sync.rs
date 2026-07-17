@@ -33,7 +33,7 @@ fn sync_writes_every_content_main_table() {
         "projects",
         "episodes",
         "personal_info",
-        "recent_updates",
+        "moments",
     ] {
         let count: i64 = sink
             .connection()
