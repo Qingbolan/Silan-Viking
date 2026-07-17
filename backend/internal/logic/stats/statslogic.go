@@ -95,6 +95,9 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 	// One visitor can trigger several API requests for a page. Count each
 	// observed network address once per country so endpoint fan-out does not
 	// inflate the geographical ranking.
+	sort.Slice(countryLogs, func(i, j int) bool {
+		return countryLogs[i].CreatedAt.After(countryLogs[j].CreatedAt)
+	})
 	type locationKey struct {
 		country   string
 		city      string
@@ -102,10 +105,15 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		longitude float64
 	}
 	locationVisitors := make(map[locationKey]map[string]struct{})
+	seenVisitors := make(map[string]struct{})
 	for _, row := range countryLogs {
 		if strings.HasPrefix(row.Path, "/api/v1/stats") {
 			continue
 		}
+		if _, seen := seenVisitors[row.IP]; seen {
+			continue
+		}
+		seenVisitors[row.IP] = struct{}{}
 		key := locationKey{
 			country:   row.CountryCode,
 			city:      row.City,
