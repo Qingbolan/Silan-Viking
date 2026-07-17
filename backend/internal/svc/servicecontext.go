@@ -326,7 +326,7 @@ func migrateMomentDomain(driver, source string) error {
 	}
 
 	for _, table := range []string{
-		"content_interaction", "comments", "content_tags", "item_parts", "annotations",
+		"content_interaction", "comments", "content_tag", "item_part", "annotation",
 		"stats_cache_item", "stats_cache_visitor", "stats_cache_crawler", "stats_cache_source",
 	} {
 		exists, err := databaseTableExists(db, driver, table)
@@ -339,13 +339,13 @@ func migrateMomentDomain(driver, source string) error {
 			}
 		}
 	}
-	if exists, err := databaseTableExists(db, driver, "content_relations"); err != nil {
+	if exists, err := databaseTableExists(db, driver, "content_relation"); err != nil {
 		return err
 	} else if exists {
-		if _, err := db.Exec("UPDATE content_relations SET from_type = 'moment' WHERE from_type = 'update'"); err != nil {
+		if _, err := db.Exec("UPDATE content_relation SET from_type = 'moment' WHERE from_type = 'update'"); err != nil {
 			return err
 		}
-		if _, err := db.Exec("UPDATE content_relations SET to_type = 'moment' WHERE to_type = 'update'"); err != nil {
+		if _, err := db.Exec("UPDATE content_relation SET to_type = 'moment' WHERE to_type = 'update'"); err != nil {
 			return err
 		}
 	}

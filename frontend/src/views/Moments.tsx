@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   Briefcase,
   CalendarDays,
@@ -72,6 +73,9 @@ const Moments: React.FC = () => {
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [kind, setKind] = useState<'all' | UpdateKind>('all');
   const [selectedTime, setSelectedTime] = useState<{ year: number; month?: number } | null>(null);
+  const [searchParams] = useSearchParams();
+  const selectedMomentId = searchParams.get('id');
+  const momentElements = useRef(new Map<string, HTMLElement>());
 
   const copy = language === 'en'
     ? {
@@ -212,6 +216,22 @@ const Moments: React.FC = () => {
     [normalized, kind, selectedTime],
   );
 
+  useEffect(() => {
+    if (loadState !== 'ready' || !selectedMomentId) return;
+    const selected = moments.find((moment) =>
+      moment.id === selectedMomentId || moment.slug === selectedMomentId
+    );
+    if (!selected) return;
+    setKind('all');
+    setSelectedTime(null);
+    requestAnimationFrame(() => {
+      momentElements.current.get(selected.id)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+  }, [loadState, moments, selectedMomentId]);
+
   const kindLabel = (value: UpdateKind | 'all') => {
     if (value === 'all') return copy.all;
     const labels = language === 'en'
@@ -297,7 +317,16 @@ const Moments: React.FC = () => {
             return (
               <motion.li
                 key={moment.id}
-                className="grid grid-cols-1 gap-4 py-7 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7 sm:py-9"
+                ref={(node) => {
+                  if (node) momentElements.current.set(moment.id, node);
+                  else momentElements.current.delete(moment.id);
+                }}
+                className={[
+                  'grid grid-cols-1 gap-4 py-7 transition-colors sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7 sm:py-9',
+                  selectedMomentId === moment.id || selectedMomentId === moment.slug
+                    ? 'bg-ds-surface-2'
+                    : '',
+                ].join(' ')}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.2) }}

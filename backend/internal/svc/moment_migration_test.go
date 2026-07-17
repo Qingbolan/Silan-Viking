@@ -21,6 +21,10 @@ func TestMigrateMomentDomainPreservesLegacyRows(t *testing.T) {
 		"INSERT INTO recent_update_translations (id, recent_update_id) VALUES ('translation-1', 'moment-1')",
 		"CREATE TABLE content_interaction (entity_type TEXT)",
 		"INSERT INTO content_interaction (entity_type) VALUES ('update')",
+		"CREATE TABLE item_part (entity_type TEXT, entity_id TEXT, role TEXT)",
+		"INSERT INTO item_part (entity_type, entity_id, role) VALUES ('update', 'moment-1', 'body')",
+		"CREATE TABLE content_relation (from_type TEXT, to_type TEXT)",
+		"INSERT INTO content_relation (from_type, to_type) VALUES ('update', 'update')",
 	} {
 		if _, err := db.Exec(statement); err != nil {
 			t.Fatal(err)
@@ -59,5 +63,18 @@ func TestMigrateMomentDomainPreservesLegacyRows(t *testing.T) {
 	}
 	if entityType != "moment" {
 		t.Fatalf("entity_type = %q, want moment", entityType)
+	}
+	if err := db.QueryRow("SELECT entity_type FROM item_part WHERE entity_id = 'moment-1'").Scan(&entityType); err != nil {
+		t.Fatal(err)
+	}
+	if entityType != "moment" {
+		t.Fatalf("item_part.entity_type = %q, want moment", entityType)
+	}
+	var fromType, toType string
+	if err := db.QueryRow("SELECT from_type, to_type FROM content_relation").Scan(&fromType, &toType); err != nil {
+		t.Fatal(err)
+	}
+	if fromType != "moment" || toType != "moment" {
+		t.Fatalf("content_relation types = (%q, %q), want (moment, moment)", fromType, toType)
 	}
 }
