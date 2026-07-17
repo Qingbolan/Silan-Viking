@@ -69,6 +69,9 @@ pub struct TrafficSource {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TrafficCountry {
     pub country_code: String,
+    pub city: String,
+    pub latitude: String,
+    pub longitude: String,
     pub visits: i64,
 }
 
@@ -335,16 +338,21 @@ fn cached_traffic(
             .collect::<Result<Vec<_>, _>>()?;
     }
     let mut top_countries = Vec::new();
-    if table_exists(connection, "stats_cache_country")? {
+    if table_exists(connection, "stats_cache_location")? {
         let mut statement = connection.prepare(
-            "SELECT country_code, count FROM stats_cache_country
+            "SELECT country_code, city, latitude, longitude, count FROM stats_cache_location
              ORDER BY count DESC, country_code ASC LIMIT 4",
         )?;
         top_countries = statement
             .query_map([], |row| {
+                let latitude: f64 = row.get(2)?;
+                let longitude: f64 = row.get(3)?;
                 Ok(TrafficCountry {
                     country_code: row.get(0)?,
-                    visits: row.get(1)?,
+                    city: row.get(1)?,
+                    latitude: format!("{latitude:.1}"),
+                    longitude: format!("{longitude:.1}"),
+                    visits: row.get(4)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -549,8 +557,8 @@ mod tests {
                   ('blog', 'i_one', 'ai_crawler', 2, '2026-07-17T00:00:00Z');
                 INSERT INTO stats_cache_source VALUES
                   ('blog', 'i_one', 'ai_chat', 4, '2026-07-17T00:00:00Z');
-                INSERT INTO stats_cache_country VALUES
-                  ('SG', 7, '2026-07-17T00:00:00Z');
+                INSERT INTO stats_cache_location VALUES
+                  ('SG', 'Singapore', 1.3, 103.9, 7, '2026-07-17T00:00:00Z');
                 CREATE TABLE comments (is_approved INTEGER NOT NULL);
                 INSERT INTO comments VALUES (0), (1);
                 ",
@@ -569,6 +577,9 @@ mod tests {
             snapshot.traffic.top_countries,
             vec![TrafficCountry {
                 country_code: "SG".to_owned(),
+                city: "Singapore".to_owned(),
+                latitude: "1.3".to_owned(),
+                longitude: "103.9".to_owned(),
                 visits: 7,
             }]
         );

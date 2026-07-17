@@ -95,22 +95,43 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 	// One visitor can trigger several API requests for a page. Count each
 	// observed network address once per country so endpoint fan-out does not
 	// inflate the geographical ranking.
-	countryVisitors := make(map[string]map[string]struct{})
+	type locationKey struct {
+		country   string
+		city      string
+		latitude  float64
+		longitude float64
+	}
+	locationVisitors := make(map[locationKey]map[string]struct{})
 	for _, row := range countryLogs {
 		if strings.HasPrefix(row.Path, "/api/v1/stats") {
 			continue
 		}
-		if countryVisitors[row.CountryCode] == nil {
-			countryVisitors[row.CountryCode] = make(map[string]struct{})
+		key := locationKey{
+			country:   row.CountryCode,
+			city:      row.City,
+			latitude:  row.Latitude,
+			longitude: row.Longitude,
 		}
-		countryVisitors[row.CountryCode][row.IP] = struct{}{}
+		if locationVisitors[key] == nil {
+			locationVisitors[key] = make(map[string]struct{})
+		}
+		locationVisitors[key][row.IP] = struct{}{}
 	}
-	countries := make([]types.CountryRow, 0, len(countryVisitors))
-	for code, visitors := range countryVisitors {
-		countries = append(countries, types.CountryRow{CountryCode: code, Count: len(visitors)})
+	countries := make([]types.CountryRow, 0, len(locationVisitors))
+	for location, visitors := range locationVisitors {
+		countries = append(countries, types.CountryRow{
+			CountryCode: location.country,
+			City:        location.city,
+			Latitude:    location.latitude,
+			Longitude:   location.longitude,
+			Count:       len(visitors),
+		})
 	}
 	sort.Slice(countries, func(i, j int) bool {
 		if countries[i].Count == countries[j].Count {
+			if countries[i].CountryCode == countries[j].CountryCode {
+				return countries[i].City < countries[j].City
+			}
 			return countries[i].CountryCode < countries[j].CountryCode
 		}
 		return countries[i].Count > countries[j].Count

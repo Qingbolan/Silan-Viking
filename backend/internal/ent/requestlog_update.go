@@ -221,6 +221,80 @@ func (rlu *RequestLogUpdate) ClearCountryCode() *RequestLogUpdate {
 	return rlu
 }
 
+// SetCity sets the "city" field.
+func (rlu *RequestLogUpdate) SetCity(s string) *RequestLogUpdate {
+	rlu.mutation.SetCity(s)
+	return rlu
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableCity(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetCity(*s)
+	}
+	return rlu
+}
+
+// ClearCity clears the value of the "city" field.
+func (rlu *RequestLogUpdate) ClearCity() *RequestLogUpdate {
+	rlu.mutation.ClearCity()
+	return rlu
+}
+
+// SetLatitude sets the "latitude" field.
+func (rlu *RequestLogUpdate) SetLatitude(f float64) *RequestLogUpdate {
+	rlu.mutation.ResetLatitude()
+	rlu.mutation.SetLatitude(f)
+	return rlu
+}
+
+// SetNillableLatitude sets the "latitude" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableLatitude(f *float64) *RequestLogUpdate {
+	if f != nil {
+		rlu.SetLatitude(*f)
+	}
+	return rlu
+}
+
+// AddLatitude adds f to the "latitude" field.
+func (rlu *RequestLogUpdate) AddLatitude(f float64) *RequestLogUpdate {
+	rlu.mutation.AddLatitude(f)
+	return rlu
+}
+
+// ClearLatitude clears the value of the "latitude" field.
+func (rlu *RequestLogUpdate) ClearLatitude() *RequestLogUpdate {
+	rlu.mutation.ClearLatitude()
+	return rlu
+}
+
+// SetLongitude sets the "longitude" field.
+func (rlu *RequestLogUpdate) SetLongitude(f float64) *RequestLogUpdate {
+	rlu.mutation.ResetLongitude()
+	rlu.mutation.SetLongitude(f)
+	return rlu
+}
+
+// SetNillableLongitude sets the "longitude" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableLongitude(f *float64) *RequestLogUpdate {
+	if f != nil {
+		rlu.SetLongitude(*f)
+	}
+	return rlu
+}
+
+// AddLongitude adds f to the "longitude" field.
+func (rlu *RequestLogUpdate) AddLongitude(f float64) *RequestLogUpdate {
+	rlu.mutation.AddLongitude(f)
+	return rlu
+}
+
+// ClearLongitude clears the value of the "longitude" field.
+func (rlu *RequestLogUpdate) ClearLongitude() *RequestLogUpdate {
+	rlu.mutation.ClearLongitude()
+	return rlu
+}
+
 // SetIsBot sets the "is_bot" field.
 func (rlu *RequestLogUpdate) SetIsBot(b bool) *RequestLogUpdate {
 	rlu.mutation.SetIsBot(b)
@@ -324,6 +398,11 @@ func (rlu *RequestLogUpdate) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
 		}
 	}
+	if v, ok := rlu.mutation.City(); ok {
+		if err := requestlog.CityValidator(v); err != nil {
+			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "RequestLog.city": %w`, err)}
+		}
+	}
 	if v, ok := rlu.mutation.BotName(); ok {
 		if err := requestlog.BotNameValidator(v); err != nil {
 			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
@@ -403,6 +482,30 @@ func (rlu *RequestLogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if rlu.mutation.CountryCodeCleared() {
 		_spec.ClearField(requestlog.FieldCountryCode, field.TypeString)
+	}
+	if value, ok := rlu.mutation.City(); ok {
+		_spec.SetField(requestlog.FieldCity, field.TypeString, value)
+	}
+	if rlu.mutation.CityCleared() {
+		_spec.ClearField(requestlog.FieldCity, field.TypeString)
+	}
+	if value, ok := rlu.mutation.Latitude(); ok {
+		_spec.SetField(requestlog.FieldLatitude, field.TypeFloat64, value)
+	}
+	if value, ok := rlu.mutation.AddedLatitude(); ok {
+		_spec.AddField(requestlog.FieldLatitude, field.TypeFloat64, value)
+	}
+	if rlu.mutation.LatitudeCleared() {
+		_spec.ClearField(requestlog.FieldLatitude, field.TypeFloat64)
+	}
+	if value, ok := rlu.mutation.Longitude(); ok {
+		_spec.SetField(requestlog.FieldLongitude, field.TypeFloat64, value)
+	}
+	if value, ok := rlu.mutation.AddedLongitude(); ok {
+		_spec.AddField(requestlog.FieldLongitude, field.TypeFloat64, value)
+	}
+	if rlu.mutation.LongitudeCleared() {
+		_spec.ClearField(requestlog.FieldLongitude, field.TypeFloat64)
 	}
 	if value, ok := rlu.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)
@@ -630,6 +733,80 @@ func (rluo *RequestLogUpdateOne) ClearCountryCode() *RequestLogUpdateOne {
 	return rluo
 }
 
+// SetCity sets the "city" field.
+func (rluo *RequestLogUpdateOne) SetCity(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetCity(s)
+	return rluo
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableCity(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetCity(*s)
+	}
+	return rluo
+}
+
+// ClearCity clears the value of the "city" field.
+func (rluo *RequestLogUpdateOne) ClearCity() *RequestLogUpdateOne {
+	rluo.mutation.ClearCity()
+	return rluo
+}
+
+// SetLatitude sets the "latitude" field.
+func (rluo *RequestLogUpdateOne) SetLatitude(f float64) *RequestLogUpdateOne {
+	rluo.mutation.ResetLatitude()
+	rluo.mutation.SetLatitude(f)
+	return rluo
+}
+
+// SetNillableLatitude sets the "latitude" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableLatitude(f *float64) *RequestLogUpdateOne {
+	if f != nil {
+		rluo.SetLatitude(*f)
+	}
+	return rluo
+}
+
+// AddLatitude adds f to the "latitude" field.
+func (rluo *RequestLogUpdateOne) AddLatitude(f float64) *RequestLogUpdateOne {
+	rluo.mutation.AddLatitude(f)
+	return rluo
+}
+
+// ClearLatitude clears the value of the "latitude" field.
+func (rluo *RequestLogUpdateOne) ClearLatitude() *RequestLogUpdateOne {
+	rluo.mutation.ClearLatitude()
+	return rluo
+}
+
+// SetLongitude sets the "longitude" field.
+func (rluo *RequestLogUpdateOne) SetLongitude(f float64) *RequestLogUpdateOne {
+	rluo.mutation.ResetLongitude()
+	rluo.mutation.SetLongitude(f)
+	return rluo
+}
+
+// SetNillableLongitude sets the "longitude" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableLongitude(f *float64) *RequestLogUpdateOne {
+	if f != nil {
+		rluo.SetLongitude(*f)
+	}
+	return rluo
+}
+
+// AddLongitude adds f to the "longitude" field.
+func (rluo *RequestLogUpdateOne) AddLongitude(f float64) *RequestLogUpdateOne {
+	rluo.mutation.AddLongitude(f)
+	return rluo
+}
+
+// ClearLongitude clears the value of the "longitude" field.
+func (rluo *RequestLogUpdateOne) ClearLongitude() *RequestLogUpdateOne {
+	rluo.mutation.ClearLongitude()
+	return rluo
+}
+
 // SetIsBot sets the "is_bot" field.
 func (rluo *RequestLogUpdateOne) SetIsBot(b bool) *RequestLogUpdateOne {
 	rluo.mutation.SetIsBot(b)
@@ -746,6 +923,11 @@ func (rluo *RequestLogUpdateOne) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
 		}
 	}
+	if v, ok := rluo.mutation.City(); ok {
+		if err := requestlog.CityValidator(v); err != nil {
+			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "RequestLog.city": %w`, err)}
+		}
+	}
 	if v, ok := rluo.mutation.BotName(); ok {
 		if err := requestlog.BotNameValidator(v); err != nil {
 			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
@@ -842,6 +1024,30 @@ func (rluo *RequestLogUpdateOne) sqlSave(ctx context.Context) (_node *RequestLog
 	}
 	if rluo.mutation.CountryCodeCleared() {
 		_spec.ClearField(requestlog.FieldCountryCode, field.TypeString)
+	}
+	if value, ok := rluo.mutation.City(); ok {
+		_spec.SetField(requestlog.FieldCity, field.TypeString, value)
+	}
+	if rluo.mutation.CityCleared() {
+		_spec.ClearField(requestlog.FieldCity, field.TypeString)
+	}
+	if value, ok := rluo.mutation.Latitude(); ok {
+		_spec.SetField(requestlog.FieldLatitude, field.TypeFloat64, value)
+	}
+	if value, ok := rluo.mutation.AddedLatitude(); ok {
+		_spec.AddField(requestlog.FieldLatitude, field.TypeFloat64, value)
+	}
+	if rluo.mutation.LatitudeCleared() {
+		_spec.ClearField(requestlog.FieldLatitude, field.TypeFloat64)
+	}
+	if value, ok := rluo.mutation.Longitude(); ok {
+		_spec.SetField(requestlog.FieldLongitude, field.TypeFloat64, value)
+	}
+	if value, ok := rluo.mutation.AddedLongitude(); ok {
+		_spec.AddField(requestlog.FieldLongitude, field.TypeFloat64, value)
+	}
+	if rluo.mutation.LongitudeCleared() {
+		_spec.ClearField(requestlog.FieldLongitude, field.TypeFloat64)
 	}
 	if value, ok := rluo.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)

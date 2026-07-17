@@ -189,6 +189,9 @@ impl DesktopWorkspace {
                 .into_iter()
                 .map(|country| TrafficCountry {
                     country_code: country.country_code,
+                    city: country.city,
+                    latitude: country.latitude,
+                    longitude: country.longitude,
                     visits: country.visits,
                 })
                 .collect(),

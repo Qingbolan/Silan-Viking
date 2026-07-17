@@ -107,6 +107,9 @@ export type DashboardData = {
   }>;
   top_countries: Array<{
     country_code: string;
+    city: string;
+    latitude: string;
+    longitude: string;
     visits: number;
   }>;
 };

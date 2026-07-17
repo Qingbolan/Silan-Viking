@@ -1608,8 +1608,11 @@ export default function App() {
                         <div className="traffic-ranking traffic-countries">
                           <span>Countries</span>
                           {(dashboard?.top_countries || []).slice(0, 3).map((country) => (
-                            <div key={country.country_code}>
-                              <span>{new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}</span>
+                            <div key={`${country.country_code}-${country.city}-${country.latitude}-${country.longitude}`}>
+                              <span title={`Approx. ${country.latitude}, ${country.longitude}`}>
+                                {new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}
+                                {country.city && ` · ${country.city}`}
+                              </span>
                               <strong>{country.visits}</strong>
                             </div>
                           ))}

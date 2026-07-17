@@ -46443,6 +46443,11 @@ type RequestLogMutation struct {
 	ip             *string
 	lang           *string
 	country_code   *string
+	city           *string
+	latitude       *float64
+	addlatitude    *float64
+	longitude      *float64
+	addlongitude   *float64
 	is_bot         *bool
 	bot_name       *string
 	created_at     *time.Time
@@ -47039,6 +47044,195 @@ func (m *RequestLogMutation) ResetCountryCode() {
 	delete(m.clearedFields, requestlog.FieldCountryCode)
 }
 
+// SetCity sets the "city" field.
+func (m *RequestLogMutation) SetCity(s string) {
+	m.city = &s
+}
+
+// City returns the value of the "city" field in the mutation.
+func (m *RequestLogMutation) City() (r string, exists bool) {
+	v := m.city
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCity returns the old "city" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldCity(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCity: %w", err)
+	}
+	return oldValue.City, nil
+}
+
+// ClearCity clears the value of the "city" field.
+func (m *RequestLogMutation) ClearCity() {
+	m.city = nil
+	m.clearedFields[requestlog.FieldCity] = struct{}{}
+}
+
+// CityCleared returns if the "city" field was cleared in this mutation.
+func (m *RequestLogMutation) CityCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldCity]
+	return ok
+}
+
+// ResetCity resets all changes to the "city" field.
+func (m *RequestLogMutation) ResetCity() {
+	m.city = nil
+	delete(m.clearedFields, requestlog.FieldCity)
+}
+
+// SetLatitude sets the "latitude" field.
+func (m *RequestLogMutation) SetLatitude(f float64) {
+	m.latitude = &f
+	m.addlatitude = nil
+}
+
+// Latitude returns the value of the "latitude" field in the mutation.
+func (m *RequestLogMutation) Latitude() (r float64, exists bool) {
+	v := m.latitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatitude returns the old "latitude" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldLatitude(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatitude is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatitude requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatitude: %w", err)
+	}
+	return oldValue.Latitude, nil
+}
+
+// AddLatitude adds f to the "latitude" field.
+func (m *RequestLogMutation) AddLatitude(f float64) {
+	if m.addlatitude != nil {
+		*m.addlatitude += f
+	} else {
+		m.addlatitude = &f
+	}
+}
+
+// AddedLatitude returns the value that was added to the "latitude" field in this mutation.
+func (m *RequestLogMutation) AddedLatitude() (r float64, exists bool) {
+	v := m.addlatitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLatitude clears the value of the "latitude" field.
+func (m *RequestLogMutation) ClearLatitude() {
+	m.latitude = nil
+	m.addlatitude = nil
+	m.clearedFields[requestlog.FieldLatitude] = struct{}{}
+}
+
+// LatitudeCleared returns if the "latitude" field was cleared in this mutation.
+func (m *RequestLogMutation) LatitudeCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldLatitude]
+	return ok
+}
+
+// ResetLatitude resets all changes to the "latitude" field.
+func (m *RequestLogMutation) ResetLatitude() {
+	m.latitude = nil
+	m.addlatitude = nil
+	delete(m.clearedFields, requestlog.FieldLatitude)
+}
+
+// SetLongitude sets the "longitude" field.
+func (m *RequestLogMutation) SetLongitude(f float64) {
+	m.longitude = &f
+	m.addlongitude = nil
+}
+
+// Longitude returns the value of the "longitude" field in the mutation.
+func (m *RequestLogMutation) Longitude() (r float64, exists bool) {
+	v := m.longitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLongitude returns the old "longitude" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldLongitude(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLongitude is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLongitude requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLongitude: %w", err)
+	}
+	return oldValue.Longitude, nil
+}
+
+// AddLongitude adds f to the "longitude" field.
+func (m *RequestLogMutation) AddLongitude(f float64) {
+	if m.addlongitude != nil {
+		*m.addlongitude += f
+	} else {
+		m.addlongitude = &f
+	}
+}
+
+// AddedLongitude returns the value that was added to the "longitude" field in this mutation.
+func (m *RequestLogMutation) AddedLongitude() (r float64, exists bool) {
+	v := m.addlongitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLongitude clears the value of the "longitude" field.
+func (m *RequestLogMutation) ClearLongitude() {
+	m.longitude = nil
+	m.addlongitude = nil
+	m.clearedFields[requestlog.FieldLongitude] = struct{}{}
+}
+
+// LongitudeCleared returns if the "longitude" field was cleared in this mutation.
+func (m *RequestLogMutation) LongitudeCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldLongitude]
+	return ok
+}
+
+// ResetLongitude resets all changes to the "longitude" field.
+func (m *RequestLogMutation) ResetLongitude() {
+	m.longitude = nil
+	m.addlongitude = nil
+	delete(m.clearedFields, requestlog.FieldLongitude)
+}
+
 // SetIsBot sets the "is_bot" field.
 func (m *RequestLogMutation) SetIsBot(b bool) {
 	m.is_bot = &b
@@ -47207,7 +47401,7 @@ func (m *RequestLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RequestLogMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 15)
 	if m.method != nil {
 		fields = append(fields, requestlog.FieldMethod)
 	}
@@ -47234,6 +47428,15 @@ func (m *RequestLogMutation) Fields() []string {
 	}
 	if m.country_code != nil {
 		fields = append(fields, requestlog.FieldCountryCode)
+	}
+	if m.city != nil {
+		fields = append(fields, requestlog.FieldCity)
+	}
+	if m.latitude != nil {
+		fields = append(fields, requestlog.FieldLatitude)
+	}
+	if m.longitude != nil {
+		fields = append(fields, requestlog.FieldLongitude)
 	}
 	if m.is_bot != nil {
 		fields = append(fields, requestlog.FieldIsBot)
@@ -47270,6 +47473,12 @@ func (m *RequestLogMutation) Field(name string) (ent.Value, bool) {
 		return m.Lang()
 	case requestlog.FieldCountryCode:
 		return m.CountryCode()
+	case requestlog.FieldCity:
+		return m.City()
+	case requestlog.FieldLatitude:
+		return m.Latitude()
+	case requestlog.FieldLongitude:
+		return m.Longitude()
 	case requestlog.FieldIsBot:
 		return m.IsBot()
 	case requestlog.FieldBotName:
@@ -47303,6 +47512,12 @@ func (m *RequestLogMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldLang(ctx)
 	case requestlog.FieldCountryCode:
 		return m.OldCountryCode(ctx)
+	case requestlog.FieldCity:
+		return m.OldCity(ctx)
+	case requestlog.FieldLatitude:
+		return m.OldLatitude(ctx)
+	case requestlog.FieldLongitude:
+		return m.OldLongitude(ctx)
 	case requestlog.FieldIsBot:
 		return m.OldIsBot(ctx)
 	case requestlog.FieldBotName:
@@ -47381,6 +47596,27 @@ func (m *RequestLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCountryCode(v)
 		return nil
+	case requestlog.FieldCity:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCity(v)
+		return nil
+	case requestlog.FieldLatitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatitude(v)
+		return nil
+	case requestlog.FieldLongitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLongitude(v)
+		return nil
 	case requestlog.FieldIsBot:
 		v, ok := value.(bool)
 		if !ok {
@@ -47416,6 +47652,12 @@ func (m *RequestLogMutation) AddedFields() []string {
 	if m.addduration_ms != nil {
 		fields = append(fields, requestlog.FieldDurationMs)
 	}
+	if m.addlatitude != nil {
+		fields = append(fields, requestlog.FieldLatitude)
+	}
+	if m.addlongitude != nil {
+		fields = append(fields, requestlog.FieldLongitude)
+	}
 	return fields
 }
 
@@ -47428,6 +47670,10 @@ func (m *RequestLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedStatus()
 	case requestlog.FieldDurationMs:
 		return m.AddedDurationMs()
+	case requestlog.FieldLatitude:
+		return m.AddedLatitude()
+	case requestlog.FieldLongitude:
+		return m.AddedLongitude()
 	}
 	return nil, false
 }
@@ -47450,6 +47696,20 @@ func (m *RequestLogMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddDurationMs(v)
+		return nil
+	case requestlog.FieldLatitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLatitude(v)
+		return nil
+	case requestlog.FieldLongitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLongitude(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RequestLog numeric field %s", name)
@@ -47485,6 +47745,15 @@ func (m *RequestLogMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(requestlog.FieldCountryCode) {
 		fields = append(fields, requestlog.FieldCountryCode)
+	}
+	if m.FieldCleared(requestlog.FieldCity) {
+		fields = append(fields, requestlog.FieldCity)
+	}
+	if m.FieldCleared(requestlog.FieldLatitude) {
+		fields = append(fields, requestlog.FieldLatitude)
+	}
+	if m.FieldCleared(requestlog.FieldLongitude) {
+		fields = append(fields, requestlog.FieldLongitude)
 	}
 	if m.FieldCleared(requestlog.FieldBotName) {
 		fields = append(fields, requestlog.FieldBotName)
@@ -47533,6 +47802,15 @@ func (m *RequestLogMutation) ClearField(name string) error {
 	case requestlog.FieldCountryCode:
 		m.ClearCountryCode()
 		return nil
+	case requestlog.FieldCity:
+		m.ClearCity()
+		return nil
+	case requestlog.FieldLatitude:
+		m.ClearLatitude()
+		return nil
+	case requestlog.FieldLongitude:
+		m.ClearLongitude()
+		return nil
 	case requestlog.FieldBotName:
 		m.ClearBotName()
 		return nil
@@ -47573,6 +47851,15 @@ func (m *RequestLogMutation) ResetField(name string) error {
 		return nil
 	case requestlog.FieldCountryCode:
 		m.ResetCountryCode()
+		return nil
+	case requestlog.FieldCity:
+		m.ResetCity()
+		return nil
+	case requestlog.FieldLatitude:
+		m.ResetLatitude()
+		return nil
+	case requestlog.FieldLongitude:
+		m.ResetLongitude()
 		return nil
 	case requestlog.FieldIsBot:
 		m.ResetIsBot()

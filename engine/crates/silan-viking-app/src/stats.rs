@@ -123,6 +123,12 @@ struct SnapshotResponse {
 #[derive(Debug, Clone, Deserialize)]
 struct CountryItem {
     country_code: String,
+    #[serde(default)]
+    city: String,
+    #[serde(default)]
+    latitude: f64,
+    #[serde(default)]
+    longitude: f64,
     count: i64,
 }
 
@@ -179,10 +185,14 @@ CREATE TABLE IF NOT EXISTS stats_cache_source (
     count       INTEGER NOT NULL,
     synced_at   TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS stats_cache_country (
-    country_code TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS stats_cache_location (
+    country_code TEXT NOT NULL,
+    city         TEXT NOT NULL,
+    latitude     REAL NOT NULL,
+    longitude    REAL NOT NULL,
     count        INTEGER NOT NULL,
-    synced_at    TEXT NOT NULL
+    synced_at    TEXT NOT NULL,
+    PRIMARY KEY (country_code, city, latitude, longitude)
 );
 ";
 
@@ -386,7 +396,7 @@ impl StatsSync {
             "stats_cache_visitor",
             "stats_cache_crawler",
             "stats_cache_source",
-            "stats_cache_country",
+            "stats_cache_location",
         ] {
             tx.execute(&format!("DELETE FROM {table}"), [])?;
         }
@@ -454,9 +464,17 @@ impl StatsSync {
         }
         for country in &snapshot.countries {
             tx.execute(
-                "INSERT INTO stats_cache_country (country_code, count, synced_at)
-                 VALUES (?1, ?2, ?3)",
-                rusqlite::params![country.country_code, country.count, stamp],
+                "INSERT INTO stats_cache_location
+                 (country_code, city, latitude, longitude, count, synced_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                rusqlite::params![
+                    country.country_code,
+                    country.city,
+                    country.latitude,
+                    country.longitude,
+                    country.count,
+                    stamp
+                ],
             )?;
         }
         tx.commit()?;
@@ -661,7 +679,7 @@ mod tests {
             assert!(request.starts_with("GET /api/v1/stats/snapshot "));
             assert!(request.contains("\r\nAuthorization: Bearer stats-contract-token\r\n"));
             observed.fetch_add(1, Ordering::SeqCst);
-            let body = r#"{"generated_at":"2026-07-17T00:00:00Z","items":[{"stats":{"entity_type":"blog","entity_id":"i_one","views":8,"likes":2,"comments":1},"visitors":[],"crawlers":[{"visitor_kind":"ai_crawler","count":3}],"sources":[{"source":"ai_chat","count":2}]}],"countries":[{"country_code":"SG","count":7}]}"#;
+            let body = r#"{"generated_at":"2026-07-17T00:00:00Z","items":[{"stats":{"entity_type":"blog","entity_id":"i_one","views":8,"likes":2,"comments":1},"visitors":[],"crawlers":[{"visitor_kind":"ai_crawler","count":3}],"sources":[{"source":"ai_chat","count":2}]}],"countries":[{"country_code":"SG","city":"Singapore","latitude":1.3,"longitude":103.9,"count":7}]}"#;
             write!(
                 stream,
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
@@ -689,14 +707,14 @@ mod tests {
             8
         );
         let connection = Connection::open(directory.path().join("portfolio.db")).expect("db");
-        let country: (String, i64) = connection
+        let country: (String, String, f64, f64, i64) = connection
             .query_row(
-                "SELECT country_code, count FROM stats_cache_country",
+                "SELECT country_code, city, latitude, longitude, count FROM stats_cache_location",
                 [],
-                |row| Ok((row.get(0)?, row.get(1)?)),
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
             )
             .expect("country cache");
-        assert_eq!(country, ("SG".to_owned(), 7));
+        assert_eq!(country, ("SG".to_owned(), "Singapore".to_owned(), 1.3, 103.9, 7));
     }
 
     #[test]

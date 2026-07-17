@@ -84,12 +84,18 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			SetLang(r.URL.Query().Get("lang")).
 			SetIsBot(isBot).
 			SetBotName(botName)
-		country := edgeCountryCode(r)
-		if country == "" {
-			country = m.countries.Resolve(clientIP(r))
+		location := m.countries.Resolve(clientIP(r))
+		if country := edgeCountryCode(r); country != "" {
+			location.CountryCode = country
 		}
-		if country != "" {
-			builder.SetCountryCode(country)
+		if location.CountryCode != "" {
+			builder.SetCountryCode(location.CountryCode)
+		}
+		if location.City != "" {
+			builder.SetCity(location.City)
+		}
+		if location.Latitude != 0 || location.Longitude != 0 {
+			builder.SetLatitude(location.Latitude).SetLongitude(location.Longitude)
 		}
 		_, _ = builder.Save(ctx)
 	}

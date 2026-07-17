@@ -135,6 +135,9 @@ pub(crate) struct TrafficSource {
 #[derive(Debug, Serialize)]
 pub(crate) struct TrafficCountry {
     pub(crate) country_code: String,
+    pub(crate) city: String,
+    pub(crate) latitude: String,
+    pub(crate) longitude: String,
     pub(crate) visits: i64,
 }
 

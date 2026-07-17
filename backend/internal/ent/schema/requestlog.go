@@ -59,6 +59,15 @@ func (RequestLog) Fields() []ent.Field {
 			Optional().
 			MaxLen(2).
 			Comment("ISO 3166-1 alpha-2 country supplied by the trusted edge proxy."),
+		field.String("city").
+			Optional().
+			MaxLen(128),
+		field.Float("latitude").
+			Optional().
+			Comment("Coarse IP-derived latitude rounded to one decimal place."),
+		field.Float("longitude").
+			Optional().
+			Comment("Coarse IP-derived longitude rounded to one decimal place."),
 		field.Bool("is_bot").
 			Default(false).
 			Comment("Whether the User-Agent is a known search-engine / social crawler."),

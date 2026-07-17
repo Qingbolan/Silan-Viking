@@ -99,6 +99,21 @@ func CountryCode(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldCountryCode, v))
 }
 
+// City applies equality check predicate on the "city" field. It's identical to CityEQ.
+func City(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldCity, v))
+}
+
+// Latitude applies equality check predicate on the "latitude" field. It's identical to LatitudeEQ.
+func Latitude(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldLatitude, v))
+}
+
+// Longitude applies equality check predicate on the "longitude" field. It's identical to LongitudeEQ.
+func Longitude(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldLongitude, v))
+}
+
 // IsBot applies equality check predicate on the "is_bot" field. It's identical to IsBotEQ.
 func IsBot(v bool) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldIsBot, v))
@@ -737,6 +752,181 @@ func CountryCodeEqualFold(v string) predicate.RequestLog {
 // CountryCodeContainsFold applies the ContainsFold predicate on the "country_code" field.
 func CountryCodeContainsFold(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldContainsFold(FieldCountryCode, v))
+}
+
+// CityEQ applies the EQ predicate on the "city" field.
+func CityEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldCity, v))
+}
+
+// CityNEQ applies the NEQ predicate on the "city" field.
+func CityNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldCity, v))
+}
+
+// CityIn applies the In predicate on the "city" field.
+func CityIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldCity, vs...))
+}
+
+// CityNotIn applies the NotIn predicate on the "city" field.
+func CityNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldCity, vs...))
+}
+
+// CityGT applies the GT predicate on the "city" field.
+func CityGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldCity, v))
+}
+
+// CityGTE applies the GTE predicate on the "city" field.
+func CityGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldCity, v))
+}
+
+// CityLT applies the LT predicate on the "city" field.
+func CityLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldCity, v))
+}
+
+// CityLTE applies the LTE predicate on the "city" field.
+func CityLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldCity, v))
+}
+
+// CityContains applies the Contains predicate on the "city" field.
+func CityContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldCity, v))
+}
+
+// CityHasPrefix applies the HasPrefix predicate on the "city" field.
+func CityHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldCity, v))
+}
+
+// CityHasSuffix applies the HasSuffix predicate on the "city" field.
+func CityHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldCity, v))
+}
+
+// CityIsNil applies the IsNil predicate on the "city" field.
+func CityIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldCity))
+}
+
+// CityNotNil applies the NotNil predicate on the "city" field.
+func CityNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldCity))
+}
+
+// CityEqualFold applies the EqualFold predicate on the "city" field.
+func CityEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldCity, v))
+}
+
+// CityContainsFold applies the ContainsFold predicate on the "city" field.
+func CityContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldCity, v))
+}
+
+// LatitudeEQ applies the EQ predicate on the "latitude" field.
+func LatitudeEQ(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldLatitude, v))
+}
+
+// LatitudeNEQ applies the NEQ predicate on the "latitude" field.
+func LatitudeNEQ(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldLatitude, v))
+}
+
+// LatitudeIn applies the In predicate on the "latitude" field.
+func LatitudeIn(vs ...float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldLatitude, vs...))
+}
+
+// LatitudeNotIn applies the NotIn predicate on the "latitude" field.
+func LatitudeNotIn(vs ...float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldLatitude, vs...))
+}
+
+// LatitudeGT applies the GT predicate on the "latitude" field.
+func LatitudeGT(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldLatitude, v))
+}
+
+// LatitudeGTE applies the GTE predicate on the "latitude" field.
+func LatitudeGTE(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldLatitude, v))
+}
+
+// LatitudeLT applies the LT predicate on the "latitude" field.
+func LatitudeLT(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldLatitude, v))
+}
+
+// LatitudeLTE applies the LTE predicate on the "latitude" field.
+func LatitudeLTE(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldLatitude, v))
+}
+
+// LatitudeIsNil applies the IsNil predicate on the "latitude" field.
+func LatitudeIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldLatitude))
+}
+
+// LatitudeNotNil applies the NotNil predicate on the "latitude" field.
+func LatitudeNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldLatitude))
+}
+
+// LongitudeEQ applies the EQ predicate on the "longitude" field.
+func LongitudeEQ(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldLongitude, v))
+}
+
+// LongitudeNEQ applies the NEQ predicate on the "longitude" field.
+func LongitudeNEQ(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldLongitude, v))
+}
+
+// LongitudeIn applies the In predicate on the "longitude" field.
+func LongitudeIn(vs ...float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldLongitude, vs...))
+}
+
+// LongitudeNotIn applies the NotIn predicate on the "longitude" field.
+func LongitudeNotIn(vs ...float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldLongitude, vs...))
+}
+
+// LongitudeGT applies the GT predicate on the "longitude" field.
+func LongitudeGT(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldLongitude, v))
+}
+
+// LongitudeGTE applies the GTE predicate on the "longitude" field.
+func LongitudeGTE(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldLongitude, v))
+}
+
+// LongitudeLT applies the LT predicate on the "longitude" field.
+func LongitudeLT(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldLongitude, v))
+}
+
+// LongitudeLTE applies the LTE predicate on the "longitude" field.
+func LongitudeLTE(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldLongitude, v))
+}
+
+// LongitudeIsNil applies the IsNil predicate on the "longitude" field.
+func LongitudeIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldLongitude))
+}
+
+// LongitudeNotNil applies the NotNil predicate on the "longitude" field.
+func LongitudeNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldLongitude))
 }
 
 // IsBotEQ applies the EQ predicate on the "is_bot" field.

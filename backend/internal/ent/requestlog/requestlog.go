@@ -31,6 +31,12 @@ const (
 	FieldLang = "lang"
 	// FieldCountryCode holds the string denoting the country_code field in the database.
 	FieldCountryCode = "country_code"
+	// FieldCity holds the string denoting the city field in the database.
+	FieldCity = "city"
+	// FieldLatitude holds the string denoting the latitude field in the database.
+	FieldLatitude = "latitude"
+	// FieldLongitude holds the string denoting the longitude field in the database.
+	FieldLongitude = "longitude"
 	// FieldIsBot holds the string denoting the is_bot field in the database.
 	FieldIsBot = "is_bot"
 	// FieldBotName holds the string denoting the bot_name field in the database.
@@ -53,6 +59,9 @@ var Columns = []string{
 	FieldIP,
 	FieldLang,
 	FieldCountryCode,
+	FieldCity,
+	FieldLatitude,
+	FieldLongitude,
 	FieldIsBot,
 	FieldBotName,
 	FieldCreatedAt,
@@ -83,6 +92,8 @@ var (
 	LangValidator func(string) error
 	// CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
 	CountryCodeValidator func(string) error
+	// CityValidator is a validator for the "city" field. It is called by the builders before save.
+	CityValidator func(string) error
 	// DefaultIsBot holds the default value on creation for the "is_bot" field.
 	DefaultIsBot bool
 	// BotNameValidator is a validator for the "bot_name" field. It is called by the builders before save.
@@ -142,6 +153,21 @@ func ByLang(opts ...sql.OrderTermOption) OrderOption {
 // ByCountryCode orders the results by the country_code field.
 func ByCountryCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCountryCode, opts...).ToFunc()
+}
+
+// ByCity orders the results by the city field.
+func ByCity(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCity, opts...).ToFunc()
+}
+
+// ByLatitude orders the results by the latitude field.
+func ByLatitude(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLatitude, opts...).ToFunc()
+}
+
+// ByLongitude orders the results by the longitude field.
+func ByLongitude(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLongitude, opts...).ToFunc()
 }
 
 // ByIsBot orders the results by the is_bot field.

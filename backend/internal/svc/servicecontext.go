@@ -92,6 +92,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			ip TEXT,
 			lang TEXT,
 			country_code TEXT,
+			city TEXT,
+			latitude REAL,
+			longitude REAL,
 			is_bot BOOLEAN DEFAULT 0,
 			bot_name TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -108,6 +111,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			ip VARCHAR(64),
 			lang VARCHAR(8),
 			country_code VARCHAR(2),
+			city VARCHAR(128),
+			latitude DOUBLE,
+			longitude DOUBLE,
 			is_bot TINYINT(1) DEFAULT 0,
 			bot_name VARCHAR(64),
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -124,6 +130,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			ip TEXT,
 			lang TEXT,
 			country_code TEXT,
+			city TEXT,
+			latitude DOUBLE PRECISION,
+			longitude DOUBLE PRECISION,
 			is_bot BOOLEAN DEFAULT FALSE,
 			bot_name TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -154,6 +163,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			countryType = "VARCHAR(2)"
 		}
 		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN country_code " + countryType)
+		cityType, coordinateType := "TEXT", "REAL"
+		if c.Database.Driver == "mysql" {
+			cityType, coordinateType = "VARCHAR(128)", "DOUBLE"
+		} else if c.Database.Driver == "postgres" || c.Database.Driver == "postgresql" {
+			coordinateType = "DOUBLE PRECISION"
+		}
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN city " + cityType)
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN latitude " + coordinateType)
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN longitude " + coordinateType)
 	}
 
 	// Create user_identities table for OAuth identities (to store avatar, etc.)

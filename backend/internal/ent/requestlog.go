@@ -35,6 +35,12 @@ type RequestLog struct {
 	Lang string `json:"lang,omitempty"`
 	// ISO 3166-1 alpha-2 country supplied by the trusted edge proxy.
 	CountryCode string `json:"country_code,omitempty"`
+	// City holds the value of the "city" field.
+	City string `json:"city,omitempty"`
+	// Coarse IP-derived latitude rounded to one decimal place.
+	Latitude float64 `json:"latitude,omitempty"`
+	// Coarse IP-derived longitude rounded to one decimal place.
+	Longitude float64 `json:"longitude,omitempty"`
 	// Whether the User-Agent is a known search-engine / social crawler.
 	IsBot bool `json:"is_bot,omitempty"`
 	// Canonical crawler name when is_bot is true (e.g. Googlebot).
@@ -51,9 +57,11 @@ func (*RequestLog) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case requestlog.FieldIsBot:
 			values[i] = new(sql.NullBool)
+		case requestlog.FieldLatitude, requestlog.FieldLongitude:
+			values[i] = new(sql.NullFloat64)
 		case requestlog.FieldID, requestlog.FieldStatus, requestlog.FieldDurationMs:
 			values[i] = new(sql.NullInt64)
-		case requestlog.FieldMethod, requestlog.FieldPath, requestlog.FieldReferrer, requestlog.FieldUserAgent, requestlog.FieldIP, requestlog.FieldLang, requestlog.FieldCountryCode, requestlog.FieldBotName:
+		case requestlog.FieldMethod, requestlog.FieldPath, requestlog.FieldReferrer, requestlog.FieldUserAgent, requestlog.FieldIP, requestlog.FieldLang, requestlog.FieldCountryCode, requestlog.FieldCity, requestlog.FieldBotName:
 			values[i] = new(sql.NullString)
 		case requestlog.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -131,6 +139,24 @@ func (rl *RequestLog) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field country_code", values[i])
 			} else if value.Valid {
 				rl.CountryCode = value.String
+			}
+		case requestlog.FieldCity:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field city", values[i])
+			} else if value.Valid {
+				rl.City = value.String
+			}
+		case requestlog.FieldLatitude:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field latitude", values[i])
+			} else if value.Valid {
+				rl.Latitude = value.Float64
+			}
+		case requestlog.FieldLongitude:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field longitude", values[i])
+			} else if value.Valid {
+				rl.Longitude = value.Float64
 			}
 		case requestlog.FieldIsBot:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -212,6 +238,15 @@ func (rl *RequestLog) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("country_code=")
 	builder.WriteString(rl.CountryCode)
+	builder.WriteString(", ")
+	builder.WriteString("city=")
+	builder.WriteString(rl.City)
+	builder.WriteString(", ")
+	builder.WriteString("latitude=")
+	builder.WriteString(fmt.Sprintf("%v", rl.Latitude))
+	builder.WriteString(", ")
+	builder.WriteString("longitude=")
+	builder.WriteString(fmt.Sprintf("%v", rl.Longitude))
 	builder.WriteString(", ")
 	builder.WriteString("is_bot=")
 	builder.WriteString(fmt.Sprintf("%v", rl.IsBot))

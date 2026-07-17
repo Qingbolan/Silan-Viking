@@ -146,6 +146,48 @@ func (rlc *RequestLogCreate) SetNillableCountryCode(s *string) *RequestLogCreate
 	return rlc
 }
 
+// SetCity sets the "city" field.
+func (rlc *RequestLogCreate) SetCity(s string) *RequestLogCreate {
+	rlc.mutation.SetCity(s)
+	return rlc
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableCity(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetCity(*s)
+	}
+	return rlc
+}
+
+// SetLatitude sets the "latitude" field.
+func (rlc *RequestLogCreate) SetLatitude(f float64) *RequestLogCreate {
+	rlc.mutation.SetLatitude(f)
+	return rlc
+}
+
+// SetNillableLatitude sets the "latitude" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableLatitude(f *float64) *RequestLogCreate {
+	if f != nil {
+		rlc.SetLatitude(*f)
+	}
+	return rlc
+}
+
+// SetLongitude sets the "longitude" field.
+func (rlc *RequestLogCreate) SetLongitude(f float64) *RequestLogCreate {
+	rlc.mutation.SetLongitude(f)
+	return rlc
+}
+
+// SetNillableLongitude sets the "longitude" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableLongitude(f *float64) *RequestLogCreate {
+	if f != nil {
+		rlc.SetLongitude(*f)
+	}
+	return rlc
+}
+
 // SetIsBot sets the "is_bot" field.
 func (rlc *RequestLogCreate) SetIsBot(b bool) *RequestLogCreate {
 	rlc.mutation.SetIsBot(b)
@@ -276,6 +318,11 @@ func (rlc *RequestLogCreate) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
 		}
 	}
+	if v, ok := rlc.mutation.City(); ok {
+		if err := requestlog.CityValidator(v); err != nil {
+			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "RequestLog.city": %w`, err)}
+		}
+	}
 	if _, ok := rlc.mutation.IsBot(); !ok {
 		return &ValidationError{Name: "is_bot", err: errors.New(`ent: missing required field "RequestLog.is_bot"`)}
 	}
@@ -351,6 +398,18 @@ func (rlc *RequestLogCreate) createSpec() (*RequestLog, *sqlgraph.CreateSpec) {
 	if value, ok := rlc.mutation.CountryCode(); ok {
 		_spec.SetField(requestlog.FieldCountryCode, field.TypeString, value)
 		_node.CountryCode = value
+	}
+	if value, ok := rlc.mutation.City(); ok {
+		_spec.SetField(requestlog.FieldCity, field.TypeString, value)
+		_node.City = value
+	}
+	if value, ok := rlc.mutation.Latitude(); ok {
+		_spec.SetField(requestlog.FieldLatitude, field.TypeFloat64, value)
+		_node.Latitude = value
+	}
+	if value, ok := rlc.mutation.Longitude(); ok {
+		_spec.SetField(requestlog.FieldLongitude, field.TypeFloat64, value)
+		_node.Longitude = value
 	}
 	if value, ok := rlc.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)

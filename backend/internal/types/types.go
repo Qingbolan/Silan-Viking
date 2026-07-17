@@ -938,8 +938,11 @@ type StatsSnapshotResponse struct {
 }
 
 type CountryRow struct {
-	CountryCode string `json:"country_code"`
-	Count       int    `json:"count"`
+	CountryCode string  `json:"country_code"`
+	City        string  `json:"city"`
+	Latitude    float64 `json:"latitude"`
+	Longitude   float64 `json:"longitude"`
+	Count       int     `json:"count"`
 }
 
 type StatsSnapshotItem struct {
