@@ -7,6 +7,7 @@ import (
 	"silan-backend/internal/logic/resume"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
+	"silan-backend/internal/utils"
 )
 
 // Get complete resume data
@@ -16,6 +17,11 @@ func GetResumeDataHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
+		}
+		req.ClientIP = utils.GetClientIP(r)
+		req.UserAgentFull = utils.GetUserAgent(r)
+		if req.Referrer == "" {
+			req.Referrer = r.Referer()
 		}
 
 		l := resume.NewGetResumeDataLogic(r.Context(), svcCtx)

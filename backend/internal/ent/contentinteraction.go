@@ -37,8 +37,20 @@ type ContentInteraction struct {
 	VisitorKind contentinteraction.VisitorKind `json:"visitor_kind,omitempty"`
 	// ReferrerKind holds the value of the "referrer_kind" field.
 	ReferrerKind contentinteraction.ReferrerKind `json:"referrer_kind,omitempty"`
+	// Referrer holds the value of the "referrer" field.
+	Referrer *string `json:"referrer,omitempty"`
+	// LandingURL holds the value of the "landing_url" field.
+	LandingURL *string `json:"landing_url,omitempty"`
 	// CrawlerName holds the value of the "crawler_name" field.
 	CrawlerName *string `json:"crawler_name,omitempty"`
+	// CountryCode holds the value of the "country_code" field.
+	CountryCode string `json:"country_code,omitempty"`
+	// City holds the value of the "city" field.
+	City string `json:"city,omitempty"`
+	// Latitude holds the value of the "latitude" field.
+	Latitude float64 `json:"latitude,omitempty"`
+	// Longitude holds the value of the "longitude" field.
+	Longitude float64 `json:"longitude,omitempty"`
 	// SessionDuration holds the value of the "session_duration" field.
 	SessionDuration int `json:"session_duration,omitempty"`
 	// ScrollProgress holds the value of the "scroll_progress" field.
@@ -53,11 +65,11 @@ func (*ContentInteraction) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case contentinteraction.FieldScrollProgress:
+		case contentinteraction.FieldLatitude, contentinteraction.FieldLongitude, contentinteraction.FieldScrollProgress:
 			values[i] = new(sql.NullFloat64)
 		case contentinteraction.FieldSessionDuration:
 			values[i] = new(sql.NullInt64)
-		case contentinteraction.FieldID, contentinteraction.FieldEntityType, contentinteraction.FieldEntityID, contentinteraction.FieldSectionAnchor, contentinteraction.FieldKind, contentinteraction.FieldUserIdentityID, contentinteraction.FieldFingerprint, contentinteraction.FieldIPAddress, contentinteraction.FieldUserAgent, contentinteraction.FieldVisitorKind, contentinteraction.FieldReferrerKind, contentinteraction.FieldCrawlerName:
+		case contentinteraction.FieldID, contentinteraction.FieldEntityType, contentinteraction.FieldEntityID, contentinteraction.FieldSectionAnchor, contentinteraction.FieldKind, contentinteraction.FieldUserIdentityID, contentinteraction.FieldFingerprint, contentinteraction.FieldIPAddress, contentinteraction.FieldUserAgent, contentinteraction.FieldVisitorKind, contentinteraction.FieldReferrerKind, contentinteraction.FieldReferrer, contentinteraction.FieldLandingURL, contentinteraction.FieldCrawlerName, contentinteraction.FieldCountryCode, contentinteraction.FieldCity:
 			values[i] = new(sql.NullString)
 		case contentinteraction.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -147,12 +159,50 @@ func (ci *ContentInteraction) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				ci.ReferrerKind = contentinteraction.ReferrerKind(value.String)
 			}
+		case contentinteraction.FieldReferrer:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field referrer", values[i])
+			} else if value.Valid {
+				ci.Referrer = new(string)
+				*ci.Referrer = value.String
+			}
+		case contentinteraction.FieldLandingURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field landing_url", values[i])
+			} else if value.Valid {
+				ci.LandingURL = new(string)
+				*ci.LandingURL = value.String
+			}
 		case contentinteraction.FieldCrawlerName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field crawler_name", values[i])
 			} else if value.Valid {
 				ci.CrawlerName = new(string)
 				*ci.CrawlerName = value.String
+			}
+		case contentinteraction.FieldCountryCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field country_code", values[i])
+			} else if value.Valid {
+				ci.CountryCode = value.String
+			}
+		case contentinteraction.FieldCity:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field city", values[i])
+			} else if value.Valid {
+				ci.City = value.String
+			}
+		case contentinteraction.FieldLatitude:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field latitude", values[i])
+			} else if value.Valid {
+				ci.Latitude = value.Float64
+			}
+		case contentinteraction.FieldLongitude:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field longitude", values[i])
+			} else if value.Valid {
+				ci.Longitude = value.Float64
 			}
 		case contentinteraction.FieldSessionDuration:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -248,10 +298,32 @@ func (ci *ContentInteraction) String() string {
 	builder.WriteString("referrer_kind=")
 	builder.WriteString(fmt.Sprintf("%v", ci.ReferrerKind))
 	builder.WriteString(", ")
+	if v := ci.Referrer; v != nil {
+		builder.WriteString("referrer=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := ci.LandingURL; v != nil {
+		builder.WriteString("landing_url=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	if v := ci.CrawlerName; v != nil {
 		builder.WriteString("crawler_name=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("country_code=")
+	builder.WriteString(ci.CountryCode)
+	builder.WriteString(", ")
+	builder.WriteString("city=")
+	builder.WriteString(ci.City)
+	builder.WriteString(", ")
+	builder.WriteString("latitude=")
+	builder.WriteString(fmt.Sprintf("%v", ci.Latitude))
+	builder.WriteString(", ")
+	builder.WriteString("longitude=")
+	builder.WriteString(fmt.Sprintf("%v", ci.Longitude))
 	builder.WriteString(", ")
 	builder.WriteString("session_duration=")
 	builder.WriteString(fmt.Sprintf("%v", ci.SessionDuration))

@@ -63,9 +63,27 @@ func (ContentInteraction) Fields() []ent.Field {
 		field.Enum("referrer_kind").
 			Values("search", "social", "ai_chat", "direct", "internal").
 			Default("direct"),
+		field.String("referrer").
+			Optional().
+			Nillable().
+			MaxLen(2048),
+		field.String("landing_url").
+			Optional().
+			Nillable().
+			MaxLen(2048),
 		field.String("crawler_name").
 			Optional().
 			Nillable(),
+		field.String("country_code").
+			Optional().
+			MaxLen(2),
+		field.String("city").
+			Optional().
+			MaxLen(120),
+		field.Float("latitude").
+			Optional(),
+		field.Float("longitude").
+			Optional(),
 		field.Int("session_duration").
 			Default(0),
 		field.Float("scroll_progress").

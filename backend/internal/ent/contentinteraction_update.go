@@ -197,6 +197,46 @@ func (ciu *ContentInteractionUpdate) SetNillableReferrerKind(ck *contentinteract
 	return ciu
 }
 
+// SetReferrer sets the "referrer" field.
+func (ciu *ContentInteractionUpdate) SetReferrer(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetReferrer(s)
+	return ciu
+}
+
+// SetNillableReferrer sets the "referrer" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableReferrer(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetReferrer(*s)
+	}
+	return ciu
+}
+
+// ClearReferrer clears the value of the "referrer" field.
+func (ciu *ContentInteractionUpdate) ClearReferrer() *ContentInteractionUpdate {
+	ciu.mutation.ClearReferrer()
+	return ciu
+}
+
+// SetLandingURL sets the "landing_url" field.
+func (ciu *ContentInteractionUpdate) SetLandingURL(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetLandingURL(s)
+	return ciu
+}
+
+// SetNillableLandingURL sets the "landing_url" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableLandingURL(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetLandingURL(*s)
+	}
+	return ciu
+}
+
+// ClearLandingURL clears the value of the "landing_url" field.
+func (ciu *ContentInteractionUpdate) ClearLandingURL() *ContentInteractionUpdate {
+	ciu.mutation.ClearLandingURL()
+	return ciu
+}
+
 // SetCrawlerName sets the "crawler_name" field.
 func (ciu *ContentInteractionUpdate) SetCrawlerName(s string) *ContentInteractionUpdate {
 	ciu.mutation.SetCrawlerName(s)
@@ -214,6 +254,100 @@ func (ciu *ContentInteractionUpdate) SetNillableCrawlerName(s *string) *ContentI
 // ClearCrawlerName clears the value of the "crawler_name" field.
 func (ciu *ContentInteractionUpdate) ClearCrawlerName() *ContentInteractionUpdate {
 	ciu.mutation.ClearCrawlerName()
+	return ciu
+}
+
+// SetCountryCode sets the "country_code" field.
+func (ciu *ContentInteractionUpdate) SetCountryCode(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetCountryCode(s)
+	return ciu
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableCountryCode(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetCountryCode(*s)
+	}
+	return ciu
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (ciu *ContentInteractionUpdate) ClearCountryCode() *ContentInteractionUpdate {
+	ciu.mutation.ClearCountryCode()
+	return ciu
+}
+
+// SetCity sets the "city" field.
+func (ciu *ContentInteractionUpdate) SetCity(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetCity(s)
+	return ciu
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableCity(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetCity(*s)
+	}
+	return ciu
+}
+
+// ClearCity clears the value of the "city" field.
+func (ciu *ContentInteractionUpdate) ClearCity() *ContentInteractionUpdate {
+	ciu.mutation.ClearCity()
+	return ciu
+}
+
+// SetLatitude sets the "latitude" field.
+func (ciu *ContentInteractionUpdate) SetLatitude(f float64) *ContentInteractionUpdate {
+	ciu.mutation.ResetLatitude()
+	ciu.mutation.SetLatitude(f)
+	return ciu
+}
+
+// SetNillableLatitude sets the "latitude" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableLatitude(f *float64) *ContentInteractionUpdate {
+	if f != nil {
+		ciu.SetLatitude(*f)
+	}
+	return ciu
+}
+
+// AddLatitude adds f to the "latitude" field.
+func (ciu *ContentInteractionUpdate) AddLatitude(f float64) *ContentInteractionUpdate {
+	ciu.mutation.AddLatitude(f)
+	return ciu
+}
+
+// ClearLatitude clears the value of the "latitude" field.
+func (ciu *ContentInteractionUpdate) ClearLatitude() *ContentInteractionUpdate {
+	ciu.mutation.ClearLatitude()
+	return ciu
+}
+
+// SetLongitude sets the "longitude" field.
+func (ciu *ContentInteractionUpdate) SetLongitude(f float64) *ContentInteractionUpdate {
+	ciu.mutation.ResetLongitude()
+	ciu.mutation.SetLongitude(f)
+	return ciu
+}
+
+// SetNillableLongitude sets the "longitude" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableLongitude(f *float64) *ContentInteractionUpdate {
+	if f != nil {
+		ciu.SetLongitude(*f)
+	}
+	return ciu
+}
+
+// AddLongitude adds f to the "longitude" field.
+func (ciu *ContentInteractionUpdate) AddLongitude(f float64) *ContentInteractionUpdate {
+	ciu.mutation.AddLongitude(f)
+	return ciu
+}
+
+// ClearLongitude clears the value of the "longitude" field.
+func (ciu *ContentInteractionUpdate) ClearLongitude() *ContentInteractionUpdate {
+	ciu.mutation.ClearLongitude()
 	return ciu
 }
 
@@ -313,6 +447,26 @@ func (ciu *ContentInteractionUpdate) check() error {
 			return &ValidationError{Name: "referrer_kind", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.referrer_kind": %w`, err)}
 		}
 	}
+	if v, ok := ciu.mutation.Referrer(); ok {
+		if err := contentinteraction.ReferrerValidator(v); err != nil {
+			return &ValidationError{Name: "referrer", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.referrer": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.LandingURL(); ok {
+		if err := contentinteraction.LandingURLValidator(v); err != nil {
+			return &ValidationError{Name: "landing_url", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.landing_url": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.CountryCode(); ok {
+		if err := contentinteraction.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.country_code": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.City(); ok {
+		if err := contentinteraction.CityValidator(v); err != nil {
+			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.city": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -373,11 +527,53 @@ func (ciu *ContentInteractionUpdate) sqlSave(ctx context.Context) (n int, err er
 	if value, ok := ciu.mutation.ReferrerKind(); ok {
 		_spec.SetField(contentinteraction.FieldReferrerKind, field.TypeEnum, value)
 	}
+	if value, ok := ciu.mutation.Referrer(); ok {
+		_spec.SetField(contentinteraction.FieldReferrer, field.TypeString, value)
+	}
+	if ciu.mutation.ReferrerCleared() {
+		_spec.ClearField(contentinteraction.FieldReferrer, field.TypeString)
+	}
+	if value, ok := ciu.mutation.LandingURL(); ok {
+		_spec.SetField(contentinteraction.FieldLandingURL, field.TypeString, value)
+	}
+	if ciu.mutation.LandingURLCleared() {
+		_spec.ClearField(contentinteraction.FieldLandingURL, field.TypeString)
+	}
 	if value, ok := ciu.mutation.CrawlerName(); ok {
 		_spec.SetField(contentinteraction.FieldCrawlerName, field.TypeString, value)
 	}
 	if ciu.mutation.CrawlerNameCleared() {
 		_spec.ClearField(contentinteraction.FieldCrawlerName, field.TypeString)
+	}
+	if value, ok := ciu.mutation.CountryCode(); ok {
+		_spec.SetField(contentinteraction.FieldCountryCode, field.TypeString, value)
+	}
+	if ciu.mutation.CountryCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldCountryCode, field.TypeString)
+	}
+	if value, ok := ciu.mutation.City(); ok {
+		_spec.SetField(contentinteraction.FieldCity, field.TypeString, value)
+	}
+	if ciu.mutation.CityCleared() {
+		_spec.ClearField(contentinteraction.FieldCity, field.TypeString)
+	}
+	if value, ok := ciu.mutation.Latitude(); ok {
+		_spec.SetField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
+	}
+	if value, ok := ciu.mutation.AddedLatitude(); ok {
+		_spec.AddField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
+	}
+	if ciu.mutation.LatitudeCleared() {
+		_spec.ClearField(contentinteraction.FieldLatitude, field.TypeFloat64)
+	}
+	if value, ok := ciu.mutation.Longitude(); ok {
+		_spec.SetField(contentinteraction.FieldLongitude, field.TypeFloat64, value)
+	}
+	if value, ok := ciu.mutation.AddedLongitude(); ok {
+		_spec.AddField(contentinteraction.FieldLongitude, field.TypeFloat64, value)
+	}
+	if ciu.mutation.LongitudeCleared() {
+		_spec.ClearField(contentinteraction.FieldLongitude, field.TypeFloat64)
 	}
 	if value, ok := ciu.mutation.SessionDuration(); ok {
 		_spec.SetField(contentinteraction.FieldSessionDuration, field.TypeInt, value)
@@ -584,6 +780,46 @@ func (ciuo *ContentInteractionUpdateOne) SetNillableReferrerKind(ck *contentinte
 	return ciuo
 }
 
+// SetReferrer sets the "referrer" field.
+func (ciuo *ContentInteractionUpdateOne) SetReferrer(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetReferrer(s)
+	return ciuo
+}
+
+// SetNillableReferrer sets the "referrer" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableReferrer(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetReferrer(*s)
+	}
+	return ciuo
+}
+
+// ClearReferrer clears the value of the "referrer" field.
+func (ciuo *ContentInteractionUpdateOne) ClearReferrer() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearReferrer()
+	return ciuo
+}
+
+// SetLandingURL sets the "landing_url" field.
+func (ciuo *ContentInteractionUpdateOne) SetLandingURL(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetLandingURL(s)
+	return ciuo
+}
+
+// SetNillableLandingURL sets the "landing_url" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableLandingURL(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetLandingURL(*s)
+	}
+	return ciuo
+}
+
+// ClearLandingURL clears the value of the "landing_url" field.
+func (ciuo *ContentInteractionUpdateOne) ClearLandingURL() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearLandingURL()
+	return ciuo
+}
+
 // SetCrawlerName sets the "crawler_name" field.
 func (ciuo *ContentInteractionUpdateOne) SetCrawlerName(s string) *ContentInteractionUpdateOne {
 	ciuo.mutation.SetCrawlerName(s)
@@ -601,6 +837,100 @@ func (ciuo *ContentInteractionUpdateOne) SetNillableCrawlerName(s *string) *Cont
 // ClearCrawlerName clears the value of the "crawler_name" field.
 func (ciuo *ContentInteractionUpdateOne) ClearCrawlerName() *ContentInteractionUpdateOne {
 	ciuo.mutation.ClearCrawlerName()
+	return ciuo
+}
+
+// SetCountryCode sets the "country_code" field.
+func (ciuo *ContentInteractionUpdateOne) SetCountryCode(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetCountryCode(s)
+	return ciuo
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableCountryCode(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetCountryCode(*s)
+	}
+	return ciuo
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (ciuo *ContentInteractionUpdateOne) ClearCountryCode() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearCountryCode()
+	return ciuo
+}
+
+// SetCity sets the "city" field.
+func (ciuo *ContentInteractionUpdateOne) SetCity(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetCity(s)
+	return ciuo
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableCity(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetCity(*s)
+	}
+	return ciuo
+}
+
+// ClearCity clears the value of the "city" field.
+func (ciuo *ContentInteractionUpdateOne) ClearCity() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearCity()
+	return ciuo
+}
+
+// SetLatitude sets the "latitude" field.
+func (ciuo *ContentInteractionUpdateOne) SetLatitude(f float64) *ContentInteractionUpdateOne {
+	ciuo.mutation.ResetLatitude()
+	ciuo.mutation.SetLatitude(f)
+	return ciuo
+}
+
+// SetNillableLatitude sets the "latitude" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableLatitude(f *float64) *ContentInteractionUpdateOne {
+	if f != nil {
+		ciuo.SetLatitude(*f)
+	}
+	return ciuo
+}
+
+// AddLatitude adds f to the "latitude" field.
+func (ciuo *ContentInteractionUpdateOne) AddLatitude(f float64) *ContentInteractionUpdateOne {
+	ciuo.mutation.AddLatitude(f)
+	return ciuo
+}
+
+// ClearLatitude clears the value of the "latitude" field.
+func (ciuo *ContentInteractionUpdateOne) ClearLatitude() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearLatitude()
+	return ciuo
+}
+
+// SetLongitude sets the "longitude" field.
+func (ciuo *ContentInteractionUpdateOne) SetLongitude(f float64) *ContentInteractionUpdateOne {
+	ciuo.mutation.ResetLongitude()
+	ciuo.mutation.SetLongitude(f)
+	return ciuo
+}
+
+// SetNillableLongitude sets the "longitude" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableLongitude(f *float64) *ContentInteractionUpdateOne {
+	if f != nil {
+		ciuo.SetLongitude(*f)
+	}
+	return ciuo
+}
+
+// AddLongitude adds f to the "longitude" field.
+func (ciuo *ContentInteractionUpdateOne) AddLongitude(f float64) *ContentInteractionUpdateOne {
+	ciuo.mutation.AddLongitude(f)
+	return ciuo
+}
+
+// ClearLongitude clears the value of the "longitude" field.
+func (ciuo *ContentInteractionUpdateOne) ClearLongitude() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearLongitude()
 	return ciuo
 }
 
@@ -713,6 +1043,26 @@ func (ciuo *ContentInteractionUpdateOne) check() error {
 			return &ValidationError{Name: "referrer_kind", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.referrer_kind": %w`, err)}
 		}
 	}
+	if v, ok := ciuo.mutation.Referrer(); ok {
+		if err := contentinteraction.ReferrerValidator(v); err != nil {
+			return &ValidationError{Name: "referrer", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.referrer": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.LandingURL(); ok {
+		if err := contentinteraction.LandingURLValidator(v); err != nil {
+			return &ValidationError{Name: "landing_url", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.landing_url": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.CountryCode(); ok {
+		if err := contentinteraction.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.country_code": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.City(); ok {
+		if err := contentinteraction.CityValidator(v); err != nil {
+			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.city": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -790,11 +1140,53 @@ func (ciuo *ContentInteractionUpdateOne) sqlSave(ctx context.Context) (_node *Co
 	if value, ok := ciuo.mutation.ReferrerKind(); ok {
 		_spec.SetField(contentinteraction.FieldReferrerKind, field.TypeEnum, value)
 	}
+	if value, ok := ciuo.mutation.Referrer(); ok {
+		_spec.SetField(contentinteraction.FieldReferrer, field.TypeString, value)
+	}
+	if ciuo.mutation.ReferrerCleared() {
+		_spec.ClearField(contentinteraction.FieldReferrer, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.LandingURL(); ok {
+		_spec.SetField(contentinteraction.FieldLandingURL, field.TypeString, value)
+	}
+	if ciuo.mutation.LandingURLCleared() {
+		_spec.ClearField(contentinteraction.FieldLandingURL, field.TypeString)
+	}
 	if value, ok := ciuo.mutation.CrawlerName(); ok {
 		_spec.SetField(contentinteraction.FieldCrawlerName, field.TypeString, value)
 	}
 	if ciuo.mutation.CrawlerNameCleared() {
 		_spec.ClearField(contentinteraction.FieldCrawlerName, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.CountryCode(); ok {
+		_spec.SetField(contentinteraction.FieldCountryCode, field.TypeString, value)
+	}
+	if ciuo.mutation.CountryCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldCountryCode, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.City(); ok {
+		_spec.SetField(contentinteraction.FieldCity, field.TypeString, value)
+	}
+	if ciuo.mutation.CityCleared() {
+		_spec.ClearField(contentinteraction.FieldCity, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.Latitude(); ok {
+		_spec.SetField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
+	}
+	if value, ok := ciuo.mutation.AddedLatitude(); ok {
+		_spec.AddField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
+	}
+	if ciuo.mutation.LatitudeCleared() {
+		_spec.ClearField(contentinteraction.FieldLatitude, field.TypeFloat64)
+	}
+	if value, ok := ciuo.mutation.Longitude(); ok {
+		_spec.SetField(contentinteraction.FieldLongitude, field.TypeFloat64, value)
+	}
+	if value, ok := ciuo.mutation.AddedLongitude(); ok {
+		_spec.AddField(contentinteraction.FieldLongitude, field.TypeFloat64, value)
+	}
+	if ciuo.mutation.LongitudeCleared() {
+		_spec.ClearField(contentinteraction.FieldLongitude, field.TypeFloat64)
 	}
 	if value, ok := ciuo.mutation.SessionDuration(); ok {
 		_spec.SetField(contentinteraction.FieldSessionDuration, field.TypeInt, value)

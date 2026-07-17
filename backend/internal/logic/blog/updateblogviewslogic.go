@@ -75,7 +75,7 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 		return tx.Commit()
 	}
 
-	if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, analytics.InteractionEvent{
+	if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, l.svcCtx.CountryResolver, analytics.InteractionEvent{
 		EntityType:      "blog",
 		EntityID:        postID,
 		Kind:            "view",
@@ -84,6 +84,7 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 		IPAddress:       req.ClientIP,
 		UserAgent:       req.UserAgentFull,
 		Referrer:        req.Referrer,
+		LandingURL:      req.LandingURL,
 		SessionDuration: sessionDuration,
 		ScrollProgress:  req.ScrollProgress,
 	}); err != nil {

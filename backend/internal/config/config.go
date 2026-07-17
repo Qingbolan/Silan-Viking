@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -9,11 +10,51 @@ import (
 
 type Config struct {
 	rest.RestConf
-	Database DatabaseConfig `json:"database"`
-	Auth     AuthConfig     `json:"auth"`
-	Media    MediaConfig    `json:"media"`
-	Security SecurityConfig `json:"security,optional"`
-	Traffic  TrafficConfig  `json:"traffic,optional"`
+	Database      DatabaseConfig      `json:"database"`
+	Auth          AuthConfig          `json:"auth"`
+	Media         MediaConfig         `json:"media"`
+	Security      SecurityConfig      `json:"security,optional"`
+	Traffic       TrafficConfig       `json:"traffic,optional"`
+	ContentDeploy ContentDeployConfig `json:"content_deploy,optional"`
+}
+
+type ContentDeployConfig struct {
+	ImporterPath   string `json:"importer_path,env=CONTENT_DEPLOY_IMPORTER_PATH,optional"`
+	DatabaseEnv    string `json:"database_env,env=CONTENT_DEPLOY_DATABASE_ENV,optional"`
+	MaxBundleBytes int64  `json:"max_bundle_bytes,env=CONTENT_DEPLOY_MAX_BUNDLE_BYTES,optional"`
+}
+
+func (c *Config) ContentDeployImporterPath() string {
+	if c.ContentDeploy.ImporterPath != "" {
+		return c.ContentDeploy.ImporterPath
+	}
+	return "/usr/local/bin/silan-sqlite2pg"
+}
+
+func (c *Config) ContentDeployDatabaseEnv() string {
+	if c.ContentDeploy.DatabaseEnv != "" {
+		return c.ContentDeploy.DatabaseEnv
+	}
+	return "/etc/silan-backend/db.env"
+}
+
+func (c *Config) ContentDeployMaxBundleBytes() int64 {
+	if c.ContentDeploy.MaxBundleBytes > 0 {
+		return c.ContentDeploy.MaxBundleBytes
+	}
+	return 128 << 20
+}
+
+// ApplyRuntimeLimits keeps the server-wide go-zero guards compatible with the
+// authenticated content deployment route. The framework applies these guards
+// before route middleware, so a handler cannot raise them locally.
+func (c *Config) ApplyRuntimeLimits() {
+	if required := c.ContentDeployMaxBundleBytes(); c.MaxBytes < required {
+		c.MaxBytes = required
+	}
+	if c.Timeout < 130_000 {
+		c.Timeout = 130_000
+	}
 }
 
 // SecurityConfig holds machine-to-machine credentials. Values are injected at
@@ -108,6 +149,17 @@ func (c *Config) LoadConfigFromEnv() {
 	}
 	if token := os.Getenv("STATS_SYNC_TOKEN"); token != "" {
 		c.Security.StatsSyncToken = token
+	}
+	if value := os.Getenv("CONTENT_DEPLOY_IMPORTER_PATH"); value != "" {
+		c.ContentDeploy.ImporterPath = value
+	}
+	if value := os.Getenv("CONTENT_DEPLOY_DATABASE_ENV"); value != "" {
+		c.ContentDeploy.DatabaseEnv = value
+	}
+	if value := os.Getenv("CONTENT_DEPLOY_MAX_BUNDLE_BYTES"); value != "" {
+		if parsed, err := strconv.ParseInt(value, 10, 64); err == nil && parsed > 0 {
+			c.ContentDeploy.MaxBundleBytes = parsed
+		}
 	}
 	if value := os.Getenv("TRAFFIC_AI_USER_AGENTS"); value != "" {
 		c.Traffic.AIUserAgents = csvList(value)

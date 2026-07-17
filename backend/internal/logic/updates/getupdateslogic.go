@@ -29,7 +29,10 @@ func (l *GetUpdatesLogic) GetUpdates(req *types.UpdateListRequest) (*types.Updat
 	updates, err := l.svcCtx.DB.RecentUpdate.Query().
 		Where(recentupdate.VisibilityEQ(recentupdate.VisibilityPublic)).
 		WithTranslations().
-		Order(recentupdate.ByDate(sql.OrderDesc())).
+		Order(
+			recentupdate.ByPinned(sql.OrderDesc()),
+			recentupdate.ByDate(sql.OrderDesc()),
+		).
 		All(l.ctx)
 	if err != nil {
 		return nil, err

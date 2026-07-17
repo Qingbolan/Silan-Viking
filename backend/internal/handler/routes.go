@@ -6,6 +6,7 @@ package handler
 import (
 	"net/http"
 
+	analytics "silan-backend/internal/handler/analytics"
 	auth "silan-backend/internal/handler/auth"
 	blog "silan-backend/internal/handler/blog"
 	contact "silan-backend/internal/handler/contact"
@@ -23,6 +24,12 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	server.AddRoute(rest.Route{
+		Method:  http.MethodGet,
+		Path:    "/api/v1/analytics/crawler-hit",
+		Handler: analytics.CrawlerHitHandler(serverCtx),
+	})
+
 	server.AddRoutes(
 		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
@@ -446,6 +453,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/:slug",
 					Handler: updates.GetUpdateHandler(serverCtx),
 				},
+				{Method: http.MethodGet, Path: "/:slug/engagement", Handler: updates.GetEngagementHandler(serverCtx)},
+				{Method: http.MethodPost, Path: "/:id/like", Handler: updates.ToggleLikeHandler(serverCtx)},
+				{Method: http.MethodGet, Path: "/:slug/comments", Handler: updates.ListCommentsHandler(serverCtx)},
+				{Method: http.MethodPost, Path: "/:id/comments", Handler: updates.CreateCommentHandler(serverCtx)},
+				{Method: http.MethodPost, Path: "/comments/:comment_id/like", Handler: updates.ToggleCommentLikeHandler(serverCtx)},
+				{Method: http.MethodDelete, Path: "/comments/:comment_id", Handler: updates.DeleteCommentHandler(serverCtx)},
 			}...,
 		),
 		rest.WithPrefix("/api/v1/updates"),
@@ -497,10 +510,18 @@ func privateStatsRoutes(serverCtx *svc.ServiceContext) []rest.Route {
 }
 
 func privateContentStatusRoutes(serverCtx *svc.ServiceContext) []rest.Route {
-	return []rest.Route{{
-		// Deployed content provenance and media readiness.
-		Method:  http.MethodGet,
-		Path:    "/content/status",
-		Handler: health.ContentStatusHandler(serverCtx),
-	}}
+	return []rest.Route{
+		{
+			// Deployed content provenance and media readiness.
+			Method:  http.MethodGet,
+			Path:    "/content/status",
+			Handler: health.ContentStatusHandler(serverCtx),
+		},
+		{
+			// Atomically promote an authenticated content projection and media bundle.
+			Method:  http.MethodPost,
+			Path:    "/content/deploy",
+			Handler: health.ContentDeployHandler(serverCtx),
+		},
+	}
 }

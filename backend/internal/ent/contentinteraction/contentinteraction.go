@@ -34,8 +34,20 @@ const (
 	FieldVisitorKind = "visitor_kind"
 	// FieldReferrerKind holds the string denoting the referrer_kind field in the database.
 	FieldReferrerKind = "referrer_kind"
+	// FieldReferrer holds the string denoting the referrer field in the database.
+	FieldReferrer = "referrer"
+	// FieldLandingURL holds the string denoting the landing_url field in the database.
+	FieldLandingURL = "landing_url"
 	// FieldCrawlerName holds the string denoting the crawler_name field in the database.
 	FieldCrawlerName = "crawler_name"
+	// FieldCountryCode holds the string denoting the country_code field in the database.
+	FieldCountryCode = "country_code"
+	// FieldCity holds the string denoting the city field in the database.
+	FieldCity = "city"
+	// FieldLatitude holds the string denoting the latitude field in the database.
+	FieldLatitude = "latitude"
+	// FieldLongitude holds the string denoting the longitude field in the database.
+	FieldLongitude = "longitude"
 	// FieldSessionDuration holds the string denoting the session_duration field in the database.
 	FieldSessionDuration = "session_duration"
 	// FieldScrollProgress holds the string denoting the scroll_progress field in the database.
@@ -59,7 +71,13 @@ var Columns = []string{
 	FieldUserAgent,
 	FieldVisitorKind,
 	FieldReferrerKind,
+	FieldReferrer,
+	FieldLandingURL,
 	FieldCrawlerName,
+	FieldCountryCode,
+	FieldCity,
+	FieldLatitude,
+	FieldLongitude,
 	FieldSessionDuration,
 	FieldScrollProgress,
 	FieldCreatedAt,
@@ -76,6 +94,14 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// ReferrerValidator is a validator for the "referrer" field. It is called by the builders before save.
+	ReferrerValidator func(string) error
+	// LandingURLValidator is a validator for the "landing_url" field. It is called by the builders before save.
+	LandingURLValidator func(string) error
+	// CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	CountryCodeValidator func(string) error
+	// CityValidator is a validator for the "city" field. It is called by the builders before save.
+	CityValidator func(string) error
 	// DefaultSessionDuration holds the default value on creation for the "session_duration" field.
 	DefaultSessionDuration int
 	// DefaultScrollProgress holds the default value on creation for the "scroll_progress" field.
@@ -250,9 +276,39 @@ func ByReferrerKind(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReferrerKind, opts...).ToFunc()
 }
 
+// ByReferrer orders the results by the referrer field.
+func ByReferrer(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReferrer, opts...).ToFunc()
+}
+
+// ByLandingURL orders the results by the landing_url field.
+func ByLandingURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLandingURL, opts...).ToFunc()
+}
+
 // ByCrawlerName orders the results by the crawler_name field.
 func ByCrawlerName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCrawlerName, opts...).ToFunc()
+}
+
+// ByCountryCode orders the results by the country_code field.
+func ByCountryCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCountryCode, opts...).ToFunc()
+}
+
+// ByCity orders the results by the city field.
+func ByCity(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCity, opts...).ToFunc()
+}
+
+// ByLatitude orders the results by the latitude field.
+func ByLatitude(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLatitude, opts...).ToFunc()
+}
+
+// ByLongitude orders the results by the longitude field.
+func ByLongitude(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLongitude, opts...).ToFunc()
 }
 
 // BySessionDuration orders the results by the session_duration field.

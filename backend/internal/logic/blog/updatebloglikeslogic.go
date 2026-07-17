@@ -57,7 +57,7 @@ func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest
 
 	if req.Increment {
 		if !existingLike {
-			if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, analytics.InteractionEvent{
+			if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, l.svcCtx.CountryResolver, analytics.InteractionEvent{
 				EntityType:     "blog",
 				EntityID:       postID,
 				Kind:           "like",

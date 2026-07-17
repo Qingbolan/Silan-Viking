@@ -2,10 +2,13 @@ package resume
 
 import (
 	"context"
+	"time"
 
 	"silan-backend/internal/ent"
+	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/partentry"
+	"silan-backend/internal/logic/analytics"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -28,6 +31,9 @@ func NewGetResumeDataLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Get
 }
 
 func (l *GetResumeDataLogic) GetResumeData(req *types.ResumeRequest) (resp *types.ResumeData, err error) {
+	if err := l.recordHomepageView(req); err != nil {
+		l.Errorf("record homepage view: %v", err)
+	}
 	personalInfoLogic := NewGetPersonalInfoLogic(l.ctx, l.svcCtx)
 	personalInfo, err := personalInfoLogic.GetPersonalInfo(&types.PersonalInfoRequest{Language: req.Language})
 	if err != nil {
@@ -43,6 +49,33 @@ func (l *GetResumeDataLogic) GetResumeData(req *types.ResumeRequest) (resp *type
 		PersonalInfo: *personalInfo,
 		Parts:        parts,
 	}, nil
+}
+
+func (l *GetResumeDataLogic) recordHomepageView(req *types.ResumeRequest) error {
+	if req.Fingerprint == "" {
+		return nil
+	}
+	oneHourAgo := time.Now().Add(-time.Hour)
+	exists, err := l.svcCtx.DB.ContentInteraction.Query().Where(
+		contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeResume),
+		contentinteraction.EntityIDEQ("homepage"),
+		contentinteraction.KindEQ(contentinteraction.KindView),
+		contentinteraction.FingerprintEQ(req.Fingerprint),
+		contentinteraction.CreatedAtGT(oneHourAgo),
+	).Exist(l.ctx)
+	if err != nil || exists {
+		return err
+	}
+	return analytics.RecordContentInteraction(l.ctx, l.svcCtx.DB, l.svcCtx.Traffic, l.svcCtx.CountryResolver, analytics.InteractionEvent{
+		EntityType:  "resume",
+		EntityID:    "homepage",
+		Kind:        "view",
+		Fingerprint: req.Fingerprint,
+		IPAddress:   req.ClientIP,
+		UserAgent:   req.UserAgentFull,
+		Referrer:    req.Referrer,
+		LandingURL:  req.LandingURL,
+	})
 }
 
 func (l *GetResumeDataLogic) getResumeParts(language string) ([]types.ResumePart, error) {

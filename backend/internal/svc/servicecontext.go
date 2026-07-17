@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"silan-backend/internal/config"
+	"silan-backend/internal/contentdeploy"
 	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/migrate"
@@ -21,14 +22,16 @@ import (
 )
 
 type ServiceContext struct {
-	Config      config.Config
-	Cors        rest.Middleware
-	Analytics   rest.Middleware
-	PrivateAPI  rest.Middleware
-	DB          *ent.Client
-	RawDB       *sql.DB
-	ContentTags *contenttag.Repository
-	Traffic     *traffic.Classifier
+	Config          config.Config
+	Cors            rest.Middleware
+	Analytics       rest.Middleware
+	PrivateAPI      rest.Middleware
+	DB              *ent.Client
+	RawDB           *sql.DB
+	ContentTags     *contenttag.Repository
+	Traffic         *traffic.Classifier
+	CountryResolver *traffic.CountryResolver
+	ContentDeploy   *contentdeploy.Service
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -235,14 +238,22 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 
 	return &ServiceContext{
-		Config:      c,
-		Cors:        middleware.NewCorsMiddleware().Handle,
-		Analytics:   middleware.NewAnalyticsMiddleware(client, trafficClassifier, countryResolver).Handle,
-		PrivateAPI:  middleware.NewMachineTokenMiddleware(c.Security.StatsSyncToken).Handle,
-		DB:          client,
-		RawDB:       rawDB,
-		ContentTags: contenttag.NewRepository(rawDB, c.Database.Driver),
-		Traffic:     trafficClassifier,
+		Config:          c,
+		Cors:            middleware.NewCorsMiddleware().Handle,
+		Analytics:       middleware.NewAnalyticsMiddleware(client, trafficClassifier, countryResolver).Handle,
+		PrivateAPI:      middleware.NewMachineTokenMiddleware(c.Security.StatsSyncToken).Handle,
+		DB:              client,
+		RawDB:           rawDB,
+		ContentTags:     contenttag.NewRepository(rawDB, c.Database.Driver),
+		Traffic:         trafficClassifier,
+		CountryResolver: countryResolver,
+		ContentDeploy: contentdeploy.NewService(contentdeploy.Config{
+			Driver:         c.Database.Driver,
+			ImporterPath:   c.ContentDeployImporterPath(),
+			DatabaseEnv:    c.ContentDeployDatabaseEnv(),
+			MediaRoot:      c.MediaRoot(),
+			MaxBundleBytes: c.ContentDeployMaxBundleBytes(),
+		}, rawDB),
 	}
 }
 
@@ -501,6 +512,8 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 				user_agent TEXT,
 				visitor_kind TEXT NOT NULL DEFAULT 'human',
 				referrer_kind TEXT NOT NULL DEFAULT 'direct',
+				referrer TEXT,
+				landing_url TEXT,
 				crawler_name TEXT,
 				session_duration INTEGER NOT NULL DEFAULT 0,
 				scroll_progress REAL NOT NULL DEFAULT 0,
@@ -553,6 +566,8 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 				user_agent TEXT,
 				visitor_kind VARCHAR(32) NOT NULL DEFAULT 'human',
 				referrer_kind VARCHAR(32) NOT NULL DEFAULT 'direct',
+				referrer TEXT,
+				landing_url TEXT,
 				crawler_name VARCHAR(255),
 				session_duration INT NOT NULL DEFAULT 0,
 				scroll_progress DOUBLE NOT NULL DEFAULT 0,
@@ -605,6 +620,8 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 				user_agent TEXT,
 				visitor_kind TEXT NOT NULL DEFAULT 'human',
 				referrer_kind TEXT NOT NULL DEFAULT 'direct',
+				referrer TEXT,
+				landing_url TEXT,
 				crawler_name TEXT,
 				session_duration INT NOT NULL DEFAULT 0,
 				scroll_progress DOUBLE PRECISION NOT NULL DEFAULT 0,

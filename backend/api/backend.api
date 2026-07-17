@@ -204,7 +204,10 @@ type (
 	}
 	// Resume requests
 	ResumeRequest {
-		Language string `form:"lang,default=en"`
+		Language    string `form:"lang,default=en"`
+		Fingerprint string `form:"fingerprint,optional"`
+		Referrer     string `form:"referrer,optional"`
+		LandingURL   string `form:"landing_url,optional"`
 	}
 	PersonalInfoRequest {
 		Language string `form:"lang,default=en"`
@@ -486,6 +489,7 @@ type (
 		ClientIP       string  `json:"client_ip,optional"`
 		UserAgentFull  string  `json:"user_agent_full,optional"`
 		Referrer       string  `json:"referrer,optional"`
+		LandingURL     string  `json:"landing_url,optional"`
 		ReadingTime    int     `json:"reading_time,optional"`
 		ScrollProgress float64 `json:"scroll_progress,optional"`
 		SessionStart   string  `json:"session_start,optional"`
@@ -499,6 +503,7 @@ type (
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Referrer       string `json:"referrer,optional"`
+		LandingURL     string `json:"landing_url,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	UpdateBlogLikesResponse {
@@ -749,6 +754,7 @@ type (
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Referrer       string `json:"referrer,optional"`
+		LandingURL     string `json:"landing_url,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	LikeProjectResponse {
@@ -761,6 +767,7 @@ type (
 		ClientIP       string `json:"client_ip,optional"`
 		UserAgentFull  string `json:"user_agent_full,optional"`
 		Referrer       string `json:"referrer,optional"`
+		LandingURL     string `json:"landing_url,optional"`
 		Language       string `form:"lang,default=en"`
 	}
 	RecordProjectViewResponse {
@@ -1107,6 +1114,9 @@ type (
 		IPMasked     string `json:"ip_masked"`
 		VisitorKind  string `json:"visitor_kind"`
 		ReferrerKind string `json:"referrer_kind"`
+		Referrer     string `json:"referrer"`
+		LandingURL   string `json:"landing_url"`
+		CrawlerName  string `json:"crawler_name"`
 		LastSeenAt   string `json:"last_seen_at"`
 	}
 	// VisitorsResponse lists the visitors of a content item.

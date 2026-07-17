@@ -351,7 +351,13 @@ var (
 		{Name: "user_agent", Type: field.TypeString, Nullable: true},
 		{Name: "visitor_kind", Type: field.TypeEnum, Enums: []string{"human", "search_crawler", "ai_crawler"}, Default: "human"},
 		{Name: "referrer_kind", Type: field.TypeEnum, Enums: []string{"search", "social", "ai_chat", "direct", "internal"}, Default: "direct"},
+		{Name: "referrer", Type: field.TypeString, Nullable: true, Size: 2048},
+		{Name: "landing_url", Type: field.TypeString, Nullable: true, Size: 2048},
 		{Name: "crawler_name", Type: field.TypeString, Nullable: true},
+		{Name: "country_code", Type: field.TypeString, Nullable: true, Size: 2},
+		{Name: "city", Type: field.TypeString, Nullable: true, Size: 120},
+		{Name: "latitude", Type: field.TypeFloat64, Nullable: true},
+		{Name: "longitude", Type: field.TypeFloat64, Nullable: true},
 		{Name: "session_duration", Type: field.TypeInt, Default: 0},
 		{Name: "scroll_progress", Type: field.TypeFloat64, Default: 0},
 		{Name: "created_at", Type: field.TypeTime, Nullable: true},
@@ -385,7 +391,7 @@ var (
 			{
 				Name:    "contentinteraction_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{ContentInteractionColumns[14]},
+				Columns: []*schema.Column{ContentInteractionColumns[20]},
 			},
 		},
 	}

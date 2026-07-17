@@ -109,7 +109,7 @@ func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *typ
 			return nil, err
 		}
 
-		if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, analytics.InteractionEvent{
+		if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, l.svcCtx.CountryResolver, analytics.InteractionEvent{
 			EntityType:     "project",
 			EntityID:       projectID,
 			Kind:           "like",

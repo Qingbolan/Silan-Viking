@@ -108,6 +108,7 @@ func updateToData(ctx context.Context, tags *contenttag.Repository, update *ent.
 		Tags:        labels,
 		Status:      string(update.Status),
 		Priority:    string(update.Priority),
+		Pinned:      update.Pinned,
 		CreatedAt:   update.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:   update.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}

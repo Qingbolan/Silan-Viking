@@ -608,6 +608,7 @@ type LikeProjectRequest struct {
 	ClientIP            string `json:"client_ip,optional"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	Referrer            string `json:"referrer,optional"`
+	LandingURL          string `json:"landing_url,optional"`
 	Language            string `form:"lang,default=en"`
 }
 
@@ -840,8 +841,34 @@ type RecentUpdate struct {
 	Tags        []string `json:"tags"`
 	Status      string   `json:"status"`
 	Priority    string   `json:"priority"`
+	Pinned      bool     `json:"pinned"`
 	CreatedAt   string   `json:"created_at"`
 	UpdatedAt   string   `json:"updated_at"`
+}
+
+type UpdateCommentData struct {
+	ID              string              `json:"id"`
+	UpdateID        string              `json:"update_id"`
+	ParentID        string              `json:"parent_id,optional"`
+	AuthorName      string              `json:"author_name"`
+	AuthorAvatarURL string              `json:"author_avatar_url,optional"`
+	Content         string              `json:"content"`
+	CreatedAt       string              `json:"created_at"`
+	CanDelete       bool                `json:"can_delete"`
+	LikesCount      int                 `json:"likes_count"`
+	IsLikedByUser   bool                `json:"is_liked_by_user"`
+	Replies         []UpdateCommentData `json:"replies"`
+}
+
+type UpdateCommentListResponse struct {
+	Comments []UpdateCommentData `json:"comments"`
+	Total    int                 `json:"total"`
+}
+
+type UpdateEngagementResponse struct {
+	Likes         int  `json:"likes"`
+	Comments      int  `json:"comments"`
+	IsLikedByUser bool `json:"is_liked_by_user"`
 }
 
 type RecordProjectViewRequest struct {
@@ -851,6 +878,7 @@ type RecordProjectViewRequest struct {
 	ClientIP            string `json:"client_ip,optional"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	Referrer            string `json:"referrer,optional"`
+	LandingURL          string `json:"landing_url,optional"`
 	Language            string `form:"lang,default=en"`
 }
 
@@ -896,7 +924,12 @@ type ResumePart struct {
 }
 
 type ResumeRequest struct {
-	Language string `form:"lang,default=en"`
+	Language      string `form:"lang,default=en"`
+	Fingerprint   string `form:"fingerprint,optional"`
+	Referrer      string `form:"referrer,optional"`
+	LandingURL    string `form:"landing_url,optional"`
+	ClientIP      string `json:"-"`
+	UserAgentFull string `json:"-"`
 }
 
 type SocialLink struct {
@@ -961,6 +994,7 @@ type UpdateBlogLikesRequest struct {
 	ClientIP            string `json:"client_ip,optional"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	Referrer            string `json:"referrer,optional"`
+	LandingURL          string `json:"landing_url,optional"`
 	Language            string `form:"lang,default=en"`
 }
 
@@ -976,6 +1010,7 @@ type UpdateBlogViewsRequest struct {
 	ClientIP            string  `json:"client_ip,optional"`
 	UserAgentFull       string  `json:"user_agent_full,optional"`
 	Referrer            string  `json:"referrer,optional"`
+	LandingURL          string  `json:"landing_url,optional"`
 	ReadingTime         int     `json:"reading_time,optional"`
 	ScrollProgress      float64 `json:"scroll_progress,optional"`
 	SessionStart        string  `json:"session_start,optional"`
@@ -1049,11 +1084,18 @@ type VerifyEmailResponse struct {
 }
 
 type VisitorRow struct {
-	Fingerprint  string `json:"fingerprint"`
-	IPMasked     string `json:"ip_masked"`
-	VisitorKind  string `json:"visitor_kind"`
-	ReferrerKind string `json:"referrer_kind"`
-	LastSeenAt   string `json:"last_seen_at"`
+	Fingerprint  string  `json:"fingerprint"`
+	IPMasked     string  `json:"ip_masked"`
+	VisitorKind  string  `json:"visitor_kind"`
+	ReferrerKind string  `json:"referrer_kind"`
+	Referrer     string  `json:"referrer"`
+	LandingURL   string  `json:"landing_url"`
+	CrawlerName  string  `json:"crawler_name"`
+	CountryCode  string  `json:"country_code"`
+	City         string  `json:"city"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	LastSeenAt   string  `json:"last_seen_at"`
 }
 
 type VisitorsResponse struct {

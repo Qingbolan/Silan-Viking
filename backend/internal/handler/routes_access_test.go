@@ -22,8 +22,14 @@ func TestStatisticsAccessPolicyRouteSets(t *testing.T) {
 		t.Fatalf("private stats routes = %v, want %v", got, want)
 	}
 
-	contentStatus := privateContentStatusRoutes(nil)
-	if len(contentStatus) != 1 || contentStatus[0].Path != "/content/status" {
-		t.Fatalf("private content status routes = %#v", contentStatus)
+	contentRoutes := privateContentStatusRoutes(nil)
+	got = got[:0]
+	for _, route := range contentRoutes {
+		got = append(got, route.Method+" "+route.Path)
+	}
+	want = []string{"GET /content/status", "POST /content/deploy"}
+	slices.Sort(got)
+	if !slices.Equal(got, want) {
+		t.Fatalf("private content routes = %v, want %v", got, want)
 	}
 }

@@ -11121,7 +11121,15 @@ type ContentInteractionMutation struct {
 	user_agent          *string
 	visitor_kind        *contentinteraction.VisitorKind
 	referrer_kind       *contentinteraction.ReferrerKind
+	referrer            *string
+	landing_url         *string
 	crawler_name        *string
+	country_code        *string
+	city                *string
+	latitude            *float64
+	addlatitude         *float64
+	longitude           *float64
+	addlongitude        *float64
 	session_duration    *int
 	addsession_duration *int
 	scroll_progress     *float64
@@ -11662,6 +11670,104 @@ func (m *ContentInteractionMutation) ResetReferrerKind() {
 	m.referrer_kind = nil
 }
 
+// SetReferrer sets the "referrer" field.
+func (m *ContentInteractionMutation) SetReferrer(s string) {
+	m.referrer = &s
+}
+
+// Referrer returns the value of the "referrer" field in the mutation.
+func (m *ContentInteractionMutation) Referrer() (r string, exists bool) {
+	v := m.referrer
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReferrer returns the old "referrer" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldReferrer(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReferrer is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReferrer requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReferrer: %w", err)
+	}
+	return oldValue.Referrer, nil
+}
+
+// ClearReferrer clears the value of the "referrer" field.
+func (m *ContentInteractionMutation) ClearReferrer() {
+	m.referrer = nil
+	m.clearedFields[contentinteraction.FieldReferrer] = struct{}{}
+}
+
+// ReferrerCleared returns if the "referrer" field was cleared in this mutation.
+func (m *ContentInteractionMutation) ReferrerCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldReferrer]
+	return ok
+}
+
+// ResetReferrer resets all changes to the "referrer" field.
+func (m *ContentInteractionMutation) ResetReferrer() {
+	m.referrer = nil
+	delete(m.clearedFields, contentinteraction.FieldReferrer)
+}
+
+// SetLandingURL sets the "landing_url" field.
+func (m *ContentInteractionMutation) SetLandingURL(s string) {
+	m.landing_url = &s
+}
+
+// LandingURL returns the value of the "landing_url" field in the mutation.
+func (m *ContentInteractionMutation) LandingURL() (r string, exists bool) {
+	v := m.landing_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLandingURL returns the old "landing_url" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldLandingURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLandingURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLandingURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLandingURL: %w", err)
+	}
+	return oldValue.LandingURL, nil
+}
+
+// ClearLandingURL clears the value of the "landing_url" field.
+func (m *ContentInteractionMutation) ClearLandingURL() {
+	m.landing_url = nil
+	m.clearedFields[contentinteraction.FieldLandingURL] = struct{}{}
+}
+
+// LandingURLCleared returns if the "landing_url" field was cleared in this mutation.
+func (m *ContentInteractionMutation) LandingURLCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldLandingURL]
+	return ok
+}
+
+// ResetLandingURL resets all changes to the "landing_url" field.
+func (m *ContentInteractionMutation) ResetLandingURL() {
+	m.landing_url = nil
+	delete(m.clearedFields, contentinteraction.FieldLandingURL)
+}
+
 // SetCrawlerName sets the "crawler_name" field.
 func (m *ContentInteractionMutation) SetCrawlerName(s string) {
 	m.crawler_name = &s
@@ -11709,6 +11815,244 @@ func (m *ContentInteractionMutation) CrawlerNameCleared() bool {
 func (m *ContentInteractionMutation) ResetCrawlerName() {
 	m.crawler_name = nil
 	delete(m.clearedFields, contentinteraction.FieldCrawlerName)
+}
+
+// SetCountryCode sets the "country_code" field.
+func (m *ContentInteractionMutation) SetCountryCode(s string) {
+	m.country_code = &s
+}
+
+// CountryCode returns the value of the "country_code" field in the mutation.
+func (m *ContentInteractionMutation) CountryCode() (r string, exists bool) {
+	v := m.country_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountryCode returns the old "country_code" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldCountryCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountryCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountryCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountryCode: %w", err)
+	}
+	return oldValue.CountryCode, nil
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (m *ContentInteractionMutation) ClearCountryCode() {
+	m.country_code = nil
+	m.clearedFields[contentinteraction.FieldCountryCode] = struct{}{}
+}
+
+// CountryCodeCleared returns if the "country_code" field was cleared in this mutation.
+func (m *ContentInteractionMutation) CountryCodeCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldCountryCode]
+	return ok
+}
+
+// ResetCountryCode resets all changes to the "country_code" field.
+func (m *ContentInteractionMutation) ResetCountryCode() {
+	m.country_code = nil
+	delete(m.clearedFields, contentinteraction.FieldCountryCode)
+}
+
+// SetCity sets the "city" field.
+func (m *ContentInteractionMutation) SetCity(s string) {
+	m.city = &s
+}
+
+// City returns the value of the "city" field in the mutation.
+func (m *ContentInteractionMutation) City() (r string, exists bool) {
+	v := m.city
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCity returns the old "city" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldCity(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCity: %w", err)
+	}
+	return oldValue.City, nil
+}
+
+// ClearCity clears the value of the "city" field.
+func (m *ContentInteractionMutation) ClearCity() {
+	m.city = nil
+	m.clearedFields[contentinteraction.FieldCity] = struct{}{}
+}
+
+// CityCleared returns if the "city" field was cleared in this mutation.
+func (m *ContentInteractionMutation) CityCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldCity]
+	return ok
+}
+
+// ResetCity resets all changes to the "city" field.
+func (m *ContentInteractionMutation) ResetCity() {
+	m.city = nil
+	delete(m.clearedFields, contentinteraction.FieldCity)
+}
+
+// SetLatitude sets the "latitude" field.
+func (m *ContentInteractionMutation) SetLatitude(f float64) {
+	m.latitude = &f
+	m.addlatitude = nil
+}
+
+// Latitude returns the value of the "latitude" field in the mutation.
+func (m *ContentInteractionMutation) Latitude() (r float64, exists bool) {
+	v := m.latitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatitude returns the old "latitude" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldLatitude(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatitude is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatitude requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatitude: %w", err)
+	}
+	return oldValue.Latitude, nil
+}
+
+// AddLatitude adds f to the "latitude" field.
+func (m *ContentInteractionMutation) AddLatitude(f float64) {
+	if m.addlatitude != nil {
+		*m.addlatitude += f
+	} else {
+		m.addlatitude = &f
+	}
+}
+
+// AddedLatitude returns the value that was added to the "latitude" field in this mutation.
+func (m *ContentInteractionMutation) AddedLatitude() (r float64, exists bool) {
+	v := m.addlatitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLatitude clears the value of the "latitude" field.
+func (m *ContentInteractionMutation) ClearLatitude() {
+	m.latitude = nil
+	m.addlatitude = nil
+	m.clearedFields[contentinteraction.FieldLatitude] = struct{}{}
+}
+
+// LatitudeCleared returns if the "latitude" field was cleared in this mutation.
+func (m *ContentInteractionMutation) LatitudeCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldLatitude]
+	return ok
+}
+
+// ResetLatitude resets all changes to the "latitude" field.
+func (m *ContentInteractionMutation) ResetLatitude() {
+	m.latitude = nil
+	m.addlatitude = nil
+	delete(m.clearedFields, contentinteraction.FieldLatitude)
+}
+
+// SetLongitude sets the "longitude" field.
+func (m *ContentInteractionMutation) SetLongitude(f float64) {
+	m.longitude = &f
+	m.addlongitude = nil
+}
+
+// Longitude returns the value of the "longitude" field in the mutation.
+func (m *ContentInteractionMutation) Longitude() (r float64, exists bool) {
+	v := m.longitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLongitude returns the old "longitude" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldLongitude(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLongitude is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLongitude requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLongitude: %w", err)
+	}
+	return oldValue.Longitude, nil
+}
+
+// AddLongitude adds f to the "longitude" field.
+func (m *ContentInteractionMutation) AddLongitude(f float64) {
+	if m.addlongitude != nil {
+		*m.addlongitude += f
+	} else {
+		m.addlongitude = &f
+	}
+}
+
+// AddedLongitude returns the value that was added to the "longitude" field in this mutation.
+func (m *ContentInteractionMutation) AddedLongitude() (r float64, exists bool) {
+	v := m.addlongitude
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLongitude clears the value of the "longitude" field.
+func (m *ContentInteractionMutation) ClearLongitude() {
+	m.longitude = nil
+	m.addlongitude = nil
+	m.clearedFields[contentinteraction.FieldLongitude] = struct{}{}
+}
+
+// LongitudeCleared returns if the "longitude" field was cleared in this mutation.
+func (m *ContentInteractionMutation) LongitudeCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldLongitude]
+	return ok
+}
+
+// ResetLongitude resets all changes to the "longitude" field.
+func (m *ContentInteractionMutation) ResetLongitude() {
+	m.longitude = nil
+	m.addlongitude = nil
+	delete(m.clearedFields, contentinteraction.FieldLongitude)
 }
 
 // SetSessionDuration sets the "session_duration" field.
@@ -11906,7 +12250,7 @@ func (m *ContentInteractionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ContentInteractionMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 20)
 	if m.entity_type != nil {
 		fields = append(fields, contentinteraction.FieldEntityType)
 	}
@@ -11937,8 +12281,26 @@ func (m *ContentInteractionMutation) Fields() []string {
 	if m.referrer_kind != nil {
 		fields = append(fields, contentinteraction.FieldReferrerKind)
 	}
+	if m.referrer != nil {
+		fields = append(fields, contentinteraction.FieldReferrer)
+	}
+	if m.landing_url != nil {
+		fields = append(fields, contentinteraction.FieldLandingURL)
+	}
 	if m.crawler_name != nil {
 		fields = append(fields, contentinteraction.FieldCrawlerName)
+	}
+	if m.country_code != nil {
+		fields = append(fields, contentinteraction.FieldCountryCode)
+	}
+	if m.city != nil {
+		fields = append(fields, contentinteraction.FieldCity)
+	}
+	if m.latitude != nil {
+		fields = append(fields, contentinteraction.FieldLatitude)
+	}
+	if m.longitude != nil {
+		fields = append(fields, contentinteraction.FieldLongitude)
 	}
 	if m.session_duration != nil {
 		fields = append(fields, contentinteraction.FieldSessionDuration)
@@ -11977,8 +12339,20 @@ func (m *ContentInteractionMutation) Field(name string) (ent.Value, bool) {
 		return m.VisitorKind()
 	case contentinteraction.FieldReferrerKind:
 		return m.ReferrerKind()
+	case contentinteraction.FieldReferrer:
+		return m.Referrer()
+	case contentinteraction.FieldLandingURL:
+		return m.LandingURL()
 	case contentinteraction.FieldCrawlerName:
 		return m.CrawlerName()
+	case contentinteraction.FieldCountryCode:
+		return m.CountryCode()
+	case contentinteraction.FieldCity:
+		return m.City()
+	case contentinteraction.FieldLatitude:
+		return m.Latitude()
+	case contentinteraction.FieldLongitude:
+		return m.Longitude()
 	case contentinteraction.FieldSessionDuration:
 		return m.SessionDuration()
 	case contentinteraction.FieldScrollProgress:
@@ -12014,8 +12388,20 @@ func (m *ContentInteractionMutation) OldField(ctx context.Context, name string) 
 		return m.OldVisitorKind(ctx)
 	case contentinteraction.FieldReferrerKind:
 		return m.OldReferrerKind(ctx)
+	case contentinteraction.FieldReferrer:
+		return m.OldReferrer(ctx)
+	case contentinteraction.FieldLandingURL:
+		return m.OldLandingURL(ctx)
 	case contentinteraction.FieldCrawlerName:
 		return m.OldCrawlerName(ctx)
+	case contentinteraction.FieldCountryCode:
+		return m.OldCountryCode(ctx)
+	case contentinteraction.FieldCity:
+		return m.OldCity(ctx)
+	case contentinteraction.FieldLatitude:
+		return m.OldLatitude(ctx)
+	case contentinteraction.FieldLongitude:
+		return m.OldLongitude(ctx)
 	case contentinteraction.FieldSessionDuration:
 		return m.OldSessionDuration(ctx)
 	case contentinteraction.FieldScrollProgress:
@@ -12101,12 +12487,54 @@ func (m *ContentInteractionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetReferrerKind(v)
 		return nil
+	case contentinteraction.FieldReferrer:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReferrer(v)
+		return nil
+	case contentinteraction.FieldLandingURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLandingURL(v)
+		return nil
 	case contentinteraction.FieldCrawlerName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCrawlerName(v)
+		return nil
+	case contentinteraction.FieldCountryCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountryCode(v)
+		return nil
+	case contentinteraction.FieldCity:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCity(v)
+		return nil
+	case contentinteraction.FieldLatitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatitude(v)
+		return nil
+	case contentinteraction.FieldLongitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLongitude(v)
 		return nil
 	case contentinteraction.FieldSessionDuration:
 		v, ok := value.(int)
@@ -12137,6 +12565,12 @@ func (m *ContentInteractionMutation) SetField(name string, value ent.Value) erro
 // this mutation.
 func (m *ContentInteractionMutation) AddedFields() []string {
 	var fields []string
+	if m.addlatitude != nil {
+		fields = append(fields, contentinteraction.FieldLatitude)
+	}
+	if m.addlongitude != nil {
+		fields = append(fields, contentinteraction.FieldLongitude)
+	}
 	if m.addsession_duration != nil {
 		fields = append(fields, contentinteraction.FieldSessionDuration)
 	}
@@ -12151,6 +12585,10 @@ func (m *ContentInteractionMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *ContentInteractionMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case contentinteraction.FieldLatitude:
+		return m.AddedLatitude()
+	case contentinteraction.FieldLongitude:
+		return m.AddedLongitude()
 	case contentinteraction.FieldSessionDuration:
 		return m.AddedSessionDuration()
 	case contentinteraction.FieldScrollProgress:
@@ -12164,6 +12602,20 @@ func (m *ContentInteractionMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *ContentInteractionMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case contentinteraction.FieldLatitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLatitude(v)
+		return nil
+	case contentinteraction.FieldLongitude:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLongitude(v)
+		return nil
 	case contentinteraction.FieldSessionDuration:
 		v, ok := value.(int)
 		if !ok {
@@ -12201,8 +12653,26 @@ func (m *ContentInteractionMutation) ClearedFields() []string {
 	if m.FieldCleared(contentinteraction.FieldUserAgent) {
 		fields = append(fields, contentinteraction.FieldUserAgent)
 	}
+	if m.FieldCleared(contentinteraction.FieldReferrer) {
+		fields = append(fields, contentinteraction.FieldReferrer)
+	}
+	if m.FieldCleared(contentinteraction.FieldLandingURL) {
+		fields = append(fields, contentinteraction.FieldLandingURL)
+	}
 	if m.FieldCleared(contentinteraction.FieldCrawlerName) {
 		fields = append(fields, contentinteraction.FieldCrawlerName)
+	}
+	if m.FieldCleared(contentinteraction.FieldCountryCode) {
+		fields = append(fields, contentinteraction.FieldCountryCode)
+	}
+	if m.FieldCleared(contentinteraction.FieldCity) {
+		fields = append(fields, contentinteraction.FieldCity)
+	}
+	if m.FieldCleared(contentinteraction.FieldLatitude) {
+		fields = append(fields, contentinteraction.FieldLatitude)
+	}
+	if m.FieldCleared(contentinteraction.FieldLongitude) {
+		fields = append(fields, contentinteraction.FieldLongitude)
 	}
 	if m.FieldCleared(contentinteraction.FieldCreatedAt) {
 		fields = append(fields, contentinteraction.FieldCreatedAt)
@@ -12236,8 +12706,26 @@ func (m *ContentInteractionMutation) ClearField(name string) error {
 	case contentinteraction.FieldUserAgent:
 		m.ClearUserAgent()
 		return nil
+	case contentinteraction.FieldReferrer:
+		m.ClearReferrer()
+		return nil
+	case contentinteraction.FieldLandingURL:
+		m.ClearLandingURL()
+		return nil
 	case contentinteraction.FieldCrawlerName:
 		m.ClearCrawlerName()
+		return nil
+	case contentinteraction.FieldCountryCode:
+		m.ClearCountryCode()
+		return nil
+	case contentinteraction.FieldCity:
+		m.ClearCity()
+		return nil
+	case contentinteraction.FieldLatitude:
+		m.ClearLatitude()
+		return nil
+	case contentinteraction.FieldLongitude:
+		m.ClearLongitude()
 		return nil
 	case contentinteraction.FieldCreatedAt:
 		m.ClearCreatedAt()
@@ -12280,8 +12768,26 @@ func (m *ContentInteractionMutation) ResetField(name string) error {
 	case contentinteraction.FieldReferrerKind:
 		m.ResetReferrerKind()
 		return nil
+	case contentinteraction.FieldReferrer:
+		m.ResetReferrer()
+		return nil
+	case contentinteraction.FieldLandingURL:
+		m.ResetLandingURL()
+		return nil
 	case contentinteraction.FieldCrawlerName:
 		m.ResetCrawlerName()
+		return nil
+	case contentinteraction.FieldCountryCode:
+		m.ResetCountryCode()
+		return nil
+	case contentinteraction.FieldCity:
+		m.ResetCity()
+		return nil
+	case contentinteraction.FieldLatitude:
+		m.ResetLatitude()
+		return nil
+	case contentinteraction.FieldLongitude:
+		m.ResetLongitude()
 		return nil
 	case contentinteraction.FieldSessionDuration:
 		m.ResetSessionDuration()

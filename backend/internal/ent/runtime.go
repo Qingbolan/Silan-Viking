@@ -542,16 +542,32 @@ func init() {
 	contactmessage.DefaultID = contactmessageDescID.Default.(func() string)
 	contentinteractionFields := schema.ContentInteraction{}.Fields()
 	_ = contentinteractionFields
+	// contentinteractionDescReferrer is the schema descriptor for referrer field.
+	contentinteractionDescReferrer := contentinteractionFields[11].Descriptor()
+	// contentinteraction.ReferrerValidator is a validator for the "referrer" field. It is called by the builders before save.
+	contentinteraction.ReferrerValidator = contentinteractionDescReferrer.Validators[0].(func(string) error)
+	// contentinteractionDescLandingURL is the schema descriptor for landing_url field.
+	contentinteractionDescLandingURL := contentinteractionFields[12].Descriptor()
+	// contentinteraction.LandingURLValidator is a validator for the "landing_url" field. It is called by the builders before save.
+	contentinteraction.LandingURLValidator = contentinteractionDescLandingURL.Validators[0].(func(string) error)
+	// contentinteractionDescCountryCode is the schema descriptor for country_code field.
+	contentinteractionDescCountryCode := contentinteractionFields[14].Descriptor()
+	// contentinteraction.CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	contentinteraction.CountryCodeValidator = contentinteractionDescCountryCode.Validators[0].(func(string) error)
+	// contentinteractionDescCity is the schema descriptor for city field.
+	contentinteractionDescCity := contentinteractionFields[15].Descriptor()
+	// contentinteraction.CityValidator is a validator for the "city" field. It is called by the builders before save.
+	contentinteraction.CityValidator = contentinteractionDescCity.Validators[0].(func(string) error)
 	// contentinteractionDescSessionDuration is the schema descriptor for session_duration field.
-	contentinteractionDescSessionDuration := contentinteractionFields[12].Descriptor()
+	contentinteractionDescSessionDuration := contentinteractionFields[18].Descriptor()
 	// contentinteraction.DefaultSessionDuration holds the default value on creation for the session_duration field.
 	contentinteraction.DefaultSessionDuration = contentinteractionDescSessionDuration.Default.(int)
 	// contentinteractionDescScrollProgress is the schema descriptor for scroll_progress field.
-	contentinteractionDescScrollProgress := contentinteractionFields[13].Descriptor()
+	contentinteractionDescScrollProgress := contentinteractionFields[19].Descriptor()
 	// contentinteraction.DefaultScrollProgress holds the default value on creation for the scroll_progress field.
 	contentinteraction.DefaultScrollProgress = contentinteractionDescScrollProgress.Default.(float64)
 	// contentinteractionDescCreatedAt is the schema descriptor for created_at field.
-	contentinteractionDescCreatedAt := contentinteractionFields[14].Descriptor()
+	contentinteractionDescCreatedAt := contentinteractionFields[20].Descriptor()
 	// contentinteraction.DefaultCreatedAt holds the default value on creation for the created_at field.
 	contentinteraction.DefaultCreatedAt = contentinteractionDescCreatedAt.Default.(func() time.Time)
 	// contentinteractionDescID is the schema descriptor for id field.

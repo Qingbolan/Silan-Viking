@@ -97,7 +97,7 @@ func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewR
 			return nil, err
 		}
 
-		if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, analytics.InteractionEvent{
+		if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, l.svcCtx.CountryResolver, analytics.InteractionEvent{
 			EntityType:     "project",
 			EntityID:       projectID,
 			Kind:           "view",
@@ -106,6 +106,7 @@ func (l *RecordProjectViewLogic) RecordProjectView(req *types.RecordProjectViewR
 			IPAddress:      clientIP,
 			UserAgent:      userAgent,
 			Referrer:       req.Referrer,
+			LandingURL:     req.LandingURL,
 		}); err != nil {
 			return nil, err
 		}

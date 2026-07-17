@@ -136,6 +136,34 @@ func (cic *ContentInteractionCreate) SetNillableReferrerKind(ck *contentinteract
 	return cic
 }
 
+// SetReferrer sets the "referrer" field.
+func (cic *ContentInteractionCreate) SetReferrer(s string) *ContentInteractionCreate {
+	cic.mutation.SetReferrer(s)
+	return cic
+}
+
+// SetNillableReferrer sets the "referrer" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableReferrer(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetReferrer(*s)
+	}
+	return cic
+}
+
+// SetLandingURL sets the "landing_url" field.
+func (cic *ContentInteractionCreate) SetLandingURL(s string) *ContentInteractionCreate {
+	cic.mutation.SetLandingURL(s)
+	return cic
+}
+
+// SetNillableLandingURL sets the "landing_url" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableLandingURL(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetLandingURL(*s)
+	}
+	return cic
+}
+
 // SetCrawlerName sets the "crawler_name" field.
 func (cic *ContentInteractionCreate) SetCrawlerName(s string) *ContentInteractionCreate {
 	cic.mutation.SetCrawlerName(s)
@@ -146,6 +174,62 @@ func (cic *ContentInteractionCreate) SetCrawlerName(s string) *ContentInteractio
 func (cic *ContentInteractionCreate) SetNillableCrawlerName(s *string) *ContentInteractionCreate {
 	if s != nil {
 		cic.SetCrawlerName(*s)
+	}
+	return cic
+}
+
+// SetCountryCode sets the "country_code" field.
+func (cic *ContentInteractionCreate) SetCountryCode(s string) *ContentInteractionCreate {
+	cic.mutation.SetCountryCode(s)
+	return cic
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableCountryCode(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetCountryCode(*s)
+	}
+	return cic
+}
+
+// SetCity sets the "city" field.
+func (cic *ContentInteractionCreate) SetCity(s string) *ContentInteractionCreate {
+	cic.mutation.SetCity(s)
+	return cic
+}
+
+// SetNillableCity sets the "city" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableCity(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetCity(*s)
+	}
+	return cic
+}
+
+// SetLatitude sets the "latitude" field.
+func (cic *ContentInteractionCreate) SetLatitude(f float64) *ContentInteractionCreate {
+	cic.mutation.SetLatitude(f)
+	return cic
+}
+
+// SetNillableLatitude sets the "latitude" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableLatitude(f *float64) *ContentInteractionCreate {
+	if f != nil {
+		cic.SetLatitude(*f)
+	}
+	return cic
+}
+
+// SetLongitude sets the "longitude" field.
+func (cic *ContentInteractionCreate) SetLongitude(f float64) *ContentInteractionCreate {
+	cic.mutation.SetLongitude(f)
+	return cic
+}
+
+// SetNillableLongitude sets the "longitude" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableLongitude(f *float64) *ContentInteractionCreate {
+	if f != nil {
+		cic.SetLongitude(*f)
 	}
 	return cic
 }
@@ -304,6 +388,26 @@ func (cic *ContentInteractionCreate) check() error {
 			return &ValidationError{Name: "referrer_kind", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.referrer_kind": %w`, err)}
 		}
 	}
+	if v, ok := cic.mutation.Referrer(); ok {
+		if err := contentinteraction.ReferrerValidator(v); err != nil {
+			return &ValidationError{Name: "referrer", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.referrer": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.LandingURL(); ok {
+		if err := contentinteraction.LandingURLValidator(v); err != nil {
+			return &ValidationError{Name: "landing_url", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.landing_url": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.CountryCode(); ok {
+		if err := contentinteraction.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.country_code": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.City(); ok {
+		if err := contentinteraction.CityValidator(v); err != nil {
+			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.city": %w`, err)}
+		}
+	}
 	if _, ok := cic.mutation.SessionDuration(); !ok {
 		return &ValidationError{Name: "session_duration", err: errors.New(`ent: missing required field "ContentInteraction.session_duration"`)}
 	}
@@ -385,9 +489,33 @@ func (cic *ContentInteractionCreate) createSpec() (*ContentInteraction, *sqlgrap
 		_spec.SetField(contentinteraction.FieldReferrerKind, field.TypeEnum, value)
 		_node.ReferrerKind = value
 	}
+	if value, ok := cic.mutation.Referrer(); ok {
+		_spec.SetField(contentinteraction.FieldReferrer, field.TypeString, value)
+		_node.Referrer = &value
+	}
+	if value, ok := cic.mutation.LandingURL(); ok {
+		_spec.SetField(contentinteraction.FieldLandingURL, field.TypeString, value)
+		_node.LandingURL = &value
+	}
 	if value, ok := cic.mutation.CrawlerName(); ok {
 		_spec.SetField(contentinteraction.FieldCrawlerName, field.TypeString, value)
 		_node.CrawlerName = &value
+	}
+	if value, ok := cic.mutation.CountryCode(); ok {
+		_spec.SetField(contentinteraction.FieldCountryCode, field.TypeString, value)
+		_node.CountryCode = value
+	}
+	if value, ok := cic.mutation.City(); ok {
+		_spec.SetField(contentinteraction.FieldCity, field.TypeString, value)
+		_node.City = value
+	}
+	if value, ok := cic.mutation.Latitude(); ok {
+		_spec.SetField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
+		_node.Latitude = value
+	}
+	if value, ok := cic.mutation.Longitude(); ok {
+		_spec.SetField(contentinteraction.FieldLongitude, field.TypeFloat64, value)
+		_node.Longitude = value
 	}
 	if value, ok := cic.mutation.SessionDuration(); ok {
 		_spec.SetField(contentinteraction.FieldSessionDuration, field.TypeInt, value)

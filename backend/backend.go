@@ -78,6 +78,7 @@ func main() {
 
 	// Load environment variables (overrides file config)
 	c.LoadConfigFromEnv()
+	c.ApplyRuntimeLimits()
 
 	// Set default database configuration if not provided
 	if c.Database.Driver == "" {

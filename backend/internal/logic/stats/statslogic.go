@@ -12,13 +12,16 @@ import (
 	"strings"
 	"time"
 
+	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
+	"silan-backend/internal/traffic"
 	"silan-backend/internal/types"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -280,6 +283,10 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 	if err != nil {
 		return nil, err
 	}
+	legacyLocations, err := l.legacyVisitorLocations(rows)
+	if err != nil {
+		return nil, err
+	}
 
 	visitors := make([]types.VisitorRow, 0, len(rows))
 	for _, row := range rows {
@@ -291,11 +298,39 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 		if row.Fingerprint != nil {
 			fp = *row.Fingerprint
 		}
+		referrer := ""
+		if row.Referrer != nil {
+			referrer = *row.Referrer
+		}
+		landingURL := ""
+		if row.LandingURL != nil {
+			landingURL = *row.LandingURL
+		}
+		crawlerName := ""
+		if row.CrawlerName != nil {
+			crawlerName = *row.CrawlerName
+		}
+		location := traffic.GeoLocation{
+			CountryCode: row.CountryCode,
+			City:        row.City,
+			Latitude:    row.Latitude,
+			Longitude:   row.Longitude,
+		}
+		if location.CountryCode == "" {
+			location = legacyLocations[ip]
+		}
 		visitors = append(visitors, types.VisitorRow{
 			Fingerprint:  fp,
 			IPMasked:     maskIP(ip),
 			VisitorKind:  row.VisitorKind.String(),
 			ReferrerKind: row.ReferrerKind.String(),
+			Referrer:     referrer,
+			LandingURL:   landingURL,
+			CrawlerName:  crawlerName,
+			CountryCode:  location.CountryCode,
+			City:         location.City,
+			Latitude:     location.Latitude,
+			Longitude:    location.Longitude,
 			LastSeenAt:   row.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		})
 	}
@@ -304,6 +339,56 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 		EntityID:   req.EntityID,
 		Visitors:   visitors,
 	}, nil
+}
+
+// legacyVisitorLocations restores coarse geography for interactions recorded
+// before location columns were added. Request logs are matched by network
+// address inside the interaction time range; no cross-visitor inference is
+// performed.
+func (l *StatsLogic) legacyVisitorLocations(rows []*ent.ContentInteraction) (map[string]traffic.GeoLocation, error) {
+	locations := make(map[string]traffic.GeoLocation)
+	if len(rows) == 0 {
+		return locations, nil
+	}
+	ips := make([]string, 0, len(rows))
+	earliest, latest := rows[0].CreatedAt, rows[0].CreatedAt
+	for _, row := range rows {
+		if row.IPAddress != nil && *row.IPAddress != "" {
+			ips = append(ips, *row.IPAddress)
+		}
+		if row.CreatedAt.Before(earliest) {
+			earliest = row.CreatedAt
+		}
+		if row.CreatedAt.After(latest) {
+			latest = row.CreatedAt
+		}
+	}
+	if len(ips) == 0 {
+		return locations, nil
+	}
+	logs, err := l.svcCtx.DB.RequestLog.Query().
+		Where(
+			requestlog.IPIn(ips...),
+			requestlog.CountryCodeNEQ(""),
+			requestlog.CreatedAtGTE(earliest.Add(-time.Minute)),
+			requestlog.CreatedAtLTE(latest.Add(time.Minute)),
+		).
+		Order(requestlog.ByCreatedAt(sql.OrderDesc())).
+		All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range logs {
+		if _, exists := locations[row.IP]; !exists {
+			locations[row.IP] = traffic.GeoLocation{
+				CountryCode: row.CountryCode,
+				City:        row.City,
+				Latitude:    row.Latitude,
+				Longitude:   row.Longitude,
+			}
+		}
+	}
+	return locations, nil
 }
 
 // CrawlerBreakdown aggregates interactions by visitor kind. An empty
