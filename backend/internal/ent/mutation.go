@@ -46442,6 +46442,7 @@ type RequestLogMutation struct {
 	user_agent     *string
 	ip             *string
 	lang           *string
+	country_code   *string
 	is_bot         *bool
 	bot_name       *string
 	created_at     *time.Time
@@ -46989,6 +46990,55 @@ func (m *RequestLogMutation) ResetLang() {
 	delete(m.clearedFields, requestlog.FieldLang)
 }
 
+// SetCountryCode sets the "country_code" field.
+func (m *RequestLogMutation) SetCountryCode(s string) {
+	m.country_code = &s
+}
+
+// CountryCode returns the value of the "country_code" field in the mutation.
+func (m *RequestLogMutation) CountryCode() (r string, exists bool) {
+	v := m.country_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountryCode returns the old "country_code" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldCountryCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountryCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountryCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountryCode: %w", err)
+	}
+	return oldValue.CountryCode, nil
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (m *RequestLogMutation) ClearCountryCode() {
+	m.country_code = nil
+	m.clearedFields[requestlog.FieldCountryCode] = struct{}{}
+}
+
+// CountryCodeCleared returns if the "country_code" field was cleared in this mutation.
+func (m *RequestLogMutation) CountryCodeCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldCountryCode]
+	return ok
+}
+
+// ResetCountryCode resets all changes to the "country_code" field.
+func (m *RequestLogMutation) ResetCountryCode() {
+	m.country_code = nil
+	delete(m.clearedFields, requestlog.FieldCountryCode)
+}
+
 // SetIsBot sets the "is_bot" field.
 func (m *RequestLogMutation) SetIsBot(b bool) {
 	m.is_bot = &b
@@ -47157,7 +47207,7 @@ func (m *RequestLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RequestLogMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.method != nil {
 		fields = append(fields, requestlog.FieldMethod)
 	}
@@ -47181,6 +47231,9 @@ func (m *RequestLogMutation) Fields() []string {
 	}
 	if m.lang != nil {
 		fields = append(fields, requestlog.FieldLang)
+	}
+	if m.country_code != nil {
+		fields = append(fields, requestlog.FieldCountryCode)
 	}
 	if m.is_bot != nil {
 		fields = append(fields, requestlog.FieldIsBot)
@@ -47215,6 +47268,8 @@ func (m *RequestLogMutation) Field(name string) (ent.Value, bool) {
 		return m.IP()
 	case requestlog.FieldLang:
 		return m.Lang()
+	case requestlog.FieldCountryCode:
+		return m.CountryCode()
 	case requestlog.FieldIsBot:
 		return m.IsBot()
 	case requestlog.FieldBotName:
@@ -47246,6 +47301,8 @@ func (m *RequestLogMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldIP(ctx)
 	case requestlog.FieldLang:
 		return m.OldLang(ctx)
+	case requestlog.FieldCountryCode:
+		return m.OldCountryCode(ctx)
 	case requestlog.FieldIsBot:
 		return m.OldIsBot(ctx)
 	case requestlog.FieldBotName:
@@ -47316,6 +47373,13 @@ func (m *RequestLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLang(v)
+		return nil
+	case requestlog.FieldCountryCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountryCode(v)
 		return nil
 	case requestlog.FieldIsBot:
 		v, ok := value.(bool)
@@ -47419,6 +47483,9 @@ func (m *RequestLogMutation) ClearedFields() []string {
 	if m.FieldCleared(requestlog.FieldLang) {
 		fields = append(fields, requestlog.FieldLang)
 	}
+	if m.FieldCleared(requestlog.FieldCountryCode) {
+		fields = append(fields, requestlog.FieldCountryCode)
+	}
 	if m.FieldCleared(requestlog.FieldBotName) {
 		fields = append(fields, requestlog.FieldBotName)
 	}
@@ -47463,6 +47530,9 @@ func (m *RequestLogMutation) ClearField(name string) error {
 	case requestlog.FieldLang:
 		m.ClearLang()
 		return nil
+	case requestlog.FieldCountryCode:
+		m.ClearCountryCode()
+		return nil
 	case requestlog.FieldBotName:
 		m.ClearBotName()
 		return nil
@@ -47500,6 +47570,9 @@ func (m *RequestLogMutation) ResetField(name string) error {
 		return nil
 	case requestlog.FieldLang:
 		m.ResetLang()
+		return nil
+	case requestlog.FieldCountryCode:
+		m.ResetCountryCode()
 		return nil
 	case requestlog.FieldIsBot:
 		m.ResetIsBot()

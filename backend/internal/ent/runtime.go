@@ -1758,16 +1758,20 @@ func init() {
 	requestlogDescLang := requestlogFields[8].Descriptor()
 	// requestlog.LangValidator is a validator for the "lang" field. It is called by the builders before save.
 	requestlog.LangValidator = requestlogDescLang.Validators[0].(func(string) error)
+	// requestlogDescCountryCode is the schema descriptor for country_code field.
+	requestlogDescCountryCode := requestlogFields[9].Descriptor()
+	// requestlog.CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	requestlog.CountryCodeValidator = requestlogDescCountryCode.Validators[0].(func(string) error)
 	// requestlogDescIsBot is the schema descriptor for is_bot field.
-	requestlogDescIsBot := requestlogFields[9].Descriptor()
+	requestlogDescIsBot := requestlogFields[10].Descriptor()
 	// requestlog.DefaultIsBot holds the default value on creation for the is_bot field.
 	requestlog.DefaultIsBot = requestlogDescIsBot.Default.(bool)
 	// requestlogDescBotName is the schema descriptor for bot_name field.
-	requestlogDescBotName := requestlogFields[10].Descriptor()
+	requestlogDescBotName := requestlogFields[11].Descriptor()
 	// requestlog.BotNameValidator is a validator for the "bot_name" field. It is called by the builders before save.
 	requestlog.BotNameValidator = requestlogDescBotName.Validators[0].(func(string) error)
 	// requestlogDescCreatedAt is the schema descriptor for created_at field.
-	requestlogDescCreatedAt := requestlogFields[11].Descriptor()
+	requestlogDescCreatedAt := requestlogFields[12].Descriptor()
 	// requestlog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	requestlog.DefaultCreatedAt = requestlogDescCreatedAt.Default.(func() time.Time)
 	researchprojectFields := schema.ResearchProject{}.Fields()

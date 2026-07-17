@@ -84,7 +84,7 @@ fn sync_pulls_remote_stats_then_cache_serves_them_offline() {
     let db = dir.join("portfolio.db");
 
     // Sync — the real ureq client against the mock API.
-    let sync = StatsSync::new(&base_url, &db);
+    let sync = StatsSync::new(&base_url, &db).with_bearer_token("stats-integration-token");
     sync.sync_item("blog", "abc").expect("sync succeeds");
     server.join().expect("mock server joins");
 
@@ -123,7 +123,7 @@ fn re_sync_replaces_the_previous_snapshot() {
     std::fs::create_dir_all(&dir).expect("mkdir");
     let db = dir.join("portfolio.db");
 
-    let sync = StatsSync::new(&base_url, &db);
+    let sync = StatsSync::new(&base_url, &db).with_bearer_token("stats-integration-token");
     sync.sync_item("blog", "abc").expect("first sync");
     sync.sync_item("blog", "abc").expect("second sync");
     server.join().expect("mock joins");

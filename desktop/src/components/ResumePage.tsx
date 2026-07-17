@@ -414,14 +414,16 @@ function ResumeEditorWorkspace({
   return (
     <div className="resume-editor-workspace" role="dialog" aria-modal="true" aria-label={title}>
       <div className="resume-editor-topbar">
-        <button type="button" className="resume-editor-close" disabled={saving} onClick={onCancel} aria-label="Close editor">
-          <X size={15} />
-        </button>
         <div className="resume-editor-title">
           <span>{eyebrow}</span>
           <strong>{title}</strong>
           <em>{subtitle}</em>
         </div>
+        <button type="button" className="resume-editor-close" disabled={saving} onClick={onCancel} aria-label="Close editor">
+          <X size={15} />
+        </button>
+      </div>
+      <div className="resume-editor-actions" aria-label="Editor actions">
         <button type="button" className="resume-editor-save" disabled={saving} onClick={onSave}>
           {saving ? <LoaderCircle size={14} className="spin" /> : <Check size={14} />}
           {saving ? 'Saving' : saveLabel}
@@ -588,10 +590,8 @@ function ResumeProfileForm({
 
 export function ResumePage({
   overview,
-  onEditProse,
 }: {
   overview: EditorDocument | null;
-  onEditProse?: () => void;
 }) {
   const [language, setLanguage] = React.useState('en');
   const [sections, setSections] = React.useState<ResumeSection[] | null>(null);
@@ -746,6 +746,17 @@ export function ResumePage({
     });
   };
 
+  const startEditSummary = () => {
+    startEditProfile();
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const section = document.querySelector<HTMLElement>('#profile-bio');
+        section?.scrollIntoView({ block: 'start' });
+        section?.querySelector<HTMLTextAreaElement>('textarea')?.focus();
+      });
+    });
+  };
+
   const saveProfile = async () => {
     if (!profileSource || !profileDraft) return;
     setSavingProfile(true);
@@ -822,8 +833,8 @@ export function ResumePage({
 
       {summaryText && (
         <header className="resume-summary">
-          {onEditProse && (
-            <button type="button" className="resume-block-action resume-summary-edit" onClick={onEditProse} title="Open source editor" aria-label="Open source editor">
+          {profileSource && (
+            <button type="button" className="resume-block-action resume-summary-edit" onClick={startEditSummary} title="Edit summary" aria-label="Edit summary">
               <PencilLine size={13} />
             </button>
           )}

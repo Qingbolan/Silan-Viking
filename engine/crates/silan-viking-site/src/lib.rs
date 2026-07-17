@@ -109,7 +109,16 @@ impl SiteProjector {
 
     fn robots(&self) -> String {
         format!(
-            "User-agent: *\nAllow: /\nSitemap: {}/sitemap.xml\n",
+            "User-agent: *\n\
+             Allow: /\n\
+             Disallow: /api/v1/stats/snapshot\n\
+             Disallow: /api/v1/stats/bots\n\
+             Disallow: /api/v1/stats/crawlers\n\
+             Disallow: /api/v1/stats/sources\n\
+             Disallow: /api/v1/stats/visitors\n\
+             Disallow: /api/v1/content/status\n\
+             Disallow: /api/v1/auth/\n\
+             Sitemap: {}/sitemap.xml\n",
             self.base_url
         )
     }
@@ -167,5 +176,16 @@ mod tests {
         }];
         let json = SeoEmitter::json_ld("https://silan.tech", &pages);
         assert!(json.contains("A \\\"quoted\\\" title"));
+    }
+
+    #[test]
+    fn robots_allows_public_crawling_and_excludes_only_private_apis() {
+        let projector = SiteProjector::new("https://silan.tech");
+        let robots = projector.robots();
+        assert!(robots.contains("Allow: /\n"));
+        assert!(robots.contains("Disallow: /api/v1/stats/snapshot\n"));
+        assert!(robots.contains("Disallow: /api/v1/content/status\n"));
+        assert!(!robots.contains("Disallow: /api/v1/blog"));
+        assert!(!robots.contains("Disallow: /api/v1/media"));
     }
 }

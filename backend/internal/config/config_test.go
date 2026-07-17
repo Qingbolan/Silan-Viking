@@ -19,6 +19,15 @@ func TestLoadConfigFromEnvOverridesMediaRoot(t *testing.T) {
 	}
 }
 
+func TestLoadConfigFromEnvLoadsStatsSyncToken(t *testing.T) {
+	t.Setenv("STATS_SYNC_TOKEN", "runtime-secret")
+	cfg := Config{}
+	cfg.LoadConfigFromEnv()
+	if got, want := cfg.Security.StatsSyncToken, "runtime-secret"; got != want {
+		t.Fatalf("StatsSyncToken = %q, want %q", got, want)
+	}
+}
+
 func TestMediaRootUsesDeployDefault(t *testing.T) {
 	cfg := Config{}
 	if got, want := cfg.MediaRoot(), "/data/media"; got != want {

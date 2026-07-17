@@ -207,7 +207,7 @@ const projectLifecycle = (status: string, visibility: string): LifecycleView => 
       : {
           id: 'show',
           label: 'Show',
-          description: 'Keep the project state and show it publicly.',
+          description: 'Keep the project state and show it on the public website after the next deploy.',
           tone: 'secondary',
           nextState: { status, visibility: 'public' },
         });
@@ -217,7 +217,7 @@ const projectLifecycle = (status: string, visibility: string): LifecycleView => 
     status,
     visibility,
     statusLabel: titleCase(status),
-    visibilityLabel: visibility === 'public' ? 'Public portfolio' : titleCase(visibility),
+    visibilityLabel: titleCase(visibility),
     actions,
   };
 };

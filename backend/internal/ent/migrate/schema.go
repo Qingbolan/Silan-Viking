@@ -1454,6 +1454,7 @@ var (
 		{Name: "user_agent", Type: field.TypeString, Nullable: true, Size: 1024},
 		{Name: "ip", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "lang", Type: field.TypeString, Nullable: true, Size: 8},
+		{Name: "country_code", Type: field.TypeString, Nullable: true, Size: 2},
 		{Name: "is_bot", Type: field.TypeBool, Default: false},
 		{Name: "bot_name", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "created_at", Type: field.TypeTime, Nullable: true},
@@ -1467,7 +1468,7 @@ var (
 			{
 				Name:    "requestlog_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{RequestLogsColumns[11]},
+				Columns: []*schema.Column{RequestLogsColumns[12]},
 			},
 			{
 				Name:    "requestlog_path",
@@ -1477,7 +1478,7 @@ var (
 			{
 				Name:    "requestlog_is_bot",
 				Unique:  false,
-				Columns: []*schema.Column{RequestLogsColumns[9]},
+				Columns: []*schema.Column{RequestLogsColumns[10]},
 			},
 		},
 	}

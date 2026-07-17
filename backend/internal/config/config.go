@@ -12,7 +12,14 @@ type Config struct {
 	Database DatabaseConfig `json:"database"`
 	Auth     AuthConfig     `json:"auth"`
 	Media    MediaConfig    `json:"media"`
+	Security SecurityConfig `json:"security,optional"`
 	Traffic  TrafficConfig  `json:"traffic,optional"`
+}
+
+// SecurityConfig holds machine-to-machine credentials. Values are injected at
+// runtime and must not be committed to the YAML configuration.
+type SecurityConfig struct {
+	StatsSyncToken string `json:"stats_sync_token,env=STATS_SYNC_TOKEN,optional"`
 }
 
 // MediaConfig locates the binary resource files the media endpoint serves.
@@ -98,6 +105,9 @@ func (c *Config) LoadConfigFromEnv() {
 	}
 	if mediaRoot := os.Getenv("MEDIA_ROOT"); mediaRoot != "" {
 		c.Media.Root = mediaRoot
+	}
+	if token := os.Getenv("STATS_SYNC_TOKEN"); token != "" {
+		c.Security.StatsSyncToken = token
 	}
 	if value := os.Getenv("TRAFFIC_AI_USER_AGENTS"); value != "" {
 		c.Traffic.AIUserAgents = csvList(value)

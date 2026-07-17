@@ -3658,7 +3658,6 @@ dependencies = [
 name = "silan-desktop"
 version = "1.0.0"
 dependencies = [
- "rusqlite",
  "serde",
  "serde_json",
  "serde_yaml",

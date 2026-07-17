@@ -171,6 +171,9 @@ func validateConfig(c *config.Config) error {
 	if c.Database.Source == "" {
 		return fmt.Errorf("database source/connection string is required")
 	}
+	if token := c.Security.StatsSyncToken; token != "" && len(token) < 32 {
+		return fmt.Errorf("STATS_SYNC_TOKEN must contain at least 32 bytes")
+	}
 
 	return nil
 }

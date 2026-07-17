@@ -55,6 +55,10 @@ func (RequestLog) Fields() []ent.Field {
 		field.String("lang").
 			Optional().
 			MaxLen(8),
+		field.String("country_code").
+			Optional().
+			MaxLen(2).
+			Comment("ISO 3166-1 alpha-2 country supplied by the trusted edge proxy."),
 		field.Bool("is_bot").
 			Default(false).
 			Comment("Whether the User-Agent is a known search-engine / social crawler."),

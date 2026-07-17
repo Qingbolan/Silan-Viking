@@ -11,6 +11,7 @@ import type {
 } from '../../types/api';
 import { get, formatLanguage, mediaUrl } from '../utils';
 import { fetchUpdates } from '../updates/updateApi';
+import { fetchProjects } from '../projects/projectApi';
 
 interface ResumeEntryResponse {
   id: string;
@@ -237,9 +238,10 @@ const mapAwards = (part?: ResumePartResponse): Award[] =>
   });
 
 export const fetchResumeData = async (language: Language = 'en'): Promise<ResumeData> => {
-  const [response, updates] = await Promise.all([
+  const [response, updates, portfolioProjects] = await Promise.all([
     get<ResumeResponse>('/api/v1/resume', { lang: formatLanguage(language) }),
     fetchUpdates(language),
+    fetchProjects({ status: 'active', size: 100 }, language),
   ]);
 
   const parts = response.parts || [];
@@ -304,15 +306,30 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
       },
       research: {
         title: sectionTitle('research', language),
-        content: research.map((item) => ({
-          id: item.id,
-          title: item.title,
-          location: item.location || item.institution || '',
-          date: formatDateRange(item, language),
-          details: item.details || [],
-          image: optionalMediaUrl(item.image),
-          tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
-        })),
+        content: [
+          ...portfolioProjects.map((project) => ({
+            id: project.slug || project.id,
+            title: project.name,
+            location: language === 'zh' ? '公开项目' : 'Public portfolio',
+            date: project.year ? String(project.year) : '',
+            details: [project.description].filter(Boolean),
+            image: optionalMediaUrl(project.thumbnailUrl),
+            tags: project.tags && project.tags.length > 0 ? project.tags : undefined,
+          })),
+          ...research
+            .filter((item) => !portfolioProjects.some((project) => (
+              project.id === item.id || project.name.trim().toLowerCase() === item.title.trim().toLowerCase()
+            )))
+            .map((item) => ({
+              id: item.id,
+              title: item.title,
+              location: item.location || item.institution || '',
+              date: formatDateRange(item, language),
+              details: item.details || [],
+              image: optionalMediaUrl(item.image),
+              tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
+            })),
+        ],
       },
       publications: {
         title: sectionTitle('publications', language),

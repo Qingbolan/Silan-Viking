@@ -110,6 +110,15 @@ pub fn run_incremental_sync(
     })
 }
 
+pub(crate) fn source_revision(
+    parsers: &ParserRegistry,
+    mappers: &MapperRegistry,
+    schema: &Schema,
+    scan: &ScanReport,
+) -> Result<String, SyncError> {
+    Ok(batch_digest(&build_batch(parsers, mappers, schema, scan)?))
+}
+
 /// Drive the parse → validate → map chain over every scanned Item, folding
 /// the results into one batch. Does no IO.
 fn build_batch(
@@ -261,12 +270,14 @@ fn batch_digest(batch: &RowSetBatch) -> String {
 /// (`11` §11.11). Keeping the column in the synced schema means the live and
 /// snapshot `sync_meta` tables share one shape, so `promote` can replace it.
 fn sync_meta_row(content_hash: &str, items_total: usize) -> RowSet {
+    let generated_at = time::OffsetDateTime::now_utc().to_string();
     let mut set = RowSet::new();
     set.push(
         Row::new("sync_meta")
             .with("content_hash", SqlValue::Text(content_hash.to_owned()))
             .with("items_total", SqlValue::Int(items_total as i64))
-            .with("content_commit", SqlValue::Text(String::new())),
+            .with("content_commit", SqlValue::Text(String::new()))
+            .with("generated_at", SqlValue::Text(generated_at)),
     );
     set
 }

@@ -29,6 +29,8 @@ const (
 	FieldIP = "ip"
 	// FieldLang holds the string denoting the lang field in the database.
 	FieldLang = "lang"
+	// FieldCountryCode holds the string denoting the country_code field in the database.
+	FieldCountryCode = "country_code"
 	// FieldIsBot holds the string denoting the is_bot field in the database.
 	FieldIsBot = "is_bot"
 	// FieldBotName holds the string denoting the bot_name field in the database.
@@ -50,6 +52,7 @@ var Columns = []string{
 	FieldUserAgent,
 	FieldIP,
 	FieldLang,
+	FieldCountryCode,
 	FieldIsBot,
 	FieldBotName,
 	FieldCreatedAt,
@@ -78,6 +81,8 @@ var (
 	IPValidator func(string) error
 	// LangValidator is a validator for the "lang" field. It is called by the builders before save.
 	LangValidator func(string) error
+	// CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	CountryCodeValidator func(string) error
 	// DefaultIsBot holds the default value on creation for the "is_bot" field.
 	DefaultIsBot bool
 	// BotNameValidator is a validator for the "bot_name" field. It is called by the builders before save.
@@ -132,6 +137,11 @@ func ByIP(opts ...sql.OrderTermOption) OrderOption {
 // ByLang orders the results by the lang field.
 func ByLang(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLang, opts...).ToFunc()
+}
+
+// ByCountryCode orders the results by the country_code field.
+func ByCountryCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCountryCode, opts...).ToFunc()
 }
 
 // ByIsBot orders the results by the is_bot field.

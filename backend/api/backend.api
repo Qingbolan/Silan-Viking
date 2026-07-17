@@ -1169,7 +1169,14 @@ service backend-api {
 	@doc "Aggregate view/like/comment counts of one item"
 	@handler Stats
 	get / (StatsRequest) returns (StatsResponse)
+}
 
+@server (
+	group:      stats
+	prefix:     /api/v1/stats
+	middleware: Cors,PrivateAPI
+)
+service backend-api {
 	@doc "De-identified visitor list of one item"
 	@handler Visitors
 	get /visitors (StatsRequest) returns (VisitorsResponse)
@@ -1185,6 +1192,10 @@ service backend-api {
 	@doc "Crawler access log — which bot crawled which page, and when"
 	@handler BotVisits
 	get /bots (BotVisitsRequest) returns (BotVisitsResponse)
+
+	@doc "Full-site snapshot used by SDK sync"
+	@handler Snapshot
+	get /snapshot
 }
 
 // ========== HEALTH GROUP ==========
@@ -1207,6 +1218,17 @@ service backend-api {
 	@doc "Liveness probe — returns ok without touching the database"
 	@handler Health
 	get /health returns (HealthResponse)
+}
+
+@server (
+	group:      health
+	prefix:     /api/v1
+	middleware: Cors,PrivateAPI
+)
+service backend-api {
+	@doc "Deployed content provenance and media readiness"
+	@handler ContentStatus
+	get /content/status
 }
 
 // Media — serves the binary resource files (`assets/` images) that content

@@ -8,9 +8,13 @@ package stats
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
+	"time"
 
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/contentinteraction"
+	"silan-backend/internal/ent/requestlog"
 	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -23,6 +27,99 @@ type StatsLogic struct {
 	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+}
+
+// Snapshot returns all observed content statistics in one HTTP response.
+// Per-item aggregation stays inside the backend so clients do not fan out
+// four requests for every content item.
+func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
+	interactions, err := l.svcCtx.DB.ContentInteraction.Query().All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	comments, err := l.svcCtx.DB.Comment.Query().All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	type entity struct{ kind, id string }
+	entities := map[entity]struct{}{}
+	for _, row := range interactions {
+		entities[entity{kind: row.EntityType.String(), id: row.EntityID}] = struct{}{}
+	}
+	for _, row := range comments {
+		entities[entity{kind: row.EntityType.String(), id: row.EntityID}] = struct{}{}
+	}
+	keys := make([]entity, 0, len(entities))
+	for key := range entities {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].kind == keys[j].kind {
+			return keys[i].id < keys[j].id
+		}
+		return keys[i].kind < keys[j].kind
+	})
+
+	items := make([]types.StatsSnapshotItem, 0, len(keys))
+	for _, key := range keys {
+		req := &types.StatsRequest{EntityType: key.kind, EntityID: key.id}
+		itemStats, statsErr := l.Stats(req)
+		if statsErr != nil {
+			return nil, statsErr
+		}
+		visitors, visitorsErr := l.Visitors(req)
+		if visitorsErr != nil {
+			return nil, visitorsErr
+		}
+		crawlers, crawlersErr := l.CrawlerBreakdown(req)
+		if crawlersErr != nil {
+			return nil, crawlersErr
+		}
+		sources, sourcesErr := l.SourceBreakdown(req)
+		if sourcesErr != nil {
+			return nil, sourcesErr
+		}
+		items = append(items, types.StatsSnapshotItem{
+			Stats:    *itemStats,
+			Visitors: visitors.Visitors,
+			Crawlers: crawlers.Items,
+			Sources:  sources.Items,
+		})
+	}
+	countryLogs, err := l.svcCtx.DB.RequestLog.Query().
+		Where(requestlog.IsBot(false), requestlog.CountryCodeNEQ("")).
+		All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	// One visitor can trigger several API requests for a page. Count each
+	// observed network address once per country so endpoint fan-out does not
+	// inflate the geographical ranking.
+	countryVisitors := make(map[string]map[string]struct{})
+	for _, row := range countryLogs {
+		if strings.HasPrefix(row.Path, "/api/v1/stats") {
+			continue
+		}
+		if countryVisitors[row.CountryCode] == nil {
+			countryVisitors[row.CountryCode] = make(map[string]struct{})
+		}
+		countryVisitors[row.CountryCode][row.IP] = struct{}{}
+	}
+	countries := make([]types.CountryRow, 0, len(countryVisitors))
+	for code, visitors := range countryVisitors {
+		countries = append(countries, types.CountryRow{CountryCode: code, Count: len(visitors)})
+	}
+	sort.Slice(countries, func(i, j int) bool {
+		if countries[i].Count == countries[j].Count {
+			return countries[i].CountryCode < countries[j].CountryCode
+		}
+		return countries[i].Count > countries[j].Count
+	})
+	return &types.StatsSnapshotResponse{
+		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		Items:       items,
+		Countries:   countries,
+	}, nil
 }
 
 // NewStatsLogic builds a StatsLogic for one request.

@@ -1,84 +1,27 @@
-//! Desktop use cases. This composes the Markdown write model with the SQLite
-//! read projection without leaking either persistence API into Tauri commands.
+//! Thin Tauri-facing adapters over the public `silan-viking-app` use cases.
 
-use crate::insights::RuntimeInsightsRepository;
 use crate::model::{
-    DashboardData, DocumentStateInput, EditorDocument, EditorTranslation, EpisodeSeriesInput,
-    EpisodeSeriesSource, EntityCount, MomentsCover, MomentsProfile, MomentsSettings, RawPart,
+    CommitActivityDay, DailyContentTraffic, DailyTraffic, DashboardData, DashboardItem,
+    DeployRunStatus, DeployVerificationResult, DeployedStats, DeploymentPlan,
+    DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation, EntityCount,
+    EpisodeSeriesInput, EpisodeSeriesSource, GeoAction, GeoEvidence, GeoInsightReport, GeoMetric,
+    ImportedMediaAsset, MomentsCover, MomentsProfile, MomentsSettings, RemoteContentVersion,
     ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource, ResumeSection,
-    ResumeSocialLink, StatsSyncReport, VersionChange, VersionCommit, VersionStatus,
+    ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry, TrafficSource, VersionChange,
+    VersionCommit, VersionStatus,
 };
-use crate::projection::ProjectionRepository;
 use serde::Deserialize;
 use silan_viking_app::{
-    api_base_url, ContentCreator, ContentEditor, ContentKind, GitRepo, IdeaCategory, StatsSync,
-    TranslationLocator, Workspace,
+    api_base_url, ContentCreator, ContentEditor, ContentKind, DeliveryControl, EditableDocument,
+    EditablePart, EditableSection, GeoAdvisor, IdeaCategory, MediaLibrary, ReleaseScope,
+    SaveLifecycleInput, SaveTranslationInput, WebsiteInsights, WorkspaceContent,
 };
-use std::collections::BTreeSet;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_MOMENTS_BACKGROUND_POSITION: &str = "center 42%";
 const DEFAULT_MOMENTS_COVER_HEIGHT_PX: u16 = 420;
-const VERSION_COMMIT_AUTHOR_NAME: &str = "Silan.Hu";
-const VERSION_COMMIT_AUTHOR_EMAIL: &str = "silan.hu@u.nus.edu";
-
-#[derive(Debug, Clone, Copy)]
-enum VersionScope {
-    Resume,
-    Blog,
-    Project,
-    Idea,
-    Update,
-}
-
-impl VersionScope {
-    fn parse(raw: &str) -> Result<Self, String> {
-        match raw {
-            "resume" => Ok(Self::Resume),
-            "blog" => Ok(Self::Blog),
-            "project" => Ok(Self::Project),
-            "idea" => Ok(Self::Idea),
-            "update" => Ok(Self::Update),
-            other => Err(format!("unsupported version scope `{other}`")),
-        }
-    }
-
-    fn id(self) -> &'static str {
-        match self {
-            Self::Resume => "resume",
-            Self::Blog => "blog",
-            Self::Project => "project",
-            Self::Idea => "idea",
-            Self::Update => "update",
-        }
-    }
-
-    fn label(self) -> &'static str {
-        match self {
-            Self::Resume => "Resume",
-            Self::Blog => "Blog",
-            Self::Project => "Projects",
-            Self::Idea => "Ideas",
-            Self::Update => "Updates",
-        }
-    }
-
-    fn pathspecs(self) -> &'static [&'static str] {
-        match self {
-            Self::Resume => &["resources/resume"],
-            Self::Blog => &["resources/blog", "resources/episode"],
-            Self::Project => &["resources/projects"],
-            Self::Idea => &["resources/ideas"],
-            Self::Update => &["resources/updates"],
-        }
-    }
-
-    fn release_message(self) -> String {
-        format!("release: {} updates", self.id())
-    }
-}
 
 #[derive(Debug, Clone)]
 struct MomentsUiConfig {
@@ -124,10 +67,13 @@ pub(crate) struct DesktopWorkspace {
     /// absolutize server-relative media paths (`/api/v1/media?f=…`) so the
     /// Tauri webview can load cover images. `None` degrades to no covers.
     media_base: Option<String>,
-    projection: ProjectionRepository,
-    insights: RuntimeInsightsRepository,
+    website_insights: WebsiteInsights,
     content: ContentEditor,
     creator: ContentCreator,
+    workspace_content: WorkspaceContent,
+    media_library: MediaLibrary,
+    geo_advisor: GeoAdvisor,
+    delivery_control: DeliveryControl,
 }
 
 impl DesktopWorkspace {
@@ -143,10 +89,21 @@ impl DesktopWorkspace {
                 "SILAN_DESKTOP_CONTENT is not set; launch through `silan-viking desktop`".to_owned()
             })?;
         Ok(Self {
-            projection: ProjectionRepository::open(&db_path)?,
-            insights: RuntimeInsightsRepository::open(&db_path)?,
+            website_insights: WebsiteInsights::open(&content_root, &db_path)
+                .map_err(|error| error.to_string())?,
             content: ContentEditor::open(&content_root).map_err(|error| error.to_string())?,
             creator: ContentCreator::open(&content_root).map_err(|error| error.to_string())?,
+            workspace_content: WorkspaceContent::open(&content_root)
+                .map_err(|error| error.to_string())?,
+            media_library: MediaLibrary::open(&content_root).map_err(|error| error.to_string())?,
+            geo_advisor: GeoAdvisor::open(&content_root, &db_path)
+                .map_err(|error| error.to_string())?,
+            delivery_control: DeliveryControl::open(
+                &content_root,
+                &db_path,
+                content_root.parent().unwrap_or(&content_root),
+            )
+            .map_err(|error| error.to_string())?,
             media_base: api_base_url(&content_root).ok(),
             db_path,
             content_root,
@@ -154,27 +111,87 @@ impl DesktopWorkspace {
     }
 
     pub(crate) fn dashboard(&self) -> Result<DashboardData, String> {
-        let content = self.projection.content_metrics()?;
-        let runtime = self.insights.snapshot()?;
-        let deployed = self.projection.deployed_stats()?;
+        let snapshot = self
+            .website_insights
+            .dashboard_snapshot()
+            .map_err(|error| error.to_string())?;
         Ok(DashboardData {
-            total_views: content.total_views,
-            total_likes: content.total_likes,
-            total_comments: runtime.total_comments,
-            pending_comments: runtime.pending_comments,
-            human_interactions: runtime.human_interactions,
-            crawler_interactions: runtime.crawler_interactions,
-            ai_crawler_interactions: runtime.ai_crawler_interactions,
-            search_crawler_interactions: runtime.search_crawler_interactions,
-            recent_items: content.recent_items,
-            deployed_views: deployed.views,
-            deployed_likes: deployed.likes,
-            deployed_comments: deployed.comments,
-            deployed_human_interactions: deployed.human_interactions,
-            deployed_ai_crawler_interactions: deployed.ai_crawler_interactions,
-            deployed_search_crawler_interactions: deployed.search_crawler_interactions,
-            deployed_ai_chat_referrals: deployed.ai_chat_referrals,
-            stats_synced_at: deployed.synced_at,
+            total_views: snapshot.stats.views,
+            total_likes: snapshot.stats.likes,
+            total_comments: snapshot.comments.total,
+            pending_comments: snapshot.comments.pending,
+            human_interactions: snapshot.stats.human_interactions,
+            crawler_interactions: snapshot.crawlers.total,
+            ai_crawler_interactions: snapshot.crawlers.ai,
+            search_crawler_interactions: snapshot.crawlers.search,
+            recent_items: snapshot
+                .recent_content
+                .into_iter()
+                .map(|item| DashboardItem {
+                    entity_type: item.content_type,
+                    title: item.title,
+                    slug: item.slug,
+                    status: item.status,
+                    visibility: item.visibility,
+                    updated_at: item.updated_at,
+                })
+                .collect(),
+            deployed_views: snapshot.stats.views,
+            deployed_likes: snapshot.stats.likes,
+            deployed_comments: snapshot.stats.comments,
+            deployed_human_interactions: snapshot.stats.human_interactions,
+            deployed_ai_crawler_interactions: snapshot.crawlers.ai,
+            deployed_search_crawler_interactions: snapshot.crawlers.search,
+            deployed_ai_chat_referrals: snapshot.ai_referrals.visits,
+            stats_synced_at: snapshot.freshness.synced_at,
+            today_visits: snapshot.traffic.today_visits,
+            daily_visits: snapshot
+                .traffic
+                .daily_visits
+                .into_iter()
+                .map(|day| DailyTraffic {
+                    date: day.date,
+                    visits: day.visits,
+                    content: day
+                        .content
+                        .into_iter()
+                        .map(|item| DailyContentTraffic {
+                            content_type: item.content_type,
+                            title: item.title,
+                            visits: item.visits,
+                            comments: item.comments,
+                        })
+                        .collect(),
+                })
+                .collect(),
+            top_content: snapshot
+                .traffic
+                .top_content
+                .into_iter()
+                .map(|item| TopContentItem {
+                    content_type: item.content_type,
+                    title: item.title,
+                    views: item.views,
+                })
+                .collect(),
+            top_sources: snapshot
+                .traffic
+                .top_sources
+                .into_iter()
+                .map(|source| TrafficSource {
+                    source: source.source,
+                    visits: source.visits,
+                })
+                .collect(),
+            top_countries: snapshot
+                .traffic
+                .top_countries
+                .into_iter()
+                .map(|country| TrafficCountry {
+                    country_code: country.country_code,
+                    visits: country.visits,
+                })
+                .collect(),
         })
     }
 
@@ -203,148 +220,148 @@ impl DesktopWorkspace {
         })
     }
 
-    /// Pull real view/like/comment counts from the deployed server for every
-    /// known content item and cache them locally. There is no bulk endpoint,
-    /// so this makes 4 HTTP requests per distinct entity — explicit and
-    /// operator-triggered, never run implicitly on dashboard load.
+    /// Pull one coherent full-site snapshot from the deployed server.
     pub(crate) fn sync_stats(&self) -> Result<StatsSyncReport, String> {
-        let base_url = api_base_url(&self.content_root).map_err(|error| error.to_string())?;
-        let syncer = StatsSync::new(base_url, &self.db_path);
-
-        let entities: BTreeSet<(String, String)> = self
-            .projection
-            .all_parts()?
-            .into_iter()
-            .map(|part| (part.entity_type, part.entity_id))
-            .collect();
-
-        let mut synced = 0i64;
-        let mut failed = 0i64;
-        for (entity_type, entity_id) in entities {
-            match syncer.sync_item(&entity_type, &entity_id) {
-                Ok(()) => synced += 1,
-                Err(_) => failed += 1,
-            }
-        }
-
-        let deployed = self.projection.deployed_stats()?;
+        let result = self
+            .website_insights
+            .sync_remote_stats()
+            .map_err(|error| error.to_string())?;
+        let snapshot = self
+            .website_insights
+            .dashboard_snapshot()
+            .map_err(|error| error.to_string())?;
         Ok(StatsSyncReport {
-            synced,
-            failed,
-            stats: deployed,
+            synced: result.item_count as i64,
+            failed: 0,
+            stats: DeployedStats {
+                views: snapshot.stats.views,
+                likes: snapshot.stats.likes,
+                comments: snapshot.stats.comments,
+                human_interactions: snapshot.stats.human_interactions,
+                ai_crawler_interactions: snapshot.crawlers.ai,
+                search_crawler_interactions: snapshot.crawlers.search,
+                ai_chat_referrals: snapshot.ai_referrals.visits,
+                synced_at: snapshot.freshness.synced_at,
+            },
         })
     }
 
     pub(crate) fn version_status(&self, scope: &str) -> Result<VersionStatus, String> {
-        let scope = VersionScope::parse(scope)?;
-        let repo = GitRepo::open(&self.content_root).map_err(|error| error.to_string())?;
-        let branch = repo
-            .run(["branch", "--show-current"])
-            .map_err(|error| error.to_string())?
-            .stdout;
-        let head = repo
-            .run(["rev-parse", "--short=12", "HEAD"])
+        let status = self
+            .delivery_control
+            .scope_status(ReleaseScope::parse(scope).map_err(|error| error.to_string())?)
             .map_err(|error| error.to_string())?;
-        let head = head.stdout;
-        let changes = repo
-            .run(git_pathspec_args(
-                &["status", "--porcelain"],
-                scope.pathspecs(),
-            ))
-            .map_err(|error| error.to_string())?
-            .stdout
-            .lines()
-            .filter_map(parse_git_status_line)
-            .collect::<Vec<_>>();
-        let recent_commits = repo
-            .run(git_pathspec_args(
-                &["log", "-5", "--pretty=format:%h%x1f%s%x1f%cr"],
-                scope.pathspecs(),
-            ))
-            .map_err(|error| error.to_string())?
-            .stdout
-            .lines()
-            .filter_map(parse_git_log_line)
-            .collect::<Vec<_>>();
-
-        Ok(VersionStatus {
-            scope: scope.id().to_owned(),
-            scope_label: scope.label().to_owned(),
-            branch: if branch.is_empty() {
-                "(detached)".to_owned()
-            } else {
-                branch
-            },
-            head,
-            dirty_count: changes.len(),
-            changes,
-            recent_commits,
-        })
+        Ok(map_version_status(status))
     }
 
     pub(crate) fn release_scope(&self, scope: &str) -> Result<VersionStatus, String> {
-        let scope = VersionScope::parse(scope)?;
-        let repo = GitRepo::open(&self.content_root).map_err(|error| error.to_string())?;
-        let before = self.version_status(scope.id())?;
-        if before.dirty_count == 0 {
-            return Err(format!("{} has no updates to release", scope.label()));
-        }
-
-        repo.run(git_pathspec_args(&["add", "-A"], scope.pathspecs()))
+        let status = self
+            .delivery_control
+            .release_scope(ReleaseScope::parse(scope).map_err(|error| error.to_string())?)
             .map_err(|error| error.to_string())?;
-        let staged = repo
-            .run(git_pathspec_args(
-                &["diff", "--cached", "--name-only"],
-                scope.pathspecs(),
-            ))
-            .map_err(|error| error.to_string())?
-            .stdout;
-        if staged.trim().is_empty() {
-            return Err(format!("{} has no staged updates to release", scope.label()));
-        }
+        Ok(map_version_status(status))
+    }
 
-        let mut commit_args = vec![
-            "-c".to_owned(),
-            format!("user.name={VERSION_COMMIT_AUTHOR_NAME}"),
-            "-c".to_owned(),
-            format!("user.email={VERSION_COMMIT_AUTHOR_EMAIL}"),
-            "commit".to_owned(),
-            "--only".to_owned(),
-            "-m".to_owned(),
-            scope.release_message(),
-        ];
-        commit_args.push("--".to_owned());
-        commit_args.extend(scope.pathspecs().iter().map(|path| (*path).to_owned()));
-        repo.run(commit_args).map_err(|error| error.to_string())?;
-
-        Workspace::open(&self.content_root)
-            .map_err(|error| error.to_string())?
-            .sync(&self.db_path)
+    pub(crate) fn deployment_plan(&self) -> Result<DeploymentPlan, String> {
+        let plan = self
+            .delivery_control
+            .deployment_plan()
             .map_err(|error| error.to_string())?;
-        self.version_status(scope.id())
+        Ok(DeploymentPlan {
+            branch: plan.branch,
+            head: plan.head,
+            deploy_target: plan
+                .deploy_target
+                .unwrap_or_else(|| "No deployed API target configured".to_owned()),
+            dirty_count: plan.dirty_count,
+            media_asset_count: plan.media_asset_count,
+            next_action: plan.next_action,
+            commit_activity: plan
+                .commit_activity
+                .into_iter()
+                .map(|day| CommitActivityDay {
+                    date: day.date,
+                    commit_count: day.commit_count,
+                    scopes: day
+                        .scopes
+                        .into_iter()
+                        .map(|scope| scope.id().to_owned())
+                        .collect(),
+                })
+                .collect(),
+            scopes: plan
+                .scopes
+                .into_iter()
+                .map(|scope| DeploymentScopeStatus {
+                    scope: scope.scope.id().to_owned(),
+                    scope_label: scope.scope_label,
+                    dirty_count: scope.dirty_count,
+                    clean: scope.dirty_count == 0,
+                })
+                .collect(),
+        })
+    }
+
+    pub(crate) fn deploy_content(&self) -> Result<DeployRunStatus, String> {
+        let status = self
+            .delivery_control
+            .deploy_content()
+            .map_err(|error| error.to_string())?;
+        Ok(DeployRunStatus {
+            success: status.success,
+            content_commit: status.content_commit,
+            stdout: status.stdout,
+            stderr: status.stderr,
+        })
+    }
+
+    pub(crate) fn verify_remote(&self) -> Result<DeployVerificationResult, String> {
+        let result = self
+            .delivery_control
+            .verify_remote()
+            .map_err(|error| error.to_string())?;
+        Ok(DeployVerificationResult {
+            verified: result.verified,
+            expected_content_commit: result.expected_content_commit,
+            remote: RemoteContentVersion {
+                health: result.remote.health,
+                content_hash: result.remote.content_hash,
+                content_commit: result.remote.content_commit,
+                generated_at: result.remote.generated_at,
+                media_root_ok: result.remote.media_root_ok,
+            },
+            mismatch_reason: result.mismatch_reason,
+        })
     }
 
     pub(crate) fn list_documents(&self) -> Result<Vec<EditorDocument>, String> {
-        let mut documents = Vec::new();
-        for part in self.projection.all_parts()? {
-            let document = self.hydrate(part)?;
-            if !document.translations.is_empty() {
-                documents.push(document);
-            }
-        }
-        Ok(documents)
+        Ok(self
+            .workspace_content
+            .editable_documents()
+            .map_err(|error| error.to_string())?
+            .into_iter()
+            .flat_map(map_editable_document)
+            .collect())
     }
 
     pub(crate) fn entity_counts(&self) -> Result<Vec<EntityCount>, String> {
-        self.projection.entity_counts()
-    }
-
-    pub(crate) fn document(&self, id: &str) -> Result<EditorDocument, String> {
-        self.hydrate(self.projection.part(id)?)
+        Ok(self
+            .workspace_content
+            .entity_counts()
+            .map_err(|error| error.to_string())?
+            .into_iter()
+            .map(|count| EntityCount {
+                entity_type: count.content_type,
+                count: count.count as i64,
+            })
+            .collect())
     }
 
     pub(crate) fn resume_sections(&self, language: &str) -> Result<Vec<ResumeSection>, String> {
-        self.projection.resume_sections(language)
+        self.workspace_content
+            .editable_sections(ContentKind::Resume, language)
+            .map(map_resume_sections)
+            .map_err(|error| error.to_string())
     }
 
     pub(crate) fn episode_series_source(
@@ -473,7 +490,10 @@ impl DesktopWorkspace {
         self.content
             .save_resume_part_and_sync(role, language, &content, expected_revision, &self.db_path)
             .map_err(|error| error.to_string())?;
-        self.projection.resume_sections(language)
+        self.workspace_content
+            .editable_sections(ContentKind::Resume, language)
+            .map(map_resume_sections)
+            .map_err(|error| error.to_string())
     }
 
     pub(crate) fn save_document(
@@ -482,19 +502,83 @@ impl DesktopWorkspace {
         body: &str,
         expected_revision: &str,
     ) -> Result<EditorDocument, String> {
-        let part = self.projection.part_for_translation(translation_id)?;
-        let item_part_id = part.id.clone();
-        let document = self.hydrate(part)?;
-        let translation = document
-            .translations
-            .iter()
-            .find(|translation| translation.id == translation_id)
-            .ok_or_else(|| format!("translation `{translation_id}` has no Markdown source"))?;
-        let locator = translation_locator(&document, &translation.language)?;
-        self.content
-            .save_markdown_and_sync(&locator, body, expected_revision, &self.db_path)
+        let saved = self
+            .workspace_content
+            .save_translation(
+                &SaveTranslationInput {
+                    translation_id: translation_id.to_owned(),
+                    content: body.to_owned(),
+                    expected_revision: expected_revision.to_owned(),
+                },
+                &self.db_path,
+            )
             .map_err(|error| error.to_string())?;
-        self.document(&item_part_id)
+        map_editable_document(saved)
+            .into_iter()
+            .find(|part| {
+                part.translations
+                    .iter()
+                    .any(|value| value.id == translation_id)
+            })
+            .ok_or_else(|| format!("saved translation `{translation_id}` was not returned"))
+    }
+
+    pub(crate) fn import_media_asset(
+        &self,
+        translation_id: &str,
+        source_path: &str,
+    ) -> Result<ImportedMediaAsset, String> {
+        let (document, _, _) = self
+            .workspace_content
+            .translation(translation_id)
+            .map_err(|error| error.to_string())?;
+        let asset = self
+            .media_library
+            .import_asset(&document.id, source_path)
+            .map_err(|error| error.to_string())?;
+        Ok(ImportedMediaAsset {
+            markdown: asset.markdown,
+            uri: asset.uri,
+            relative_path: asset.relative_path,
+            file_name: asset.file_name,
+            byte_count: asset.byte_count,
+        })
+    }
+
+    pub(crate) fn geo_insights(&self, translation_id: &str) -> Result<GeoInsightReport, String> {
+        let report = self
+            .geo_advisor
+            .analyze_translation(translation_id)
+            .map_err(|error| error.to_string())?;
+        Ok(GeoInsightReport {
+            document_id: report.document_id,
+            translation_id: report.translation_id,
+            title: report.title,
+            language: report.language,
+            score: report.score,
+            grade: report.grade,
+            summary: report.summary,
+            metrics: report
+                .metrics
+                .into_iter()
+                .map(|metric| GeoMetric {
+                    label: metric.label,
+                    value: metric.value,
+                    detail: metric.detail,
+                    evidence: metric.evidence.into_iter().map(map_geo_evidence).collect(),
+                })
+                .collect(),
+            actions: report
+                .actions
+                .into_iter()
+                .map(|action| GeoAction {
+                    priority: action.priority,
+                    label: action.label,
+                    detail: action.detail,
+                    evidence: action.evidence.into_iter().map(map_geo_evidence).collect(),
+                })
+                .collect(),
+        })
     }
 
     pub(crate) fn save_document_state(
@@ -503,28 +587,31 @@ impl DesktopWorkspace {
         state: DocumentStateInput,
         expected_revision: &str,
     ) -> Result<EditorDocument, String> {
-        let part = self.projection.part_for_translation(translation_id)?;
-        let item_part_id = part.id.clone();
-        let document = self.hydrate(part)?;
-        validate_document_state(&document.entity_type, &state)?;
-        let translation = document
-            .translations
-            .iter()
-            .find(|translation| translation.id == translation_id)
-            .ok_or_else(|| format!("translation `{translation_id}` has no Markdown source"))?;
-        let locator = translation_locator(&document, &translation.language)?;
-        self.content
-            .save_frontmatter_fields_and_sync(
-                &locator,
-                &[
-                    ("status", state.status.as_str()),
-                    ("visibility", state.visibility.as_str()),
-                ],
-                expected_revision,
+        let (current, _, _) = self
+            .workspace_content
+            .translation(translation_id)
+            .map_err(|error| error.to_string())?;
+        validate_document_state(&current.content_type, &state)?;
+        let saved = self
+            .workspace_content
+            .save_lifecycle(
+                &SaveLifecycleInput {
+                    translation_id: translation_id.to_owned(),
+                    status: state.status,
+                    visibility: state.visibility,
+                    expected_revision: expected_revision.to_owned(),
+                },
                 &self.db_path,
             )
             .map_err(|error| error.to_string())?;
-        self.document(&item_part_id)
+        map_editable_document(saved)
+            .into_iter()
+            .find(|part| {
+                part.translations
+                    .iter()
+                    .any(|value| value.id == translation_id)
+            })
+            .ok_or_else(|| format!("saved translation `{translation_id}` was not returned"))
     }
 
     pub(crate) fn capture_idea(
@@ -537,7 +624,7 @@ impl DesktopWorkspace {
             .creator
             .capture_idea_and_sync(note, category, &self.db_path)
             .map_err(|error| error.to_string())?;
-        self.hydrate(self.projection.part_by_stable_id(&captured.part_id)?)
+        self.document_for_part(&captured.part_id)
     }
 
     pub(crate) fn capture_blog(
@@ -550,7 +637,7 @@ impl DesktopWorkspace {
             .creator
             .capture_blog_and_sync(draft, category, &self.db_path)
             .map_err(|error| error.to_string())?;
-        self.hydrate(self.projection.part_by_stable_id(&captured.part_id)?)
+        self.document_for_part(&captured.part_id)
     }
 
     pub(crate) fn capture_update(&self, event: &str) -> Result<EditorDocument, String> {
@@ -558,7 +645,7 @@ impl DesktopWorkspace {
             .creator
             .capture_update_and_sync(event, &self.db_path)
             .map_err(|error| error.to_string())?;
-        self.hydrate(self.projection.part_by_stable_id(&captured.part_id)?)
+        self.document_for_part(&captured.part_id)
     }
 
     pub(crate) fn create_project(&self, title: &str) -> Result<EditorDocument, String> {
@@ -566,71 +653,18 @@ impl DesktopWorkspace {
             .creator
             .capture_project_and_sync(title, &self.db_path)
             .map_err(|error| error.to_string())?;
-        self.hydrate(self.projection.part_by_stable_id(&captured.part_id)?)
+        self.document_for_part(&captured.part_id)
     }
 
-    fn hydrate(&self, raw: RawPart) -> Result<EditorDocument, String> {
-        let summary = self.projection.entity_summary(
-            &raw.entity_type,
-            &raw.entity_id,
-            &raw.canonical_language,
-        )?;
-        let title = if summary.title.is_empty() {
-            format!("{} {}", raw.entity_type, raw.entity_id)
-        } else {
-            summary.title.clone()
-        };
-        let cover_url = self
-            .projection
-            .cover_url(&raw.entity_type, &raw.entity_id)?
-            .and_then(|url| self.absolutize_media_url(&url));
-        let series_cover_url = summary
-            .series_cover_url
-            .as_deref()
-            .and_then(|url| self.absolutize_media_url(url));
-        let mut document = EditorDocument {
-            id: raw.id,
-            part_id: raw.part_id,
-            entity_type: raw.entity_type,
-            entity_id: raw.entity_id,
-            series_id: summary.series_id,
-            series_slug: summary.series_slug,
-            series_title: summary.series_title,
-            series_description: summary.series_description,
-            series_cover_url,
-            episode_number: summary.episode_number,
-            slug: summary.slug,
-            role: raw.role,
-            canonical_language: raw.canonical_language,
-            title,
-            status: summary.status,
-            visibility: summary.visibility,
-            date: summary.date,
-            pinned: summary.pinned,
-            updated_at: raw.updated_at,
-            cover_url,
-            translations: Vec::new(),
-        };
-
-        for translation in raw.translations {
-            let locator = translation_locator(&document, &translation.language)?;
-            match self.content.read_markdown(&locator) {
-                Ok(source) => document.translations.push(EditorTranslation {
-                    id: translation.id,
-                    language: translation.language,
-                    content: source.body,
-                    revision: source.revision,
-                    source_path: source.relative_path,
-                }),
-                Err(error) if error.is_source_not_found() => {}
-                Err(error) => return Err(error.to_string()),
-            }
-        }
-        Ok(document)
-    }
-
-    fn absolutize_media_url(&self, url: &str) -> Option<String> {
-        self.resolve_media_reference(url)
+    fn document_for_part(&self, part_id: &str) -> Result<EditorDocument, String> {
+        let (document, _) = WorkspaceContent::open(&self.content_root)
+            .map_err(|error| error.to_string())?
+            .document_for_part(part_id)
+            .map_err(|error| error.to_string())?;
+        map_editable_document(document)
+            .into_iter()
+            .find(|part| part.part_id == part_id)
+            .ok_or_else(|| format!("captured part `{part_id}` was not returned"))
     }
 
     fn resolve_media_reference(&self, reference: &str) -> Option<String> {
@@ -641,6 +675,15 @@ impl DesktopWorkspace {
         if reference.starts_with("http://") || reference.starts_with("https://") {
             return Some(reference.to_owned());
         }
+        if reference.starts_with("/api/v1/media?f=") {
+            if let Ok(local) = self.media_library.resolve_local_reference(reference) {
+                return Some(local.to_string_lossy().to_string());
+            }
+            return self
+                .media_base
+                .as_ref()
+                .map(|base| format!("{base}{reference}"));
+        }
         if reference.starts_with('/') {
             return self
                 .media_base
@@ -648,13 +691,10 @@ impl DesktopWorkspace {
                 .map(|base| format!("{base}{reference}"));
         }
 
-        let content_root = self.content_root.canonicalize().ok()?;
-        let path = self.content_root.join(reference).canonicalize().ok()?;
-        if path.is_file() && path.starts_with(content_root) {
-            Some(path.to_string_lossy().to_string())
-        } else {
-            None
-        }
+        self.media_library
+            .resolve_local_reference(reference)
+            .ok()
+            .map(|path| path.to_string_lossy().to_string())
     }
 
     fn read_moments_config(&self) -> Result<MomentsUiConfig, String> {
@@ -727,6 +767,131 @@ fn avatar_label(display_name: &str) -> String {
         .find_map(|part| part.chars().next())
         .unwrap_or('P')
         .to_string()
+}
+
+fn map_editable_document(document: EditableDocument) -> Vec<EditorDocument> {
+    let EditableDocument {
+        item_id,
+        content_type,
+        slug,
+        title,
+        series_slug,
+        episode_number,
+        status,
+        visibility,
+        updated_at,
+        cover_uri,
+        date,
+        pinned,
+        parts,
+        ..
+    } = document;
+    parts
+        .into_iter()
+        .map(|part| {
+            let EditablePart {
+                id,
+                role,
+                canonical_language,
+                translations,
+                ..
+            } = part;
+            EditorDocument {
+                id: id.clone(),
+                part_id: id,
+                entity_type: content_type.clone(),
+                entity_id: item_id.clone(),
+                series_id: series_slug.clone(),
+                series_slug: series_slug.clone(),
+                series_title: None,
+                series_description: None,
+                series_cover_url: None,
+                episode_number,
+                slug: slug.clone(),
+                role,
+                canonical_language,
+                title: title.clone(),
+                status: status.clone(),
+                visibility: visibility.clone(),
+                date: date.clone(),
+                pinned,
+                updated_at: updated_at.clone(),
+                cover_url: cover_uri.clone(),
+                translations: translations
+                    .into_iter()
+                    .map(|translation| EditorTranslation {
+                        id: translation.id,
+                        language: translation.language,
+                        content: translation.content,
+                        revision: translation.source_revision.0,
+                        source_path: translation.source_path,
+                    })
+                    .collect(),
+            }
+        })
+        .collect()
+}
+
+fn map_resume_sections(sections: Vec<EditableSection>) -> Vec<ResumeSection> {
+    sections
+        .into_iter()
+        .map(|section| ResumeSection {
+            role: section.role,
+            shape: section.shape,
+            canonical_language: section.canonical_language,
+            entries: section
+                .entries
+                .into_iter()
+                .map(|entry| crate::model::ResumeEntry {
+                    entry_id: entry.id,
+                    sort_order: entry.sort_order as i64,
+                    shared: entry.shared,
+                    localized: entry.localized,
+                })
+                .collect(),
+        })
+        .collect()
+}
+
+fn map_geo_evidence(evidence: silan_viking_app::GeoEvidence) -> GeoEvidence {
+    let source = match evidence.source {
+        silan_viking_app::GeoEvidenceSource::SourceContent => "source_content",
+        silan_viking_app::GeoEvidenceSource::RemoteStats => "remote_stats",
+        silan_viking_app::GeoEvidenceSource::AiCrawler => "ai_crawler",
+        silan_viking_app::GeoEvidenceSource::AiReferral => "ai_referral",
+        silan_viking_app::GeoEvidenceSource::LlmInference => "llm_inference",
+    };
+    GeoEvidence {
+        source: source.to_owned(),
+        detail: evidence.detail,
+    }
+}
+
+fn map_version_status(status: silan_viking_app::ScopeReleaseStatus) -> VersionStatus {
+    VersionStatus {
+        scope: status.scope.id().to_owned(),
+        scope_label: status.scope_label,
+        branch: status.branch,
+        head: status.head,
+        dirty_count: status.dirty_count,
+        changes: status
+            .changes
+            .into_iter()
+            .map(|change| VersionChange {
+                status: change.status,
+                path: change.path,
+            })
+            .collect(),
+        recent_commits: status
+            .recent_commits
+            .into_iter()
+            .map(|commit| VersionCommit {
+                hash: commit.hash,
+                subject: commit.subject,
+                relative_time: commit.relative_time,
+            })
+            .collect(),
+    }
 }
 
 /// Serialize block-editor entries back into the on-disk TOML shape:
@@ -942,65 +1107,4 @@ fn validate_document_state(kind: &str, state: &DocumentStateInput) -> Result<(),
         return Err(format!("`{}` is not a valid visibility", state.visibility));
     }
     Ok(())
-}
-
-fn translation_locator(
-    document: &EditorDocument,
-    language: &str,
-) -> Result<TranslationLocator, String> {
-    let kind = ContentKind::from_frontmatter_value(&document.entity_type)
-        .map_err(|error| error.to_string())?;
-    TranslationLocator::new(
-        kind,
-        document.slug.clone(),
-        document.series_slug.clone(),
-        document.role.clone(),
-        language,
-    )
-    .map_err(|error| error.to_string())
-}
-
-fn parse_git_status_line(line: &str) -> Option<VersionChange> {
-    if line.len() < 4 {
-        return None;
-    }
-    let status = line.get(..2)?.trim().to_owned();
-    let path = line
-        .get(3..)?
-        .split(" -> ")
-        .last()
-        .unwrap_or_default()
-        .trim()
-        .to_owned();
-    if path.is_empty() {
-        return None;
-    }
-    Some(VersionChange { status, path })
-}
-
-fn git_pathspec_args(prefix: &[&str], pathspecs: &[&str]) -> Vec<String> {
-    let mut args = prefix
-        .iter()
-        .map(|arg| (*arg).to_owned())
-        .collect::<Vec<_>>();
-    if !pathspecs.is_empty() {
-        args.push("--".to_owned());
-        args.extend(pathspecs.iter().map(|path| (*path).to_owned()));
-    }
-    args
-}
-
-fn parse_git_log_line(line: &str) -> Option<VersionCommit> {
-    let mut parts = line.split('\x1f');
-    let hash = parts.next()?.trim().to_owned();
-    let subject = parts.next()?.trim().to_owned();
-    let relative_time = parts.next()?.trim().to_owned();
-    if hash.is_empty() {
-        return None;
-    }
-    Some(VersionCommit {
-        hash,
-        subject,
-        relative_time,
-    })
 }

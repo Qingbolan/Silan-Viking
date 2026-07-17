@@ -15,7 +15,10 @@
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::time::Duration;
 use thiserror::Error;
+
+const STATS_SYNC_TOKEN_ENV: &str = "SILAN_STATS_SYNC_TOKEN";
 
 /// A statistics failure.
 #[derive(Debug, Error)]
@@ -32,6 +35,9 @@ pub enum StatsError {
     /// No `[deploy]` server is configured, so there is nothing to sync from.
     #[error("stats sync needs a deployed server: set the API base URL (e.g. [deploy] in silan-viking.toml)")]
     NoServer,
+    /// Private statistics require an operator-provided machine credential.
+    #[error("stats sync needs SILAN_STATS_SYNC_TOKEN")]
+    MissingCredential,
     /// The cache has never been synced.
     #[error("stats cache is empty for `{0}` — run `silan stats sync` first")]
     NotSynced(String),
@@ -106,6 +112,35 @@ struct SourceItem {
     count: i64,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct SnapshotResponse {
+    generated_at: String,
+    items: Vec<SnapshotItem>,
+    #[serde(default)]
+    countries: Vec<CountryItem>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct CountryItem {
+    country_code: String,
+    count: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct SnapshotItem {
+    stats: ItemStats,
+    visitors: Vec<VisitorRow>,
+    crawlers: Vec<CrawlerItem>,
+    sources: Vec<SourceItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct StatsSyncResult {
+    pub item_count: usize,
+    pub generated_at: String,
+    pub request_count: usize,
+}
+
 // ── the local cache schema ──────────────────────────────────────────────────
 
 /// `CREATE TABLE` statements for the four `stats_cache_*` tables. Every row
@@ -143,6 +178,11 @@ CREATE TABLE IF NOT EXISTS stats_cache_source (
     source      TEXT NOT NULL,
     count       INTEGER NOT NULL,
     synced_at   TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS stats_cache_country (
+    country_code TEXT PRIMARY KEY,
+    count        INTEGER NOT NULL,
+    synced_at    TEXT NOT NULL
 );
 ";
 
@@ -207,6 +247,7 @@ pub struct StatsSync {
     base_url: String,
     /// The local `portfolio.db` path.
     db: std::path::PathBuf,
+    bearer_token: Option<String>,
 }
 
 impl StatsSync {
@@ -215,13 +256,37 @@ impl StatsSync {
         Self {
             base_url: base_url.into().trim_end_matches('/').to_owned(),
             db: db.as_ref().to_path_buf(),
+            bearer_token: private_api_token(),
         }
+    }
+
+    /// Override the runtime token, primarily for an explicit embedding or
+    /// deterministic HTTP contract test.
+    pub fn with_bearer_token(mut self, token: impl Into<String>) -> Self {
+        self.bearer_token = non_empty_token(token.into());
+        self
     }
 
     /// GET a JSON resource from the Go API and decode it.
     fn get_json<T: for<'de> Deserialize<'de>>(&self, path: &str) -> Result<T, StatsError> {
         let url = format!("{}{path}", self.base_url);
-        let response = ureq::get(&url)
+        let token = self
+            .bearer_token
+            .as_ref()
+            .ok_or(StatsError::MissingCredential)?;
+        // Statistics are an interactive Desktop refresh, not a background
+        // crawler. Bound failure latency explicitly; ureq's broad defaults
+        // can otherwise leave the UI waiting for roughly a minute on a
+        // broken route even though the healthy snapshot normally takes
+        // around one second.
+        let agent = ureq::AgentBuilder::new()
+            .timeout_connect(Duration::from_secs(3))
+            .timeout_read(Duration::from_secs(8))
+            .timeout_write(Duration::from_secs(3))
+            .build();
+        let mut request = agent.get(&url);
+        request = request.set("Authorization", &format!("Bearer {token}"));
+        let response = request
             .call()
             .map_err(|e| StatsError::Http(format!("{url}: {e}")))?;
         response
@@ -308,6 +373,110 @@ impl StatsSync {
         tx.commit()?;
         Ok(())
     }
+
+    /// Fetch and persist one full-site snapshot in a single HTTP request.
+    pub fn sync_snapshot(&self) -> Result<StatsSyncResult, StatsError> {
+        ensure_cache_schema(&self.db)?;
+        let snapshot: SnapshotResponse = self.get_json("/api/v1/stats/snapshot")?;
+        let stamp = now_stamp();
+        let mut conn = Connection::open(&self.db)?;
+        let tx = conn.transaction()?;
+        for table in [
+            "stats_cache_item",
+            "stats_cache_visitor",
+            "stats_cache_crawler",
+            "stats_cache_source",
+            "stats_cache_country",
+        ] {
+            tx.execute(&format!("DELETE FROM {table}"), [])?;
+        }
+        for item in &snapshot.items {
+            let stats = &item.stats;
+            tx.execute(
+                "INSERT INTO stats_cache_item
+                 (entity_type, entity_id, views, likes, comments, synced_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                rusqlite::params![
+                    stats.entity_type,
+                    stats.entity_id,
+                    stats.views,
+                    stats.likes,
+                    stats.comments,
+                    stamp
+                ],
+            )?;
+            for visitor in &item.visitors {
+                tx.execute(
+                    "INSERT INTO stats_cache_visitor
+                     (entity_type, entity_id, fingerprint, ip_masked, visitor_kind,
+                      referrer_kind, last_seen_at, synced_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    rusqlite::params![
+                        stats.entity_type,
+                        stats.entity_id,
+                        visitor.fingerprint,
+                        visitor.ip_masked,
+                        visitor.visitor_kind,
+                        visitor.referrer_kind,
+                        visitor.last_seen_at,
+                        stamp
+                    ],
+                )?;
+            }
+            for crawler in &item.crawlers {
+                tx.execute(
+                    "INSERT INTO stats_cache_crawler
+                     (entity_type, entity_id, visitor_kind, count, synced_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5)",
+                    rusqlite::params![
+                        stats.entity_type,
+                        stats.entity_id,
+                        crawler.visitor_kind,
+                        crawler.count,
+                        stamp
+                    ],
+                )?;
+            }
+            for source in &item.sources {
+                tx.execute(
+                    "INSERT INTO stats_cache_source
+                     (entity_type, entity_id, source, count, synced_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5)",
+                    rusqlite::params![
+                        stats.entity_type,
+                        stats.entity_id,
+                        source.source,
+                        source.count,
+                        stamp
+                    ],
+                )?;
+            }
+        }
+        for country in &snapshot.countries {
+            tx.execute(
+                "INSERT INTO stats_cache_country (country_code, count, synced_at)
+                 VALUES (?1, ?2, ?3)",
+                rusqlite::params![country.country_code, country.count, stamp],
+            )?;
+        }
+        tx.commit()?;
+        Ok(StatsSyncResult {
+            item_count: snapshot.items.len(),
+            generated_at: snapshot.generated_at,
+            request_count: 1,
+        })
+    }
+}
+
+pub(crate) fn private_api_token() -> Option<String> {
+    std::env::var(STATS_SYNC_TOKEN_ENV)
+        .ok()
+        .and_then(non_empty_token)
+}
+
+fn non_empty_token(token: String) -> Option<String> {
+    let token = token.trim();
+    (!token.is_empty()).then(|| token.to_owned())
 }
 
 // ── the query side — read the local cache, offline ──────────────────────────
@@ -442,6 +611,10 @@ impl StatsCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     #[test]
     fn cache_round_trips_an_item() {
@@ -472,6 +645,67 @@ mod tests {
         assert!(matches!(missing, Err(StatsError::NotSynced(_))));
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn full_site_sync_uses_exactly_one_http_request() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let address = listener.local_addr().expect("address");
+        let requests = Arc::new(AtomicUsize::new(0));
+        let observed = Arc::clone(&requests);
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept");
+            let mut request = [0_u8; 2048];
+            let read = stream.read(&mut request).expect("read");
+            let request = String::from_utf8_lossy(&request[..read]);
+            assert!(request.starts_with("GET /api/v1/stats/snapshot "));
+            assert!(request.contains("\r\nAuthorization: Bearer stats-contract-token\r\n"));
+            observed.fetch_add(1, Ordering::SeqCst);
+            let body = r#"{"generated_at":"2026-07-17T00:00:00Z","items":[{"stats":{"entity_type":"blog","entity_id":"i_one","views":8,"likes":2,"comments":1},"visitors":[],"crawlers":[{"visitor_kind":"ai_crawler","count":3}],"sources":[{"source":"ai_chat","count":2}]}],"countries":[{"country_code":"SG","count":7}]}"#;
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            )
+            .expect("respond");
+        });
+
+        let directory = tempfile::tempdir().expect("temp");
+        let db = directory.path().join("portfolio.db");
+        let result = StatsSync::new(format!("http://{address}"), &db)
+            .with_bearer_token("stats-contract-token")
+            .sync_snapshot()
+            .expect("sync");
+        server.join().expect("server");
+        assert_eq!(requests.load(Ordering::SeqCst), 1);
+        assert_eq!(result.request_count, 1);
+        assert_eq!(result.item_count, 1);
+        assert_eq!(
+            StatsCache::open(db)
+                .item("blog", "i_one")
+                .expect("cache")
+                .views,
+            8
+        );
+        let connection = Connection::open(directory.path().join("portfolio.db")).expect("db");
+        let country: (String, i64) = connection
+            .query_row(
+                "SELECT country_code, count FROM stats_cache_country",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .expect("country cache");
+        assert_eq!(country, ("SG".to_owned(), 7));
+    }
+
+    #[test]
+    fn private_stats_fail_before_http_without_a_credential() {
+        let directory = tempfile::tempdir().expect("temp");
+        let result = StatsSync::new("http://127.0.0.1:1", directory.path().join("portfolio.db"))
+            .with_bearer_token("")
+            .sync_snapshot();
+        assert!(matches!(result, Err(StatsError::MissingCredential)));
     }
 
     #[test]

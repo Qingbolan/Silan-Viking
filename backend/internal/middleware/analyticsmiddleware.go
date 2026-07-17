@@ -16,6 +16,12 @@ type AnalyticsMiddleware struct {
 	classifier *traffic.Classifier
 }
 
+var countryHeaders = [...]string{
+	"CF-IPCountry",
+	"X-Vercel-IP-Country",
+	"CloudFront-Viewer-Country",
+}
+
 func NewAnalyticsMiddleware(client *ent.Client, classifier *traffic.Classifier) *AnalyticsMiddleware {
 	return &AnalyticsMiddleware{client: client, classifier: classifier}
 }
@@ -62,7 +68,7 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// short context decouples it from the (already-finished) request.
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		_, _ = m.client.RequestLog.Create().
+		builder := m.client.RequestLog.Create().
 			SetMethod(r.Method).
 			SetPath(r.URL.Path).
 			SetStatus(wrapped.status).
@@ -72,9 +78,27 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			SetIP(clientIP(r)).
 			SetLang(r.URL.Query().Get("lang")).
 			SetIsBot(isBot).
-			SetBotName(botName).
-			Save(ctx)
+			SetBotName(botName)
+		if country := edgeCountryCode(r); country != "" {
+			builder.SetCountryCode(country)
+		}
+		_, _ = builder.Save(ctx)
 	}
+}
+
+// edgeCountryCode accepts only canonical ISO-shaped values from supported
+// edge providers. Special Cloudflare values such as XX and T1 are excluded.
+func edgeCountryCode(r *http.Request) string {
+	for _, header := range countryHeaders {
+		code := strings.ToUpper(strings.TrimSpace(r.Header.Get(header)))
+		if len(code) == 2 &&
+			code[0] >= 'A' && code[0] <= 'Z' &&
+			code[1] >= 'A' && code[1] <= 'Z' &&
+			code != "XX" {
+			return code
+		}
+	}
+	return ""
 }
 
 func clientIP(r *http.Request) string {

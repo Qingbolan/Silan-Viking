@@ -162,6 +162,24 @@ Configure `[deploy]` in `silan-viking.toml` once (host, SSH key path,
 remote dir, compose file) and every deploy after that is one command. The
 target host only needs Docker.
 
+Private analytics and deployed-content verification use one machine
+credential without restricting public pages or crawler access. Generate a
+high-entropy token, store it as `STATS_SYNC_TOKEN` in `.env` beside the
+server's deployed `docker-compose.yml`, and expose the same value as
+`SILAN_STATS_SYNC_TOKEN` only to the local CLI/Desktop process:
+
+```sh
+token="$(openssl rand -hex 32)"
+printf 'STATS_SYNC_TOKEN=%s\n' "$token" > .env
+export SILAN_STATS_SYNC_TOKEN="$token"
+```
+
+`.env` is ignored by git; `deploy/.env.example` documents the required
+variable and can be copied into the configured remote deployment directory.
+The token protects full-site statistics, crawler/visitor details, and
+`/api/v1/content/status`. Public content, media, health, sitemap, robots, and
+per-item aggregate statistics remain unauthenticated.
+
 ### 6. Let an agent help
 
 ```sh

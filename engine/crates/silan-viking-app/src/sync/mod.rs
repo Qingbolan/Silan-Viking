@@ -22,5 +22,6 @@ mod sink;
 pub use error::{MapError, SyncError};
 pub use mapper::{Mapper, MapperRegistry};
 pub use rows::{Row, RowSet, RowSetBatch, SqlValue};
+pub(crate) use run::source_revision;
 pub use run::{run_incremental_sync, run_sync, SyncReport};
 pub use sink::{Sink, SqliteSink};

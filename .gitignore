@@ -84,3 +84,8 @@ yarn-error.log*
 # backend copy plus the projected `portfolio.db` (and its sqlite -wal / -shm
 # runtime files). Rebuilt on every deploy, never committed.
 /_deploy/
+pr/
+
+# Local/remote deployment credentials. Commit only deploy/.env.example.
+/.env
+/deploy/.env

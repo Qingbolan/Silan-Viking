@@ -132,6 +132,20 @@ func (rlc *RequestLogCreate) SetNillableLang(s *string) *RequestLogCreate {
 	return rlc
 }
 
+// SetCountryCode sets the "country_code" field.
+func (rlc *RequestLogCreate) SetCountryCode(s string) *RequestLogCreate {
+	rlc.mutation.SetCountryCode(s)
+	return rlc
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableCountryCode(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetCountryCode(*s)
+	}
+	return rlc
+}
+
 // SetIsBot sets the "is_bot" field.
 func (rlc *RequestLogCreate) SetIsBot(b bool) *RequestLogCreate {
 	rlc.mutation.SetIsBot(b)
@@ -257,6 +271,11 @@ func (rlc *RequestLogCreate) check() error {
 			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "RequestLog.lang": %w`, err)}
 		}
 	}
+	if v, ok := rlc.mutation.CountryCode(); ok {
+		if err := requestlog.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
+		}
+	}
 	if _, ok := rlc.mutation.IsBot(); !ok {
 		return &ValidationError{Name: "is_bot", err: errors.New(`ent: missing required field "RequestLog.is_bot"`)}
 	}
@@ -328,6 +347,10 @@ func (rlc *RequestLogCreate) createSpec() (*RequestLog, *sqlgraph.CreateSpec) {
 	if value, ok := rlc.mutation.Lang(); ok {
 		_spec.SetField(requestlog.FieldLang, field.TypeString, value)
 		_node.Lang = value
+	}
+	if value, ok := rlc.mutation.CountryCode(); ok {
+		_spec.SetField(requestlog.FieldCountryCode, field.TypeString, value)
+		_node.CountryCode = value
 	}
 	if value, ok := rlc.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)

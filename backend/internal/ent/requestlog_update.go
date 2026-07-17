@@ -201,6 +201,26 @@ func (rlu *RequestLogUpdate) ClearLang() *RequestLogUpdate {
 	return rlu
 }
 
+// SetCountryCode sets the "country_code" field.
+func (rlu *RequestLogUpdate) SetCountryCode(s string) *RequestLogUpdate {
+	rlu.mutation.SetCountryCode(s)
+	return rlu
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableCountryCode(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetCountryCode(*s)
+	}
+	return rlu
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (rlu *RequestLogUpdate) ClearCountryCode() *RequestLogUpdate {
+	rlu.mutation.ClearCountryCode()
+	return rlu
+}
+
 // SetIsBot sets the "is_bot" field.
 func (rlu *RequestLogUpdate) SetIsBot(b bool) *RequestLogUpdate {
 	rlu.mutation.SetIsBot(b)
@@ -299,6 +319,11 @@ func (rlu *RequestLogUpdate) check() error {
 			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "RequestLog.lang": %w`, err)}
 		}
 	}
+	if v, ok := rlu.mutation.CountryCode(); ok {
+		if err := requestlog.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
+		}
+	}
 	if v, ok := rlu.mutation.BotName(); ok {
 		if err := requestlog.BotNameValidator(v); err != nil {
 			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
@@ -372,6 +397,12 @@ func (rlu *RequestLogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if rlu.mutation.LangCleared() {
 		_spec.ClearField(requestlog.FieldLang, field.TypeString)
+	}
+	if value, ok := rlu.mutation.CountryCode(); ok {
+		_spec.SetField(requestlog.FieldCountryCode, field.TypeString, value)
+	}
+	if rlu.mutation.CountryCodeCleared() {
+		_spec.ClearField(requestlog.FieldCountryCode, field.TypeString)
 	}
 	if value, ok := rlu.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)
@@ -579,6 +610,26 @@ func (rluo *RequestLogUpdateOne) ClearLang() *RequestLogUpdateOne {
 	return rluo
 }
 
+// SetCountryCode sets the "country_code" field.
+func (rluo *RequestLogUpdateOne) SetCountryCode(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetCountryCode(s)
+	return rluo
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableCountryCode(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetCountryCode(*s)
+	}
+	return rluo
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (rluo *RequestLogUpdateOne) ClearCountryCode() *RequestLogUpdateOne {
+	rluo.mutation.ClearCountryCode()
+	return rluo
+}
+
 // SetIsBot sets the "is_bot" field.
 func (rluo *RequestLogUpdateOne) SetIsBot(b bool) *RequestLogUpdateOne {
 	rluo.mutation.SetIsBot(b)
@@ -690,6 +741,11 @@ func (rluo *RequestLogUpdateOne) check() error {
 			return &ValidationError{Name: "lang", err: fmt.Errorf(`ent: validator failed for field "RequestLog.lang": %w`, err)}
 		}
 	}
+	if v, ok := rluo.mutation.CountryCode(); ok {
+		if err := requestlog.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
+		}
+	}
 	if v, ok := rluo.mutation.BotName(); ok {
 		if err := requestlog.BotNameValidator(v); err != nil {
 			return &ValidationError{Name: "bot_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.bot_name": %w`, err)}
@@ -780,6 +836,12 @@ func (rluo *RequestLogUpdateOne) sqlSave(ctx context.Context) (_node *RequestLog
 	}
 	if rluo.mutation.LangCleared() {
 		_spec.ClearField(requestlog.FieldLang, field.TypeString)
+	}
+	if value, ok := rluo.mutation.CountryCode(); ok {
+		_spec.SetField(requestlog.FieldCountryCode, field.TypeString, value)
+	}
+	if rluo.mutation.CountryCodeCleared() {
+		_spec.ClearField(requestlog.FieldCountryCode, field.TypeString)
 	}
 	if value, ok := rluo.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)

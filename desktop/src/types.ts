@@ -32,6 +32,41 @@ export type EditorTranslation = {
   source_path: string;
 };
 
+export type ImportedMediaAsset = {
+  uri: string;
+  relative_path: string;
+  file_name: string;
+  byte_count: number;
+  markdown: string;
+};
+
+export type GeoInsightReport = {
+  document_id: string;
+  translation_id: string;
+  title: string;
+  language: string;
+  score: number;
+  grade: string;
+  summary: string;
+  metrics: Array<{
+    label: string;
+    value: string;
+    detail: string;
+    evidence: GeoEvidence[];
+  }>;
+  actions: Array<{
+    priority: string;
+    label: string;
+    detail: string;
+    evidence: GeoEvidence[];
+  }>;
+};
+
+export type GeoEvidence = {
+  source: "source_content" | "remote_stats" | "ai_crawler" | "ai_referral" | "llm_inference";
+  detail: string;
+};
+
 export type DashboardData = {
   total_views: number;
   total_likes: number;
@@ -50,6 +85,30 @@ export type DashboardData = {
   deployed_search_crawler_interactions: number;
   deployed_ai_chat_referrals: number;
   stats_synced_at: string | null;
+  today_visits: number;
+  daily_visits: Array<{
+    date: string;
+    visits: number;
+    content: Array<{
+      content_type: string;
+      title: string;
+      visits: number;
+      comments: number;
+    }>;
+  }>;
+  top_content: Array<{
+    content_type: string;
+    title: string;
+    views: number;
+  }>;
+  top_sources: Array<{
+    source: string;
+    visits: number;
+  }>;
+  top_countries: Array<{
+    country_code: string;
+    visits: number;
+  }>;
 };
 
 export type StatsSyncReport = {
@@ -85,6 +144,48 @@ export type VersionStatus = {
 };
 
 export type VersionScope = 'resume' | 'blog' | 'project' | 'idea' | 'update';
+
+export type DeploymentPlan = {
+  branch: string;
+  head: string;
+  deploy_target: string;
+  dirty_count: number;
+  media_asset_count: number;
+  next_action: string;
+  commit_activity: Array<{
+    date: string;
+    commit_count: number;
+    scopes: VersionScope[];
+  }>;
+  scopes: Array<{
+    scope: VersionScope;
+    scope_label: string;
+    dirty_count: number;
+    clean: boolean;
+  }>;
+};
+
+export type DeployRunStatus = {
+  success: boolean;
+  content_commit: string;
+  stdout: string;
+  stderr: string;
+};
+
+export type RemoteContentVersion = {
+  health: string;
+  content_hash: string;
+  content_commit: string;
+  generated_at: string;
+  media_root_ok: boolean;
+};
+
+export type DeployVerificationResult = {
+  verified: boolean;
+  expected_content_commit: string;
+  remote: RemoteContentVersion;
+  mismatch_reason: string | null;
+};
 
 export type DashboardItem = {
   entity_type: string;

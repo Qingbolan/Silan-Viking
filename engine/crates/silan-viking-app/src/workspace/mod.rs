@@ -113,6 +113,10 @@ impl Workspace {
         self.sync_into(&mut sink)
     }
 
+    pub(crate) fn source_revision(&self) -> Result<String, SyncError> {
+        crate::sync::source_revision(&self.parsers, &self.mappers, &self.schema, &self.scan()?)
+    }
+
     /// `sync`, but writing into a caller-provided [`SqliteSink`] — used by
     /// tests that open an in-memory database.
     pub fn sync_into(&self, sink: &mut SqliteSink) -> Result<SyncReport, SyncError> {

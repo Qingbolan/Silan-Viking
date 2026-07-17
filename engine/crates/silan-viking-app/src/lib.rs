@@ -22,7 +22,10 @@
 #![forbid(unsafe_code)]
 
 pub mod capture;
+pub mod delivery_control;
 pub mod editor;
+pub mod geo_advisor;
+pub mod media_library;
 pub mod parser;
 pub mod proposal;
 pub mod query;
@@ -30,13 +33,25 @@ pub mod schema;
 mod source_lock;
 pub mod stats;
 pub mod sync;
+pub mod website_insights;
 pub mod workspace;
+pub mod workspace_content;
+pub mod workspace_sync;
 
 pub use capture::{CaptureError, CapturedContent, ContentCreator, IdeaCategory};
+pub use delivery_control::{
+    DeliveryControl, DeliveryControlError, DeployRunStatus, DeployVerificationResult,
+    DeploymentPlan, ReleaseScope, RemoteContentVersion, ScopeReleaseStatus,
+};
 pub use editor::{
     ContentEditor, EditorError, ResumeProfileSource, SeriesMetadataSource, SourceDocument,
     TranslationLocator,
 };
+pub use geo_advisor::{
+    GeoAction, GeoAdvisor, GeoAdvisorError, GeoEvidence, GeoEvidenceSource, GeoInsightReport,
+    GeoMetric,
+};
+pub use media_library::{MediaAssetRef, MediaLibrary, MediaLibraryError, MediaReferenceStatus};
 pub use proposal::store::ProposalKind;
 pub use proposal::{
     canonicalize, AcceptOutcome, AcceptReport, GitRepo, ProposalError, ProposalId, ProposalLock,
@@ -44,8 +59,24 @@ pub use proposal::{
 };
 pub use query::{EmbedderMode, QueryDocument, QueryError, QueryHit, QueryIndex};
 pub use schema::{Schema, SchemaError};
-pub use stats::{api_base_url, CountRow, ItemStats, StatsCache, StatsError, StatsSync, VisitorRow};
+pub use stats::{
+    api_base_url, CountRow, ItemStats, StatsCache, StatsError, StatsSync, StatsSyncResult,
+    VisitorRow,
+};
+pub use website_insights::{
+    AiReferralSummary, AttentionItem, AttentionKind, AttentionSeverity, CommentSummary,
+    CrawlerSummary, DashboardSnapshot, FreshnessState, RecentContentItem, StatsFreshness,
+    StatsSummary, WebsiteInsights, WebsiteInsightsError,
+};
 pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
+pub use workspace_content::{
+    EditableDocument, EditableEntry, EditablePart, EditableSection, EditableTranslation,
+    EditableWorkspace, SaveLifecycleInput, SaveTranslationInput, SourceRevision, WorkspaceContent,
+    WorkspaceContentError, WorkspaceEntityCount,
+};
+pub use workspace_sync::{
+    WorkspaceSync, WorkspaceSyncError, WorkspaceSyncResult, WorkspaceSyncState, WorkspaceSyncStatus,
+};
 
 // Re-export the content-layer types that appear across the app's public API.
 pub use silan_viking_base::{Identified, SilanUri, Slug};

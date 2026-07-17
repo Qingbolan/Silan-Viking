@@ -2181,10 +2181,15 @@ fn desktop_editor(content_root: &Path, db_path: &Path, args: &[&str]) -> Result<
     println!("desktop: {}", desktop_dir.display());
     println!("press Ctrl-C to stop the desktop dev session");
 
+    let current_cli = env::current_exe()
+        .map_err(|error| format!("desktop: resolve current CLI executable: {error}"))?;
     let status = Command::new("npm")
         .current_dir(&desktop_dir)
         .env("SILAN_DESKTOP_CONTENT", &content_root)
         .env("SILAN_DESKTOP_DB", &db_path)
+        // DeliveryControl must invoke the same reviewed CLI that launched this
+        // Desktop session, not an unrelated older binary found on PATH.
+        .env("SILAN_VIKING_BIN", current_cli)
         .args(["run", "desktop"])
         .status()
         .map_err(|e| format!("launch Tauri desktop app: {e}"))?;
@@ -3084,10 +3089,9 @@ fn site_preview(
 //       ├── etc/backend-api.yaml      ← server config
 //       └── _deploy/api/portfolio.db  ← derived database
 
-/// One end-to-end nginx-mode deploy. Walks through each enabled phase, then
-/// restarts the backend and probes `/api/v1/health`. Restart and health check
-/// run unconditionally when *any* phase ran — even content-only — because the
-/// backend caches DB handles and must reopen the file.
+/// One end-to-end nginx-mode deploy. Backend binaries require a restart;
+/// SQLite content swaps require stop/start; PostgreSQL content transactions
+/// remain online. Every path finishes by probing `/api/v1/health`.
 fn run_nginx_deploy(
     content_root: &Path,
     db_path: &Path,
@@ -3112,25 +3116,30 @@ fn run_nginx_deploy(
             println!("  {step} backend  tar source → scp → build API + sqlite2pg (remote)");
             step += 1;
         }
-        if what.does_content() {
+        if what.does_backend() {
             println!(
-                "  {step} content  silan-viking index sync → stop {} → cp .prev → \
-                 clear wal/shm → pull live DB → promote derived tables locally → \
-                 scp promoted DB → chown → md5-verify → \
-                 (if PG-configured: sqlite2pg, preserving runtime tables) → mirror media/",
-                cfg.systemd_unit,
+                "  {step} credential  install STATS_SYNC_TOKEN into protected systemd EnvironmentFile"
             );
             step += 1;
         }
-        let bring_up_verb = if what.does_content() {
-            "start"
-        } else {
-            "restart"
+        if what.does_content() {
+            println!(
+                "  {step} content  silan-viking index sync → detect runtime DB → cp .prev → \
+                 pull projection artifact → promote derived tables locally → \
+                 scp promoted DB → chown → md5-verify → \
+                 (PostgreSQL: transactional sqlite2pg while API stays online; \
+                 SQLite: stop/swap/start) → mirror media/",
+            );
+            step += 1;
+        }
+        let activation = match (what.does_backend(), what.does_content()) {
+            (true, _) => format!("restart {}", cfg.systemd_unit),
+            (false, true) => {
+                "no API restart in PostgreSQL mode (SQLite installs stop/start only)".to_owned()
+            }
+            (false, false) => "no API lifecycle change".to_owned(),
         };
-        println!(
-            "  {step} {bring_up_verb}  systemctl {bring_up_verb} {} → curl /api/v1/health",
-            cfg.systemd_unit
-        );
+        println!("  {step} activate  {activation} → curl /api/v1/health");
         return Ok(());
     }
 
@@ -3153,6 +3162,9 @@ fn run_nginx_deploy(
         deploy_nginx_backend(project_root, cfg)?;
         did_work = true;
     }
+    if what.does_backend() {
+        deploy_nginx_private_api_credential(cfg)?;
+    }
     if what.does_content() {
         backend_stopped = deploy_nginx_content(content_root, db_path, cfg)?;
         did_work = true;
@@ -3161,17 +3173,19 @@ fn run_nginx_deploy(
         return Err(format!("--what={} selected nothing", what.label()));
     }
 
-    let restart_verb = if backend_stopped { "start" } else { "restart" };
-    println!(
-        "[{restart_verb}] systemctl {restart_verb} {}",
-        cfg.systemd_unit
-    );
-    ssh_exec(
-        cfg,
-        &format!("systemctl {restart_verb} {}", cfg.systemd_unit),
-    )?;
-    // Give systemd a beat to flip the unit state before we probe.
-    std::thread::sleep(std::time::Duration::from_secs(2));
+    if backend_stopped {
+        println!("[start] systemctl start {}", cfg.systemd_unit);
+        ssh_exec(cfg, &format!("systemctl start {}", cfg.systemd_unit))?;
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    } else if what.does_backend() {
+        println!("[restart] systemctl restart {}", cfg.systemd_unit);
+        ssh_exec(cfg, &format!("systemctl restart {}", cfg.systemd_unit))?;
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    } else if what.does_content() {
+        println!("[online] PostgreSQL content transaction applied; API stayed running");
+    } else {
+        println!("[online] static frontend updated; API lifecycle unchanged");
+    }
     let health_base = cfg
         .public_url
         .clone()
@@ -3182,13 +3196,80 @@ fn run_nginx_deploy(
     Ok(())
 }
 
+const PRIVATE_API_TOKEN_ENV: &str = "SILAN_STATS_SYNC_TOKEN";
+const REMOTE_PRIVATE_ENV_PATH: &str = "/etc/silan-backend/db.env";
+
+fn private_api_deploy_token() -> Result<String, String> {
+    let token = env::var(PRIVATE_API_TOKEN_ENV)
+        .map_err(|_| format!("{PRIVATE_API_TOKEN_ENV} is required for backend/content deploy"))?;
+    validate_private_api_deploy_token(&token)
+}
+
+fn validate_private_api_deploy_token(token: &str) -> Result<String, String> {
+    let token = token.trim();
+    if token.len() < 32 {
+        return Err(format!(
+            "{PRIVATE_API_TOKEN_ENV} must contain at least 32 characters"
+        ));
+    }
+    if !token
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    {
+        return Err(format!(
+            "{PRIVATE_API_TOKEN_ENV} may contain only ASCII letters, digits, `-`, and `_`"
+        ));
+    }
+    Ok(token.to_owned())
+}
+
+fn deploy_nginx_private_api_credential(cfg: &DeployConfig) -> Result<(), String> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let token = private_api_deploy_token()?;
+    let local = env::temp_dir().join(format!(
+        "silan-private-api-{}-{}.env",
+        std::process::id(),
+        time::OffsetDateTime::now_utc().unix_timestamp_nanos()
+    ));
+    let remote = format!("/tmp/silan-private-api-{}.env", std::process::id());
+    fs::write(&local, format!("STATS_SYNC_TOKEN={token}\n"))
+        .map_err(|error| format!("[credential] write temporary env: {error}"))?;
+    fs::set_permissions(&local, fs::Permissions::from_mode(0o600))
+        .map_err(|error| format!("[credential] protect temporary env: {error}"))?;
+
+    println!("[credential] install protected machine credential");
+    let result = (|| {
+        scp_to(cfg, &local, &remote)?;
+        ssh_exec(
+            cfg,
+            &format!(
+                "set -e && \
+                 install -d -m 0750 /etc/silan-backend && \
+                 touch {env_path} && \
+                 sed -i '/^STATS_SYNC_TOKEN=/d' {env_path} && \
+                 cat {remote} >> {env_path} && \
+                 chown root:www {env_path} && chmod 0640 {env_path} && \
+                 rm -f {remote}",
+                env_path = REMOTE_PRIVATE_ENV_PATH,
+            ),
+        )?;
+        Ok(())
+    })();
+    let _ = fs::remove_file(&local);
+    if result.is_err() {
+        let _ = ssh_exec(cfg, &format!("rm -f {remote}"));
+    }
+    result
+}
+
 /// Phase 1 — content. Rebuild the local derived db, ship it, leave the
 /// restart/health check to the caller.
 ///
-/// The DB swap is wrapped in stop → backup → pull-live → promote → push →
-/// clear-wal → chown. Only derived tables come from `index sync`; runtime
-/// facts remain owned by the live DB. Returns `true` when the backend was
-/// stopped here, so the caller does `start` instead of `restart`.
+/// PostgreSQL mode treats SQLite as an offline projection artifact and never
+/// changes the API process lifecycle. SQLite mode still wraps the live-file
+/// swap in stop → backup → promote → push → clear-wal → start. Returns `true`
+/// only when the backend was stopped for a live SQLite swap.
 fn deploy_nginx_content(
     content_root: &Path,
     db_path: &Path,
@@ -3202,15 +3283,20 @@ fn deploy_nginx_content(
     println!("[content] mkdir -p {remote_dir}");
     ssh_exec(cfg, &format!("mkdir -p {remote_dir}"))?;
 
-    // Stop the backend BEFORE touching the live DB. Without this, scp races
-    // against silan-backend's mmap'd file handle: on some kernels the
-    // overwrite "succeeds" but the running process keeps serving the old
-    // inode, leaving local md5 ≠ remote md5 even though deploy looks green.
-    println!(
-        "[content] systemctl stop {} (release DB lock)",
-        cfg.systemd_unit
-    );
-    ssh_exec(cfg, &format!("systemctl stop {}", cfg.systemd_unit))?;
+    let database_mode = remote_database_mode(cfg)?;
+    let backend_stopped = database_mode == RemoteDatabaseMode::Sqlite;
+    if backend_stopped {
+        // SQLite installs serve this exact file and must release their live
+        // handle before it is replaced. PostgreSQL installs only use the
+        // file as an offline import artifact and remain online.
+        println!(
+            "[content] systemctl stop {} (release SQLite lock)",
+            cfg.systemd_unit
+        );
+        ssh_exec(cfg, &format!("systemctl stop {}", cfg.systemd_unit))?;
+    } else {
+        println!("[content] PostgreSQL runtime detected; API remains online");
+    }
 
     // Take a .prev snapshot so `site rollback` has something to fall back
     // on. The previous --what=content path skipped this and left rollback
@@ -3225,8 +3311,10 @@ fn deploy_nginx_content(
     // Clear stale -wal/-shm from the now-stopped backend. If they survive
     // they will be paired against the new main DB at next open and sqlite
     // will report "database disk image is malformed" → crashloop → 502.
-    println!("[content] clear stale WAL/SHM on remote");
-    ssh_exec(cfg, &format!("rm -f {remote_db}-wal {remote_db}-shm"))?;
+    if backend_stopped {
+        println!("[content] clear stale WAL/SHM on remote");
+        ssh_exec(cfg, &format!("rm -f {remote_db}-wal {remote_db}-shm"))?;
+    }
 
     // Never ship the derived snapshot over the live DB. The live file owns
     // all runtime facts; pull it, replace only the derived-table whitelist in
@@ -3283,7 +3371,7 @@ fn deploy_nginx_content(
     // the installer wrote (/etc/silan-backend/db.env containing DB_SOURCE).
     // Without it, the deploy stays SQLite-only — no change in behaviour for
     // installs that never migrated.
-    sync_remote_postgres_if_configured(cfg, &remote_db)?;
+    sync_remote_postgres(cfg, &remote_db, database_mode)?;
 
     // Mirror media assets to <remote_dir>/api/media. The DB already holds
     // rewritten `/api/v1/media?f=<rel_path>` URLs from `sync`; the backend
@@ -3292,32 +3380,115 @@ fn deploy_nginx_content(
     // deleted from content/ disappears from the server on the next deploy.
     let assets = ws.scan().map_err(|e| e.to_string())?.assets().to_vec();
     if assets.is_empty() {
-        return Ok(true);
+        return Ok(backend_stopped);
     }
-    let staging = std::env::temp_dir().join("silan-viking-content-staging");
+    let generation = format!(
+        "{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_err(|error| format!("system clock before unix epoch: {error}"))?
+            .as_nanos()
+    );
+    let staging = std::env::temp_dir().join(format!("silan-viking-media-{generation}"));
     let _ = fs::remove_dir_all(&staging);
     fs::create_dir_all(&staging)
         .map_err(|e| format!("[content] staging dir {}: {e}", staging.display()))?;
     let Some(media_root) = stage_media(&staging, &assets)? else {
-        return Ok(true);
+        return Ok(backend_stopped);
     };
     let remote_media = format!("{}/api/media", cfg.remote_dir);
     println!(
-        "[content] mirror {} media file(s) → {remote_media}",
+        "[content] pack and mirror {} media file(s) → {remote_media}",
         assets.len(),
     );
-    // Clear the remote dir first so a deleted asset doesn't linger.
-    ssh_exec(
-        cfg,
-        &format!("rm -rf {remote_media} && mkdir -p {remote_media}"),
-    )?;
-    // scp -r the *contents* of the staged tree into the remote media dir
-    // (the trailing `/.` is the "merge contents, don't nest" trick).
-    let mut src = absolutise(&media_root)?.into_os_string();
-    src.push("/.");
-    scp_to(cfg, Path::new(&src), &remote_media)?;
+    let local_archive =
+        std::env::temp_dir().join(format!("silan-viking-media-{generation}.tar.gz"));
+    let remote_archive = format!("/tmp/silan-viking-media-{generation}.tar.gz");
+    let remote_media_next = format!("{remote_media}.next-{generation}");
+    let remote_media_previous = format!("{remote_media}.previous-{generation}");
+    let remote_media_hash = format!("{remote_media}.generation-md5");
+    let publish_media = (|| -> Result<(), String> {
+        let generation_hash = media_generation_hash(&assets);
+        let remote_generation = ssh_exec(
+            cfg,
+            &format!(
+                "if [ -d {remote_media} ] && [ -f {remote_media_hash} ]; then \
+                   cat {remote_media_hash}; \
+                 fi"
+            ),
+        )?;
+        if remote_generation.trim() == generation_hash {
+            println!("[content] media generation unchanged; skip pack and upload");
+            return Ok(());
+        }
+        let status = Command::new("tar")
+            .env("COPYFILE_DISABLE", "1")
+            .args(["-czf"])
+            .arg(&local_archive)
+            .args(["-C"])
+            .arg(absolutise(&media_root)?)
+            .arg(".")
+            .status()
+            .map_err(|error| format!("[content] start media archive: {error}"))?;
+        if !status.success() {
+            return Err("[content] media archive creation failed".to_owned());
+        }
+        scp_to(cfg, &local_archive, &remote_archive)?;
+        ssh_exec(
+            cfg,
+            &format!(
+                "set -e; \
+                 rm -rf {next} {previous}; mkdir -p {next}; \
+                 tar -xzf {archive} -C {next}; \
+                 if [ -d {live} ]; then mv {live} {previous}; fi; \
+                 if mv {next} {live}; then \
+                   printf '%s\\n' {hash} > {hash_file}.next; \
+                   mv {hash_file}.next {hash_file}; \
+                   rm -rf {previous}; rm -f {archive}; \
+                 else \
+                   rm -rf {next}; \
+                   if [ -d {previous} ]; then mv {previous} {live}; fi; \
+                   rm -f {archive}; exit 1; \
+                 fi",
+                next = remote_media_next,
+                previous = remote_media_previous,
+                archive = remote_archive,
+                live = remote_media,
+                hash = generation_hash,
+                hash_file = remote_media_hash,
+            ),
+        )?;
+        Ok(())
+    })();
+    let _ = fs::remove_file(&local_archive);
+    if publish_media.is_err() {
+        let _ = ssh_exec(
+            cfg,
+            &format!(
+                "rm -rf {remote_media_next}; rm -f {remote_archive}; \
+                 if [ ! -d {remote_media} ] && [ -d {remote_media_previous} ]; then \
+                   mv {remote_media_previous} {remote_media}; \
+                 fi"
+            ),
+        );
+    }
     let _ = fs::remove_dir_all(&staging);
-    Ok(true)
+    publish_media?;
+    Ok(backend_stopped)
+}
+
+fn media_generation_hash(assets: &[ScannedAsset]) -> String {
+    let mut ordered = assets.iter().collect::<Vec<_>>();
+    ordered.sort_by(|left, right| left.rel_path.cmp(&right.rel_path));
+    let mut digest = md5::Context::new();
+    for asset in ordered {
+        digest.consume(asset.rel_path.as_bytes());
+        digest.consume([0]);
+        digest.consume(asset.hash.to_string().as_bytes());
+        digest.consume([0]);
+    }
+    format!("{:x}", digest.compute())
 }
 
 /// Confirm that the remote DB file is byte-identical to what we shipped.
@@ -3359,16 +3530,16 @@ const REMOTE_DB_ENV_PATH: &str = "/etc/silan-backend/db.env";
 /// of `backend/cmd/sqlite2pg` from this same tree.
 const REMOTE_SQLITE2PG_BIN: &str = "/usr/local/bin/silan-sqlite2pg";
 
-/// If the remote backend is configured to read from PostgreSQL (env file
-/// present and `DB_DRIVER=postgres`), import the freshly-scp'd SQLite into
-/// PG so the next backend start reads the new content. Without this, a
-/// content push only refreshes the SQLite file — but the live read path is
-/// PG, so the site would keep serving stale data.
-///
-/// Returns Ok(()) and prints a one-line skip note when PG mode is not
-/// detected, so the same `update-content` flow keeps working for installs
-/// that never migrated off SQLite.
-fn sync_remote_postgres_if_configured(cfg: &DeployConfig, remote_db: &str) -> Result<(), String> {
+/// Resolve the production read model before any lifecycle action. PostgreSQL
+/// mode requires the importer up front so a missing binary fails while the
+/// API is still healthy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RemoteDatabaseMode {
+    Sqlite,
+    Postgres,
+}
+
+fn remote_database_mode(cfg: &DeployConfig) -> Result<RemoteDatabaseMode, String> {
     // Decide once whether PG mode is active. Reading the env file's
     // `DB_DRIVER` and trying `[ -x importer ]` in a single ssh call keeps
     // the deploy log clean for non-PG installs (one round trip, one note).
@@ -3388,15 +3559,26 @@ fn sync_remote_postgres_if_configured(cfg: &DeployConfig, remote_db: &str) -> Re
     match state {
         "NO_PG" => {
             println!("[pg-sync] skip: remote backend uses SQLite (no {REMOTE_DB_ENV_PATH})");
-            Ok(())
+            Ok(RemoteDatabaseMode::Sqlite)
         }
         "PG_NO_BIN" => Err(format!(
             "[pg-sync] {REMOTE_DB_ENV_PATH} says DB_DRIVER=postgres but \
              {REMOTE_SQLITE2PG_BIN} is missing — install it from \
-             `backend/cmd/sqlite2pg` before running update-content. Backend is \
-             stopped; restart manually after fixing."
+             `backend/cmd/sqlite2pg` before running update-content."
         )),
-        "PG_READY" => {
+        "PG_READY" => Ok(RemoteDatabaseMode::Postgres),
+        other => Err(format!("[pg-sync] unexpected probe state: {other:?}")),
+    }
+}
+
+fn sync_remote_postgres(
+    cfg: &DeployConfig,
+    remote_db: &str,
+    database_mode: RemoteDatabaseMode,
+) -> Result<(), String> {
+    match database_mode {
+        RemoteDatabaseMode::Sqlite => Ok(()),
+        RemoteDatabaseMode::Postgres => {
             println!("[pg-sync] import SQLite → PG via {REMOTE_SQLITE2PG_BIN}");
             let cmd = format!(
                 "{bin} --sqlite {db} --env-file {env}",
@@ -3414,7 +3596,6 @@ fn sync_remote_postgres_if_configured(cfg: &DeployConfig, remote_db: &str) -> Re
             }
             Ok(())
         }
-        other => Err(format!("[pg-sync] unexpected probe state: {other:?}")),
     }
 }
 
@@ -5212,4 +5393,45 @@ fn resume_add_part(content_root: &Path, role: &str) -> Result<(), String> {
     println!("created {}", meta.display());
     println!("created {}", lang_file.display());
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{media_generation_hash, validate_private_api_deploy_token};
+    use silan_viking_app::ScannedAsset;
+    use silan_viking_base::ContentHash;
+    use std::path::PathBuf;
+
+    #[test]
+    fn private_api_deploy_token_requires_strength_and_env_safe_characters() {
+        assert!(validate_private_api_deploy_token("short").is_err());
+        assert!(validate_private_api_deploy_token("0123456789abcdef0123456789abcde!").is_err());
+        assert_eq!(
+            validate_private_api_deploy_token(" 0123456789abcdef0123456789abcdef_token ")
+                .expect("valid"),
+            "0123456789abcdef0123456789abcdef_token"
+        );
+    }
+
+    #[test]
+    fn media_generation_hash_is_order_independent_and_content_sensitive() {
+        let asset = |path: &str, bytes: &[u8]| ScannedAsset {
+            rel_path: path.to_owned(),
+            abs_path: PathBuf::from(path),
+            hash: ContentHash::of(bytes),
+        };
+        let first = asset("blog/a/assets/a.png", b"a");
+        let second = asset("projects/b/assets/b.png", b"b");
+        assert_eq!(
+            media_generation_hash(&[first.clone(), second.clone()]),
+            media_generation_hash(&[second.clone(), first.clone()])
+        );
+        assert_ne!(
+            media_generation_hash(&[first, second]),
+            media_generation_hash(&[
+                asset("blog/a/assets/a.png", b"changed"),
+                asset("projects/b/assets/b.png", b"b"),
+            ])
+        );
+    }
 }

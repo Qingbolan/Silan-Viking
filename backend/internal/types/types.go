@@ -441,6 +441,14 @@ type HealthResponse struct {
 	Status string `json:"status"`
 }
 
+type ContentStatusResponse struct {
+	Health        string `json:"health"`
+	ContentHash   string `json:"content_hash"`
+	ContentCommit string `json:"content_commit"`
+	GeneratedAt   string `json:"generated_at"`
+	MediaRootOK   bool   `json:"media_root_ok"`
+}
+
 type IdeaCategoriesRequest struct {
 	Language string `form:"lang,default=en"`
 }
@@ -921,6 +929,24 @@ type StatsResponse struct {
 	Views      int    `json:"views"`
 	Likes      int    `json:"likes"`
 	Comments   int    `json:"comments"`
+}
+
+type StatsSnapshotResponse struct {
+	GeneratedAt string              `json:"generated_at"`
+	Items       []StatsSnapshotItem `json:"items"`
+	Countries   []CountryRow        `json:"countries"`
+}
+
+type CountryRow struct {
+	CountryCode string `json:"country_code"`
+	Count       int    `json:"count"`
+}
+
+type StatsSnapshotItem struct {
+	Stats    StatsResponse `json:"stats"`
+	Visitors []VisitorRow  `json:"visitors"`
+	Crawlers []CrawlerRow  `json:"crawlers"`
+	Sources  []SourceRow   `json:"sources"`
 }
 
 type UpdateBlogLikesRequest struct {

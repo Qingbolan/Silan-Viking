@@ -203,6 +203,14 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.Cors, serverCtx.PrivateAPI},
+			privateContentStatusRoutes(serverCtx)...,
+		),
+		rest.WithPrefix("/api/v1"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
 			[]rest.Route{
 				{
@@ -409,38 +417,15 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
-			[]rest.Route{
-				{
-					// Aggregate view/like/comment counts of one item
-					Method:  http.MethodGet,
-					Path:    "/",
-					Handler: stats.StatsHandler(serverCtx),
-				},
-				{
-					// Crawler access log — which bot crawled which page, and when
-					Method:  http.MethodGet,
-					Path:    "/bots",
-					Handler: stats.BotVisitsHandler(serverCtx),
-				},
-				{
-					// Visitor-kind (human / search / AI crawler) breakdown
-					Method:  http.MethodGet,
-					Path:    "/crawlers",
-					Handler: stats.CrawlerBreakdownHandler(serverCtx),
-				},
-				{
-					// Referrer-source breakdown
-					Method:  http.MethodGet,
-					Path:    "/sources",
-					Handler: stats.SourceBreakdownHandler(serverCtx),
-				},
-				{
-					// De-identified visitor list of one item
-					Method:  http.MethodGet,
-					Path:    "/visitors",
-					Handler: stats.VisitorsHandler(serverCtx),
-				},
-			}...,
+			publicStatsRoutes(serverCtx)...,
+		),
+		rest.WithPrefix("/api/v1/stats"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.Cors, serverCtx.PrivateAPI},
+			privateStatsRoutes(serverCtx)...,
 		),
 		rest.WithPrefix("/api/v1/stats"),
 	)
@@ -465,4 +450,57 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithPrefix("/api/v1/updates"),
 	)
+}
+
+func publicStatsRoutes(serverCtx *svc.ServiceContext) []rest.Route {
+	return []rest.Route{{
+		// Aggregate view/like/comment counts of one item.
+		Method:  http.MethodGet,
+		Path:    "/",
+		Handler: stats.StatsHandler(serverCtx),
+	}}
+}
+
+func privateStatsRoutes(serverCtx *svc.ServiceContext) []rest.Route {
+	return []rest.Route{
+		{
+			// Full-site snapshot used by SDK sync (one HTTP request).
+			Method:  http.MethodGet,
+			Path:    "/snapshot",
+			Handler: stats.SnapshotHandler(serverCtx),
+		},
+		{
+			// Crawler access log — which bot crawled which page, and when.
+			Method:  http.MethodGet,
+			Path:    "/bots",
+			Handler: stats.BotVisitsHandler(serverCtx),
+		},
+		{
+			// Visitor-kind (human / search / AI crawler) breakdown.
+			Method:  http.MethodGet,
+			Path:    "/crawlers",
+			Handler: stats.CrawlerBreakdownHandler(serverCtx),
+		},
+		{
+			// Referrer-source breakdown.
+			Method:  http.MethodGet,
+			Path:    "/sources",
+			Handler: stats.SourceBreakdownHandler(serverCtx),
+		},
+		{
+			// De-identified visitor list of one item.
+			Method:  http.MethodGet,
+			Path:    "/visitors",
+			Handler: stats.VisitorsHandler(serverCtx),
+		},
+	}
+}
+
+func privateContentStatusRoutes(serverCtx *svc.ServiceContext) []rest.Route {
+	return []rest.Route{{
+		// Deployed content provenance and media readiness.
+		Method:  http.MethodGet,
+		Path:    "/content/status",
+		Handler: health.ContentStatusHandler(serverCtx),
+	}}
 }

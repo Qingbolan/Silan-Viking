@@ -58,6 +58,22 @@ impl FieldValue {
             _ => None,
         }
     }
+
+    /// The value as an integer, if numeric and integral.
+    pub fn as_int(&self) -> Option<i64> {
+        match self {
+            FieldValue::Int(value) => Some(*value),
+            _ => None,
+        }
+    }
+
+    /// The value as a boolean.
+    pub fn as_bool(&self) -> Option<bool> {
+        match self {
+            FieldValue::Bool(value) => Some(*value),
+            _ => None,
+        }
+    }
 }
 
 /// The language-neutral fields of a parsed Item — slug, status, dates, enums.
@@ -78,6 +94,14 @@ impl LangNeutral {
     /// The text value of a field, if present and textual.
     pub fn text(&self, name: &str) -> Option<&str> {
         self.get(name).and_then(FieldValue::as_text)
+    }
+
+    pub fn int(&self, name: &str) -> Option<i64> {
+        self.get(name).and_then(FieldValue::as_int)
+    }
+
+    pub fn bool(&self, name: &str) -> Option<bool> {
+        self.get(name).and_then(FieldValue::as_bool)
     }
 
     /// All field names present.

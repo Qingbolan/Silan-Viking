@@ -2,8 +2,9 @@
 
 use crate::application::DesktopWorkspace;
 use crate::model::{
-    DashboardData, DocumentStateInput, EditorDocument, EpisodeSeriesInput, EpisodeSeriesSource,
-    EntityCount, MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile,
+    DashboardData, DeployRunStatus, DeployVerificationResult, DeploymentPlan, DocumentStateInput,
+    EditorDocument, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoInsightReport,
+    ImportedMediaAsset, MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile,
     ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus,
 };
 
@@ -23,13 +24,29 @@ pub(crate) fn get_dashboard() -> Result<DashboardData, String> {
 }
 
 #[tauri::command]
-pub(crate) fn get_moments_settings() -> Result<MomentsSettings, String> {
-    DesktopWorkspace::from_environment()?.moments_settings()
+pub(crate) fn get_deployment_plan() -> Result<DeploymentPlan, String> {
+    DesktopWorkspace::from_environment()?.deployment_plan()
 }
 
 #[tauri::command]
-pub(crate) fn get_document(id: String) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.document(&id)
+pub(crate) async fn deploy_content() -> Result<DeployRunStatus, String> {
+    run_background("content deploy", || {
+        DesktopWorkspace::from_environment()?.deploy_content()
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn verify_remote_content() -> Result<DeployVerificationResult, String> {
+    run_background("remote verification", || {
+        DesktopWorkspace::from_environment()?.verify_remote()
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) fn get_moments_settings() -> Result<MomentsSettings, String> {
+    DesktopWorkspace::from_environment()?.moments_settings()
 }
 
 #[tauri::command]
@@ -48,6 +65,19 @@ pub(crate) fn save_document_state(
     expected_revision: String,
 ) -> Result<EditorDocument, String> {
     DesktopWorkspace::from_environment()?.save_document_state(&id, state, &expected_revision)
+}
+
+#[tauri::command]
+pub(crate) fn import_media_asset(
+    id: String,
+    source_path: String,
+) -> Result<ImportedMediaAsset, String> {
+    DesktopWorkspace::from_environment()?.import_media_asset(&id, &source_path)
+}
+
+#[tauri::command]
+pub(crate) fn get_geo_insights(id: String) -> Result<GeoInsightReport, String> {
+    DesktopWorkspace::from_environment()?.geo_insights(&id)
 }
 
 #[tauri::command]
@@ -71,8 +101,24 @@ pub(crate) fn create_project(title: String) -> Result<EditorDocument, String> {
 }
 
 #[tauri::command]
-pub(crate) fn sync_stats() -> Result<StatsSyncReport, String> {
-    DesktopWorkspace::from_environment()?.sync_stats()
+pub(crate) async fn sync_stats() -> Result<StatsSyncReport, String> {
+    // Network and cache persistence are intentionally blocking SDK
+    // boundaries. Keep both off Tauri's command executor so a slow response
+    // cannot stall window events, painting, or the loading-state animation.
+    run_background("stats sync", || {
+        DesktopWorkspace::from_environment()?.sync_stats()
+    })
+    .await
+}
+
+async fn run_background<T, F>(operation: &str, task: F) -> Result<T, String>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, String> + Send + 'static,
+{
+    tauri::async_runtime::spawn_blocking(task)
+        .await
+        .map_err(|error| format!("{operation} worker failed: {error}"))?
 }
 
 #[tauri::command]

@@ -16,6 +16,8 @@ Media:
   # The development server runs from backend/, so serve the canonical
   # content assets without maintaining a second copied media directory.
   Root: ../content/resources
+# Private statistics and deployment-status credentials are intentionally not
+# stored here. Inject STATS_SYNC_TOKEN into the backend process environment.
 Traffic:
   ai_user_agents:
     - gptbot

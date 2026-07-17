@@ -24,6 +24,7 @@ type ServiceContext struct {
 	Config      config.Config
 	Cors        rest.Middleware
 	Analytics   rest.Middleware
+	PrivateAPI  rest.Middleware
 	DB          *ent.Client
 	RawDB       *sql.DB
 	ContentTags *contenttag.Repository
@@ -90,6 +91,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent TEXT,
 			ip TEXT,
 			lang TEXT,
+			country_code TEXT,
 			is_bot BOOLEAN DEFAULT 0,
 			bot_name TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -105,6 +107,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent VARCHAR(1024),
 			ip VARCHAR(64),
 			lang VARCHAR(8),
+			country_code VARCHAR(2),
 			is_bot TINYINT(1) DEFAULT 0,
 			bot_name VARCHAR(64),
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -120,6 +123,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			user_agent TEXT,
 			ip TEXT,
 			lang TEXT,
+			country_code TEXT,
 			is_bot BOOLEAN DEFAULT FALSE,
 			bot_name TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -145,6 +149,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		}
 		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN is_bot " + boolType)
 		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN bot_name " + nameType)
+		countryType := "TEXT"
+		if c.Database.Driver == "mysql" {
+			countryType = "VARCHAR(2)"
+		}
+		_, _ = rawDB.Exec("ALTER TABLE request_logs ADD COLUMN country_code " + countryType)
 	}
 
 	// Create user_identities table for OAuth identities (to store avatar, etc.)
@@ -207,6 +216,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:      c,
 		Cors:        middleware.NewCorsMiddleware().Handle,
 		Analytics:   middleware.NewAnalyticsMiddleware(client, trafficClassifier).Handle,
+		PrivateAPI:  middleware.NewMachineTokenMiddleware(c.Security.StatsSyncToken).Handle,
 		DB:          client,
 		RawDB:       rawDB,
 		ContentTags: contenttag.NewRepository(rawDB, c.Database.Driver),

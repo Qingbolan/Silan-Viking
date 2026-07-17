@@ -1,18 +1,23 @@
 import React from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, isTauri } from '@tauri-apps/api/core';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import {
   Activity,
   AlertCircle,
   Archive,
   BarChart3,
+  Bot,
   BookOpen,
   Brain,
   Briefcase,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Eye,
   EyeOff,
+  FileImage,
   FileText,
   Folder,
   FolderPlus,
@@ -33,12 +38,14 @@ import {
   Send,
   Sparkles,
   Type,
+  UploadCloud,
   UserRound,
   X,
 } from 'lucide-react';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
 import { CaptureSheet } from './components/CaptureSheet';
+import { CommitWall, TrafficWall } from './components/CommitWall';
 import { ContentCard } from './components/ContentCard';
 import { NewProjectDialog } from './components/NewProjectDialog';
 import { ResumePage } from './components/ResumePage';
@@ -68,6 +75,9 @@ import type {
   ContentKind,
   DashboardData,
   DashboardItem,
+  DeploymentPlan,
+  DeployRunStatus,
+  DeployVerificationResult,
   EditorDocument,
   EntityCount,
   EntityFilter,
@@ -75,7 +85,9 @@ import type {
   EpisodeSeriesInput,
   EpisodeSeriesSource,
   EpisodeSeries,
+  GeoInsightReport,
   IdeaCategory,
+  ImportedMediaAsset,
   MomentsSettings,
   StatsSyncReport,
   VersionStatus,
@@ -155,6 +167,15 @@ export default function App() {
   const [documents, setDocuments] = React.useState<EditorDocument[]>([]);
   const [entityCounts, setEntityCounts] = React.useState<Map<EntityFilter, number>>(() => new Map());
   const [dashboard, setDashboard] = React.useState<DashboardData | null>(null);
+  const [deploymentPlan, setDeploymentPlan] = React.useState<DeploymentPlan | null>(null);
+  const [activityPage, setActivityPage] = React.useState<0 | 1>(0);
+  const [deliveryPage, setDeliveryPage] = React.useState<0 | 1>(0);
+  const [refreshingWorkspace, setRefreshingWorkspace] = React.useState(false);
+  const [selectedCommitDay, setSelectedCommitDay] = React.useState<{ date: string; scopes: VersionScope[] } | null>(null);
+  const [selectedTrafficDate, setSelectedTrafficDate] = React.useState<string | null>(null);
+  const [freshnessTick, setFreshnessTick] = React.useState(0);
+  const [deployingContent, setDeployingContent] = React.useState(false);
+  const [deployVerification, setDeployVerification] = React.useState<DeployVerificationResult | null>(null);
   const [momentsSettings, setMomentsSettings] = React.useState<MomentsSettings | null>(null);
   const [screen, setScreen] = React.useState<'dashboard' | 'content'>('dashboard');
   const [selectedId, setSelectedId] = React.useState('');
@@ -168,6 +189,7 @@ export default function App() {
   const [error, setError] = React.useState<string | null>(null);
   const [confirmingRefresh, setConfirmingRefresh] = React.useState(false);
   const [capturePhase, setCapturePhase] = React.useState<CapturePhase>('closed');
+  const [captureOrigin, setCaptureOrigin] = React.useState({ x: 0, y: 0 });
   const [captureTarget, setCaptureTarget] = React.useState<CaptureTarget>('idea');
   const [captureNote, setCaptureNote] = React.useState('');
   const [captureCategory, setCaptureCategory] = React.useState<IdeaCategory>('inspiration');
@@ -192,6 +214,14 @@ export default function App() {
   const [releasingScope, setReleasingScope] = React.useState<VersionScope | ''>('');
   const [versionError, setVersionError] = React.useState<string | null>(null);
   const [versionPanelOpen, setVersionPanelOpen] = React.useState(false);
+  const [mediaDragActive, setMediaDragActive] = React.useState(false);
+  const [mediaImporting, setMediaImporting] = React.useState(false);
+  const [mediaDropError, setMediaDropError] = React.useState<string | null>(null);
+  const [lastImportedAsset, setLastImportedAsset] = React.useState<ImportedMediaAsset | null>(null);
+  const [geoPanelOpen, setGeoPanelOpen] = React.useState(false);
+  const [geoInsights, setGeoInsights] = React.useState<GeoInsightReport | null>(null);
+  const [geoLoading, setGeoLoading] = React.useState(false);
+  const [geoError, setGeoError] = React.useState<string | null>(null);
   const [stateSavingId, setStateSavingId] = React.useState('');
   const [seriesEditingSlug, setSeriesEditingSlug] = React.useState('');
   const [seriesSource, setSeriesSource] = React.useState<EpisodeSeriesSource | null>(null);
@@ -395,6 +425,10 @@ export default function App() {
     ? `${episodeSeries.length} series · ${visibleItemCount} episodes · ${filtered.length} Markdown parts`
     : `${visibleItemCount} items · ${filtered.length} Markdown parts`;
   const statsSyncedAt = dashboard?.stats_synced_at || null;
+  const workspaceRefreshLabel = React.useMemo(
+    () => formatSyncedAgo(statsSyncedAt).replace(/^Synced /, ''),
+    [statsSyncedAt, freshnessTick],
+  );
   const hasSyncedStats = Boolean(statsSyncedAt);
   const displayedViews = hasSyncedStats
     ? dashboard?.deployed_views ?? 0
@@ -420,6 +454,20 @@ export default function App() {
   const displayedAiChatReferrals = hasSyncedStats
     ? dashboard?.deployed_ai_chat_referrals ?? 0
     : 0;
+  const selectedCommitItems = selectedCommitDay
+    ? (dashboard?.recent_items || []).filter((item) => {
+        const scope = item.entity_type === 'episode' ? 'blog' : item.entity_type;
+        return selectedCommitDay.scopes.includes(scope as VersionScope);
+      })
+    : [];
+  const selectedTrafficDay = selectedTrafficDate
+    ? dashboard?.daily_visits.find((day) => day.date === selectedTrafficDate) || null
+    : null;
+  const activityFilterLabel = selectedTrafficDay
+    ? `${selectedTrafficDay.date} · Human traffic · ${selectedTrafficDay.visits} visits`
+    : selectedCommitDay
+      ? `${selectedCommitDay.date} · ${selectedCommitDay.scopes.join(' · ') || 'Content'}`
+      : 'All content · Latest activity';
 
   React.useEffect(() => {
     if (loading || filtered.length === 0) return;
@@ -431,6 +479,11 @@ export default function App() {
   React.useEffect(() => {
     setSaveFailed(false);
   }, [selectedTranslation?.id]);
+
+  React.useEffect(() => {
+    const timer = window.setInterval(() => setFreshnessTick((tick) => tick + 1), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   React.useEffect(() => {
     if (capturePhase === 'editing' || capturePhase === 'failed') {
@@ -507,6 +560,31 @@ export default function App() {
     }
   }, []);
 
+  const loadDeploymentPlan = React.useCallback(async () => {
+    try {
+      setDeploymentPlan(await invoke<DeploymentPlan>('get_deployment_plan'));
+    } catch (reason) {
+      setError(String(reason));
+    }
+  }, []);
+
+  const deployContent = React.useCallback(async () => {
+    if (deployingContent || !deploymentPlan || deploymentPlan.dirty_count > 0) return;
+    setDeployingContent(true);
+    setDeployVerification(null);
+    setError(null);
+    try {
+      await invoke<DeployRunStatus>('deploy_content');
+      const verification = await invoke<DeployVerificationResult>('verify_remote_content');
+      setDeployVerification(verification);
+      await loadDeploymentPlan();
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setDeployingContent(false);
+    }
+  }, [deployingContent, deploymentPlan, loadDeploymentPlan]);
+
   const loadMomentsSettings = React.useCallback(async () => {
     try {
       setMomentsSettings(await invoke<MomentsSettings>('get_moments_settings'));
@@ -526,6 +604,10 @@ export default function App() {
   React.useEffect(() => {
     if (screen === 'dashboard') void loadDashboard();
   }, [screen, loadDashboard]);
+
+  React.useEffect(() => {
+    if (screen === 'dashboard') void loadDeploymentPlan();
+  }, [screen, loadDeploymentPlan]);
 
   React.useEffect(() => {
     if (screen === 'content' && entityFilter === 'update') void loadMomentsSettings();
@@ -688,6 +770,7 @@ export default function App() {
       setVersionStatus(nextStatus);
       setShelfVersionStatus(nextStatus);
       await loadDocuments();
+      if (deploymentPlan) await loadDeploymentPlan();
     } catch (reason) {
       setVersionError(String(reason));
       setVersionPanelOpen(true);
@@ -696,17 +779,30 @@ export default function App() {
     }
   };
 
-  const syncStats = async () => {
-    if (syncingStats) return;
-    setSyncingStats(true);
-    setStatsSyncError(null);
+  const refreshWorkspace = async () => {
+    if (refreshingWorkspace) return;
+    if (dirtyIds.size > 0) {
+      setConfirmingRefresh(true);
+      return;
+    }
+    setRefreshingWorkspace(true);
+    setError(null);
     try {
-      await invoke<StatsSyncReport>('sync_stats');
-      setDashboard(await invoke<DashboardData>('get_dashboard'));
+      if (screen === 'dashboard') {
+        setSyncingStats(true);
+        setStatsSyncError(null);
+        await invoke<StatsSyncReport>('sync_stats');
+        await Promise.all([loadDocuments(), loadDashboard(), loadDeploymentPlan()]);
+      } else {
+        await loadDocuments();
+        if (entityFilter === 'update') await loadMomentsSettings();
+      }
     } catch (reason) {
-      setStatsSyncError(String(reason));
+      if (screen === 'dashboard') setStatsSyncError(String(reason));
+      else setError(String(reason));
     } finally {
       setSyncingStats(false);
+      setRefreshingWorkspace(false);
     }
   };
 
@@ -717,6 +813,18 @@ export default function App() {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => setCapturePhase('editing'));
     });
+  };
+
+  const openCaptureFromTrigger = (
+    target: CaptureTarget,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setCaptureOrigin({
+      x: bounds.left + bounds.width / 2,
+      y: bounds.top + bounds.height / 2,
+    });
+    openCapture(target);
   };
 
   const requestCaptureClose = () => {
@@ -757,7 +865,10 @@ export default function App() {
       setEntityFilter(captureTarget);
       setScreen('content');
       setSelectedSeriesId('');
-      setContentEditorOpen(captureTarget === 'update');
+      // A successful capture is the beginning of authoring, not the end of
+      // it. Open every newly created prose item immediately so Blog and Idea
+      // captures can be completed and published without hunting for the card.
+      setContentEditorOpen(true);
       setCaptureNote('');
       await loadEntityCounts();
       setCapturePhase('closing');
@@ -874,6 +985,115 @@ export default function App() {
   React.useEffect(() => {
     saveSelectedRef.current = saveSelected;
   });
+
+  const patchSelectedTranslationContent = React.useCallback((content: string) => {
+    if (!selected || !selectedTranslation) return;
+    setDocuments((current) => current.map((document) => (
+      document.id === selected.id
+        ? {
+            ...document,
+            translations: document.translations.map((translation) => (
+              translation.id === selectedTranslation.id ? { ...translation, content } : translation
+            )),
+          }
+        : document
+    )));
+    setDirtyIds((current) => new Set(current).add(selectedTranslation.id));
+  }, [selected?.id, selectedTranslation?.id]);
+
+  const insertMarkdownAtCursor = React.useCallback((markdown: string) => {
+    if (!selectedTranslation) return;
+    const block = `\n\n${markdown.trim()}\n`;
+    const editor = editorRef.current;
+    if (editor) {
+      editor.insertValue(block, true);
+      patchSelectedTranslationContent(editor.getValue());
+      return;
+    }
+    patchSelectedTranslationContent(`${selectedTranslation.content}${block}`);
+  }, [patchSelectedTranslationContent, selectedTranslation]);
+
+  const importDroppedMedia = React.useCallback(async (paths: string[]) => {
+    if (!selectedTranslation) {
+      setMediaDropError('Open a Markdown translation before dropping media.');
+      return;
+    }
+    const candidates = paths.filter(Boolean);
+    if (candidates.length === 0) return;
+
+    setMediaImporting(true);
+    setMediaDropError(null);
+    try {
+      const imported: ImportedMediaAsset[] = [];
+      for (const sourcePath of candidates) {
+        imported.push(await invoke<ImportedMediaAsset>('import_media_asset', {
+          id: selectedTranslation.id,
+          sourcePath,
+        }));
+      }
+      insertMarkdownAtCursor(imported.map((asset) => asset.markdown).join('\n\n'));
+      setLastImportedAsset(imported[imported.length - 1] || null);
+      if (deploymentPlan) void loadDeploymentPlan();
+    } catch (reason) {
+      setMediaDropError(String(reason));
+    } finally {
+      setMediaImporting(false);
+    }
+  }, [deploymentPlan, insertMarkdownAtCursor, loadDeploymentPlan, selectedTranslation]);
+
+  React.useEffect(() => {
+    if (!contentEditorOpen || !isTauri()) {
+      setMediaDragActive(false);
+      return;
+    }
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    getCurrentWebview().onDragDropEvent((event) => {
+      const payload = event.payload;
+      if (payload.type === 'enter' || payload.type === 'over') {
+        setMediaDragActive(Boolean(selectedTranslation));
+        return;
+      }
+      if (payload.type === 'leave') {
+        setMediaDragActive(false);
+        return;
+      }
+      if (payload.type === 'drop') {
+        setMediaDragActive(false);
+        void importDroppedMedia(payload.paths);
+      }
+    }).then((nextUnlisten) => {
+      if (disposed) nextUnlisten();
+      else unlisten = nextUnlisten;
+    }).catch((reason) => {
+      setMediaDropError(String(reason));
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [contentEditorOpen, importDroppedMedia, selectedTranslation]);
+
+  const openGeoPanel = async () => {
+    if (!selectedTranslation || geoLoading) return;
+    setGeoPanelOpen(true);
+    setGeoLoading(true);
+    setGeoError(null);
+    try {
+      setGeoInsights(await invoke<GeoInsightReport>('get_geo_insights', { id: selectedTranslation.id }));
+    } catch (reason) {
+      setGeoError(String(reason));
+    } finally {
+      setGeoLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    setGeoInsights(null);
+    setGeoError(null);
+    setMediaDropError(null);
+    setLastImportedAsset(null);
+  }, [selectedTranslation?.id]);
 
   const toggleToolbar = () => setToolbarVisible((current) => {
     const next = !current;
@@ -1130,7 +1350,6 @@ export default function App() {
   const resumeOverview = filtered.find((document) => document.entity_type === 'resume' && document.role === 'summary')
     || filtered.find((document) => document.entity_type === 'resume' && document.role === 'overview')
     || null;
-  const resumeGroup = contentGroups.find((group) => group.kind === 'resume') || null;
   // Episodes never appear in `contentGroups` (they group under their series),
   // so the editor overlay resolves them from the series tree instead.
   const selectedContentGroup = selected && editableMasonryContentKinds.has(selected.entity_type)
@@ -1246,6 +1465,15 @@ export default function App() {
           <div className="source-note">
             <FileText size={14} />
             <span><strong>content/</strong> is the source</span>
+            <button
+              type="button"
+              onClick={() => void refreshWorkspace()}
+              disabled={refreshingWorkspace}
+              title="Refresh workspace"
+              aria-label="Refresh workspace"
+            >
+              {refreshingWorkspace ? <LoaderCircle size={14} /> : <RefreshCw size={14} />}
+            </button>
           </div>
         </div>
       </aside>
@@ -1297,9 +1525,6 @@ export default function App() {
                     <span>New</span>
                   </button>
                 )}
-                <button type="button" onClick={refreshDocuments} title="Refresh source tree" aria-label="Refresh source tree">
-                  <RefreshCw size={15} />
-                </button>
               </div>
             )}
           </header>
@@ -1316,38 +1541,83 @@ export default function App() {
           <section className="dashboard-area">
             <div className="dashboard-grid">
               <section className="activity-summary ds-acrylic" data-ds="">
-                <div>
-                  <div className="activity-summary-head">
-                    <div className="eyebrow">Site activity</div>
-                    <button
-                      type="button"
-                      className={`sync-stats-button ${syncingStats ? 'pending' : ''}`}
-                      onClick={() => void syncStats()}
-                      disabled={syncingStats}
-                      title="Pull real views, reactions, crawler traffic, and source traffic from the deployed site"
-                    >
-                      {syncingStats ? <LoaderCircle size={13} /> : <RefreshCw size={13} />}
-                      {syncingStats ? 'Syncing' : 'Sync stats'}
-                    </button>
-                  </div>
-                  <h2>{displayedHumanInteractions}</h2>
-                  <p>{hasSyncedStats ? 'human interactions synced from the deployed site' : 'human interactions recorded in the local projection'}</p>
-                  <span className="sync-freshness">{formatSyncedAgo(statsSyncedAt)}</span>
-                  {statsSyncError && (
-                    <div className="dialog-error stats-sync-error" role="alert">
-                      <AlertCircle size={13} />
-                      <span>{statsSyncError}</span>
+                <div className="activity-carousel">
+                  <div className="activity-carousel-bar">
+                    <div className="activity-tabs" role="tablist" aria-label="Site activity views">
+                      <button type="button" role="tab" aria-selected={activityPage === 0} onClick={() => setActivityPage(0)}>Sync status</button>
+                      <button type="button" role="tab" aria-selected={activityPage === 1} onClick={() => setActivityPage(1)}>Traffic detail</button>
                     </div>
-                  )}
-                </div>
-                <div className="activity-breakdown">
-                  <div><span>Views</span><strong>{displayedViews}</strong></div>
-                  <div><span>Likes</span><strong>{displayedLikes}</strong></div>
-                  <div><span>Comments</span><strong>{displayedComments}</strong></div>
-                  <div><span>Crawlers</span><strong>{displayedCrawlerInteractions}</strong></div>
-                  <div><span>AI crawlers</span><strong>{displayedAiCrawlerInteractions}</strong></div>
-                  <div><span>Search bots</span><strong>{displayedSearchCrawlerInteractions}</strong></div>
-                  <div><span>AI chat</span><strong>{displayedAiChatReferrals}</strong></div>
+                    <div className="activity-carousel-controls">
+                      <button type="button" onClick={() => setActivityPage(activityPage === 0 ? 1 : 0)} aria-label="Previous activity page"><ChevronLeft size={14} /></button>
+                      <span>{activityPage + 1} / 2</span>
+                      <button type="button" onClick={() => setActivityPage(activityPage === 0 ? 1 : 0)} aria-label="Next activity page"><ChevronRight size={14} /></button>
+                    </div>
+                  </div>
+                  <div className="activity-carousel-page" key={activityPage}>
+                    {activityPage === 0 ? (
+                      <>
+                        <div className="activity-primary">
+                          <div className="activity-summary-head">
+                            <div className="eyebrow">Site activity</div>
+                          </div>
+                          <h2>{displayedHumanInteractions}</h2>
+                          <p>{hasSyncedStats ? 'human interactions synced from the deployed site' : 'human interactions recorded in the local projection'}</p>
+                          <span className="sync-freshness">{formatSyncedAgo(statsSyncedAt)}</span>
+                          {statsSyncError && (
+                            <div className="dialog-error stats-sync-error" role="alert">
+                              <AlertCircle size={13} />
+                              <span>{statsSyncError}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="activity-breakdown">
+                          <div><span>Views</span><strong>{displayedViews}</strong></div>
+                          <div><span>Likes</span><strong>{displayedLikes}</strong></div>
+                          <div><span>Comments</span><strong>{displayedComments}</strong></div>
+                          <div><span>Crawlers</span><strong>{displayedCrawlerInteractions}</strong></div>
+                          <div><span>AI crawlers</span><strong>{displayedAiCrawlerInteractions}</strong></div>
+                          <div><span>Search bots</span><strong>{displayedSearchCrawlerInteractions}</strong></div>
+                          <div><span>AI chat</span><strong>{displayedAiChatReferrals}</strong></div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="traffic-detail">
+                        <div className="traffic-today">
+                          <span>Today</span>
+                          <strong>+{dashboard?.today_visits ?? 0}</strong>
+                          <p>human visits since 00:00 UTC</p>
+                        </div>
+                        <div className="traffic-ranking">
+                          <span>Top content</span>
+                          {(dashboard?.top_content || []).slice(0, 3).map((item) => (
+                            <div key={`${item.content_type}-${item.title}`}>
+                              <span>{item.title}</span><strong>{item.views}</strong>
+                            </div>
+                          ))}
+                          {!dashboard?.top_content.length && <p>No content traffic yet.</p>}
+                        </div>
+                        <div className="traffic-ranking">
+                          <span>Traffic sources</span>
+                          {(dashboard?.top_sources || []).slice(0, 3).map((source) => (
+                            <div key={source.source}>
+                              <span>{source.source.replace(/_/g, ' ')}</span><strong>{source.visits}</strong>
+                            </div>
+                          ))}
+                          {!dashboard?.top_sources.length && <p>No source traffic yet.</p>}
+                        </div>
+                        <div className="traffic-ranking traffic-countries">
+                          <span>Countries</span>
+                          {(dashboard?.top_countries || []).slice(0, 3).map((country) => (
+                            <div key={country.country_code}>
+                              <span>{new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}</span>
+                              <strong>{country.visits}</strong>
+                            </div>
+                          ))}
+                          {!dashboard?.top_countries.length && <p>No country traffic yet.</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -1357,30 +1627,95 @@ export default function App() {
                 <p>comments pending review</p>
               </section>
 
-              <section className="recent-board ds-acrylic" data-ds="">
-                <div className="board-head">
-                  <div>
-                    <span>Content activity</span>
-                    <h2>Recently touched</h2>
+              <section className="delivery-panel ds-acrylic" data-ds="">
+                <div className="activity-carousel-bar delivery-carousel-bar">
+                  <div className="activity-tabs" role="tablist" aria-label="Delivery views">
+                    <button type="button" role="tab" aria-selected={deliveryPage === 0} onClick={() => setDeliveryPage(0)}>Release activity</button>
+                    <button type="button" role="tab" aria-selected={deliveryPage === 1} onClick={() => setDeliveryPage(1)}>Traffic detail</button>
                   </div>
-                  <button type="button" onClick={refreshDocuments} title="Refresh source tree" aria-label="Refresh source tree">
-                    <RefreshCw size={15} />
-                  </button>
+                  <div className="delivery-toolbar">
+                    <span>{deliveryPage + 1} / 2</span>
+                    <button type="button" onClick={() => setDeliveryPage(deliveryPage === 0 ? 1 : 0)} aria-label="Previous delivery page"><ChevronLeft size={14} /></button>
+                    <button type="button" onClick={() => setDeliveryPage(deliveryPage === 0 ? 1 : 0)} aria-label="Next delivery page"><ChevronRight size={14} /></button>
+                  </div>
                 </div>
-                <div className="recent-list">
-                  {(dashboard?.recent_items || []).map((item) => (
+                <div className="delivery-carousel-page" key={deliveryPage}>
+                  {deliveryPage === 0 ? (
+                    deploymentPlan ? (
+                      <CommitWall
+                        activity={deploymentPlan.commit_activity}
+                        selectedDate={selectedCommitDay?.date}
+                        onSelect={(date, scopes) => {
+                          setSelectedTrafficDate(null);
+                          setSelectedCommitDay((current) => current?.date === date ? null : { date, scopes });
+                        }}
+                      />
+                    ) : (
+                      <div className="version-loading">
+                        <LoaderCircle size={15} />
+                        <span>Reading delivery state...</span>
+                      </div>
+                    )
+                  ) : (
+                    <TrafficWall
+                      activity={dashboard?.daily_visits || []}
+                      selectedDate={selectedTrafficDate}
+                      onSelect={(date) => {
+                        setSelectedCommitDay(null);
+                        setSelectedTrafficDate((current) => current === date ? null : date);
+                      }}
+                    />
+                  )}
+                </div>
+              </section>
+
+              <section className="recent-board ds-acrylic" data-ds="">
+                <div className="activity-filter-bar">
+                  <span>{activityFilterLabel}</span>
+                  {(selectedCommitDay || selectedTrafficDay) && (
                     <button
                       type="button"
-                      key={`${item.entity_type}-${item.slug}`}
-                      className="recent-row"
-                      onClick={() => openShelf(item.entity_type === 'episode' ? 'blog' : item.entity_type as EntityFilter)}
+                      onClick={() => {
+                        setSelectedCommitDay(null);
+                        setSelectedTrafficDate(null);
+                      }}
+                      aria-label="Clear activity filter"
+                      title="Clear filter"
                     >
-                      <span className={badgeClass(item.entity_type as ContentKind)}>{item.entity_type}</span>
-                      <strong>{item.title}</strong>
-                      <small>{contentStateSummary(item.entity_type as ContentKind, item.status, item.visibility)}</small>
+                      <X size={13} />
+                      Clear
                     </button>
-                  ))}
+                  )}
                 </div>
+                {selectedTrafficDay ? (
+                  <div className="traffic-result-list activity-result-list">
+                    {selectedTrafficDay.content.map((item, index) => (
+                      <button type="button" key={`${item.content_type}-${item.title}`} onClick={() => openShelf(item.content_type === 'episode' ? 'blog' : item.content_type as EntityFilter)}>
+                        <span>{index + 1}</span>
+                        <strong>{item.title}</strong>
+                        <small>{item.visits} visits</small>
+                        <small>{item.comments} comments total</small>
+                      </button>
+                    ))}
+                    {selectedTrafficDay.content.length === 0 && <p>No content traffic for this date.</p>}
+                  </div>
+                ) : (
+                  <div className="recent-list">
+                    {(selectedCommitDay ? selectedCommitItems : dashboard?.recent_items || []).map((item) => (
+                      <button
+                        type="button"
+                        key={`${item.entity_type}-${item.slug}`}
+                        className="recent-row"
+                        onClick={() => openShelf(item.entity_type === 'episode' ? 'blog' : item.entity_type as EntityFilter)}
+                      >
+                        <span className={badgeClass(item.entity_type as ContentKind)}>{item.entity_type}</span>
+                        <strong>{item.title}</strong>
+                        <small>{contentStateSummary(item.entity_type as ContentKind, item.status, item.visibility)}</small>
+                      </button>
+                    ))}
+                    {selectedCommitDay && selectedCommitItems.length === 0 && <p className="activity-empty">No recently indexed content matches this commit scope.</p>}
+                  </div>
+                )}
               </section>
             </div>
           </section>
@@ -1388,7 +1723,6 @@ export default function App() {
           <section className="editor-area resume-editor-area">
             <ResumePage
               overview={resumeOverview}
-              onEditProse={resumeGroup ? () => openContentGroup(resumeGroup) : undefined}
             />
           </section>
         ) : isUpdateShelf && !contentEditorOpen ? (
@@ -1468,9 +1802,6 @@ export default function App() {
                         <span>New</span>
                       </button>
                     )}
-                    <button type="button" onClick={refreshDocuments} title="Refresh source tree" aria-label="Refresh source tree">
-                      <RefreshCw size={15} />
-                    </button>
                   </div>
                 </div>
 
@@ -1581,10 +1912,20 @@ export default function App() {
 
         {screen === 'dashboard' ? (
           <div className="quick-dock" aria-label="Writing shortcuts">
-            <button type="button" className="idea-trigger" onClick={() => openCapture('idea')}><Lightbulb size={15} />Record idea</button>
-            <button type="button" onClick={() => openCapture('update')}><Clock3 size={15} />New update</button>
+            <button
+              type="button"
+              className="dock-refresh"
+              onClick={() => void refreshWorkspace()}
+              disabled={refreshingWorkspace}
+              title="Refresh workspace"
+            >
+              {refreshingWorkspace && <LoaderCircle size={15} />}
+              {refreshingWorkspace ? 'Refreshing' : workspaceRefreshLabel}
+            </button>
+            <button type="button" className="idea-trigger" onClick={(event) => openCaptureFromTrigger('idea', event)}><Lightbulb size={15} />Record idea</button>
+            <button type="button" onClick={(event) => openCaptureFromTrigger('update', event)}><Clock3 size={15} />New update</button>
             <button type="button" onClick={openNewProject}><Plus size={15} />New project</button>
-            <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
+            <button type="button" onClick={(event) => openCaptureFromTrigger('blog', event)}><PencilLine size={15} />Write blog</button>
           </div>
         ) : isUpdateShelf && !contentEditorOpen ? (
           <div className="quick-dock moment-dock" aria-label="Moment shortcuts">
@@ -1601,10 +1942,10 @@ export default function App() {
                 className="dock-release"
                 disabled={releasingScope === 'update'}
                 onClick={() => void releaseCurrentScope('update')}
-                title="Commit and release Updates changes only"
+                title="Commit Updates changes locally; use Deploy content to update the website"
               >
                 {releasingScope === 'update' ? <LoaderCircle size={15} /> : <Send size={15} />}
-                {releasingScope === 'update' ? 'Releasing' : 'Release'}
+                {releasingScope === 'update' ? 'Committing' : 'Commit'}
               </button>
             )}
           </div>
@@ -1641,7 +1982,7 @@ export default function App() {
                 title={`Commit and release ${currentShelf.label} changes only`}
               >
                 {releasingScope === shelfDockMode ? <LoaderCircle size={15} /> : <Send size={15} />}
-                {releasingScope === shelfDockMode ? 'Releasing' : 'Release'}
+                {releasingScope === shelfDockMode ? 'Committing' : 'Commit'}
               </button>
             )}
           </div>
@@ -1750,13 +2091,9 @@ export default function App() {
                             onClick={() => void releaseCurrentScope(versionStatus.scope)}
                           >
                             {releasingScope === versionStatus.scope ? <LoaderCircle size={13} /> : <Send size={13} />}
-                            {releasingScope === versionStatus.scope ? 'Releasing' : 'Release'}
+                            {releasingScope === versionStatus.scope ? 'Committing' : 'Commit'}
                           </button>
                         )}
-                        <button type="button" onClick={() => void openVersionPanel(versionStatus.scope)} disabled={versionLoading || Boolean(releasingScope)}>
-                        <RefreshCw size={13} />
-                        Refresh
-                      </button>
                       </div>
                     </div>
                     {versionStatus.changes.length === 0 ? (
@@ -1893,6 +2230,16 @@ export default function App() {
                   {renderStateControls(selectedContentGroup, 'header')}
                   <button
                     type="button"
+                    className={`content-close content-geo-toggle ${geoPanelOpen ? 'active' : ''}`}
+                    onClick={() => void openGeoPanel()}
+                    title="Run AI/GEO content check"
+                    aria-label="Run AI/GEO content check"
+                    disabled={!selectedTranslation || geoLoading}
+                  >
+                    {geoLoading ? <LoaderCircle size={15} /> : <Bot size={15} />}
+                  </button>
+                  <button
+                    type="button"
                     className={`content-close content-toolbar-toggle ${toolbarVisible ? 'active' : ''}`}
                     aria-pressed={toolbarVisible}
                     onClick={toggleToolbar}
@@ -1962,6 +2309,7 @@ export default function App() {
                       <span data-visibility={contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibility === 'private' ? 'private' : undefined}>
                         {contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibilityLabel}
                       </span>
+                      {mediaImporting && <span>importing media</span>}
                     </div>
                   </header>
 
@@ -1984,15 +2332,108 @@ export default function App() {
                     </div>
                     <div ref={hostRef} className="editor-host" />
                   </div>
+                  {mediaDragActive && (
+                    <div className="media-drop-overlay" role="status">
+                      <div>
+                        <UploadCloud size={26} />
+                        <strong>Drop into {selected.role}</strong>
+                        <span>assets/ · silan:// Markdown</span>
+                      </div>
+                    </div>
+                  )}
+                  {(mediaImporting || mediaDropError || lastImportedAsset) && (
+                    <div className="media-import-toast" data-state={mediaDropError ? 'error' : mediaImporting ? 'loading' : 'done'}>
+                      {mediaDropError ? <AlertCircle size={14} /> : mediaImporting ? <LoaderCircle size={14} /> : <FileImage size={14} />}
+                      <span>
+                        {mediaDropError || (mediaImporting ? 'Importing media asset...' : `${lastImportedAsset?.file_name} inserted as silan:// asset`)}
+                      </span>
+                    </div>
+                  )}
                 </section>
               </div>
             </div>
           </section>
         )}
+
+        {geoPanelOpen && (
+          <div className="dialog-overlay" role="presentation" onClick={() => setGeoPanelOpen(false)}>
+            <div
+              className="dialog-card geo-card"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="geo-card-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="dialog-headline">
+                <div className="new-project-badge">
+                  <Bot size={17} />
+                </div>
+                <button
+                  type="button"
+                  className="dialog-close"
+                  onClick={() => setGeoPanelOpen(false)}
+                  aria-label="Close GEO insights"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              <h3 id="geo-card-title">AI/GEO readiness</h3>
+              <p>{selected?.title || 'Selected content'} · {selectedTranslation?.language || ''}</p>
+              {geoLoading ? (
+                <div className="version-loading">
+                  <LoaderCircle size={15} />
+                  <span>Reading content structure...</span>
+                </div>
+              ) : geoError ? (
+                <div className="dialog-error" role="alert">
+                  <AlertCircle size={14} />
+                  <span>{geoError}</span>
+                </div>
+              ) : geoInsights ? (
+                <>
+                  <div className="geo-score-row">
+                    <strong>{geoInsights.score}</strong>
+                    <div>
+                      <span>{geoInsights.grade}</span>
+                      <p>{geoInsights.summary}</p>
+                    </div>
+                  </div>
+                  <div className="geo-metric-grid">
+                    {geoInsights.metrics.map((metric) => (
+                      <div key={metric.label} title={metric.detail}>
+                        <span>{metric.label}</span>
+                        <strong>{metric.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                  <section className="geo-action-list" aria-label="GEO actions">
+                    {geoInsights.actions.map((action) => (
+                      <div className="geo-action-row" key={`${action.priority}:${action.label}`}>
+                        <span>{action.priority}</span>
+                        <div>
+                          <strong>{action.label}</strong>
+                          <p>{action.detail}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </section>
+                  <div className="dialog-actions">
+                    <button type="button" className="cancel" onClick={() => setGeoPanelOpen(false)}>Close</button>
+                    <button type="button" className="primary" onClick={() => void openGeoPanel()}>
+                      <Bot size={15} />
+                      Refresh
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        )}
       </main>
 
       <CaptureSheet
         phase={capturePhase}
+        origin={captureOrigin}
         target={captureTarget}
         onTargetChange={setCaptureTarget}
         category={captureCategory}
@@ -2010,7 +2451,7 @@ export default function App() {
         onTransitionEnd={(event) => {
           if (
             event.target === event.currentTarget
-            && event.propertyName === 'opacity'
+            && event.propertyName === 'clip-path'
             && capturePhase === 'closing'
           ) {
             setCapturePhase('closed');

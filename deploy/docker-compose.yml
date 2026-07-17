@@ -19,6 +19,10 @@ services:
       dockerfile: deploy/backend.Dockerfile
     image: silan-backend:latest
     restart: unless-stopped
+    environment:
+      # Required private machine credential. Keep the value in the .env beside
+      # the deployed compose file; never place it here or in a web bundle.
+      STATS_SYNC_TOKEN: ${STATS_SYNC_TOKEN:?set STATS_SYNC_TOKEN in the deployment .env}
     volumes:
       # The derived DB (`/data/portfolio.db`) and the binary resource files
       # (`/data/media/`) both live here. The deploy pipeline's promote step

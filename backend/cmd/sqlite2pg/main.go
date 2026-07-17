@@ -89,6 +89,9 @@ func main() {
 	if err := entClient.Close(); err != nil {
 		log.Fatalf("sqlite2pg: close ent client: %v", err)
 	}
+	if err := ensureProjectionMetadataSchema(context.Background(), writeDSN); err != nil {
+		log.Fatalf("sqlite2pg: projection metadata schema: %v", err)
+	}
 	// Schema.Create runs through the admin DSN so it can add tables safely,
 	// but those new objects must be handed back to the runtime role. Without
 	// this transfer PostgreSQL hides the admin-owned table from ent's
@@ -255,6 +258,27 @@ func main() {
 	for _, t := range skipped {
 		log.Printf("  skipped (no PG counterpart): %s", t)
 	}
+}
+
+// sync_meta belongs to the content projection rather than the runtime domain,
+// so it is intentionally outside ent's serving-model schema. The importer owns
+// this explicit boundary table and migrates it before table discovery, making
+// deployed-content provenance available on every supported database.
+func ensureProjectionMetadataSchema(ctx context.Context, dsn string) error {
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS sync_meta (
+			content_commit TEXT,
+			content_hash TEXT,
+			items_total BIGINT,
+			generated_at TEXT
+		)`)
+	return err
 }
 
 // Runtime-owned tables are written by visitors or the serving backend. A

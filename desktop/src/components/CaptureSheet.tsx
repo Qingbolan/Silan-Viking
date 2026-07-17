@@ -21,6 +21,7 @@ type CaptureSheetProps = {
   onSubmit: () => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onTransitionEnd: (event: React.TransitionEvent<HTMLElement>) => void;
+  origin: { x: number; y: number };
 };
 
 export function CaptureSheet({
@@ -40,6 +41,7 @@ export function CaptureSheet({
   onSubmit,
   onKeyDown,
   onTransitionEnd,
+  origin,
 }: CaptureSheetProps) {
   return (
     <section
@@ -48,6 +50,10 @@ export function CaptureSheet({
       data-target={target}
       aria-hidden={phase === 'closed'}
       onTransitionEnd={onTransitionEnd}
+      style={{
+        '--capture-origin-x': `${origin.x}px`,
+        '--capture-origin-y': `${origin.y}px`,
+      } as React.CSSProperties}
     >
       <header className="capture-header">
         <nav className="capture-mode-tabs" role="tablist" aria-label="快速书写模式">
