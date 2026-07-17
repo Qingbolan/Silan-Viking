@@ -13,6 +13,7 @@ import { Seo } from '../components/Seo';
 import { fetchUpdates } from '../api/updates/updateApi';
 import type { RecentUpdate } from '../types/api';
 import Markdown from '../components/ui/Markdown';
+import UpdateMomentActions from '../components/Resume/UpdateMomentActions';
 import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 import {
   Alert,
@@ -23,6 +24,7 @@ import {
   Skeleton,
   type BadgeProps,
 } from '../components/ds';
+import { withoutRepeatedTitle } from '../lib/markdown';
 
 type UpdateKind = 'work' | 'education' | 'research' | 'publication' | 'project' | 'other';
 
@@ -203,7 +205,10 @@ const RecentUpdates: React.FC = () => {
       const date = validDate(update.date);
       if (!date || date.getFullYear() !== selectedTime.year) return false;
       return selectedTime.month === undefined || date.getMonth() === selectedTime.month;
-    }),
+    }).sort((left, right) =>
+      Number(Boolean(right.update.pinned)) - Number(Boolean(left.update.pinned))
+      || (validDate(right.update.date)?.getTime() ?? 0) - (validDate(left.update.date)?.getTime() ?? 0),
+    ),
     [normalized, kind, selectedTime],
   );
 
@@ -298,6 +303,11 @@ const RecentUpdates: React.FC = () => {
                 transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.2) }}
               >
                 <div className="flex items-center gap-2 text-ds-xs text-ds-fg-subtle sm:block">
+                  {update.pinned && (
+                    <span className="mb-2 inline-flex font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-primary">
+                      {language === 'en' ? 'PIN' : '置顶'}
+                    </span>
+                  )}
                   <time dateTime={update.date} className="font-mono tabular-nums">{exactDate}</time>
                   <span className="sm:mt-3 sm:flex sm:items-center sm:gap-1.5">
                     <Icon className="size-3.5" aria-hidden />
@@ -325,7 +335,7 @@ const RecentUpdates: React.FC = () => {
                   </div>
 
                   <Markdown className="mt-4 text-ds-base leading-7 text-ds-fg-muted">
-                    {update.description}
+                    {withoutRepeatedTitle(update.description, update.title)}
                   </Markdown>
 
                   {update.tags?.length > 0 && (
@@ -337,6 +347,7 @@ const RecentUpdates: React.FC = () => {
                       ))}
                     </div>
                   )}
+                  <UpdateMomentActions updateKey={update.slug || update.id} />
                 </article>
               </motion.li>
             );

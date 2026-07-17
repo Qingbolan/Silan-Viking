@@ -470,6 +470,7 @@ export const likeProject = async (
   if (options.clientIP) body.client_ip = options.clientIP;
   body.user_agent_full = options.userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
   body.referrer = typeof document !== 'undefined' ? document.referrer : '';
+  body.landing_url = typeof window !== 'undefined' ? window.location.href : '';
 
   const url = `/api/v1/projects/${projectId}/like?lang=${formatLanguage(options.language || 'en')}`;
   const response = await post<LikeProjectResponse>(url, body);

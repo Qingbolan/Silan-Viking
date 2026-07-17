@@ -12,6 +12,7 @@ import type {
 import { get, formatLanguage, mediaUrl } from '../utils';
 import { fetchUpdates } from '../updates/updateApi';
 import { fetchProjects } from '../projects/projectApi';
+import { getClientFingerprint } from '../../utils/fingerprint';
 
 interface ResumeEntryResponse {
   id: string;
@@ -238,8 +239,15 @@ const mapAwards = (part?: ResumePartResponse): Award[] =>
   });
 
 export const fetchResumeData = async (language: Language = 'en'): Promise<ResumeData> => {
+  const acquisition = typeof document === 'undefined'
+      ? {}
+      : {
+          fingerprint: getClientFingerprint(),
+          referrer: document.referrer,
+          landing_url: window.location.href,
+        };
   const [response, updates, portfolioProjects] = await Promise.all([
-    get<ResumeResponse>('/api/v1/resume', { lang: formatLanguage(language) }),
+    get<ResumeResponse>('/api/v1/resume', { lang: formatLanguage(language), ...acquisition }),
     fetchUpdates(language),
     fetchProjects({ status: 'active', size: 100 }, language),
   ]);
@@ -385,6 +393,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           type: update.type,
           status: update.status,
           priority: update.priority,
+          pinned: update.pinned,
         })),
       },
     },

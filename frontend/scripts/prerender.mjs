@@ -430,6 +430,32 @@ async function writeLlmsText() {
     lines.push('');
   }
   writeFileSync(join(DIST, 'llms.txt'), `${lines.join('\n').trim()}\n`, 'utf8');
+  writeFileSync(join(DIST, 'about.txt'), `${crawlerProfileText(entries).trim()}\n`, 'utf8');
+}
+
+function crawlerProfileText(entries) {
+  const profile = entries.find((entry) => entry.kind === 'Profile');
+  return [
+    'Silan Hu — AI Systems Researcher & Full Stack Developer',
+    '',
+    `Canonical site: ${publicUrl('/')}`,
+    `Machine-readable context: ${publicUrl('/llms.txt')}`,
+    '',
+    GEO_PROFILE.identity,
+    '',
+    GEO_PROFILE.positioning,
+    '',
+    GEO_PROFILE.attribution,
+    '',
+    `Primary topics: ${GEO_PROFILE.topics.join(', ')}`,
+    '',
+    GEO_PROFILE.evidence,
+    '',
+    'Evidence highlights:',
+    ...GEO_PROFILE.highlights.map((item) => `- ${item}`),
+    '',
+    profile?.text || '',
+  ].join('\n');
 }
 
 const priorityFor = (route) => {
@@ -492,21 +518,38 @@ function rewriteHtmlMetadata(routes) {
 
 function writeRobots() {
   const disallowPrefix = basePath || '';
-  const robots = [
-    'User-agent: *',
+  const publicFetchers = [
+    '*',
+    'ClaudeBot',
+    'Claude-User',
+    'Claude-SearchBot',
+    'Claude-Code',
+    'claude-code',
+    'Claude-Web',
+    'anthropic-ai',
+  ];
+  const privateDisallows = [
+    `${disallowPrefix}/api/v1/stats/snapshot`,
+    `${disallowPrefix}/api/v1/stats/bots`,
+    `${disallowPrefix}/api/v1/stats/crawlers`,
+    `${disallowPrefix}/api/v1/stats/sources`,
+    `${disallowPrefix}/api/v1/stats/visitors`,
+    `${disallowPrefix}/api/v1/content/status`,
+    `${disallowPrefix}/api/v1/auth/`,
+  ];
+  const groups = publicFetchers.flatMap((agent) => [
+    `User-agent: ${agent}`,
     'Allow: /',
+    '# Private machine and identity APIs — public content remains crawlable.',
+    ...privateDisallows.map((path) => `Disallow: ${path}`),
+    '',
+  ]);
+  const robots = [
+    ...groups,
     '# Internal pages — not for indexing.',
     `Disallow: ${disallowPrefix}/search`,
     `Disallow: ${disallowPrefix}/gallery`,
     `Disallow: ${disallowPrefix}/design`,
-    '# Private machine and identity APIs — public content remains crawlable.',
-    `Disallow: ${disallowPrefix}/api/v1/stats/snapshot`,
-    `Disallow: ${disallowPrefix}/api/v1/stats/bots`,
-    `Disallow: ${disallowPrefix}/api/v1/stats/crawlers`,
-    `Disallow: ${disallowPrefix}/api/v1/stats/sources`,
-    `Disallow: ${disallowPrefix}/api/v1/stats/visitors`,
-    `Disallow: ${disallowPrefix}/api/v1/content/status`,
-    `Disallow: ${disallowPrefix}/api/v1/auth/`,
     '',
     `Sitemap: ${publicUrl('/sitemap.xml')}`,
     '',
@@ -681,7 +724,7 @@ async function main() {
   rewriteManifest();
   writeRobots();
   rewriteBuiltAssetPaths();
-  log('wrote sitemap.xml, robots.txt, llms.txt and manifest.json');
+  log('wrote sitemap.xml, robots.txt, llms.txt, about.txt and manifest.json');
 
   await withTimeout(browser.close(), 5000, 'browser');
   await new Promise((resolve) => server.close(resolve));

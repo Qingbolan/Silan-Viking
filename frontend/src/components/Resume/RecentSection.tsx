@@ -1,18 +1,17 @@
 // src/components/Resume/RecentSection.tsx
 //
-// Résumé "recent updates" panel — a ds-styled timeline of the latest
-// work / research / publication entries. A primary-tone Segmented filters
-// by type; each entry is a quiet
-// hairline list-row with a Badge status marker. A height-clipped list
-// fades into a ds Button CTA when there is more than fits.
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+// Résumé "recent updates" panel — a year/month grouped activity timeline.
+// The homepage and dedicated updates page share the same chronological model;
+// filtering changes the entries, never the layout mode.
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Zap, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Markdown from '../ui/Markdown';
-import { Segmented, Badge, Button } from '../../components/ds';
+import { Segmented, Badge } from '../../components/ds';
 import type { SegmentedOption } from '../../components/ds';
+import { withoutRepeatedTitle } from '../../lib/markdown';
 
 export interface RecentItem {
   id: string;
@@ -23,6 +22,7 @@ export interface RecentItem {
   tags: string[];
   status: 'active' | 'ongoing' | 'completed';
   priority: 'high' | 'medium' | 'low';
+  pinned?: boolean;
 }
 
 interface RecentSectionProps {
@@ -56,23 +56,23 @@ const STATUS_TONE: Record<RecentItem['status'], 'success' | 'primary' | 'neutral
 };
 
 const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 }) => {
-  const { t } = useTranslation();
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const [isTruncated, setIsTruncated] = useState(false);
+  const { t, i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage?.startsWith('zh') ? 'zh-CN' : 'en';
   const [filter, setFilter] = useState<string>('all');
   const navigate = useNavigate();
 
   /* --- Relative time label. --------------------------------------------- */
   const getRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
-    const diffDays = Math.floor(
-      Math.abs(Date.now() - date.getTime()) / (1000 * 60 * 60 * 24),
+    if (Number.isNaN(date.getTime())) return dateString;
+    const diffDays = Math.max(0, Math.floor((Date.now() - date.getTime()) / 86_400_000));
+    const formatter = new Intl.RelativeTimeFormat(
+      locale,
+      { numeric: 'auto' },
     );
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffDays / 365);
-    if (diffYears > 0) return t('resume.years_ago', { years: diffYears });
-    if (diffMonths > 0) return t('resume.months_ago', { months: diffMonths });
-    return t('resume.days_ago', { days: diffDays });
+    if (diffDays >= 365) return formatter.format(-Math.floor(diffDays / 365), 'year');
+    if (diffDays >= 30) return formatter.format(-Math.floor(diffDays / 30), 'month');
+    return formatter.format(-diffDays, 'day');
   };
 
   /* --- Priority dot. ----------------------------------------------------- */
@@ -116,21 +116,51 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
       ? normalized
       : normalized.filter((item) => item._type === filter);
     return [...source].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      (a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned))
+        || new Date(b.date).getTime() - new Date(a.date).getTime(),
     );
   }, [normalized, filter]);
 
-  /* --- Detect whether the list is visually height-clipped. -------------- */
-  useEffect(() => {
-    const check = () => {
-      const el = listRef.current;
-      if (!el) return;
-      setIsTruncated(el.scrollHeight > el.clientHeight + 2);
-    };
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, [filteredData]);
+  const groupedData = useMemo(() => {
+    const groups = new Map<string, {
+      label: string;
+      year: number;
+      month: number;
+      pinned: boolean;
+      items: typeof filteredData;
+    }>();
+    filteredData.forEach((item) => {
+      const date = new Date(item.date);
+      const valid = !Number.isNaN(date.getTime());
+      const year = valid ? date.getFullYear() : 0;
+      const month = valid ? date.getMonth() : 0;
+      const key = item.pinned
+        ? 'pinned'
+        : valid ? `${year}-${String(month + 1).padStart(2, '0')}` : 'unknown';
+      const label = item.pinned
+        ? locale.startsWith('zh') ? '置顶' : 'Pinned'
+        : valid
+        ? new Intl.DateTimeFormat(
+            locale,
+            { year: 'numeric', month: 'long' },
+          ).format(date)
+        : item.date;
+      const group = groups.get(key) ?? {
+        label,
+        year,
+        month,
+        pinned: Boolean(item.pinned),
+        items: [],
+      };
+      group.items.push(item);
+      groups.set(key, group);
+    });
+    return [...groups.values()].sort((a, b) =>
+      Number(b.pinned) - Number(a.pinned)
+      || b.year - a.year
+      || b.month - a.month,
+    );
+  }, [filteredData, locale]);
 
   return (
     <motion.section
@@ -155,100 +185,85 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
             )}
           </div>
 
-          {/* Clipped list of recent entries. */}
+          {/* Year/month groups with day-led entries, like a chronological journal. */}
           <div
-            className="relative"
+            className="space-y-10"
             role="list"
             aria-label={t('resume.recent_updates', { defaultValue: 'Recent updates' })}
           >
-            <div
-              ref={listRef}
-              className="max-h-72 space-y-2 overflow-hidden sm:max-h-80 lg:max-h-96"
-            >
-              {filteredData.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  role="link"
-                  tabIndex={0}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  onClick={() =>
-                    navigate(`/recent-updates?id=${encodeURIComponent(item.id)}`)
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigate(`/recent-updates?id=${encodeURIComponent(item.id)}`);
-                    }
-                  }}
-                  aria-label={`${t('resume.view_details', { defaultValue: 'View details' })}: ${item.title}`}
-                  className={[
-                    'group flex w-full cursor-pointer items-center gap-3 rounded-ds-md px-3 py-2',
-                    'transition-colors',
-                    'duration-ds-fast ease-ds-standard',
-                    'hover:bg-ds-surface-2',
-                    'outline-none focus-visible:shadow-ds-focus',
-                  ].join(' ')}
-                >
-                  {/* Single-row layout (silan, 2026-05-22): title • inline
-                      description (truncated) • status • relative time.
-                      Tags + priority dropped from the row view — they
-                      stayed in the detail view. */}
-                  {priorityIcon(item.priority)}
-
-                  <h4 className="shrink-0 text-ds-sm font-semibold text-ds-fg transition-colors duration-ds-fast group-hover:text-ds-primary">
-                    {item.title}
-                  </h4>
-
-                  {item.description && (
-                    <Markdown
-                      className={[
-                        'min-w-0 flex-1 truncate text-ds-sm text-ds-fg-muted',
-                        // Kill markdown's default block wrappers so the
-                        // description renders inline on a single row.
-                        '[&_p]:m-0 [&_p]:inline [&_div]:m-0 [&_div]:inline',
-                      ].join(' ')}
-                    >
-                      {item.description}
-                    </Markdown>
-                  )}
-
-                  <Badge
-                    tone={STATUS_TONE[item.status]}
-                    appearance="soft"
-                    size="sm"
-                    dot
-                    className="shrink-0 border-0"
-                  >
-                    {t(`resume.status.${item.status}`)}
-                  </Badge>
-
-                  <span className="shrink-0 whitespace-nowrap text-ds-xs text-ds-fg-subtle">
-                    {getRelativeTime(item.date)}
-                  </span>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Fade overlay + CTA when the list is clipped. */}
-            {isTruncated && (
-              <>
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-ds-bg"
-                />
-                <div className="absolute inset-x-0 bottom-2 flex justify-center">
-                  <Button
-                    variant="subtle"
-                    size="sm"
-                    onClick={() => navigate('/recent-updates')}
-                  >
-                    {t('resume.view_all', { defaultValue: 'Show More' })}
-                  </Button>
+            {groupedData.map((group) => (
+              <section key={`${group.year}-${group.month}`} aria-label={group.label}>
+                <h4 className="mb-4 border-b border-ds-border pb-2 font-mono text-ds-xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
+                  {group.label}
+                </h4>
+                <div className="divide-y divide-ds-border">
+                  {group.items.map((item, index) => {
+                    const date = new Date(item.date);
+                    const day = Number.isNaN(date.getTime()) ? '—' : String(date.getDate()).padStart(2, '0');
+                    return (
+                      <motion.article
+                        key={item.id}
+                        role="link"
+                        tabIndex={0}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.16) }}
+                        onClick={() => navigate(`/recent-updates?id=${encodeURIComponent(item.id)}`)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            navigate(`/recent-updates?id=${encodeURIComponent(item.id)}`);
+                          }
+                        }}
+                        aria-label={`${t('resume.view_details', { defaultValue: 'View details' })}: ${item.title}`}
+                        className="group grid cursor-pointer grid-cols-[3rem_minmax(0,1fr)] gap-4 py-5 outline-none transition-colors hover:bg-ds-surface-2 focus-visible:shadow-ds-focus sm:grid-cols-[4rem_minmax(0,1fr)] sm:gap-6 sm:px-2"
+                      >
+                        <time
+                          dateTime={item.date}
+                          className="font-mono text-2xl font-medium tabular-nums text-ds-fg sm:text-3xl"
+                        >
+                          {day}
+                        </time>
+                        <div className="min-w-0">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="flex min-w-0 items-center gap-2">
+                              {item.pinned && (
+                                <span className="shrink-0 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-primary">
+                                  {locale.startsWith('zh') ? '置顶' : 'PIN'}
+                                </span>
+                              )}
+                              {priorityIcon(item.priority)}
+                              <h5 className="truncate text-ds-base font-semibold text-ds-fg transition-colors group-hover:text-ds-primary">
+                                {item.title}
+                              </h5>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              <Badge
+                                tone={STATUS_TONE[item.status]}
+                                appearance="soft"
+                                size="sm"
+                                dot
+                                className="border-0"
+                              >
+                                {t(`resume.status.${item.status}`)}
+                              </Badge>
+                              <span className="whitespace-nowrap text-ds-xs text-ds-fg-subtle">
+                                {getRelativeTime(item.date)}
+                              </span>
+                            </div>
+                          </div>
+                          {item.description && (
+                            <Markdown className="mt-2 line-clamp-2 text-ds-sm leading-6 text-ds-fg-muted">
+                              {withoutRepeatedTitle(item.description, item.title)}
+                            </Markdown>
+                          )}
+                        </div>
+                      </motion.article>
+                    );
+                  })}
                 </div>
-              </>
-            )}
+              </section>
+            ))}
           </div>
       </div>
     </motion.section>

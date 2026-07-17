@@ -83,6 +83,7 @@ export interface RecentUpdate {
   tags: string[];
   status: string;
   priority: string;
+  pinned: boolean;
   created_at: string;
   updated_at: string;
 }

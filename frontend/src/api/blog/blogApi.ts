@@ -92,6 +92,7 @@ export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'):
         fingerprint: getClientFingerprint(),
         user_agent_full: navigator.userAgent,
         referrer: document.referrer,
+        landing_url: window.location.href,
       }),
     });
     
