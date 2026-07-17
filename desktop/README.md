@@ -1,4 +1,4 @@
-# Silan Desktop
+# Silan Context System
 
 Standalone Tauri authoring application for the local `content/` workspace.
 It is not part of the public React website and is not served by the Go

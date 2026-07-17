@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertCircle, ArrowUp, ImagePlus, LoaderCircle, Sparkles, X } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { AlertCircle, Check, LoaderCircle, Mic, Sparkles, Square, X } from 'lucide-react';
 import type { CapturePhase, CaptureTarget, IdeaCategory } from '../types';
 
 type CaptureCategoryOption = { value: IdeaCategory; label: string; Icon: typeof Sparkles };
@@ -24,6 +25,8 @@ type CaptureSheetProps = {
   origin: { x: number; y: number };
 };
 
+const MAX_DICTATION_MS = 60_000;
+
 export function CaptureSheet({
   phase,
   target,
@@ -43,6 +46,153 @@ export function CaptureSheet({
   onTransitionEnd,
   origin,
 }: CaptureSheetProps) {
+  const [voicePhase, setVoicePhase] = React.useState<'idle' | 'recording' | 'transcribing'>('idle');
+  const [voiceError, setVoiceError] = React.useState<string | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = React.useState(0);
+  const recorderRef = React.useRef<MediaRecorder | null>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+  const recordingStartedAtRef = React.useRef<number | null>(null);
+  const recordingDeadlineRef = React.useRef<number | null>(null);
+  const recordingClockRef = React.useRef<number | null>(null);
+  const waveformCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
+
+  const clearRecordingTimers = () => {
+    if (recordingDeadlineRef.current !== null) window.clearTimeout(recordingDeadlineRef.current);
+    if (recordingClockRef.current !== null) window.clearInterval(recordingClockRef.current);
+    recordingDeadlineRef.current = null;
+    recordingClockRef.current = null;
+  };
+
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  };
+
+  React.useEffect(() => () => {
+    clearRecordingTimers();
+    recorderRef.current?.stop();
+    stopStream();
+  }, []);
+
+  React.useEffect(() => {
+    if (voicePhase !== 'recording' || !streamRef.current || !waveformCanvasRef.current) return;
+
+    const audioContext = new AudioContext();
+    const analyser = audioContext.createAnalyser();
+    const source = audioContext.createMediaStreamSource(streamRef.current);
+    const samples = new Uint8Array(analyser.frequencyBinCount);
+    const canvas = waveformCanvasRef.current;
+    const context = canvas.getContext('2d');
+    let animationFrame = 0;
+    analyser.fftSize = 128;
+    analyser.smoothingTimeConstant = 0.72;
+    source.connect(analyser);
+
+    const draw = () => {
+      if (!context) return;
+      const bounds = canvas.getBoundingClientRect();
+      const pixelRatio = window.devicePixelRatio || 1;
+      const width = Math.max(1, Math.round(bounds.width * pixelRatio));
+      const height = Math.max(1, Math.round(bounds.height * pixelRatio));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+
+      analyser.getByteFrequencyData(samples);
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = 'rgba(255, 255, 255, 0.92)';
+      context.beginPath();
+      const barCount = 22;
+      const gap = 2 * pixelRatio;
+      const barWidth = Math.max(pixelRatio, (width - gap * (barCount - 1)) / barCount);
+      for (let index = 0; index < barCount; index += 1) {
+        const sampleIndex = Math.floor((index / barCount) * samples.length * 0.72);
+        const strength = samples[sampleIndex] / 255;
+        const barHeight = Math.max(2 * pixelRatio, strength * height * 0.92);
+        const x = index * (barWidth + gap);
+        const y = (height - barHeight) / 2;
+        context.roundRect(x, y, barWidth, barHeight, barWidth / 2);
+      }
+      context.fill();
+      animationFrame = window.requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      source.disconnect();
+      analyser.disconnect();
+      void audioContext.close();
+    };
+  }, [voicePhase]);
+
+  const startVoiceInput = async () => {
+    setVoiceError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const preferredMime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+        .find((mime) => MediaRecorder.isTypeSupported(mime));
+      const recorder = new MediaRecorder(stream, preferredMime ? { mimeType: preferredMime } : undefined);
+      const chunks: Blob[] = [];
+      streamRef.current = stream;
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunks.push(event.data);
+      };
+      recorder.onstop = async () => {
+        clearRecordingTimers();
+        const startedAt = recordingStartedAtRef.current;
+        const durationMs = startedAt === null
+          ? 1
+          : Math.max(1, Math.min(MAX_DICTATION_MS, Math.round(performance.now() - startedAt)));
+        recordingStartedAtRef.current = null;
+        setVoicePhase('transcribing');
+        setRecordingSeconds(0);
+        stopStream();
+        try {
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
+          const transcript = await invoke<string>('transcribe_audio', {
+            audio: bytes,
+            mimeType: blob.type || 'audio/webm',
+            durationMs,
+          });
+          onNoteChange([note.trim(), transcript].filter(Boolean).join(note.trim() ? '\n\n' : ''));
+        } catch (reason) {
+          setVoiceError(String(reason));
+        } finally {
+          recorderRef.current = null;
+          setVoicePhase('idle');
+        }
+      };
+      recordingStartedAtRef.current = performance.now();
+      recorder.start();
+      setVoicePhase('recording');
+      setRecordingSeconds(0);
+      recordingClockRef.current = window.setInterval(() => {
+        const startedAt = recordingStartedAtRef.current;
+        if (startedAt !== null) {
+          setRecordingSeconds(Math.min(60, Math.floor((performance.now() - startedAt) / 1000)));
+        }
+      }, 250);
+      recordingDeadlineRef.current = window.setTimeout(() => {
+        if (recorder.state === 'recording') recorder.stop();
+      }, MAX_DICTATION_MS);
+    } catch (reason) {
+      clearRecordingTimers();
+      recordingStartedAtRef.current = null;
+      stopStream();
+      setVoiceError(String(reason));
+      setVoicePhase('idle');
+    }
+  };
+
+  const toggleVoiceInput = () => {
+    if (voicePhase === 'recording') recorderRef.current?.stop();
+    else if (voicePhase === 'idle') void startVoiceInput();
+  };
+
   return (
     <section
       className="idea-capture"
@@ -134,35 +284,50 @@ export function CaptureSheet({
                 : '先把文章草稿写下来...'}
             aria-label={target === 'update' ? '事件内容' : target === 'idea' ? '想法内容' : '文章草稿'}
           />
-          <div className="capture-sheet-footer">
-            <button
-              type="button"
-              className="capture-attachment"
-              disabled
-              title="保存草稿后可在编辑器中添加图片"
-              aria-label="保存草稿后添加图片"
-            >
-              <ImagePlus size={19} />
-            </button>
-            <button
-              type="button"
-              className="capture-submit"
-              disabled={!note.trim() || phase === 'submitting'}
-              onClick={onSubmit}
-              title={target === 'update' ? '记录事件' : target === 'idea' ? '记录想法' : '保存文章草稿'}
-              aria-label={target === 'update' ? '记录事件' : target === 'idea' ? '记录想法' : '保存文章草稿'}
-            >
-              {phase === 'submitting' ? <LoaderCircle size={19} /> : <ArrowUp size={19} />}
-            </button>
-          </div>
         </div>
 
-        {error && (
+        {(error || voiceError) && (
           <div className="capture-error" role="alert">
             <AlertCircle size={15} />
-            <span>{error}</span>
+            <span>{error || voiceError}</span>
           </div>
         )}
+      </div>
+
+      <div className="capture-action-dock" aria-label="Capture actions">
+        <button
+          type="button"
+          className={voicePhase === 'recording' ? 'recording' : ''}
+          onClick={toggleVoiceInput}
+          disabled={phase === 'submitting' || voicePhase === 'transcribing'}
+          title={voicePhase === 'recording' ? 'Stop recording' : 'Voice input'}
+        >
+          {voicePhase === 'transcribing'
+            ? <LoaderCircle size={16} />
+            : voicePhase === 'recording'
+              ? <Square size={14} />
+              : <Mic size={16} />}
+          {voicePhase === 'transcribing'
+            ? 'Transcribing'
+            : voicePhase === 'recording'
+              ? (
+                <span className="capture-waveform">
+                  <canvas ref={waveformCanvasRef} aria-hidden="true" />
+                  <span>{recordingSeconds}s / 60s</span>
+                </span>
+              )
+              : 'Dictate'}
+        </button>
+        <button
+          type="button"
+          className="capture-confirm"
+          disabled={!note.trim() || phase === 'submitting' || voicePhase !== 'idle'}
+          onClick={onSubmit}
+          title={target === 'update' ? '记录事件' : target === 'idea' ? '记录想法' : '保存文章草稿'}
+        >
+          {phase === 'submitting' ? <LoaderCircle size={16} /> : <Check size={16} />}
+          {phase === 'submitting' ? 'Saving' : 'Confirm'}
+        </button>
       </div>
 
       {phase === 'confirming-close' && (

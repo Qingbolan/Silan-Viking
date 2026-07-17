@@ -57,6 +57,8 @@ fn tauri_command_surface_matches_the_desktop_features() {
     let app = fs::read_to_string(desktop_root.join("src/App.tsx")).expect("App.tsx");
     let resume =
         fs::read_to_string(desktop_root.join("src/components/ResumePage.tsx")).expect("resume");
+    let capture = fs::read_to_string(desktop_root.join("src/components/CaptureSheet.tsx"))
+        .expect("capture sheet");
 
     let registered = main
         .split("commands::")
@@ -72,7 +74,7 @@ fn tauri_command_surface_matches_the_desktop_features() {
         })
         .filter_map(identifier_prefix)
         .collect::<BTreeSet<_>>();
-    let invoked = invoked_commands(&format!("{app}\n{resume}"));
+    let invoked = invoked_commands(&format!("{app}\n{resume}\n{capture}"));
 
     assert_eq!(
         registered, declared,

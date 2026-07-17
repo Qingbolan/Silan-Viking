@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { MarkdownPreview } from './MarkdownPreview';
+import { ResumeBioEditor } from './ResumeBioEditor';
 import type {
   EditorDocument,
   ResumeEntry,
@@ -445,16 +446,12 @@ function ResumeEditorWorkspace({
 
 function ResumeProfileForm({
   profile,
-  summary,
   saving,
   onProfileChange,
-  onSummaryChange,
 }: {
   profile: ResumeProfile;
-  summary: string;
   saving: boolean;
   onProfileChange: (profile: ResumeProfile) => void;
-  onSummaryChange: (summary: string) => void;
 }) {
   const setField = (key: keyof ResumeProfile, value: string) => {
     onProfileChange({ ...profile, [key]: value });
@@ -515,19 +512,6 @@ function ResumeProfileForm({
             </label>
           ))}
         </div>
-      </section>
-
-      <section className="resume-editor-section" id="profile-bio">
-        <h3>Bio</h3>
-        <label className="resume-form-field resume-form-field--wide">
-          <span>bio <em>Markdown</em></span>
-          <textarea
-            value={summary}
-            rows={12}
-            disabled={saving}
-            onChange={(event) => onSummaryChange(event.target.value)}
-          />
-        </label>
       </section>
 
       <section className="resume-editor-section" id="profile-links">
@@ -603,7 +587,9 @@ export function ResumePage({
 
   // At most one block edits at a time: which section + entry, and its draft.
   const [editing, setEditing] = React.useState<{ role: string; draft: EntryDraft } | null>(null);
-  const [profileDraft, setProfileDraft] = React.useState<{ profile: ResumeProfile; summary: string } | null>(null);
+  const [profileDraft, setProfileDraft] = React.useState<ResumeProfile | null>(null);
+  const [summaryDraft, setSummaryDraft] = React.useState<string | null>(null);
+  const [summaryToolbarVisible, setSummaryToolbarVisible] = React.useState(false);
   const [savingRole, setSavingRole] = React.useState<string | null>(null);
   const [savingProfile, setSavingProfile] = React.useState(false);
   const [sectionErrors, setSectionErrors] = React.useState<Record<string, string>>({});
@@ -630,19 +616,20 @@ export function ResumePage({
   React.useEffect(() => {
     setEditing(null);
     setProfileDraft(null);
+    setSummaryDraft(null);
     setConfirmDelete(null);
     loadSections(language);
     loadProfile(language);
   }, [language, loadProfile, loadSections]);
 
   React.useEffect(() => {
-    if (!editing && !profileDraft) return undefined;
+    if (!editing && !profileDraft && summaryDraft === null) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [editing, profileDraft]);
+  }, [editing, profileDraft, summaryDraft]);
 
   const orderedSections = React.useMemo(() => {
     if (!sections) return [];
@@ -738,23 +725,19 @@ export function ResumePage({
     setEditing(null);
     setConfirmDelete(null);
     setProfileDraft({
-      profile: {
-        ...profileSource.profile,
-        social_links: profileSource.profile.social_links.map((link) => ({ ...link })),
-      },
-      summary: profileSource.summary,
+      ...profileSource.profile,
+      social_links: profileSource.profile.social_links.map((link) => ({ ...link })),
     });
+    setSummaryDraft(null);
   };
 
   const startEditSummary = () => {
-    startEditProfile();
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        const section = document.querySelector<HTMLElement>('#profile-bio');
-        section?.scrollIntoView({ block: 'start' });
-        section?.querySelector<HTMLTextAreaElement>('textarea')?.focus();
-      });
-    });
+    if (!profileSource) return;
+    setEditing(null);
+    setConfirmDelete(null);
+    setProfileDraft(null);
+    setSummaryDraft(profileSource.summary);
+    setSummaryToolbarVisible(false);
   };
 
   const saveProfile = async () => {
@@ -764,12 +747,30 @@ export function ResumePage({
     try {
       const saved = await invoke<ResumeProfileSource>('save_resume_profile', {
         language,
-        profile: profileDraft.profile,
-        summary: profileDraft.summary,
+        profile: profileDraft,
         expectedRevision: profileSource.revision,
       });
       setProfileSource(saved);
       setProfileDraft(null);
+    } catch (reason) {
+      setProfileError(String(reason));
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const saveSummary = async () => {
+    if (!profileSource || summaryDraft === null) return;
+    setSavingProfile(true);
+    setProfileError(null);
+    try {
+      const saved = await invoke<ResumeProfileSource>('save_resume_summary', {
+        language,
+        summary: summaryDraft,
+        expectedRevision: profileSource.revision,
+      });
+      setProfileSource(saved);
+      setSummaryDraft(null);
     } catch (reason) {
       setProfileError(String(reason));
     } finally {
@@ -827,18 +828,22 @@ export function ResumePage({
         <ResumeProfileView
           source={profileSource}
           onEdit={startEditProfile}
-          editingDisabled={editing !== null || savingProfile}
+          editingDisabled={editing !== null || summaryDraft !== null || savingProfile}
         />
       ) : null}
 
-      {summaryText && (
+      {(profileSource || summaryText) && (
         <header className="resume-summary">
           {profileSource && (
-            <button type="button" className="resume-block-action resume-summary-edit" onClick={startEditSummary} title="Edit summary" aria-label="Edit summary">
+            <button type="button" className="resume-block-action resume-summary-edit" disabled={editing !== null || profileDraft !== null || savingProfile} onClick={startEditSummary} title="Edit bio" aria-label="Edit bio">
               <PencilLine size={13} />
             </button>
           )}
-          <MarkdownPreview content={summaryText} className="resume-summary-md" />
+          {summaryText ? (
+            <MarkdownPreview content={summaryText} className="resume-summary-md" />
+          ) : (
+            <p className="resume-summary-empty">No bio yet.</p>
+          )}
         </header>
       )}
 
@@ -861,7 +866,7 @@ export function ResumePage({
               <button
                 type="button"
                 className="resume-block-action"
-                disabled={saving || editing !== null || profileDraft !== null}
+                disabled={saving || editing !== null || profileDraft !== null || summaryDraft !== null}
                 onClick={() => startAdd(section)}
                 title={`Add ${section.shape === 'key_value_list' ? 'category' : 'entry'}`}
                 aria-label={`Add ${section.shape === 'key_value_list' ? 'category' : 'entry'}`}
@@ -901,7 +906,7 @@ export function ResumePage({
                           <button
                             type="button"
                             className="resume-block-action"
-                            disabled={saving || editing !== null || profileDraft !== null}
+                            disabled={saving || editing !== null || profileDraft !== null || summaryDraft !== null}
                             onClick={() => startEdit(section, entry)}
                             title="Edit"
                             aria-label={`Edit ${entry.entry_id}`}
@@ -911,7 +916,7 @@ export function ResumePage({
                           <button
                             type="button"
                             className="resume-block-action"
-                            disabled={saving || editing !== null || profileDraft !== null}
+                            disabled={saving || editing !== null || profileDraft !== null || summaryDraft !== null}
                             onClick={() => moveEntry(section, entry.entry_id, -1)}
                             title="Move up"
                             aria-label={`Move ${entry.entry_id} up`}
@@ -921,7 +926,7 @@ export function ResumePage({
                           <button
                             type="button"
                             className="resume-block-action"
-                            disabled={saving || editing !== null || profileDraft !== null}
+                            disabled={saving || editing !== null || profileDraft !== null || summaryDraft !== null}
                             onClick={() => moveEntry(section, entry.entry_id, 1)}
                             title="Move down"
                             aria-label={`Move ${entry.entry_id} down`}
@@ -942,7 +947,7 @@ export function ResumePage({
                             <button
                               type="button"
                               className="resume-block-action"
-                              disabled={saving || editing !== null || profileDraft !== null}
+                              disabled={saving || editing !== null || profileDraft !== null || summaryDraft !== null}
                               onClick={() => setConfirmDelete(deleteKey)}
                               title="Delete"
                               aria-label={`Delete ${entry.entry_id}`}
@@ -964,27 +969,39 @@ export function ResumePage({
       {profileDraft && profileSource && (
         <ResumeEditorWorkspace
           eyebrow={`${language.toUpperCase()} resume`}
-          title={profileDraft.profile.full_name || 'Profile'}
+          title={profileDraft.full_name || 'Profile'}
           subtitle="Profile header"
           saving={savingProfile}
           saveLabel="Save profile"
           outline={[
             { id: 'profile-identity', label: 'Identity' },
             { id: 'profile-contact', label: 'Contact' },
-            { id: 'profile-bio', label: 'Bio' },
             { id: 'profile-links', label: 'Links' },
           ]}
           onSave={() => void saveProfile()}
           onCancel={() => setProfileDraft(null)}
         >
           <ResumeProfileForm
-            profile={profileDraft.profile}
-            summary={profileDraft.summary}
+            profile={profileDraft}
             saving={savingProfile}
-            onProfileChange={(profile) => setProfileDraft({ ...profileDraft, profile })}
-            onSummaryChange={(summary) => setProfileDraft({ ...profileDraft, summary })}
+            onProfileChange={setProfileDraft}
           />
         </ResumeEditorWorkspace>
+      )}
+
+      {summaryDraft !== null && profileSource && (
+        <ResumeBioEditor
+          value={summaryDraft}
+          language={language}
+          sourcePath={profileSource.relative_path}
+          disabled={savingProfile}
+          dirty={summaryDraft !== profileSource.summary}
+          toolbarVisible={summaryToolbarVisible}
+          onChange={setSummaryDraft}
+          onSave={() => void saveSummary()}
+          onCancel={() => setSummaryDraft(null)}
+          onToggleToolbar={() => setSummaryToolbarVisible((visible) => !visible)}
+        />
       )}
 
       {editing && editingSection && (

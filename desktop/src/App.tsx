@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock3,
   Eye,
   EyeOff,
@@ -75,6 +76,7 @@ import type {
   ContentKind,
   DashboardData,
   DashboardItem,
+  DeliverySyncStatus,
   DeploymentPlan,
   DeployRunStatus,
   DeployVerificationResult,
@@ -90,6 +92,7 @@ import type {
   ImportedMediaAsset,
   MomentsSettings,
   StatsSyncReport,
+  TrafficEvidence,
   VersionStatus,
   VersionScope,
 } from './types';
@@ -114,6 +117,61 @@ const entityMeta: Record<EntityFilter, { label: string; eyebrow: string; empty: 
 
 const navigationEntityFilters: EntityFilter[] = ['resume', 'update', 'blog', 'project', 'idea'];
 
+const isTechnicalTrafficSubject = (subject: string) => (
+  /\.(?:js|css)\.map(?:$|[?#])/i.test(subject)
+  || /(?:^|\/)assets\/.+\.(?:js|css|map)(?:$|[?#])/i.test(subject)
+);
+
+const groupEvidenceByAgent = (evidence: TrafficEvidence[]) => {
+  const grouped: Record<string, {
+    visits: number;
+    events: Set<string>;
+    subjects: Record<string, { kind: TrafficEvidence['subject_kind']; visits: number }>;
+  }> = {};
+  evidence.forEach((item) => {
+    grouped[item.agent] ||= { visits: 0, events: new Set(), subjects: {} };
+    const group = grouped[item.agent];
+    group.visits += item.visits;
+    group.events.add(item.event);
+    if (item.subject) {
+      const key = `${item.subject_kind}:${item.subject}`;
+      group.subjects[key] ||= { kind: item.subject_kind, visits: 0 };
+      group.subjects[key].visits += item.visits;
+    }
+  });
+  return Object.entries(grouped)
+    .map(([agent, group]) => {
+      const subjects = Object.entries(group.subjects)
+        .map(([key, value]) => ({
+          label: key.slice(key.indexOf(':') + 1),
+          ...value,
+        }))
+        .sort((left, right) => right.visits - left.visits || left.label.localeCompare(right.label));
+      const visibleSubjects = subjects.filter((subject) => !isTechnicalTrafficSubject(subject.label));
+      return {
+        agent,
+        visits: group.visits,
+        event: [...group.events].join(' · '),
+        subjects: visibleSubjects.slice(0, 6),
+        hiddenSubjectCount: Math.max(0, visibleSubjects.length - 6),
+        technicalVisits: subjects
+          .filter((subject) => isTechnicalTrafficSubject(subject.label))
+          .reduce((total, subject) => total + subject.visits, 0),
+      };
+    })
+    .sort((left, right) => right.visits - left.visits || left.agent.localeCompare(right.agent));
+};
+
+const evidenceSubjectLabel = (kind: TrafficEvidence['subject_kind']) => {
+  switch (kind) {
+    case 'attributed_topic': return 'Attributed topic';
+    case 'search_query': return 'Search query';
+    case 'landing_page': return 'Landing page';
+    case 'page': return 'Page fetched';
+    default: return 'Observed';
+  }
+};
+
 const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof Sparkles }> = [
   { value: 'inspiration', label: '灵感', Icon: Sparkles },
   { value: 'thought', label: '想法', Icon: Brain },
@@ -122,7 +180,7 @@ const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof S
   { value: 'event', label: '事件', Icon: CalendarDays },
 ];
 
-const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode']);
+const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'update']);
 
 const destroyVditor = (editor: Vditor | null) => {
   if (!editor) return;
@@ -168,13 +226,17 @@ export default function App() {
   const [entityCounts, setEntityCounts] = React.useState<Map<EntityFilter, number>>(() => new Map());
   const [dashboard, setDashboard] = React.useState<DashboardData | null>(null);
   const [deploymentPlan, setDeploymentPlan] = React.useState<DeploymentPlan | null>(null);
+  const [deliverySyncStatus, setDeliverySyncStatus] = React.useState<DeliverySyncStatus | null>(null);
+  const [refreshingDeliveryStatus, setRefreshingDeliveryStatus] = React.useState(false);
   const [activityPage, setActivityPage] = React.useState<0 | 1>(0);
-  const [deliveryPage, setDeliveryPage] = React.useState<0 | 1>(0);
+  const [deliveryPage, setDeliveryPage] = React.useState<0 | 1 | 2 | 3>(0);
   const [refreshingWorkspace, setRefreshingWorkspace] = React.useState(false);
   const [selectedCommitDay, setSelectedCommitDay] = React.useState<{ date: string; scopes: VersionScope[] } | null>(null);
   const [selectedTrafficDate, setSelectedTrafficDate] = React.useState<string | null>(null);
+  const [expandedTrafficItem, setExpandedTrafficItem] = React.useState<string | null>(null);
   const [freshnessTick, setFreshnessTick] = React.useState(0);
   const [deployingContent, setDeployingContent] = React.useState(false);
+  const [confirmingDeploy, setConfirmingDeploy] = React.useState(false);
   const [deployVerification, setDeployVerification] = React.useState<DeployVerificationResult | null>(null);
   const [momentsSettings, setMomentsSettings] = React.useState<MomentsSettings | null>(null);
   const [screen, setScreen] = React.useState<'dashboard' | 'content'>('dashboard');
@@ -454,20 +516,37 @@ export default function App() {
   const displayedAiChatReferrals = hasSyncedStats
     ? dashboard?.deployed_ai_chat_referrals ?? 0
     : 0;
+  const localDeliveryCount = deliverySyncStatus?.local_commits ?? 0;
+  const remoteDeliveryCount = deliverySyncStatus?.remote_commits ?? 0;
+  const attentionCount = localDeliveryCount + remoteDeliveryCount;
+  const workspaceChangeCount = deliverySyncStatus?.workspace_changes ?? deploymentPlan?.dirty_count ?? 0;
+  const canDeployCommittedContent = localDeliveryCount > 0
+    && workspaceChangeCount === 0
+    && dirtyIds.size === 0;
   const selectedCommitItems = selectedCommitDay
     ? (dashboard?.recent_items || []).filter((item) => {
         const scope = item.entity_type === 'episode' ? 'blog' : item.entity_type;
         return selectedCommitDay.scopes.includes(scope as VersionScope);
       })
     : [];
+  const trafficMode = deliveryPage === 2 ? 'seo' : deliveryPage === 3 ? 'geo' : 'human';
+  const trafficActivity = trafficMode === 'seo'
+    ? dashboard?.daily_seo_visits || []
+    : trafficMode === 'geo'
+      ? dashboard?.daily_geo_visits || []
+      : dashboard?.daily_visits || [];
   const selectedTrafficDay = selectedTrafficDate
-    ? dashboard?.daily_visits.find((day) => day.date === selectedTrafficDate) || null
+    ? trafficActivity.find((day) => day.date === selectedTrafficDate) || null
     : null;
   const activityFilterLabel = selectedTrafficDay
-    ? `${selectedTrafficDay.date} · Human traffic · ${selectedTrafficDay.visits} visits`
+    ? `${selectedTrafficDay.date} · ${trafficMode === 'human' ? 'Human' : trafficMode.toUpperCase()} traffic · ${selectedTrafficDay.visits} visits`
     : selectedCommitDay
       ? `${selectedCommitDay.date} · ${selectedCommitDay.scopes.join(' · ') || 'Content'}`
       : 'All content · Latest activity';
+
+  React.useEffect(() => {
+    setExpandedTrafficItem(null);
+  }, [selectedTrafficDate, trafficMode]);
 
   React.useEffect(() => {
     if (loading || filtered.length === 0) return;
@@ -568,8 +647,20 @@ export default function App() {
     }
   }, []);
 
+  const loadDeliverySyncStatus = React.useCallback(async () => {
+    setRefreshingDeliveryStatus(true);
+    try {
+      setDeliverySyncStatus(await invoke<DeliverySyncStatus>('get_delivery_sync_status'));
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setRefreshingDeliveryStatus(false);
+    }
+  }, []);
+
   const deployContent = React.useCallback(async () => {
-    if (deployingContent || !deploymentPlan || deploymentPlan.dirty_count > 0) return;
+    if (deployingContent || !deploymentPlan || !canDeployCommittedContent) return;
+    setConfirmingDeploy(false);
     setDeployingContent(true);
     setDeployVerification(null);
     setError(null);
@@ -577,13 +668,13 @@ export default function App() {
       await invoke<DeployRunStatus>('deploy_content');
       const verification = await invoke<DeployVerificationResult>('verify_remote_content');
       setDeployVerification(verification);
-      await loadDeploymentPlan();
+      await Promise.all([loadDeploymentPlan(), loadDeliverySyncStatus()]);
     } catch (reason) {
       setError(String(reason));
     } finally {
       setDeployingContent(false);
     }
-  }, [deployingContent, deploymentPlan, loadDeploymentPlan]);
+  }, [canDeployCommittedContent, deployingContent, deploymentPlan, loadDeliverySyncStatus, loadDeploymentPlan]);
 
   const loadMomentsSettings = React.useCallback(async () => {
     try {
@@ -608,6 +699,30 @@ export default function App() {
   React.useEffect(() => {
     if (screen === 'dashboard') void loadDeploymentPlan();
   }, [screen, loadDeploymentPlan]);
+
+  React.useEffect(() => {
+    if (screen !== 'dashboard') return;
+    let active = true;
+    let loadingStatus = false;
+    const refresh = async () => {
+      if (loadingStatus) return;
+      loadingStatus = true;
+      try {
+        const status = await invoke<DeliverySyncStatus>('get_delivery_sync_status');
+        if (active) setDeliverySyncStatus(status);
+      } catch (reason) {
+        if (active) setError(String(reason));
+      } finally {
+        loadingStatus = false;
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 2_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [screen]);
 
   React.useEffect(() => {
     if (screen === 'content' && entityFilter === 'update') void loadMomentsSettings();
@@ -694,6 +809,12 @@ export default function App() {
     setContentEditorOpen(false);
   };
 
+  const returnToDashboard = () => {
+    setContentEditorOpen(false);
+    setSelectedSeriesId('');
+    setScreen('dashboard');
+  };
+
   const openContentGroup = (group: ContentGroup) => {
     if (!editableMasonryContentKinds.has(group.kind)) return;
     const primary = selectPrimaryDocument(group);
@@ -770,7 +891,7 @@ export default function App() {
       setVersionStatus(nextStatus);
       setShelfVersionStatus(nextStatus);
       await loadDocuments();
-      if (deploymentPlan) await loadDeploymentPlan();
+      if (deploymentPlan) await Promise.all([loadDeploymentPlan(), loadDeliverySyncStatus()]);
     } catch (reason) {
       setVersionError(String(reason));
       setVersionPanelOpen(true);
@@ -792,7 +913,7 @@ export default function App() {
         setSyncingStats(true);
         setStatsSyncError(null);
         await invoke<StatsSyncReport>('sync_stats');
-        await Promise.all([loadDocuments(), loadDashboard(), loadDeploymentPlan()]);
+        await Promise.all([loadDocuments(), loadDashboard(), loadDeploymentPlan(), loadDeliverySyncStatus()]);
       } else {
         await loadDocuments();
         if (entityFilter === 'update') await loadMomentsSettings();
@@ -1119,6 +1240,7 @@ export default function App() {
         ...document,
         status: saved.status,
         visibility: saved.visibility,
+        pinned: saved.pinned,
       };
     }));
   }, []);
@@ -1194,7 +1316,7 @@ export default function App() {
     const savingState = stateSavingId === group.id;
     const disabled = savingState || stateDirty || !translation;
     const lifecycle = contentLifecycleFor(group.kind, group.status, group.visibility);
-    if (lifecycle.actions.length === 0) return null;
+    if (lifecycle.actions.length === 0 && group.kind !== 'update') return null;
 
     return (
       <div
@@ -1218,6 +1340,21 @@ export default function App() {
             {action.label}
           </button>
         ))}
+        {group.kind === 'update' && (
+          <button
+            type="button"
+            disabled={disabled}
+            className={`state-action state-action--secondary ${group.pinned ? 'active' : ''}`}
+            title={group.pinned ? 'Remove this update from the top' : 'Keep this update at the top'}
+            onClick={() => void saveGroupState(group, {
+              status: group.status,
+              visibility: group.visibility,
+              pinned: !group.pinned,
+            })}
+          >
+            {group.pinned ? 'Unpin' : 'Pin'}
+          </button>
+        )}
       </div>
     );
   };
@@ -1431,13 +1568,11 @@ export default function App() {
           <button
             type="button"
             className={`entity-button ${screen === 'dashboard' ? 'active' : ''}`}
-            onClick={() => {
-              setScreen('dashboard');
-            }}
+            onClick={returnToDashboard}
           >
             <BarChart3 size={16} />
             <span>Dashboard</span>
-            <strong>{dashboard?.pending_comments || 0}</strong>
+            <strong>{attentionCount}</strong>
           </button>
           <div className="nav-rule" />
           {navigationEntityFilters.map((filter) => {
@@ -1493,7 +1628,8 @@ export default function App() {
                   <>
                     <span>{displayedHumanInteractions} human interactions</span>
                     <span>{displayedAiCrawlerInteractions} AI · {displayedSearchCrawlerInteractions} search crawler hits</span>
-                    <span>{dashboard?.pending_comments || 0} comments to review</span>
+                    <span>{attentionCount} delivery updates</span>
+                    <span>{workspaceChangeCount} uncommitted workspace changes</span>
                     <span>{dirtyIds.size} unsaved Markdown files</span>
                   </>
                 ) : (
@@ -1505,29 +1641,29 @@ export default function App() {
                 )}
               </div>
             </div>
-            {screen === 'content' && !isUpdateShelf && isMasonryShelf && !contentEditorOpen && (
-              <div className="library-head-actions">
-                {entityFilter === 'blog' && (
-                  <button type="button" className="new-entity-button" onClick={() => openCapture('blog')} title="Write blog" aria-label="Write blog">
-                    <PencilLine size={15} />
-                    <span>New</span>
-                  </button>
-                )}
-                {entityFilter === 'project' && (
-                  <button type="button" className="new-entity-button" onClick={openNewProject} title="New project" aria-label="New project">
-                    <FolderPlus size={15} />
-                    <span>New</span>
-                  </button>
-                )}
-                {entityFilter === 'idea' && (
-                  <button type="button" className="new-entity-button" onClick={() => openCapture('idea')} title="Record idea" aria-label="Record idea">
-                    <Lightbulb size={15} />
-                    <span>New</span>
-                  </button>
-                )}
-              </div>
+            {screen === 'content' && !contentEditorOpen && (
+              <button
+                type="button"
+                className="content-close content-close-top"
+                onClick={returnToDashboard}
+                title="Back to Overview"
+                aria-label="Back to Overview"
+              >
+                <X size={18} />
+              </button>
             )}
           </header>
+        )}
+        {updatesShellActive && (
+          <button
+            type="button"
+            className="content-close content-close-top"
+            onClick={returnToDashboard}
+            title="Back to Overview"
+            aria-label="Back to Overview"
+          >
+            <X size={18} />
+          </button>
         )}
 
         {error && (
@@ -1585,7 +1721,7 @@ export default function App() {
                         <div className="traffic-today">
                           <span>Today</span>
                           <strong>+{dashboard?.today_visits ?? 0}</strong>
-                          <p>human visits since 00:00 UTC</p>
+                          <p>human visits since 00:00 SGT</p>
                         </div>
                         <div className="traffic-ranking">
                           <span>Top content</span>
@@ -1609,7 +1745,12 @@ export default function App() {
                           <span>Countries</span>
                           {(dashboard?.top_countries || []).slice(0, 3).map((country) => (
                             <div key={`${country.country_code}-${country.city}-${country.latitude}-${country.longitude}`}>
-                              <span title={country.ip_addresses.length ? `IP: ${country.ip_addresses.join(', ')}` : 'No IP recorded'}>
+                              <span
+                                title={[
+                                  `${new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}${country.city ? ` · ${country.city}` : ''}`,
+                                  country.ip_addresses.length ? `IP: ${country.ip_addresses.join(', ')}` : '',
+                                ].filter(Boolean).join('\n')}
+                              >
                                 {new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}
                                 {country.city && ` · ${country.city}`}
                               </span>
@@ -1626,20 +1767,100 @@ export default function App() {
 
               <section className="attention-panel ds-acrylic" data-ds="">
                 <span>Needs attention</span>
-                <strong>{dashboard?.pending_comments || 0}</strong>
-                <p>comments pending review</p>
+                <strong>{attentionCount}</strong>
+                <p className="attention-status" data-state={deliverySyncStatus?.state || 'loading'}>
+                  {!deliverySyncStatus
+                    ? 'Comparing local and deployed versions…'
+                    : workspaceChangeCount > 0
+                      ? `${workspaceChangeCount} uncommitted ${workspaceChangeCount === 1 ? 'change' : 'changes'} must be committed first`
+                      : localDeliveryCount > 0
+                        ? `${localDeliveryCount} committed ${localDeliveryCount === 1 ? 'update' : 'updates'} ready to deploy`
+                        : remoteDeliveryCount > 0
+                          ? `${remoteDeliveryCount} ${remoteDeliveryCount === 1 ? 'update exists' : 'updates exist'} on the deployed version`
+                          : 'Local and deployed content match'}
+                </p>
+                {deliverySyncStatus && (
+                  <div className="attention-version-pair" aria-label="Local and deployed content versions">
+                    <span>Local <b>{deliverySyncStatus.local_head.slice(0, 7)}</b></span>
+                    <span>Deployed <b>{deliverySyncStatus.remote_head.slice(0, 7)}</b></span>
+                  </div>
+                )}
+                <div className="attention-actions">
+                  <button
+                    type="button"
+                    className="attention-refresh"
+                    disabled={refreshingDeliveryStatus || deployingContent}
+                    onClick={() => void loadDeliverySyncStatus()}
+                    title="Compare local Git HEAD with the deployed content commit now"
+                  >
+                    {refreshingDeliveryStatus ? <LoaderCircle size={14} /> : <RefreshCw size={14} />}
+                    {refreshingDeliveryStatus ? 'Checking' : 'Refresh status'}
+                  </button>
+                  {localDeliveryCount > 0 && (
+                    <button
+                      type="button"
+                      className="attention-deploy"
+                      disabled={deployingContent || !deploymentPlan || !canDeployCommittedContent}
+                      onClick={() => setConfirmingDeploy(true)}
+                      title={workspaceChangeCount > 0 ? 'Commit workspace changes before deploying' : 'Deploy committed content to the production website'}
+                    >
+                      {deployingContent ? <LoaderCircle size={14} /> : <UploadCloud size={14} />}
+                      {deployingContent ? 'Deploying' : `Deploy ${localDeliveryCount}`}
+                    </button>
+                  )}
+                </div>
+                {deployVerification && (
+                  <div className="delivery-verification" data-verified={deployVerification.verified}>
+                    <CheckCircle2 size={14} />
+                    <span>
+                      {deployVerification.verified
+                        ? `Remote verified at ${deployVerification.remote.content_commit.slice(0, 12)}`
+                        : deployVerification.mismatch_reason || 'Remote content differs from local content'}
+                    </span>
+                  </div>
+                )}
               </section>
 
               <section className="delivery-panel ds-acrylic" data-ds="">
                 <div className="activity-carousel-bar delivery-carousel-bar">
                   <div className="activity-tabs" role="tablist" aria-label="Delivery views">
-                    <button type="button" role="tab" aria-selected={deliveryPage === 0} onClick={() => setDeliveryPage(0)}>Release activity</button>
-                    <button type="button" role="tab" aria-selected={deliveryPage === 1} onClick={() => setDeliveryPage(1)}>Traffic detail</button>
+                    {(['Release activity', 'Human traffic', 'SEO traffic', 'GEO traffic'] as const).map((label, page) => (
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={deliveryPage === page}
+                        key={label}
+                        onClick={() => {
+                          setDeliveryPage(page as 0 | 1 | 2 | 3);
+                          setSelectedTrafficDate(null);
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                   <div className="delivery-toolbar">
-                    <span>{deliveryPage + 1} / 2</span>
-                    <button type="button" onClick={() => setDeliveryPage(deliveryPage === 0 ? 1 : 0)} aria-label="Previous delivery page"><ChevronLeft size={14} /></button>
-                    <button type="button" onClick={() => setDeliveryPage(deliveryPage === 0 ? 1 : 0)} aria-label="Next delivery page"><ChevronRight size={14} /></button>
+                    <span>{deliveryPage + 1} / 4</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeliveryPage(((deliveryPage + 3) % 4) as 0 | 1 | 2 | 3);
+                        setSelectedTrafficDate(null);
+                      }}
+                      aria-label="Previous delivery page"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeliveryPage(((deliveryPage + 1) % 4) as 0 | 1 | 2 | 3);
+                        setSelectedTrafficDate(null);
+                      }}
+                      aria-label="Next delivery page"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
                   </div>
                 </div>
                 <div className="delivery-carousel-page" key={deliveryPage}>
@@ -1661,7 +1882,8 @@ export default function App() {
                     )
                   ) : (
                     <TrafficWall
-                      activity={dashboard?.daily_visits || []}
+                      activity={trafficActivity}
+                      noun={trafficMode === 'human' ? 'human visit' : trafficMode === 'seo' ? 'search visit' : 'AI discovery'}
                       selectedDate={selectedTrafficDate}
                       onSelect={(date) => {
                         setSelectedCommitDay(null);
@@ -1691,15 +1913,93 @@ export default function App() {
                   )}
                 </div>
                 {selectedTrafficDay ? (
-                  <div className="traffic-result-list activity-result-list">
-                    {selectedTrafficDay.content.map((item, index) => (
-                      <button type="button" key={`${item.content_type}-${item.title}`} onClick={() => openShelf(item.content_type === 'episode' ? 'blog' : item.content_type as EntityFilter)}>
+                  <div className={`traffic-result-list activity-result-list${trafficMode === 'geo' ? ' traffic-result-list--geo' : ''}`}>
+                    {selectedTrafficDay.content.map((item, index) => {
+                      const itemKey = `${item.content_type}-${item.title}`;
+                      const expanded = trafficMode === 'human' && expandedTrafficItem === itemKey;
+                      return (
+                        <button
+                        type="button"
+                        key={itemKey}
+                        className={expanded ? 'traffic-result-row traffic-result-row--expanded' : 'traffic-result-row'}
+                        aria-expanded={trafficMode === 'human' ? expanded : undefined}
+                        onClick={() => {
+                          if (trafficMode === 'human') {
+                            setExpandedTrafficItem((current) => current === itemKey ? null : itemKey);
+                          } else {
+                            openShelf(item.content_type === 'episode' ? 'blog' : item.content_type as EntityFilter);
+                          }
+                        }}
+                      >
                         <span>{index + 1}</span>
                         <strong>{item.title}</strong>
                         <small>{item.visits} visits</small>
-                        <small>{item.comments} comments total</small>
-                      </button>
-                    ))}
+                        <small className="traffic-row-tail">
+                          {item.comments} comments total
+                          {trafficMode === 'human' && <ChevronDown size={13} aria-hidden="true" />}
+                        </small>
+                        {expanded && (
+                          <span className="visitor-breakdown">
+                            {item.visitors.length > 0 ? item.visitors.map((visitor, visitorIndex) => (
+                              <span className="visitor-location" key={`${visitor.country_code}-${visitor.city}-${visitorIndex}`}>
+                                <span className="visitor-location-heading">
+                                  <strong>{[visitor.country_code, visitor.city].filter(Boolean).join(' · ') || 'Location unavailable'}</strong>
+                                  <small>{visitor.visits} {visitor.visits === 1 ? 'visit' : 'visits'}</small>
+                                </span>
+                                {(visitor.latitude || visitor.longitude) && (
+                                  <small className="visitor-coordinates">{visitor.latitude}, {visitor.longitude}</small>
+                                )}
+                                <span className="visitor-ip-list">
+                                  {visitor.ip_addresses.length > 0
+                                    ? visitor.ip_addresses.map((ip) => <code key={ip}>{ip}</code>)
+                                    : <small>IP unavailable</small>}
+                                </span>
+                              </span>
+                            )) : (
+                              <small className="visitor-empty">No visitor location was recorded for these visits.</small>
+                            )}
+                          </span>
+                        )}
+                        {trafficMode !== 'human' && item.evidence.length > 0 && (
+                          <span className="traffic-evidence">
+                            {trafficMode === 'geo'
+                              ? groupEvidenceByAgent(item.evidence).map(({ agent, event, visits, subjects, hiddenSubjectCount, technicalVisits }) => (
+                                  <span className="traffic-agent-group" key={agent}>
+                                    <span className="traffic-agent-heading">
+                                      <strong>{agent}</strong>
+                                      <small className="traffic-agent-event">{event} · {visits}</small>
+                                    </span>
+                                    {subjects.length > 0 && (
+                                      <span className="traffic-agent-topics">
+                                        {subjects.map((subject) => (
+                                          <small key={`${subject.kind}-${subject.label}`}>
+                                            <span>{evidenceSubjectLabel(subject.kind)}</span>
+                                            {subject.label}
+                                            <b>{subject.visits}</b>
+                                          </small>
+                                        ))}
+                                      </span>
+                                    )}
+                                    <span className="traffic-agent-notes">
+                                      {technicalVisits > 0 && <small>{technicalVisits} asset requests hidden</small>}
+                                      {hiddenSubjectCount > 0 && <small>+{hiddenSubjectCount} more pages</small>}
+                                      {subjects.every((subject) => subject.kind !== 'attributed_topic' && subject.kind !== 'search_query') && (
+                                        <small className="traffic-query-note">Provider did not expose a query</small>
+                                      )}
+                                    </span>
+                                  </span>
+                                ))
+                              : item.evidence.map((evidence) => (
+                                  <span key={`${evidence.agent}-${evidence.subject}`}>
+                                    <strong>{evidence.subject || evidence.event}</strong>
+                                    <small>{evidence.agent} · {evidence.visits}</small>
+                                  </span>
+                                ))}
+                          </span>
+                        )}
+                        </button>
+                      );
+                    })}
                     {selectedTrafficDay.content.length === 0 && <p>No content traffic for this date.</p>}
                   </div>
                 ) : (
@@ -1791,20 +2091,6 @@ export default function App() {
                   <div>
                     <span>{currentShelf.label}</span>
                     <strong>{filtered.length} parts</strong>
-                  </div>
-                  <div className="library-head-actions">
-                    {entityFilter === 'project' && (
-                      <button type="button" className="new-entity-button" onClick={openNewProject} title="New project" aria-label="New project">
-                        <FolderPlus size={15} />
-                        <span>New</span>
-                      </button>
-                    )}
-                    {entityFilter === 'idea' && (
-                      <button type="button" className="new-entity-button" onClick={() => openCapture('idea')} title="Record idea" aria-label="Record idea">
-                        <Lightbulb size={15} />
-                        <span>New</span>
-                      </button>
-                    )}
                   </div>
                 </div>
 
@@ -2016,6 +2302,34 @@ export default function App() {
             onCancel={cancelRefresh}
             onConfirm={confirmRefresh}
           />
+        )}
+
+        {confirmingDeploy && deploymentPlan && (
+          <div className="dialog-overlay" role="presentation" onClick={() => setConfirmingDeploy(false)}>
+            <div className="dialog-card deploy-confirm-card" role="dialog" aria-modal="true" aria-labelledby="deploy-confirm-title" onClick={(event) => event.stopPropagation()}>
+              <div className="dialog-headline">
+                <div className="new-project-badge">
+                  <UploadCloud size={17} />
+                </div>
+                <button type="button" className="dialog-close" onClick={() => setConfirmingDeploy(false)} aria-label="Cancel deployment">
+                  <X size={15} />
+                </button>
+              </div>
+              <h3 id="deploy-confirm-title">Deploy content to production?</h3>
+              <p>This pushes committed public content and media to {deploymentPlan.deploy_target}. The remote content database will be replaced through the verified deployment pipeline.</p>
+              <div className="deploy-confirm-summary">
+                <span>Local commit</span>
+                <strong>{deploymentPlan.head}</strong>
+              </div>
+              <div className="dialog-actions">
+                <button type="button" className="secondary" onClick={() => setConfirmingDeploy(false)}>Cancel</button>
+                <button type="button" className="primary" onClick={() => void deployContent()}>
+                  <UploadCloud size={14} />
+                  Deploy content
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {creatingProject && (

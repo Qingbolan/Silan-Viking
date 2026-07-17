@@ -3,6 +3,7 @@ import type { ContentKind } from '../types';
 export type DocumentStateInput = {
   status: string;
   visibility: string;
+  pinned?: boolean;
 };
 
 export type LifecycleActionId =

@@ -99,6 +99,8 @@ pub(crate) struct DashboardData {
     pub(crate) stats_synced_at: Option<String>,
     pub(crate) today_visits: i64,
     pub(crate) daily_visits: Vec<DailyTraffic>,
+    pub(crate) daily_seo_visits: Vec<DailyTraffic>,
+    pub(crate) daily_geo_visits: Vec<DailyTraffic>,
     pub(crate) top_content: Vec<TopContentItem>,
     pub(crate) top_sources: Vec<TrafficSource>,
     pub(crate) top_countries: Vec<TrafficCountry>,
@@ -117,6 +119,27 @@ pub(crate) struct DailyContentTraffic {
     pub(crate) title: String,
     pub(crate) visits: i64,
     pub(crate) comments: i64,
+    pub(crate) evidence: Vec<TrafficEvidence>,
+    pub(crate) visitors: Vec<VisitorLocation>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct VisitorLocation {
+    pub(crate) country_code: String,
+    pub(crate) city: String,
+    pub(crate) latitude: String,
+    pub(crate) longitude: String,
+    pub(crate) ip_addresses: Vec<String>,
+    pub(crate) visits: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct TrafficEvidence {
+    pub(crate) agent: String,
+    pub(crate) event: String,
+    pub(crate) subject_kind: Option<String>,
+    pub(crate) subject: Option<String>,
+    pub(crate) visits: i64,
 }
 
 #[derive(Debug, Serialize)]
@@ -195,6 +218,16 @@ pub(crate) struct DeploymentPlan {
     pub(crate) next_action: String,
     pub(crate) commit_activity: Vec<CommitActivityDay>,
     pub(crate) scopes: Vec<DeploymentScopeStatus>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct DeliverySyncStatus {
+    pub(crate) local_head: String,
+    pub(crate) remote_head: String,
+    pub(crate) local_commits: usize,
+    pub(crate) remote_commits: usize,
+    pub(crate) workspace_changes: usize,
+    pub(crate) state: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -351,6 +384,7 @@ pub(crate) struct EpisodeSeriesInput {
 pub(crate) struct DocumentStateInput {
     pub(crate) status: String,
     pub(crate) visibility: String,
+    pub(crate) pinned: Option<bool>,
 }
 
 /// One edited Resume entry as submitted by the block editor: the flat

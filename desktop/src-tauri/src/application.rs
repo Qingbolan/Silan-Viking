@@ -2,13 +2,13 @@
 
 use crate::model::{
     CommitActivityDay, DailyContentTraffic, DailyTraffic, DashboardData, DashboardItem,
-    DeployRunStatus, DeployVerificationResult, DeployedStats, DeploymentPlan,
+    DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats, DeploymentPlan,
     DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation, EntityCount,
     EpisodeSeriesInput, EpisodeSeriesSource, GeoAction, GeoEvidence, GeoInsightReport, GeoMetric,
     ImportedMediaAsset, MomentsCover, MomentsProfile, MomentsSettings, RemoteContentVersion,
     ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource, ResumeSection,
-    ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry, TrafficSource, VersionChange,
-    VersionCommit, VersionStatus,
+    ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry, TrafficEvidence,
+    TrafficSource, VersionChange, VersionCommit, VersionStatus, VisitorLocation,
 };
 use serde::Deserialize;
 use silan_viking_app::{
@@ -44,7 +44,19 @@ impl Default for MomentsUiConfig {
 
 #[derive(Debug, Default, Deserialize)]
 struct ProjectConfig {
+    project: Option<ProjectSection>,
+    database: Option<DatabaseConfig>,
     desktop: Option<DesktopConfig>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct ProjectSection {
+    content_dir: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct DatabaseConfig {
+    path: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -78,16 +90,9 @@ pub(crate) struct DesktopWorkspace {
 
 impl DesktopWorkspace {
     pub(crate) fn from_environment() -> Result<Self, String> {
-        let db_path = env::var("SILAN_DESKTOP_DB")
-            .map(PathBuf::from)
-            .map_err(|_| {
-                "SILAN_DESKTOP_DB is not set; launch through `silan-viking desktop`".to_owned()
-            })?;
-        let content_root = env::var("SILAN_DESKTOP_CONTENT")
-            .map(PathBuf::from)
-            .map_err(|_| {
-                "SILAN_DESKTOP_CONTENT is not set; launch through `silan-viking desktop`".to_owned()
-            })?;
+        let workspace = DesktopWorkspacePaths::resolve()?;
+        let db_path = workspace.db_path;
+        let content_root = workspace.content_root;
         Ok(Self {
             website_insights: WebsiteInsights::open(&content_root, &db_path)
                 .map_err(|error| error.to_string())?,
@@ -145,25 +150,9 @@ impl DesktopWorkspace {
             deployed_ai_chat_referrals: snapshot.ai_referrals.visits,
             stats_synced_at: snapshot.freshness.synced_at,
             today_visits: snapshot.traffic.today_visits,
-            daily_visits: snapshot
-                .traffic
-                .daily_visits
-                .into_iter()
-                .map(|day| DailyTraffic {
-                    date: day.date,
-                    visits: day.visits,
-                    content: day
-                        .content
-                        .into_iter()
-                        .map(|item| DailyContentTraffic {
-                            content_type: item.content_type,
-                            title: item.title,
-                            visits: item.visits,
-                            comments: item.comments,
-                        })
-                        .collect(),
-                })
-                .collect(),
+            daily_visits: map_daily_traffic(snapshot.traffic.daily_visits),
+            daily_seo_visits: map_daily_traffic(snapshot.traffic.daily_seo_visits),
+            daily_geo_visits: map_daily_traffic(snapshot.traffic.daily_geo_visits),
             top_content: snapshot
                 .traffic
                 .top_content
@@ -303,6 +292,21 @@ impl DesktopWorkspace {
                     clean: scope.dirty_count == 0,
                 })
                 .collect(),
+        })
+    }
+
+    pub(crate) fn delivery_sync_status(&self) -> Result<DeliverySyncStatus, String> {
+        let status = self
+            .delivery_control
+            .sync_status()
+            .map_err(|error| error.to_string())?;
+        Ok(DeliverySyncStatus {
+            local_head: status.local_head,
+            remote_head: status.remote_head,
+            local_commits: status.local_commits,
+            remote_commits: status.remote_commits,
+            workspace_changes: status.workspace_changes,
+            state: status.state,
         })
     }
 
@@ -451,7 +455,6 @@ impl DesktopWorkspace {
         &self,
         language: &str,
         profile: &ResumeProfile,
-        summary: &str,
         expected_revision: &str,
     ) -> Result<ResumeProfileSource, String> {
         let current = self
@@ -464,6 +467,35 @@ impl DesktopWorkspace {
             .save_resume_profile_and_sync(
                 language,
                 &frontmatter,
+                &current.body,
+                expected_revision,
+                &self.db_path,
+            )
+            .map_err(|error| error.to_string())?;
+        Ok(ResumeProfileSource {
+            language: language.to_owned(),
+            revision: saved.revision,
+            relative_path: saved.relative_path,
+            profile: parse_resume_profile(&saved.frontmatter)?,
+            summary: saved.body,
+        })
+    }
+
+    pub(crate) fn save_resume_summary(
+        &self,
+        language: &str,
+        summary: &str,
+        expected_revision: &str,
+    ) -> Result<ResumeProfileSource, String> {
+        let current = self
+            .content
+            .read_resume_profile(language)
+            .map_err(|error| error.to_string())?;
+        let saved = self
+            .content
+            .save_resume_profile_and_sync(
+                language,
+                &current.frontmatter,
                 summary,
                 expected_revision,
                 &self.db_path,
@@ -603,6 +635,7 @@ impl DesktopWorkspace {
                     translation_id: translation_id.to_owned(),
                     status: state.status,
                     visibility: state.visibility,
+                    pinned: state.pinned,
                     expected_revision: expected_revision.to_owned(),
                 },
                 &self.db_path,
@@ -707,10 +740,8 @@ impl DesktopWorkspace {
             return Ok(MomentsUiConfig::default());
         }
 
-        let text = fs::read_to_string(&config_path)
-            .map_err(|error| format!("cannot read `{}`: {error}", config_path.display()))?;
-        let project: ProjectConfig = toml::from_str(&text)
-            .map_err(|error| format!("cannot parse `{}`: {error}", config_path.display()))?;
+        let project_root = self.content_root.parent().unwrap_or(&self.content_root);
+        let project = read_project_config(project_root)?;
         let Some(moments) = project.desktop.and_then(|desktop| desktop.moments) else {
             return Ok(MomentsUiConfig::default());
         };
@@ -749,11 +780,134 @@ impl DesktopWorkspace {
     }
 }
 
+#[derive(Debug, Clone)]
+struct DesktopWorkspacePaths {
+    content_root: PathBuf,
+    db_path: PathBuf,
+}
+
+impl DesktopWorkspacePaths {
+    fn resolve() -> Result<Self, String> {
+        let project_root = env::var("SILAN_DESKTOP_PROJECT")
+            .ok()
+            .map(PathBuf::from)
+            .or_else(|| {
+                env::var("SILAN_DESKTOP_CONTENT")
+                    .ok()
+                    .map(PathBuf::from)
+                    .and_then(|content| content.parent().map(Path::to_path_buf))
+            })
+            .or_else(|| find_project_root_from_current_dir().ok())
+            .ok_or_else(|| {
+                "Desktop workspace is not configured; set SILAN_DESKTOP_CONTENT/SILAN_DESKTOP_DB or run from a silan-viking project".to_owned()
+            })?;
+        let config = read_project_config(&project_root)?;
+        let content_root = env::var("SILAN_DESKTOP_CONTENT")
+            .ok()
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                let content_dir = config
+                    .project
+                    .as_ref()
+                    .and_then(|section| section.content_dir.as_deref())
+                    .unwrap_or("content");
+                project_root.join(content_dir)
+            });
+        let db_path = env::var("SILAN_DESKTOP_DB")
+            .ok()
+            .map(PathBuf::from)
+            .or_else(|| {
+                config
+                    .database
+                    .as_ref()
+                    .and_then(|database| database.path.as_deref())
+                    .map(|path| project_root.join(path))
+            })
+            .ok_or_else(|| {
+                format!(
+                    "Desktop database is not configured; add [database].path to {} or set SILAN_DESKTOP_DB",
+                    project_root.join("silan-viking.toml").display()
+                )
+            })?;
+        Ok(Self {
+            content_root,
+            db_path,
+        })
+    }
+}
+
+pub(crate) fn desktop_content_root() -> Result<PathBuf, String> {
+    DesktopWorkspacePaths::resolve().map(|workspace| workspace.content_root)
+}
+
+fn map_daily_traffic(days: Vec<silan_viking_app::DailyTraffic>) -> Vec<DailyTraffic> {
+    days.into_iter()
+        .map(|day| DailyTraffic {
+            date: day.date,
+            visits: day.visits,
+            content: day
+                .content
+                .into_iter()
+                .map(|item| DailyContentTraffic {
+                    content_type: item.content_type,
+                    title: item.title,
+                    visits: item.visits,
+                    comments: item.comments,
+                    evidence: item
+                        .evidence
+                        .into_iter()
+                        .map(|evidence| TrafficEvidence {
+                            agent: evidence.agent,
+                            event: evidence.event,
+                            subject_kind: evidence.subject_kind,
+                            subject: evidence.subject,
+                            visits: evidence.visits,
+                        })
+                        .collect(),
+                    visitors: item
+                        .visitors
+                        .into_iter()
+                        .map(|visitor| VisitorLocation {
+                            country_code: visitor.country_code,
+                            city: visitor.city,
+                            latitude: visitor.latitude,
+                            longitude: visitor.longitude,
+                            ip_addresses: visitor.ip_addresses,
+                            visits: visitor.visits,
+                        })
+                        .collect(),
+                })
+                .collect(),
+        })
+        .collect()
+}
+
 fn project_config_path(content_root: &Path) -> PathBuf {
     content_root
         .parent()
         .map(|project_root| project_root.join("silan-viking.toml"))
         .unwrap_or_else(|| content_root.join("silan-viking.toml"))
+}
+
+fn read_project_config(project_root: &Path) -> Result<ProjectConfig, String> {
+    let config_path = project_root.join("silan-viking.toml");
+    let text = fs::read_to_string(&config_path)
+        .map_err(|error| format!("cannot read `{}`: {error}", config_path.display()))?;
+    toml::from_str(&text)
+        .map_err(|error| format!("cannot parse `{}`: {error}", config_path.display()))
+}
+
+fn find_project_root_from_current_dir() -> Result<PathBuf, String> {
+    let mut cursor =
+        env::current_dir().map_err(|error| format!("cannot read current directory: {error}"))?;
+    loop {
+        if cursor.join("silan-viking.toml").is_file() {
+            return Ok(cursor);
+        }
+        if !cursor.pop() {
+            return Err("no silan-viking.toml found above current directory".to_owned());
+        }
+    }
 }
 
 fn non_empty_or(value: &str, fallback: &str) -> String {
@@ -906,7 +1060,7 @@ fn serialize_resume_part(
     shape: &str,
     entries: &[ResumeEntryInput],
 ) -> Result<String, String> {
-    let header = format!("# Resume — {role} ({shape}). Managed by Silan Desktop.\n\n");
+    let header = format!("# Resume — {role} ({shape}). Managed by Silan Context System.\n\n");
     match shape {
         "entry_list" => {
             let mut list = toml::value::Array::new();

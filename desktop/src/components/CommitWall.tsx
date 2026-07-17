@@ -19,6 +19,7 @@ type CommitWallProps = {
 
 type TrafficWallProps = {
   activity: Array<{ date: string; visits: number }>;
+  noun?: string;
   selectedDate?: string | null;
   onSelect?: (date: string) => void;
 };
@@ -44,11 +45,11 @@ export function CommitWall({ activity, selectedDate, onSelect }: CommitWallProps
   }} />;
 }
 
-export function TrafficWall({ activity, selectedDate, onSelect }: TrafficWallProps) {
+export function TrafficWall({ activity, noun = 'human visit', selectedDate, onSelect }: TrafficWallProps) {
   return (
     <TileWall
       activity={activity.map((day) => ({ date: day.date, count: day.visits }))}
-      noun="human visit"
+      noun={noun}
       selectedDate={selectedDate}
       onSelect={onSelect}
     />
@@ -66,8 +67,13 @@ function TileWall({ activity, noun, selectedDate, onSelect }: {
     [activity],
   );
   const days = React.useMemo(() => {
-    const today = new Date();
-    const utcToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const singaporeDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Singapore',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+    const utcToday = new Date(`${singaporeDate}T00:00:00Z`);
     const end = new Date(utcToday.getTime() + (6 - utcToday.getUTCDay()) * DAY_MS);
     const start = new Date(end.getTime() - (WEEKS * 7 - 1) * DAY_MS);
     return Array.from({ length: WEEKS * 7 }, (_, index) => {

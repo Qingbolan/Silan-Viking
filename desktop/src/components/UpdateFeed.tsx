@@ -1,4 +1,4 @@
-import { ChevronRight, Lock, PencilLine } from 'lucide-react';
+import { Lock, PencilLine } from 'lucide-react';
 import { contentGroupTags, contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
 import { toWebviewMediaUrl } from '../lib/media';
 import type { ContentGroup, EditorDocument, MomentsSettings } from '../types';
@@ -41,7 +41,10 @@ export function UpdateFeed({
   meta,
   onOpen,
 }: UpdateFeedProps) {
-  const ordered = [...groups].sort((left, right) => contentGroupDate(right).localeCompare(contentGroupDate(left)));
+  const ordered = [...groups].sort((left, right) =>
+    Number(Boolean(right.pinned)) - Number(Boolean(left.pinned))
+    || contentGroupDate(right).localeCompare(contentGroupDate(left)),
+  );
 
   if (ordered.length === 0) {
     return (
@@ -51,7 +54,6 @@ export function UpdateFeed({
     );
   }
 
-  const pinned = ordered.filter((group) => group.pinned).slice(0, 4);
   const profile = settings?.profile;
   const displayName = profile?.display_name.trim() || 'Profile';
   const avatarUrl = toWebviewMediaUrl(profile?.avatar_url);
@@ -76,29 +78,6 @@ export function UpdateFeed({
         </div>
       </header>
 
-      {pinned.length > 0 && (
-        <section className="updates-pin" aria-label="Pinned updates">
-          <h2>Pin</h2>
-          <div className="updates-pin-gallery">
-            {pinned.map((group) => {
-              const document = selectPrimaryDocument(group);
-              const preview = translationPreview(document);
-              const coverUrl = toWebviewMediaUrl(group.coverUrl);
-              return (
-                <button type="button" className="updates-pin-card" key={group.id} onClick={() => onOpen(group)}>
-                  {coverUrl ? (
-                    <img src={coverUrl} alt="" loading="lazy" />
-                  ) : (
-                    <span>{preview || group.title}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <ChevronRight size={28} aria-hidden="true" />
-        </section>
-      )}
-
       <div className="updates-timeline">
         {ordered.map((group) => {
           const document = selectPrimaryDocument(group);
@@ -111,6 +90,7 @@ export function UpdateFeed({
           return (
             <article className="updates-timeline-row" key={group.id}>
               <time className="updates-date" dateTime={updateDate}>
+                {group.pinned && <em>PIN</em>}
                 <strong>{date.day}</strong>
                 <span>{date.month}.</span>
               </time>

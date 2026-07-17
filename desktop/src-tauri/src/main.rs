@@ -3,17 +3,17 @@
 mod application;
 mod commands;
 mod model;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tauri::{http, Manager};
 
 fn main() {
     tauri::Builder::default()
         .register_uri_scheme_protocol("silan", |_ctx, request| silan_protocol_response(request))
         .setup(|app| {
-            if let Ok(content_root) = std::env::var("SILAN_DESKTOP_CONTENT") {
-                app.asset_protocol_scope()
-                    .allow_directory(PathBuf::from(content_root).join("resources"), true)?;
-            }
+            let content_root = application::desktop_content_root()
+                .map_err(|error| std::io::Error::new(std::io::ErrorKind::NotFound, error))?;
+            app.asset_protocol_scope()
+                .allow_directory(content_root.join("resources"), true)?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -25,6 +25,7 @@ fn main() {
             commands::get_episode_series_source,
             commands::get_dashboard,
             commands::get_deployment_plan,
+            commands::get_delivery_sync_status,
             commands::get_entity_counts,
             commands::get_geo_insights,
             commands::get_moments_settings,
@@ -40,18 +41,20 @@ fn main() {
             commands::save_episode_series,
             commands::save_resume_entries,
             commands::save_resume_profile,
+            commands::save_resume_summary,
             commands::sync_stats,
+            commands::transcribe_audio,
             commands::verify_remote_content
         ])
         .run(tauri::generate_context!())
-        .expect("failed to run Silan Desktop");
+        .expect("failed to run Silan Context System");
 }
 
 fn silan_protocol_response(request: http::Request<Vec<u8>>) -> http::Response<Vec<u8>> {
-    let Ok(content_root) = std::env::var("SILAN_DESKTOP_CONTENT") else {
+    let Ok(content_root) = application::desktop_content_root() else {
         return text_response(
             http::StatusCode::SERVICE_UNAVAILABLE,
-            "SILAN_DESKTOP_CONTENT is not configured",
+            "desktop workspace is not configured",
         );
     };
     let Ok(library) = silan_viking_app::MediaLibrary::open(content_root) else {

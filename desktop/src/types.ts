@@ -67,6 +67,36 @@ export type GeoEvidence = {
   detail: string;
 };
 
+export type DailyTraffic = {
+  date: string;
+  visits: number;
+  content: Array<{
+    content_type: string;
+    title: string;
+    visits: number;
+    comments: number;
+    evidence: TrafficEvidence[];
+    visitors: VisitorLocation[];
+  }>;
+};
+
+export type VisitorLocation = {
+  country_code: string;
+  city: string;
+  latitude: string;
+  longitude: string;
+  ip_addresses: string[];
+  visits: number;
+};
+
+export type TrafficEvidence = {
+  agent: string;
+  event: string;
+  subject_kind: 'attributed_topic' | 'page' | 'landing_page' | 'search_query' | null;
+  subject: string | null;
+  visits: number;
+};
+
 export type DashboardData = {
   total_views: number;
   total_likes: number;
@@ -86,16 +116,9 @@ export type DashboardData = {
   deployed_ai_chat_referrals: number;
   stats_synced_at: string | null;
   today_visits: number;
-  daily_visits: Array<{
-    date: string;
-    visits: number;
-    content: Array<{
-      content_type: string;
-      title: string;
-      visits: number;
-      comments: number;
-    }>;
-  }>;
+  daily_visits: DailyTraffic[];
+  daily_seo_visits: DailyTraffic[];
+  daily_geo_visits: DailyTraffic[];
   top_content: Array<{
     content_type: string;
     title: string;
@@ -167,6 +190,15 @@ export type DeploymentPlan = {
     dirty_count: number;
     clean: boolean;
   }>;
+};
+
+export type DeliverySyncStatus = {
+  local_head: string;
+  remote_head: string;
+  local_commits: number;
+  remote_commits: number;
+  workspace_changes: number;
+  state: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown';
 };
 
 export type DeployRunStatus = {
