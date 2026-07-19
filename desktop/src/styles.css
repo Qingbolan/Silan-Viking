@@ -16,13 +16,16 @@
   --line: rgba(0, 0, 0, 0.1);
   --paper: #ffffff;
   --paper-solid: #ffffff;
-  --paper-warm: #fbfbf9;
+  --paper-warm: #fdfcf8;
+  --paper-muted: #f7f6f1;
   --paper-fiber:
-    linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.72)),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.018) 0 1px, transparent 1px 4px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.012) 0 1px, transparent 1px 6px);
-  --print-hairline: rgba(0, 0, 0, 0.085);
-  --print-rule: rgba(0, 0, 0, 0.16);
+    radial-gradient(circle at 17% 29%, rgba(0, 0, 0, 0.030) 0 0.45px, transparent 0.75px),
+    radial-gradient(circle at 72% 61%, rgba(0, 0, 0, 0.022) 0 0.5px, transparent 0.85px),
+    radial-gradient(circle at 38% 78%, rgba(0, 0, 0, 0.018) 0 0.55px, transparent 0.9px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.64), rgba(250, 249, 245, 0.52));
+  --paper-fiber-size: 23px 29px, 31px 37px, 43px 47px, 100% 100%;
+  --print-hairline: rgba(0, 0, 0, 0.075);
+  --print-rule: rgba(0, 0, 0, 0.18);
   --accent: #3a6bd8;
   --accent-dark: #2a52ad;
   --green: #3a7a4f;
@@ -1523,6 +1526,7 @@ h1 {
   padding: 0;
   background-color: var(--paper-warm);
   background-image: var(--paper-fiber);
+  background-size: var(--paper-fiber-size);
   text-align: left;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   transition: border-color 120ms ease, background-color 120ms ease;
@@ -1796,6 +1800,7 @@ h1 {
   border-radius: 6px;
   background-color: var(--paper-warm);
   background-image: var(--paper-fiber);
+  background-size: var(--paper-fiber-size);
   color: var(--ink);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
@@ -1932,6 +1937,7 @@ h1 {
   border-radius: 6px;
   background-color: var(--paper-warm);
   background-image: var(--paper-fiber);
+  background-size: var(--paper-fiber-size);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
@@ -2296,15 +2302,16 @@ h1 {
   border: 0;
   border-radius: 0;
   padding: 14px 18px;
-  background-color: #f4f4f2;
+  background-color: var(--paper-muted);
   background-image: var(--paper-fiber);
+  background-size: var(--paper-fiber-size);
   color: var(--ink);
   text-align: left;
-  box-shadow: inset 3px 0 0 rgba(0, 0, 0, 0.06);
+  box-shadow: inset 2px 0 0 rgba(0, 0, 0, 0.05);
 }
 
 .moments-entry:hover {
-  background-color: #eeeeec;
+  background-color: #f1f0eb;
 }
 
 .moments-entry p {
