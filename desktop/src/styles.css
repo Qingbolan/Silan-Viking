@@ -16,13 +16,6 @@
   --line: rgba(0, 0, 0, 0.1);
   --paper: #ffffff;
   --paper-solid: #ffffff;
-  --paper-warm: #fbfbf9;
-  --paper-fiber:
-    linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.72)),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.018) 0 1px, transparent 1px 4px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.012) 0 1px, transparent 1px 6px);
-  --print-hairline: rgba(0, 0, 0, 0.085);
-  --print-rule: rgba(0, 0, 0, 0.16);
   --accent: #3a6bd8;
   --accent-dark: #2a52ad;
   --green: #3a7a4f;
@@ -1518,19 +1511,17 @@ h1 {
   display: grid;
   width: 100%;
   overflow: hidden;
-  border: 1px solid var(--print-hairline);
-  border-radius: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   padding: 0;
-  background-color: var(--paper-warm);
-  background-image: var(--paper-fiber);
+  background: var(--paper-solid);
   text-align: left;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition: border-color 120ms ease, background 120ms ease;
 }
 
 .content-card:hover {
   border-color: var(--ds-color-border-strong);
-  background-color: #fdfdfb;
+  background: #fdfdfc;
 }
 
 .content-card-open {
@@ -1564,9 +1555,9 @@ h1 {
   align-items: center;
   min-height: 26px;
   overflow: hidden;
-  border: 1px solid var(--print-hairline);
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--color-surfaceSecondary);
 }
 
 .state-control-summary span {
@@ -1577,29 +1568,27 @@ h1 {
   color: var(--muted);
   font-size: 10px;
   font-weight: 560;
-  letter-spacing: 0;
   white-space: nowrap;
 }
 
 .state-control-summary span + span {
-  border-left: 1px solid var(--print-hairline);
+  border-left: 1px solid var(--line);
   color: var(--faint);
 }
 
 .state-control-summary span[data-visibility="private"] {
-  background: rgba(0, 0, 0, 0.045);
+  background: #e9e9e7;
   color: #595959;
 }
 
 .state-controls button {
   height: 26px;
-  border: 1px solid var(--print-hairline);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper-solid);
   color: var(--muted);
   font-size: 11px;
   font-weight: 520;
-  letter-spacing: 0;
 }
 
 .state-controls button {
@@ -1664,7 +1653,7 @@ h1 {
 
 .content-card-cover {
   display: block;
-  border-bottom: 1px solid var(--print-hairline);
+  border-bottom: 1px solid var(--line);
 }
 
 .content-card-cover img {
@@ -1694,7 +1683,7 @@ h1 {
   color: var(--muted);
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0;
+  letter-spacing: 0.03em;
 }
 
 .content-state-pills {
@@ -1708,21 +1697,20 @@ h1 {
   display: inline-flex;
   align-items: center;
   min-height: 20px;
-  border: 1px solid var(--print-hairline);
-  border-radius: 3px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
   padding: 0 7px;
-  background: rgba(255, 255, 255, 0.64);
+  background: var(--paper-solid);
   color: var(--muted);
   font-size: 10px;
   font-weight: 560;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
   line-height: 1;
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.025);
   white-space: nowrap;
 }
 
 .content-state-pills > span[data-visibility="private"] {
-  background: rgba(0, 0, 0, 0.045);
+  background: #e9e9e7;
   color: #595959;
 }
 
@@ -1750,27 +1738,25 @@ h1 {
 
 .content-card-engagement {
   display: inline-flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
   margin-top: 2px;
-  color: #777;
-  font-family: var(--font-mono);
+  color: var(--faint);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 
 .content-card-engagement span {
   display: inline-flex;
-  gap: 4px;
+  gap: 5px;
   align-items: center;
-  min-width: 30px;
+  min-width: 34px;
   white-space: nowrap;
 }
 
 .content-card-engagement svg {
   flex: 0 0 auto;
-  color: #8c8c8c;
-  stroke-width: 1.65;
+  color: var(--muted);
 }
 
 .content-empty {
@@ -1792,12 +1778,10 @@ h1 {
   gap: 16px;
   align-items: flex-start;
   padding: 18px;
-  border: 1px solid var(--print-hairline);
-  border-radius: 6px;
-  background-color: var(--paper-warm);
-  background-image: var(--paper-fiber);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-solid);
   color: var(--ink);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .series-detail-head > div {
@@ -1834,8 +1818,7 @@ h1 {
   display: inline-flex;
   gap: 14px;
   align-items: center;
-  color: #777;
-  font-family: var(--font-mono);
+  color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
@@ -1850,8 +1833,7 @@ h1 {
 
 .series-engagement svg {
   flex: 0 0 auto;
-  color: #8c8c8c;
-  stroke-width: 1.65;
+  color: var(--faint);
 }
 
 .series-detail-head small {
@@ -1867,8 +1849,8 @@ h1 {
   width: min(420px, 100%);
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  border: 1px solid var(--print-hairline);
-  border-radius: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
   background: var(--color-surfaceSecondary);
 }
 
@@ -1883,18 +1865,17 @@ h1 {
   gap: 7px;
   align-items: center;
   height: 30px;
-  border: 1px solid var(--print-hairline);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper-solid);
   color: var(--muted);
   font-size: 12px;
   font-weight: 560;
-  letter-spacing: 0;
 }
 
 .series-detail-head .series-back {
-  border-color: var(--print-hairline);
-  background: rgba(255, 255, 255, 0.68);
+  border-color: var(--line);
+  background: var(--paper-solid);
   color: var(--muted);
 }
 
@@ -1927,12 +1908,10 @@ h1 {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 14px 13px;
-  border: 1px solid var(--print-hairline);
-  border-radius: 6px;
-  background-color: var(--paper-warm);
-  background-image: var(--paper-fiber);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-solid);
 }
 
 .series-episode-open {
@@ -1949,21 +1928,16 @@ h1 {
 }
 
 .series-episode-number {
-  display: flex;
-  width: 38px;
+  display: grid;
+  width: 36px;
   height: 36px;
-  align-items: center;
-  justify-content: flex-start;
-  border: 0;
-  border-left: 1px solid var(--print-rule);
-  border-radius: 0;
-  padding-left: 10px;
-  background: transparent;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .series-episode-copy {
@@ -1985,8 +1959,7 @@ h1 {
   display: inline-flex;
   gap: 10px;
   align-items: center;
-  color: #777;
-  font-family: var(--font-mono);
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2000,8 +1973,7 @@ h1 {
 
 .series-episode-engagement svg {
   flex: 0 0 auto;
-  color: #8c8c8c;
-  stroke-width: 1.65;
+  color: var(--faint);
 }
 
 .series-episode-copy strong {
@@ -2270,11 +2242,11 @@ h1 {
 .moments-date em {
   align-self: center;
   margin-right: 8px;
-  color: var(--ink);
+  color: var(--accent);
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: 0.12em;
 }
 
 .moments-date strong {
@@ -2296,15 +2268,13 @@ h1 {
   border: 0;
   border-radius: 0;
   padding: 14px 18px;
-  background-color: #f4f4f2;
-  background-image: var(--paper-fiber);
+  background: #f4f4f3;
   color: var(--ink);
   text-align: left;
-  box-shadow: inset 3px 0 0 rgba(0, 0, 0, 0.06);
 }
 
 .moments-entry:hover {
-  background-color: #eeeeec;
+  background: #ededec;
 }
 
 .moments-entry p {
@@ -2335,8 +2305,7 @@ h1 {
   gap: 14px;
   align-items: center;
   margin-top: 10px;
-  color: #777;
-  font-family: var(--font-mono);
+  color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
@@ -2351,8 +2320,7 @@ h1 {
 
 .moments-engagement svg {
   flex: 0 0 auto;
-  color: #8c8c8c;
-  stroke-width: 1.65;
+  color: var(--faint);
 }
 
 .moments-entry svg {
