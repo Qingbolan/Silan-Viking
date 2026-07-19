@@ -354,6 +354,7 @@ export default function App() {
           date: document.date || null,
           pinned: Boolean(document.pinned),
           coverUrl: document.cover_url || undefined,
+          engagement: document.engagement,
           documents: [],
           cardKind: document.entity_type === 'blog' ? 'article' : undefined,
         });
@@ -398,6 +399,7 @@ export default function App() {
           visibility: document.visibility,
           date: document.date || null,
           pinned: Boolean(document.pinned),
+          engagement: document.engagement,
           episodeNumber: document.episode_number,
           documents: [],
         });
@@ -432,6 +434,10 @@ export default function App() {
       visibility: lifecycle.visibilityLabel,
       coverUrl: series.coverUrl || undefined,
       documents: firstEpisode.documents,
+      engagement: series.episodes.reduce((total, episode) => ({
+        likes: total.likes + episode.engagement.likes,
+        comments: total.comments + episode.engagement.comments,
+      }), { likes: 0, comments: 0 }),
       cardKind: 'series',
       episodeCount: series.episodes.length,
       latestEpisode: latestEpisode
@@ -1317,16 +1323,19 @@ export default function App() {
     const disabled = savingState || stateDirty || !translation;
     const lifecycle = contentLifecycleFor(group.kind, group.status, group.visibility);
     if (lifecycle.actions.length === 0 && group.kind !== 'moment') return null;
+    const showStateSummary = variant === 'header';
 
     return (
       <div
         className={`state-controls state-controls--${variant}`}
         title={stateDirty ? 'Save Markdown before changing lifecycle state' : undefined}
       >
-        <span className="state-control-summary" aria-label={`${group.title} state`}>
-          <span>{lifecycle.statusLabel}</span>
-          <span data-visibility={lifecycle.visibility === 'private' ? 'private' : undefined}>{lifecycle.visibilityLabel}</span>
-        </span>
+        {showStateSummary && (
+          <span className="state-control-summary" aria-label={`${group.title} state`}>
+            <span>{lifecycle.statusLabel}</span>
+            <span data-visibility={lifecycle.visibility === 'private' ? 'private' : undefined}>{lifecycle.visibilityLabel}</span>
+          </span>
+        )}
         {lifecycle.actions.map((action) => (
           <button
             key={action.id}
@@ -1367,16 +1376,19 @@ export default function App() {
       return Boolean(translation && dirtyIds.has(translation.id));
     });
     const disabled = savingState || stateDirty || series.episodes.length === 0;
+    const showStateSummary = variant === 'header';
 
     return (
       <div
         className={`state-controls state-controls--${variant}`}
         title={stateDirty ? 'Save episode Markdown before changing the whole series' : undefined}
       >
-        <span className="state-control-summary" aria-label={`${series.title} state`}>
-          <span>{lifecycle.statusLabel}</span>
-          <span data-visibility={lifecycle.visibility === 'private' ? 'private' : undefined}>{lifecycle.visibilityLabel}</span>
-        </span>
+        {showStateSummary && (
+          <span className="state-control-summary" aria-label={`${series.title} state`}>
+            <span>{lifecycle.statusLabel}</span>
+            <span data-visibility={lifecycle.visibility === 'private' ? 'private' : undefined}>{lifecycle.visibilityLabel}</span>
+          </span>
+        )}
         {lifecycle.actions.map((action) => (
           <button
             key={action.id}
@@ -1785,18 +1797,8 @@ export default function App() {
                     <span>Deployed <b>{deliverySyncStatus.remote_head.slice(0, 7)}</b></span>
                   </div>
                 )}
-                <div className="attention-actions">
-                  <button
-                    type="button"
-                    className="attention-refresh"
-                    disabled={refreshingDeliveryStatus || deployingContent}
-                    onClick={() => void loadDeliverySyncStatus()}
-                    title="Compare local Git HEAD with the deployed content commit now"
-                  >
-                    {refreshingDeliveryStatus ? <LoaderCircle size={14} /> : <RefreshCw size={14} />}
-                    {refreshingDeliveryStatus ? 'Checking' : 'Refresh status'}
-                  </button>
-                  {localDeliveryCount > 0 && (
+                {localDeliveryCount > 0 && (
+                  <div className="attention-actions">
                     <button
                       type="button"
                       className="attention-deploy"
@@ -1807,8 +1809,8 @@ export default function App() {
                       {deployingContent ? <LoaderCircle size={14} /> : <UploadCloud size={14} />}
                       {deployingContent ? 'Deploying' : `Deploy ${localDeliveryCount}`}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
                 {deployVerification && (
                   <div className="delivery-verification" data-verified={deployVerification.verified}>
                     <CheckCircle2 size={14} />

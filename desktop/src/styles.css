@@ -1736,6 +1736,29 @@ h1 {
   font-size: 12px;
 }
 
+.content-card-engagement {
+  display: inline-flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 2px;
+  color: var(--faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.content-card-engagement span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 34px;
+  white-space: nowrap;
+}
+
+.content-card-engagement svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
 .content-empty {
   display: grid;
   min-height: 360px;
@@ -1789,6 +1812,28 @@ h1 {
   margin: 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+.series-engagement {
+  display: inline-flex;
+  gap: 14px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.series-engagement span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 38px;
+  white-space: nowrap;
+}
+
+.series-engagement svg {
+  flex: 0 0 auto;
+  color: var(--faint);
 }
 
 .series-detail-head small {
@@ -1905,8 +1950,30 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
   color: var(--faint);
   font-size: 11px;
+}
+
+.series-episode-engagement {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.series-episode-engagement span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 32px;
+  white-space: nowrap;
+}
+
+.series-episode-engagement svg {
+  flex: 0 0 auto;
+  color: var(--faint);
 }
 
 .series-episode-copy strong {
@@ -2231,6 +2298,29 @@ h1 {
 .moments-tags span {
   color: var(--muted);
   font-size: 12px;
+}
+
+.moments-engagement {
+  display: inline-flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.moments-engagement span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 38px;
+  white-space: nowrap;
+}
+
+.moments-engagement svg {
+  flex: 0 0 auto;
+  color: var(--faint);
 }
 
 .moments-entry svg {

@@ -21,7 +21,13 @@ export type EditorDocument = {
   pinned?: boolean;
   updated_at: string;
   cover_url?: string | null;
+  engagement: EngagementStats;
   translations: EditorTranslation[];
+};
+
+export type EngagementStats = {
+  likes: number;
+  comments: number;
 };
 
 export type EditorTranslation = {
@@ -253,6 +259,7 @@ export type ContentGroup = {
   pinned?: boolean;
   coverUrl?: string;
   documents: EditorDocument[];
+  engagement: EngagementStats;
   cardKind?: 'article' | 'series';
   episodeCount?: number;
   latestEpisode?: { title: string; episodeNumber?: number | null };

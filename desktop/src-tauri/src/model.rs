@@ -22,7 +22,14 @@ pub(crate) struct EditorDocument {
     pub(crate) pinned: bool,
     pub(crate) updated_at: String,
     pub(crate) cover_url: Option<String>,
+    pub(crate) engagement: EngagementStats,
     pub(crate) translations: Vec<EditorTranslation>,
+}
+
+#[derive(Debug, Default, Clone, Serialize)]
+pub(crate) struct EngagementStats {
+    pub(crate) likes: i64,
+    pub(crate) comments: i64,
 }
 
 #[derive(Debug, Serialize)]

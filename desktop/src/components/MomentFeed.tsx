@@ -1,4 +1,4 @@
-import { Lock, PencilLine } from 'lucide-react';
+import { Heart, Lock, MessageCircle, PencilLine } from 'lucide-react';
 import { contentGroupTags, contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
 import { toWebviewMediaUrl } from '../lib/media';
 import type { ContentGroup, EditorDocument, MomentsSettings } from '../types';
@@ -102,6 +102,19 @@ export function MomentFeed({
                       {tags.map((tag) => <span key={tag}>#{tag}</span>)}
                     </div>
                   )}
+                  <div
+                    className="moments-engagement"
+                    aria-label={`${group.engagement.likes} likes and ${group.engagement.comments} comments`}
+                  >
+                    <span title={`${group.engagement.likes} likes`}>
+                      <Heart size={14} />
+                      {group.engagement.likes}
+                    </span>
+                    <span title={`${group.engagement.comments} comments`}>
+                      <MessageCircle size={14} />
+                      {group.engagement.comments}
+                    </span>
+                  </div>
                 </div>
                 {group.visibility !== 'public' ? <Lock size={18} aria-label="Private moment" /> : <PencilLine size={16} aria-hidden="true" />}
               </button>

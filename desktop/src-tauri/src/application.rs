@@ -3,18 +3,19 @@
 use crate::model::{
     CommitActivityDay, DailyContentTraffic, DailyTraffic, DashboardData, DashboardItem,
     DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats, DeploymentPlan,
-    DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation, EntityCount,
-    EpisodeSeriesInput, EpisodeSeriesSource, GeoAction, GeoEvidence, GeoInsightReport, GeoMetric,
-    ImportedMediaAsset, MomentsCover, MomentsProfile, MomentsSettings, RemoteContentVersion,
-    ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource, ResumeSection,
-    ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry, TrafficEvidence,
-    TrafficSource, VersionChange, VersionCommit, VersionStatus, VisitorLocation,
+    DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation, EngagementStats,
+    EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction, GeoEvidence, GeoInsightReport,
+    GeoMetric, ImportedMediaAsset, MomentsCover, MomentsProfile, MomentsSettings,
+    RemoteContentVersion, ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource,
+    ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry,
+    TrafficEvidence, TrafficSource, VersionChange, VersionCommit, VersionStatus, VisitorLocation,
 };
 use serde::Deserialize;
 use silan_viking_app::{
     api_base_url, ContentCreator, ContentEditor, ContentKind, DeliveryControl, EditableDocument,
     EditablePart, EditableSection, GeoAdvisor, IdeaCategory, MediaLibrary, ReleaseScope,
-    SaveLifecycleInput, SaveTranslationInput, WebsiteInsights, WorkspaceContent,
+    SaveLifecycleInput, SaveTranslationInput, StatsCache, StatsError, WebsiteInsights,
+    WorkspaceContent,
 };
 use std::env;
 use std::fs;
@@ -343,12 +344,13 @@ impl DesktopWorkspace {
     }
 
     pub(crate) fn list_documents(&self) -> Result<Vec<EditorDocument>, String> {
+        let stats = ContentEngagementSnapshot::read(&self.db_path);
         Ok(self
             .workspace_content
             .editable_documents()
             .map_err(|error| error.to_string())?
             .into_iter()
-            .flat_map(map_editable_document)
+            .flat_map(|document| map_editable_document(document, &stats))
             .collect())
     }
 
@@ -549,7 +551,8 @@ impl DesktopWorkspace {
                 &self.db_path,
             )
             .map_err(|error| error.to_string())?;
-        map_editable_document(saved)
+        let engagement = ContentEngagementSnapshot::read(&self.db_path);
+        map_editable_document(saved, &engagement)
             .into_iter()
             .find(|part| {
                 part.translations
@@ -641,7 +644,8 @@ impl DesktopWorkspace {
                 &self.db_path,
             )
             .map_err(|error| error.to_string())?;
-        map_editable_document(saved)
+        let engagement = ContentEngagementSnapshot::read(&self.db_path);
+        map_editable_document(saved, &engagement)
             .into_iter()
             .find(|part| {
                 part.translations
@@ -698,7 +702,8 @@ impl DesktopWorkspace {
             .map_err(|error| error.to_string())?
             .document_for_part(part_id)
             .map_err(|error| error.to_string())?;
-        map_editable_document(document)
+        let engagement = ContentEngagementSnapshot::read(&self.db_path);
+        map_editable_document(document, &engagement)
             .into_iter()
             .find(|part| part.part_id == part_id)
             .ok_or_else(|| format!("captured part `{part_id}` was not returned"))
@@ -927,7 +932,33 @@ fn avatar_label(display_name: &str) -> String {
         .to_string()
 }
 
-fn map_editable_document(document: EditableDocument) -> Vec<EditorDocument> {
+struct ContentEngagementSnapshot {
+    cache: StatsCache,
+}
+
+impl ContentEngagementSnapshot {
+    fn read(db_path: &Path) -> Self {
+        Self {
+            cache: StatsCache::open(db_path),
+        }
+    }
+
+    fn item(&self, entity_type: &str, entity_id: &str) -> EngagementStats {
+        match self.cache.item(entity_type, entity_id) {
+            Ok(stats) => EngagementStats {
+                likes: stats.likes,
+                comments: stats.comments,
+            },
+            Err(StatsError::NotSynced(_)) => EngagementStats::default(),
+            Err(_) => EngagementStats::default(),
+        }
+    }
+}
+
+fn map_editable_document(
+    document: EditableDocument,
+    engagement: &ContentEngagementSnapshot,
+) -> Vec<EditorDocument> {
     let EditableDocument {
         item_id,
         content_type,
@@ -944,6 +975,7 @@ fn map_editable_document(document: EditableDocument) -> Vec<EditorDocument> {
         parts,
         ..
     } = document;
+    let item_engagement = engagement.item(&content_type, &item_id);
     parts
         .into_iter()
         .map(|part| {
@@ -975,6 +1007,7 @@ fn map_editable_document(document: EditableDocument) -> Vec<EditorDocument> {
                 pinned,
                 updated_at: updated_at.clone(),
                 cover_url: cover_uri.clone(),
+                engagement: item_engagement.clone(),
                 translations: translations
                     .into_iter()
                     .map(|translation| EditorTranslation {
@@ -1054,7 +1087,7 @@ fn map_version_status(status: silan_viking_app::ScopeReleaseStatus) -> VersionSt
 
 /// Serialize block-editor entries back into the on-disk TOML shape:
 /// `[[entry]]` array-of-tables for `entry_list` parts, a top-level
-/// `"Category" = [...]` map for `key_value_list` parts.
+/// identity-bearing `[[entry]]` tables for `key_value_list` parts.
 fn serialize_resume_part(
     role: &str,
     shape: &str,
@@ -1087,14 +1120,20 @@ fn serialize_resume_part(
             Ok(format!("{header}{body}"))
         }
         "key_value_list" => {
-            let mut root = toml::map::Map::new();
+            let mut list = toml::value::Array::new();
             for entry in entries {
+                let mut table = toml::map::Map::new();
+                table.insert(
+                    "entry_id".to_owned(),
+                    toml::Value::String(entry.entry_id.clone()),
+                );
                 let category = entry
                     .fields
                     .get("category")
                     .and_then(|value| value.as_str())
                     .unwrap_or(&entry.entry_id)
                     .to_owned();
+                table.insert("category".to_owned(), toml::Value::String(category));
                 let items = entry
                     .fields
                     .get("items")
@@ -1102,8 +1141,11 @@ fn serialize_resume_part(
                     .transpose()?
                     .flatten()
                     .unwrap_or(toml::Value::Array(Vec::new()));
-                root.insert(category, items);
+                table.insert("items".to_owned(), items);
+                list.push(toml::Value::Table(table));
             }
+            let mut root = toml::map::Map::new();
+            root.insert("entry".to_owned(), toml::Value::Array(list));
             let body = toml::to_string(&toml::Value::Table(root))
                 .map_err(|error| format!("cannot serialize `{role}` categories: {error}"))?;
             Ok(format!("{header}{body}"))
@@ -1265,4 +1307,32 @@ fn validate_document_state(kind: &str, state: &DocumentStateInput) -> Result<(),
         return Err(format!("`{}` is not a valid visibility", state.visibility));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn key_value_writer_preserves_stable_entry_identity() {
+        let entries = vec![ResumeEntryInput {
+            entry_id: "skill-languages".to_owned(),
+            fields: serde_json::Map::from_iter([
+                (
+                    "category".to_owned(),
+                    serde_json::Value::String("编程语言".to_owned()),
+                ),
+                (
+                    "items".to_owned(),
+                    serde_json::json!(["Rust", "Go", "Python"]),
+                ),
+            ]),
+        }];
+
+        let source =
+            serialize_resume_part("skills", "key_value_list", &entries).expect("serialize skills");
+        assert!(source.contains("entry_id = \"skill-languages\""));
+        assert!(source.contains("category = \"编程语言\""));
+        assert!(!source.contains("\"kv:编程语言\""));
+    }
 }

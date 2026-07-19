@@ -1,4 +1,4 @@
-import { ArrowLeft, FileText, PencilLine } from 'lucide-react';
+import { ArrowLeft, FileText, Heart, MessageCircle, PencilLine } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { badgeClass, contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
 import { contentStateSummary } from '../lib/contentLifecycle';
@@ -15,8 +15,14 @@ type SeriesDetailProps = {
   seriesStateControls?: ReactNode;
 };
 
+const seriesEngagement = (series: EpisodeSeries) => series.episodes.reduce((total, episode) => ({
+  likes: total.likes + episode.engagement.likes,
+  comments: total.comments + episode.engagement.comments,
+}), { likes: 0, comments: 0 });
+
 export function SeriesDetail({ series, onBack, onEditSeries, onEditEpisode, renderStateControls, seriesStateControls }: SeriesDetailProps) {
   const coverUrl = toWebviewMediaUrl(series.coverUrl);
+  const engagement = seriesEngagement(series);
   const latestDate = series.episodes.reduce((latest, episode) => {
     const updatedAt = contentGroupUpdatedAt(episode);
     return !latest || updatedAt > latest ? updatedAt : latest;
@@ -36,6 +42,19 @@ export function SeriesDetail({ series, onBack, onEditSeries, onEditEpisode, rend
             {series.episodes.length} episodes
             {latestDate ? ` · Updated ${formatShortDate(latestDate)}` : ''}
           </p>
+          <div
+            className="series-engagement"
+            aria-label={`${engagement.likes} likes and ${engagement.comments} comments across this series`}
+          >
+            <span title={`${engagement.likes} likes across this series`}>
+              <Heart size={14} />
+              {engagement.likes}
+            </span>
+            <span title={`${engagement.comments} comments across this series`}>
+              <MessageCircle size={14} />
+              {engagement.comments}
+            </span>
+          </div>
           {series.description && <small>{series.description}</small>}
           {coverUrl && (
             <img className="series-cover" src={coverUrl} alt="" loading="lazy" />
@@ -74,6 +93,19 @@ export function SeriesDetail({ series, onBack, onEditSeries, onEditEpisode, rend
                           {part}
                         </span>
                       ))}
+                    </span>
+                    <span
+                      className="series-episode-engagement"
+                      aria-label={`${episode.engagement.likes} likes and ${episode.engagement.comments} comments`}
+                    >
+                      <span title={`${episode.engagement.likes} likes`}>
+                        <Heart size={13} />
+                        {episode.engagement.likes}
+                      </span>
+                      <span title={`${episode.engagement.comments} comments`}>
+                        <MessageCircle size={13} />
+                        {episode.engagement.comments}
+                      </span>
                     </span>
                   </span>
                   <strong>{episode.title}</strong>

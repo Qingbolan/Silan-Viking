@@ -1,3 +1,4 @@
+import { Heart, MessageCircle } from 'lucide-react';
 import { contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
 import { contentStateSummary } from '../lib/contentLifecycle';
 import { formatShortDate } from '../lib/format';
@@ -74,6 +75,16 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
               Latest{group.latestEpisode.episodeNumber != null ? ` #${group.latestEpisode.episodeNumber}` : ''} · {group.latestEpisode.title}
             </span>
           )}
+          <span className="content-card-engagement" aria-label={`${group.engagement.likes} likes and ${group.engagement.comments} comments`}>
+            <span title={`${group.engagement.likes} likes`}>
+              <Heart size={13} />
+              {group.engagement.likes}
+            </span>
+            <span title={`${group.engagement.comments} comments`}>
+              <MessageCircle size={13} />
+              {group.engagement.comments}
+            </span>
+          </span>
         </span>
       </button>
       {stateControls && <div className="content-card-actions">{stateControls}</div>}
