@@ -75,6 +75,7 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 		Description:      description,
 		Tags:             tags,
 		Year:             year,
+		IsFeatured:       proj.IsFeatured,
 		Status:           string(proj.Status),
 		StartDate:        proj.StartDate,
 		EndDate:          proj.EndDate,

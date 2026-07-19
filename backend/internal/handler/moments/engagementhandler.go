@@ -35,6 +35,7 @@ func ToggleLikeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 		req.ClientIP, req.UserAgentFull, req.Referrer = utils.GetClientIP(r), utils.GetUserAgent(r), r.Referer()
+		req.CountryCode = utils.GetCountryCode(r, svcCtx.CountryResolver)
 		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 		resp, err := updateslogic.ToggleUpdateLike(r.Context(), svcCtx, &req)
 		if err != nil {

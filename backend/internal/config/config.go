@@ -109,7 +109,11 @@ type TrafficConfig struct {
 
 // AuthConfig holds authentication-related settings
 type AuthConfig struct {
-	GoogleClientID string `json:"google_client_id,env=GOOGLE_CLIENT_ID"`
+	GoogleClientID     string `json:"google_client_id,env=GOOGLE_CLIENT_ID"`
+	GitHubClientID     string `json:"github_client_id,env=GITHUB_CLIENT_ID,optional"`
+	GitHubClientSecret string `json:"github_client_secret,env=GITHUB_CLIENT_SECRET,optional"`
+	GitHubCallbackURL  string `json:"github_callback_url,env=GITHUB_CALLBACK_URL,optional"`
+	FrontendURL        string `json:"frontend_url,env=FRONTEND_URL,optional"`
 }
 
 // LoadConfigFromEnv loads configuration from environment variables
@@ -143,6 +147,21 @@ func (c *Config) LoadConfigFromEnv() {
 	// Auth configuration from env
 	if googleID := os.Getenv("GOOGLE_CLIENT_ID"); googleID != "" {
 		c.Auth.GoogleClientID = googleID
+	}
+	if value := os.Getenv("GITHUB_CLIENT_ID"); value != "" {
+		c.Auth.GitHubClientID = value
+	}
+	if value := os.Getenv("GITHUB_CLIENT_SECRET"); value != "" {
+		c.Auth.GitHubClientSecret = value
+	}
+	if value := os.Getenv("GITHUB_CALLBACK_URL"); value != "" {
+		c.Auth.GitHubCallbackURL = value
+	}
+	if value := os.Getenv("FRONTEND_URL"); value != "" {
+		c.Auth.FrontendURL = value
+	}
+	if c.Auth.FrontendURL == "" {
+		c.Auth.FrontendURL = "http://localhost:3000"
 	}
 	if mediaRoot := os.Getenv("MEDIA_ROOT"); mediaRoot != "" {
 		c.Media.Root = mediaRoot

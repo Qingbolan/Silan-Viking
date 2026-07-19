@@ -6,7 +6,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   loading: boolean;
+  githubAvailable: boolean;
   loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithGitHub: () => void;
   logout: () => void;
 }
 
@@ -27,6 +29,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [githubAvailable, setGitHubAvailable] = useState(false);
 
   const mapUser = useCallback((data: any): User => {
     const payload = data.user ?? data;
@@ -71,6 +74,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [mapUser]);
 
+  useEffect(() => {
+    let active = true;
+    void fetch(apiUrl('/api/v1/auth/providers'))
+      .then((response) => response.ok ? response.json() : null)
+      .then((providers) => {
+        if (active) setGitHubAvailable(Boolean(providers?.github));
+      })
+      .catch(() => {
+        if (active) setGitHubAvailable(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const loginWithGoogle = useCallback(async (idToken: string) => {
     try {
       const response = await fetch(apiUrl('/api/v1/auth/google/verify'), {
@@ -99,13 +117,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   }, []);
 
+  const loginWithGitHub = useCallback(() => {
+    const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.assign(apiUrl(`/api/v1/auth/github/start?return_to=${encodeURIComponent(returnTo)}`));
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: !!user,
         user,
         loading,
+        githubAvailable,
         loginWithGoogle,
+        loginWithGitHub,
         logout,
       }}
     >

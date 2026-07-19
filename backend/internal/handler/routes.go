@@ -66,6 +66,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: auth.SessionHandler(serverCtx),
 				},
 				{
+					Method:  http.MethodGet,
+					Path:    "/providers",
+					Handler: auth.ProvidersHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/github/start",
+					Handler: auth.GitHubStartHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/github/callback",
+					Handler: auth.GitHubCallbackHandler(serverCtx),
+				},
+				{
 					// Clear the current sign-in session
 					Method:  http.MethodPost,
 					Path:    "/logout",

@@ -294,6 +294,7 @@ export interface Project {
   description: string;
   tags: string[];
   year: number;
+  isFeatured: boolean;
   status?: 'active' | 'completed' | 'paused' | 'cancelled';
   startDate?: string;
   endDate?: string;

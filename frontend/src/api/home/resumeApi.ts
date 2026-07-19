@@ -249,7 +249,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
   const [response, moments, portfolioProjects] = await Promise.all([
     get<ResumeResponse>('/api/v1/resume', { lang: formatLanguage(language), ...acquisition }),
     fetchMomentsApi(language),
-    fetchProjects({ status: 'active', size: 100 }, language),
+    fetchProjects({ status: 'active', featured: true, size: 100 }, language),
   ]);
 
   const parts = response.parts || [];
@@ -257,7 +257,6 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
   const aboutText = bodyText(findPart(parts, ['summary', 'about']), language);
   const education = mapEducation(findPart(parts, ['education']));
   const experience = mapExperience(findPart(parts, ['experience', 'work']));
-  const research = mapResearch(findPart(parts, ['research']));
   const publications = mapPublications(findPart(parts, ['publication']));
   const awards = mapAwards(findPart(parts, ['award']));
   const skills = [
@@ -313,9 +312,8 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
         })),
       },
       research: {
-        title: sectionTitle('research', language),
-        content: [
-          ...portfolioProjects.map((project) => ({
+        title: language === 'zh' ? '精选项目' : 'Featured Projects',
+        content: portfolioProjects.map((project) => ({
             id: project.slug || project.id,
             title: project.name,
             location: language === 'zh' ? '公开项目' : 'Public portfolio',
@@ -324,20 +322,6 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
             image: optionalMediaUrl(project.thumbnailUrl),
             tags: project.tags && project.tags.length > 0 ? project.tags : undefined,
           })),
-          ...research
-            .filter((item) => !portfolioProjects.some((project) => (
-              project.id === item.id || project.name.trim().toLowerCase() === item.title.trim().toLowerCase()
-            )))
-            .map((item) => ({
-              id: item.id,
-              title: item.title,
-              location: item.location || item.institution || '',
-              date: formatDateRange(item, language),
-              details: item.details || [],
-              image: optionalMediaUrl(item.image),
-              tags: item.tags && item.tags.length > 0 ? item.tags : undefined,
-            })),
-        ],
       },
       publications: {
         title: sectionTitle('publications', language),

@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   const apiProxyTarget =
     env.VITE_API_PROXY_TARGET ||
     (mode === 'development' ? 'http://localhost:5200' : 'https://silan.tech');
+  const developmentCountry = env.VITE_DEV_COUNTRY || 'SG';
 
   return {
     base: env.VITE_PUBLIC_BASE || '/',
@@ -27,6 +28,9 @@ export default defineConfig(({ mode }) => {
           target: apiProxyTarget,
           changeOrigin: true,
           secure: !apiProxyTarget.startsWith('http://'),
+          headers: mode === 'development'
+            ? { 'CF-IPCountry': developmentCountry }
+            : undefined,
         },
       },
     },

@@ -2,6 +2,7 @@ package moments
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"strings"
@@ -50,6 +51,10 @@ func UpdateEngagement(ctx context.Context, svcCtx *svc.ServiceContext, key, fing
 	if err != nil {
 		return nil, err
 	}
+	likers, err := updateLikers(ctx, svcCtx, id)
+	if err != nil {
+		return nil, err
+	}
 	query := svcCtx.DB.ContentInteraction.Query().Where(
 		contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeMoment),
 		contentinteraction.EntityIDEQ(id),
@@ -63,10 +68,69 @@ func UpdateEngagement(ctx context.Context, svcCtx *svc.ServiceContext, key, fing
 	case fingerprint != "":
 		query = query.Where(contentinteraction.FingerprintEQ(fingerprint))
 	default:
-		return &types.UpdateEngagementResponse{Likes: likes, Comments: comments}, nil
+		return &types.UpdateEngagementResponse{Likes: likes, Comments: comments, Likers: likers}, nil
 	}
 	liked, err := query.Exist(ctx)
-	return &types.UpdateEngagementResponse{Likes: likes, Comments: comments, IsLikedByUser: liked}, err
+	return &types.UpdateEngagementResponse{Likes: likes, Comments: comments, IsLikedByUser: liked, Likers: likers}, err
+}
+
+func updateLikers(ctx context.Context, svcCtx *svc.ServiceContext, momentID string) ([]types.UpdateLiker, error) {
+	rows, err := svcCtx.DB.ContentInteraction.Query().Where(
+		contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeMoment),
+		contentinteraction.EntityIDEQ(momentID),
+		contentinteraction.KindEQ(contentinteraction.KindLike),
+	).Order(ent.Desc(contentinteraction.FieldCreatedAt)).Limit(10).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	identityIDs := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if row.UserIdentityID != nil {
+			identityIDs = append(identityIDs, *row.UserIdentityID)
+		}
+	}
+	identities := make(map[string]*ent.UserIdentity, len(identityIDs))
+	if len(identityIDs) > 0 {
+		users, queryErr := svcCtx.DB.UserIdentity.Query().
+			Where(useridentity.IDIn(identityIDs...)).
+			All(ctx)
+		if queryErr != nil {
+			return nil, queryErr
+		}
+		for _, user := range users {
+			identities[user.ID] = user
+		}
+	}
+
+	result := make([]types.UpdateLiker, 0, len(rows))
+	for _, row := range rows {
+		if row.UserIdentityID != nil {
+			user := identities[*row.UserIdentityID]
+			if user != nil {
+				result = append(result, types.UpdateLiker{
+					Kind: "user", AvatarURL: user.AvatarURL, Label: user.DisplayName,
+				})
+				continue
+			}
+		}
+		fingerprint := ""
+		if row.Fingerprint != nil {
+			fingerprint = *row.Fingerprint
+		}
+		result = append(result, types.UpdateLiker{
+			Kind:          "visitor",
+			CountryCode:   strings.ToUpper(row.CountryCode),
+			VisitorNumber: visitorNumber(fingerprint),
+		})
+	}
+	return result, nil
+}
+
+func visitorNumber(fingerprint string) string {
+	sum := sha256.Sum256([]byte(fingerprint))
+	number := (int(sum[0])<<8|int(sum[1]))%99 + 1
+	return fmt.Sprintf("%02d", number)
 }
 
 func ToggleUpdateLike(ctx context.Context, svcCtx *svc.ServiceContext, req *types.LikeProjectRequest) (*types.UpdateEngagementResponse, error) {
@@ -99,7 +163,8 @@ func ToggleUpdateLike(ctx context.Context, svcCtx *svc.ServiceContext, req *type
 		}
 	} else if err := analytics.RecordContentInteraction(ctx, svcCtx.DB, svcCtx.Traffic, svcCtx.CountryResolver, analytics.InteractionEvent{
 		EntityType: "moment", EntityID: id, Kind: "like", UserIdentityID: req.AuthenticatedUserID,
-		Fingerprint: req.Fingerprint, IPAddress: req.ClientIP, UserAgent: req.UserAgentFull, Referrer: req.Referrer,
+		Fingerprint: req.Fingerprint, IPAddress: req.ClientIP, CountryCode: req.CountryCode,
+		UserAgent: req.UserAgentFull, Referrer: req.Referrer,
 	}); err != nil {
 		return nil, err
 	}

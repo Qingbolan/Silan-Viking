@@ -13,6 +13,16 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+func TestVisitorNumberIsStableAndTwoDigits(t *testing.T) {
+	first := visitorNumber("browser-cookie-a")
+	if first != visitorNumber("browser-cookie-a") {
+		t.Fatal("visitor number must remain stable for one browser cookie")
+	}
+	if len(first) != 2 || first < "01" || first > "99" {
+		t.Fatalf("visitorNumber() = %q, want 01 through 99", first)
+	}
+}
+
 func TestUpdatePartBodiesLoadsRequestedLanguageAndFallsBackToEnglish(t *testing.T) {
 	ctx := context.Background()
 	client := enttest.Open(

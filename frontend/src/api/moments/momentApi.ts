@@ -14,10 +14,19 @@ export const fetchMoments = async (language: 'en' | 'zh' = 'en'): Promise<Moment
   return response?.moments ?? [];
 };
 
+export interface MomentLiker {
+  kind: 'visitor' | 'user';
+  country_code?: string;
+  visitor_number?: string;
+  avatar_url?: string;
+  label?: string;
+}
+
 export interface MomentEngagement {
   likes: number;
   comments: number;
   is_liked_by_user: boolean;
+  likers: MomentLiker[];
 }
 
 export const fetchMomentEngagement = (

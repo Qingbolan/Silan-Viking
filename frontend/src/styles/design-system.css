@@ -93,7 +93,8 @@
 
 /* Acrylic — frosted glass for cards / popovers / panels. */
 .ds-acrylic {
-  position: relative;
+  /* Material classes own appearance, not layout positioning. Callers choose
+     relative/fixed/absolute explicitly (Dropdown and Tooltip are fixed). */
   background: var(--ds-glass-tint);
   backdrop-filter: saturate(180%) blur(var(--ds-blur-md));
   -webkit-backdrop-filter: saturate(180%) blur(var(--ds-blur-md));

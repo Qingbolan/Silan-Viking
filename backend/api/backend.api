@@ -118,6 +118,7 @@ type (
 		Description string   `json:"description"`
 		Tags        []string `json:"tags"`
 		Year        int      `json:"year"`
+		IsFeatured  bool     `json:"is_featured"`
 	}
 	// Extended project for detailed views
 	ProjectExtended {
@@ -261,6 +262,7 @@ type (
 		Description string   `json:"description,optional"`
 		Tags        []string `json:"tags,optional"`
 		Year        int      `json:"year"`
+		IsFeatured  bool     `json:"is_featured,optional"`
 	}
 	UpdateProjectRequest {
 		ID          string   `path:"id"`
@@ -268,6 +270,7 @@ type (
 		Description string   `json:"description,optional"`
 		Tags        []string `json:"tags,optional"`
 		Year        int      `json:"year,optional"`
+		IsFeatured  bool     `json:"is_featured,optional"`
 	}
 	DeleteProjectRequest {
 		ID string `path:"id"`
@@ -821,6 +824,10 @@ type (
 		Provider  string `json:"provider"`
 		Verified  bool   `json:"verified"`
 	}
+	AuthProvidersResponse {
+		Google bool `json:"google"`
+		GitHub bool `json:"github"`
+	}
 	// VerifyEmailRequest carries the company email the Job Opportunity form
 	// asks to validate before submission.
 	VerifyEmailRequest {
@@ -1081,6 +1088,18 @@ service backend-api {
 	@doc "Resolve the current HttpOnly Google session"
 	@handler Session
 	get /session returns (GoogleVerifyResponse)
+
+	@doc "List configured public sign-in providers"
+	@handler Providers
+	get /providers returns (AuthProvidersResponse)
+
+	@doc "Start the GitHub OAuth web flow"
+	@handler GitHubStart
+	get /github/start
+
+	@doc "Complete the GitHub OAuth callback"
+	@handler GitHubCallback
+	get /github/callback
 
 	@doc "Clear the current sign-in session"
 	@handler Logout

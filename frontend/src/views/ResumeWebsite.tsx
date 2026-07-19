@@ -170,7 +170,7 @@ const ResumeWebsite: React.FC = () => {
       sections.push({ id: 'publications-section', title: resumeData.sections.publications.title, level: 2 });
     }
 
-    if (resumeData.sections?.research) {
+    if (resumeData.sections?.research?.content?.length > 0) {
       sections.push({ id: 'research-section', title: resumeData.sections.research.title, level: 2 });
     }
 
@@ -392,7 +392,7 @@ const ResumeWebsite: React.FC = () => {
         )}
 
         {/* Projects Section — research projects shown as a card grid. */}
-        {resumeData.sections?.research && resumeData.sections.research.content && (
+        {resumeData.sections?.research?.content?.length > 0 && (
           <div id="research-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">
             <SectionCard
               title={resumeData.sections.research.title}

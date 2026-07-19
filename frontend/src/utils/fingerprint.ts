@@ -1,8 +1,38 @@
 // Lightweight browser fingerprint for local authorization (no PII)
 // Combines userAgent, language, platform, hardwareConcurrency, and timezone
-// and stores a stable UUID in localStorage for consistency.
+// and stores a stable browser ID in both a first-party cookie and localStorage.
+// The cookie is the cross-page identity contract; localStorage preserves
+// continuity for existing visitors and privacy-restricted environments.
 
 const STORAGE_KEY = 'client_fingerprint_v1';
+const COOKIE_KEY = 'silan_visitor_id';
+const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
+
+const readCookie = (): string | undefined => {
+  try {
+    const prefix = `${COOKIE_KEY}=`;
+    return document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(prefix))
+      ?.slice(prefix.length);
+  } catch {
+    return undefined;
+  }
+};
+
+const persistBrowserID = (value: string) => {
+  try {
+    document.cookie = `${COOKIE_KEY}=${encodeURIComponent(value)}; Max-Age=${COOKIE_MAX_AGE_SECONDS}; Path=/; SameSite=Lax`;
+  } catch {
+    // Cookies can be unavailable in privacy-restricted contexts.
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    // The in-memory value still works for the current page lifetime.
+  }
+};
 
 function hashString(input: string): string {
   let hash = 0;
@@ -34,9 +64,19 @@ function generateRawFingerprint(): string {
 }
 
 export function getClientFingerprint(): string {
+  const cookieValue = readCookie();
+  if (cookieValue) {
+    const decoded = decodeURIComponent(cookieValue);
+    persistBrowserID(decoded);
+    return decoded;
+  }
+
   try {
     const existing = localStorage.getItem(STORAGE_KEY);
-    if (existing) return existing;
+    if (existing) {
+      persistBrowserID(existing);
+      return existing;
+    }
   } catch {
     // Storage can be unavailable in privacy-restricted contexts.
   }
@@ -45,11 +85,7 @@ export function getClientFingerprint(): string {
   // Add a random nonce once to avoid collisions across users sharing exact env
   const nonce = Math.random().toString(36).slice(2, 8);
   const fp = `${raw}-${nonce}`;
-  try {
-    localStorage.setItem(STORAGE_KEY, fp);
-  } catch {
-    // The in-memory value still works for the current page lifetime.
-  }
+  persistBrowserID(fp);
   return fp;
 }
 
@@ -59,5 +95,9 @@ export function resetClientFingerprint(): void {
   } catch {
     // Reset is best-effort when storage access is blocked.
   }
+  try {
+    document.cookie = `${COOKIE_KEY}=; Max-Age=0; Path=/; SameSite=Lax`;
+  } catch {
+    // Reset is best-effort when cookie access is blocked.
+  }
 }
-

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Heart, MessageCircle } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import {
   createMomentComment,
   deleteMomentComment,
@@ -12,17 +12,39 @@ import {
 import { getClientFingerprint } from '../../utils/fingerprint';
 import { EntityDiscussion, type RemoteDiscussionComment } from '../ds/EntityDiscussion';
 import type { CommentDraft } from '../ds/article-footer/types';
+import { useLanguage } from '../LanguageContext';
+import MomentActionMenu from './MomentActionMenu';
+import MomentLikerAvatar from './MomentLikerAvatar';
 
 interface MomentActionsProps {
   momentKey: string;
+  timestamp: string;
 }
 
-const EMPTY_ENGAGEMENT: MomentEngagement = { likes: 0, comments: 0, is_liked_by_user: false };
+const EMPTY_ENGAGEMENT: MomentEngagement = {
+  likes: 0,
+  comments: 0,
+  is_liked_by_user: false,
+  likers: [],
+};
 
-const MomentActions: React.FC<MomentActionsProps> = ({ momentKey }) => {
+const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) => {
+  const { language } = useLanguage();
   const [engagement, setEngagement] = useState(EMPTY_ENGAGEMENT);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [likePending, setLikePending] = useState(false);
+  const likers = engagement.likers ?? [];
+  const formattedTimestamp = (() => {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return timestamp;
+    return new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-SG', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  })();
 
   useEffect(() => {
     let active = true;
@@ -62,31 +84,44 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey }) => {
   }, [momentKey]);
 
   return (
-    <div className="mt-5 border-t border-ds-border pt-3">
-      <div className="flex items-center gap-4 text-ds-sm">
-        <button
-          type="button"
-          className={`inline-flex items-center gap-1.5 transition-colors ${engagement.is_liked_by_user ? 'text-red-500' : 'text-ds-fg-muted hover:text-ds-fg'}`}
-          disabled={likePending}
-          onClick={() => void toggleLike()}
+    <div className="mt-6 border-t border-ds-border pt-3">
+      <div className="flex min-h-10 items-center justify-between gap-4">
+        <time
+          dateTime={timestamp}
+          className="font-mono text-ds-xs tabular-nums text-ds-fg-subtle"
         >
-          <Heart className="size-4" fill={engagement.is_liked_by_user ? 'currentColor' : 'none'} />
-          <span>{engagement.likes || 'Like'}</span>
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 text-ds-fg-muted transition-colors hover:text-ds-fg"
-          onClick={() => setCommentsOpen((value) => !value)}
-        >
-          <MessageCircle className="size-4" />
-          <span>{engagement.comments || 'Comment'}</span>
-        </button>
+          {formattedTimestamp}
+        </time>
+
+        <MomentActionMenu
+          language={language as 'en' | 'zh'}
+          likes={engagement.likes}
+          comments={engagement.comments}
+          liked={engagement.is_liked_by_user}
+          likePending={likePending}
+          commentsOpen={commentsOpen}
+          onLike={() => { void toggleLike(); }}
+          onComment={() => setCommentsOpen((value) => !value)}
+        />
       </div>
 
       {engagement.likes > 0 && (
-        <div className="mt-3 flex items-center gap-2 rounded-ds-sm bg-ds-surface-2 px-3 py-2 text-ds-xs text-ds-fg-muted">
-          <Heart className="size-3.5 text-red-500" fill="currentColor" />
-          <span>{engagement.likes} {engagement.likes === 1 ? 'person likes this' : 'people like this'}</span>
+        <div className="mt-3 flex min-h-12 items-center gap-3 rounded-ds-sm bg-ds-surface-2 px-3 py-2.5">
+          <Heart className="size-4 shrink-0 text-red-500" fill="currentColor" />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            {likers.map((liker, index) => (
+              <MomentLikerAvatar
+                key={`${liker.kind}-${liker.visitor_number || liker.avatar_url || index}`}
+                liker={liker}
+                language={language as 'en' | 'zh'}
+              />
+            ))}
+            {engagement.likes > likers.length && (
+              <span className="ml-0.5 font-mono text-ds-xs tabular-nums text-ds-fg-subtle">
+                +{engagement.likes - likers.length}
+              </span>
+            )}
+          </div>
         </div>
       )}
 

@@ -39,6 +39,7 @@ const normalizeProject = (raw: any): Project => ({
   description: raw.description || '',
   tags: Array.isArray(raw.tags) ? raw.tags : [],
   year: Number.isFinite(Number(raw.year)) ? Number(raw.year) : 0,
+  isFeatured: Boolean(raw.isFeatured ?? raw.is_featured),
   status: raw.status || undefined,
   startDate: raw.startDate || raw.start_date || undefined,
   endDate: raw.endDate || raw.end_date || undefined,

@@ -163,6 +163,7 @@ func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types
 		Description:      description,
 		Tags:             tags,
 		Year:             year,
+		IsFeatured:       proj.IsFeatured,
 		Status:           string(proj.Status),
 		StartDate:        proj.StartDate,
 		EndDate:          proj.EndDate,

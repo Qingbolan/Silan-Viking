@@ -38,3 +38,15 @@ func LogoutHandler(_ *svc.ServiceContext) http.HandlerFunc {
 		httpx.OkJsonCtx(r.Context(), w, map[string]bool{"ok": true})
 	}
 }
+
+func ProvidersHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		config := svcCtx.Config.Auth
+		httpx.OkJsonCtx(r.Context(), w, map[string]bool{
+			"google": config.GoogleClientID != "",
+			"github": config.GitHubClientID != "" &&
+				config.GitHubClientSecret != "" &&
+				config.GitHubCallbackURL != "",
+		})
+	}
+}

@@ -67,6 +67,17 @@ const validDate = (value: string): Date | null => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+interface MomentTimelineItem {
+  moment: Moment;
+  kind: UpdateKind;
+}
+
+interface MomentMonthGroup {
+  key: string;
+  label: string;
+  items: MomentTimelineItem[];
+}
+
 const Moments: React.FC = () => {
   const { language } = useLanguage();
   const [moments, setUpdates] = useState<Moment[]>([]);
@@ -210,11 +221,41 @@ const Moments: React.FC = () => {
       if (!date || date.getFullYear() !== selectedTime.year) return false;
       return selectedTime.month === undefined || date.getMonth() === selectedTime.month;
     }).sort((left, right) =>
-      Number(Boolean(right.moment.pinned)) - Number(Boolean(left.moment.pinned))
-      || (validDate(right.moment.date)?.getTime() ?? 0) - (validDate(left.moment.date)?.getTime() ?? 0),
+      (validDate(right.moment.date)?.getTime() ?? 0) - (validDate(left.moment.date)?.getTime() ?? 0),
     ),
     [normalized, kind, selectedTime],
   );
+
+  const monthGroups = useMemo<MomentMonthGroup[]>(() => {
+    const groups = new Map<string, MomentMonthGroup>();
+    filtered.forEach((item) => {
+      const date = validDate(item.moment.date);
+      const key = date
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+        : 'undated';
+      if (!groups.has(key)) {
+        groups.set(key, {
+          key,
+          label: date
+            ? new Intl.DateTimeFormat(language === 'en' ? 'en-SG' : 'zh-CN', {
+                month: 'long',
+                year: 'numeric',
+              }).format(date)
+            : language === 'en' ? 'Undated' : '未标注日期',
+          items: [],
+        });
+      }
+      groups.get(key)!.items.push(item);
+    });
+
+    return [...groups.values()].map((group) => ({
+      ...group,
+      items: [...group.items].sort((left, right) =>
+        Number(Boolean(right.moment.pinned)) - Number(Boolean(left.moment.pinned))
+        || (validDate(right.moment.date)?.getTime() ?? 0) - (validDate(left.moment.date)?.getTime() ?? 0),
+      ),
+    }));
+  }, [filtered, language]);
 
   useEffect(() => {
     if (loadState !== 'ready' || !selectedMomentId) return;
@@ -307,76 +348,120 @@ const Moments: React.FC = () => {
       )}
 
       {loadState === 'ready' && filtered.length > 0 && (
-        <ol className="divide-y divide-ds-border border-y border-ds-border">
-          {filtered.map(({ moment, kind: momentKind }, index) => {
-            const Icon = KIND_ICONS[momentKind];
-            const date = validDate(moment.date);
-            const exactDate = date?.toLocaleDateString(language === 'en' ? 'en-SG' : 'zh-CN', {
-              year: 'numeric', month: 'short', day: 'numeric',
-            }) ?? moment.date;
-            return (
-              <motion.li
-                key={moment.id}
-                ref={(node) => {
-                  if (node) momentElements.current.set(moment.id, node);
-                  else momentElements.current.delete(moment.id);
-                }}
-                className="grid scroll-mt-24 grid-cols-1 gap-4 py-7 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7 sm:py-9"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.2) }}
-              >
-                <div className="flex items-center gap-2 text-ds-xs text-ds-fg-subtle sm:block">
-                  {moment.pinned && (
-                    <span className="mb-2 inline-flex font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-ds-primary">
-                      {language === 'en' ? 'PIN' : '置顶'}
-                    </span>
-                  )}
-                  <time dateTime={moment.date} className="font-mono tabular-nums">{exactDate}</time>
-                  <span className="sm:mt-3 sm:flex sm:items-center sm:gap-1.5">
-                    <Icon className="size-3.5" aria-hidden />
-                    <span>{kindLabel(momentKind)}</span>
-                  </span>
-                </div>
+        <div className="space-y-16">
+          {monthGroups.map((group) => (
+            <section key={group.key} aria-labelledby={`month-${group.key}`}>
+              <header className="grid grid-cols-1 border-b border-ds-border pb-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7">
+                <div aria-hidden />
+                <h2
+                  id={`month-${group.key}`}
+                  className="font-mono text-ds-sm font-semibold uppercase tracking-[0.12em] text-ds-fg-muted"
+                >
+                  {group.label}
+                </h2>
+              </header>
 
-                <article className="min-w-0">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <h2 className="text-balance text-ds-xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg sm:text-ds-2xl">
-                      {moment.title}
-                    </h2>
-                    <div className="flex shrink-0 flex-wrap gap-1.5">
-                      {moment.status && (
-                        <Badge tone={statusTone(moment.status)} appearance="soft" dot>
-                          {moment.status}
-                        </Badge>
-                      )}
-                      {moment.priority && (
-                        <Badge tone={priorityTone(moment.priority)} appearance="outline">
-                          {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+              <ol className="divide-y divide-ds-border">
+                {group.items.map(({ moment, kind: momentKind }, index) => {
+                  const Icon = KIND_ICONS[momentKind];
+                  const date = validDate(moment.date);
+                  const previousDate = index > 0 ? group.items[index - 1].moment.date : undefined;
+                  const showDay = moment.pinned || moment.date !== previousDate;
+                  const day = date
+                    ? String(date.getDate()).padStart(2, '0')
+                    : moment.date;
+                  const weekday = date?.toLocaleDateString(language === 'en' ? 'en-SG' : 'zh-CN', {
+                    weekday: 'short',
+                  });
 
-                  <Markdown className="mt-4 text-ds-base leading-7 text-ds-fg-muted">
-                    {withoutRepeatedTitle(moment.description, moment.title)}
-                  </Markdown>
+                  return (
+                    <motion.li
+                      key={moment.id}
+                      ref={(node) => {
+                        if (node) momentElements.current.set(moment.id, node);
+                        else momentElements.current.delete(moment.id);
+                      }}
+                      className="grid scroll-mt-24 grid-cols-1 gap-4 py-7 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7 sm:py-10"
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.2) }}
+                    >
+                      <div className="flex items-center gap-3 sm:block">
+                        {moment.pinned ? (
+                          <span className="font-mono text-ds-lg font-medium tracking-[-0.03em] text-ds-fg sm:text-ds-xl">
+                            {language === 'en' ? 'Pin' : '置顶'}
+                          </span>
+                        ) : showDay ? (
+                          <>
+                            <time
+                              dateTime={moment.date}
+                              className="font-mono text-3xl font-medium leading-none tabular-nums tracking-[-0.05em] text-ds-fg sm:text-4xl"
+                            >
+                              {day}
+                            </time>
+                            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ds-fg-subtle sm:mt-2 sm:block">
+                              {weekday}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="hidden h-8 sm:block" aria-hidden />
+                        )}
+                      </div>
 
-                  {moment.tags?.length > 0 && (
-                    <div className="mt-5 flex flex-wrap gap-x-3 gap-y-1.5">
-                      {moment.tags.map((tag) => (
-                        <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <MomentActions momentKey={moment.slug || moment.id} />
-                </article>
-              </motion.li>
-            );
-          })}
-        </ol>
+                      <article className="min-w-0">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <span className="mb-2 inline-flex items-center gap-1.5 text-ds-xs text-ds-fg-subtle">
+                              <Icon className="size-3.5" aria-hidden />
+                              {kindLabel(momentKind)}
+                            </span>
+                            <h3 className="text-balance text-ds-xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg sm:text-ds-2xl">
+                              {moment.title}
+                            </h3>
+                          </div>
+                          <div className="flex shrink-0 flex-wrap gap-1.5">
+                            {moment.status && (
+                              <Badge tone={statusTone(moment.status)} appearance="soft" dot>
+                                {moment.status}
+                              </Badge>
+                            )}
+                            {moment.priority && (
+                              <Badge tone={priorityTone(moment.priority)} appearance="outline">
+                                {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <Markdown className="mt-4 max-w-[68ch] text-ds-base leading-8 text-ds-fg-muted [&_.vditor-reset]:!pl-0">
+                          {withoutRepeatedTitle(moment.description, moment.title)}
+                        </Markdown>
+
+                        {moment.tags?.length > 0 && (
+                          <div className="mt-5 flex flex-wrap gap-x-3 gap-y-1.5">
+                            {moment.tags.map((tag) => (
+                              <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <MomentActions
+                          momentKey={moment.slug || moment.id}
+                          timestamp={
+                            moment.created_at && !moment.created_at.startsWith('0001-')
+                              ? moment.created_at
+                              : `${moment.date}T00:00:00`
+                          }
+                        />
+                      </article>
+                    </motion.li>
+                  );
+                })}
+              </ol>
+            </section>
+          ))}
+        </div>
       )}
     </motion.div>
   );

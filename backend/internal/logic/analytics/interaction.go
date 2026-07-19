@@ -17,6 +17,7 @@ type InteractionEvent struct {
 	UserIdentityID  string
 	Fingerprint     string
 	IPAddress       string
+	CountryCode     string
 	UserAgent       string
 	Referrer        string
 	LandingURL      string
@@ -67,7 +68,9 @@ func RecordContentInteraction(ctx context.Context, client *ent.Client, classifie
 	if crawlerName != "" {
 		builder.SetCrawlerName(crawlerName)
 	}
-	if visitorKind == "human" && resolver != nil {
+	if visitorKind == "human" && event.CountryCode != "" {
+		builder.SetCountryCode(event.CountryCode)
+	} else if visitorKind == "human" && resolver != nil {
 		location := resolver.Resolve(event.IPAddress)
 		if location.CountryCode != "" {
 			builder.SetCountryCode(location.CountryCode)

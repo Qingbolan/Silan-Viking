@@ -291,6 +291,7 @@ type CreateProjectRequest struct {
 	Description string   `json:"description,optional"`
 	Tags        []string `json:"tags,optional"`
 	Year        int      `json:"year"`
+	IsFeatured  bool     `json:"is_featured,optional"`
 }
 
 type DeleteBlogCommentRequest struct {
@@ -414,6 +415,11 @@ type GoogleVerifyResponse struct {
 	AvatarURL string `json:"avatar_url,optional"`
 	Provider  string `json:"provider"`
 	Verified  bool   `json:"verified"`
+}
+
+type AuthProvidersResponse struct {
+	Google bool `json:"google"`
+	GitHub bool `json:"github"`
 }
 
 type GraphData struct {
@@ -606,6 +612,7 @@ type LikeProjectRequest struct {
 	Fingerprint         string `json:"fingerprint"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	ClientIP            string `json:"client_ip,optional"`
+	CountryCode         string `json:"-"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	Referrer            string `json:"referrer,optional"`
 	LandingURL          string `json:"landing_url,optional"`
@@ -650,6 +657,7 @@ type Project struct {
 	Description      string   `json:"description"`
 	Tags             []string `json:"tags"`
 	Year             int      `json:"year"`
+	IsFeatured       bool     `json:"is_featured"`
 	Status           string   `json:"status"`
 	StartDate        string   `json:"start_date,omitempty"`
 	EndDate          string   `json:"end_date,omitempty"`
@@ -866,9 +874,18 @@ type UpdateCommentListResponse struct {
 }
 
 type UpdateEngagementResponse struct {
-	Likes         int  `json:"likes"`
-	Comments      int  `json:"comments"`
-	IsLikedByUser bool `json:"is_liked_by_user"`
+	Likes         int           `json:"likes"`
+	Comments      int           `json:"comments"`
+	IsLikedByUser bool          `json:"is_liked_by_user"`
+	Likers        []UpdateLiker `json:"likers"`
+}
+
+type UpdateLiker struct {
+	Kind          string `json:"kind"`
+	CountryCode   string `json:"country_code,omitempty"`
+	VisitorNumber string `json:"visitor_number,omitempty"`
+	AvatarURL     string `json:"avatar_url,omitempty"`
+	Label         string `json:"label,omitempty"`
 }
 
 type RecordProjectViewRequest struct {
@@ -1066,6 +1083,7 @@ type UpdateProjectRequest struct {
 	Description string   `json:"description,optional"`
 	Tags        []string `json:"tags,optional"`
 	Year        int      `json:"year,optional"`
+	IsFeatured  bool     `json:"is_featured,optional"`
 }
 
 type MomentRequest struct {

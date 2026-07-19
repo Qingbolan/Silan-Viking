@@ -79,6 +79,9 @@ func main() {
 	// tables (the runtime role gets ownership reassigned after; the
 	// installer also does this on first cutover).
 	schemaDSN := writeDSN
+	if err := repairLanguageDictionary(context.Background(), schemaDSN); err != nil {
+		log.Fatalf("sqlite2pg: repair language dictionary: %v", err)
+	}
 	entClient, err := ent.Open("postgres", schemaDSN)
 	if err != nil {
 		log.Fatalf("sqlite2pg: open pg via ent: %v", err)
@@ -232,6 +235,16 @@ func main() {
 		log.Printf("copied %s: %d rows", t, n)
 	}
 
+	// Old projection snapshots may contain translation rows but an empty
+	// languages table. TRUNCATE + copy would otherwise erase the pre-schema
+	// repair above and recreate the same orphaned graph while FK triggers are
+	// disabled. Reconcile shared dictionary parents inside the import
+	// transaction so the committed projection is referentially complete.
+	if err := reconcileLanguageDictionary(ctx, tx); err != nil {
+		_ = tx.Rollback()
+		log.Fatalf("sqlite2pg: reconcile language dictionary: %v", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		log.Fatalf("sqlite2pg: commit pg tx: %v", err)
 	}
@@ -258,6 +271,91 @@ func main() {
 	for _, t := range skipped {
 		log.Printf("  skipped (no PG counterpart): %s", t)
 	}
+}
+
+// repairLanguageDictionary is a pre-schema migration for databases imported
+// by older sqlite2pg releases. Those releases disabled FK triggers during
+// copy and could therefore persist translation language_code values without
+// their languages parent. Ent validates existing rows when it adds the new
+// FK, so the repair must run before Schema.Create.
+func repairLanguageDictionary(ctx context.Context, dsn string) error {
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	rollback := func(cause error) error {
+		_ = tx.Rollback()
+		return cause
+	}
+
+	// Establish the parent boundary first even on a partially migrated
+	// database. Ent will reconcile indexes and constraints afterwards.
+	if _, err := tx.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS languages (
+			code VARCHAR(5) PRIMARY KEY,
+			name VARCHAR(50) NOT NULL,
+			native_name VARCHAR(50) NOT NULL,
+			is_active BOOLEAN NOT NULL DEFAULT TRUE,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`); err != nil {
+		return rollback(err)
+	}
+
+	if err := reconcileLanguageDictionary(ctx, tx); err != nil {
+		return rollback(err)
+	}
+	return tx.Commit()
+}
+
+type languageDictionaryTx interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+func reconcileLanguageDictionary(ctx context.Context, tx languageDictionaryTx) error {
+	rows, err := tx.QueryContext(ctx, `
+		SELECT DISTINCT table_name
+		FROM information_schema.columns
+		WHERE table_schema = 'public' AND column_name = 'language_code'
+		ORDER BY table_name`)
+	if err != nil {
+		return err
+	}
+	var tables []string
+	for rows.Next() {
+		var table string
+		if err := rows.Scan(&table); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		tables = append(tables, table)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return err
+	}
+	_ = rows.Close()
+
+	for _, table := range tables {
+		statement := fmt.Sprintf(`
+			INSERT INTO languages (code, name, native_name)
+			SELECT DISTINCT language_code,
+				CASE language_code WHEN 'en' THEN 'English' WHEN 'zh' THEN 'Chinese' ELSE language_code END,
+				CASE language_code WHEN 'en' THEN 'English' WHEN 'zh' THEN '中文' ELSE language_code END
+			FROM %s
+			WHERE language_code IS NOT NULL AND btrim(language_code) <> ''
+			ON CONFLICT (code) DO NOTHING`, quotePGIdentifier(table))
+		if _, err := tx.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("seed from %s: %w", table, err)
+		}
+	}
+	return nil
 }
 
 // sync_meta belongs to the content projection rather than the runtime domain,
