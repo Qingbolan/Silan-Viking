@@ -66,27 +66,30 @@ if [ ! -x "${BUILT_BIN}" ]; then
 fi
 
 # --- install ----------------------------------------------------------------
-echo "[2/3] installing to ${PREFIX}/silan-viking..."
+echo "[2/3] installing silan + svk aliases to ${PREFIX}..."
 mkdir -p "${PREFIX}"
 install -m 755 "${BUILT_BIN}" "${PREFIX}/silan-viking"
+ln -sfn "silan-viking" "${PREFIX}/silan"
+ln -sfn "silan-viking" "${PREFIX}/svk"
 
 # --- verify -----------------------------------------------------------------
 echo "[3/3] verifying..."
 INSTALLED_VERSION="$("${PREFIX}/silan-viking" --help 2>/dev/null | grep -oE 'silan-viking [0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)"
 echo "  installed: ${PREFIX}/silan-viking  (${INSTALLED_VERSION:-version unknown})"
+echo "  commands:  silan · svk · silan-viking"
 
 # Warn — don't fail — if the install prefix is not on PATH; the binary is
 # installed correctly, the shell just will not find it by bare name yet.
 case ":${PATH}:" in
   *":${PREFIX}:"*)
     echo
-    echo "done. run 'silan-viking guide' to get started."
+    echo "done. run 'silan onboard' to get started."
     ;;
   *)
     echo
     echo "done — but ${PREFIX} is not on your PATH."
     echo "add this to your shell profile (~/.zshrc or ~/.bashrc):"
     echo "  export PATH=\"${PREFIX}:\$PATH\""
-    echo "then run 'silan-viking guide'."
+    echo "then run 'silan onboard'."
     ;;
 esac

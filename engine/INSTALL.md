@@ -1,7 +1,8 @@
-# Installing silan-viking
+# Installing Silan CLI
 
-`silan-viking` is the content engine for a Silan-style personal website — a
-single self-contained CLI. This page covers installing it as an end user.
+`silan` is the primary command for the Silan personal website content engine.
+`svk` is its compact alias, while `silan-viking` remains available for
+compatibility. All three names execute the same binary.
 (Engine developers: use `engine/install-dev.sh` to build from a checkout.)
 
 ## One-line install
@@ -14,7 +15,7 @@ This:
 
 1. detects your OS and CPU architecture (macOS and Linux, Intel and ARM);
 2. downloads the matching prebuilt binary from the project's GitHub Releases;
-3. installs it to `~/.local/bin/silan-viking`;
+3. installs `silan-viking` and creates the `silan` / `svk` aliases;
 4. tells you the next command to run.
 
 If no prebuilt binary exists for your platform (or no release is published
@@ -44,21 +45,21 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## From-zero to a running site
 
-Once `silan-viking` is on your PATH, it walks you through the rest — you
+Once `silan` is on your PATH, it walks you through the rest — you
 never have to memorise the command surface. The key command is **`guide`**:
 run it any time and it tells you the next step for wherever your project is.
 
 ```sh
 mkdir my-site && cd my-site
 
-silan-viking init            # scaffold the project — ends by printing
+silan init                   # scaffold the project — ends by printing
                              # the next steps for you
 
-silan-viking guide           # "what do I do now?" — re-run this anytime
+silan guide                  # "what do I do now?" — re-run this anytime
 
-silan-viking index sync      # build the derived database from content/
+silan index sync             # build the derived database from content/
 
-silan-viking site preview    # build the site and preview it locally
+silan site preview           # build the site and preview it locally
 ```
 
 `init` lays down `content/` (six content types + three seed items), a
@@ -67,16 +68,16 @@ project state and points you at the right next command — before `index sync`
 it tells you to sync, after syncing it points at `site preview` and
 `site deploy`.
 
-Add content with the per-type commands — `silan-viking blog new <slug>`,
-`silan-viking project new <slug>`, `silan-viking idea new <slug>` — then
-re-run `index sync`. `silan-viking --help` lists everything.
+Add content with the per-type commands — `silan blog new <slug>`,
+`silan project new <slug>`, `silan idea new <slug>` — then
+re-run `index sync`. `silan --help` lists everything.
 
 ## Uninstalling
 
 ```sh
-silan-viking uninstall           # remove the skill + derived files,
+silan uninstall                  # remove the skill + derived files,
                                  # keep your content/
-silan-viking uninstall --purge   # also delete content/ and the config
+silan uninstall --purge          # also delete content/ and the config
 ```
 
 `uninstall` prints exactly what it will delete and asks for confirmation

@@ -317,6 +317,7 @@ enable_deploy = false                  # the deploy() ability is off by default 
 [deploy]
 # Deploy target server. silan site deploy reads this section (§6.5)
 host         = "silan.tech"
+credential_profile = "primary"        # OAuth credentials; profiles may be shared across domains
 user         = "deploy"
 ssh_key_path = "~/.ssh/silan_deploy_ed25519"   # ★ only stores the path; never the key body
 remote_dir   = "/srv/silan-viking"

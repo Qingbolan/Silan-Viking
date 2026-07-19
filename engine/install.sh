@@ -98,6 +98,11 @@ install_prebuilt() {
   return 0
 }
 
+install_aliases() {
+  ln -sfn "${BIN}" "${INSTALL_DIR}/silan"
+  ln -sfn "${BIN}" "${INSTALL_DIR}/svk"
+}
+
 main() {
   target="$(detect_target)"
   say "installing ${BIN} for ${target}"
@@ -108,23 +113,25 @@ main() {
 
   installed="${INSTALL_DIR}/${BIN}"
   [ -x "${installed}" ] || die "install finished but ${installed} is missing"
+  install_aliases
   ver="$("${installed}" --help 2>/dev/null \
     | grep -oE 'silan-viking [0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)"
   say "installed ${installed}  (${ver:-version unknown})"
+  say "commands: silan · svk · silan-viking"
 
   # PATH check — installed correctly either way, but a bare-name call needs
   # the install dir on PATH.
   case ":${PATH}:" in
     *":${INSTALL_DIR}:"*)
       say ""
-      say "done. next: run 'silan-viking guide' to get started."
+      say "done. next: run 'silan onboard' to get started."
       ;;
     *)
       say ""
       say "done — but ${INSTALL_DIR} is not on your PATH."
       say "add to your shell profile (~/.zshrc or ~/.bashrc):"
       say "  export PATH=\"${INSTALL_DIR}:\$PATH\""
-      say "then run 'silan-viking guide'."
+      say "then run 'silan onboard'."
       ;;
   esac
 }
