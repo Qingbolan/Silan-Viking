@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1220" viewBox="0 0 1800 1220" role="img" aria-labelledby="title desc">
+  <title id="title">Silan Context System Architecture</title>
+  <desc id="desc">Academic architecture diagram showing source materials, local content operations, indexed state, public publishing surfaces, and optional EasyNet integration.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #d7dee8; stroke-width: 2; }
+      .panel-soft { fill: #f1f6fb; stroke: #d7dee8; stroke-width: 2; }
+      .panel-warm { fill: #fff8ea; stroke: #ead8af; stroke-width: 2; }
+      .panel-green { fill: #eef8f2; stroke: #c9e3d1; stroke-width: 2; }
+      .panel-blue { fill: #edf5ff; stroke: #c9dcf5; stroke-width: 2; }
+      .panel-purple { fill: #f5f0ff; stroke: #ded2f6; stroke-width: 2; }
+      .title { fill: #111827; font: 700 42px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .subtitle { fill: #526070; font: 400 23px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .section { fill: #111827; font: 700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .label { fill: #182230; font: 700 21px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .body { fill: #3d4b5c; font: 400 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .small { fill: #5f6f82; font: 400 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .mono { fill: #2d3748; font: 500 17px "SFMono-Regular", Consolas, monospace; letter-spacing: 0; }
+      .badge { fill: #0f172a; font: 700 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0; }
+      .flow { fill: none; stroke: #255f9e; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .flow-soft { fill: none; stroke: #7391ad; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 8 8; }
+      .boundary { fill: none; stroke: #aab7c6; stroke-width: 2; stroke-dasharray: 10 8; }
+      .shadow { filter: url(#shadow); }
+    </style>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#255f9e"/>
+    </marker>
+    <marker id="arrow-soft" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="12" markerHeight="12" orient="auto-start-reverse">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#7391ad"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1800" height="1220"/>
+  <text class="title" x="90" y="92">Silan Context System Architecture</text>
+  <text class="subtitle" x="92" y="130">From scattered personal material to indexed context, controlled publication, and future cross-device retrieval.</text>
+
+  <rect class="panel shadow" x="70" y="185" width="420" height="750" rx="22"/>
+  <text class="section" x="105" y="232">Source Materials</text>
+  <text class="small" x="105" y="263">private working context before normalization</text>
+
+  <g>
+    <rect class="panel-soft" x="105" y="304" width="350" height="70" rx="16"/>
+    <text class="label" x="132" y="334">Research workflow</text>
+    <text class="body" x="132" y="358">papers, notes, experiments, talks</text>
+
+    <rect class="panel-soft" x="105" y="400" width="350" height="70" rx="16"/>
+    <text class="label" x="132" y="430">Creator workflow</text>
+    <text class="body" x="132" y="454">scripts, posts, videos, thumbnails</text>
+
+    <rect class="panel-soft" x="105" y="496" width="350" height="70" rx="16"/>
+    <text class="label" x="132" y="526">OPC workflow</text>
+    <text class="body" x="132" y="550">proof of work, timeline, identity</text>
+
+    <rect class="panel-soft" x="105" y="592" width="350" height="70" rx="16"/>
+    <text class="label" x="132" y="622">Existing public assets</text>
+    <text class="body" x="132" y="646">resume, project pages, media links</text>
+  </g>
+
+  <rect class="panel shadow" x="565" y="185" width="670" height="750" rx="22"/>
+  <text class="section" x="600" y="232">Local Content Operations</text>
+  <text class="small" x="600" y="263">canonical source, review surface, validation, and indexing</text>
+
+  <rect class="panel-warm" x="615" y="310" width="540" height="150" rx="18"/>
+  <text class="badge" x="642" y="340">1</text>
+  <text class="label" x="675" y="340">Canonical content workspace</text>
+  <text class="mono" x="675" y="371">content/**/*.md + YAML frontmatter</text>
+  <text class="body" x="675" y="400">typed records for resume, projects, blogs, ideas, series,</text>
+  <text class="body" x="675" y="425">updates, resources, and explicit relations.</text>
+
+  <rect class="panel-blue" x="615" y="510" width="250" height="170" rx="18"/>
+  <text class="badge" x="642" y="542">2</text>
+  <text class="label" x="675" y="542">Silan Context System</text>
+  <text class="body" x="642" y="575">local desktop review</text>
+  <text class="body" x="642" y="602">edit Markdown safely</text>
+  <text class="body" x="642" y="629">sync after accepted changes</text>
+  <text class="small" x="642" y="660">public site is not the CMS</text>
+
+  <rect class="panel-green" x="905" y="510" width="250" height="170" rx="18"/>
+  <text class="badge" x="932" y="542">3</text>
+  <text class="label" x="965" y="542">silan-viking engine</text>
+  <text class="body" x="932" y="575">validate schema</text>
+  <text class="body" x="932" y="602">resolve silan:// links</text>
+  <text class="body" x="932" y="629">derive publish state</text>
+  <text class="small" x="932" y="660">CLI, site, MCP adapters</text>
+
+  <rect class="panel-purple" x="705" y="730" width="360" height="115" rx="18"/>
+  <text class="badge" x="732" y="762">4</text>
+  <text class="label" x="765" y="762">Indexed local state</text>
+  <text class="mono" x="765" y="793">_deploy/api/portfolio.db</text>
+  <text class="body" x="765" y="820">read model for preview, API, and desktop insights</text>
+
+  <rect class="boundary" x="590" y="288" width="590" height="585" rx="24"/>
+  <text class="small" x="835" y="900">local, versioned, inspectable boundary</text>
+
+  <rect class="panel shadow" x="1310" y="185" width="420" height="750" rx="22"/>
+  <text class="section" x="1345" y="232">Public and Indexed Outputs</text>
+  <text class="small" x="1345" y="263">generated from the same accepted state</text>
+
+  <rect class="panel-soft" x="1345" y="304" width="350" height="86" rx="16"/>
+  <text class="label" x="1372" y="337">Personal website</text>
+  <text class="body" x="1372" y="362">portfolio, writing, projects, timeline</text>
+
+  <rect class="panel-soft" x="1345" y="420" width="350" height="86" rx="16"/>
+  <text class="label" x="1372" y="453">API and static mirrors</text>
+  <text class="body" x="1372" y="478">SQLite-backed API, NUS mirror, deploy bundle</text>
+
+  <rect class="panel-soft" x="1345" y="536" width="350" height="86" rx="16"/>
+  <text class="label" x="1372" y="569">SEO / GEO package</text>
+  <text class="body" x="1372" y="594">sitemap, OpenGraph, structured metadata</text>
+
+  <rect class="panel-soft" x="1345" y="652" width="350" height="86" rx="16"/>
+  <text class="label" x="1372" y="685">Runtime feedback</text>
+  <text class="body" x="1372" y="710">views, comments, contact, content status</text>
+  <text class="small" x="1372" y="760">public pages remain separated from local authoring</text>
+
+  <rect class="panel" x="470" y="1005" width="860" height="120" rx="20"/>
+  <text class="section" x="505" y="1043">Optional extension layer</text>
+  <text class="body" x="505" y="1073">Proposal-based assisted drafting and EasyNet cross-device material index</text>
+  <text class="body" x="505" y="1100">integration attach outside the canonical write path.</text>
+
+  <path class="flow" d="M455 470 C520 470 540 385 615 385" marker-end="url(#arrow)"/>
+  <text class="small" x="485" y="442">collect and normalize</text>
+
+  <path class="flow" d="M885 460 L885 510" marker-end="url(#arrow)"/>
+  <text class="small" x="910" y="492">review</text>
+
+  <path class="flow" d="M865 595 L905 595" marker-end="url(#arrow)"/>
+  <text class="small" x="823" y="718">accepted edits</text>
+  <path class="flow" d="M1030 680 C1030 705 995 720 935 730" marker-end="url(#arrow)"/>
+  <text class="small" x="1014" y="714">index sync</text>
+
+  <path class="flow" d="M1065 788 C1190 788 1215 347 1345 347" marker-end="url(#arrow)"/>
+  <path class="flow" d="M1065 788 C1200 788 1215 463 1345 463" marker-end="url(#arrow)"/>
+  <path class="flow" d="M1065 788 C1210 788 1215 579 1345 579" marker-end="url(#arrow)"/>
+  <path class="flow" d="M1065 788 C1220 788 1225 695 1345 695" marker-end="url(#arrow)"/>
+  <text class="small" x="1162" y="823">publish from indexed state</text>
+
+  <path class="flow-soft" d="M735 1005 C710 940 720 875 780 845" marker-end="url(#arrow-soft)"/>
+  <path class="flow-soft" d="M1065 1005 C1110 920 1200 850 1310 745" marker-end="url(#arrow-soft)"/>
+  <text class="small" x="855" y="968">non-authoritative assistance and retrieval</text>
+
+  <text class="small" x="90" y="1178">Figure: The system treats the website as an output of a local content operations pipeline, not as the authoring source.</text>
+</svg>

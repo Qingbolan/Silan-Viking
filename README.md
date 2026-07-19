@@ -1,93 +1,100 @@
 # Silan Personal Website
 
-> **This isn't a website. It's an agent-first personal context system — and the
-> site is just one of its renderings.**
->
-> My ideas, work and writing live as a typed, agent-maintainable context graph.
-> AI agents **read** it, **reason over** it, and **help maintain** it through a
-> `propose → review → publish` pipeline. Content is never hand-edited; it flows
-> through that pipeline. The website (React) is one render target, the MCP
-> server is another.
->
-> Rust engine · Go-Zero API · React render · MCP server.
+A local-first content workspace and public site behind
+[silan.tech](https://silan.tech).
 
-A modern, interactive, and SEO-optimized personal resume website for AI
-professionals and full-stack developers — the kind of site that doubles as
-your résumé, your blog, your project gallery, your research notebook, and
-your public timeline, without forcing you to maintain six tools to keep
-them in sync.
+![Silan Context System banner](output/imagegen/silan-context-system-banner.png)
+
+Silan Context System turns scattered personal material into a versioned
+workspace, an indexed context model, and a repeatable publishing workflow.
+Instead of treating the website as a CMS, this repo treats the website as the
+rendered output of a local content system.
 
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)
 ![Release](https://img.shields.io/github/v/release/Qingbolan/Silan-Personal-Website)
 
+![EasyNet Native](https://img.shields.io/badge/EasyNet-native-111827)
+![CLI Support](https://img.shields.io/badge/CLI-supported-2563eb)
+![MCP Support](https://img.shields.io/badge/MCP-supported-7c3aed)
+![Skill Support](https://img.shields.io/badge/Skill-supported-059669)
+![Rust](https://img.shields.io/badge/Rust-engine-b7410e?logo=rust&logoColor=white)
+![Go](https://img.shields.io/badge/Go-API-00add8?logo=go&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-frontend-3178c6?logo=typescript&logoColor=white)
+![Tauri](https://img.shields.io/badge/Tauri-desktop-24c8db?logo=tauri&logoColor=white)
+![Markdown](https://img.shields.io/badge/Markdown%20%2B%20YAML-content-4b5563?logo=markdown&logoColor=white)
+
 - **Live demo**: <https://silan.tech>
 - **Latest release**: [v1.0.0](https://github.com/Qingbolan/Silan-Personal-Website/releases/tag/v1.0.0)
-
-![alt text](image.png)
-
----
-
-## What you get
-
-A single deployable that turns a folder of Markdown into a polished,
-multi-section personal site:
-
-- **Interactive résumé** — parts-based, multi-language, generated from a
-  truth-source file you edit by hand
-- **Project gallery** — README / Quickstart / Releases / Dependencies tabs,
-  view counts, likes, public issue threads
-- **Blog & series** — long-form posts and multi-episode tutorial series
-- **Research ideas** — abstracts, progress notes, references, results
-- **Public timeline** — `update/` entries for what you're shipping this week
-- **Contact + public message wall** — visitors can leave notes without auth
-
-Powered by:
-
-- **React 18 + TypeScript + Vite + Tailwind + Framer Motion + Three.js** —
-  fast, animated, mobile-first
-- **Go-Zero + Ent ORM** — typed API backed by SQLite (default), MySQL, or
-  PostgreSQL
-- **silan-viking** — the Rust engine that ties content, database, frontend,
-  and deploy into one CLI
-- **i18n** (English / 中文) baked in across every content type
-- **SEO-ready** — server-rendered routes, OpenGraph, structured data,
-  sitemap
-- **Prometheus metrics + visitor analytics** — view tracking without
-  third-party scripts
+- **Implementation map**: Rust engine/CLI/MCP/site tooling, Go API,
+  TypeScript web and desktop UI, Tauri desktop shell, Markdown + YAML content.
 
 ---
 
-## The idea
+## Who This Is For
 
-Most personal sites force a trade-off: a static-site generator gives you
-clean Markdown but no database for view counts, likes, search, or comments;
-a CMS gives you those features but locks your content behind a UI. This
-project picks both.
+Use this when your personal website is no longer just a page, but the public
+interface for a growing body of work.
 
-**Your content lives in `content/` as plain Markdown.** You edit it in your
-editor of choice, version it with git, diff it like code.
+- A researcher wants paper notes, experiments, talks, project logs, and résumé
+  evidence to stay connected when they become public pages.
+- An independent creator wants scripts, long-form posts, release notes, media
+  context, and project write-ups to move through one repeatable publishing
+  workflow.
+- A one-person company/operator (OPC) wants proof of work, positioning,
+  contact surfaces, public updates, and technical history to read as one
+  coherent portfolio instead of several disconnected artifacts.
 
-**Your site runs against a real database.** A Rust engine
-(`silan-viking`) reads `content/`, validates the cross-references, and
-writes a derived SQLite database. The Go API serves it; the React frontend
-consumes it. View counts, likes, public messages, and comments all
-persist normally.
+## When It Starts To Hurt
 
-**One command ships the whole stack.** `silan-viking site deploy` packs the
-engine binary, derived DB, Go service, built frontend, and Docker assets
-into a bundle and rolls it onto your host. The host only needs Docker — no
-Node, no Go, no Rust toolchain.
+The project exists for the moment when simple static pages stop being enough:
 
-**An AI assistant can edit content with you, not for you.** The engine
-exposes itself over [MCP](https://modelcontextprotocol.io) so Claude / any
-MCP-capable agent can draft a blog post, propose a project update, or
-extend your résumé — and every change goes through a `proposal` queue you
-review and accept by hand.
+- The material is already there, but it is spread across notes, folders,
+  drafts, repos, and old pages.
+- Every publish requires a private checklist: update the page, rebuild the
+  index, check language variants, touch sitemap/OpenGraph, sync mirrors, and
+  make sure analytics still point at the right content.
+- SEO/GEO work happens after writing, so public metadata drifts away from the
+  actual content.
+- The website starts acting like the CMS, mixing private work-in-progress
+  material with what visitors should see.
+- Related work is hard to follow because posts, projects, ideas, and résumé
+  bullets describe the same thing without explicit links.
+
+## What You Can Do Today
+
+The current repo supports the core loop end to end:
+
+- **Write** research notes, project records, blog posts, updates, and résumé
+  material as versioned Markdown.
+- **Link** related material with stable `silan://` references instead of
+  copying context between pages.
+- **Review** the local workspace through **Silan Context System** before it
+  becomes public.
+- **Preview** the public site from the same indexed state that deployment will
+  use.
+- **Publish** the site, API data, sitemap, structured metadata, language
+  variants, and deploy artifact through the same workflow.
+
+Cross-material indexing is already represented by `silan://` references and
+the local SQLite projection. The broader cross-device material index is being
+linked through EasyNet, so the current boundary is explicit: local content is
+canonical; external indexing is an extension.
+
+## What It Is Not
+
+- It is not a generic CMS for teams.
+- It is not a portfolio theme where the source of truth lives in the UI.
+- It is not a replacement for note-taking, writing, or media-production tools.
+- It is not claiming that every EasyNet indexing path is finished today.
+
+Technical details are kept in
+[`docs/TECHNICAL-OVERVIEW.md`](docs/TECHNICAL-OVERVIEW.md); this README stays
+focused on what the system is for and what a user should expect from it.
 
 ---
 
-## How to use it
+## A Typical Workflow
 
 ### 1. Install the CLI
 
@@ -104,23 +111,23 @@ for your platform, it falls back to `cargo install` from source.
 See [`engine/INSTALL.md`](engine/INSTALL.md) for the install-dir override,
 version pinning, SHA256 verification, and uninstall.
 
-### 2. From zero to a running site
+### 2. Create a local content workspace
 
 ```sh
 mkdir my-site && cd my-site
 
 silan-viking init            # scaffold content/, silan-viking.toml, SCHEMA.md
-silan-viking guide           # "what do I do now?" — re-run any time
+silan-viking guide           # inspect current project state and next step
 silan-viking index sync      # build the derived database from content/
 silan-viking site preview    # build the site and open a local preview
 ```
 
-`init` lays down a `content/` tree with six content types and three seed
-items. From there, `guide` reads project state and tells you the next
-step — before `index sync` it points at sync; after syncing it points at
-preview and deploy. You never have to memorize the command surface.
+`init` lays down a `content/` tree with six content types and seed examples.
+From there, `guide` reads project state and tells you the next operation:
+sync before preview, preview before deploy, and deploy only after the indexed
+state is current.
 
-### 3. Add content
+### 3. Add or update material
 
 ```sh
 silan-viking blog new my-first-post
@@ -129,15 +136,36 @@ silan-viking idea new what-if-we-tried-this
 silan-viking episode series new my-tutorial-series
 silan-viking update new shipped-the-thing
 
-silan-viking index sync      # re-derive the database
-silan-viking site preview    # see it
+silan-viking index sync      # validate and re-derive the database
+silan-viking site preview    # inspect the public rendering
 ```
 
-Multi-language? Each item can carry `en.md` + `zh.md` + any other locale —
-the engine wires them into the same record. The résumé works the same way,
-just one-of: edit `content/resources/resume/parts/*/en.md`.
+Each item can carry `en.md` + `zh.md` + any other locale. The engine wires
+language variants into the same record so public pages, search metadata, and
+cross-links stay aligned.
 
-### 4. Inspect & link
+### 4. Open the desktop app
+
+```sh
+silan-viking desktop
+```
+
+The desktop app is named **Silan Context System**. It is a local authoring
+surface over the same `content/` workspace and derived
+`_deploy/api/portfolio.db` projection. The app reads runtime insights from
+SQLite and writes editorial changes back to Markdown through the Rust engine,
+then refreshes the projection.
+
+For local development from a checkout:
+
+```sh
+./engine/target/debug/silan-viking desktop
+```
+
+Do not launch `desktop/` directly with `npm run desktop` unless you provide
+`SILAN_DESKTOP_CONTENT` and `SILAN_DESKTOP_DB`; the CLI injects those paths.
+
+### 5. Index and link context
 
 ```sh
 silan-viking content tree                       # entire content layout
@@ -148,19 +176,19 @@ silan-viking relation link silan://blog/foo \
 ```
 
 Everything is addressable by a `silan://` URI. Relations are first-class:
-a blog post that references a project, a project that grew out of an idea,
-a résumé bullet that points at a publication.
+a blog post can reference a project, a project can grow out of an idea, and a
+résumé bullet can point at the concrete work behind it.
 
-### 5. Ship it
+### 6. Publish the current state
 
 ```sh
 silan-viking site deploy --dry-run    # preview the bundle
 silan-viking site deploy --confirm    # roll to the host in silan-viking.toml
 ```
 
-Configure `[deploy]` in `silan-viking.toml` once (host, SSH key path,
-remote dir, compose file) and every deploy after that is one command. The
-target host only needs Docker.
+Configure `[deploy]` in `silan-viking.toml` once: host, SSH key path, remote
+dir, and compose file. After that, deploy is a repeatable publish step instead
+of a hand-maintained checklist. The target host only needs Docker.
 
 Private analytics and deployed-content verification use one machine
 credential without restricting public pages or crawler access. Generate a
@@ -183,148 +211,30 @@ The token protects full-site statistics, crawler/visitor details, and
 `/api/v1/content/status`. Public content, media, health, sitemap, robots, and
 per-item aggregate statistics remain unauthenticated.
 
-### 6. Let an agent help
+### 7. Optional assisted drafting
 
 ```sh
-silan-viking skill emit            # write a Claude Code skill descriptor
+silan-viking skill emit            # write an assistant skill descriptor
 silan-viking mcp                   # start the MCP server (port 7700)
-silan-viking proposal list         # see what the agent suggested
+silan-viking proposal list         # inspect suggested changes
 silan-viking proposal accept <id>  # merge the proposal into content/
 ```
 
-The agent never writes to `content/` directly — it submits proposals you
-accept, reject, or rebase. Your editorial voice stays yours.
+MCP and proposals are optional. They exist for assisted drafting and bulk
+maintenance, but they do not define the product. Suggested changes enter a
+proposal queue and only reach `content/` after review.
 
 ---
 
-## Architecture
+## Technical Reference
 
-```
-                       ┌─────────────────────────────────────┐
-                       │  content/ (Markdown + YAML + i18n)  │  ← you edit this
-                       └──────────────────┬──────────────────┘
-                                          │ silan-viking index sync
-                                          ▼
-       ┌──────────────────────────────────────────────────────────────┐
-       │                  silan-viking — Rust engine                  │
-       │  cli · mcp · site          (L4 outward-facing adapters)      │
-       │  app  (parser → mapper → sink)              (L3 behavior)    │
-       │  content · entities  (sea-orm)              (L2 domain)      │
-       │  base                                       (L1 utilities)   │
-       └──────────────────┬───────────────────────────────────────────┘
-                          │ writes _deploy/api/portfolio.db
-                          ▼
-                       ┌─────────────────────────────────────┐
-                       │  Go-Zero API  +  Ent ORM            │
-                       │  serves: résumé, projects, blog,    │
-                       │  ideas, updates, metrics, messages  │
-                       └──────────────────┬──────────────────┘
-                                          │ HTTP / JSON
-                                          ▼
-                       ┌─────────────────────────────────────┐
-                       │  React 18 + Vite + Tailwind +       │
-                       │  Framer Motion + Three.js + i18next │
-                       └─────────────────────────────────────┘
-```
+Implementation details are documented separately:
 
-Crate dependencies are strictly one-way (`cli/mcp/site → app →
-entities/content → base`); cargo enforces no back-edges at compile time.
-The L1 → L4 layering keeps the engine testable end-to-end without spinning
-up the Go service or the React app.
-
----
-
-## Repository layout
-
-```
-Silan-Personal-Website/
-├── engine/                       # silan-viking Rust workspace
-│   ├── crates/                   # base / content / entities / app / cli / mcp / site
-│   ├── install.sh                # one-line installer
-│   └── INSTALL.md                # install reference
-│
-├── content/                      # the Markdown truth source
-│   ├── blog/  project/  ideas/   # long-form & gallery content
-│   ├── episode/  update/         # series and timeline
-│   ├── resources/resume/         # parts-based résumé
-│   └── agent/                    # MCP / skill scratchpad
-├── silan-viking.toml             # project config (paths, identity, deploy)
-│
-├── frontend/                     # React 18 + Vite + TypeScript app
-├── backend/                      # Go-Zero API + Ent ORM
-├── deploy/                       # docker-compose, nginx, entrypoints
-│
-└── docs/                         # silan-viking design docs (01..N)
-```
-
----
-
-## Building from source
-
-The engine is a Cargo workspace pinned to Rust stable (currently 1.95).
-
-```sh
-cd engine
-cargo build --release -p silan-viking-cli
-# binary: engine/target/release/silan-viking
-```
-
-The frontend and backend are bundled into `silan-viking site deploy` and
-rebuilt inside Docker on the deploy host, so you don't need Node or Go
-locally to ship. If you do want to work on them directly:
-
-```sh
-cd frontend && npm install && npm run dev   # http://localhost:5173
-cd backend  && go mod download && go run backend.go   # http://localhost:8080
-```
-
-### NUS static mirror
-
-The NUS Computing mirror is a static `~/public_html/` deployment under
-`https://www.comp.nus.edu.sg/~silan-hu/`. It does not rely on `.htaccess` or
-server rewrites; the static build physically prerenders every public route as a
-directory with an `index.html`, while runtime API and media requests continue
-to use `https://silan.tech/api/v1/...`.
-
-```sh
-cd frontend
-npm run build:static -- /~silan-hu/
-rsync -av --delete dist/ your-nus-account@server:~/public_html/
-```
-
-`npm run build:nus` is the convenience alias for the same NUS base path.
-
-The equivalent CLI entry from the repository root is:
-
-```sh
-silan-viking site build --static-base /~silan-hu/
-rsync -av --delete frontend/dist/ your-nus-account@server:~/public_html/
-```
-
-`silan-viking site build --target nus` is kept as the same alias.
-
-Known limitation: authenticated login depends on cross-site secure cookies and
-may be blocked by browser third-party-cookie policy on the NUS mirror. Anonymous
-browsing, search, content loading, public comments and contact messages remain
-the supported mirror use cases.
-
-### Cross-compiling releases
-
-```sh
-# native
-cargo build --release -p silan-viking-cli --target aarch64-apple-darwin
-
-# Linux via cross (needs Docker; on Apple Silicon, install cross from git main)
-cargo install cross --git https://github.com/cross-rs/cross
-cross build --config 'build.rustc-wrapper=""' \
-            --release -p silan-viking-cli \
-            --target x86_64-unknown-linux-gnu
-```
-
-> Linux release binaries ship with **empty** deploy-artifact placeholders
-> (the cross container can't see `frontend/` / `backend/` / `deploy/`
-> outside the cargo workspace). Everything except `site deploy` works
-> normally; for full deploy support on Linux, build from a local checkout.
+- [Technical overview](docs/TECHNICAL-OVERVIEW.md) — stack, architecture,
+  repository layout, source builds, desktop bundle, static mirror, and release
+  cross-compilation.
+- [silan-viking design docs](docs/silan-viking/README.md) — engine
+  architecture, service boundaries, testing, delivery, and design decisions.
 
 ---
 
