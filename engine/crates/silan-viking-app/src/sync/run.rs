@@ -22,6 +22,7 @@ use crate::parser::{IssuePolicy, ParserRegistry};
 use crate::schema::Schema;
 use crate::workspace::ScanReport;
 use silan_viking_base::ContentHash;
+use std::collections::BTreeSet;
 
 /// The outcome of a sync run.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -176,6 +177,16 @@ fn build_batch(
         batch.push(episode_series_rows(scan));
     }
 
+    // Language is a shared dictionary entity. Translation mappers emit the
+    // referencing `language_code`, while this batch-level projection emits
+    // each parent exactly once. Keeping ownership here prevents every mapper
+    // from duplicating language rows and guarantees the derived snapshot is
+    // referentially complete before it reaches PostgreSQL.
+    let languages = language_rows(&batch);
+    if !languages.is_empty() {
+        batch.push(languages);
+    }
+
     // `tag` is a cross-type entity table: every Item that uses a tag emits
     // its own `tag` row, so the same tag slug arrives once per Item. Fold
     // them to one row per `id` — otherwise the sink writes duplicate `tag`
@@ -185,6 +196,37 @@ fn build_batch(
     batch.dedup_table_by("tag", "id");
 
     Ok(batch)
+}
+
+fn language_rows(batch: &RowSetBatch) -> RowSet {
+    let codes: BTreeSet<&str> = batch
+        .rows()
+        .iter()
+        .filter_map(|row| match row.columns().get("language_code") {
+            Some(SqlValue::Text(code)) if !code.trim().is_empty() => Some(code.as_str()),
+            _ => None,
+        })
+        .collect();
+
+    let mut set = RowSet::new();
+    for code in codes {
+        let (name, native_name) = language_names(code);
+        set.push(
+            Row::new("languages")
+                .with("code", SqlValue::Text(code.to_owned()))
+                .with("name", SqlValue::Text(name.to_owned()))
+                .with("native_name", SqlValue::Text(native_name.to_owned())),
+        );
+    }
+    set
+}
+
+fn language_names(code: &str) -> (&str, &str) {
+    match code {
+        "en" => ("English", "English"),
+        "zh" => ("Chinese", "中文"),
+        _ => (code, code),
+    }
 }
 
 /// Build the `episode_series` rows from the scan's container series.
@@ -280,4 +322,78 @@ fn sync_meta_row(content_hash: &str, items_total: usize) -> RowSet {
             .with("generated_at", SqlValue::Text(generated_at)),
     );
     set
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn language_rows_are_unique_and_named() {
+        let mut batch = RowSetBatch::new();
+        let mut translations = RowSet::new();
+        for code in ["zh", "en", "zh"] {
+            translations.push(
+                Row::new("moment_translations")
+                    .with("language_code", SqlValue::Text(code.to_owned())),
+            );
+        }
+        batch.push(translations);
+
+        let rows = language_rows(&batch);
+        let projected: Vec<_> = rows
+            .rows()
+            .iter()
+            .map(|row| {
+                (
+                    row.columns().get("code"),
+                    row.columns().get("name"),
+                    row.columns().get("native_name"),
+                )
+            })
+            .collect();
+
+        assert_eq!(projected.len(), 2);
+        assert_eq!(
+            projected[0],
+            (
+                Some(&SqlValue::Text("en".to_owned())),
+                Some(&SqlValue::Text("English".to_owned())),
+                Some(&SqlValue::Text("English".to_owned())),
+            )
+        );
+        assert_eq!(
+            projected[1],
+            (
+                Some(&SqlValue::Text("zh".to_owned())),
+                Some(&SqlValue::Text("Chinese".to_owned())),
+                Some(&SqlValue::Text("中文".to_owned())),
+            )
+        );
+    }
+
+    #[test]
+    fn language_rows_ignore_empty_and_support_new_codes() {
+        let mut batch = RowSetBatch::new();
+        let mut translations = RowSet::new();
+        for code in ["", "ja"] {
+            translations.push(
+                Row::new("project_translations")
+                    .with("language_code", SqlValue::Text(code.to_owned())),
+            );
+        }
+        batch.push(translations);
+
+        let rows = language_rows(&batch);
+        assert_eq!(rows.len(), 1);
+        let row = &rows.rows()[0];
+        assert_eq!(
+            row.columns().get("code"),
+            Some(&SqlValue::Text("ja".to_owned()))
+        );
+        assert_eq!(
+            row.columns().get("native_name"),
+            Some(&SqlValue::Text("ja".to_owned()))
+        );
+    }
 }

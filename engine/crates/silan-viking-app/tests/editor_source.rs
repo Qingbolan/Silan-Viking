@@ -179,6 +179,52 @@ fn save_frontmatter_fields_updates_source_then_refreshes_the_projection() {
 }
 
 #[test]
+fn save_frontmatter_fields_preserves_boolean_types() {
+    let temporary = tempfile::tempdir().expect("temporary workspace");
+    let content_root = temporary.path().join("content");
+    let db_path = temporary.path().join("portfolio.db");
+    copy_tree(&fixture_root(), &content_root);
+
+    Workspace::open(&content_root)
+        .expect("open copied fixture")
+        .sync(&db_path)
+        .expect("seed projection");
+
+    let editor = ContentEditor::open(&content_root).expect("open source editor");
+    let locator = TranslationLocator::new(
+        ContentKind::Project,
+        "sample-project",
+        None::<String>,
+        "overview",
+        "en",
+    )
+    .expect("valid locator");
+    let original = editor.read_markdown(&locator).expect("read source");
+    let saved = editor
+        .save_frontmatter_fields_and_sync(
+            &locator,
+            &[("is_featured", "true")],
+            &original.revision,
+            &db_path,
+        )
+        .expect("save featured state and sync");
+
+    let source = fs::read_to_string(content_root.join(saved.relative_path)).expect("read source");
+    assert!(source.contains("is_featured: true"));
+    assert!(!source.contains("is_featured: 'true'"));
+
+    let conn = Connection::open(&db_path).expect("open refreshed projection");
+    let projected: bool = conn
+        .query_row(
+            "SELECT is_featured FROM projects WHERE slug = 'sample-project'",
+            [],
+            |row| row.get(0),
+        )
+        .expect("projected featured state");
+    assert!(projected);
+}
+
+#[test]
 fn save_resume_part_rewrites_toml_then_refreshes_the_projection() {
     let temporary = tempfile::tempdir().expect("temporary workspace");
     let content_root = temporary.path().join("content");

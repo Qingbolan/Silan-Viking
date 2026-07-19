@@ -88,6 +88,13 @@ pub struct SaveLifecycleInput {
     pub expected_revision: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct SaveProjectFeaturedInput {
+    pub translation_id: String,
+    pub is_featured: bool,
+    pub expected_revision: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct WorkspaceEntityCount {
     pub content_type: String,
@@ -354,6 +361,32 @@ impl WorkspaceContent {
         self.editor.save_frontmatter_fields_and_sync(
             &locator,
             &fields,
+            &input.expected_revision,
+            db_path,
+        )?;
+        WorkspaceContent::open(&self.content_root)?.editable_document(&document.id)
+    }
+
+    /// Change whether a project is selected for the website home page.
+    ///
+    /// The authored frontmatter remains the source of truth; the projection
+    /// is refreshed atomically after the source mutation.
+    pub fn save_project_featured(
+        &self,
+        input: &SaveProjectFeaturedInput,
+        db_path: impl AsRef<Path>,
+    ) -> Result<EditableDocument, WorkspaceContentError> {
+        let (document, part, translation) = self.translation(&input.translation_id)?;
+        if document.content_type != ContentKind::Project.frontmatter_value() {
+            return Err(WorkspaceContentError::InvalidTranslationId(
+                input.translation_id.clone(),
+            ));
+        }
+        let locator = locator(&document, &part, &translation.language)?;
+        let value = input.is_featured.to_string();
+        self.editor.save_frontmatter_fields_and_sync(
+            &locator,
+            &[("is_featured", value.as_str())],
             &input.expected_revision,
             db_path,
         )?;

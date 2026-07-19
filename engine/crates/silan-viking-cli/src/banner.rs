@@ -17,11 +17,9 @@
 // ------------------
 // 1. Side-effect-free: only local file reads (project config, DB
 //    `stat`). No network I/O — `--help` must stay fast offline.
-// 2. Restrained palette. Three roles only — `accent` (cyan, used by
-//    the grouped command block too so the whole `--help` reads as one
-//    document), `dim` (grey supporting text), and a single status
-//    colour per status (green healthy, yellow warn, plain unset).
-//    No 256-colour gradients.
+// 2. Restrained NUS palette. NUS Blue (#003D7C) owns structure and
+//    identity; NUS Orange (#EF7C00) owns actions and attention. Supporting
+//    text remains terminal-native dim so contrast follows the user's theme.
 // 3. Two-column layout. Every label is left-padded to `LABEL_WIDTH`
 //    so values line up under one another regardless of label length.
 // 4. Honour `NO_COLOR` / `CLICOLOR_FORCE` / TTY detection.
@@ -95,8 +93,8 @@ impl ColourMode {
         }
     }
 
-    /// Wrap `text` in `style` only when colour is on. `style` is the
-    /// SGR parameter list (e.g. `"1;36"` for bold cyan).
+    /// Wrap `text` in `style` only when colour is on. `style` is an SGR
+    /// parameter list and may use true-colour RGB.
     pub fn paint(self, style: &str, text: &str) -> String {
         match self {
             Self::On => format!("\x1b[{style}m{text}\x1b[0m"),
@@ -105,21 +103,19 @@ impl ColourMode {
     }
 }
 
-/// The whole banner — and the grouped command block — uses three
-/// roles. Anything outside these three is plain text.
+/// NUS corporate palette for terminal UI. RGB values follow the official
+/// identity guide: Blue #003D7C and Orange #EF7C00.
 pub mod sgr {
-    /// Bold cyan — primary accent. Wordmark, labels, group headers,
-    /// command names. One accent colour across the whole `--help`.
-    pub const ACCENT: &str = "1;36";
+    /// NUS Blue — identity, hierarchy, labels, and section headers.
+    pub const ACCENT: &str = "1;38;2;0;61;124";
+    /// NUS Orange — commands, actions, and the product wordmark.
+    pub const ACTION: &str = "1;38;2;239;124;0";
     /// Dim default — secondary text (tagline, signature, hints).
     pub const DIM: &str = "2";
-    /// Bold — command literals, so they stand out from their
-    /// descriptions without spending a second colour.
-    pub const BOLD: &str = "1";
-    /// Bold green — healthy / ready / OK.
-    pub const OK: &str = "1;32";
-    /// Bold yellow — warn / not-yet-initialised state.
-    pub const WARN: &str = "1;33";
+    /// Ready / healthy uses NUS Blue rather than introducing a third hue.
+    pub const OK: &str = ACCENT;
+    /// Warnings and incomplete states use NUS Orange.
+    pub const WARN: &str = ACTION;
 }
 
 // ── Logo ─────────────────────────────────────────────────────────────
@@ -150,12 +146,12 @@ fn write_logo(buf: &mut String, style: ColourMode) {
 /// indent so the banner reads as one block. ASCII `--` rather than an
 /// em dash so the banner stays pure ASCII across every terminal.
 fn write_tagline(buf: &mut String, style: ColourMode) {
-    const WORDMARK: &str = "silan-viking";
+    const WORDMARK: &str = "silan";
     const TAGLINE: &str = "The content engine for Silan's personal website";
-    const SIGNATURE: &str = "-- Silan Hu, creator of silan-viking";
+    const SIGNATURE: &str = "-- Silan Hu · aliases: svk · silan-viking";
 
     buf.push_str(MARGIN);
-    buf.push_str(&style.paint(sgr::ACCENT, WORDMARK));
+    buf.push_str(&style.paint(sgr::ACTION, WORDMARK));
     buf.push_str("  ");
     buf.push_str(&style.paint(sgr::DIM, TAGLINE));
     buf.push('\n');
@@ -182,7 +178,7 @@ fn write_project_status(buf: &mut String, style: ColourMode, content_root: &Path
         (
             sgr::WARN,
             "○",
-            "not initialised  ·  run 'silan-viking init'".to_string(),
+            "not initialised  ·  run 'silan init'".to_string(),
         )
     };
     write_row(
@@ -224,7 +220,7 @@ fn write_project_status(buf: &mut String, style: ColourMode, content_root: &Path
                 Err(_) => format!(
                     "{}  {}",
                     label,
-                    style.paint(sgr::WARN, "(not built — run 'silan-viking index sync')"),
+                    style.paint(sgr::WARN, "(not built — run 'silan index sync')"),
                 ),
             }
         }
@@ -296,7 +292,7 @@ mod tests {
         let out = render_plain(Path::new("/nonexistent/content"));
         assert!(
             out.contains("not initialised"),
-            "uninitialised project should hint at 'silan-viking init'"
+            "uninitialised project should hint at 'silan init'"
         );
     }
 
@@ -304,6 +300,16 @@ mod tests {
     fn no_color_strips_ansi() {
         let out = render_plain(Path::new("/nonexistent/content"));
         assert!(!out.contains('\x1b'), "ANSI escape leaked despite NO_COLOR");
+    }
+
+    #[test]
+    fn nus_palette_uses_official_rgb_values() {
+        assert_eq!(sgr::ACCENT, "1;38;2;0;61;124");
+        assert_eq!(sgr::ACTION, "1;38;2;239;124;0");
+        assert_eq!(
+            ColourMode::On.paint(sgr::ACCENT, "NUS"),
+            "\u{1b}[1;38;2;0;61;124mNUS\u{1b}[0m"
+        );
     }
 
     #[test]

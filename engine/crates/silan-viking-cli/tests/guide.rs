@@ -40,10 +40,7 @@ fn guide_on_a_bare_dir_says_run_init() {
     let (ok, out) = cli(&root, &["guide"]);
     assert!(ok, "guide should succeed on a bare dir: {out}");
     assert!(out.contains("No silan-viking project"), "{out}");
-    assert!(
-        out.contains("silan-viking init"),
-        "must point at init: {out}"
-    );
+    assert!(out.contains("silan init"), "must point at init: {out}");
 }
 
 #[test]
@@ -57,7 +54,7 @@ fn init_ends_with_the_next_steps_block() {
         "init must print Next steps: {out}"
     );
     assert!(
-        out.contains("silan-viking index sync"),
+        out.contains("silan index sync"),
         "the first next step is index sync: {out}"
     );
 }
@@ -72,7 +69,7 @@ fn guide_after_init_points_at_index_sync() {
         out.contains("not yet synced"),
         "an initialised-but-unsynced project must be named as such: {out}"
     );
-    assert!(out.contains("silan-viking index sync"), "{out}");
+    assert!(out.contains("silan index sync"), "{out}");
 }
 
 #[test]

@@ -195,6 +195,30 @@ impl Sink for SqliteSink {
         tx.execute("DROP TABLE IF EXISTS recent_updates", [])?;
 
         tx.commit()?;
+        self.checkpoint_portable_snapshot()?;
+        Ok(())
+    }
+}
+
+impl SqliteSink {
+    /// Fold the committed WAL generation into the main database file.
+    ///
+    /// `portfolio.db` is a deployable artifact, not merely a live SQLite
+    /// connection. Deployment copies that one file, so returning from sync
+    /// while newer pages exist only in `portfolio.db-wal` would publish the
+    /// previous generation. TRUNCATE also leaves no ambiguous companion file
+    /// for hashing or upload.
+    fn checkpoint_portable_snapshot(&self) -> Result<(), SyncError> {
+        let (busy, _, _): (i64, i64, i64) =
+            self.conn
+                .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+                    Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+                })?;
+        if busy != 0 {
+            return Err(SyncError::db(
+                "cannot checkpoint portfolio.db: another connection holds the WAL generation",
+            ));
+        }
         Ok(())
     }
 }
@@ -417,5 +441,26 @@ mod tests {
             )
             .expect("runtime row survives");
         assert_eq!(content, "keep me");
+    }
+
+    #[test]
+    fn disk_sync_is_complete_when_only_main_database_file_is_copied() {
+        let directory = tempfile::tempdir().expect("temp directory");
+        let database = directory.path().join("portfolio.db");
+        let copied = directory.path().join("published.db");
+        let mut sink = SqliteSink::open(&database).expect("disk sink");
+
+        let mut set = RowSet::new();
+        set.push(Row::new("ideas").with("id", SqlValue::Text("latest".to_owned())));
+        let mut batch = RowSetBatch::new();
+        batch.push(set);
+        sink.write_batch(&batch).expect("sync and checkpoint");
+
+        std::fs::copy(&database, &copied).expect("copy main file only");
+        let published = Connection::open(copied).expect("open copied generation");
+        let id: String = published
+            .query_row("SELECT id FROM ideas", [], |row| row.get(0))
+            .expect("latest row is in main file");
+        assert_eq!(id, "latest");
     }
 }

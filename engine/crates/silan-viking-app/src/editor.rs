@@ -287,10 +287,12 @@ impl ContentEditor {
         let doc = frontmatter::split(&original);
         let mut map = parse_frontmatter_mapping(&doc.frontmatter, &relative_path)?;
         for (key, value) in fields {
-            map.insert(
-                serde_yaml::Value::String((*key).to_owned()),
-                serde_yaml::Value::String((*value).to_owned()),
-            );
+            let value = match *value {
+                "true" => serde_yaml::Value::Bool(true),
+                "false" => serde_yaml::Value::Bool(false),
+                value => serde_yaml::Value::String(value.to_owned()),
+            };
+            map.insert(serde_yaml::Value::String((*key).to_owned()), value);
         }
         let frontmatter =
             serde_yaml::to_string(&serde_yaml::Value::Mapping(map)).map_err(|error| {

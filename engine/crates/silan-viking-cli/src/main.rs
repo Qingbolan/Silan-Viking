@@ -2,11 +2,14 @@
 
 mod banner;
 mod credentials;
+mod onboarding;
 mod scaffold;
 mod skill;
 
 use rusqlite::{params, Connection, OptionalExtension};
-use silan_viking_app::{ContentKind, Identified, ProposalId, ScannedAsset, Workspace};
+use silan_viking_app::{
+    ContentKind, CredentialProfile, Identified, ProposalId, ScannedAsset, Workspace,
+};
 use std::env;
 use std::fs;
 use std::io;
@@ -59,7 +62,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
         "project" => &[
             "project new|list|show|edit|archive|rm <slug>",
             "project add-part <slug> <role> · project add-lang <slug> <lang>",
-            "project progress <slug>",
+            "project progress <slug> · project feature|unfeature <slug>",
             "project list [--status <status>|--tag <tag>]",
         ],
         "moment" => &[
@@ -105,6 +108,10 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "stats show|visitors|crawlers|sources <uri>",
         ],
         "desktop" | "destop" => &["desktop"],
+        "onboard" | "setup" => &[
+            "onboard [--flow quickstart|advanced]",
+            "onboard --plan",
+        ],
         "mcp" => &["mcp serve [--stdio] · mcp status"],
         "uninstall" => &["uninstall [--purge] [--dry-run|--yes]"],
         "skill" => &["skill emit|status [--path PATH]", "skill rm [--path PATH]"],
@@ -112,6 +119,8 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
         "credentials" => &[
             "credentials openai set|rotate",
             "credentials openai status|test|remove",
+            "credentials google set|rotate|status|remove [--profile <name>]",
+            "credentials github set|rotate|status|remove [--profile <name>]",
         ],
         "completion" => &["completion bash|zsh|fish"],
         _ => return None,
@@ -134,6 +143,20 @@ fn first_positional(args: &[String]) -> Option<&str> {
     None
 }
 
+fn credential_profile_from_flags(flags: &[&str]) -> Result<CredentialProfile, String> {
+    match flags {
+        [] => Ok(CredentialProfile::default_profile()),
+        ["--profile", profile] => {
+            CredentialProfile::parse(*profile).map_err(|error| error.to_string())
+        }
+        [flag] if flag.starts_with("--profile=") => {
+            CredentialProfile::parse(flag.trim_start_matches("--profile="))
+                .map_err(|error| error.to_string())
+        }
+        _ => Err("credential command accepts only an optional `--profile <name>`".to_owned()),
+    }
+}
+
 fn run(args: Vec<String>) -> Result<(), String> {
     // Command-specific help: `silan-viking <command> --help`. The
     // top-level banner promises "run 'silan-viking <command> --help'
@@ -148,9 +171,9 @@ fn run(args: Vec<String>) -> Result<(), String> {
             .any(|a| matches!(a.as_str(), "-h" | "--help" | "help"));
         if asks_help {
             if let Some(usage) = command_usage(command) {
-                println!("silan-viking {command} — verbs:");
+                println!("silan {command} — verbs:");
                 for line in usage {
-                    println!("    silan-viking {line}");
+                    println!("    silan {line}");
                 }
                 return Ok(());
             }
@@ -188,6 +211,9 @@ fn run(args: Vec<String>) -> Result<(), String> {
     match command.as_slice() {
         ["init"] => init_content(&opts.content_root),
         ["guide"] => guide(&opts.content_root, false),
+        ["onboard", flags @ ..] | ["setup", flags @ ..] => {
+            run_onboarding(&opts.content_root, &opts.db_path, &opts.out_dir, flags)
+        }
         ["doctor"] => doctor(&opts.content_root),
         // uninstall [--purge] [--dry-run|--yes] — order-insensitive flags.
         ["uninstall", flags @ ..]
@@ -215,6 +241,28 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["credentials", "openai", "status"] => credentials::openai_status(),
         ["credentials", "openai", "test"] => credentials::openai_test(),
         ["credentials", "openai", "remove"] => credentials::openai_remove(),
+        ["credentials", "github", action, flags @ ..]
+            if matches!(*action, "set" | "rotate" | "status" | "remove") =>
+        {
+            let profile = credential_profile_from_flags(flags)?;
+            match *action {
+                "set" | "rotate" => credentials::github_set(&profile),
+                "status" => credentials::github_status(&profile),
+                "remove" => credentials::github_remove(&profile),
+                _ => unreachable!(),
+            }
+        }
+        ["credentials", "google", action, flags @ ..]
+            if matches!(*action, "set" | "rotate" | "status" | "remove") =>
+        {
+            let profile = credential_profile_from_flags(flags)?;
+            match *action {
+                "set" | "rotate" => credentials::google_set(&profile),
+                "status" => credentials::google_status(&profile),
+                "remove" => credentials::google_remove(&profile),
+                _ => unreachable!(),
+            }
+        }
         ["desktop", flags @ ..] | ["destop", flags @ ..] => {
             desktop_editor(&opts.content_root, &opts.db_path, flags)
         }
@@ -355,6 +403,12 @@ fn run(args: Vec<String>) -> Result<(), String> {
             type_set_publish(&opts.content_root, "blog", slug, "draft", "private")
         }
         ["project", "progress", slug] => project_progress(&opts.content_root, slug),
+        ["project", "feature", slug] => {
+            type_set_field(&opts.content_root, "project", slug, "is_featured", "true")
+        }
+        ["project", "unfeature", slug] => {
+            type_set_field(&opts.content_root, "project", slug, "is_featured", "false")
+        }
         ["moment", "status", slug, state] => {
             type_set_field(&opts.content_root, "moment", slug, "status", state)
         }
@@ -536,13 +590,13 @@ fn run(args: Vec<String>) -> Result<(), String> {
                 )
             };
             for line in usage {
-                msg.push_str("\n    silan-viking ");
+                msg.push_str("\n    silan ");
                 msg.push_str(line);
             }
             Err(msg)
         }
         _ => Err(format!(
-            "unknown command `{}` · run 'silan-viking --help' for the command list",
+            "unknown command `{}` · run 'silan --help' for the command list",
             opts.command.join(" "),
         )),
     }
@@ -709,8 +763,8 @@ fn resolve_content_root(args: &[String]) -> PathBuf {
 ///
 ///   1. ASCII wordmark banner + tagline + signature + live project status
 ///      (rendered by `banner::render_top_level_banner`).
-///   2. A hand-grouped, ANSI-coloured `Commands:` block with `[Group]`
-///      headers in bold cyan and command names in bold.
+///   2. A hand-grouped, ANSI-coloured `Commands:` block with NUS Blue
+///      section hierarchy and NUS Orange command actions.
 ///
 /// Maintenance contract: this block is hand-written. Adding, renaming, or
 /// removing a command requires updating both the dispatch table in `run`
@@ -723,19 +777,19 @@ fn print_help(content_root: &Path) {
     print!("{}", banner::render_top_level_banner(content_root));
 
     let h = |t: &str| style.paint(sgr::ACCENT, t); // group / section header
-    let c = |t: &str| style.paint(sgr::BOLD, t); // command literal
+    let c = |t: &str| style.paint(sgr::ACTION, t); // command literal
     let d = |t: &str| style.paint(sgr::DIM, t); // dim hint text
 
     // Usage line.
     println!("{}", h("Usage:"));
     println!(
         "  {} {}\n",
-        c("silan-viking"),
+        c("silan"),
         d("[--content PATH] [--db PATH] [--out PATH] <command>"),
     );
 
-    // Grouped command listing. `[Group]` headers in bold cyan, command
-    // names in bold, descriptions plain. Padding is fixed so the
+    // Grouped command listing. `[Group]` headers use NUS Blue, command
+    // names use NUS Orange, descriptions remain plain. Padding is fixed so the
     // description column lines up across every group.
     println!("{}", h("Commands:"));
 
@@ -789,6 +843,10 @@ fn print_help(content_root: &Path) {
 
     println!("  {}", h("[Maintenance]"));
     row("init", "Lay down a runnable silan-viking project");
+    row(
+        "onboard",
+        "Interactive project, login, verification, and deployment setup",
+    );
     row("guide", "Show the next recommended step for this project");
     row("doctor", "Health check — content, index, embedder");
     row("config", "Show resolved paths, or edit silan-viking.toml");
@@ -883,7 +941,7 @@ fn print_help(content_root: &Path) {
     println!(
         "{}",
         d(&format!(
-            "silan-viking {} · run 'silan-viking <command> --help' for command-specific help.",
+            "silan-viking {} · commands: silan · svk · silan-viking",
             env!("CARGO_PKG_VERSION"),
         )),
     );
@@ -1264,8 +1322,8 @@ fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
         ProjectStage::NotInitialised => (
             "No silan-viking project here yet. To start:",
             vec![
-                ("silan-viking init", "scaffold a project in this directory"),
-                ("silan-viking guide", "re-run this to see what is next"),
+                ("silan init", "scaffold a project in this directory"),
+                ("silan guide", "re-run this to see what is next"),
             ],
         ),
         ProjectStage::NotSynced => (
@@ -1276,15 +1334,15 @@ fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
             },
             vec![
                 (
-                    "silan-viking index sync",
+                    "silan index sync",
                     "build the derived database from content/",
                 ),
                 (
-                    "silan-viking site preview",
+                    "silan site preview",
                     "build the site and preview it locally",
                 ),
                 (
-                    "silan-viking blog new <slug>",
+                    "silan blog new <slug>",
                     "write your first post (or idea/project)",
                 ),
             ],
@@ -1292,22 +1350,16 @@ fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
         ProjectStage::Synced => (
             "Project is initialised and synced. From here you can:",
             vec![
+                ("silan site preview", "rebuild and preview the site locally"),
                 (
-                    "silan-viking site preview",
-                    "rebuild and preview the site locally",
-                ),
-                (
-                    "silan-viking blog new <slug>",
+                    "silan blog new <slug>",
                     "add content, then re-run index sync",
                 ),
                 (
-                    "silan-viking site deploy --confirm",
+                    "silan site deploy --confirm",
                     "deploy to the host in silan-viking.toml",
                 ),
-                (
-                    "silan-viking doctor",
-                    "health-check content, index, and embedder",
-                ),
+                ("silan doctor", "health-check content, index, and embedder"),
             ],
         ),
     };
@@ -1325,7 +1377,225 @@ fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
             }
         }
     }
-    println!("\nrun 'silan-viking --help' for the full command list.");
+    println!("\nrun 'silan --help' for the full command list.");
+    Ok(())
+}
+
+fn prompt_yes_no(question: &str, default_yes: bool) -> Result<bool, String> {
+    let hint = if default_yes { "[Y/n]" } else { "[y/N]" };
+    print!("{question} {hint}: ");
+    io::Write::flush(&mut io::stdout()).map_err(|error| error.to_string())?;
+    let mut answer = String::new();
+    io::stdin()
+        .read_line(&mut answer)
+        .map_err(|error| error.to_string())?;
+    let answer = answer.trim().to_ascii_lowercase();
+    if answer.is_empty() {
+        return Ok(default_yes);
+    }
+    Ok(matches!(answer.as_str(), "y" | "yes" | "是"))
+}
+
+fn onboarding_flow_and_mode(flags: &[&str]) -> Result<(onboarding::OnboardingFlow, bool), String> {
+    let mut flow = onboarding::OnboardingFlow::QuickStart;
+    let mut plan_only = false;
+    let mut index = 0;
+    while index < flags.len() {
+        match flags[index] {
+            "--plan" => {
+                plan_only = true;
+                index += 1;
+            }
+            "--flow" => {
+                let value = flags
+                    .get(index + 1)
+                    .ok_or("onboard: --flow needs quickstart or advanced")?;
+                flow = onboarding::OnboardingFlow::parse(value)?;
+                index += 2;
+            }
+            flag if flag.starts_with("--flow=") => {
+                flow = onboarding::OnboardingFlow::parse(&flag["--flow=".len()..])?;
+                index += 1;
+            }
+            other => {
+                return Err(format!(
+                    "onboard: unknown flag `{other}`; expected --flow quickstart|advanced or --plan"
+                ))
+            }
+        }
+    }
+    Ok((flow, plan_only))
+}
+
+fn run_onboarding(
+    content_root: &Path,
+    db_path: &Path,
+    out_dir: &Path,
+    flags: &[&str],
+) -> Result<(), String> {
+    use onboarding::{OnboardingFlow, OnboardingSession, OnboardingState};
+
+    let (flow, plan_only) = onboarding_flow_and_mode(flags)?;
+    let mut session = OnboardingSession::new(flow);
+    println!("silan deployment onboarding");
+    println!(
+        "flow={}{}",
+        match session.flow() {
+            OnboardingFlow::QuickStart => "quickstart",
+            OnboardingFlow::Advanced => "advanced",
+        },
+        if plan_only { " · plan only" } else { "" }
+    );
+
+    if plan_only {
+        println!("\nDeployment readiness plan:");
+        match project_stage(content_root) {
+            ProjectStage::NotInitialised => {
+                println!("  1. initialise project       required");
+                println!("  2. sync content projection  pending");
+                println!("  3. configure deployment     pending");
+            }
+            ProjectStage::NotSynced => {
+                println!("  1. initialise project       ready");
+                println!("  2. sync content projection  required");
+                println!("  3. configure deployment     pending");
+            }
+            ProjectStage::Synced => {
+                println!("  1. initialise project       ready");
+                println!("  2. sync content projection  ready");
+                match deploy_config(content_root) {
+                    Ok(config) => println!(
+                        "  3. configure deployment     ready (profile={})",
+                        config.credential_profile.as_str()
+                    ),
+                    Err(_) => println!("  3. configure deployment     required"),
+                }
+            }
+        }
+        println!("  4. configure OAuth          interactive");
+        println!("  5. verify and deploy        interactive");
+        return Ok(());
+    }
+
+    while session.state() != OnboardingState::Complete {
+        match session.state() {
+            OnboardingState::InspectProject => {
+                println!("\n[1/6] Project");
+                if matches!(project_stage(content_root), ProjectStage::NotInitialised) {
+                    if !prompt_yes_no("No project found. Initialise it now?", true)? {
+                        return Err("onboarding stopped before project initialisation".to_owned());
+                    }
+                    init_content(content_root)?;
+                } else {
+                    println!("Project configuration found.");
+                }
+            }
+            OnboardingState::PrepareContent => {
+                println!("\n[2/6] Content");
+                if !matches!(project_stage(content_root), ProjectStage::Synced) {
+                    if !prompt_yes_no("Build the derived content database now?", true)? {
+                        return Err("onboarding stopped before content sync".to_owned());
+                    }
+                    let workspace =
+                        Workspace::open(content_root).map_err(|error| error.to_string())?;
+                    let report = workspace.sync(db_path).map_err(|error| error.to_string())?;
+                    println!(
+                        "Content ready: {} items, {} rows.",
+                        report.items_scanned, report.rows_written
+                    );
+                } else {
+                    println!("Content projection is ready.");
+                }
+            }
+            OnboardingState::ResolveDeployment => {
+                println!("\n[3/6] Deployment target");
+                if let Err(error) = deploy_config(content_root) {
+                    println!("{error}");
+                    if !prompt_yes_no(
+                        "Open silan-viking.toml to configure the deployment target?",
+                        true,
+                    )? {
+                        return Err("onboarding stopped before deployment configuration".to_owned());
+                    }
+                    config_edit(content_root, false)?;
+                    deploy_config(content_root).map_err(|retry_error| {
+                        format!("deployment configuration is still incomplete: {retry_error}")
+                    })?;
+                }
+                let config = deploy_config(content_root)?;
+                println!(
+                    "Target: {} · credential profile: {}",
+                    config.public_url.as_deref().unwrap_or(config.host.as_str()),
+                    config.credential_profile.as_str()
+                );
+            }
+            OnboardingState::ResolveCredentials => {
+                println!("\n[4/6] Login providers");
+                let config = deploy_config(content_root)?;
+                let profile = &config.credential_profile;
+                let google_ready = credentials::google_client_id(profile)?.is_some();
+                println!(
+                    "Google [{}]: {}",
+                    profile.as_str(),
+                    if google_ready {
+                        "configured"
+                    } else {
+                        "not configured"
+                    }
+                );
+                if !google_ready && prompt_yes_no("Configure Google login for this profile?", true)?
+                {
+                    credentials::google_set(profile)?;
+                }
+                let github_ready = credentials::github_credentials(profile)?.is_some();
+                println!(
+                    "GitHub [{}]: {}",
+                    profile.as_str(),
+                    if github_ready {
+                        "configured"
+                    } else {
+                        "not configured"
+                    }
+                );
+                if !github_ready
+                    && prompt_yes_no("Configure GitHub login for this profile?", false)?
+                {
+                    credentials::github_set(profile)?;
+                }
+            }
+            OnboardingState::Verify => {
+                println!("\n[5/6] Verification");
+                doctor(content_root)?;
+                site_check(content_root)?;
+            }
+            OnboardingState::Review => {
+                println!("\n[6/6] Deployment review");
+                let what = if session.flow() == OnboardingFlow::Advanced {
+                    print!("Deploy scope [all/content/frontend/backend] (all): ");
+                    io::Write::flush(&mut io::stdout()).map_err(|error| error.to_string())?;
+                    let mut answer = String::new();
+                    io::stdin()
+                        .read_line(&mut answer)
+                        .map_err(|error| error.to_string())?;
+                    DeployWhat::parse(match answer.trim() {
+                        "" => "all",
+                        value => value,
+                    })?
+                } else {
+                    DeployWhat::All
+                };
+                site_deploy(content_root, db_path, out_dir, false, what)?;
+                if prompt_yes_no("Run this deployment now?", false)? {
+                    site_deploy(content_root, db_path, out_dir, true, what)?;
+                } else {
+                    println!("Deployment not started. The reviewed plan is ready to run later.");
+                }
+            }
+            OnboardingState::Complete => {}
+        }
+        session.advance();
+    }
+    println!("\nOnboarding complete.");
     Ok(())
 }
 
@@ -2223,10 +2493,10 @@ fn completion(shell: &str) -> Result<(), String> {
                  #   eval \"$(silan completion bash)\"\n\
                  _silan() {{\n  \
                    local groups=\"idea blog project episode resume moment content index \\\n    \
-                     relation site stats proposal mcp skill init config doctor completion\"\n  \
+                     relation site stats proposal mcp skill init onboard setup config doctor completion\"\n  \
                    COMPREPLY=( $(compgen -W \"$groups\" -- \"${{COMP_WORDS[COMP_CWORD]}}\") )\n\
                  }}\n\
-                 complete -F _silan silan"
+                 complete -F _silan silan svk silan-viking"
             );
             Ok(())
         }
@@ -2234,14 +2504,14 @@ fn completion(shell: &str) -> Result<(), String> {
             println!(
                 "# silan zsh completion — add to a dir on $fpath, or:\n\
                  #   eval \"$(silan completion zsh)\"\n\
-                 #compdef silan\n\
+                 #compdef silan svk silan-viking\n\
                  _silan() {{\n  \
                    local -a groups\n  \
                    groups=(idea blog project episode resume moment content index \\\n    \
-                     relation site stats proposal mcp skill init config doctor completion)\n  \
+                     relation site stats proposal mcp skill init onboard setup config doctor completion)\n  \
                    compadd -- $groups\n\
                  }}\n\
-                 compdef _silan silan"
+                 compdef _silan silan svk silan-viking"
             );
             Ok(())
         }
@@ -2250,7 +2520,9 @@ fn completion(shell: &str) -> Result<(), String> {
                 "# silan fish completion — save to ~/.config/fish/completions/silan.fish\n\
                  complete -c silan -f -n __fish_use_subcommand -a \\\n  \
                  'idea blog project episode resume moment content index relation site \\\n   \
-                 stats proposal mcp skill init config doctor completion'"
+                 stats proposal mcp skill init onboard setup config doctor completion'\n\
+                 complete -c svk -w silan\n\
+                 complete -c silan-viking -w silan"
             );
             Ok(())
         }
@@ -2381,7 +2653,7 @@ fn site_build(
 ) -> Result<(), String> {
     if !target.is_default() {
         let project_root = content_root.parent().unwrap_or(content_root);
-        let dist = build_frontend_target(project_root, &target)?;
+        let dist = build_frontend_target(project_root, &target, None)?;
         println!(
             "built frontend target={} out={}",
             target.label(),
@@ -2406,6 +2678,7 @@ fn site_build(
 fn build_frontend_target(
     project_root: &Path,
     target: &FrontendBuildTarget,
+    credential_profile: Option<&CredentialProfile>,
 ) -> Result<PathBuf, String> {
     let frontend = project_root.join("frontend");
     if !frontend.is_dir() {
@@ -2428,9 +2701,15 @@ fn build_frontend_target(
         target.label(),
         frontend.display()
     );
-    let status = Command::new("npm")
-        .args(&npm_args)
-        .current_dir(&frontend)
+    let default_profile = CredentialProfile::default_profile();
+    let google_client_id =
+        credentials::google_client_id(credential_profile.unwrap_or(&default_profile))?;
+    let mut npm = Command::new("npm");
+    npm.args(&npm_args).current_dir(&frontend);
+    if let Some(client_id) = google_client_id {
+        npm.env("VITE_GOOGLE_CLIENT_ID", client_id.as_str());
+    }
+    let status = npm
         .status()
         .map_err(|e| format!("[frontend] npm run {script}: {e}"))?;
     if !status.success() {
@@ -2642,6 +2921,9 @@ struct DeployConfig {
     /// snippet. Optional — if absent, the deploy assumes a sysadmin wired
     /// Nginx by hand.
     nginx_extension_dir: Option<String>,
+    /// Selects the OAuth credential set for this deployment. Different
+    /// domains may isolate credentials or intentionally share a profile.
+    credential_profile: CredentialProfile,
 }
 
 /// Read and validate `[deploy]` from the project config. A missing section or
@@ -2763,6 +3045,13 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
         .get("public_url")
         .and_then(|v| v.as_str())
         .map(|s| s.trim_end_matches('/').to_owned());
+    let credential_profile = CredentialProfile::parse(
+        deploy
+            .get("credential_profile")
+            .and_then(|value| value.as_str())
+            .unwrap_or(silan_viking_app::DEFAULT_CREDENTIAL_PROFILE),
+    )
+    .map_err(|error| format!("[deploy].credential_profile: {error}"))?;
 
     Ok(DeployConfig {
         mode,
@@ -2779,6 +3068,7 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
         backend_port,
         systemd_unit,
         nginx_extension_dir,
+        credential_profile,
     })
 }
 
@@ -3160,6 +3450,10 @@ fn run_nginx_deploy(
             "  target  {}@{}:{}  (nginx mode)",
             cfg.user, cfg.host, cfg.remote_dir,
         );
+        println!(
+            "  auth    credential profile={}",
+            cfg.credential_profile.as_str()
+        );
         println!("  scope   --what={}", what.label());
         let mut step = 1;
         if what.does_frontend() {
@@ -3172,7 +3466,7 @@ fn run_nginx_deploy(
         }
         if what.does_backend() {
             println!(
-                "  {step} credential  install STATS_SYNC_TOKEN into protected systemd EnvironmentFile"
+                "  {step} credential  install private API and configured OAuth credentials into protected systemd EnvironmentFile"
             );
             step += 1;
         }
@@ -3368,18 +3662,64 @@ fn deploy_nginx_private_api_credential(cfg: &DeployConfig) -> Result<(), String>
     use std::os::unix::fs::PermissionsExt;
 
     let token = private_api_deploy_token()?;
+    let github = credentials::github_credentials(&cfg.credential_profile)?;
+    let google = credentials::google_client_id(&cfg.credential_profile)?;
+    let public_url = cfg
+        .public_url
+        .as_deref()
+        .unwrap_or("")
+        .trim_end_matches('/');
+    let public_url = if public_url.is_empty() {
+        format!("https://{}", cfg.host)
+    } else {
+        public_url.to_owned()
+    };
+    if public_url.contains('\n') || public_url.contains('\r') {
+        return Err("[credential] public URL contains an invalid line break".to_owned());
+    }
+
+    let mut environment = format!("STATS_SYNC_TOKEN={token}\n");
+    let mut managed_keys = vec!["STATS_SYNC_TOKEN"];
+    if let Some(google) = google {
+        environment.push_str(&format!("GOOGLE_CLIENT_ID={}\n", google.as_str()));
+        managed_keys.push("GOOGLE_CLIENT_ID");
+    }
+    if let Some(github) = github {
+        environment.push_str(&format!(
+            "GITHUB_CLIENT_ID={}\nGITHUB_CLIENT_SECRET={}\n\
+             GITHUB_CALLBACK_URL={public_url}/api/v1/auth/github/callback\n\
+             FRONTEND_URL={public_url}\n",
+            github.client_id(),
+            github.expose_client_secret(),
+        ));
+        managed_keys.extend([
+            "GITHUB_CLIENT_ID",
+            "GITHUB_CLIENT_SECRET",
+            "GITHUB_CALLBACK_URL",
+            "FRONTEND_URL",
+        ]);
+    }
+
     let local = env::temp_dir().join(format!(
         "silan-private-api-{}-{}.env",
         std::process::id(),
         time::OffsetDateTime::now_utc().unix_timestamp_nanos()
     ));
     let remote = format!("/tmp/silan-private-api-{}.env", std::process::id());
-    fs::write(&local, format!("STATS_SYNC_TOKEN={token}\n"))
+    fs::write(&local, environment)
         .map_err(|error| format!("[credential] write temporary env: {error}"))?;
     fs::set_permissions(&local, fs::Permissions::from_mode(0o600))
         .map_err(|error| format!("[credential] protect temporary env: {error}"))?;
 
-    println!("[credential] install protected machine credential");
+    println!(
+        "[credential] install protected machine credentials ({})",
+        managed_keys.join(", ")
+    );
+    let remove_managed = managed_keys
+        .iter()
+        .map(|key| format!("/^{key}=/d"))
+        .collect::<Vec<_>>()
+        .join(";");
     let result = (|| {
         scp_to(cfg, &local, &remote)?;
         ssh_exec(
@@ -3388,11 +3728,12 @@ fn deploy_nginx_private_api_credential(cfg: &DeployConfig) -> Result<(), String>
                 "set -e && \
                  install -d -m 0750 /etc/silan-backend && \
                  touch {env_path} && \
-                 sed -i '/^STATS_SYNC_TOKEN=/d' {env_path} && \
+                 sed -i '{remove_managed}' {env_path} && \
                  cat {remote} >> {env_path} && \
                  chown root:www {env_path} && chmod 0640 {env_path} && \
                  rm -f {remote}",
                 env_path = REMOTE_PRIVATE_ENV_PATH,
+                remove_managed = remove_managed,
             ),
         )?;
         Ok(())
@@ -3806,7 +4147,11 @@ fn md5_file(path: &Path) -> Result<String, String> {
 /// side (otherwise nginx serves them as text/plain and search engines index
 /// them).
 fn deploy_nginx_frontend(project_root: &Path, cfg: &DeployConfig) -> Result<(), String> {
-    let dist = build_frontend_target(project_root, &FrontendBuildTarget::default())?;
+    let dist = build_frontend_target(
+        project_root,
+        &FrontendBuildTarget::default(),
+        Some(&cfg.credential_profile),
+    )?;
     let tarball = std::env::temp_dir().join("silan-viking-frontend-dist.tar.gz");
     println!("[frontend] tar dist → {}", tarball.display());
     let status = Command::new("tar")

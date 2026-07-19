@@ -6,6 +6,9 @@
 
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 /// The CLI binary cargo built for this test.
 fn bin() -> &'static str {
@@ -17,12 +20,13 @@ fn bin() -> &'static str {
 /// the filesystem, and an empty cwd proves it.
 fn empty_cwd() -> PathBuf {
     let dir = std::env::temp_dir().join(format!(
-        "silan-cli-helpdispatch-{}-{}",
+        "silan-cli-helpdispatch-{}-{}-{}",
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("clock")
-            .as_nanos()
+            .as_nanos(),
+        TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed)
     ));
     std::fs::create_dir_all(&dir).expect("mkdir temp cwd");
     dir
@@ -59,7 +63,7 @@ fn bare_multi_verb_command_lists_verbs_on_stderr() {
         "stderr must explain the missing subcommand: {stderr}"
     );
     assert!(
-        stderr.contains("silan-viking stats sync <uri>"),
+        stderr.contains("silan stats sync <uri>"),
         "stderr must list the `stats` verb usage lines: {stderr}"
     );
     assert!(
@@ -82,7 +86,7 @@ fn mistyped_subcommand_lists_verbs_on_stderr() {
         "stderr must name the unknown subcommand: {stderr}"
     );
     assert!(
-        stderr.contains("silan-viking stats show|visitors|crawlers|sources <uri>"),
+        stderr.contains("silan stats show|visitors|crawlers|sources <uri>"),
         "stderr must list the `stats` verb usage lines: {stderr}"
     );
     assert!(
@@ -101,9 +105,7 @@ fn unknown_command_reports_concise_error_on_stderr() {
     let (code, stdout, stderr) = run(&["frobnicate"]);
     assert_eq!(code, 1, "unknown command must exit 1");
     assert!(
-        stderr.contains(
-            "unknown command `frobnicate` · run 'silan-viking --help' for the command list"
-        ),
+        stderr.contains("unknown command `frobnicate` · run 'silan --help' for the command list"),
         "stderr must give the concise unknown-command error: {stderr}"
     );
     assert!(
@@ -125,11 +127,11 @@ fn command_help_writes_verbs_to_stdout() {
         let (code, stdout, stderr) = run(&["stats", flag]);
         assert_eq!(code, 0, "`stats {flag}` must exit 0");
         assert!(
-            stdout.contains("silan-viking stats — verbs:"),
+            stdout.contains("silan stats — verbs:"),
             "`stats {flag}` must write the verbs header to stdout: {stdout}"
         );
         assert!(
-            stdout.contains("silan-viking stats sync <uri>"),
+            stdout.contains("silan stats sync <uri>"),
             "`stats {flag}` must list the `stats` verb usage lines: {stdout}"
         );
         assert!(
@@ -141,6 +143,34 @@ fn command_help_writes_verbs_to_stdout() {
             "command-specific help must not print the full banner"
         );
     }
+}
+
+#[test]
+fn credential_help_exposes_oauth_lifecycles() {
+    let (code, stdout, stderr) = run(&["credentials", "--help"]);
+    assert_eq!(code, 0);
+    assert!(
+        stdout.contains("credentials google set|rotate|status|remove"),
+        "credential help must expose the Google OAuth lifecycle: {stdout}"
+    );
+    assert!(
+        stdout.contains("credentials github set|rotate|status|remove"),
+        "credential help must expose the GitHub OAuth lifecycle: {stdout}"
+    );
+    assert!(stderr.is_empty());
+}
+
+#[test]
+fn credential_profile_rejects_unsafe_names_before_keychain_access() {
+    let (code, _stdout, stderr) = run(&[
+        "credentials",
+        "google",
+        "status",
+        "--profile",
+        "bad/profile",
+    ]);
+    assert_eq!(code, 1);
+    assert!(stderr.contains("invalid credential profile"), "{stderr}");
 }
 
 #[test]

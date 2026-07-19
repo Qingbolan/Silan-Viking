@@ -22,9 +22,12 @@
 #![forbid(unsafe_code)]
 
 pub mod capture;
+pub mod credential_profile;
 pub mod delivery_control;
 pub mod editor;
 pub mod geo_advisor;
+pub mod github_oauth_credentials;
+pub mod google_oauth_credentials;
 pub mod media_library;
 pub mod openai_credentials;
 pub mod parser;
@@ -40,6 +43,9 @@ pub mod workspace_content;
 pub mod workspace_sync;
 
 pub use capture::{CaptureError, CapturedContent, ContentCreator, IdeaCategory};
+pub use credential_profile::{
+    CredentialProfile, CredentialProfileError, DEFAULT_CREDENTIAL_PROFILE,
+};
 pub use delivery_control::{
     DeliveryControl, DeliveryControlError, DeliverySyncStatus, DeployRunStatus,
     DeployVerificationResult, DeploymentPlan, ReleaseScope, RemoteContentVersion,
@@ -52,6 +58,14 @@ pub use editor::{
 pub use geo_advisor::{
     GeoAction, GeoAdvisor, GeoAdvisorError, GeoEvidence, GeoEvidenceSource, GeoInsightReport,
     GeoMetric,
+};
+pub use github_oauth_credentials::{
+    GitHubOAuthCredentialError, GitHubOAuthCredentials, GITHUB_OAUTH_KEYCHAIN_ACCOUNT,
+    GITHUB_OAUTH_KEYCHAIN_SERVICE,
+};
+pub use google_oauth_credentials::{
+    GoogleOAuthClientId, GoogleOAuthCredentialError, GOOGLE_OAUTH_KEYCHAIN_ACCOUNT,
+    GOOGLE_OAUTH_KEYCHAIN_SERVICE,
 };
 pub use media_library::{MediaAssetRef, MediaLibrary, MediaLibraryError, MediaReferenceStatus};
 pub use openai_credentials::{
@@ -77,8 +91,8 @@ pub use website_insights::{
 pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
 pub use workspace_content::{
     EditableDocument, EditableEntry, EditablePart, EditableSection, EditableTranslation,
-    EditableWorkspace, SaveLifecycleInput, SaveTranslationInput, SourceRevision, WorkspaceContent,
-    WorkspaceContentError, WorkspaceEntityCount,
+    EditableWorkspace, SaveLifecycleInput, SaveProjectFeaturedInput, SaveTranslationInput,
+    SourceRevision, WorkspaceContent, WorkspaceContentError, WorkspaceEntityCount,
 };
 pub use workspace_sync::{
     WorkspaceSync, WorkspaceSyncError, WorkspaceSyncResult, WorkspaceSyncState, WorkspaceSyncStatus,

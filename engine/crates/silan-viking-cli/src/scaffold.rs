@@ -158,6 +158,7 @@ fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
             lines.push("kind: project".to_owned());
             lines.push("status: active".to_owned());
             lines.push("visibility: private".to_owned());
+            lines.push("is_featured: false".to_owned());
         }
         "episode" => {
             lines.push("kind: episode".to_owned());

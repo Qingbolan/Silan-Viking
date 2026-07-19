@@ -14,6 +14,20 @@ fn fixture() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/fixtures/content")
 }
 
+fn copy_tree(source: &Path, destination: &Path) {
+    std::fs::create_dir_all(destination).expect("create fixture destination");
+    for entry in std::fs::read_dir(source).expect("read fixture directory") {
+        let entry = entry.expect("fixture entry");
+        let source_path = entry.path();
+        let destination_path = destination.join(entry.file_name());
+        if source_path.is_dir() {
+            copy_tree(&source_path, &destination_path);
+        } else {
+            std::fs::copy(source_path, destination_path).expect("copy fixture file");
+        }
+    }
+}
+
 /// Run the CLI, returning (success, stdout, stderr).
 fn run(args: &[&str]) -> (bool, String, String) {
     let out = Command::new(bin()).args(args).output().expect("cli runs");
@@ -60,6 +74,40 @@ fn content_ls_lists_fixture_items() {
     ]);
     assert!(ok);
     assert!(stdout.contains("silan://resources/blog/hello-world"));
+}
+
+#[test]
+fn project_feature_and_unfeature_update_authored_frontmatter() {
+    let temporary = std::env::temp_dir().join(format!(
+        "silan-cli-feature-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    let content_root = temporary.join("content");
+    copy_tree(&fixture(), &content_root);
+    let content = content_root.to_str().expect("content path");
+    let project_source =
+        content_root.join("resources/projects/sample-project/parts/overview/en.md");
+
+    let (ok, _, stderr) = run(&["--content", content, "project", "feature", "sample-project"]);
+    assert!(ok, "feature failed: {stderr}");
+    let featured = std::fs::read_to_string(&project_source).expect("read featured project");
+    assert!(featured.contains("is_featured: true"));
+
+    let (ok, _, stderr) = run(&[
+        "--content",
+        content,
+        "project",
+        "unfeature",
+        "sample-project",
+    ]);
+    assert!(ok, "unfeature failed: {stderr}");
+    let unfeatured = std::fs::read_to_string(project_source).expect("read unfeatured project");
+    assert!(unfeatured.contains("is_featured: false"));
+    std::fs::remove_dir_all(temporary).expect("remove temporary workspace");
 }
 
 #[test]

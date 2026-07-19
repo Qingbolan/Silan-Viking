@@ -117,9 +117,14 @@ fn build_entry(
 
 /// Parse a `key_value_list` Part file body (skills) into entries.
 ///
-/// Each top-level key is a category; its value is a list of strings. One
-/// entry is produced per category, with `category` and `items` in the
-/// localized payload (`10` §10.4.5: the category label is language-specific).
+/// The current source shape is an `[[entry]]` list carrying a stable
+/// `entry_id`, localized `category`, and localized `items`. Stable identity
+/// is essential because translated category labels are not identities:
+/// `Languages` and `编程语言` are the same logical entry.
+///
+/// The former top-level `"Category" = [...]` map remains readable so existing
+/// workspaces can migrate on their next Desktop save, but all writers emit
+/// the identity-bearing shape.
 pub fn parse_key_value_list(
     item_slug: &str,
     role: &str,
@@ -136,6 +141,56 @@ pub fn parse_key_value_list(
         role: role.to_owned(),
         detail: "key_value_list file is not a TOML table".to_owned(),
     })?;
+
+    if let Some(value) = table.get("entry") {
+        let source_entries = value
+            .as_array()
+            .ok_or_else(|| ParseError::MalformedEntries {
+                item: item_slug.to_owned(),
+                role: role.to_owned(),
+                detail: "`entry` must be an array of tables".to_owned(),
+            })?;
+        let mut entries = Vec::with_capacity(source_entries.len());
+        for (index, value) in source_entries.iter().enumerate() {
+            let source = value
+                .as_table()
+                .ok_or_else(|| ParseError::MalformedEntries {
+                    item: item_slug.to_owned(),
+                    role: role.to_owned(),
+                    detail: format!("entry {index} must be a table"),
+                })?;
+            let entry_id = source
+                .get("entry_id")
+                .and_then(toml::Value::as_str)
+                .filter(|id| !id.trim().is_empty())
+                .map(str::to_owned)
+                .unwrap_or_else(|| format!("kv:{role}:{index}"));
+            let category = source
+                .get("category")
+                .and_then(toml::Value::as_str)
+                .ok_or_else(|| ParseError::MalformedEntries {
+                    item: item_slug.to_owned(),
+                    role: role.to_owned(),
+                    detail: format!("entry `{entry_id}` requires string `category`"),
+                })?;
+            let items = source
+                .get("items")
+                .and_then(toml::Value::as_array)
+                .ok_or_else(|| ParseError::MalformedEntries {
+                    item: item_slug.to_owned(),
+                    role: role.to_owned(),
+                    detail: format!("entry `{entry_id}` requires array `items`"),
+                })?
+                .iter()
+                .filter_map(|item| item.as_str().map(str::to_owned))
+                .collect();
+            let mut localized = BTreeMap::new();
+            localized.insert("category".to_owned(), EntryValue::Text(category.to_owned()));
+            localized.insert("items".to_owned(), EntryValue::List(items));
+            entries.push(PartEntry::new(entry_id, BTreeMap::new(), localized));
+        }
+        return Ok(entries);
+    }
 
     let mut entries = Vec::with_capacity(table.len());
     for (category, value) in table {
@@ -277,6 +332,30 @@ institution = "MIT"
         assert_eq!(
             langs.localized().get("items").and_then(EntryValue::as_list),
             Some(["Rust".to_owned(), "Go".to_owned()].as_slice())
+        );
+    }
+
+    #[test]
+    fn parses_identity_bearing_key_value_entries_across_languages() {
+        let en = r#"
+[[entry]]
+entry_id = "skill-languages"
+category = "Languages"
+items = ["Rust", "Go"]
+"#;
+        let zh = r#"
+[[entry]]
+entry_id = "skill-languages"
+category = "编程语言"
+items = ["Rust", "Go"]
+"#;
+        let en_entries = parse_key_value_list("resume", "skills", en).expect("valid English");
+        let zh_entries = parse_key_value_list("resume", "skills", zh).expect("valid Chinese");
+        assert_eq!(en_entries[0].entry_id(), "skill-languages");
+        assert_eq!(zh_entries[0].entry_id(), "skill-languages");
+        assert_ne!(
+            en_entries[0].localized().get("category"),
+            zh_entries[0].localized().get("category")
         );
     }
 
