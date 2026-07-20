@@ -22,9 +22,9 @@ fn copy_tree(source: &Path, destination: &Path) {
     }
 }
 
-fn idea_directories(root: &Path) -> BTreeSet<String> {
-    fs::read_dir(root.join("resources/ideas"))
-        .expect("read ideas")
+fn moment_directories(root: &Path) -> BTreeSet<String> {
+    fs::read_dir(root.join("resources/moment"))
+        .expect("read moments")
         .filter_map(Result::ok)
         .filter(|entry| entry.path().is_dir())
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
@@ -49,58 +49,56 @@ fn capture_creates_markdown_source_then_projects_it() {
     let creator = ContentCreator::open(&content_root).expect("open creator");
 
     let captured = creator
-        .capture_idea_and_sync(
-            "记录真正的本地 Markdown 想法。\n\n后续可以继续发展。",
-            IdeaCategory::Inspiration,
+        .capture_moment_and_sync(
+            "记录真正的本地 Markdown Moment。\n\n后续可以继续发展。",
             &db_path,
         )
-        .expect("capture idea");
+        .expect("capture moment");
 
-    let item_root = content_root.join("resources/ideas").join(&captured.slug);
+    let item_root = content_root.join("resources/moment").join(&captured.slug);
     assert!(item_root.join("item.toml").is_file());
-    assert!(item_root.join("parts/overview/meta.toml").is_file());
+    assert!(item_root.join("parts/body/meta.toml").is_file());
     let markdown =
-        fs::read_to_string(item_root.join("parts/overview/en.md")).expect("read captured Markdown");
-    assert!(markdown.contains("category: inspiration"));
-    assert!(markdown.contains("记录真正的本地 Markdown 想法。"));
+        fs::read_to_string(item_root.join("parts/body/en.md")).expect("read captured Markdown");
+    assert!(markdown.contains("kind: moment"));
+    assert!(markdown.contains("status: ongoing"));
+    assert!(markdown.contains("记录真正的本地 Markdown Moment。"));
 
     let connection = Connection::open(db_path).expect("open projection");
-    let projected: (String, String, String) = connection
+    let projected: (String, String) = connection
         .query_row(
             "
-            SELECT i.slug, i.category, t.body
-            FROM ideas AS i
-            INNER JOIN item_part AS p ON p.entity_id = i.id AND p.role = 'overview'
+            SELECT m.slug, t.body
+            FROM moments AS m
+            INNER JOIN item_part AS p ON p.entity_id = m.id AND p.role = 'body'
             INNER JOIN item_part_translation AS t ON t.item_part_id = p.id AND t.language_code = 'en'
             WHERE p.part_id = ?1
             ",
             [&captured.part_id],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .expect("read captured projection");
     assert_eq!(projected.0, captured.slug);
-    assert_eq!(projected.1, "inspiration");
-    assert!(projected.2.contains("后续可以继续发展。"));
+    assert!(projected.1.contains("后续可以继续发展。"));
 }
 
 #[test]
-fn failed_projection_removes_the_new_idea_directory() {
+fn failed_projection_removes_the_new_moment_directory() {
     let temporary = tempfile::tempdir().expect("temporary workspace");
     let content_root = temporary.path().join("content");
     copy_tree(&fixture_root(), &content_root);
     let creator = ContentCreator::open(&content_root).expect("open creator");
-    let before = idea_directories(&content_root);
+    let before = moment_directories(&content_root);
     let invalid_db_path = temporary.path().join("database-directory");
     fs::create_dir(&invalid_db_path).expect("create invalid database path");
 
-    let result = creator.capture_idea_and_sync(
+    let result = creator.capture_moment_and_sync(
         "This source must not remain after sync fails.",
-        IdeaCategory::Thought,
         invalid_db_path,
     );
 
     assert!(matches!(result, Err(CaptureError::Projection { .. })));
-    assert_eq!(idea_directories(&content_root), before);
+    assert_eq!(moment_directories(&content_root), before);
 }
 
 #[test]

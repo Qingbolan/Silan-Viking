@@ -458,12 +458,10 @@ mod tests {
     }
 
     #[test]
-    fn idea_has_its_four_parts_with_overview_required() {
+    fn moment_has_body_required() {
         let schema = real_schema();
-        let idea = schema.type_spec(ContentKind::Idea).expect("idea spec");
-        assert_eq!(idea.parts.len(), 4);
-        assert!(idea.part("overview").expect("overview").required);
-        assert!(!idea.part("progress").expect("progress").required);
+        let moment = schema.type_spec(ContentKind::Moment).expect("moment spec");
+        assert!(moment.part("body").expect("body").required);
     }
 
     #[test]

@@ -12,20 +12,19 @@
 //! it (it never silently writes `part_id` back to the truth source).
 //!
 //! Note on directory naming: the on-disk type directory is the engine's
-//! `ContentKind::dir_name()` (e.g. `ideas`, plural), not the CLI verb-group
-//! name (`idea`). Callers pass the verb-group `kind`; this module maps it to
+//! `ContentKind::dir_name()` (e.g. `projects`, plural), not the CLI verb-group
+//! name (`project`). Callers pass the verb-group `kind`; this module maps it to
 //! the directory via [`type_dir_name`].
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Map a CLI verb-group name (`idea`/`blog`/...) to the on-disk type
+/// Map a CLI verb-group name (`blog`/`project`/...) to the on-disk type
 /// directory the engine scans (`ContentKind::dir_name()`). Only the plural
-/// `idea`→`ideas` and `project`→`projects` differ; routing every name
-/// through one function keeps the mapping in a single place.
+/// `project`→`projects` differs; routing every name through one function keeps
+/// the mapping in a single place.
 pub fn type_dir_name(kind: &str) -> Result<&'static str, ScaffoldError> {
     match kind {
-        "idea" => Ok("ideas"),
         "blog" => Ok("blog"),
         "project" => Ok("projects"),
         "episode" => Ok("episode"),
@@ -143,11 +142,6 @@ fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
     let title = slug_to_title(slug);
     let mut lines = vec![format!("slug: {slug}"), format!("title: {title}")];
     match kind {
-        "idea" => {
-            lines.push("kind: idea".to_owned());
-            lines.push("status: draft".to_owned());
-            lines.push("visibility: private".to_owned());
-        }
         "blog" => {
             lines.push("kind: blog".to_owned());
             lines.push("content_type: article".to_owned());
@@ -181,7 +175,7 @@ fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
     format!("---\n{}\n---\n", lines.join("\n"))
 }
 
-/// Scaffold a new flat-type Item (idea / blog / project / moment).
+/// Scaffold a new flat-type Item (blog / project / moment).
 ///
 /// Lays down `resources/<kind>/<slug>/parts/<primary-role>/{meta.toml,en.md}`.
 pub fn new_item(content_root: &Path, kind: &str, slug: &str) -> Result<Scaffolded, ScaffoldError> {
@@ -443,7 +437,7 @@ pub fn episode_dir(
 /// The primary (required) Part role for a flat content type.
 fn primary_role(kind: &str) -> Result<&'static str, ScaffoldError> {
     match kind {
-        "idea" | "project" => Ok("overview"),
+        "project" => Ok("overview"),
         "blog" | "moment" | "episode" => Ok("body"),
         other => Err(ScaffoldError(format!(
             "`{other}` is not a scaffoldable flat type"

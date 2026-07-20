@@ -649,6 +649,53 @@ impl StatsCache {
         })
     }
 
+    /// Update locally managed reaction counters for one item.
+    ///
+    /// Runtime stats are normally synced from production. This method is the
+    /// explicit operator override used by the desktop workbench: it preserves
+    /// the cached view count and only replaces the human-managed reaction
+    /// counters.
+    pub fn save_item_engagement(
+        &self,
+        entity_type: &str,
+        entity_id: &str,
+        likes: i64,
+        comments: i64,
+    ) -> Result<ItemStats, StatsError> {
+        ensure_cache_schema(&self.db)?;
+        let current_views = match self.item(entity_type, entity_id) {
+            Ok(stats) => stats.views,
+            Err(StatsError::NotSynced(_)) => 0,
+            Err(error) => return Err(error),
+        };
+        let synced_at = time::OffsetDateTime::now_utc().to_string();
+        let conn = Connection::open(&self.db)?;
+        conn.execute(
+            "INSERT INTO stats_cache_item
+             (entity_type, entity_id, views, likes, comments, synced_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(entity_type, entity_id) DO UPDATE SET
+               likes = excluded.likes,
+               comments = excluded.comments,
+               synced_at = excluded.synced_at",
+            rusqlite::params![
+                entity_type,
+                entity_id,
+                current_views,
+                likes,
+                comments,
+                synced_at
+            ],
+        )?;
+        Ok(ItemStats {
+            entity_type: entity_type.to_owned(),
+            entity_id: entity_id.to_owned(),
+            views: current_views,
+            likes,
+            comments,
+        })
+    }
+
     /// The cached visitors of one item.
     pub fn visitors(
         &self,

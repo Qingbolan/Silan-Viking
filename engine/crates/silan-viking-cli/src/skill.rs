@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 /// silan's *natural-language* trigger surface, never tool names — Claude
 /// mounts the skill by matching this against what silan is doing.
 const DESCRIPTION: &str = "silan's personal context system. \
-Use it when silan voices an idea, a spark, a half-formed thought, or wants to \
+Use it when silan voices a moment, a spark, a half-formed thought, or wants to \
 write an article / push a project forward / review site content and visitor \
 data — to capture the thought into context, help write, maintain projects, \
 and selectively publish.";
@@ -79,12 +79,12 @@ fn render_skill_md(content_root: &Path) -> String {
          | silan seems to be… | what you do |\n\
          |---|---|\n\
          | taking stock of existing work (\"which projects are in flight\") | `list(type, filter)` — a structured list with status |\n\
-         | wanting to see by tag (\"all the rust posts\", \"every ML idea\") | `list(type, filter.tag)` to filter; `list_tags(type?)` to see what tags exist |\n\
+         | wanting to see by tag (\"all the rust posts\", \"every ML moment\") | `list(type, filter.tag)` to filter; `list_tags(type?)` to see what tags exist |\n\
          | finding whether a topic was written about | `recall(query)` — semantic search; tags are folded in, so a tagged Item ranks high for its tag word |\n\
          | voicing a half-formed thought | `capture(note, type)` — open a proposal, do not commit |\n\
-         | wanting a *new* idea / blog / project written | `propose` to a fresh `silan://resources/<kind>/<slug>` — see the note below |\n\
-         | wanting to think an idea through, write it up | `recall` for related Items first, then `propose` |\n\
-         | wanting to push a project / idea forward | `propose` anchored to the right Part (e.g. progress) |\n\
+         | wanting a *new* moment / blog / project written | `propose` to a fresh `silan://resources/<kind>/<slug>` — see the note below |\n\
+         | wanting to think a moment through, write it up | `recall` for related Items first, then `propose` |\n\
+         | wanting to push a project / moment forward | `propose` anchored to the right Part (e.g. progress) |\n\
          | asking \"how many people read this\" | `stats` / `visitors` / `crawler_breakdown` / `source_breakdown` |\n\
          | asking you to remember something about him / the project | `ctx_write` to `silan://agent/` — written directly, no proposal |\n\
          | ending the session | `reflect(session)` — settle it into agent memory |\n\
@@ -95,7 +95,7 @@ fn render_skill_md(content_root: &Path) -> String {
          exist yet *creates* it: the proposal carries the new Item, its first\n\
          Part, and the `meta.toml`. You do **not** run a CLI `new` command\n\
          first, and you never write into `content/` directly — one `propose`\n\
-         call is the whole path from a fresh idea to a reviewable proposal.\n\
+         call is the whole path from a fresh moment to a reviewable proposal.\n\
          `propose` to an Item that already exists modifies it instead.\n\
          \n\
          For a multi-Part Item (a project with overview + goals + …), pass the\n\

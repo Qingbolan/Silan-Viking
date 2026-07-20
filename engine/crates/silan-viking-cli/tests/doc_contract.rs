@@ -44,15 +44,15 @@ fn fresh_init() -> PathBuf {
 
 // ── Contract 1 — `silan init` output, against `06` §6.2.1 ──────────────────
 //
-// `06` §6.2.1 specifies: init scaffolds the six content-type directories,
-// three seed Items (a welcome blog, one idea, one project), the resume
+// `06` §6.2.1 specifies: init scaffolds the active content-type directories,
+// two seed Items (a welcome blog and one project), the resume
 // Item, `SCHEMA.md`, `silan-viking.toml`, and a git repo.
 
 #[test]
-fn init_scaffolds_the_six_type_directories() {
+fn init_scaffolds_the_active_type_directories() {
     let c = fresh_init();
-    // `06` §6.2.1: all six content-type collection directories exist.
-    for type_dir in ["blog", "ideas", "projects", "episode", "resume", "moment"] {
+    // `06` §6.2.1: active content-type collection directories exist.
+    for type_dir in ["blog", "projects", "episode", "resume", "moment"] {
         assert!(
             c.join("resources").join(type_dir).is_dir(),
             "`06` §6.2.1: init must scaffold resources/{type_dir}/"
@@ -61,17 +61,12 @@ fn init_scaffolds_the_six_type_directories() {
 }
 
 #[test]
-fn init_scaffolds_the_three_seed_items_and_resume() {
+fn init_scaffolds_the_seed_items_and_resume() {
     let c = fresh_init();
-    // `06` §6.2.1: three seed Items — a welcome blog, one idea, one project.
+    // `06` §6.2.1: seed Items — a welcome blog and one project.
     assert!(
         c.join("resources/blog/welcome/parts/body/en.md").is_file(),
         "`06` §6.2.1: init must seed a welcome blog"
-    );
-    assert!(
-        c.join("resources/ideas/first-idea/parts/overview/en.md")
-            .is_file(),
-        "`06` §6.2.1: init must seed one idea"
     );
     assert!(
         c.join("resources/projects/first-project/parts/overview/en.md")
@@ -112,8 +107,11 @@ fn init_scaffolds_schema_config_and_git() {
 fn scaffolded_meta_toml_carries_a_stable_part_id() {
     let c = fresh_init();
     let meta =
-        std::fs::read_to_string(c.join("resources/ideas/first-idea/parts/overview/meta.toml"))
-            .expect("read meta.toml");
+        std::fs::read_to_string(c.join("resources/moment/first-moment/parts/body/meta.toml"))
+            .unwrap_or_else(|_| {
+                std::fs::read_to_string(c.join("resources/blog/welcome/parts/body/meta.toml"))
+                    .expect("read meta.toml")
+            });
     // `01` §1.4: `part_id` is minted at scaffold time, not by sync.
     assert!(
         meta.contains("part_id"),
@@ -178,11 +176,11 @@ fn scaffolded_part_id_is_stable_across_a_re_read() {
 // (the `content tree|ls <uri>` drift of `14` §14.1 #11) is class-B drift.
 
 #[test]
-fn help_lists_all_six_type_command_groups() {
+fn help_lists_active_type_command_groups() {
     let out = Command::new(bin()).arg("--help").output().expect("help");
     let help = String::from_utf8_lossy(&out.stdout);
-    // `02`: six type-specific command groups.
-    for group in ["idea", "blog", "project", "episode", "resume", "moment"] {
+    // `02`: active type-specific command groups.
+    for group in ["blog", "project", "episode", "resume", "moment"] {
         assert!(
             help.contains(group),
             "`02`: --help must list the `{group}` command group"
@@ -200,14 +198,14 @@ fn help_promised_content_uri_arg_actually_works() {
         ok_tree,
         "`content tree <uri>` is in --help — it must actually accept the uri"
     );
-    let (ok_ls, ls_out) = cli(&c, &["content", "ls", "silan://resources/ideas"]);
+    let (ok_ls, ls_out) = cli(&c, &["content", "ls", "silan://resources/projects"]);
     assert!(
         ok_ls,
         "`content ls <uri>` is in --help — it must actually accept the uri"
     );
-    // The uri is a subtree filter: `ls ideas` shows the idea, not the blog.
+    // The uri is a subtree filter: `ls projects` shows the project, not the blog.
     assert!(
-        ls_out.contains("first-idea") && !ls_out.contains("welcome"),
+        ls_out.contains("first-project") && !ls_out.contains("welcome"),
         "`content ls <uri>` must filter to the named subtree"
     );
 }

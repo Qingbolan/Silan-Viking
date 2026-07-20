@@ -133,6 +133,10 @@ pub enum EditorError {
     #[error("Markdown source not found: {path}")]
     SourceNotFound { path: String },
 
+    /// A create-only write targeted an existing Markdown representation.
+    #[error("Markdown source already exists: {path}")]
+    SourceAlreadyExists { path: String },
+
     /// The source changed after the editor loaded it.
     #[error("source changed on disk; reload before saving `{path}`")]
     RevisionConflict { path: String },
@@ -243,6 +247,60 @@ impl ContentEditor {
                 });
             }
             if let Err(rollback) = atomic_replace(&path, original.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: rollback.to_string(),
+                });
+            }
+            return Err(EditorError::Projection {
+                path: relative_path,
+                detail: projection,
+            });
+        }
+
+        let persisted = read_source(&path)?;
+        Ok(self.source_document(&path, &persisted))
+    }
+
+    /// Create one missing Markdown representation and refresh the SQLite
+    /// projection. This is intentionally create-only so generated
+    /// translations never overwrite human-authored language files.
+    pub fn create_markdown_and_sync(
+        &self,
+        locator: &TranslationLocator,
+        source: &str,
+        db_path: impl AsRef<Path>,
+    ) -> Result<SourceDocument, EditorError> {
+        let path = self.source_path(locator);
+        let relative_path = self.relative_path(&path);
+        let _save_guard = source_lock::acquire().map_err(|detail| EditorError::Io {
+            path: relative_path.clone(),
+            detail,
+        })?;
+        if path.exists() {
+            return Err(EditorError::SourceAlreadyExists {
+                path: relative_path,
+            });
+        }
+
+        atomic_replace(&path, source.as_bytes())?;
+        if let Err(error) = self.workspace.sync(db_path.as_ref()) {
+            let projection = error.to_string();
+            let current = read_source(&path).map_err(|error| EditorError::Rollback {
+                path: relative_path.clone(),
+                projection: projection.clone(),
+                rollback: format!("cannot verify the source before rollback: {error}"),
+            })?;
+            if ContentHash::of(current.as_bytes()) != ContentHash::of(source.as_bytes()) {
+                return Err(EditorError::Rollback {
+                    path: relative_path,
+                    projection,
+                    rollback: "source changed after create; refusing to delete the external edit"
+                        .to_owned(),
+                });
+            }
+            if let Err(rollback) = fs::remove_file(&path) {
                 return Err(EditorError::Rollback {
                     path: relative_path,
                     projection,

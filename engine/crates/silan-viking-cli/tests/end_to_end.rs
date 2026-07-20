@@ -67,19 +67,22 @@ fn empty_project_to_skill_full_chain() {
     assert!(config.contains("[database]"));
 
     // 2. create every content type.
-    ok_in(&root, &["idea", "new", "rust-context-engine"]);
     ok_in(&root, &["blog", "new", "hello-silan"]);
     ok_in(&root, &["project", "new", "viking-engine"]);
-    ok_in(&root, &["moment", "new", "q2-progress"]);
+    ok_in(&root, &["moment", "new", "rust-context-engine"]);
+    ok_in(
+        &root,
+        &["moment", "set-type", "rust-context-engine", "insight"],
+    );
     ok_in(&root, &["episode", "series", "new", "rust-tales"]);
     ok_in(&root, &["episode", "new", "rust-tales", "episode-01"]);
 
-    // 3. maintain an idea — add an optional Part and a language variant.
+    // 3. maintain a moment — add an optional Part and a language variant.
     ok_in(
         &root,
-        &["idea", "add-part", "rust-context-engine", "progress"],
+        &["moment", "add-part", "rust-context-engine", "progress"],
     );
-    ok_in(&root, &["idea", "add-lang", "rust-context-engine", "zh"]);
+    ok_in(&root, &["moment", "add-lang", "rust-context-engine", "zh"]);
 
     // 4. add a structured resume Part — shape is taken from SCHEMA.md.
     ok_in(&root, &["resume", "add-part", "education"]);
@@ -91,49 +94,48 @@ fn empty_project_to_skill_full_chain() {
 
     // 5. sync — parse + map + write the derived DB. Every Item must pass
     //    validation (this is what caught the missing `moment.date` field).
-    //    `init` scaffolds 4 Items (resume + 3 seed items, `06` §6.2.1) and
-    //    this test creates 5 more (idea/blog/project/update/episode — the
-    //    episode series is not an Item) → 9 Items in all.
+    //    `init` scaffolds 3 Items (resume + 2 seed items) and this test
+    //    creates 4 more (blog/project/moment/episode — the episode series is
+    //    not an Item) → 7 Items in all.
     let sync_out = ok_in(&root, &["index", "sync"]);
     assert!(
-        sync_out.contains("items=9"),
-        "sync should see 9 Items (4 from init + 5 created here): {sync_out}"
+        sync_out.contains("items=7"),
+        "sync should see 7 Items (3 from init + 4 created here): {sync_out}"
     );
 
     // 6. read the content back.
     let ls = ok_in(&root, &["content", "ls"]);
     for uri in [
-        "silan://resources/ideas/rust-context-engine",
         "silan://resources/blog/hello-silan",
         "silan://resources/projects/viking-engine",
-        "silan://resources/moment/q2-progress",
+        "silan://resources/moment/rust-context-engine",
         "silan://resources/episode/episode-01",
         "silan://resources/resume/resume",
     ] {
         assert!(ls.contains(uri), "content ls must list {uri}: {ls}");
     }
 
-    let idea_list = ok_in(&root, &["idea", "list"]);
-    assert!(idea_list.contains("rust-context-engine"));
+    let moment_list = ok_in(&root, &["moment", "list"]);
+    assert!(moment_list.contains("rust-context-engine"));
 
-    let idea_show = ok_in(&root, &["idea", "show", "rust-context-engine"]);
-    assert!(idea_show.contains("part=overview"));
+    let moment_show = ok_in(&root, &["moment", "show", "rust-context-engine"]);
+    assert!(moment_show.contains("part=body"));
     assert!(
-        idea_show.contains("part=progress"),
+        moment_show.contains("part=progress"),
         "the added Part must show"
     );
 
-    // 7. archive — takes the Item off the site, file stays. idea has no
+    // 7. archive — takes the Item off the site, file stays. moment has no
     //    `archived` status value, so archive sets visibility=unlisted
     //    (`10` rule 6: only visibility=public is projected).
-    ok_in(&root, &["idea", "archive", "rust-context-engine"]);
+    ok_in(&root, &["moment", "archive", "rust-context-engine"]);
     let archived = std::fs::read_to_string(
-        root.join("content/resources/ideas/rust-context-engine/parts/overview/en.md"),
+        root.join("content/resources/moment/rust-context-engine/parts/body/en.md"),
     )
     .expect("read");
     assert!(
         archived.contains("visibility: unlisted"),
-        "archiving an idea must set visibility=unlisted: {archived}"
+        "archiving a moment must set visibility=unlisted: {archived}"
     );
 
     // 8. skill emit + status — the skill package round-trips.
@@ -158,10 +160,10 @@ fn empty_project_to_skill_full_chain() {
         "a just-emitted skill must be up to date: {status}"
     );
 
-    // 9. doctor — the project is healthy end to end (9 Items: 4 from init
-    //    + 5 created above).
+    // 9. doctor — the project is healthy end to end (7 Items: 3 from init
+    //    + 4 created above).
     let doctor = ok_in(&root, &["doctor"]);
-    assert!(doctor.contains("items=9"));
+    assert!(doctor.contains("items=7"));
 
     let _ = std::fs::remove_dir_all(&root);
 }

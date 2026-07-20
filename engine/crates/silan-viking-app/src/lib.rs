@@ -37,6 +37,7 @@ pub mod schema;
 mod source_lock;
 pub mod stats;
 pub mod sync;
+pub mod translation_ai;
 pub mod website_insights;
 pub mod workspace;
 pub mod workspace_content;
@@ -83,6 +84,10 @@ pub use stats::{
     api_base_url, workspace_stats_sync_token, CountRow, ItemStats, StatsCache, StatsError,
     StatsSync, StatsSyncResult, VisitorRow,
 };
+pub use translation_ai::{
+    GeneratedMarkdownTranslation, MarkdownTranslationRequest, OpenAiMarkdownTranslator,
+    OpenAiTranslationError,
+};
 pub use website_insights::{
     AiReferralSummary, AttentionItem, AttentionKind, AttentionSeverity, CommentSummary,
     CrawlerSummary, DailyTraffic, DashboardSnapshot, FreshnessState, RecentContentItem,
@@ -90,9 +95,10 @@ pub use website_insights::{
 };
 pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
 pub use workspace_content::{
-    EditableDocument, EditableEntry, EditablePart, EditableSection, EditableTranslation,
-    EditableWorkspace, SaveLifecycleInput, SaveProjectFeaturedInput, SaveTranslationInput,
-    SourceRevision, WorkspaceContent, WorkspaceContentError, WorkspaceEntityCount,
+    CreateTranslationInput, EditableDocument, EditableEntry, EditablePart, EditableSection,
+    EditableTranslation, EditableWorkspace, SaveLifecycleInput, SaveMetadataInput,
+    SaveProjectFeaturedInput, SaveTranslationInput, SourceRevision, WorkspaceContent,
+    WorkspaceContentError, WorkspaceEntityCount,
 };
 pub use workspace_sync::{
     WorkspaceSync, WorkspaceSyncError, WorkspaceSyncResult, WorkspaceSyncState, WorkspaceSyncStatus,

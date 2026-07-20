@@ -201,12 +201,12 @@ fn valid_command_dispatches_normally() {
     // With no content project in the fresh cwd it will fail, but it must
     // fail in the command's own logic — not with a dispatch-level
     // "needs a subcommand" / "unknown command" message.
-    let (code, _stdout, stderr) = run(&["idea", "list"]);
-    assert_ne!(code, 0, "`idea list` with no project should fail");
+    let (code, _stdout, stderr) = run(&["moment", "list"]);
+    assert_ne!(code, 0, "`moment list` with no project should fail");
     assert!(
         !stderr.contains("needs a subcommand")
-            && !stderr.contains("unknown `idea` subcommand")
-            && !stderr.contains("unknown command `idea"),
-        "`idea list` must reach the command, not the dispatch-error path: {stderr}"
+            && !stderr.contains("unknown `moment` subcommand")
+            && !stderr.contains("unknown command `moment"),
+        "`moment list` must reach the command, not the dispatch-error path: {stderr}"
     );
 }

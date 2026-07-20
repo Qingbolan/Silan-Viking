@@ -11,7 +11,7 @@
 
 ## Top-level structure
 
-`SCHEMA.md` is a YAML document with six sections — `namespaces`,
+`SCHEMA.md` is a YAML document with five sections — `namespaces`,
 `field_types`, `types`, `relations`, `errors` — plus the `version` and
 `layout` scalars (see `docs/silan-viking/10` §10.2).
 
@@ -54,43 +54,19 @@ field_types:
   list:     { repr: "TOML array",               rust: "Vec<T>" }
 
 # ---------------------------------------------------------------------------
-# types — the 6 content types (per 10 §10.4).
+# types — the active content types (per 10 §10.4).
 #   Each type declares `fields` (frontmatter fields) and `parts` (Part list).
 #   Field attributes: type / required / default / source / column.
 #   Part attributes:  role / required / order / shape (default prose).
 #
 #   The `parts` list is a RECOMMENDED set, not a closed whitelist. An agent
 #   may extend any Item with a Part whose role this SCHEMA does not name —
-#   a project `benchmark`, an idea `related-work`. An undeclared role gets
+#   a project `benchmark`, a moment `related-work`. An undeclared role gets
 #   the default `prose` shape and sorts after the declared Parts; a `required`
 #   Part must still be present. The frontend renders whatever Parts an Item
 #   actually has, so a new section needs no SCHEMA edit and no UI change.
 # ---------------------------------------------------------------------------
 types:
-
-  # -- idea -------------------------------------------------------------------
-  idea:
-    main_table: ideas
-    fields:
-      - { name: slug,                       type: slug,                                 required: true,  default: null,    source: "py,ent", column: "ideas.slug" }
-      - { name: title,                      type: string,                               required: true,  default: null,    source: "py,ent", column: "ideas.title" }
-      - { name: kind,                       type: "enum(idea)",                         required: true,  default: idea,    source: new,      column: null }
-      - { name: status,                     type: "enum(draft,hypothesis,experimenting,validating,published,concluded)", required: true, default: draft, source: "py,ent", column: "ideas.status" }
-      - { name: visibility,                 type: "enum(private,unlisted,public)",      required: true,  default: private, source: new,      column: "ideas.visibility" }
-      - { name: priority,                   type: "enum(high,medium,low)",              required: false, default: medium,  source: py,       column: "idea_details.priority" }
-      - { name: category,                   type: string,                               required: false, default: null,    source: "py,ent", column: "ideas.category" }
-      - { name: tags,                       type: "list<string>",                       required: false, default: [],      source: "py,ent", column: "content_tag" }
-      - { name: abstract,                   type: text,                                 required: false, default: null,    source: "py,ent", column: "ideas.abstract" }
-      - { name: collaboration_needed,       type: bool,                                 required: false, default: false,   source: "py,ent", column: "idea_details.collaboration_needed" }
-      - { name: funding_required,           type: bool,                                 required: false, default: false,   source: "py,ent", column: "idea_details.funding_required" }
-      - { name: estimated_duration_months,  type: int,                                  required: false, default: null,    source: "py,ent", column: "idea_details.estimated_duration_months" }
-      - { name: estimated_budget,           type: float,                                required: false, default: null,    source: "py,ent", column: "idea_details.estimated_budget" }
-      - { name: relations,                  type: "list<relation>",                     required: false, default: [],      source: new,      column: "content_relation" }
-    parts:
-      - { role: overview,  required: true,  order: 10, shape: prose }
-      - { role: progress,  required: false, order: 20, shape: prose }
-      - { role: reference, required: false, order: 30, shape: prose }
-      - { role: result,    required: false, order: 40, shape: prose }
 
   # -- blog -------------------------------------------------------------------
   blog:
@@ -383,7 +359,7 @@ its primary Part. Each entry is a mapping with exactly two fields:
 
 ```yaml
 relations:
-  - { type: documents, to: silan://resources/ideas/silan-viking }
+  - { type: documents, to: silan://resources/moment/silan-viking-progress }
   - { type: references, to: silan://resources/blog/some-post }
 ```
 

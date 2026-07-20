@@ -40,6 +40,7 @@ pub struct EditableDocument {
     pub content_type: String,
     pub slug: String,
     pub title: String,
+    pub description: Option<String>,
     pub series_slug: Option<String>,
     pub episode_number: Option<i64>,
     pub status: String,
@@ -89,10 +90,27 @@ pub struct SaveLifecycleInput {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct SaveMetadataInput {
+    pub translation_id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub cover_url: Option<String>,
+    pub expected_revision: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct SaveProjectFeaturedInput {
     pub translation_id: String,
     pub is_featured: bool,
     pub expected_revision: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CreateTranslationInput {
+    pub part_id: String,
+    pub language: String,
+    pub title: String,
+    pub body: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -164,6 +182,24 @@ impl WorkspaceContent {
                 })
                 .unwrap_or_else(|| item.slug().as_str())
                 .to_owned();
+            let description = parsed
+                .main()
+                .text("excerpt")
+                .or_else(|| parsed.main().text("abstract"))
+                .or_else(|| parsed.main().text("description"))
+                .or_else(|| {
+                    parsed
+                        .langs()
+                        .iter()
+                        .find(|(language, _)| language.to_string() == canonical_language)
+                        .and_then(|(_, variant)| {
+                            variant
+                                .text("excerpt")
+                                .or_else(|| variant.text("abstract"))
+                                .or_else(|| variant.text("description"))
+                        })
+                })
+                .map(str::to_owned);
             let series_slug = (item.kind() == ContentKind::Episode)
                 .then(|| parsed.main().text("series").map(str::to_owned))
                 .flatten();
@@ -204,6 +240,7 @@ impl WorkspaceContent {
                 content_type: item.kind().frontmatter_value().to_owned(),
                 slug: item.slug().to_string(),
                 title,
+                description,
                 series_slug,
                 episode_number: parsed.main().int("episode_number"),
                 status: parsed.main().text("status").unwrap_or("draft").to_owned(),
@@ -217,6 +254,8 @@ impl WorkspaceContent {
                     .main()
                     .text("cover_url")
                     .or_else(|| parsed.main().text("cover_image"))
+                    .or_else(|| parsed.main().text("featured_image_url"))
+                    .or_else(|| parsed.main().text("thumbnail_url"))
                     .map(str::to_owned),
                 date: parsed
                     .main()
@@ -343,6 +382,35 @@ impl WorkspaceContent {
         WorkspaceContent::open(&self.content_root)?.editable_document(&document.id)
     }
 
+    pub fn create_translation(
+        &self,
+        input: &CreateTranslationInput,
+        db_path: impl AsRef<Path>,
+    ) -> Result<EditableDocument, WorkspaceContentError> {
+        let (document, part) = self.document_for_part(&input.part_id)?;
+        if part.shape != PartShape::Prose.schema_name() {
+            return Err(WorkspaceContentError::InvalidTranslationId(format!(
+                "{}:{}",
+                input.part_id, input.language
+            )));
+        }
+        if part
+            .translations
+            .iter()
+            .any(|translation| translation.language == input.language)
+        {
+            return Err(WorkspaceContentError::InvalidTranslationId(format!(
+                "{}:{} already exists",
+                input.part_id, input.language
+            )));
+        }
+        let locator = locator(&document, &part, &input.language)?;
+        let source = markdown_source(&input.title, &input.body)?;
+        self.editor
+            .create_markdown_and_sync(&locator, &source, db_path)?;
+        WorkspaceContent::open(&self.content_root)?.editable_document(&document.id)
+    }
+
     pub fn save_lifecycle(
         &self,
         input: &SaveLifecycleInput,
@@ -358,6 +426,52 @@ impl WorkspaceContent {
         if let Some(value) = pinned.as_deref() {
             fields.push(("pinned", value));
         }
+        self.editor.save_frontmatter_fields_and_sync(
+            &locator,
+            &fields,
+            &input.expected_revision,
+            db_path,
+        )?;
+        WorkspaceContent::open(&self.content_root)?.editable_document(&document.id)
+    }
+
+    pub fn save_metadata(
+        &self,
+        input: &SaveMetadataInput,
+        db_path: impl AsRef<Path>,
+    ) -> Result<EditableDocument, WorkspaceContentError> {
+        let (document, part, translation) = self.translation(&input.translation_id)?;
+        let kind = ContentKind::from_frontmatter_value(&document.content_type)
+            .map_err(|_| WorkspaceContentError::NotFound(document.id.clone()))?;
+        let locator = locator(&document, &part, &translation.language)?;
+        let mut owned_fields: Vec<(&'static str, String)> =
+            vec![("title", input.title.trim().to_owned())];
+        if let Some(field) = summary_field_for(kind) {
+            owned_fields.push((
+                field,
+                input
+                    .description
+                    .as_deref()
+                    .unwrap_or_default()
+                    .trim()
+                    .to_owned(),
+            ));
+        }
+        if let Some(field) = cover_field_for(kind) {
+            owned_fields.push((
+                field,
+                input
+                    .cover_url
+                    .as_deref()
+                    .unwrap_or_default()
+                    .trim()
+                    .to_owned(),
+            ));
+        }
+        let fields = owned_fields
+            .iter()
+            .map(|(key, value)| (*key, value.as_str()))
+            .collect::<Vec<_>>();
         self.editor.save_frontmatter_fields_and_sync(
             &locator,
             &fields,
@@ -450,6 +564,23 @@ fn locator(
     .map_err(WorkspaceContentError::Edit)
 }
 
+fn summary_field_for(kind: ContentKind) -> Option<&'static str> {
+    match kind {
+        ContentKind::Blog => Some("excerpt"),
+        ContentKind::Idea => Some("abstract"),
+        ContentKind::Project => Some("description"),
+        _ => None,
+    }
+}
+
+fn cover_field_for(kind: ContentKind) -> Option<&'static str> {
+    match kind {
+        ContentKind::Blog => Some("featured_image_url"),
+        ContentKind::Project => Some("thumbnail_url"),
+        _ => None,
+    }
+}
+
 fn entry_map_json(fields: &std::collections::BTreeMap<String, EntryValue>) -> serde_json::Value {
     serde_json::Value::Object(
         fields
@@ -457,6 +588,34 @@ fn entry_map_json(fields: &std::collections::BTreeMap<String, EntryValue>) -> se
             .map(|(name, value)| (name.clone(), entry_value_json(value)))
             .collect(),
     )
+}
+
+fn markdown_source(title: &str, body: &str) -> Result<String, WorkspaceContentError> {
+    let title = title.trim();
+    if title.is_empty() {
+        return Err(WorkspaceContentError::InvalidTranslationId(
+            "generated translation title is empty".to_owned(),
+        ));
+    }
+    let body = body.trim();
+    if body.is_empty() {
+        return Err(WorkspaceContentError::InvalidTranslationId(
+            "generated translation body is empty".to_owned(),
+        ));
+    }
+    let mut frontmatter = serde_yaml::Mapping::new();
+    frontmatter.insert(
+        serde_yaml::Value::String("title".to_owned()),
+        serde_yaml::Value::String(title.to_owned()),
+    );
+    let yaml =
+        serde_yaml::to_string(&serde_yaml::Value::Mapping(frontmatter)).map_err(|error| {
+            WorkspaceContentError::Edit(EditorError::Io {
+                path: "generated translation".to_owned(),
+                detail: format!("cannot serialize generated frontmatter: {error}"),
+            })
+        })?;
+    Ok(format!("---\n{}\n---\n{}\n", yaml.trim_end(), body))
 }
 
 fn entry_value_json(value: &EntryValue) -> serde_json::Value {

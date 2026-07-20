@@ -85,6 +85,56 @@ fn save_updates_markdown_then_refreshes_the_projection() {
 }
 
 #[test]
+fn create_markdown_translation_syncs_without_overwriting_existing_source() {
+    let temporary = tempfile::tempdir().expect("temporary workspace");
+    let content_root = temporary.path().join("content");
+    let db_path = temporary.path().join("portfolio.db");
+    copy_tree(&fixture_root(), &content_root);
+
+    Workspace::open(&content_root)
+        .expect("open copied fixture")
+        .sync(&db_path)
+        .expect("seed projection");
+
+    let editor = ContentEditor::open(&content_root).expect("open source editor");
+    let locator = TranslationLocator::new(
+        ContentKind::Blog,
+        "hello-world",
+        None::<String>,
+        "body",
+        "fr",
+    )
+    .expect("valid locator");
+    let source = "---\ntitle: Bonjour le monde\n---\n# Bonjour le monde\n\nCorps en francais.\n";
+
+    let created = editor
+        .create_markdown_and_sync(&locator, source, &db_path)
+        .expect("create and sync translation");
+
+    assert_eq!(created.body, "# Bonjour le monde\n\nCorps en francais.\n");
+    let conn = Connection::open(&db_path).expect("open refreshed projection");
+    let projected: String = conn
+        .query_row(
+            "
+            SELECT ipt.body
+            FROM item_part_translation AS ipt
+            INNER JOIN item_part AS ip ON ip.id = ipt.item_part_id
+            WHERE ip.entity_type = 'blog' AND ip.role = 'body' AND ipt.language_code = 'fr'
+            ",
+            [],
+            |row| row.get(0),
+        )
+        .expect("projected generated body");
+    assert_eq!(projected, created.body);
+
+    let duplicate = editor.create_markdown_and_sync(&locator, source, &db_path);
+    assert!(matches!(
+        duplicate,
+        Err(EditorError::SourceAlreadyExists { .. })
+    ));
+}
+
+#[test]
 fn projection_failure_restores_the_original_markdown() {
     let temporary = tempfile::tempdir().expect("temporary workspace");
     let content_root = temporary.path().join("content");

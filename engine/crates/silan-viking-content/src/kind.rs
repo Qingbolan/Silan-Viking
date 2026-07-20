@@ -1,6 +1,6 @@
-//! `ContentKind` — the closed set of the 6 content types.
+//! `ContentKind` — the closed set of active content types.
 //!
-//! Per `docs/silan-viking/10` §10.4 there are exactly six content types, and
+//! Per `docs/silan-viking/10` §10.4 the active public content model is closed, and
 //! per `01` §1.5.0 the `ContentKind` is determined in `Workspace::scan` from
 //! the `content/resources/{type}/` directory name — never guessed by a
 //! parser. This enum is that closed set; a `match` on it is exhaustive, so
@@ -10,14 +10,14 @@ use crate::error::ContentError;
 use std::fmt;
 use std::str::FromStr;
 
-/// One of the 6 silan-viking content types.
+/// One of the silan-viking content types.
 ///
 /// Invariant: this set is closed. The `ParserRegistry` / `MapperRegistry`
 /// dispatch on it exhaustively (`01` §1.5.0), so a new variant forces every
 /// dispatch site to be updated before the code compiles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ContentKind {
-    /// A half-formed thought being developed (`ideas/`).
+    /// A legacy half-formed thought (`ideas/`). Not part of [`ALL`].
     Idea,
     /// A written article / podcast / vlog / tutorial (`blog/`).
     Blog,
@@ -32,10 +32,9 @@ pub enum ContentKind {
 }
 
 impl ContentKind {
-    /// Every variant, in a stable order — useful for iteration in tests and
+    /// Every active variant, in a stable order — useful for iteration in tests and
     /// for building registries.
-    pub const ALL: [ContentKind; 6] = [
-        ContentKind::Idea,
+    pub const ALL: [ContentKind; 5] = [
         ContentKind::Blog,
         ContentKind::Project,
         ContentKind::Episode,
@@ -91,6 +90,9 @@ impl ContentKind {
     /// Used by the parser to self-check that the frontmatter `kind` agrees
     /// with the directory the Item was found in.
     pub fn from_frontmatter_value(value: &str) -> Result<Self, ContentError> {
+        if value == ContentKind::Idea.frontmatter_value() {
+            return Ok(ContentKind::Idea);
+        }
         ContentKind::ALL
             .into_iter()
             .find(|k| k.frontmatter_value() == value)
@@ -120,8 +122,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn all_contains_six_distinct_kinds() {
-        assert_eq!(ContentKind::ALL.len(), 6);
+    fn all_contains_five_active_kinds() {
+        assert_eq!(ContentKind::ALL.len(), 5);
     }
 
     #[test]
@@ -153,5 +155,14 @@ mod tests {
     fn unknown_names_are_rejected() {
         assert!(ContentKind::from_dir_name("articles").is_err());
         assert!(ContentKind::from_frontmatter_value("note").is_err());
+    }
+
+    #[test]
+    fn legacy_idea_frontmatter_still_parses_but_directory_is_inactive() {
+        assert_eq!(
+            ContentKind::from_frontmatter_value("idea").expect("legacy frontmatter"),
+            ContentKind::Idea
+        );
+        assert!(ContentKind::from_dir_name("ideas").is_err());
     }
 }

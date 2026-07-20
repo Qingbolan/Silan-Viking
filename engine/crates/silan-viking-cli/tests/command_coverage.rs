@@ -53,36 +53,6 @@ fn fresh_project() -> std::path::PathBuf {
 }
 
 #[test]
-fn idea_group_every_verb() {
-    let c = fresh_project();
-    ok(&c, &["idea", "new", "an-idea"]);
-    assert!(ok(&c, &["idea", "list"]).contains("an-idea"));
-    assert!(ok(&c, &["idea", "show", "an-idea"]).contains("kind=idea"));
-    ok(&c, &["idea", "edit", "an-idea"]);
-    ok(&c, &["idea", "add-part", "an-idea", "progress"]);
-    ok(&c, &["idea", "add-lang", "an-idea", "zh"]);
-    // type-specific: status must take a SCHEMA-valid enum value.
-    ok(&c, &["idea", "status", "an-idea", "experimenting"]);
-    err(&c, &["idea", "status", "an-idea", "not-a-status"]);
-    // promote scaffolds the target and writes the relation.
-    ok(&c, &["idea", "promote", "an-idea", "--to", "blog"]);
-    assert!(
-        c.join("resources/blog/an-idea").exists(),
-        "promote --to blog must scaffold the blog Item"
-    );
-    let idea_md = std::fs::read_to_string(c.join("resources/ideas/an-idea/parts/overview/en.md"))
-        .expect("read");
-    assert!(
-        idea_md.contains("relations:"),
-        "promote must add a relation"
-    );
-    ok(&c, &["idea", "archive", "an-idea"]);
-    ok(&c, &["idea", "rm", "an-idea"]);
-    err(&c, &["idea", "show", "an-idea"]);
-    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
-}
-
-#[test]
 fn blog_group_every_verb() {
     let c = fresh_project();
     ok(&c, &["blog", "new", "a-post"]);
@@ -201,12 +171,11 @@ fn everything_synced_passes_validation() {
     // After exercising the write verbs, a full sync must still succeed —
     // proving the scaffolds and frontmatter rewrites stay SCHEMA-valid.
     //
-    // `init` already scaffolds 4 Items (1 resume + 3 seed items: a welcome
-    // blog, one idea, one project — `06` §6.2.1). This test then creates 5
-    // more (idea / blog / project / moment / episode; the episode *series*
-    // is not itself an Item). So a full sync covers 4 + 5 = 9 Items.
+    // `init` already scaffolds 3 Items (1 resume + 2 seed items: a welcome
+    // blog and one project). This test then creates 4 more (blog / project /
+    // moment / episode; the episode *series* is not itself an Item). So a full
+    // sync covers 3 + 4 = 7 Items.
     let c = fresh_project();
-    ok(&c, &["idea", "new", "x-idea"]);
     ok(&c, &["blog", "new", "x-blog"]);
     ok(&c, &["project", "new", "x-proj"]);
     ok(&c, &["moment", "new", "x-update"]);
@@ -215,8 +184,8 @@ fn everything_synced_passes_validation() {
     ok(&c, &["episode", "new", "x-series", "x-ep"]);
     let sync = ok(&c, &["index", "sync"]);
     assert!(
-        sync.contains("items=9") && sync.contains("wrote=true"),
-        "all 9 Items (4 from init + 5 created here) must sync: {sync}"
+        sync.contains("items=7") && sync.contains("wrote=true"),
+        "all 7 Items (3 from init + 4 created here) must sync: {sync}"
     );
     let _ = std::fs::remove_dir_all(c.parent().expect("root"));
 }
@@ -246,29 +215,29 @@ fn relation_link_declares_an_edge() {
     // `02` §relation: `relation link` writes a relations entry on the `from`
     // Item; an unknown type and a missing endpoint both fail.
     let c = fresh_project();
-    ok(&c, &["idea", "new", "src-idea"]);
+    ok(&c, &["moment", "new", "src-moment"]);
     ok(&c, &["project", "new", "dst-proj"]);
     ok(
         &c,
         &[
             "relation",
             "link",
-            "silan://resources/ideas/src-idea",
+            "silan://resources/moment/src-moment",
             "silan://resources/projects/dst-proj",
             "--type",
             "evolved-into",
         ],
     );
-    let idea = std::fs::read_to_string(c.join("resources/ideas/src-idea/parts/overview/en.md"))
+    let moment = std::fs::read_to_string(c.join("resources/moment/src-moment/parts/body/en.md"))
         .expect("read");
-    assert!(idea.contains("relations:"), "link must add a relation");
-    assert!(idea.contains("dst-proj"), "link must name the target");
+    assert!(moment.contains("relations:"), "link must add a relation");
+    assert!(moment.contains("dst-proj"), "link must name the target");
     err(
         &c,
         &[
             "relation",
             "link",
-            "silan://resources/ideas/src-idea",
+            "silan://resources/moment/src-moment",
             "silan://resources/projects/dst-proj",
             "--type",
             "not-a-type",

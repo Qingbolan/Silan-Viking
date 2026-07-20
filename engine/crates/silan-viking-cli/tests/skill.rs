@@ -74,7 +74,7 @@ fn emit_renders_the_full_skill_package() {
     assert!(skill_md.contains("silan seems to be"));
     assert!(skill_md.contains("context_brief()"));
     // The type list is interpolated from SCHEMA.
-    assert!(skill_md.contains("idea / blog / project / episode / resume / moment"));
+    assert!(skill_md.contains("blog / project / episode / resume / moment"));
 
     // reference/mcp-tools.md — relative start convention, all 17 tools.
     let tools_md =

@@ -152,12 +152,12 @@ fn tools_call_recall_and_lint_run() {
         .args([
             "--content",
             content.to_str().expect("path"),
-            "idea",
+            "moment",
             "new",
             "rust-engine",
         ])
         .status()
-        .expect("idea new");
+        .expect("moment new");
 
     let responses = drive_server(
         &content,
@@ -229,7 +229,7 @@ fn stats_tool_unresolvable_uri_is_a_clear_error() {
     let responses = drive_server(
         &content,
         &[
-            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"stats","arguments":{"uri":"silan://resources/ideas/no-such-idea"}}}"#,
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"stats","arguments":{"uri":"silan://resources/moment/no-such-moment"}}}"#,
         ],
     );
     let err = &responses[0]["error"];
@@ -252,7 +252,7 @@ fn ctx_write_rejects_resources_uri() {
     let responses = drive_server(
         &content,
         &[
-            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"ctx_write","arguments":{"uri":"silan://resources/ideas/x","content":"no"}}}"#,
+            r#"{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"ctx_write","arguments":{"uri":"silan://resources/moment/x","content":"no"}}}"#,
         ],
     );
     assert!(

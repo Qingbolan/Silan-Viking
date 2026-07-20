@@ -326,7 +326,7 @@ fn cached_traffic(
     if table_exists(connection, "stats_cache_item")? {
         let mut statement = connection.prepare(
             "SELECT entity_type, entity_id, views
-             FROM stats_cache_item ORDER BY views DESC LIMIT 4",
+             FROM stats_cache_item ORDER BY views DESC",
         )?;
         top_content = statement
             .query_map([], |row| {

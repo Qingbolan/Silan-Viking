@@ -47,12 +47,6 @@ fn main() {
 /// the verb listings in `print_help` — there is no auto-sync.
 fn command_usage(command: &str) -> Option<&'static [&'static str]> {
     Some(match command {
-        "idea" => &[
-            "idea new|list|show|edit|archive|rm <slug>",
-            "idea add-part <slug> <role> · idea add-lang <slug> <lang>",
-            "idea status <slug> <state> · idea promote <slug> --to blog|project",
-            "idea list [--status <status>|--tag <tag>]",
-        ],
         "blog" => &[
             "blog new|list|show|edit|archive|rm <slug>",
             "blog add-part <slug> <role> · blog add-lang <slug> <lang>",
@@ -388,10 +382,6 @@ fn run(args: Vec<String>) -> Result<(), String> {
         ["resume", "edit", role, lang] => resume_edit(&opts.content_root, role, Some(lang)),
 
         // -- type-specific verbs --
-        ["idea", "status", slug, state] => {
-            type_set_field(&opts.content_root, "idea", slug, "status", state)
-        }
-        ["idea", "promote", slug, "--to", target] => idea_promote(&opts.content_root, slug, target),
         ["blog", "publish", slug] => {
             // Publish writes BOTH status=published AND visibility=public so the
             // post actually reaches the website — `status` alone leaves it
@@ -416,7 +406,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
             type_set_field(&opts.content_root, "moment", slug, "moment_type", ut)
         }
 
-        // -- flat-type write verbs (idea / blog / project / moment) --
+        // -- flat-type write verbs (blog / project / moment) --
         [kind, "new", slug] if is_flat_kind(kind) => type_new(&opts.content_root, kind, slug),
         [kind, "add-part", slug, role] if is_flat_kind(kind) => {
             type_add_part(&opts.content_root, kind, slug, role)
@@ -645,7 +635,7 @@ impl CliOptions {
         // V3-H / F5 carry-over: if no `--content` was passed, climb `..`
         // from cwd looking for a `silan-viking.toml`. That file is the
         // project root marker (the same role `git rev-parse --show-toplevel`
-        // serves for git). Without this climb, running `silan-viking idea
+        // serves for git). Without this climb, running `silan-viking moment
         // new <slug>` from a subdir of a project either operated on the
         // wrong tree or required threading `--content` on every call.
         let project_root = explicit_content
@@ -734,7 +724,7 @@ fn absolute_path(path: &Path) -> Result<PathBuf, String> {
 /// Priority: `--content <path>` (explicit) → `find_project_root_from(cwd)`
 /// climb (V3-H fix) → `<cwd>/content` fallback. The climb means running
 /// `silan-viking --help` from a project subdir prints the right project
-/// status (matching what `silan-viking ... idea new` would actually do).
+/// status (matching what `silan-viking ... moment new` would actually do).
 fn resolve_content_root(args: &[String]) -> PathBuf {
     let cwd = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let mut explicit: Option<PathBuf> = None;
@@ -794,8 +784,8 @@ fn print_help(content_root: &Path) {
     println!("{}", h("Commands:"));
 
     // Pad a command name to a fixed-width column so descriptions line
-    // up. The width must clear the longest name (`idea|blog|project|
-    // update`, 24 chars); `c()` wraps the name in ANSI escapes, so the
+    // up. The width must clear the longest name (`blog|project|moment`,
+    // 19 chars); `c()` wraps the name in ANSI escapes, so the
     // pad is applied to the *painted* string and the escapes count
     // toward the width — we therefore pad the raw name first, then
     // paint, keeping the visible column honest.
@@ -807,10 +797,7 @@ fn print_help(content_root: &Path) {
     };
 
     println!("  {}", h("[Content]"));
-    row(
-        "idea|blog|project|moment",
-        "Create / edit / list a content item",
-    );
+    row("blog|project|moment", "Create / edit / list a content item");
     row("episode", "Manage episode series and per-episode entries");
     row("resume", "Show and edit the single resume Item");
     println!();
@@ -865,15 +852,11 @@ fn print_help(content_root: &Path) {
     println!("{}", h("Content verbs:"));
     println!(
         "  {}",
-        d("idea|blog|project|moment new|list|show|edit|archive|rm <slug>")
+        d("blog|project|moment new|list|show|edit|archive|rm <slug>")
     );
     println!(
         "  {}",
-        d("idea|blog|project|moment add-part <slug> <role> · add-lang <slug> <lang>")
-    );
-    println!(
-        "  {}",
-        d("idea status <slug> <state> · idea promote <slug> --to blog|project")
+        d("blog|project|moment add-part <slug> <role> · add-lang <slug> <lang>")
     );
     println!(
         "  {}",
@@ -1028,23 +1011,19 @@ fn init_content(content_root: &Path) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
     }
 
-    // The six content-type directories (`06` §6.2.1). `episode` / `moment`
+    // The content-type directories (`06` §6.2.1). `episode` / `moment`
     // stay empty collections — no seed item, just the directory so the
-    // collection exists. `blog` / `ideas` / `projects` each get one seed
-    // item below; `resume` is already scaffolded above.
-    for type_dir in ["blog", "ideas", "projects", "episode", "moment"] {
+    // collection exists. `blog` / `projects` each get one seed item below;
+    // `resume` is already scaffolded above.
+    for type_dir in ["blog", "projects", "episode", "moment"] {
         fs::create_dir_all(content_root.join("resources").join(type_dir))
             .map_err(|e| e.to_string())?;
     }
 
-    // Three seed items (`06` §6.2.1: "六 type + 三示例条目"): a welcome blog,
-    // one idea, one project. Skipped if a same-slug item already exists, so
-    // `init` over a non-empty content/ does not clobber real content.
-    for (kind, slug) in [
-        ("blog", "welcome"),
-        ("idea", "first-idea"),
-        ("project", "first-project"),
-    ] {
+    // Seed items: a welcome blog and one project. Skipped if a same-slug item
+    // already exists, so `init` over a non-empty content/ does not clobber
+    // real content.
+    for (kind, slug) in [("blog", "welcome"), ("project", "first-project")] {
         let item_dir = content_root
             .join("resources")
             .join(scaffold::type_dir_name(kind).map_err(|e| e.to_string())?)
@@ -1343,7 +1322,7 @@ fn guide(content_root: &Path, from_init: bool) -> Result<(), String> {
                 ),
                 (
                     "silan blog new <slug>",
-                    "write your first post (or idea/project)",
+                    "write your first post (or project/moment)",
                 ),
             ],
         ),
@@ -1629,8 +1608,8 @@ fn content_ls(content_root: &Path, filter: Option<&str>) -> Result<(), String> {
 
 /// True if `uri` should be shown given an optional subtree `filter`. No
 /// filter → always shown. With a filter → `uri` must equal it or sit under
-/// it (prefix match on a `/` boundary, so `.../idea` does not match
-/// `.../idea-two`).
+/// it (prefix match on a `/` boundary, so `.../item` does not match
+/// `.../item-two`).
 fn uri_matches(uri: &str, filter: Option<&str>) -> bool {
     match filter {
         None => true,
@@ -1899,11 +1878,10 @@ fn relation_item_file(content_root: &Path, uri: &str) -> Result<PathBuf, String>
         .ok_or_else(|| format!("relation uri has no slug: {uri}"))?;
     // `episode` URIs carry `<series>/<slug>`; every other type is `<slug>`.
     let role = match *kind {
-        "idea" | "ideas" | "project" | "projects" => "overview",
+        "project" | "projects" => "overview",
         _ => "body",
     };
     let canon = match *kind {
-        "idea" | "ideas" => "ideas",
         "project" | "projects" => "projects",
         "blog" | "blogs" => "blog",
         "episode" | "episodes" => "episode",
@@ -2187,7 +2165,6 @@ fn resolve_stats_filter(conn: &Connection, uri: &str) -> Result<StatsFilter, Str
     let (entity_type, table) = match *kind {
         "blog" | "blogs" => ("blog", "blog_posts"),
         "project" | "projects" => ("project", "projects"),
-        "idea" | "ideas" => ("idea", "ideas"),
         "episode" | "episodes" => ("episode", "episodes"),
         "moment" | "moments" => ("moment", "moments"),
         "resume" => {
@@ -2492,7 +2469,7 @@ fn completion(shell: &str) -> Result<(), String> {
                 "# silan bash completion — source this, or add to ~/.bashrc:\n\
                  #   eval \"$(silan completion bash)\"\n\
                  _silan() {{\n  \
-                   local groups=\"idea blog project episode resume moment content index \\\n    \
+                   local groups=\"blog project episode resume moment content index \\\n    \
                      relation site stats proposal mcp skill init onboard setup config doctor completion\"\n  \
                    COMPREPLY=( $(compgen -W \"$groups\" -- \"${{COMP_WORDS[COMP_CWORD]}}\") )\n\
                  }}\n\
@@ -2507,7 +2484,7 @@ fn completion(shell: &str) -> Result<(), String> {
                  #compdef silan svk silan-viking\n\
                  _silan() {{\n  \
                    local -a groups\n  \
-                   groups=(idea blog project episode resume moment content index \\\n    \
+                   groups=(blog project episode resume moment content index \\\n    \
                      relation site stats proposal mcp skill init onboard setup config doctor completion)\n  \
                    compadd -- $groups\n\
                  }}\n\
@@ -2519,7 +2496,7 @@ fn completion(shell: &str) -> Result<(), String> {
             println!(
                 "# silan fish completion — save to ~/.config/fish/completions/silan.fish\n\
                  complete -c silan -f -n __fish_use_subcommand -a \\\n  \
-                 'idea blog project episode resume moment content index relation site \\\n   \
+                 'blog project episode resume moment content index relation site \\\n   \
                  stats proposal mcp skill init onboard setup config doctor completion'\n\
                  complete -c svk -w silan\n\
                  complete -c silan-viking -w silan"
@@ -2809,7 +2786,6 @@ fn site_publish(content_root: &Path, uri: &str) -> Result<(), String> {
         .last()
         .ok_or_else(|| format!("publish uri has no slug: {uri}"))?;
     let kind = match kind {
-        "ideas" => "idea",
         "projects" => "project",
         "blogs" => "blog",
         "episodes" => "episode",
@@ -4168,13 +4144,14 @@ fn deploy_nginx_frontend(project_root: &Path, cfg: &DeployConfig) -> Result<(), 
     let remote_tar = "/tmp/silan-viking-frontend-dist.tar.gz";
     println!("[frontend] scp → {}", remote_tar);
     scp_to(cfg, &tarball, remote_tar)?;
-    // Untar over the vhost root, then drop AppleDouble resource forks
-    // (`._*`) so nginx doesn't serve them.
+    // Replace the static tree instead of overlaying it. Old prerendered route
+    // directories (for example a removed `/ideas/`) otherwise keep winning over
+    // the SPA fallback in nginx.
     println!("[frontend] untar at {}", cfg.remote_dir);
     ssh_exec(
         cfg,
         &format!(
-            "cd {dir} && tar -xzf {tar} && find . -maxdepth 4 -name '._*' -delete",
+            "cd {dir} && find . -mindepth 1 -maxdepth 1 ! -name api ! -name .well-known ! -name .user.ini -exec rm -rf {{}} + && tar -xzf {tar} && find . -maxdepth 4 -name '._*' -delete",
             dir = cfg.remote_dir,
             tar = remote_tar,
         ),
@@ -5103,7 +5080,6 @@ fn local_site_status() -> Result<(), String> {
 
 fn parse_kind(kind: &str) -> Option<ContentKind> {
     match kind {
-        "idea" => Some(ContentKind::Idea),
         "blog" => Some(ContentKind::Blog),
         "project" => Some(ContentKind::Project),
         "episode" => Some(ContentKind::Episode),
@@ -5117,7 +5093,7 @@ fn parse_kind(kind: &str) -> Option<ContentKind> {
 /// type except `episode`, which nests under a series, and `resume`, the
 /// single Item created by `init`).
 fn is_flat_kind(kind: &str) -> bool {
-    matches!(kind, "idea" | "blog" | "project" | "moment")
+    matches!(kind, "blog" | "project" | "moment")
 }
 
 // ── content scaffolding verbs (`02` §一) ────────────────────────────────────
@@ -5143,7 +5119,7 @@ fn type_add_part(content_root: &Path, kind: &str, slug: &str, role: &str) -> Res
 fn type_add_lang(content_root: &Path, kind: &str, slug: &str, lang: &str) -> Result<(), String> {
     // add-lang targets the type's primary Part by default.
     let role = match kind {
-        "idea" | "project" => "overview",
+        "project" => "overview",
         _ => "body",
     };
     report_scaffold(scaffold::add_lang(content_root, kind, slug, role, lang))
@@ -5158,7 +5134,7 @@ fn type_edit(
     // `edit` is non-interactive here: it resolves and prints the file path the
     // author should open (a real $EDITOR launch is a host concern).
     let role = role.unwrap_or(match kind {
-        "idea" | "project" => "overview",
+        "project" => "overview",
         _ => "body",
     });
     let dir = scaffold::type_dir_name(kind).map_err(|e| e.to_string())?;
@@ -5178,7 +5154,7 @@ fn type_edit(
 
 /// `archive` takes an Item off the site (`02` §一). Its mechanism depends on
 /// the type: blog/episode have an `archived` value in their `status` enum, so
-/// archive sets that. idea/project/moment have no `archived` status, so
+/// archive sets that. project/moment have no `archived` status, so
 /// archive sets `visibility` to `unlisted` instead (`10` rule 6: only
 /// `visibility=public` is projected). moment's `status` is explicitly left
 /// unchanged (`02` §一: "归档:status 不变").
@@ -5262,7 +5238,7 @@ fn find_incoming_relations(content_root: &Path, target_uri: &str) -> Vec<(String
     if !resources.exists() {
         return out;
     }
-    let kinds = ["ideas", "blog", "projects", "episode", "resume", "moment"];
+    let kinds = ["blog", "projects", "episode", "resume", "moment"];
     for kind_dir in kinds {
         let dir = resources.join(kind_dir);
         if !dir.exists() {
@@ -5280,7 +5256,7 @@ fn find_incoming_relations(content_root: &Path, target_uri: &str) -> Vec<(String
             let source_uri = format!("silan://resources/{kind_dir}/{item_slug}");
             // The relations declaration lives in the primary Part's en.md
             // frontmatter (`01` §1.10 modifies the source Item's frontmatter
-            // when `silan idea promote` runs).
+            // when `silan relation link` runs).
             for role in ["overview", "body", "summary"] {
                 let path = item_dir.join("parts").join(role).join("en.md");
                 if !path.exists() {
@@ -5389,13 +5365,13 @@ fn parse_block_field(line: &str, key: &str) -> Option<String> {
 /// The primary (frontmatter-carrying) Part role of a flat content type.
 fn primary_role(kind: &str) -> &'static str {
     match kind {
-        "idea" | "project" => "overview",
+        "project" => "overview",
         _ => "body",
     }
 }
 
 /// Set a frontmatter field of a flat-type Item, validating the value against
-/// the SCHEMA enum if the field is enumerated. This backs `idea status`,
+/// the SCHEMA enum if the field is enumerated. This backs
 /// `blog publish/unpublish`, `moment status/set-type`, and `archive`
 /// (`02` §一 type-specific verbs). The frontmatter lives in the canonical
 /// `en.md` of the type's primary Part (`01` §1.3.1).
@@ -5441,7 +5417,7 @@ fn type_set_field(
 }
 
 /// Type-specific `publish` / `unpublish` for flat-type Items (blog, moment,
-/// idea, project). `status` is the lifecycle field; `visibility` is the
+/// project). `status` is the lifecycle field; `visibility` is the
 /// website-projection field — `01` §1.7 / `10` §10.3 keep them separate, but
 /// the user-visible `publish` verb (USAGE §3 table; `02` §一) sets BOTH in
 /// one go: published = `status=published` + `visibility=public`. Without
@@ -5736,36 +5712,8 @@ fn episode_rm(content_root: &Path, series: &str, slug: &str) -> Result<(), Strin
     Ok(())
 }
 
-/// `idea promote <slug> --to blog|project` — scaffold a new Item of the target
-/// type, seeded from the idea's slug, and declare the evolution edge in the
-/// idea's frontmatter (`02` §一: idea promote auto-creates the relation).
-fn idea_promote(content_root: &Path, slug: &str, target: &str) -> Result<(), String> {
-    if target != "blog" && target != "project" {
-        return Err(format!("`--to` must be blog or project, got `{target}`"));
-    }
-    let idea_overview = content_root
-        .join("resources/ideas")
-        .join(slug)
-        .join("parts/overview/en.md");
-    if !idea_overview.exists() {
-        return Err(format!("idea `{slug}` not found"));
-    }
-    // Scaffold the target Item (its slug mirrors the idea's).
-    report_scaffold(scaffold::new_item(content_root, target, slug))?;
-
-    // Declare the evolution edge on the idea: blog `documents` the idea is the
-    // canonical direction; `evolved_into` for a project (10 §10.5).
-    let (rel, target_uri) = match target {
-        "blog" => ("documents", format!("silan://resources/blog/{slug}")),
-        _ => ("evolved_into", format!("silan://resources/projects/{slug}")),
-    };
-    append_relation(&idea_overview, rel, &target_uri)?;
-    println!("idea `{slug}` promoted to {target} `{slug}` (relation: {rel})");
-    Ok(())
-}
-
-/// Append a `relations:` entry to a file's frontmatter (used by `idea
-/// promote`). Creates the `relations:` block if absent.
+/// Append a `relations:` entry to a file's frontmatter. Creates the
+/// `relations:` block if absent.
 fn append_relation(file: &Path, rel: &str, to_uri: &str) -> Result<(), String> {
     let text = fs::read_to_string(file).map_err(|e| e.to_string())?;
     let mut lines: Vec<String> = text.lines().map(str::to_owned).collect();

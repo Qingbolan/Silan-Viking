@@ -187,7 +187,7 @@ impl ContentCreator {
         self.create_and_sync(CaptureKind::Project, title, &body, db_path.as_ref())
     }
 
-    pub fn capture_update_and_sync(
+    pub fn capture_moment_and_sync(
         &self,
         event: &str,
         db_path: impl AsRef<Path>,
