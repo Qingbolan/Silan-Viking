@@ -4,6 +4,7 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 import {
   Activity,
   AlertCircle,
+  Aperture,
   Archive,
   BarChart3,
   Bot,
@@ -15,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Clock3,
   Eye,
   EyeOff,
   FileImage,
@@ -23,9 +23,9 @@ import {
   Folder,
   FolderPlus,
   GitBranch,
-  Lightbulb,
   LoaderCircle,
   Menu,
+  MessageCircle,
   PencilLine,
   Plus,
   PauseCircle,
@@ -36,8 +36,10 @@ import {
   Save,
   Scale,
   Search,
+  Settings,
   Send,
   Sparkles,
+  ThumbsUp,
   Type,
   UploadCloud,
   UserRound,
@@ -48,6 +50,7 @@ import 'vditor/dist/index.css';
 import { CaptureSheet } from './components/CaptureSheet';
 import { CommitWall, TrafficWall } from './components/CommitWall';
 import { ContentCard } from './components/ContentCard';
+import { LanguageCloseControls, type LanguageCloseTab } from './components/LanguageCloseControls';
 import { NewProjectDialog } from './components/NewProjectDialog';
 import { ResumePage } from './components/ResumePage';
 import { RefreshConfirmDialog } from './components/RefreshConfirmDialog';
@@ -57,6 +60,8 @@ import {
   arrangeBlogGroupsForGrid,
   badgeClass,
   docPath,
+  localizeContentGroup,
+  localizeEpisodeSeries,
   selectPrimaryDocument,
 } from './lib/content';
 import {
@@ -97,9 +102,10 @@ import type {
   VersionScope,
 } from './types';
 
-const masonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea']);
-const editableMasonryContentKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'resume', 'moment']);
-const versionScopeFilters = new Set<EntityFilter>(['resume', 'blog', 'project', 'idea', 'moment']);
+const masonryContentKinds = new Set<ContentKind>(['blog', 'project']);
+const editableMasonryContentKinds = new Set<ContentKind>(['blog', 'project', 'episode', 'resume', 'moment']);
+const versionScopeFilters = new Set<EntityFilter>(['resume', 'blog', 'project', 'moment']);
+const preferredMarkdownLanguages = ['en', 'zh'];
 
 const isVersionScope = (filter: EntityFilter): filter is VersionScope => (
   versionScopeFilters.has(filter)
@@ -109,13 +115,13 @@ const entityMeta: Record<EntityFilter, { label: string; eyebrow: string; empty: 
   all: { label: 'Library', eyebrow: 'All content', empty: 'No matching Markdown content.', Icon: Folder },
   blog: { label: 'Blog', eyebrow: 'Articles & posts', empty: 'No blog posts yet. Write the first one.', Icon: BookOpen },
   project: { label: 'Projects', eyebrow: 'Work in progress', empty: 'No projects yet. Create the first one.', Icon: Briefcase },
-  idea: { label: 'Ideas', eyebrow: 'Half-formed thoughts', empty: 'No ideas yet. Record the first one.', Icon: Lightbulb },
+  idea: { label: 'Legacy', eyebrow: 'Archived source', empty: 'No legacy sources found.', Icon: Archive },
   resume: { label: 'Resume', eyebrow: 'Structured record', empty: 'No resume parts found.', Icon: UserRound },
   episode: { label: 'Episodes', eyebrow: 'Series & episodes', empty: 'No episodes yet.', Icon: Radio },
-  moment: { label: 'Moments', eyebrow: 'Timeline', empty: 'No moments yet.', Icon: Clock3 },
+  moment: { label: 'Moments', eyebrow: 'Timeline', empty: 'No moments yet.', Icon: Aperture },
 };
 
-const navigationEntityFilters: EntityFilter[] = ['resume', 'moment', 'blog', 'project', 'idea'];
+const navigationEntityFilters: EntityFilter[] = ['resume', 'moment', 'blog', 'project'];
 
 const isTechnicalTrafficSubject = (subject: string) => (
   /\.(?:js|css)\.map(?:$|[?#])/i.test(subject)
@@ -180,7 +186,58 @@ const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof S
   { value: 'event', label: '事件', Icon: CalendarDays },
 ];
 
-const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'episode', 'moment']);
+const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'episode', 'moment']);
+type ContentRailPanel = 'parts' | 'settings' | 'reactions';
+type ContentRailMode = 'files' | 'interaction';
+type DashboardRankingMetric = 'views' | 'likes' | 'comments' | 'crawlers' | 'ai_crawlers' | 'search_bots' | 'ai_chat';
+type DashboardRankingItem = {
+  kind: ContentKind;
+  title: string;
+  slug: string;
+  count: number;
+  detail: string;
+  updatedAt: string;
+};
+const contentKinds = new Set<ContentKind>(['blog', 'project', 'idea', 'resume', 'episode', 'moment']);
+const dashboardRankingLabels: Record<DashboardRankingMetric, string> = {
+  views: 'Views ranking',
+  likes: 'Likes ranking',
+  comments: 'Comments ranking',
+  crawlers: 'Crawler ranking',
+  ai_crawlers: 'AI crawler ranking',
+  search_bots: 'Search bot ranking',
+  ai_chat: 'AI chat ranking',
+};
+
+const isContentKind = (value: string): value is ContentKind => contentKinds.has(value as ContentKind);
+
+const dashboardRankingNoun = (metric: DashboardRankingMetric, count: number) => {
+  switch (metric) {
+    case 'likes': return count === 1 ? 'like' : 'likes';
+    case 'comments': return count === 1 ? 'comment' : 'comments';
+    case 'views': return count === 1 ? 'view' : 'views';
+    case 'search_bots': return count === 1 ? 'search bot hit' : 'search bot hits';
+    case 'ai_crawlers': return count === 1 ? 'AI crawler hit' : 'AI crawler hits';
+    case 'ai_chat': return count === 1 ? 'AI chat referral' : 'AI chat referrals';
+    default: return count === 1 ? 'crawler hit' : 'crawler hits';
+  }
+};
+
+const metadataSummaryLabel = (kind: ContentKind) => {
+  switch (kind) {
+    case 'blog': return 'Excerpt';
+    case 'project': return 'Description';
+    default: return '';
+  }
+};
+
+const metadataCoverLabel = (kind: ContentKind) => {
+  switch (kind) {
+    case 'blog': return 'Featured image';
+    case 'project': return 'Thumbnail';
+    default: return '';
+  }
+};
 
 const destroyVditor = (editor: Vditor | null) => {
   if (!editor) return;
@@ -233,6 +290,7 @@ export default function App() {
   const [refreshingWorkspace, setRefreshingWorkspace] = React.useState(false);
   const [selectedCommitDay, setSelectedCommitDay] = React.useState<{ date: string; scopes: VersionScope[] } | null>(null);
   const [selectedTrafficDate, setSelectedTrafficDate] = React.useState<string | null>(null);
+  const [dashboardRankingMetric, setDashboardRankingMetric] = React.useState<DashboardRankingMetric | null>(null);
   const [expandedTrafficItem, setExpandedTrafficItem] = React.useState<string | null>(null);
   const [freshnessTick, setFreshnessTick] = React.useState(0);
   const [deployingContent, setDeployingContent] = React.useState(false);
@@ -249,14 +307,26 @@ export default function App() {
   const [saving, setSaving] = React.useState(false);
   const [saveFailed, setSaveFailed] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [generatingTranslation, setGeneratingTranslation] = React.useState('');
   const [confirmingRefresh, setConfirmingRefresh] = React.useState(false);
   const [capturePhase, setCapturePhase] = React.useState<CapturePhase>('closed');
   const [captureOrigin, setCaptureOrigin] = React.useState({ x: 0, y: 0 });
-  const [captureTarget, setCaptureTarget] = React.useState<CaptureTarget>('idea');
+  const [captureTarget, setCaptureTarget] = React.useState<CaptureTarget>('moment');
   const [captureNote, setCaptureNote] = React.useState('');
   const [captureCategory, setCaptureCategory] = React.useState<IdeaCategory>('inspiration');
   const [captureError, setCaptureError] = React.useState<string | null>(null);
+  const [chromeLanguage, setChromeLanguage] = React.useState('en');
+  const [resumeLanguage, setResumeLanguage] = React.useState('en');
+  const [resumeEditControlsVisible, setResumeEditControlsVisible] = React.useState(true);
   const [contentEditorOpen, setContentEditorOpen] = React.useState(false);
+  const [contentRailPanel, setContentRailPanel] = React.useState<ContentRailPanel>('parts');
+  const [contentRailMode, setContentRailMode] = React.useState<ContentRailMode>('files');
+  const [metadataDraft, setMetadataDraft] = React.useState({ title: '', description: '', cover_url: '' });
+  const [metadataSavingId, setMetadataSavingId] = React.useState('');
+  const [metadataError, setMetadataError] = React.useState<string | null>(null);
+  const [reactionDraft, setReactionDraft] = React.useState({ likes: '0', comments: '0' });
+  const [reactionSavingId, setReactionSavingId] = React.useState('');
+  const [reactionError, setReactionError] = React.useState<string | null>(null);
   // Typora-style: the toolbar is a setting, hidden by default — formatting
   // happens by typing Markdown syntax and native shortcuts (⌘B, ⌘I…).
   const [toolbarVisible, setToolbarVisible] = React.useState(
@@ -349,6 +419,7 @@ export default function App() {
           kind: document.entity_type,
           title: document.title,
           slug: document.slug,
+          description: document.description || null,
           status: document.status,
           visibility: document.visibility,
           date: document.date || null,
@@ -395,6 +466,7 @@ export default function App() {
           kind: 'episode',
           title: document.title,
           slug: document.slug,
+          description: document.description || null,
           status: document.status,
           visibility: document.visibility,
           date: document.date || null,
@@ -418,7 +490,16 @@ export default function App() {
     }));
   }, [filtered]);
 
-  const seriesCards = React.useMemo(() => episodeSeries.map((series): ContentGroup | null => {
+  const displayContentGroups = React.useMemo(
+    () => contentGroups.map((group) => localizeContentGroup(group, chromeLanguage)),
+    [contentGroups, chromeLanguage],
+  );
+  const displayEpisodeSeries = React.useMemo(
+    () => episodeSeries.map((series) => localizeEpisodeSeries(series, chromeLanguage)),
+    [episodeSeries, chromeLanguage],
+  );
+
+  const seriesCards = React.useMemo(() => displayEpisodeSeries.map((series): ContentGroup | null => {
     const firstEpisode = series.episodes[0];
     if (!firstEpisode) return null;
     const latestEpisode = [...series.episodes].sort(
@@ -433,6 +514,8 @@ export default function App() {
       status: lifecycle.statusLabel,
       visibility: lifecycle.visibilityLabel,
       coverUrl: series.coverUrl || undefined,
+      description: series.description || null,
+      language: chromeLanguage,
       documents: firstEpisode.documents,
       engagement: series.episodes.reduce((total, episode) => ({
         likes: total.likes + episode.engagement.likes,
@@ -442,17 +525,77 @@ export default function App() {
       episodeCount: series.episodes.length,
       latestEpisode: latestEpisode
         ? { title: latestEpisode.title, episodeNumber: latestEpisode.episodeNumber }
-        : undefined,
+      : undefined,
     };
-  }).filter((group): group is ContentGroup => group !== null), [episodeSeries]);
+  }).filter((group): group is ContentGroup => group !== null), [displayEpisodeSeries, chromeLanguage]);
+  const dashboardContentMetadata = React.useMemo(() => {
+    const metadata = new Map<string, {
+      kind: ContentKind;
+      title: string;
+      slug: string;
+      status: string;
+      visibility: string;
+      updatedAt: string;
+    }>();
+    documents.forEach((document) => {
+      if (!isContentKind(document.entity_type)) return;
+      const key = `${document.entity_type}:${document.title}`;
+      if (!metadata.has(key) || document.updated_at > (metadata.get(key)?.updatedAt || '')) {
+        metadata.set(key, {
+          kind: document.entity_type,
+          title: document.title,
+          slug: document.slug,
+          status: document.status,
+          visibility: document.visibility,
+          updatedAt: document.updated_at,
+        });
+      }
+    });
+    return metadata;
+  }, [documents]);
+  const dashboardEngagementRanking = React.useMemo(() => {
+    const groups = new Map<string, {
+      kind: ContentKind;
+      title: string;
+      slug: string;
+      status: string;
+      visibility: string;
+      updatedAt: string;
+      likes: number;
+      comments: number;
+    }>();
+    documents.forEach((document) => {
+      if (!editableMasonryContentKinds.has(document.entity_type)) return;
+      const key = `${document.entity_type}:${document.entity_id}`;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          kind: document.entity_type,
+          title: document.title,
+          slug: document.slug,
+          status: document.status,
+          visibility: document.visibility,
+          updatedAt: document.updated_at,
+          likes: document.engagement.likes,
+          comments: document.engagement.comments,
+        });
+      }
+    });
+    return Array.from(groups.values());
+  }, [documents]);
 
   const selectedSeries = React.useMemo(() => (
-    episodeSeries.find((series) => `series:${series.id}` === selectedSeriesId) || null
-  ), [episodeSeries, selectedSeriesId]);
+    displayEpisodeSeries.find((series) => `series:${series.id}` === selectedSeriesId) || null
+  ), [displayEpisodeSeries, selectedSeriesId]);
+  const editingSeries = React.useMemo(() => (
+    episodeSeries.find((series) => series.slug === seriesEditingSlug) || null
+  ), [episodeSeries, seriesEditingSlug]);
 
   const selected = documents.find((document) => document.id === selectedId)
     || filtered[0]
     || null;
+  const proseShelfActive = screen === 'content'
+    && masonryContentKinds.has(entityFilter as ContentKind)
+    && !contentEditorOpen;
   const selectedLanguage = selected
     ? languageByDocument[selected.id]
       || selected.canonical_language
@@ -462,6 +605,83 @@ export default function App() {
   const selectedTranslation = selected?.translations.find(
     (translation) => translation.language === selectedLanguage,
   ) || selected?.translations[0] || null;
+  const selectedEditorLanguages = selected
+    ? Array.from(new Set([
+      ...preferredMarkdownLanguages,
+      ...selected.translations.map((translation) => translation.language),
+    ]))
+    : preferredMarkdownLanguages;
+  const resumeShelfActive = screen === 'content' && entityFilter === 'resume' && !contentEditorOpen;
+  const momentShelfActive = screen === 'content' && entityFilter === 'moment' && !contentEditorOpen;
+  const selectedLanguageTabs: LanguageCloseTab[] = resumeShelfActive || momentShelfActive || proseShelfActive
+    ? [
+      { language: 'en' },
+      { language: 'zh' },
+    ]
+    : selected
+    ? selectedEditorLanguages.map((language) => {
+      const translation = selected.translations.find((item) => item.language === language);
+      return {
+        language,
+        dirty: translation ? dirtyIds.has(translation.id) : false,
+        disabled: Boolean(generatingTranslation && generatingTranslation !== `${selected.id}:${language}`),
+      };
+    })
+    : [
+      { language: 'en' },
+      { language: 'zh' },
+    ];
+  const topControlLanguage = resumeShelfActive
+    ? resumeLanguage
+    : momentShelfActive || proseShelfActive
+      ? chromeLanguage
+      : selectedTranslation?.language || chromeLanguage;
+  const selectTopControlLanguage = (language: string) => {
+    if (resumeShelfActive) {
+      setResumeLanguage(language);
+      return;
+    }
+    if (momentShelfActive) {
+      setChromeLanguage(language);
+      setLanguageByDocument((current) => {
+        const next = { ...current };
+        filtered.forEach((document) => {
+          if (document.entity_type === 'moment' && document.translations.some((translation) => translation.language === language)) {
+            next[document.id] = language;
+          }
+        });
+        return next;
+      });
+      return;
+    }
+    if (proseShelfActive) {
+      setChromeLanguage(language);
+      setLanguageByDocument((current) => {
+        const next = { ...current };
+        filtered.forEach((document) => {
+          const belongsToShelf = document.entity_type === entityFilter
+            || (entityFilter === 'blog' && document.entity_type === 'episode');
+          if (belongsToShelf && document.translations.some((translation) => translation.language === language)) {
+            next[document.id] = language;
+          }
+        });
+        return next;
+      });
+      return;
+    }
+    if (selected?.translations.some((translation) => translation.language === language)) {
+      setLanguageByDocument((current) => ({
+        ...current,
+        [selected.id]: language,
+      }));
+      return;
+    }
+    if (selected && preferredMarkdownLanguages.includes(language)) {
+      void generateMissingTranslation(language);
+      return;
+    }
+    setChromeLanguage(language);
+  };
   const dirty = selectedTranslation ? dirtyIds.has(selectedTranslation.id) : false;
   const versionScope = screen === 'content'
     && !contentEditorOpen
@@ -482,6 +702,33 @@ export default function App() {
   const saveDockSubline = !saving && !saveFailed && otherDirtyCount > 0
     ? `${otherDirtyCount} other unsaved translation${otherDirtyCount > 1 ? 's' : ''}`
     : selectedTranslation?.source_path || 'No source selected';
+  const renderLanguageCloseControls = ({
+    fixed = false,
+    disabled = false,
+    closeLabel,
+    closeTitle,
+    closeSize,
+    onClose,
+  }: {
+    fixed?: boolean;
+    disabled?: boolean;
+    closeLabel: string;
+    closeTitle?: string;
+    closeSize?: number;
+    onClose: () => void;
+  }) => (
+    <LanguageCloseControls
+      fixed={fixed}
+      languages={selectedLanguageTabs}
+      activeLanguage={topControlLanguage}
+      disabled={disabled}
+      closeLabel={closeLabel}
+      closeTitle={closeTitle}
+      closeSize={closeSize}
+      onLanguageSelect={selectTopControlLanguage}
+      onClose={onClose}
+    />
+  );
   const currentShelf = entityMeta[entityFilter];
   const visibleItemCount = React.useMemo(
     () => new Set(filtered.map((document) => `${document.entity_type}:${document.entity_id}`)).size,
@@ -544,11 +791,116 @@ export default function App() {
   const selectedTrafficDay = selectedTrafficDate
     ? trafficActivity.find((day) => day.date === selectedTrafficDate) || null
     : null;
+  const dashboardRankingItems = React.useMemo((): DashboardRankingItem[] => {
+    if (!dashboardRankingMetric) return [];
+    const fromMetadata = (contentType: string, title: string) => {
+      const metadata = dashboardContentMetadata.get(`${contentType}:${title}`);
+      const kind = isContentKind(contentType) ? contentType : 'blog';
+      return metadata || {
+        kind,
+        title,
+        slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        status: '',
+        visibility: '',
+        updatedAt: '',
+      };
+    };
+    const toRankingItem = (
+      contentType: string,
+      title: string,
+      count: number,
+      detail?: string,
+    ): DashboardRankingItem => {
+      const metadata = fromMetadata(contentType, title);
+      return {
+        kind: metadata.kind,
+        title: metadata.title,
+        slug: metadata.slug,
+        count,
+        detail: detail || (metadata.status && metadata.visibility
+          ? contentStateSummary(metadata.kind, metadata.status, metadata.visibility)
+          : contentType),
+        updatedAt: metadata.updatedAt,
+      };
+    };
+    if (dashboardRankingMetric === 'likes' || dashboardRankingMetric === 'comments') {
+      return dashboardEngagementRanking
+        .map((item) => toRankingItem(
+          item.kind,
+          item.title,
+          item[dashboardRankingMetric],
+          contentStateSummary(item.kind, item.status, item.visibility),
+        ))
+        .filter((item) => item.count > 0)
+        .sort((left, right) => (
+          right.count - left.count
+          || right.updatedAt.localeCompare(left.updatedAt)
+          || left.title.localeCompare(right.title)
+        ));
+    }
+    if (dashboardRankingMetric === 'views') {
+      return (dashboard?.top_content || [])
+        .map((item) => toRankingItem(item.content_type, item.title, item.views))
+        .filter((item) => item.count > 0)
+        .sort((left, right) => right.count - left.count || left.title.localeCompare(right.title));
+    }
+
+    const counts = new Map<string, { contentType: string; title: string; count: number }>();
+    const addTraffic = (
+      days: DashboardData['daily_visits'],
+      counter: (item: DashboardData['daily_visits'][number]['content'][number]) => number,
+    ) => {
+      days.forEach((day) => {
+        day.content.forEach((item) => {
+          const count = counter(item);
+          if (count <= 0) return;
+          const key = `${item.content_type}:${item.title}`;
+          const current = counts.get(key) || { contentType: item.content_type, title: item.title, count: 0 };
+          current.count += count;
+          counts.set(key, current);
+        });
+      });
+    };
+    if (dashboardRankingMetric === 'search_bots' || dashboardRankingMetric === 'crawlers') {
+      addTraffic(dashboard?.daily_seo_visits || [], (item) => (
+        item.evidence
+          .filter((evidence) => evidence.event === 'Search indexing')
+          .reduce((sum, evidence) => sum + evidence.visits, 0)
+      ));
+    }
+    if (dashboardRankingMetric === 'ai_crawlers' || dashboardRankingMetric === 'crawlers') {
+      addTraffic(dashboard?.daily_geo_visits || [], (item) => (
+        item.evidence
+          .filter((evidence) => evidence.event !== 'Referral click')
+          .reduce((sum, evidence) => sum + evidence.visits, 0)
+      ));
+    }
+    if (dashboardRankingMetric === 'ai_chat') {
+      addTraffic(dashboard?.daily_geo_visits || [], (item) => (
+        item.evidence
+          .filter((evidence) => evidence.event === 'Referral click')
+          .reduce((sum, evidence) => sum + evidence.visits, 0)
+      ));
+    }
+    return Array.from(counts.values())
+      .map((item) => toRankingItem(item.contentType, item.title, item.count))
+      .filter((item) => item.count > 0)
+      .sort((left, right) => right.count - left.count || left.title.localeCompare(right.title));
+  }, [
+    dashboard?.daily_geo_visits,
+    dashboard?.daily_seo_visits,
+    dashboard?.top_content,
+    dashboardContentMetadata,
+    dashboardEngagementRanking,
+    dashboardRankingMetric,
+  ]);
   const activityFilterLabel = selectedTrafficDay
     ? `${selectedTrafficDay.date} · ${trafficMode === 'human' ? 'Human' : trafficMode.toUpperCase()} traffic · ${selectedTrafficDay.visits} visits`
     : selectedCommitDay
       ? `${selectedCommitDay.date} · ${selectedCommitDay.scopes.join(' · ') || 'Content'}`
-      : 'All content · Latest activity';
+      : dashboardRankingMetric
+        ? `All content · ${dashboardRankingLabels[dashboardRankingMetric]}`
+        : 'All content · Latest activity';
 
   React.useEffect(() => {
     setExpandedTrafficItem(null);
@@ -825,10 +1177,14 @@ export default function App() {
     if (!editableMasonryContentKinds.has(group.kind)) return;
     const primary = selectPrimaryDocument(group);
     if (!primary) return;
+    setContentRailPanel('parts');
+    setContentRailMode('files');
     setSelectedId(primary.id);
     setLanguageByDocument((current) => ({
       ...current,
-      [primary.id]: current[primary.id]
+      [primary.id]: group.language && primary.translations.some((translation) => translation.language === group.language)
+        ? group.language
+        : current[primary.id]
         || primary.canonical_language
         || primary.translations[0]?.language
         || '',
@@ -839,6 +1195,33 @@ export default function App() {
     // underneath, so closing the editor returns to the series management
     // view — Blog → Series → Episode unwinds in order. Same id fallback
     // chain as the series tree builder.
+    if (group.kind === 'episode') {
+      const seriesId = primary.series_id || primary.series_slug || 'unfiled';
+      setSelectedSeriesId(`series:${seriesId}`);
+    } else {
+      setSelectedSeriesId('');
+    }
+    setContentEditorOpen(true);
+  };
+
+  const openContentGroupInteraction = (group: ContentGroup) => {
+    if (!editableMasonryContentKinds.has(group.kind)) return;
+    const primary = selectPrimaryDocument(group);
+    if (!primary) return;
+    setContentRailPanel('reactions');
+    setContentRailMode('interaction');
+    setSelectedId(primary.id);
+    setLanguageByDocument((current) => ({
+      ...current,
+      [primary.id]: group.language && primary.translations.some((translation) => translation.language === group.language)
+        ? group.language
+        : current[primary.id]
+        || primary.canonical_language
+        || primary.translations[0]?.language
+        || '',
+    }));
+    setEntityFilter(group.kind === 'episode' ? 'blog' : group.kind);
+    setScreen('content');
     if (group.kind === 'episode') {
       const seriesId = primary.series_id || primary.series_slug || 'unfiled';
       setSelectedSeriesId(`series:${seriesId}`);
@@ -976,10 +1359,8 @@ export default function App() {
     setCaptureError(null);
     try {
       const created = captureTarget === 'moment'
-        ? await invoke<EditorDocument>('capture_update', { event: note })
-        : captureTarget === 'idea'
-          ? await invoke<EditorDocument>('capture_idea', { note, category: captureCategory })
-          : await invoke<EditorDocument>('capture_blog', { draft: note, category: captureCategory });
+        ? await invoke<EditorDocument>('capture_moment', { event: note })
+        : await invoke<EditorDocument>('capture_blog', { draft: note, category: captureCategory });
       setDocuments((current) => [
         ...current.filter((document) => document.id !== created.id),
         created,
@@ -993,8 +1374,8 @@ export default function App() {
       setScreen('content');
       setSelectedSeriesId('');
       // A successful capture is the beginning of authoring, not the end of
-      // it. Open every newly created prose item immediately so Blog and Idea
-      // captures can be completed and published without hunting for the card.
+      // it. Open every newly created prose item immediately so captures can be
+      // completed and published without hunting for the card.
       setContentEditorOpen(true);
       setCaptureNote('');
       await loadEntityCounts();
@@ -1104,6 +1485,52 @@ export default function App() {
       setSaving(false);
     }
   };
+
+  async function generateMissingTranslation(targetLanguage: string) {
+    if (!selected) return;
+    const existing = selected.translations.find((translation) => translation.language === targetLanguage);
+    if (existing) {
+      setLanguageByDocument((current) => ({
+        ...current,
+        [selected.id]: targetLanguage,
+      }));
+      return;
+    }
+    const source = selectedTranslation
+      || selected.translations.find((translation) => translation.language === selected.canonical_language)
+      || selected.translations[0];
+    if (!source) {
+      setError('This Part has no source language to translate from.');
+      return;
+    }
+    if (dirtyIds.has(source.id)) {
+      setError(`Save ${source.language} before generating ${targetLanguage}.`);
+      return;
+    }
+    const generationKey = `${selected.id}:${targetLanguage}`;
+    if (generatingTranslation) return;
+    setGeneratingTranslation(generationKey);
+    setError(null);
+    try {
+      const generated = await invoke<EditorDocument>('generate_missing_translation', {
+        id: selected.id,
+        targetLanguage,
+        sourceLanguage: source.language,
+      });
+      setDocuments((current) => current.map((document) => (
+        document.id === generated.id ? generated : document
+      )));
+      setLanguageByDocument((current) => ({
+        ...current,
+        [generated.id]: targetLanguage,
+      }));
+      setSaveFailed(false);
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setGeneratingTranslation('');
+    }
+  }
 
   // Fresh-closure handle for the ⌘S keydown listener: the listener attaches
   // once per overlay open, but `saveSelected` closes over the live document
@@ -1244,6 +1671,9 @@ export default function App() {
       if (!sameEntity) return document;
       return {
         ...document,
+        title: saved.title,
+        description: saved.description,
+        cover_url: saved.cover_url,
         status: saved.status,
         visibility: saved.visibility,
         pinned: saved.pinned,
@@ -1482,7 +1912,11 @@ export default function App() {
       type="button"
       key={document.id}
       className={`document-row ${document.id === selected?.id ? 'active' : ''}`}
-      onClick={() => setSelectedId(document.id)}
+      onClick={() => {
+        setContentRailPanel('parts');
+        setContentRailMode('files');
+        setSelectedId(document.id);
+      }}
     >
       <FileText size={15} />
       <span className="document-copy">
@@ -1513,10 +1947,10 @@ export default function App() {
   const masonryGroups = isMasonryShelf
     ? entityFilter === 'blog'
       ? arrangeBlogGroupsForGrid([
-          ...contentGroups.filter((group) => group.kind === 'blog'),
+          ...displayContentGroups.filter((group) => group.kind === 'blog'),
           ...seriesCards,
         ])
-      : contentGroups.filter((group) => group.kind === entityFilter)
+      : displayContentGroups.filter((group) => group.kind === entityFilter)
     : [];
   const updateGroups = isUpdateShelf
     ? contentGroups.filter((group) => group.kind === 'moment')
@@ -1538,6 +1972,148 @@ export default function App() {
       && shelfVersionStatus?.scope === versionScope
       && shelfVersionStatus.dirty_count > 0,
   );
+  const selectedMetadataTarget = selectedContentGroup ? stateTargetForGroup(selectedContentGroup) : null;
+  const selectedMetadataTranslation = selectedMetadataTarget?.translation || null;
+  const selectedMetadataSummaryLabel = selectedContentGroup ? metadataSummaryLabel(selectedContentGroup.kind) : '';
+  const selectedMetadataCoverLabel = selectedContentGroup ? metadataCoverLabel(selectedContentGroup.kind) : '';
+  const metadataDirty = Boolean(selectedContentGroup && (
+    metadataDraft.title.trim() !== selectedContentGroup.title
+    || metadataDraft.description.trim() !== (selectedContentGroup.description || '')
+    || metadataDraft.cover_url.trim() !== (selectedContentGroup.coverUrl || '')
+  ));
+  const reactionDirty = Boolean(selectedContentGroup && (
+    Number.parseInt(reactionDraft.likes, 10) !== selectedContentGroup.engagement.likes
+    || Number.parseInt(reactionDraft.comments, 10) !== selectedContentGroup.engagement.comments
+  ));
+
+  React.useEffect(() => {
+    if (!selectedContentGroup || metadataSavingId) return;
+    setMetadataDraft({
+      title: selectedContentGroup.title,
+      description: selectedContentGroup.description || '',
+      cover_url: selectedContentGroup.coverUrl || '',
+    });
+    setMetadataError(null);
+  }, [
+    selectedContentGroup?.id,
+    selectedContentGroup?.title,
+    selectedContentGroup?.description,
+    selectedContentGroup?.coverUrl,
+    metadataSavingId,
+  ]);
+
+  React.useEffect(() => {
+    if (!selectedContentGroup || reactionSavingId) return;
+    setReactionDraft({
+      likes: String(selectedContentGroup.engagement.likes),
+      comments: String(selectedContentGroup.engagement.comments),
+    });
+    setReactionError(null);
+  }, [
+    selectedContentGroup?.id,
+    selectedContentGroup?.engagement.likes,
+    selectedContentGroup?.engagement.comments,
+    reactionSavingId,
+  ]);
+
+  const resetMetadataDraftForGroup = (group: ContentGroup) => {
+    setMetadataDraft({
+      title: group.title,
+      description: group.description || '',
+      cover_url: group.coverUrl || '',
+    });
+    setMetadataError(null);
+  };
+
+  const closeContentEditorLayer = () => {
+    if (contentRailPanel === 'settings') {
+      if (selectedContentGroup) {
+        if (metadataSavingId === selectedContentGroup.id) return;
+        resetMetadataDraftForGroup(selectedContentGroup);
+      }
+      setContentRailPanel(contentRailMode === 'interaction' ? 'reactions' : 'parts');
+      return;
+    }
+    setContentEditorOpen(false);
+  };
+
+  const saveContentMetadata = async () => {
+    if (!selectedContentGroup || !selectedMetadataTranslation || metadataSavingId) return;
+    const title = metadataDraft.title.trim();
+    if (!title) {
+      setMetadataError('Title is required.');
+      return;
+    }
+    if (dirtyIds.has(selectedMetadataTranslation.id)) {
+      setMetadataError('Save Markdown before changing metadata.');
+      return;
+    }
+    setMetadataSavingId(selectedContentGroup.id);
+    setMetadataError(null);
+    try {
+      const saved = await invoke<EditorDocument>('save_content_metadata', {
+        id: selectedMetadataTranslation.id,
+        metadata: {
+          title,
+          description: selectedMetadataSummaryLabel ? metadataDraft.description.trim() : null,
+          cover_url: selectedMetadataCoverLabel ? metadataDraft.cover_url.trim() : null,
+        },
+        expectedRevision: selectedMetadataTranslation.revision,
+      });
+      mergeSavedDocument(saved);
+      setMetadataDraft({
+        title: saved.title,
+        description: saved.description || '',
+        cover_url: saved.cover_url || '',
+      });
+    } catch (reason) {
+      setMetadataError(String(reason));
+    } finally {
+      setMetadataSavingId('');
+    }
+  };
+
+  const saveEngagementStats = async () => {
+    if (!selectedContentGroup || reactionSavingId) return;
+    const likes = Number.parseInt(reactionDraft.likes, 10);
+    const comments = Number.parseInt(reactionDraft.comments, 10);
+    if (!Number.isFinite(likes) || !Number.isFinite(comments) || likes < 0 || comments < 0) {
+      setReactionError('Reaction counters must be zero or greater.');
+      return;
+    }
+    const primary = selectPrimaryDocument(selectedContentGroup);
+    if (!primary) {
+      setReactionError('No content item is selected.');
+      return;
+    }
+    setReactionSavingId(selectedContentGroup.id);
+    setReactionError(null);
+    try {
+      const saved = await invoke<{ likes: number; comments: number }>('save_engagement_stats', {
+        entityType: primary.entity_type,
+        entityId: primary.entity_id,
+        stats: { likes, comments },
+      });
+      setDocuments((current) => current.map((document) => (
+        document.entity_type === primary.entity_type && document.entity_id === primary.entity_id
+          ? { ...document, engagement: saved }
+          : document
+      )));
+    } catch (reason) {
+      setReactionError(String(reason));
+    } finally {
+      setReactionSavingId('');
+    }
+  };
+
+  const openContentRailMode = (mode: ContentRailMode) => {
+    setContentRailMode(mode);
+    setContentRailPanel(mode === 'interaction' ? 'reactions' : 'parts');
+  };
+
+  const toggleContentRailMode = () => {
+    openContentRailMode(contentRailMode === 'files' ? 'interaction' : 'files');
+  };
 
   React.useEffect(() => {
     if (!versionScope) {
@@ -1653,30 +2229,20 @@ export default function App() {
                 )}
               </div>
             </div>
-            {screen === 'content' && !contentEditorOpen && (
-              <button
-                type="button"
-                className="content-close content-close-top"
-                onClick={returnToDashboard}
-                title="Back to Overview"
-                aria-label="Back to Overview"
-              >
-                <X size={18} />
-              </button>
-            )}
+            {screen === 'content' && !contentEditorOpen && renderLanguageCloseControls({
+              fixed: true,
+              closeLabel: 'Back to Overview',
+              closeTitle: 'Back to Overview',
+              onClose: returnToDashboard,
+            })}
           </header>
         )}
-        {updatesShellActive && (
-          <button
-            type="button"
-            className="content-close content-close-top"
-            onClick={returnToDashboard}
-            title="Back to Overview"
-            aria-label="Back to Overview"
-          >
-            <X size={18} />
-          </button>
-        )}
+        {updatesShellActive && renderLanguageCloseControls({
+          fixed: true,
+          closeLabel: 'Back to Overview',
+          closeTitle: 'Back to Overview',
+          onClose: returnToDashboard,
+        })}
 
         {error && (
           <div className="error" role="alert">
@@ -1719,13 +2285,83 @@ export default function App() {
                           )}
                         </div>
                         <div className="activity-breakdown">
-                          <div><span>Views</span><strong>{displayedViews}</strong></div>
-                          <div><span>Likes</span><strong>{displayedLikes}</strong></div>
-                          <div><span>Comments</span><strong>{displayedComments}</strong></div>
-                          <div><span>Crawlers</span><strong>{displayedCrawlerInteractions}</strong></div>
-                          <div><span>AI crawlers</span><strong>{displayedAiCrawlerInteractions}</strong></div>
-                          <div><span>Search bots</span><strong>{displayedSearchCrawlerInteractions}</strong></div>
-                          <div><span>AI chat</span><strong>{displayedAiChatReferrals}</strong></div>
+                          <button
+                            type="button"
+                            data-active={dashboardRankingMetric === 'views' ? 'true' : undefined}
+                            onClick={() => {
+                              setSelectedCommitDay(null);
+                              setSelectedTrafficDate(null);
+                              setDashboardRankingMetric((current) => current === 'views' ? null : 'views');
+                            }}
+                          >
+                            <span>Views</span><strong>{displayedViews}</strong>
+                          </button>
+                          <button
+                            type="button"
+                            data-active={dashboardRankingMetric === 'likes' ? 'true' : undefined}
+                            onClick={() => {
+                              setSelectedCommitDay(null);
+                              setSelectedTrafficDate(null);
+                              setDashboardRankingMetric((current) => current === 'likes' ? null : 'likes');
+                            }}
+                          >
+                            <span>Likes</span><strong>{displayedLikes}</strong>
+                          </button>
+                          <button
+                            type="button"
+                            data-active={dashboardRankingMetric === 'comments' ? 'true' : undefined}
+                            onClick={() => {
+                              setSelectedCommitDay(null);
+                              setSelectedTrafficDate(null);
+                              setDashboardRankingMetric((current) => current === 'comments' ? null : 'comments');
+                            }}
+                          >
+                            <span>Comments</span><strong>{displayedComments}</strong>
+                          </button>
+                          <button
+                            type="button"
+                            data-active={dashboardRankingMetric === 'crawlers' ? 'true' : undefined}
+                            onClick={() => {
+                              setSelectedCommitDay(null);
+                              setSelectedTrafficDate(null);
+                              setDashboardRankingMetric((current) => current === 'crawlers' ? null : 'crawlers');
+                            }}
+                          >
+                            <span>Crawlers</span><strong>{displayedCrawlerInteractions}</strong>
+                          </button>
+                          <button
+                            type="button"
+                            data-active={dashboardRankingMetric === 'ai_crawlers' ? 'true' : undefined}
+                            onClick={() => {
+                              setSelectedCommitDay(null);
+                              setSelectedTrafficDate(null);
+                              setDashboardRankingMetric((current) => current === 'ai_crawlers' ? null : 'ai_crawlers');
+                            }}
+                          >
+                            <span>AI crawlers</span><strong>{displayedAiCrawlerInteractions}</strong>
+                          </button>
+                          <button
+                            type="button"
+                            data-active={dashboardRankingMetric === 'search_bots' ? 'true' : undefined}
+                            onClick={() => {
+                              setSelectedCommitDay(null);
+                              setSelectedTrafficDate(null);
+                              setDashboardRankingMetric((current) => current === 'search_bots' ? null : 'search_bots');
+                            }}
+                          >
+                            <span>Search bots</span><strong>{displayedSearchCrawlerInteractions}</strong>
+                          </button>
+                          <button
+                            type="button"
+                            data-active={dashboardRankingMetric === 'ai_chat' ? 'true' : undefined}
+                            onClick={() => {
+                              setSelectedCommitDay(null);
+                              setSelectedTrafficDate(null);
+                              setDashboardRankingMetric((current) => current === 'ai_chat' ? null : 'ai_chat');
+                            }}
+                          >
+                            <span>AI chat</span><strong>{displayedAiChatReferrals}</strong>
+                          </button>
                         </div>
                       </>
                     ) : (
@@ -1826,17 +2462,18 @@ export default function App() {
               <section className="delivery-panel ds-acrylic" data-ds="">
                 <div className="activity-carousel-bar delivery-carousel-bar">
                   <div className="activity-tabs" role="tablist" aria-label="Delivery views">
-                    {(['Release activity', 'Human traffic', 'SEO traffic', 'GEO traffic'] as const).map((label, page) => (
-                      <button
+	                      {(['Release activity', 'Human traffic', 'SEO traffic', 'GEO traffic'] as const).map((label, page) => (
+	                      <button
                         type="button"
                         role="tab"
                         aria-selected={deliveryPage === page}
                         key={label}
-                        onClick={() => {
-                          setDeliveryPage(page as 0 | 1 | 2 | 3);
-                          setSelectedTrafficDate(null);
-                        }}
-                      >
+	                        onClick={() => {
+	                          setDeliveryPage(page as 0 | 1 | 2 | 3);
+	                          setSelectedTrafficDate(null);
+	                          setDashboardRankingMetric(null);
+	                        }}
+	                      >
                         {label}
                       </button>
                     ))}
@@ -1845,20 +2482,22 @@ export default function App() {
                     <span>{deliveryPage + 1} / 4</span>
                     <button
                       type="button"
-                      onClick={() => {
-                        setDeliveryPage(((deliveryPage + 3) % 4) as 0 | 1 | 2 | 3);
-                        setSelectedTrafficDate(null);
-                      }}
+	                      onClick={() => {
+	                        setDeliveryPage(((deliveryPage + 3) % 4) as 0 | 1 | 2 | 3);
+	                        setSelectedTrafficDate(null);
+	                        setDashboardRankingMetric(null);
+	                      }}
                       aria-label="Previous delivery page"
                     >
                       <ChevronLeft size={14} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        setDeliveryPage(((deliveryPage + 1) % 4) as 0 | 1 | 2 | 3);
-                        setSelectedTrafficDate(null);
-                      }}
+	                      onClick={() => {
+	                        setDeliveryPage(((deliveryPage + 1) % 4) as 0 | 1 | 2 | 3);
+	                        setSelectedTrafficDate(null);
+	                        setDashboardRankingMetric(null);
+	                      }}
                       aria-label="Next delivery page"
                     >
                       <ChevronRight size={14} />
@@ -1871,10 +2510,11 @@ export default function App() {
                       <CommitWall
                         activity={deploymentPlan.commit_activity}
                         selectedDate={selectedCommitDay?.date}
-                        onSelect={(date, scopes) => {
-                          setSelectedTrafficDate(null);
-                          setSelectedCommitDay((current) => current?.date === date ? null : { date, scopes });
-                        }}
+	                        onSelect={(date, scopes) => {
+	                          setSelectedTrafficDate(null);
+	                          setDashboardRankingMetric(null);
+	                          setSelectedCommitDay((current) => current?.date === date ? null : { date, scopes });
+	                        }}
                       />
                     ) : (
                       <div className="version-loading">
@@ -1887,10 +2527,11 @@ export default function App() {
                       activity={trafficActivity}
                       noun={trafficMode === 'human' ? 'human visit' : trafficMode === 'seo' ? 'search visit' : 'AI discovery'}
                       selectedDate={selectedTrafficDate}
-                      onSelect={(date) => {
-                        setSelectedCommitDay(null);
-                        setSelectedTrafficDate((current) => current === date ? null : date);
-                      }}
+	                      onSelect={(date) => {
+	                        setSelectedCommitDay(null);
+	                        setDashboardRankingMetric(null);
+	                        setSelectedTrafficDate((current) => current === date ? null : date);
+	                      }}
                     />
                   )}
                 </div>
@@ -1899,13 +2540,14 @@ export default function App() {
               <section className="recent-board ds-acrylic" data-ds="">
                 <div className="activity-filter-bar">
                   <span>{activityFilterLabel}</span>
-                  {(selectedCommitDay || selectedTrafficDay) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCommitDay(null);
-                        setSelectedTrafficDate(null);
-                      }}
+	                  {(selectedCommitDay || selectedTrafficDay || dashboardRankingMetric) && (
+	                    <button
+	                      type="button"
+	                      onClick={() => {
+	                        setSelectedCommitDay(null);
+	                        setSelectedTrafficDate(null);
+	                        setDashboardRankingMetric(null);
+	                      }}
                       aria-label="Clear activity filter"
                       title="Clear filter"
                     >
@@ -2004,6 +2646,29 @@ export default function App() {
                     })}
                     {selectedTrafficDay.content.length === 0 && <p>No content traffic for this date.</p>}
                   </div>
+                ) : dashboardRankingMetric ? (
+                  <div className="recent-list">
+                    {dashboardRankingItems.map((item, index) => (
+                      <button
+                        type="button"
+                        key={`${item.kind}-${item.slug}`}
+                        className="recent-row recent-row--ranking"
+                        onClick={() => openShelf(item.kind === 'episode' ? 'blog' : item.kind)}
+                      >
+                        <span className="rank-badge">#{index + 1}</span>
+                        <strong>{item.title}</strong>
+                        <small>{item.detail}</small>
+                        <small className="ranking-count">
+                          {item.count} {dashboardRankingNoun(dashboardRankingMetric, item.count)}
+                        </small>
+                      </button>
+                    ))}
+                    {dashboardRankingItems.length === 0 && (
+                      <p className="activity-empty">
+                        No content has {dashboardRankingLabels[dashboardRankingMetric].toLowerCase()} data yet.
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <div className="recent-list">
                     {(selectedCommitDay ? selectedCommitItems : dashboard?.recent_items || []).map((item) => (
@@ -2028,6 +2693,9 @@ export default function App() {
           <section className="editor-area resume-editor-area">
             <ResumePage
               overview={resumeOverview}
+              language={resumeLanguage}
+              onLanguageChange={setResumeLanguage}
+              editControlsVisible={resumeEditControlsVisible}
             />
           </section>
         ) : isUpdateShelf && !contentEditorOpen ? (
@@ -2040,6 +2708,7 @@ export default function App() {
                 empty={currentShelf.empty}
                 query={query}
                 settings={momentsSettings}
+                languageByDocument={languageByDocument}
                 eyebrow={currentShelf.eyebrow}
                 title={currentShelf.label}
                 meta={[
@@ -2160,36 +2829,43 @@ export default function App() {
                   <>
                     <header className="document-header">
                       <div className="document-identity">
-                        <span className={badgeClass(selected.entity_type)}>{selected.entity_type}</span>
                         <div>
                           <h2>{selected.title}</h2>
-                        <p>{selected.role} · {selectedTranslation?.source_path}</p>
+                          <p>{selected.role} · {selectedTranslation?.source_path}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="document-state">
-                        <span>{contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).statusLabel}</span>
-                        <span data-visibility={contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibility === 'private' ? 'private' : undefined}>
-                          {contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibilityLabel}
-                        </span>
-                    </div>
                     </header>
 
                     <div className="editor-frame" data-entity={selected.entity_type} data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
                       <div className="language-tabs" role="tablist" aria-label="Language representations">
-                        {selected.translations.map((translation) => (
-                          <button
-                            type="button"
-                            key={translation.id}
-                            className={translation.id === selectedTranslation?.id ? 'active' : ''}
-                            onClick={() => setLanguageByDocument((current) => ({
-                              ...current,
-                              [selected.id]: translation.language,
-                            }))}
-                          >
-                            {translation.language}
-                            {dirtyIds.has(translation.id) && <span />}
-                          </button>
-                        ))}
+                        {selectedEditorLanguages.map((language) => {
+                          const translation = selected.translations.find((item) => item.language === language);
+                          const generationKey = `${selected.id}:${language}`;
+                          const generating = generatingTranslation === generationKey;
+                          return (
+                            <button
+                              type="button"
+                              key={language}
+                              className={translation?.id === selectedTranslation?.id ? 'active' : ''}
+                              disabled={saving || Boolean(generatingTranslation && !generating)}
+                              title={translation ? `Open ${language}` : `Generate ${language} with OpenAI`}
+                              onClick={() => {
+                                if (translation) {
+                                  setLanguageByDocument((current) => ({
+                                    ...current,
+                                    [selected.id]: translation.language,
+                                  }));
+                                  return;
+                                }
+                                void generateMissingTranslation(language);
+                              }}
+                            >
+                              {language}
+                              {generating ? <LoaderCircle size={12} /> : !translation ? <Sparkles size={12} /> : null}
+                              {translation && dirtyIds.has(translation.id) && <span />}
+                            </button>
+                          );
+                        })}
                       </div>
                       <div ref={hostRef} className="editor-host" />
                     </div>
@@ -2213,15 +2889,13 @@ export default function App() {
               {refreshingWorkspace && <LoaderCircle size={15} />}
               {refreshingWorkspace ? 'Refreshing' : workspaceRefreshLabel}
             </button>
-            <button type="button" className="idea-trigger" onClick={(event) => openCaptureFromTrigger('idea', event)}><Lightbulb size={15} />Record idea</button>
-            <button type="button" onClick={(event) => openCaptureFromTrigger('moment', event)}><Clock3 size={15} />New moment</button>
+            <button type="button" className="moment-trigger" onClick={(event) => openCaptureFromTrigger('moment', event)}><Aperture size={15} />Catch moment</button>
             <button type="button" onClick={openNewProject}><Plus size={15} />New project</button>
             <button type="button" onClick={(event) => openCaptureFromTrigger('blog', event)}><PencilLine size={15} />Write blog</button>
           </div>
         ) : isUpdateShelf && !contentEditorOpen ? (
           <div className="quick-dock moment-dock" aria-label="Moment shortcuts">
-            <button type="button" className="idea-trigger" onClick={() => openCapture('idea')}><Lightbulb size={15} />Catch idea</button>
-            <button type="button" onClick={() => openCapture('moment')}><Clock3 size={15} />New moment</button>
+            <button type="button" className="moment-trigger" onClick={() => openCapture('moment')}><Aperture size={15} />Catch moment</button>
             <button type="button" onClick={() => openCapture('blog')}><PencilLine size={15} />Write blog</button>
             <button type="button" onClick={() => void openVersionPanel('moment')} title="Open Moments Git version status">
               <GitBranch size={15} />
@@ -2242,6 +2916,17 @@ export default function App() {
           </div>
         ) : shelfDockMode ? (
           <div className="quick-dock shelf-action-dock" aria-label={`${currentShelf.label} shortcuts`}>
+            {shelfDockMode === 'resume' && (
+              <button
+                type="button"
+                className="dock-mode-toggle"
+                aria-pressed={!resumeEditControlsVisible}
+                onClick={() => setResumeEditControlsVisible((visible) => !visible)}
+                title={resumeEditControlsVisible ? 'Hide resume edit operations' : 'Show resume edit operations'}
+              >
+                {resumeEditControlsVisible ? 'Editing' : 'Preview'}
+              </button>
+            )}
             {shelfDockMode === 'blog' && (
               <button type="button" className="dock-primary" onClick={() => openCapture('blog')}>
                 <PencilLine size={15} />
@@ -2251,12 +2936,6 @@ export default function App() {
             {shelfDockMode === 'project' && (
               <button type="button" className="dock-primary" onClick={openNewProject}>
                 <FolderPlus size={15} />
-                Create
-              </button>
-            )}
-            {shelfDockMode === 'idea' && (
-              <button type="button" className="dock-primary" onClick={() => openCapture('idea')}>
-                <Lightbulb size={15} />
                 Create
               </button>
             )}
@@ -2313,9 +2992,11 @@ export default function App() {
                 <div className="new-project-badge">
                   <UploadCloud size={17} />
                 </div>
-                <button type="button" className="dialog-close" onClick={() => setConfirmingDeploy(false)} aria-label="Cancel deployment">
-                  <X size={15} />
-                </button>
+                {renderLanguageCloseControls({
+                  closeLabel: 'Cancel deployment',
+                  closeSize: 15,
+                  onClose: () => setConfirmingDeploy(false),
+                })}
               </div>
               <h3 id="deploy-confirm-title">Deploy content to production?</h3>
               <p>This pushes committed public content and media to {deploymentPlan.deploy_target}. The remote content database will be replaced through the verified deployment pipeline.</p>
@@ -2360,15 +3041,12 @@ export default function App() {
                 <div className="new-project-badge">
                   <GitBranch size={17} />
                 </div>
-                <button
-                  type="button"
-                  className="dialog-close"
-                  onClick={closeVersionPanel}
-                  aria-label="Close version status"
-                  disabled={versionLoading || Boolean(releasingScope)}
-                >
-                  <X size={15} />
-                </button>
+                {renderLanguageCloseControls({
+                  disabled: versionLoading || Boolean(releasingScope),
+                  closeLabel: 'Close version status',
+                  closeSize: 15,
+                  onClose: closeVersionPanel,
+                })}
               </div>
               <h3 id="version-card-title">Version management</h3>
               <p>{versionStatus?.scope_label || 'Section'} Git history under content/</p>
@@ -2449,79 +3127,119 @@ export default function App() {
         )}
 
         {seriesEditingSlug && (
-          <div className="dialog-overlay" role="presentation" onClick={closeSeriesEditor}>
-            <div
-              className="dialog-card series-editor-card"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="series-editor-title"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="new-project-badge">
-                <Radio size={17} />
+          <section className="resume-editor-workspace series-editor-workspace" role="dialog" aria-modal="true" aria-labelledby="series-editor-title">
+            <header className="resume-editor-topbar">
+              <div className="resume-editor-title">
+                <span>Episode series</span>
+                <strong id="series-editor-title">{seriesDraft.title || 'Edit series'}</strong>
+                <em>{seriesSource?.relative_path || `content/resources/episode/${seriesEditingSlug}/series.toml`}</em>
               </div>
-              <h3 id="series-editor-title">Edit series</h3>
-              <p>{seriesSource?.relative_path || `content/resources/episode/${seriesEditingSlug}/series.toml`}</p>
-              <label className="series-editor-field">
-                <span>Title</span>
-                <input
-                  className="dialog-input"
-                  type="text"
-                  value={seriesDraft.title}
-                  onChange={(event) => setSeriesDraft((current) => ({ ...current, title: event.target.value }))}
-                  disabled={seriesEditorLoading || seriesEditorSaving}
-                />
-              </label>
-              <label className="series-editor-field">
-                <span>Description</span>
-                <textarea
-                  value={seriesDraft.description}
-                  onChange={(event) => setSeriesDraft((current) => ({ ...current, description: event.target.value }))}
-                  disabled={seriesEditorLoading || seriesEditorSaving}
-                  rows={4}
-                />
-              </label>
-              <label className="series-editor-field">
-                <span>Cover URL</span>
-                <input
-                  className="dialog-input"
-                  type="text"
-                  value={seriesDraft.cover_url}
-                  onChange={(event) => setSeriesDraft((current) => ({ ...current, cover_url: event.target.value }))}
-                  disabled={seriesEditorLoading || seriesEditorSaving}
-                  placeholder="silan://resources/episode/series/assets/cover.png"
-                />
-              </label>
-              <label className="series-editor-field">
-                <span>Status</span>
-                <input
-                  className="dialog-input"
-                  type="text"
-                  value={seriesDraft.status}
-                  onChange={(event) => setSeriesDraft((current) => ({ ...current, status: event.target.value }))}
-                  disabled={seriesEditorLoading || seriesEditorSaving}
-                />
-              </label>
-              {seriesEditorError && (
-                <div className="dialog-error" role="alert">
-                  <AlertCircle size={14} />
-                  <span>{seriesEditorError}</span>
+              {renderLanguageCloseControls({
+                disabled: seriesEditorSaving,
+                closeLabel: 'Close series editor',
+                closeSize: 15,
+                onClose: closeSeriesEditor,
+              })}
+            </header>
+
+            <div className="resume-editor-body">
+              <aside className="resume-editor-outline" aria-label="Series editor sections">
+                <a href="#series-editor-basics">Basics</a>
+                <a href="#series-editor-presentation">Presentation</a>
+                <a href="#series-editor-publishing">Publishing</a>
+                <a href="#series-editor-source">Source</a>
+              </aside>
+              <main className="resume-editor-canvas">
+                <div className="resume-form resume-form--workspace content-settings-form">
+                  <section className="resume-editor-section content-settings-section" id="series-editor-basics">
+                    <h3>Basics</h3>
+                    <div className="content-settings-grid">
+                      <label className="content-settings-field content-settings-field--wide">
+                        <span>Title</span>
+                        <input
+                          type="text"
+                          value={seriesDraft.title}
+                          onChange={(event) => setSeriesDraft((current) => ({ ...current, title: event.target.value }))}
+                          disabled={seriesEditorLoading || seriesEditorSaving}
+                        />
+                      </label>
+                    </div>
+                  </section>
+
+                  <section className="resume-editor-section content-settings-section" id="series-editor-presentation">
+                    <h3>Presentation</h3>
+                    <div className="content-settings-grid">
+                      <label className="content-settings-field content-settings-field--wide">
+                        <span>Description</span>
+                        <textarea
+                          value={seriesDraft.description}
+                          onChange={(event) => setSeriesDraft((current) => ({ ...current, description: event.target.value }))}
+                          disabled={seriesEditorLoading || seriesEditorSaving}
+                          rows={5}
+                        />
+                      </label>
+                      <label className="content-settings-field content-settings-field--wide">
+                        <span>Cover URL</span>
+                        <input
+                          type="text"
+                          value={seriesDraft.cover_url}
+                          onChange={(event) => setSeriesDraft((current) => ({ ...current, cover_url: event.target.value }))}
+                          disabled={seriesEditorLoading || seriesEditorSaving}
+                          placeholder="silan://resources/episode/series/assets/cover.png"
+                        />
+                      </label>
+                    </div>
+                  </section>
+
+                  <section className="resume-editor-section content-settings-section" id="series-editor-publishing">
+                    <h3>Publishing</h3>
+                    {editingSeries ? renderSeriesStateControls(editingSeries, 'header') : (
+                      <div className="version-loading">
+                        <LoaderCircle size={15} />
+                        <span>Reading series state...</span>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="resume-editor-section content-settings-section" id="series-editor-source">
+                    <h3>Source</h3>
+                    <div className="content-settings-grid">
+                      <label className="content-settings-field content-settings-field--wide">
+                        <span>Metadata source</span>
+                        <input type="text" value={seriesSource?.relative_path || `content/resources/episode/${seriesEditingSlug}/series.toml`} disabled />
+                      </label>
+                    </div>
+                  </section>
+
+                  {seriesEditorLoading && (
+                    <div className="version-loading">
+                      <LoaderCircle size={15} />
+                      <span>Reading series...</span>
+                    </div>
+                  )}
+
+                  {seriesEditorError && (
+                    <div className="content-settings-error" role="alert">
+                      <AlertCircle size={14} />
+                      <span>{seriesEditorError}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              <div className="dialog-actions">
-                <button type="button" className="cancel" disabled={seriesEditorSaving} onClick={closeSeriesEditor}>Cancel</button>
-                <button
-                  type="button"
-                  className={`primary ${seriesEditorSaving ? 'pending' : ''}`}
-                  disabled={!seriesSource || !seriesDraft.title.trim() || seriesEditorLoading || seriesEditorSaving}
-                  onClick={() => void saveSeriesEditor()}
-                >
-                  {seriesEditorSaving || seriesEditorLoading ? <LoaderCircle size={15} /> : <Save size={15} />}
-                  {seriesEditorLoading ? 'Loading' : seriesEditorSaving ? 'Saving' : 'Save series'}
-                </button>
-              </div>
+              </main>
             </div>
-          </div>
+
+            <div className="resume-editor-actions" aria-label="Series editor actions">
+              <button
+                type="button"
+                className="resume-editor-save"
+                disabled={!seriesSource || !seriesDraft.title.trim() || seriesEditorLoading || seriesEditorSaving}
+                onClick={() => void saveSeriesEditor()}
+              >
+                {seriesEditorSaving || seriesEditorLoading ? <LoaderCircle size={14} className="spin" /> : <Save size={14} />}
+                {seriesEditorLoading ? 'Loading' : seriesEditorSaving ? 'Saving' : 'Save series'}
+              </button>
+            </div>
+          </section>
         )}
 
         {contentEditorOpen && selectedContentGroup && selected && editableMasonryContentKinds.has(selected.entity_type) && (
@@ -2545,130 +3263,377 @@ export default function App() {
                     </p>
                   </div>
                 </div>
-                <div className="content-editor-actions">
-                  {renderStateControls(selectedContentGroup, 'header')}
-                  <button
-                    type="button"
-                    className={`content-close content-geo-toggle ${geoPanelOpen ? 'active' : ''}`}
-                    onClick={() => void openGeoPanel()}
-                    title="Run AI/GEO content check"
-                    aria-label="Run AI/GEO content check"
-                    disabled={!selectedTranslation || geoLoading}
-                  >
-                    {geoLoading ? <LoaderCircle size={15} /> : <Bot size={15} />}
-                  </button>
-                  <button
-                    type="button"
-                    className={`content-close content-toolbar-toggle ${toolbarVisible ? 'active' : ''}`}
-                    aria-pressed={toolbarVisible}
-                    onClick={toggleToolbar}
-                    title={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
-                    aria-label={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
-                  >
-                    <Type size={15} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`content-save ${saving ? 'pending' : ''}`}
-                    disabled={!dirty || saving}
-                    onClick={() => void saveSelected()}
-                  >
-                    {saving ? <LoaderCircle size={15} /> : <Save size={15} />}
-                    {saving ? 'Saving' : saveFailed ? 'Retry' : 'Save'}
-                  </button>
-                </div>
+                {contentRailPanel === 'parts' && (
+                  <div className="quick-dock content-editor-actions">
+                    <button
+                      type="button"
+                      className={`content-close content-geo-toggle ${geoPanelOpen ? 'active' : ''}`}
+                      onClick={() => void openGeoPanel()}
+                      title="Run AI/GEO content check"
+                      aria-label="Run AI/GEO content check"
+                      disabled={!selectedTranslation || geoLoading}
+                    >
+                      {geoLoading ? <LoaderCircle size={15} /> : <Search size={15} />}
+                    </button>
+                    <button
+                      type="button"
+                      className={`content-close content-toolbar-toggle ${toolbarVisible ? 'active' : ''}`}
+                      aria-pressed={toolbarVisible}
+                      onClick={toggleToolbar}
+                      title={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
+                      aria-label={toolbarVisible ? 'Hide formatting toolbar' : 'Show formatting toolbar'}
+                    >
+                      <Type size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className={`content-save ${saving ? 'pending' : ''}`}
+                      disabled={!dirty || saving}
+                      onClick={() => void saveSelected()}
+                    >
+                      {saving ? <LoaderCircle size={15} /> : <Save size={15} />}
+                      {saving ? 'Saving' : saveFailed ? 'Retry' : 'Save'}
+                    </button>
+                  </div>
+                )}
               </header>
 
-              <button type="button" className="content-close content-close-top" onClick={() => setContentEditorOpen(false)} aria-label="Close content editor">
-                <X size={18} />
-              </button>
+              {renderLanguageCloseControls({
+                fixed: true,
+                closeLabel: contentRailPanel === 'settings' ? 'Close settings' : 'Close content editor',
+                closeTitle: contentRailPanel === 'settings' ? 'Close settings' : 'Close content editor',
+                disabled: contentRailPanel === 'settings' && metadataSavingId === selectedContentGroup.id,
+                onClose: closeContentEditorLayer,
+              })}
 
-              <div className="content-editor-body">
-                <aside className="content-part-rail" aria-label="Content Markdown parts">
-                  {selected.entity_type === 'episode' && selectedSeries && (
-                    <div className="content-episode-rail" role="navigation" aria-label="Series episodes">
-                      <div className="content-part-rail-head">
-                        <span>{selectedSeries.title}</span>
-                        <strong>{selectedSeries.episodes.length}</strong>
-                      </div>
-                      {selectedSeries.episodes.map((episode) => (
-                        <button
-                          type="button"
-                          key={episode.id}
-                          className={`content-episode-row ${episode.id === selected.entity_id ? 'active' : ''}`}
-                          onClick={() => openContentGroup(episode)}
-                        >
-                          <span className="content-episode-number">
-                            {episode.episodeNumber != null ? `#${episode.episodeNumber}` : '·'}
-                          </span>
-                          <span className="content-episode-title">{episode.title}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="content-part-rail-head">
-                    <span>Parts</span>
-                    <strong>{selectedContentGroup.documents.length}</strong>
-                  </div>
-                  {selectedContentGroup.documents.map((document) => renderDocumentRow(document))}
-                </aside>
-
-                <section className="content-writing-panel" aria-label="Content Markdown editor">
-                  <header className="document-header content-document-header">
-                    <div className="document-identity">
-                      <FileText size={16} />
-                      <div>
-                        <h2>{selected.title}</h2>
-                        <p>{selected.role} · {selectedTranslation?.source_path}</p>
-                      </div>
-                    </div>
-                    <div className="document-state">
-                      {dirty && <span>unsaved</span>}
-                      <span>{contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).statusLabel}</span>
-                      <span data-visibility={contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibility === 'private' ? 'private' : undefined}>
-                        {contentLifecycleFor(selected.entity_type, selected.status, selected.visibility).visibilityLabel}
-                      </span>
-                      {mediaImporting && <span>importing media</span>}
-                    </div>
+              <div className="content-editor-body" data-panel={contentRailPanel}>
+                {contentRailPanel !== 'settings' && (
+                <aside className="content-part-rail" aria-label="Content side rail">
+                  <header className="content-explorer-top">
+                    <button
+                      type="button"
+                      className="content-explorer-icon"
+                      aria-label="Open content details"
+                      onClick={() => setContentRailPanel('settings')}
+                    >
+                      <Menu size={22} />
+                    </button>
+                    <button
+                      type="button"
+                      className="content-explorer-title"
+                      onClick={toggleContentRailMode}
+                    >
+                      {contentRailMode === 'files' ? 'FILES' : 'INTERACTION'}
+                    </button>
                   </header>
 
-                  <div className="editor-frame content-editor-frame" data-entity={selected.entity_type} data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
-                    <div className="language-tabs" role="tablist" aria-label="Language representations">
-                      {selected.translations.map((translation) => (
+                  <nav className="content-explorer-tree" aria-label={contentRailMode === 'files' ? 'Content parts' : 'Content interactions'}>
+                    {selectedContentGroup.documents.length === 0 ? (
+                      <div className="content-explorer-empty">No content selected.</div>
+                    ) : contentRailMode === 'interaction' ? (
+                      <>
+                        {selected.entity_type === 'episode' && selectedSeries && (
+                          <div className="content-tree-section" role="group" aria-label="Episode interactions">
+                            {selectedSeries.episodes.map((episode) => (
+                              <button
+                                type="button"
+                                key={episode.id}
+                                className={`content-tree-row ${contentRailPanel === 'reactions' && episode.id === selected.entity_id ? 'active' : ''}`}
+                                onClick={() => openContentGroupInteraction(episode)}
+                              >
+                                <span>{episode.episodeNumber != null ? `${episode.episodeNumber}. ` : ''}{episode.title}</span>
+                                <small>{episode.engagement.likes}/{episode.engagement.comments}</small>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="content-tree-section" role="group" aria-label="Part interactions">
+                          {selectedContentGroup.documents.map((document) => (
+                            <button
+                              type="button"
+                              key={document.id}
+                              className={`content-tree-row ${contentRailPanel === 'reactions' && document.id === selected?.id ? 'active' : ''}`}
+                              onClick={() => {
+                                setContentRailMode('interaction');
+                                setContentRailPanel('reactions');
+                                setSelectedId(document.id);
+                              }}
+                            >
+                              <span>{document.role}</span>
+                              <small>{document.engagement.likes}/{document.engagement.comments}</small>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {selected.entity_type === 'episode' && selectedSeries && (
+                          <div className="content-tree-section" role="group" aria-label="Series episodes">
+                            <button
+                              type="button"
+                              className="content-tree-row content-tree-row--tool"
+                              onClick={() => void openSeriesEditor(selectedSeries)}
+                            >
+                              <span>Series settings</span>
+                            </button>
+                            {selectedSeries.episodes.map((episode) => (
+                              <button
+                                type="button"
+                                key={episode.id}
+                                className={`content-tree-row ${episode.id === selected.entity_id ? 'active' : ''}`}
+                                onClick={() => openContentGroup(episode)}
+                              >
+                                <span>{episode.episodeNumber != null ? `${episode.episodeNumber}. ` : ''}{episode.title}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="content-tree-section" role="group" aria-label="Markdown parts">
+                          {selectedContentGroup.documents.map((document) => (
+                            <button
+                              type="button"
+                              key={document.id}
+                              className={`content-tree-row ${contentRailPanel === 'parts' && document.id === selected?.id ? 'active' : ''}`}
+                              onClick={() => {
+                                setContentRailMode('files');
+                                setContentRailPanel('parts');
+                                setSelectedId(document.id);
+                              }}
+                            >
+                              <span>{document.role}</span>
+                              {dirtyIds.has(document.translations.find((translation) => translation.language === languageByDocument[document.id])?.id || document.translations[0]?.id || '') && (
+                                <i aria-label="Unsaved changes" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </nav>
+
+                </aside>
+                )}
+
+                <div className="content-main-panel">
+                  <section
+                    className={`content-writing-panel ${contentRailPanel === 'parts' ? '' : 'is-hidden'}`}
+                    aria-label="Content Markdown editor"
+                    aria-hidden={contentRailPanel !== 'parts'}
+                  >
+                    <header className="document-header content-document-header">
+                      <div className="document-identity">
+                        <div>
+                          <h2>{selected.title}</h2>
+                          <p>{selected.role} · {selectedTranslation?.source_path}</p>
+                        </div>
+                      </div>
+                    </header>
+
+                    <div className="editor-frame content-editor-frame" data-entity={selected.entity_type} data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
+                      <div ref={hostRef} className="editor-host" />
+                    </div>
+                    {mediaDragActive && (
+                      <div className="media-drop-overlay" role="status">
+                        <div>
+                          <UploadCloud size={26} />
+                          <strong>Drop into {selected.role}</strong>
+                          <span>assets/ · silan:// Markdown</span>
+                        </div>
+                      </div>
+                    )}
+                    {(mediaImporting || mediaDropError || lastImportedAsset) && (
+                      <div className="media-import-toast" data-state={mediaDropError ? 'error' : mediaImporting ? 'loading' : 'done'}>
+                        {mediaDropError ? <AlertCircle size={14} /> : mediaImporting ? <LoaderCircle size={14} /> : <FileImage size={14} />}
+                        <span>
+                          {mediaDropError || (mediaImporting ? 'Importing media asset...' : `${lastImportedAsset?.file_name} inserted as silan:// asset`)}
+                        </span>
+                      </div>
+                    )}
+                  </section>
+                  {contentRailPanel === 'settings' && (
+                    <section className="content-settings-panel content-settings-panel--metadata" aria-label="Content settings">
+                      <header className="resume-editor-topbar content-settings-topbar">
+                        <div className="resume-editor-title">
+                          <span>{selected.entity_type.toUpperCase()} SETTINGS</span>
+                          <strong>{selectedContentGroup.title}</strong>
+                          <em>{selectedContentGroup.slug}</em>
+                        </div>
+                      </header>
+                      <div className="resume-editor-body">
+                        <aside className="resume-editor-outline" aria-label="Settings sections">
+                          <a href="#content-settings-identity">Identity</a>
+                          {(selectedMetadataSummaryLabel || selectedMetadataCoverLabel) && <a href="#content-settings-presentation">Presentation</a>}
+                          <a href="#content-settings-lifecycle">Lifecycle</a>
+                          <a href="#content-settings-source">Source</a>
+                        </aside>
+                        <main className="resume-editor-canvas">
+                          <div className="resume-form resume-form--workspace content-settings-form">
+                            <section id="content-settings-identity" className="resume-editor-section content-settings-section">
+                              <h3>Identity</h3>
+                              <div className="content-settings-grid">
+                                <label className="content-settings-field content-settings-field--wide">
+                                  <span>Title</span>
+                                  <input
+                                    type="text"
+                                    value={metadataDraft.title}
+                                    onChange={(event) => setMetadataDraft((current) => ({ ...current, title: event.target.value }))}
+                                    disabled={metadataSavingId === selectedContentGroup.id}
+                                  />
+                                </label>
+                                <label className="content-settings-field">
+                                  <span>Slug</span>
+                                  <input type="text" value={selectedContentGroup.slug} disabled />
+                                </label>
+                                <label className="content-settings-field">
+                                  <span>Type</span>
+                                  <input type="text" value={selected.entity_type} disabled />
+                                </label>
+                              </div>
+                            </section>
+
+                          {(selectedMetadataSummaryLabel || selectedMetadataCoverLabel) && (
+                            <section id="content-settings-presentation" className="resume-editor-section content-settings-section">
+                              <h3>Presentation</h3>
+                              <div className="content-settings-grid">
+                                {selectedMetadataSummaryLabel && (
+                                  <label className="content-settings-field content-settings-field--wide">
+                                    <span>{selectedMetadataSummaryLabel}</span>
+                                    <textarea
+                                      rows={4}
+                                      value={metadataDraft.description}
+                                      onChange={(event) => setMetadataDraft((current) => ({ ...current, description: event.target.value }))}
+                                      disabled={metadataSavingId === selectedContentGroup.id}
+                                    />
+                                  </label>
+                                )}
+                                {selectedMetadataCoverLabel && (
+                                  <label className="content-settings-field content-settings-field--wide">
+                                    <span>{selectedMetadataCoverLabel}</span>
+                                    <input
+                                      type="text"
+                                      value={metadataDraft.cover_url}
+                                      onChange={(event) => setMetadataDraft((current) => ({ ...current, cover_url: event.target.value }))}
+                                      disabled={metadataSavingId === selectedContentGroup.id}
+                                      placeholder="silan:// or https://"
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            </section>
+                          )}
+
+                          <section id="content-settings-lifecycle" className="resume-editor-section content-settings-section">
+                            <h3>Lifecycle</h3>
+                            {renderStateControls(selectedContentGroup, 'header')}
+                          </section>
+
+                          <section id="content-settings-source" className="resume-editor-section content-settings-section">
+                            <h3>Source</h3>
+                            <div className="content-settings-grid">
+                              <label className="content-settings-field content-settings-field--wide">
+                                <span>Metadata source</span>
+                                <input type="text" value={selectedMetadataTranslation?.source_path || ''} disabled />
+                              </label>
+                            </div>
+                          </section>
+
+                          {metadataError && (
+                            <div className="content-settings-error" role="alert">
+                              <AlertCircle size={14} />
+                              <span>{metadataError}</span>
+                            </div>
+                          )}
+                          </div>
+                        </main>
+                      </div>
+                      <div className="resume-editor-actions" aria-label="Settings actions">
                         <button
                           type="button"
-                          key={translation.id}
-                          className={translation.id === selectedTranslation?.id ? 'active' : ''}
-                          onClick={() => setLanguageByDocument((current) => ({
-                            ...current,
-                            [selected.id]: translation.language,
-                          }))}
+                          className="resume-editor-save"
+                          disabled={!metadataDirty || !selectedMetadataTranslation || metadataSavingId === selectedContentGroup.id}
+                          onClick={() => void saveContentMetadata()}
                         >
-                          {translation.language}
-                          {dirtyIds.has(translation.id) && <span />}
+                          {metadataSavingId === selectedContentGroup.id ? <LoaderCircle size={14} className="spin" /> : <Save size={14} />}
+                          {metadataSavingId === selectedContentGroup.id ? 'Saving' : 'Save settings'}
                         </button>
-                      ))}
-                    </div>
-                    <div ref={hostRef} className="editor-host" />
-                  </div>
-                  {mediaDragActive && (
-                    <div className="media-drop-overlay" role="status">
-                      <div>
-                        <UploadCloud size={26} />
-                        <strong>Drop into {selected.role}</strong>
-                        <span>assets/ · silan:// Markdown</span>
                       </div>
-                    </div>
+                    </section>
                   )}
-                  {(mediaImporting || mediaDropError || lastImportedAsset) && (
-                    <div className="media-import-toast" data-state={mediaDropError ? 'error' : mediaImporting ? 'loading' : 'done'}>
-                      {mediaDropError ? <AlertCircle size={14} /> : mediaImporting ? <LoaderCircle size={14} /> : <FileImage size={14} />}
-                      <span>
-                        {mediaDropError || (mediaImporting ? 'Importing media asset...' : `${lastImportedAsset?.file_name} inserted as silan:// asset`)}
-                      </span>
-                    </div>
+                  {contentRailPanel === 'reactions' && (
+                    <section className="content-settings-panel" aria-label="Reaction management">
+                      <header className="content-settings-header">
+                        <div>
+                          <span>REACTION MANAGEMENT</span>
+                          <h2>{selectedContentGroup.title}</h2>
+                          <p>Manage local likes and comments counters for this content item.</p>
+                        </div>
+                      </header>
+                      <div className="content-settings-layout">
+                        <div className="content-settings-form">
+                          <section id="reaction-summary" className="content-settings-section">
+                            <h3>Summary</h3>
+                            <div className="content-reaction-metrics">
+                              <div>
+                                <ThumbsUp size={16} />
+                                <span>Likes</span>
+                                <strong>{selectedContentGroup.engagement.likes}</strong>
+                              </div>
+                              <div>
+                                <MessageCircle size={16} />
+                                <span>Comments</span>
+                                <strong>{selectedContentGroup.engagement.comments}</strong>
+                              </div>
+                            </div>
+                          </section>
+
+                          <section id="reaction-counters" className="content-settings-section">
+                            <h3>Counters</h3>
+                            <div className="content-settings-grid">
+                              <label className="content-settings-field">
+                                <span>Like count</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={reactionDraft.likes}
+                                  onChange={(event) => setReactionDraft((current) => ({ ...current, likes: event.target.value }))}
+                                  disabled={reactionSavingId === selectedContentGroup.id}
+                                />
+                              </label>
+                              <label className="content-settings-field">
+                                <span>Comment count</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={reactionDraft.comments}
+                                  onChange={(event) => setReactionDraft((current) => ({ ...current, comments: event.target.value }))}
+                                  disabled={reactionSavingId === selectedContentGroup.id}
+                                />
+                              </label>
+                            </div>
+                          </section>
+
+                          {reactionError && (
+                            <div className="content-settings-error" role="alert">
+                              <AlertCircle size={14} />
+                              <span>{reactionError}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="content-settings-save"
+                        disabled={!reactionDirty || reactionSavingId === selectedContentGroup.id}
+                        onClick={() => void saveEngagementStats()}
+                      >
+                        {reactionSavingId === selectedContentGroup.id ? <LoaderCircle size={15} /> : <Save size={15} />}
+                        {reactionSavingId === selectedContentGroup.id ? 'Saving' : 'Save reactions'}
+                      </button>
+                    </section>
                   )}
-                </section>
+                </div>
               </div>
             </div>
           </section>
@@ -2687,14 +3652,11 @@ export default function App() {
                 <div className="new-project-badge">
                   <Bot size={17} />
                 </div>
-                <button
-                  type="button"
-                  className="dialog-close"
-                  onClick={() => setGeoPanelOpen(false)}
-                  aria-label="Close GEO insights"
-                >
-                  <X size={15} />
-                </button>
+                {renderLanguageCloseControls({
+                  closeLabel: 'Close GEO insights',
+                  closeSize: 15,
+                  onClose: () => setGeoPanelOpen(false),
+                })}
               </div>
               <h3 id="geo-card-title">AI/GEO readiness</h3>
               <p>{selected?.title || 'Selected content'} · {selectedTranslation?.language || ''}</p>
@@ -2756,7 +3718,9 @@ export default function App() {
         target={captureTarget}
         onTargetChange={setCaptureTarget}
         category={captureCategory}
+        language={chromeLanguage}
         onCategoryChange={setCaptureCategory}
+        onLanguageChange={setChromeLanguage}
         categories={ideaCategories}
         note={captureNote}
         onNoteChange={setCaptureNote}

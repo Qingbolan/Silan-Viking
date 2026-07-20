@@ -2,10 +2,11 @@
 
 use crate::application::DesktopWorkspace;
 use crate::model::{
-    DashboardData, DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeploymentPlan, DocumentStateInput,
-    EditorDocument, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoInsightReport,
-    ImportedMediaAsset, MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile,
-    ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus,
+    ContentMetadataInput, DashboardData, DeliverySyncStatus, DeployRunStatus,
+    DeployVerificationResult, DeploymentPlan, DocumentStateInput, EditorDocument,
+    EngagementStats, EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource,
+    GeoInsightReport, ImportedMediaAsset, MomentsSettings, ResumeEntryInput, ResumePartSource,
+    ResumeProfile, ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus,
 };
 use silan_viking_app::{OPENAI_KEYCHAIN_ACCOUNT, OPENAI_KEYCHAIN_SERVICE};
 
@@ -71,12 +72,52 @@ pub(crate) fn save_document(
 }
 
 #[tauri::command]
+pub(crate) async fn generate_missing_translation(
+    id: String,
+    target_language: String,
+    source_language: Option<String>,
+) -> Result<EditorDocument, String> {
+    run_background("AI translation generation", move || {
+        let api_key = openai_api_key()?;
+        DesktopWorkspace::from_environment()?.generate_missing_translation(
+            &id,
+            &target_language,
+            source_language.as_deref(),
+            &api_key,
+        )
+    })
+    .await
+}
+
+#[tauri::command]
 pub(crate) fn save_document_state(
     id: String,
     state: DocumentStateInput,
     expected_revision: String,
 ) -> Result<EditorDocument, String> {
     DesktopWorkspace::from_environment()?.save_document_state(&id, state, &expected_revision)
+}
+
+#[tauri::command]
+pub(crate) fn save_content_metadata(
+    id: String,
+    metadata: ContentMetadataInput,
+    expected_revision: String,
+) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.save_content_metadata(
+        &id,
+        metadata,
+        &expected_revision,
+    )
+}
+
+#[tauri::command]
+pub(crate) fn save_engagement_stats(
+    entity_type: String,
+    entity_id: String,
+    stats: EngagementStatsInput,
+) -> Result<EngagementStats, String> {
+    DesktopWorkspace::from_environment()?.save_engagement_stats(&entity_type, &entity_id, stats)
 }
 
 #[tauri::command]
@@ -88,13 +129,16 @@ pub(crate) fn import_media_asset(
 }
 
 #[tauri::command]
-pub(crate) fn get_geo_insights(id: String) -> Result<GeoInsightReport, String> {
-    DesktopWorkspace::from_environment()?.geo_insights(&id)
+pub(crate) fn import_resume_media_asset(
+    file_name: String,
+    bytes: Vec<u8>,
+) -> Result<ImportedMediaAsset, String> {
+    DesktopWorkspace::from_environment()?.import_resume_media_asset(&file_name, &bytes)
 }
 
 #[tauri::command]
-pub(crate) fn capture_idea(note: String, category: String) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.capture_idea(&note, &category)
+pub(crate) fn get_geo_insights(id: String) -> Result<GeoInsightReport, String> {
+    DesktopWorkspace::from_environment()?.geo_insights(&id)
 }
 
 #[tauri::command]
@@ -103,8 +147,8 @@ pub(crate) fn capture_blog(draft: String, category: String) -> Result<EditorDocu
 }
 
 #[tauri::command]
-pub(crate) fn capture_update(event: String) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.capture_update(&event)
+pub(crate) fn capture_moment(event: String) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.capture_moment(&event)
 }
 
 #[tauri::command]
@@ -191,7 +235,7 @@ fn openai_api_key() -> Result<String, String> {
     match entry.get_password() {
         Ok(secret) => Ok(secret),
         Err(keyring::Error::NoEntry) => Err(
-            "Voice input needs an OpenAI API key; run `silan-viking credentials openai set`"
+            "OpenAI features need an API key; run `silan-viking credentials openai set`"
                 .to_owned(),
         ),
         Err(error) => Err(format!(

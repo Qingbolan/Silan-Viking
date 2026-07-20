@@ -9,7 +9,7 @@ import type { ContentGroup } from '../types';
 const kindLabels: Record<string, string> = {
   blog: 'Article',
   project: 'Project',
-  idea: 'Idea',
+  idea: 'Legacy',
   episode: 'Series',
 };
 
@@ -28,7 +28,7 @@ type ContentCardProps = {
 export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) {
   const isSeries = group.cardKind === 'series';
   const kindLabel = isSeries ? 'Series' : kindLabels[group.kind] || group.kind;
-  const excerpt = translationPreview(selectPrimaryDocument(group));
+  const excerpt = translationPreview(selectPrimaryDocument(group), group.language);
   const updatedAt = contentGroupUpdatedAt(group);
   const date = updatedAt ? formatShortDate(updatedAt) : '';
   const partCount = group.documents.length;

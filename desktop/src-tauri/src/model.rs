@@ -16,6 +16,7 @@ pub(crate) struct EditorDocument {
     pub(crate) role: String,
     pub(crate) canonical_language: String,
     pub(crate) title: String,
+    pub(crate) description: Option<String>,
     pub(crate) status: String,
     pub(crate) visibility: String,
     pub(crate) date: Option<String>,
@@ -32,6 +33,12 @@ pub(crate) struct EngagementStats {
     pub(crate) comments: i64,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct EngagementStatsInput {
+    pub(crate) likes: i64,
+    pub(crate) comments: i64,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct EditorTranslation {
     pub(crate) id: String,
@@ -41,6 +48,13 @@ pub(crate) struct EditorTranslation {
     pub(crate) source_path: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct ContentMetadataInput {
+    pub(crate) title: String,
+    pub(crate) description: Option<String>,
+    pub(crate) cover_url: Option<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct ImportedMediaAsset {
     pub(crate) uri: String,
@@ -48,6 +62,7 @@ pub(crate) struct ImportedMediaAsset {
     pub(crate) file_name: String,
     pub(crate) byte_count: u64,
     pub(crate) markdown: String,
+    pub(crate) local_path: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -299,6 +314,7 @@ pub(crate) struct ResumeEntry {
     pub(crate) sort_order: i64,
     pub(crate) shared: serde_json::Value,
     pub(crate) localized: serde_json::Value,
+    pub(crate) media: std::collections::BTreeMap<String, String>,
 }
 
 #[derive(Debug, Serialize)]

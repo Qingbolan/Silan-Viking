@@ -1,22 +1,25 @@
 //! Thin Tauri-facing adapters over the public `silan-viking-app` use cases.
 
 use crate::model::{
+    ContentMetadataInput,
     CommitActivityDay, DailyContentTraffic, DailyTraffic, DashboardData, DashboardItem,
     DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats, DeploymentPlan,
     DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation, EngagementStats,
-    EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction, GeoEvidence, GeoInsightReport,
-    GeoMetric, ImportedMediaAsset, MomentsCover, MomentsProfile, MomentsSettings,
+    EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction,
+    GeoEvidence, GeoInsightReport, GeoMetric, ImportedMediaAsset, MomentsCover, MomentsProfile, MomentsSettings,
     RemoteContentVersion, ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource,
     ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry,
     TrafficEvidence, TrafficSource, VersionChange, VersionCommit, VersionStatus, VisitorLocation,
 };
 use serde::Deserialize;
 use silan_viking_app::{
-    api_base_url, ContentCreator, ContentEditor, ContentKind, DeliveryControl, EditableDocument,
+    api_base_url, ContentCreator, ContentEditor, ContentKind, CreateTranslationInput, DeliveryControl, EditableDocument,
     EditablePart, EditableSection, GeoAdvisor, IdeaCategory, MediaLibrary, ReleaseScope,
-    SaveLifecycleInput, SaveTranslationInput, StatsCache, StatsError, WebsiteInsights,
+    MarkdownTranslationRequest, OpenAiApiKey, OpenAiMarkdownTranslator, SaveLifecycleInput,
+    SaveMetadataInput, SaveTranslationInput, StatsCache, StatsError, WebsiteInsights,
     WorkspaceContent,
 };
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -370,7 +373,7 @@ impl DesktopWorkspace {
     pub(crate) fn resume_sections(&self, language: &str) -> Result<Vec<ResumeSection>, String> {
         self.workspace_content
             .editable_sections(ContentKind::Resume, language)
-            .map(map_resume_sections)
+            .map(|sections| self.map_resume_sections(sections))
             .map_err(|error| error.to_string())
     }
 
@@ -530,7 +533,7 @@ impl DesktopWorkspace {
             .map_err(|error| error.to_string())?;
         self.workspace_content
             .editable_sections(ContentKind::Resume, language)
-            .map(map_resume_sections)
+            .map(|sections| self.map_resume_sections(sections))
             .map_err(|error| error.to_string())
     }
 
@@ -562,6 +565,82 @@ impl DesktopWorkspace {
             .ok_or_else(|| format!("saved translation `{translation_id}` was not returned"))
     }
 
+    pub(crate) fn generate_missing_translation(
+        &self,
+        part_id: &str,
+        target_language: &str,
+        source_language: Option<&str>,
+        api_key: &str,
+    ) -> Result<EditorDocument, String> {
+        let target_language = target_language.trim();
+        if target_language.is_empty() {
+            return Err("Target language is required.".to_owned());
+        }
+        let (document, part) = self
+            .workspace_content
+            .document_for_part(part_id)
+            .map_err(|error| error.to_string())?;
+        if part
+            .translations
+            .iter()
+            .any(|translation| translation.language == target_language)
+        {
+            return Err(format!("`{target_language}` already exists for this Part."));
+        }
+        let source = source_language
+            .and_then(|language| {
+                part.translations
+                    .iter()
+                    .find(|translation| translation.language == language)
+            })
+            .or_else(|| {
+                part.translations
+                    .iter()
+                    .find(|translation| translation.language == part.canonical_language)
+            })
+            .or_else(|| part.translations.first())
+            .ok_or_else(|| "This Part has no source language to translate from.".to_owned())?;
+        if source.content.trim().is_empty() {
+            return Err(format!(
+                "`{}` is empty; write source content before generating `{target_language}`.",
+                source.language
+            ));
+        }
+
+        let api_key = OpenAiApiKey::parse(api_key.to_owned()).map_err(|error| error.to_string())?;
+        let model = env::var("SILAN_OPENAI_TRANSLATION_MODEL").unwrap_or_else(|_| "gpt-5".to_owned());
+        let translator = OpenAiMarkdownTranslator::new("https://api.openai.com", model);
+        let generated = translator
+            .translate(
+                &api_key,
+                &MarkdownTranslationRequest {
+                    source_language: source.language.clone(),
+                    target_language: target_language.to_owned(),
+                    title: document.title.clone(),
+                    body: source.content.clone(),
+                },
+            )
+            .map_err(|error| error.to_string())?;
+
+        let saved = self
+            .workspace_content
+            .create_translation(
+                &CreateTranslationInput {
+                    part_id: part_id.to_owned(),
+                    language: target_language.to_owned(),
+                    title: generated.title,
+                    body: generated.body,
+                },
+                &self.db_path,
+            )
+            .map_err(|error| error.to_string())?;
+        let engagement = ContentEngagementSnapshot::read(&self.db_path);
+        map_editable_document(saved, &engagement)
+            .into_iter()
+            .find(|part| part.part_id == part_id)
+            .ok_or_else(|| format!("generated translation for `{part_id}` was not returned"))
+    }
+
     pub(crate) fn import_media_asset(
         &self,
         translation_id: &str,
@@ -575,12 +654,71 @@ impl DesktopWorkspace {
             .media_library
             .import_asset(&document.id, source_path)
             .map_err(|error| error.to_string())?;
+        let local_path = self
+            .media_library
+            .resolve_local_reference(&asset.uri)
+            .ok()
+            .map(|path| path.to_string_lossy().to_string());
         Ok(ImportedMediaAsset {
             markdown: asset.markdown,
             uri: asset.uri,
             relative_path: asset.relative_path,
             file_name: asset.file_name,
             byte_count: asset.byte_count,
+            local_path,
+        })
+    }
+
+    pub(crate) fn import_resume_media_asset(
+        &self,
+        file_name: &str,
+        bytes: &[u8],
+    ) -> Result<ImportedMediaAsset, String> {
+        let extension = Path::new(file_name)
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(str::to_ascii_lowercase)
+            .ok_or_else(|| "media file must have an extension".to_owned())?;
+        const SUPPORTED_EXTENSIONS: &[&str] = &[
+            "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico",
+        ];
+        if !SUPPORTED_EXTENSIONS.contains(&extension.as_str()) {
+            return Err(format!("unsupported media extension `{extension}`"));
+        }
+
+        let stem = sanitize_asset_stem(
+            Path::new(file_name)
+                .file_stem()
+                .and_then(|value| value.to_str())
+                .unwrap_or("asset"),
+        );
+        let assets_dir = self.content_root.join("resources/resume/assets");
+        fs::create_dir_all(&assets_dir)
+            .map_err(|error| format!("cannot create `{}`: {error}", assets_dir.display()))?;
+
+        let mut target = assets_dir.join(format!("{stem}.{extension}"));
+        let mut suffix = 2usize;
+        while target.exists() {
+            target = assets_dir.join(format!("{stem}-{suffix}.{extension}"));
+            suffix += 1;
+        }
+        fs::write(&target, bytes)
+            .map_err(|error| format!("cannot write `{}`: {error}", target.display()))?;
+
+        let file_name = target
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("asset")
+            .to_owned();
+        let relative_path = format!("resume/assets/{file_name}");
+        let uri = format!("silan://resources/{relative_path}");
+        Ok(ImportedMediaAsset {
+            markdown: format!("![{}]({uri})", alt_text_for_asset(&file_name)),
+            uri,
+            relative_path,
+            file_name,
+            byte_count: bytes.len() as u64,
+            local_path: Some(target.to_string_lossy().to_string()),
         })
     }
 
@@ -655,17 +793,55 @@ impl DesktopWorkspace {
             .ok_or_else(|| format!("saved translation `{translation_id}` was not returned"))
     }
 
-    pub(crate) fn capture_idea(
+    pub(crate) fn save_content_metadata(
         &self,
-        note: &str,
-        category: &str,
+        translation_id: &str,
+        metadata: ContentMetadataInput,
+        expected_revision: &str,
     ) -> Result<EditorDocument, String> {
-        let category = IdeaCategory::parse(category).map_err(|error| error.to_string())?;
-        let captured = self
-            .creator
-            .capture_idea_and_sync(note, category, &self.db_path)
+        if metadata.title.trim().is_empty() {
+            return Err("Content title is required.".to_owned());
+        }
+        let saved = self
+            .workspace_content
+            .save_metadata(
+                &SaveMetadataInput {
+                    translation_id: translation_id.to_owned(),
+                    title: metadata.title,
+                    description: metadata.description,
+                    cover_url: metadata.cover_url,
+                    expected_revision: expected_revision.to_owned(),
+                },
+                &self.db_path,
+            )
             .map_err(|error| error.to_string())?;
-        self.document_for_part(&captured.part_id)
+        let engagement = ContentEngagementSnapshot::read(&self.db_path);
+        map_editable_document(saved, &engagement)
+            .into_iter()
+            .find(|part| {
+                part.translations
+                    .iter()
+                    .any(|value| value.id == translation_id)
+            })
+            .ok_or_else(|| format!("saved metadata `{translation_id}` was not returned"))
+    }
+
+    pub(crate) fn save_engagement_stats(
+        &self,
+        entity_type: &str,
+        entity_id: &str,
+        stats: EngagementStatsInput,
+    ) -> Result<EngagementStats, String> {
+        if stats.likes < 0 || stats.comments < 0 {
+            return Err("Reaction counters cannot be negative.".to_owned());
+        }
+        let saved = StatsCache::open(&self.db_path)
+            .save_item_engagement(entity_type, entity_id, stats.likes, stats.comments)
+            .map_err(|error| error.to_string())?;
+        Ok(EngagementStats {
+            likes: saved.likes,
+            comments: saved.comments,
+        })
     }
 
     pub(crate) fn capture_blog(
@@ -681,10 +857,10 @@ impl DesktopWorkspace {
         self.document_for_part(&captured.part_id)
     }
 
-    pub(crate) fn capture_update(&self, event: &str) -> Result<EditorDocument, String> {
+    pub(crate) fn capture_moment(&self, event: &str) -> Result<EditorDocument, String> {
         let captured = self
             .creator
-            .capture_update_and_sync(event, &self.db_path)
+            .capture_moment_and_sync(event, &self.db_path)
             .map_err(|error| error.to_string())?;
         self.document_for_part(&captured.part_id)
     }
@@ -737,6 +913,52 @@ impl DesktopWorkspace {
             .resolve_local_reference(reference)
             .ok()
             .map(|path| path.to_string_lossy().to_string())
+    }
+
+    fn map_resume_sections(&self, sections: Vec<EditableSection>) -> Vec<ResumeSection> {
+        sections
+            .into_iter()
+            .map(|section| ResumeSection {
+                role: section.role,
+                shape: section.shape,
+                canonical_language: section.canonical_language,
+                entries: section
+                    .entries
+                    .into_iter()
+                    .map(|entry| {
+                        let media = self.resume_entry_media(&entry.shared, &entry.localized);
+                        crate::model::ResumeEntry {
+                            entry_id: entry.id,
+                            sort_order: entry.sort_order as i64,
+                            shared: entry.shared,
+                            localized: entry.localized,
+                            media,
+                        }
+                    })
+                    .collect(),
+            })
+            .collect()
+    }
+
+    fn resume_entry_media(
+        &self,
+        shared: &serde_json::Value,
+        localized: &serde_json::Value,
+    ) -> BTreeMap<String, String> {
+        const MEDIA_FIELDS: &[&str] = &[
+            "institution_logo_url",
+            "company_logo_url",
+            "image_url",
+            "cover_url",
+        ];
+        let mut media = BTreeMap::new();
+        for field in MEDIA_FIELDS {
+            let value = json_text(shared, field).or_else(|| json_text(localized, field));
+            if let Some(resolved) = value.and_then(|reference| self.resolve_media_reference(reference)) {
+                media.insert((*field).to_owned(), resolved);
+            }
+        }
+        media
     }
 
     fn read_moments_config(&self) -> Result<MomentsUiConfig, String> {
@@ -924,6 +1146,42 @@ fn non_empty_or(value: &str, fallback: &str) -> String {
     }
 }
 
+fn json_text<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    value
+        .as_object()
+        .and_then(|map| map.get(key))
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|text| !text.is_empty())
+}
+
+fn sanitize_asset_stem(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for ch in value.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+        } else if matches!(ch, '-' | '_' | '.') {
+            out.push(ch);
+        } else if ch.is_whitespace() {
+            out.push('-');
+        }
+    }
+    let out = out.trim_matches(['-', '_', '.']).to_owned();
+    if out.is_empty() {
+        "asset".to_owned()
+    } else {
+        out
+    }
+}
+
+fn alt_text_for_asset(file_name: &str) -> String {
+    Path::new(file_name)
+        .file_stem()
+        .and_then(|value| value.to_str())
+        .unwrap_or("asset")
+        .replace(['-', '_'], " ")
+}
+
 fn avatar_label(display_name: &str) -> String {
     display_name
         .split_whitespace()
@@ -964,6 +1222,7 @@ fn map_editable_document(
         content_type,
         slug,
         title,
+        description,
         series_slug,
         episode_number,
         status,
@@ -1001,6 +1260,7 @@ fn map_editable_document(
                 role,
                 canonical_language,
                 title: title.clone(),
+                description: description.clone(),
                 status: status.clone(),
                 visibility: visibility.clone(),
                 date: date.clone(),
@@ -1019,27 +1279,6 @@ fn map_editable_document(
                     })
                     .collect(),
             }
-        })
-        .collect()
-}
-
-fn map_resume_sections(sections: Vec<EditableSection>) -> Vec<ResumeSection> {
-    sections
-        .into_iter()
-        .map(|section| ResumeSection {
-            role: section.role,
-            shape: section.shape,
-            canonical_language: section.canonical_language,
-            entries: section
-                .entries
-                .into_iter()
-                .map(|entry| crate::model::ResumeEntry {
-                    entry_id: entry.id,
-                    sort_order: entry.sort_order as i64,
-                    shared: entry.shared,
-                    localized: entry.localized,
-                })
-                .collect(),
         })
         .collect()
 }
@@ -1286,14 +1525,6 @@ fn validate_document_state(kind: &str, state: &DocumentStateInput) -> Result<(),
     let allowed_status = match kind {
         "blog" | "episode" => &["draft", "published", "archived"][..],
         "project" => &["active", "completed", "paused", "cancelled"][..],
-        "idea" => &[
-            "draft",
-            "hypothesis",
-            "experimenting",
-            "validating",
-            "published",
-            "concluded",
-        ][..],
         "moment" => &["active", "ongoing", "completed"][..],
         other => return Err(format!("state controls are not supported for `{other}`")),
     };

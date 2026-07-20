@@ -15,6 +15,7 @@ export type EditorDocument = {
   role: string;
   canonical_language: string;
   title: string;
+  description?: string | null;
   status: string;
   visibility: string;
   date?: string | null;
@@ -44,6 +45,7 @@ export type ImportedMediaAsset = {
   file_name: string;
   byte_count: number;
   markdown: string;
+  local_path?: string | null;
 };
 
 export type GeoInsightReport = {
@@ -245,7 +247,7 @@ export type EntityCount = {
 
 export type EntityFilter = 'all' | ContentKind;
 export type IdeaCategory = 'inspiration' | 'thought' | 'decision' | 'state' | 'event';
-export type CaptureTarget = 'blog' | 'idea' | 'moment';
+export type CaptureTarget = 'blog' | 'moment';
 export type CapturePhase = 'closed' | 'opening' | 'editing' | 'confirming-close' | 'submitting' | 'failed' | 'closing';
 
 export type ContentGroup = {
@@ -258,6 +260,8 @@ export type ContentGroup = {
   date?: string | null;
   pinned?: boolean;
   coverUrl?: string;
+  description?: string | null;
+  language?: string;
   documents: EditorDocument[];
   engagement: EngagementStats;
   cardKind?: 'article' | 'series';
@@ -302,6 +306,7 @@ export type ResumeEntry = {
   sort_order: number;
   shared: Record<string, ResumeFieldValue>;
   localized: Record<string, ResumeFieldValue>;
+  media?: Record<string, string>;
 };
 
 export type ResumeSection = {

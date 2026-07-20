@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  FileImage,
   LoaderCircle,
   Mail,
   MapPin,
@@ -12,12 +13,15 @@ import {
   Phone,
   Plus,
   Trash2,
-  X,
+  UploadCloud,
 } from 'lucide-react';
 import { MarkdownPreview } from './MarkdownPreview';
+import { LanguageCloseControls } from './LanguageCloseControls';
 import { ResumeBioEditor } from './ResumeBioEditor';
+import { toWebviewMediaUrl } from '../lib/media';
 import type {
   EditorDocument,
+  ImportedMediaAsset,
   ResumeEntry,
   ResumeFieldValue,
   ResumePartSource,
@@ -45,6 +49,9 @@ const managedFields = new Set(['entry_id', 'sort_order']);
 /** Long-prose fields that deserve a textarea instead of a one-line input. */
 const longTextFields = new Set(['description', 'abstract']);
 
+/** Asset fields are managed as files, not typed URLs. */
+const mediaFields = new Set(['institution_logo_url', 'company_logo_url', 'image_url']);
+
 /** Preferred form field order — identity first, dates next, prose last. */
 const preferredFieldOrder = [
   'institution', 'company', 'title', 'category',
@@ -53,6 +60,7 @@ const preferredFieldOrder = [
   'start_date', 'end_date', 'award_date', 'publication_date',
   'is_current', 'is_ongoing', 'location',
   'description', 'abstract', 'details', 'items',
+  'institution_logo_url', 'company_logo_url', 'image_url',
 ];
 
 /** Starter fields for a section's first block, per role. */
@@ -138,7 +146,7 @@ const entryFieldGroups = [
   {
     id: 'links',
     title: 'Links',
-    keys: ['url', 'institution_website', 'company_website'],
+    keys: ['url', 'institution_website', 'company_website', 'institution_logo_url', 'company_logo_url', 'image_url'],
   },
 ];
 
@@ -193,6 +201,12 @@ function EntryView({ role, entry }: { role: string; entry: ResumeEntry }) {
   const description = asText(fieldOf(entry, 'description'));
   const url = asText(fieldOf(entry, 'url')) || asText(fieldOf(entry, 'institution_website')) || asText(fieldOf(entry, 'company_website'));
   const range = dateRange(entry);
+  const logoUrl = toWebviewMediaUrl(
+    entry.media?.company_logo_url
+    || entry.media?.institution_logo_url
+    || entry.media?.image_url
+    || '',
+  );
 
   // Description and detail bullets carry inline Markdown (bold, links) —
   // render them through Vditor's own preview pipeline as one block.
@@ -204,9 +218,20 @@ function EntryView({ role, entry }: { role: string; entry: ResumeEntry }) {
   return (
     <>
       <div className="resume-entry-head">
-        <div>
+        <div className="resume-entry-title-row">
+          {logoUrl && (
+            <img
+              className="resume-entry-logo"
+              src={logoUrl}
+              alt=""
+              loading="lazy"
+              aria-hidden="true"
+            />
+          )}
+          <div>
           <h3>{title}</h3>
           {subtitle && <p className="resume-entry-subtitle">{subtitle}{location ? ` · ${location}` : ''}</p>}
+          </div>
         </div>
         {range && <span className="resume-entry-range">{range}</span>}
       </div>
@@ -225,16 +250,96 @@ function EntryView({ role, entry }: { role: string; entry: ResumeEntry }) {
 
 /* --- Block: edit form ------------------------------------------------------ */
 
+function ResumeMediaField({
+  fieldKey,
+  value,
+  previewUrl,
+  saving,
+  busy,
+  error,
+  onUpload,
+  onRemove,
+}: {
+  fieldKey: string;
+  value: string;
+  previewUrl: string;
+  saving: boolean;
+  busy: boolean;
+  error?: string;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+}) {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const hasAsset = Boolean(value || previewUrl);
+
+  return (
+    <div className="resume-media-field">
+      <div className="resume-media-label">
+        <span>{fieldLabel(fieldKey).replace(/ url$/i, '')}</span>
+        {value && <code>{value}</code>}
+      </div>
+      <div className="resume-media-control">
+        <div className="resume-media-preview" data-empty={!previewUrl}>
+          {previewUrl ? (
+            <img src={previewUrl} alt="" aria-hidden="true" />
+          ) : (
+            <FileImage size={20} aria-hidden="true" />
+          )}
+        </div>
+        <div className="resume-media-actions">
+          <button
+            type="button"
+            className="resume-media-button"
+            disabled={saving || busy}
+            onClick={() => inputRef.current?.click()}
+          >
+            {busy ? <LoaderCircle size={13} className="spin" /> : <UploadCloud size={13} />}
+            {hasAsset ? 'Change' : 'Upload'}
+          </button>
+          {hasAsset && (
+            <button
+              type="button"
+              className="resume-media-button resume-media-button--danger"
+              disabled={saving || busy}
+              onClick={onRemove}
+            >
+              <Trash2 size={13} />
+              Remove
+            </button>
+          )}
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp,image/avif,image/x-icon"
+          disabled={saving || busy}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.currentTarget.value = '';
+            if (file) onUpload(file);
+          }}
+        />
+      </div>
+      {error && <p className="resume-media-error" role="alert">{error}</p>}
+    </div>
+  );
+}
+
 function EntryForm({
   draft,
+  media,
   saving,
   onChange,
 }: {
   draft: EntryDraft;
+  media?: Record<string, string>;
   saving: boolean;
   onChange: (fields: Record<string, ResumeFieldValue>) => void;
 }) {
   const setField = (key: string, value: ResumeFieldValue) => onChange({ ...draft.fields, [key]: value });
+  const [mediaBusy, setMediaBusy] = React.useState<string | null>(null);
+  const [mediaErrors, setMediaErrors] = React.useState<Record<string, string>>({});
+  const [localPreviews, setLocalPreviews] = React.useState<Record<string, string>>({});
   const orderedKeys = orderedFieldKeys(draft.fields);
   const groupedKeys = new Set(entryFieldGroups.flatMap((group) => group.keys));
   const groups = [
@@ -251,6 +356,59 @@ function EntryForm({
 
   const renderField = (key: string) => {
     const value = draft.fields[key];
+    if (mediaFields.has(key)) {
+      const text = asText(value);
+      const previewUrl = localPreviews[key] || toWebviewMediaUrl(media?.[key]) || '';
+      return (
+        <div className="resume-form-field resume-form-field--wide" key={key}>
+          <ResumeMediaField
+            fieldKey={key}
+            value={text}
+            previewUrl={previewUrl}
+            saving={saving}
+            busy={mediaBusy === key}
+            error={mediaErrors[key]}
+            onRemove={() => {
+              setField(key, '');
+              setMediaErrors((current) => {
+                const next = { ...current };
+                delete next[key];
+                return next;
+              });
+              setLocalPreviews((current) => {
+                const next = { ...current };
+                delete next[key];
+                return next;
+              });
+            }}
+            onUpload={async (file) => {
+              setMediaBusy(key);
+              setMediaErrors((current) => {
+                const next = { ...current };
+                delete next[key];
+                return next;
+              });
+              try {
+                const bytes = Array.from(new Uint8Array(await file.arrayBuffer()));
+                const imported = await invoke<ImportedMediaAsset>('import_resume_media_asset', {
+                  fileName: file.name,
+                  bytes,
+                });
+                setField(key, imported.uri);
+                setLocalPreviews((current) => ({
+                  ...current,
+                  [key]: imported.local_path ? toWebviewMediaUrl(imported.local_path) : URL.createObjectURL(file),
+                }));
+              } catch (reason) {
+                setMediaErrors((current) => ({ ...current, [key]: String(reason) }));
+              } finally {
+                setMediaBusy(null);
+              }
+            }}
+          />
+        </div>
+      );
+    }
     if (typeof value === 'boolean') {
       return (
         <label className="resume-form-check" key={key}>
@@ -335,25 +493,29 @@ function ResumeProfileView({
   source,
   onEdit,
   editingDisabled,
+  showEditControls,
 }: {
   source: ResumeProfileSource;
   onEdit: () => void;
   editingDisabled: boolean;
+  showEditControls: boolean;
 }) {
   const { profile } = source;
   const contacts = profileContactItems(profile);
   return (
     <header className="resume-profile">
-      <button
-        type="button"
-        className="resume-block-action resume-profile-edit"
-        disabled={editingDisabled}
-        onClick={onEdit}
-        title="Edit profile"
-        aria-label="Edit profile"
-      >
-        <PencilLine size={13} />
-      </button>
+      {showEditControls && (
+        <button
+          type="button"
+          className="resume-block-action resume-profile-edit"
+          disabled={editingDisabled}
+          onClick={onEdit}
+          title="Edit profile"
+          aria-label="Edit profile"
+        >
+          <PencilLine size={13} />
+        </button>
+      )}
       <div className="resume-profile-identity">
         <h1>{profile.full_name || 'Unnamed profile'}</h1>
         {profile.title && <p className="resume-profile-title">{profile.title}</p>}
@@ -397,6 +559,8 @@ function ResumeEditorWorkspace({
   subtitle,
   saving,
   saveLabel,
+  language,
+  onLanguageChange,
   outline,
   children,
   onSave,
@@ -407,6 +571,8 @@ function ResumeEditorWorkspace({
   subtitle: string;
   saving: boolean;
   saveLabel: string;
+  language: string;
+  onLanguageChange: (language: string) => void;
   outline: { id: string; label: string }[];
   children: React.ReactNode;
   onSave: () => void;
@@ -420,9 +586,19 @@ function ResumeEditorWorkspace({
           <strong>{title}</strong>
           <em>{subtitle}</em>
         </div>
-        <button type="button" className="resume-editor-close" disabled={saving} onClick={onCancel} aria-label="Close editor">
-          <X size={15} />
-        </button>
+        <LanguageCloseControls
+          className="resume-editor-language-close"
+          languages={[
+            { language: 'en' },
+            { language: 'zh' },
+          ]}
+          activeLanguage={language}
+          disabled={saving}
+          closeLabel="Close editor"
+          closeSize={15}
+          onLanguageSelect={onLanguageChange}
+          onClose={onCancel}
+        />
       </div>
       <div className="resume-editor-actions" aria-label="Editor actions">
         <button type="button" className="resume-editor-save" disabled={saving} onClick={onSave}>
@@ -574,10 +750,15 @@ function ResumeProfileForm({
 
 export function ResumePage({
   overview,
+  language,
+  onLanguageChange,
+  editControlsVisible,
 }: {
   overview: EditorDocument | null;
+  language: string;
+  onLanguageChange: (language: string) => void;
+  editControlsVisible: boolean;
 }) {
-  const [language, setLanguage] = React.useState('en');
   const [sections, setSections] = React.useState<ResumeSection[] | null>(null);
   const [profileSource, setProfileSource] = React.useState<ResumeProfileSource | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -630,6 +811,15 @@ export function ResumePage({
       document.body.style.overflow = previousOverflow;
     };
   }, [editing, profileDraft, summaryDraft]);
+
+  React.useEffect(() => {
+    if (editControlsVisible) return;
+    setEditing(null);
+    setProfileDraft(null);
+    setSummaryDraft(null);
+    setSummaryToolbarVisible(false);
+    setConfirmDelete(null);
+  }, [editControlsVisible]);
 
   const orderedSections = React.useMemo(() => {
     if (!sections) return [];
@@ -787,6 +977,9 @@ export function ResumePage({
   const editingSection = editing
     ? orderedSections.find((section) => section.role === editing.role) || null
     : null;
+  const editingEntry = editing && editingSection
+    ? editingSection.entries.find((entry) => entry.entry_id === editing.draft.entry_id) || null
+    : null;
   const editingTitle = editing
     ? asText(editing.draft.fields.title)
       || asText(editing.draft.fields.position)
@@ -797,23 +990,6 @@ export function ResumePage({
 
   return (
     <section className="resume-page" aria-label="Resume">
-      <div className="resume-toolbar">
-        <div className="resume-language" role="tablist" aria-label="Resume language">
-          {['en', 'zh'].map((lang) => (
-            <button
-              type="button"
-              role="tab"
-              key={lang}
-              aria-selected={language === lang}
-              className={language === lang ? 'active' : ''}
-              onClick={() => setLanguage(lang)}
-            >
-              {lang}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="resume-sheet">
       {profileLoading && <div className="empty resume-profile-loading">Reading profile...</div>}
 
@@ -829,12 +1005,13 @@ export function ResumePage({
           source={profileSource}
           onEdit={startEditProfile}
           editingDisabled={editing !== null || summaryDraft !== null || savingProfile}
+          showEditControls={editControlsVisible}
         />
       ) : null}
 
       {(profileSource || summaryText) && (
         <header className="resume-summary">
-          {profileSource && (
+          {profileSource && editControlsVisible && (
             <button type="button" className="resume-block-action resume-summary-edit" disabled={editing !== null || profileDraft !== null || savingProfile} onClick={startEditSummary} title="Edit bio" aria-label="Edit bio">
               <PencilLine size={13} />
             </button>
@@ -863,16 +1040,18 @@ export function ResumePage({
           <section className="resume-section" key={section.role}>
             <div className="resume-section-head">
               <h2>{roleLabels[section.role] || section.role}</h2>
-              <button
-                type="button"
-                className="resume-block-action"
-                disabled={saving || editing !== null || profileDraft !== null || summaryDraft !== null}
-                onClick={() => startAdd(section)}
-                title={`Add ${section.shape === 'key_value_list' ? 'category' : 'entry'}`}
-                aria-label={`Add ${section.shape === 'key_value_list' ? 'category' : 'entry'}`}
-              >
-                <Plus size={14} />
-              </button>
+              {editControlsVisible && (
+                <button
+                  type="button"
+                  className="resume-block-action"
+                  disabled={saving || editing !== null || profileDraft !== null || summaryDraft !== null}
+                  onClick={() => startAdd(section)}
+                  title={`Add ${section.shape === 'key_value_list' ? 'category' : 'entry'}`}
+                  aria-label={`Add ${section.shape === 'key_value_list' ? 'category' : 'entry'}`}
+                >
+                  <Plus size={14} />
+                </button>
+              )}
             </div>
 
             {sectionError && (
@@ -902,7 +1081,8 @@ export function ResumePage({
                           <EntryView role={section.role} entry={entry} />
                         )}
                       </div>
-                      <div className="resume-block-actions">
+                      {editControlsVisible && (
+                        <div className="resume-block-actions">
                           <button
                             type="button"
                             className="resume-block-action"
@@ -955,7 +1135,8 @@ export function ResumePage({
                               <Trash2 size={13} />
                             </button>
                           )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </article>
                 );
@@ -973,6 +1154,8 @@ export function ResumePage({
           subtitle="Profile header"
           saving={savingProfile}
           saveLabel="Save profile"
+          language={language}
+          onLanguageChange={onLanguageChange}
           outline={[
             { id: 'profile-identity', label: 'Identity' },
             { id: 'profile-contact', label: 'Contact' },
@@ -993,6 +1176,7 @@ export function ResumePage({
         <ResumeBioEditor
           value={summaryDraft}
           language={language}
+          onLanguageChange={onLanguageChange}
           sourcePath={profileSource.relative_path}
           disabled={savingProfile}
           dirty={summaryDraft !== profileSource.summary}
@@ -1011,12 +1195,15 @@ export function ResumePage({
           subtitle={editing.draft.isNew ? 'New resume block' : editing.draft.entry_id}
           saving={savingRole === editingSection.role}
           saveLabel="Save block"
+          language={language}
+          onLanguageChange={onLanguageChange}
           outline={entryOutlineFor(editing.draft).map(({ id, label }) => ({ id, label }))}
           onSave={() => saveEdit(editingSection)}
           onCancel={() => setEditing(null)}
         >
           <EntryForm
             draft={editing.draft}
+            media={editingEntry?.media}
             saving={savingRole === editingSection.role}
             onChange={(fields) => setEditing({ role: editingSection.role, draft: { ...editing.draft, fields } })}
           />

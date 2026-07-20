@@ -72,7 +72,7 @@ export function SeriesDetail({ series, onBack, onEditSeries, onEditEpisode, rend
       <div className="series-episode-list">
         {series.episodes.map((episode) => {
           const primary = selectPrimaryDocument(episode);
-          const excerpt = translationPreview(primary);
+          const excerpt = translationPreview(primary, episode.language);
           const date = formatShortDate(contentGroupUpdatedAt(episode));
 
           return (

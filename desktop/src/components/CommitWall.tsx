@@ -7,7 +7,7 @@ const scopeLabels: Record<VersionScope, string> = {
   resume: 'Resume',
   blog: 'Blog',
   project: 'Projects',
-  idea: 'Ideas',
+  idea: 'Legacy',
   moment: 'Moments',
 };
 
@@ -25,6 +25,20 @@ type TrafficWallProps = {
 };
 
 const isoDate = (date: Date) => date.toISOString().slice(0, 10);
+
+const singaporeTodayUtc = () => {
+  const singaporeDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Singapore',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+  return new Date(`${singaporeDate}T00:00:00Z`);
+};
+
+const startOfUtcWeek = (date: Date) => (
+  new Date(date.getTime() - date.getUTCDay() * DAY_MS)
+);
 
 const formatDate = (value: string) => new Intl.DateTimeFormat('en', {
   month: 'short',
@@ -67,22 +81,18 @@ function TileWall({ activity, noun, selectedDate, onSelect }: {
     [activity],
   );
   const days = React.useMemo(() => {
-    const singaporeDate = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Singapore',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date());
-    const utcToday = new Date(`${singaporeDate}T00:00:00Z`);
-    const end = new Date(utcToday.getTime() + (6 - utcToday.getUTCDay()) * DAY_MS);
-    const start = new Date(end.getTime() - (WEEKS * 7 - 1) * DAY_MS);
-    return Array.from({ length: WEEKS * 7 }, (_, index) => {
+    const today = singaporeTodayUtc();
+    const currentWeekStart = startOfUtcWeek(today);
+    const start = new Date(currentWeekStart.getTime() - (WEEKS - 1) * 7 * DAY_MS);
+    const visibleDayCount = Math.floor((today.getTime() - start.getTime()) / DAY_MS) + 1;
+    return Array.from({ length: visibleDayCount }, (_, index) => {
       const date = isoDate(new Date(start.getTime() + index * DAY_MS));
       return { date, activity: activityByDate.get(date) };
     });
   }, [activityByDate]);
-  const total = activity.reduce((sum, day) => sum + day.count, 0);
-  const monthLabels = Array.from({ length: WEEKS }, (_, week) => {
+  const total = days.reduce((sum, day) => sum + (day.activity?.count ?? 0), 0);
+  const weekCount = Math.ceil(days.length / 7);
+  const monthLabels = Array.from({ length: weekCount }, (_, week) => {
     const date = new Date(`${days[week * 7].date}T00:00:00Z`);
     const previous = week > 0 ? new Date(`${days[(week - 1) * 7].date}T00:00:00Z`) : null;
     return !previous || previous.getUTCMonth() !== date.getUTCMonth()

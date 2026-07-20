@@ -1,6 +1,7 @@
 import React from 'react';
 import Vditor from 'vditor';
-import { FileText, LoaderCircle, Save, Type, X } from 'lucide-react';
+import { FileText, LoaderCircle, Save, Type } from 'lucide-react';
+import { LanguageCloseControls } from './LanguageCloseControls';
 
 const destroyEditor = (editor: Vditor | null) => {
   if (!editor) return;
@@ -21,6 +22,7 @@ export function ResumeBioEditor({
   dirty,
   toolbarVisible,
   onChange,
+  onLanguageChange,
   onSave,
   onCancel,
   onToggleToolbar,
@@ -32,6 +34,7 @@ export function ResumeBioEditor({
   dirty: boolean;
   toolbarVisible: boolean;
   onChange: (value: string) => void;
+  onLanguageChange: (language: string) => void;
   onSave: () => void;
   onCancel: () => void;
   onToggleToolbar: () => void;
@@ -120,9 +123,18 @@ export function ResumeBioEditor({
           </div>
         </header>
 
-        <button type="button" className="content-close content-close-top" disabled={disabled} onClick={onCancel} aria-label="Close content editor">
-          <X size={18} />
-        </button>
+        <LanguageCloseControls
+          fixed
+          languages={[
+            { language: 'en', dirty: dirty && language === 'en' },
+            { language: 'zh', dirty: dirty && language === 'zh' },
+          ]}
+          activeLanguage={language}
+          disabled={disabled}
+          closeLabel="Close content editor"
+          onLanguageSelect={onLanguageChange}
+          onClose={onCancel}
+        />
 
         <div className="content-editor-body">
           <aside className="content-part-rail" aria-label="Resume Markdown parts">
@@ -149,17 +161,8 @@ export function ResumeBioEditor({
                   <p>summary · {sourcePath}</p>
                 </div>
               </div>
-              <div className="document-state">
-                {dirty && <span>unsaved</span>}
-              </div>
             </header>
             <div className="editor-frame content-editor-frame" data-entity="resume" data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
-              <div className="language-tabs" role="tablist" aria-label="Language representations">
-                <button type="button" className="active" role="tab" aria-selected="true">
-                  {language}
-                  {dirty && <span />}
-                </button>
-              </div>
               <div ref={hostRef} className="editor-host" />
             </div>
           </section>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { AlertCircle, Check, LoaderCircle, Mic, Sparkles, Square, X } from 'lucide-react';
+import { AlertCircle, Check, LoaderCircle, Mic, Sparkles, Square } from 'lucide-react';
+import { LanguageCloseControls } from './LanguageCloseControls';
 import type { CapturePhase, CaptureTarget, IdeaCategory } from '../types';
 
 type CaptureCategoryOption = { value: IdeaCategory; label: string; Icon: typeof Sparkles };
@@ -10,7 +11,9 @@ type CaptureSheetProps = {
   target: CaptureTarget;
   onTargetChange: (target: CaptureTarget) => void;
   category: IdeaCategory;
+  language: string;
   onCategoryChange: (category: IdeaCategory) => void;
+  onLanguageChange: (language: string) => void;
   categories: CaptureCategoryOption[];
   note: string;
   onNoteChange: (note: string) => void;
@@ -32,7 +35,9 @@ export function CaptureSheet({
   target,
   onTargetChange,
   category,
+  language,
   onCategoryChange,
+  onLanguageChange,
   categories,
   note,
   onNoteChange,
@@ -195,7 +200,7 @@ export function CaptureSheet({
 
   return (
     <section
-      className="idea-capture"
+      className="moment-capture"
       data-phase={phase}
       data-target={target}
       aria-hidden={phase === 'closed'}
@@ -220,16 +225,6 @@ export function CaptureSheet({
           <button
             type="button"
             role="tab"
-            aria-selected={target === 'idea'}
-            className={target === 'idea' ? 'active' : ''}
-            onClick={() => onTargetChange('idea')}
-            disabled={phase === 'submitting'}
-          >
-            记录想法
-          </button>
-          <button
-            type="button"
-            role="tab"
             aria-selected={target === 'moment'}
             className={target === 'moment' ? 'active' : ''}
             onClick={() => onTargetChange('moment')}
@@ -238,21 +233,21 @@ export function CaptureSheet({
             记录事件
           </button>
         </nav>
-        <button
-          type="button"
-          className="capture-close"
-          onClick={onRequestClose}
+        <LanguageCloseControls
+          className="capture-language-close"
+          languages={[{ language: 'en' }, { language: 'zh' }]}
+          activeLanguage={language}
           disabled={phase === 'submitting'}
-          title="Close capture"
-          aria-label="Close capture"
-        >
-          <X size={18} />
-        </button>
+          closeLabel="Close capture"
+          closeTitle="Close capture"
+          onLanguageSelect={onLanguageChange}
+          onClose={onRequestClose}
+        />
       </header>
 
       <div className="capture-workspace">
         {target !== 'moment' && (
-          <div className="capture-categories" role="radiogroup" aria-label="Idea category">
+          <div className="capture-categories" role="radiogroup" aria-label="Content category">
             {categories.map(({ value, label, Icon }) => (
               <button
                 type="button"
@@ -279,10 +274,8 @@ export function CaptureSheet({
             disabled={phase === 'submitting'}
             placeholder={target === 'moment'
               ? '记录刚发生的进展、事件或状态变化...'
-              : target === 'idea'
-                ? '把你现在想到的先说清楚...'
-                : '先把文章草稿写下来...'}
-            aria-label={target === 'moment' ? '事件内容' : target === 'idea' ? '想法内容' : '文章草稿'}
+              : '先把文章草稿写下来...'}
+            aria-label={target === 'moment' ? '事件内容' : '文章草稿'}
           />
         </div>
 
@@ -323,7 +316,7 @@ export function CaptureSheet({
           className="capture-confirm"
           disabled={!note.trim() || phase === 'submitting' || voicePhase !== 'idle'}
           onClick={onSubmit}
-          title={target === 'moment' ? '记录事件' : target === 'idea' ? '记录想法' : '保存文章草稿'}
+          title={target === 'moment' ? '记录事件' : '保存文章草稿'}
         >
           {phase === 'submitting' ? <LoaderCircle size={16} /> : <Check size={16} />}
           {phase === 'submitting' ? 'Saving' : 'Confirm'}

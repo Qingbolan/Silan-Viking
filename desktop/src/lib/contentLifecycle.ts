@@ -223,113 +223,6 @@ const projectLifecycle = (status: string, visibility: string): LifecycleView => 
   };
 };
 
-const ideaLifecycle = (status: string, visibility: string): LifecycleView => {
-  const actions: LifecycleAction[] = [];
-
-  if (status === 'published') {
-    actions.push(
-      {
-        id: 'unpublish',
-        label: 'Unpublish',
-        description: 'Take the idea offline and continue validation privately.',
-        tone: 'secondary',
-        nextState: { status: 'validating', visibility: 'private' },
-      },
-      {
-        id: 'conclude',
-        label: 'Conclude',
-        description: 'Close this idea as a concluded research thread.',
-        tone: 'secondary',
-        nextState: { status: 'concluded', visibility: 'private' },
-      },
-    );
-  } else if (status === 'concluded') {
-    actions.push({
-      id: 'validate',
-      label: 'Reopen',
-      description: 'Reopen this idea for validation.',
-      tone: 'secondary',
-      nextState: { status: 'validating', visibility: 'private' },
-    });
-  } else if (status === 'validating') {
-    actions.push(
-      {
-        id: 'publish',
-        label: 'Publish',
-        description: 'Publish the validated idea publicly.',
-        tone: 'primary',
-        nextState: { status: 'published', visibility: 'public' },
-      },
-      {
-        id: 'conclude',
-        label: 'Conclude',
-        description: 'Close this idea as a concluded research thread.',
-        tone: 'secondary',
-        nextState: { status: 'concluded', visibility: 'private' },
-      },
-    );
-  } else if (status === 'experimenting') {
-    actions.push(
-      {
-        id: 'validate',
-        label: 'Validate',
-        description: 'Move this idea from experiment to validation.',
-        tone: 'primary',
-        nextState: { status: 'validating', visibility: 'private' },
-      },
-      {
-        id: 'conclude',
-        label: 'Conclude',
-        description: 'Close this idea as a concluded research thread.',
-        tone: 'secondary',
-        nextState: { status: 'concluded', visibility: 'private' },
-      },
-    );
-  } else if (status === 'hypothesis') {
-    actions.push(
-      {
-        id: 'experiment',
-        label: 'Experiment',
-        description: 'Start testing this hypothesis.',
-        tone: 'primary',
-        nextState: { status: 'experimenting', visibility: 'private' },
-      },
-      {
-        id: 'publish',
-        label: 'Publish',
-        description: 'Publish this idea publicly.',
-        tone: 'secondary',
-        nextState: { status: 'published', visibility: 'public' },
-      },
-    );
-  } else {
-    actions.push(
-      {
-        id: 'hypothesis',
-        label: 'Form hypothesis',
-        description: 'Move this draft idea into a testable hypothesis.',
-        tone: 'primary',
-        nextState: { status: 'hypothesis', visibility: 'private' },
-      },
-      {
-        id: 'publish',
-        label: 'Publish',
-        description: 'Publish this idea publicly.',
-        tone: 'secondary',
-        nextState: { status: 'published', visibility: 'public' },
-      },
-    );
-  }
-
-  return {
-    status,
-    visibility,
-    statusLabel: titleCase(status),
-    visibilityLabel: titleCase(visibility),
-    actions,
-  };
-};
-
 export const contentLifecycleFor = (
   kind: ContentKind,
   rawStatus: string | null | undefined,
@@ -343,10 +236,6 @@ export const contentLifecycleFor = (
   if (kind === 'project') {
     return projectLifecycle(normalize(rawStatus, 'active'), visibility);
   }
-  if (kind === 'idea') {
-    return ideaLifecycle(normalize(rawStatus, 'draft'), visibility);
-  }
-
   return {
     status: normalize(rawStatus, 'draft'),
     visibility,

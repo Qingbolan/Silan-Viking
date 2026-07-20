@@ -1,7 +1,13 @@
 import type { BlogCardData } from '../components/ds/BlogCard';
-import type { IdeaCardData, IdeaStatus } from '../components/ds/IdeaCard';
 import type { ProjectCardData } from '../components/ds/ProjectCard';
-import type { ContentGroup, ContentKind, EditorDocument } from '../types';
+import type {
+  ContentGroup,
+  ContentKind,
+  EditorDocument,
+  EditorTranslation,
+  EpisodeGroup,
+  EpisodeSeries,
+} from '../types';
 import { formatShortDate } from './format';
 
 export const docPath = (doc: EditorDocument) => {
@@ -20,16 +26,54 @@ export const selectPrimaryDocument = (group: ContentGroup) => (
   || group.documents[0]
 );
 
-export const translationPreview = (document?: EditorDocument | null) => {
-  const translation = document?.translations.find((item) => item.language === document.canonical_language)
-    || document?.translations[0];
-  return (translation?.content || '')
+export const selectTranslation = (
+  document?: EditorDocument | null,
+  language?: string | null,
+): EditorTranslation | undefined => (
+  (language
+    ? document?.translations.find((item) => item.language === language)
+    : undefined)
+  || document?.translations.find((item) => item.language === document.canonical_language)
+  || document?.translations[0]
+);
+
+const markdownTitle = (content: string) => (
+  content
+    .split(/\r?\n/)
+    .map((line) => line.match(/^#\s+(.+?)\s*#*\s*$/)?.[1]?.trim())
+    .find((title): title is string => Boolean(title))
+);
+
+const withoutLeadingTitle = (content: string) => (
+  content.replace(/^\s*#\s+.+?(?:\r?\n|$)/, '')
+);
+
+const markdownPreview = (content: string) => (
+  content
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
     .replace(/\[[^\]]*]\([^)]*\)/g, ' ')
     .replace(/[#>*_`~\-]+/g, ' ')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim()
+);
+
+export const localizedDocumentTitle = (
+  document?: EditorDocument | null,
+  language?: string | null,
+) => {
+  const translation = selectTranslation(document, language);
+  return markdownTitle(translation?.content || '')
+    || document?.title
+    || '';
+};
+
+export const translationPreview = (
+  document?: EditorDocument | null,
+  language?: string | null,
+) => {
+  const translation = selectTranslation(document, language);
+  return markdownPreview(withoutLeadingTitle(translation?.content || ''));
 };
 
 export const contentGroupUpdatedAt = (group: ContentGroup) => group.documents.reduce((latest, document) => (
@@ -70,26 +114,39 @@ export const arrangeBlogGroupsForGrid = (groups: ContentGroup[]) => {
   return arranged;
 };
 
-export const ideaStatus = (status: string): IdeaStatus => {
-  const normalized = status.trim().toLowerCase();
-  if (
-    normalized === 'hypothesis'
-    || normalized === 'experimenting'
-    || normalized === 'validating'
-    || normalized === 'published'
-    || normalized === 'concluded'
-  ) {
-    return normalized;
-  }
-  return 'draft';
+export const localizeContentGroup = <T extends ContentGroup>(
+  group: T,
+  language: string,
+): T => {
+  const primary = selectPrimaryDocument(group);
+  return {
+    ...group,
+    language,
+    title: localizedDocumentTitle(primary, language) || group.title,
+    description: translationPreview(primary, language) || group.description,
+    latestEpisode: group.latestEpisode,
+  };
 };
+
+export const localizeEpisodeGroup = (
+  group: EpisodeGroup,
+  language: string,
+): EpisodeGroup => localizeContentGroup(group, language);
+
+export const localizeEpisodeSeries = (
+  series: EpisodeSeries,
+  language: string,
+): EpisodeSeries => ({
+  ...series,
+  episodes: series.episodes.map((episode) => localizeEpisodeGroup(episode, language)),
+});
 
 export const toBlogCardData = (group: ContentGroup): BlogCardData => {
   const isSeries = group.cardKind === 'series';
   return {
     id: group.id,
     title: group.title,
-    excerpt: translationPreview(selectPrimaryDocument(group)),
+    excerpt: translationPreview(selectPrimaryDocument(group), group.language),
     tags: contentGroupTags(group),
     date: formatShortDate(contentGroupUpdatedAt(group)),
     kind: isSeries ? 'series' : 'article',
@@ -108,18 +165,8 @@ export const toProjectCardData = (group: ContentGroup): ProjectCardData => {
   return {
     id: group.id,
     title: group.title,
-    description: translationPreview(selectPrimaryDocument(group)),
+    description: translationPreview(selectPrimaryDocument(group), group.language),
     tags: contentGroupTags(group, 5),
     year: updatedAt ? new Date(updatedAt).getFullYear() : undefined,
   };
 };
-
-export const toIdeaCardData = (group: ContentGroup): IdeaCardData => ({
-  id: group.id,
-  title: group.title,
-  description: translationPreview(selectPrimaryDocument(group)),
-  status: ideaStatus(group.status),
-  category: group.visibility || undefined,
-  tags: contentGroupTags(group),
-  date: formatShortDate(contentGroupUpdatedAt(group)),
-});

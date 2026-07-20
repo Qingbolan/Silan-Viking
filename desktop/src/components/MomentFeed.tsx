@@ -8,6 +8,7 @@ type MomentFeedProps = {
   empty: string;
   query: string;
   settings: MomentsSettings | null;
+  languageByDocument: Record<string, string>;
   eyebrow: string;
   title: string;
   meta: string[];
@@ -36,6 +37,7 @@ export function MomentFeed({
   empty,
   query,
   settings,
+  languageByDocument,
   eyebrow,
   title,
   meta,
@@ -81,11 +83,13 @@ export function MomentFeed({
       <div className="moments-timeline">
         {ordered.map((group) => {
           const document = selectPrimaryDocument(group);
-          const translation = primaryTranslation(document);
+          const preferredLanguage = document ? languageByDocument[document.id] : '';
+          const translation = document?.translations.find((item) => item.language === preferredLanguage)
+            || primaryTranslation(document);
           const updateDate = contentGroupDate(group);
           const date = updateDateParts(updateDate);
           const tags = contentGroupTags(group, 3);
-          const preview = translationPreview(document) || translation?.content || group.title;
+          const preview = translation?.content || translationPreview(document) || group.title;
 
           return (
             <article className="moments-timeline-row" key={group.id}>
