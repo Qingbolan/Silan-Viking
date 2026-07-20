@@ -1,0 +1,48 @@
+name: Deploy to Qingbolan.github.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-github-pages.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        env:
+          VITE_API_ORIGIN: https://silan.tech
+        run: npm run build
+
+      - name: SPA fallback for GitHub Pages routing
+        working-directory: frontend
+        run: cp dist/index.html dist/404.html
+
+      - name: Deploy to Qingbolan.github.io
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.PAGES_DEPLOY_KEY }}
+          external_repository: Qingbolan/Qingbolan.github.io
+          publish_branch: main
+          publish_dir: frontend/dist
+          cname: ''
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'

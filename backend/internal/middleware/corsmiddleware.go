@@ -24,6 +24,8 @@ func (m *CorsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			// Production domains
 			"https://silan.tech",
 			"https://www.silan.tech",
+			// GitHub Pages mirror
+			"https://qingbolan.github.io",
 			// NUS domain where the site may be embedded or proxied
 			"https://www.comp.nus.edu.sg",
 			"https://comp.nus.edu.sg",
