@@ -1,5 +1,5 @@
 // Package commentruntime owns lifecycle operations for the shared comment
-// runtime tables. Blog, idea and project comments all use the same storage;
+// runtime tables. Blog, moment and project comments all use the same storage;
 // destructive operations therefore belong here rather than in three copies.
 package commentruntime
 

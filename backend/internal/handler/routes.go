@@ -12,7 +12,6 @@ import (
 	contact "silan-backend/internal/handler/contact"
 	episodes "silan-backend/internal/handler/episodes"
 	health "silan-backend/internal/handler/health"
-	ideas "silan-backend/internal/handler/ideas"
 	media "silan-backend/internal/handler/media"
 	moments "silan-backend/internal/handler/moments"
 	projects "silan-backend/internal/handler/projects"
@@ -229,70 +228,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			privateContentStatusRoutes(serverCtx)...,
 		),
 		rest.WithPrefix("/api/v1"),
-	)
-
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
-			[]rest.Route{
-				{
-					// Get ideas list with pagination and filtering
-					Method:  http.MethodGet,
-					Path:    "/",
-					Handler: ideas.GetIdeasHandler(serverCtx),
-				},
-				{
-					// Get single idea by slug (matches blog/episode/update/project
-					// main detail conventions; M0.5b GOAL #6)
-					Method:  http.MethodGet,
-					Path:    "/:slug",
-					Handler: ideas.GetIdeaHandler(serverCtx),
-				},
-				{
-					// List comments for an idea
-					Method:  http.MethodGet,
-					Path:    "/:id/comments",
-					Handler: ideas.ListIdeaCommentsHandler(serverCtx),
-				},
-				{
-					// Create a comment for an idea
-					Method:  http.MethodPost,
-					Path:    "/:id/comments",
-					Handler: ideas.CreateIdeaCommentHandler(serverCtx),
-				},
-				{
-					// Get idea categories
-					Method:  http.MethodGet,
-					Path:    "/categories",
-					Handler: ideas.GetIdeaCategoriesHandler(serverCtx),
-				},
-				{
-					// Delete a comment on idea
-					Method:  http.MethodDelete,
-					Path:    "/comments/:comment_id",
-					Handler: ideas.DeleteIdeaCommentHandler(serverCtx),
-				},
-				{
-					// Like/Unlike a comment on idea
-					Method:  http.MethodPost,
-					Path:    "/comments/:comment_id/like",
-					Handler: ideas.LikeIdeaCommentHandler(serverCtx),
-				},
-				{
-					// Search ideas with filters
-					Method:  http.MethodGet,
-					Path:    "/search",
-					Handler: ideas.SearchIdeasHandler(serverCtx),
-				},
-				{
-					// Get idea tags
-					Method:  http.MethodGet,
-					Path:    "/tags",
-					Handler: ideas.GetIdeaTagsHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithPrefix("/api/v1/ideas"),
 	)
 
 	server.AddRoutes(

@@ -44,6 +44,7 @@ func (l *GetMomentLogic) GetMoment(req *types.MomentRequest) (*types.Moment, err
 	if body := updatePartBody(l.ctx, l.svcCtx, moment.ID, "body", req.Language); body != "" {
 		data.Description = body
 	}
+	data.RelatedOutputs = relatedMomentOutputs(l.ctx, l.svcCtx, []string{moment.ID}, req.Language)[moment.ID]
 
 	return &data, nil
 }

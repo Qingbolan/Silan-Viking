@@ -43,6 +43,7 @@ func (l *GetMomentsLogic) GetMoments(req *types.MomentListRequest) (*types.Momen
 		ids = append(ids, moment.ID)
 	}
 	bodies := updatePartBodies(l.ctx, l.svcCtx, ids, "body", req.Language)
+	relatedOutputs := relatedMomentOutputs(l.ctx, l.svcCtx, ids, req.Language)
 
 	result := make([]types.Moment, 0, len(moments))
 	for _, moment := range moments {
@@ -50,6 +51,7 @@ func (l *GetMomentsLogic) GetMoments(req *types.MomentListRequest) (*types.Momen
 		if body := bodies[moment.ID]; body != "" {
 			data.Description = body
 		}
+		data.RelatedOutputs = relatedOutputs[moment.ID]
 		result = append(result, data)
 	}
 

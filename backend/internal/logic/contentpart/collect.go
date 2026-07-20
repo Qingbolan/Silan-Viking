@@ -1,7 +1,7 @@
 // Package contentpart assembles the type-agnostic Part list a detail
 // endpoint returns. Every content type stores its Parts in the same four
 // tables — item_part, item_part_translation, part_entry,
-// part_entry_translation — so one collector serves project, idea, episode
+// part_entry_translation — so one collector serves project, moment, episode
 // and update details alike.
 //
 // The Part list is data-driven: it is whatever Parts the Item actually has,

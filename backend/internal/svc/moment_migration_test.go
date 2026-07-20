@@ -78,3 +78,68 @@ func TestMigrateMomentDomainPreservesLegacyRows(t *testing.T) {
 		t.Fatalf("content_relation types = (%q, %q), want (moment, moment)", fromType, toType)
 	}
 }
+
+func TestPurgeIdeaRowsClearsProjectionAndRuntimeState(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "portfolio.db")
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	for _, statement := range []string{
+		"CREATE TABLE ideas (id TEXT PRIMARY KEY)",
+		"INSERT INTO ideas (id) VALUES ('idea-1')",
+		"CREATE TABLE idea_translations (id TEXT PRIMARY KEY, idea_id TEXT)",
+		"INSERT INTO idea_translations (id, idea_id) VALUES ('idea-tr-1', 'idea-1')",
+		"CREATE TABLE idea_details (id TEXT PRIMARY KEY, idea_id TEXT)",
+		"INSERT INTO idea_details (id, idea_id) VALUES ('idea-detail-1', 'idea-1')",
+		"CREATE TABLE idea_detail_translations (id TEXT PRIMARY KEY, idea_detail_id TEXT)",
+		"INSERT INTO idea_detail_translations (id, idea_detail_id) VALUES ('idea-detail-tr-1', 'idea-detail-1')",
+		"CREATE TABLE item_part (id TEXT PRIMARY KEY, entity_type TEXT)",
+		"INSERT INTO item_part (id, entity_type) VALUES ('part-1', 'idea')",
+		"CREATE TABLE item_part_translation (id TEXT PRIMARY KEY, item_part_id TEXT)",
+		"INSERT INTO item_part_translation (id, item_part_id) VALUES ('part-tr-1', 'part-1')",
+		"CREATE TABLE part_entry (id TEXT PRIMARY KEY, item_part_id TEXT)",
+		"INSERT INTO part_entry (id, item_part_id) VALUES ('entry-1', 'part-1')",
+		"CREATE TABLE part_entry_translation (id TEXT PRIMARY KEY, part_entry_id TEXT)",
+		"INSERT INTO part_entry_translation (id, part_entry_id) VALUES ('entry-tr-1', 'entry-1')",
+		"CREATE TABLE comments (id TEXT PRIMARY KEY, entity_type TEXT)",
+		"INSERT INTO comments (id, entity_type) VALUES ('comment-1', 'idea')",
+		"CREATE TABLE comment_likes (id TEXT PRIMARY KEY, comment_id TEXT)",
+		"INSERT INTO comment_likes (id, comment_id) VALUES ('like-1', 'comment-1')",
+		"CREATE TABLE content_relation (from_type TEXT, to_type TEXT)",
+		"INSERT INTO content_relation (from_type, to_type) VALUES ('idea', 'blog')",
+		"CREATE TABLE content_tag (entity_type TEXT)",
+		"INSERT INTO content_tag (entity_type) VALUES ('idea')",
+	} {
+		if _, err := db.Exec(statement); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	purgeIdeaRows(db, "sqlite3")
+
+	for _, table := range []string{
+		"ideas",
+		"idea_translations",
+		"idea_details",
+		"idea_detail_translations",
+		"item_part",
+		"item_part_translation",
+		"part_entry",
+		"part_entry_translation",
+		"comments",
+		"comment_likes",
+		"content_relation",
+		"content_tag",
+	} {
+		var count int
+		if err := db.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&count); err != nil {
+			t.Fatal(err)
+		}
+		if count != 0 {
+			t.Fatalf("%s count = %d, want 0", table, count)
+		}
+	}
+}

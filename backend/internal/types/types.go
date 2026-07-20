@@ -162,14 +162,6 @@ type BotVisitsResponse struct {
 	Recent  []BotVisit   `json:"recent"`
 }
 
-type Collaborator struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Affiliation string `json:"affiliation,omitempty"`
-	Role        string `json:"role"`
-	Contact     string `json:"contact,omitempty"`
-}
-
 type Contact struct {
 	Type  string `json:"type"`
 	Value string `json:"value"`
@@ -239,7 +231,7 @@ type CreateBlogCommentRequest struct {
 	Language            string `form:"lang,default=en"`
 }
 
-type CreateIdeaCommentRequest struct {
+type CreateMomentCommentRequest struct {
 	ID                  string `path:"id"`
 	ParentId            string `json:"parent_id,optional"`
 	AuthorName          string `json:"author_name,optional"`
@@ -253,21 +245,6 @@ type CreateIdeaCommentRequest struct {
 	ClientIP            string `json:"client_ip,optional"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	Language            string `form:"lang,default=en"`
-}
-
-type CreateIdeaRequest struct {
-	Title                string   `json:"title"`
-	Description          string   `json:"description"`
-	Category             string   `json:"category"`
-	Tags                 []string `json:"tags"`
-	Status               string   `json:"status,default=draft"`
-	Abstract             string   `json:"abstract,optional"`
-	Motivation           string   `json:"motivation,optional"`
-	TechStack            []string `json:"tech_stack,optional"`
-	Keywords             []string `json:"keywords,optional"`
-	EstimatedDuration    string   `json:"estimated_duration,optional"`
-	OpenForCollaboration bool     `json:"open_for_collaboration,optional"`
-	FundingStatus        string   `json:"funding_status,optional"`
 }
 
 type CreateProjectCommentRequest struct {
@@ -303,14 +280,10 @@ type DeleteBlogCommentRequest struct {
 	Language            string `form:"lang,default=en"`
 }
 
-type DeleteIdeaCommentRequest struct {
+type DeleteMomentCommentRequest struct {
 	CommentID           string `path:"comment_id"`
 	Fingerprint         string `json:"fingerprint"`
 	AuthenticatedUserID string `json:"-" form:"-"`
-}
-
-type DeleteIdeaRequest struct {
-	ID string `path:"id"`
 }
 
 type DeleteProjectCommentRequest struct {
@@ -384,26 +357,6 @@ type EpisodeSeriesRequest struct {
 	Language   string `form:"lang,default=en"`
 }
 
-type Experiment struct {
-	ID            string `json:"id"`
-	Title         string `json:"title"`
-	TitleZh       string `json:"title_zh,omitempty"`
-	Description   string `json:"description"`
-	DescriptionZh string `json:"description_zh,omitempty"`
-	Status        string `json:"status"`
-	StartDate     string `json:"start_date,omitempty"`
-	EndDate       string `json:"end_date,omitempty"`
-	Results       string `json:"results,omitempty"`
-	ResultsZh     string `json:"results_zh,omitempty"`
-	DataURL       string `json:"data_url,omitempty"`
-}
-
-type FeedbackType struct {
-	Type          string `json:"type"`
-	Description   string `json:"description"`
-	DescriptionZh string `json:"description_zh,omitempty"`
-}
-
 type GoogleVerifyRequest struct {
 	IdToken string `json:"id_token"`
 }
@@ -455,69 +408,6 @@ type ContentStatusResponse struct {
 	MediaRootOK   bool   `json:"media_root_ok"`
 }
 
-type IdeaCategoriesRequest struct {
-	Language string `form:"lang,default=en"`
-}
-
-type IdeaCommentData struct {
-	ID              string            `json:"id"`
-	IdeaID          string            `json:"idea_id"`
-	ParentID        string            `json:"parent_id,optional"`
-	AuthorName      string            `json:"author_name"`
-	AuthorAvatarURL string            `json:"author_avatar_url,optional"`
-	Content         string            `json:"content"`
-	Type            string            `json:"type"`
-	CreatedAt       string            `json:"created_at"`
-	CanDelete       bool              `json:"can_delete"`
-	LikesCount      int               `json:"likes_count"`
-	IsLikedByUser   bool              `json:"is_liked_by_user"`
-	Replies         []IdeaCommentData `json:"replies,optional"`
-}
-
-type IdeaCommentListRequest struct {
-	ID       string `path:"id"`
-	Type     string `form:"type,default=general"`
-	Language string `form:"lang,default=en"`
-}
-
-type IdeaCommentListResponse struct {
-	Comments []IdeaCommentData `json:"comments"`
-	Total    int               `json:"total"`
-}
-
-type IdeaData struct {
-	ID                   string               `json:"id"`
-	Title                string               `json:"title"`
-	Description          string               `json:"description"`
-	Category             string               `json:"category"`
-	Tags                 []string             `json:"tags"`
-	Status               string               `json:"status"`
-	Priority             string               `json:"priority,omitempty"`
-	CreatedAt            string               `json:"created_at"`
-	LastUpdated          string               `json:"last_updated,omitempty"`
-	Abstract             string               `json:"abstract,omitempty"`
-	AbstractZh           string               `json:"abstract_zh,omitempty"`
-	Progress             string               `json:"progress,omitempty"`
-	ProgressZh           string               `json:"progress_zh,omitempty"`
-	Results              string               `json:"results,omitempty"`
-	ResultsZh            string               `json:"results_zh,omitempty"`
-	Reference            string               `json:"reference,omitempty"`
-	Reference_Zh         string               `json:"reference_zh,omitempty"`
-	TechStack            []string             `json:"tech_stack,omitempty"`
-	CodeRepository       string               `json:"code_repository,omitempty"`
-	DemoURL              string               `json:"demo_url,omitempty"`
-	Collaborators        []Collaborator       `json:"collaborators,omitempty"`
-	OpenForCollaboration bool                 `json:"open_for_collaboration,omitempty"`
-	FeedbackRequested    []FeedbackType       `json:"feedback_requested,omitempty"`
-	Publications         []IdeaPublicationRef `json:"publications,omitempty"`
-	Conferences          []string             `json:"conferences,omitempty"`
-	ResearchField        string               `json:"research_field,omitempty"`
-	Keywords             []string             `json:"keywords,omitempty"`
-	EstimatedDuration    string               `json:"estimated_duration,omitempty"`
-	FundingStatus        string               `json:"funding_status,omitempty"`
-	Parts                []ContentPart        `json:"parts"`
-}
-
 // ContentPart is the type-agnostic Part shape returned by every detail
 // endpoint. The `parts` list a detail carries is whatever Parts the Item
 // actually has — the SCHEMA `parts` set is a recommendation, so an Item
@@ -540,57 +430,6 @@ type ContentPart struct {
 	CanonicalLang string            `json:"canonical_lang"`
 	Body          map[string]string `json:"body"`
 	Entries       []ContentEntry    `json:"entries"`
-}
-
-type IdeaListRequest struct {
-	Page          int    `form:"page,default=1"`
-	Size          int    `form:"size,default=10"`
-	Status        string `form:"status,optional"`
-	Category      string `form:"category,optional"`
-	Difficulty    string `form:"difficulty,optional"`
-	Collaboration bool   `form:"collaboration,optional"`
-	Funding       string `form:"funding,optional"`
-	Search        string `form:"search,optional"`
-	Tags          string `form:"tags,optional"`
-	Language      string `form:"lang,default=en"`
-}
-
-type IdeaListResponse struct {
-	Ideas      []IdeaData `json:"ideas"`
-	Total      int64      `json:"total"`
-	Page       int        `json:"page"`
-	Size       int        `json:"size"`
-	TotalPages int        `json:"total_pages"`
-}
-
-type IdeaPublicationRef struct {
-	ID      string   `json:"id"`
-	Title   string   `json:"title"`
-	Authors []string `json:"authors"`
-	Venue   string   `json:"venue"`
-	Year    int      `json:"year"`
-	Status  string   `json:"status"`
-	URL     string   `json:"url,omitempty"`
-	DOI     string   `json:"doi,omitempty"`
-}
-
-type IdeaRequest struct {
-	Slug     string `path:"slug"`
-	Language string `form:"lang,default=en"`
-}
-
-type IdeaSearchRequest struct {
-	Query    string `form:"query,optional"`
-	Category string `form:"category,optional"`
-	Status   string `form:"status,optional"`
-	Tags     string `form:"tags,optional"`
-	Language string `form:"lang,default=en"`
-	Page     int    `form:"page,default=1"`
-	Size     int    `form:"size,default=10"`
-}
-
-type IdeaTagsRequest struct {
-	Language string `form:"lang,default=en"`
 }
 
 type LikeCommentRequest struct {
@@ -837,21 +676,34 @@ type ProjectTimeline struct {
 }
 
 type Moment struct {
+	ID             string                `json:"id"`
+	UserID         string                `json:"user_id"`
+	Slug           string                `json:"slug"`
+	Type           string                `json:"type"`
+	MomentType     string                `json:"moment_type"`
+	Visibility     string                `json:"visibility"`
+	Title          string                `json:"title"`
+	Description    string                `json:"description"`
+	Date           string                `json:"date"`
+	Tags           []string              `json:"tags"`
+	Status         string                `json:"status"`
+	Priority       string                `json:"priority"`
+	Pinned         bool                  `json:"pinned"`
+	CreatedAt      string                `json:"created_at"`
+	UpdatedAt      string                `json:"updated_at"`
+	RelatedOutputs []MomentRelatedOutput `json:"related_outputs"`
+}
+
+type MomentRelatedOutput struct {
+	Kind        string   `json:"kind"`
 	ID          string   `json:"id"`
-	UserID      string   `json:"user_id"`
 	Slug        string   `json:"slug"`
-	Type        string   `json:"type"`
-	MomentType  string   `json:"moment_type"`
-	Visibility  string   `json:"visibility"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
-	Date        string   `json:"date"`
+	Path        string   `json:"path"`
+	Relation    string   `json:"relation"`
 	Tags        []string `json:"tags"`
-	Status      string   `json:"status"`
-	Priority    string   `json:"priority"`
-	Pinned      bool     `json:"pinned"`
-	CreatedAt   string   `json:"created_at"`
-	UpdatedAt   string   `json:"updated_at"`
+	Date        string   `json:"date,omitempty"`
 }
 
 type UpdateCommentData struct {
@@ -902,18 +754,6 @@ type RecordProjectViewRequest struct {
 type RecordProjectViewResponse struct {
 	ViewsCount   int  `json:"views_count"`
 	ViewRecorded bool `json:"view_recorded"`
-}
-
-type Reference struct {
-	ID      string   `json:"id"`
-	Title   string   `json:"title"`
-	Authors []string `json:"authors"`
-	Year    int      `json:"year"`
-	Venue   string   `json:"venue,omitempty"`
-	URL     string   `json:"url,omitempty"`
-	DOI     string   `json:"doi,omitempty"`
-	Notes   string   `json:"notes,omitempty"`
-	NotesZh string   `json:"notes_zh,omitempty"`
 }
 
 type ResumeData struct {
@@ -1033,26 +873,6 @@ type UpdateBlogViewsRequest struct {
 	SessionStart        string  `json:"session_start,optional"`
 	SessionEnd          string  `json:"session_end,optional"`
 	Language            string  `form:"lang,default=en"`
-}
-
-type UpdateIdeaRequest struct {
-	ID                   string   `path:"id"`
-	Title                string   `json:"title,optional"`
-	Description          string   `json:"description,optional"`
-	Category             string   `json:"category,optional"`
-	Tags                 []string `json:"tags,optional"`
-	Status               string   `json:"status,optional"`
-	Abstract             string   `json:"abstract,optional"`
-	Motivation           string   `json:"motivation,optional"`
-	TechStack            []string `json:"tech_stack,optional"`
-	Difficulty           string   `json:"difficulty,optional"`
-	ResearchField        string   `json:"research_field,optional"`
-	Keywords             []string `json:"keywords,optional"`
-	EstimatedDuration    string   `json:"estimated_duration,optional"`
-	OpenForCollaboration bool     `json:"open_for_collaboration,optional"`
-	FundingStatus        string   `json:"funding_status,optional"`
-	DemoURL              string   `json:"demo_url,optional"`
-	CodeRepository       string   `json:"code_repository,optional"`
 }
 
 type MomentListRequest struct {

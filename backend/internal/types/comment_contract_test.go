@@ -9,7 +9,7 @@ import (
 func TestCommentResponsesExposeCapabilityWithoutIdentity(t *testing.T) {
 	responses := []any{
 		BlogCommentData{ID: "blog-comment", CanDelete: true},
-		IdeaCommentData{ID: "idea-comment", CanDelete: true},
+		UpdateCommentData{ID: "moment-comment", CanDelete: true},
 		ProjectCommentData{ID: "project-comment", CanDelete: true},
 	}
 	for _, response := range responses {

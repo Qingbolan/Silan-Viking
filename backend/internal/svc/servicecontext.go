@@ -47,7 +47,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	// Guard against a stale-schema database. `Schema.Create` is append-only:
 	// it adds missing tables/columns but never ALTERs an existing column's
 	// type or nullability. A database left over from the legacy Python CLI
-	// has `ideas.user_id` as `NOT NULL` — the engine's `index sync` does not
+	// has legacy `ideas.user_id` as `NOT NULL` — the engine's `index sync` does not
 	// write `user_id`, so every sync into such a database fails silently and
 	// the served data goes stale without warning. Detect that here and fail
 	// loudly with a fix, rather than running on a database the engine can no
@@ -60,8 +60,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	// Bring the schema up to date. `Schema.Create` is append-only by default
 	// — it creates the tables/columns the ent schema declares but the db is
 	// missing, and never drops or rewrites what is already there. The
-	// silan-viking engine syncs the content tables (blog_posts, ideas, …);
-	// this fills in the side / runtime tables ent also needs (idea_details,
+	// silan-viking engine syncs the content tables (blog_posts, moments, …);
+	// this fills in the side / runtime tables ent also needs (legacy idea_details,
 	// blog_categories, project_technologies, users, comments, …) as empty
 	// tables, so a `WithXxx` join finds an empty table instead of crashing.
 	// Foreign keys are disabled: the engine's content tables are not created
@@ -235,6 +235,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	createAnalyticsTables(rawDB, c.Database.Driver)
 	createContentRelationTable(rawDB, c.Database.Driver)
 	dropContentForeignKeys(rawDB, c.Database.Driver)
+	purgeIdeaRows(rawDB, c.Database.Driver)
 	trafficClassifier := traffic.NewClassifier(c.Traffic)
 	countryResolver, countryErr := traffic.OpenCountryResolver("/var/lib/GeoIP/country.mmdb")
 	if countryErr != nil {
@@ -361,6 +362,13 @@ func databaseTableExists(db *sql.DB, driver, table string) (bool, error) {
 		).Scan(&count)
 		return count > 0, err
 	}
+	if driver == "mysql" {
+		err := db.QueryRow(
+			"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?",
+			table,
+		).Scan(&count)
+		return count > 0, err
+	}
 	err := db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&count)
 	return count > 0, err
 }
@@ -370,6 +378,14 @@ func databaseColumnExists(db *sql.DB, driver, table, column string) (bool, error
 	if driver == "postgres" || driver == "postgresql" {
 		err := db.QueryRow(
 			"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = $1 AND column_name = $2",
+			table,
+			column,
+		).Scan(&count)
+		return count > 0, err
+	}
+	if driver == "mysql" {
+		err := db.QueryRow(
+			"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?",
 			table,
 			column,
 		).Scan(&count)
@@ -393,6 +409,39 @@ func databaseColumnExists(db *sql.DB, driver, table, column string) (bool, error
 		}
 	}
 	return false, rows.Err()
+}
+
+func purgeIdeaRows(db *sql.DB, driver string) {
+	statements := []struct {
+		table string
+		sql   string
+	}{
+		{"comment_likes", "DELETE FROM comment_likes WHERE comment_id IN (SELECT id FROM comments WHERE entity_type = 'idea')"},
+		{"comments", "DELETE FROM comments WHERE entity_type = 'idea'"},
+		{"content_interaction", "DELETE FROM content_interaction WHERE entity_type = 'idea'"},
+		{"content_tag", "DELETE FROM content_tag WHERE entity_type = 'idea'"},
+		{"annotation", "DELETE FROM annotation WHERE entity_type = 'idea'"},
+		{"stats_cache_item", "DELETE FROM stats_cache_item WHERE entity_type = 'idea'"},
+		{"content_relation", "DELETE FROM content_relation WHERE from_type = 'idea' OR to_type = 'idea'"},
+		{"part_entry_translation", "DELETE FROM part_entry_translation WHERE part_entry_id IN (SELECT id FROM part_entry WHERE item_part_id IN (SELECT id FROM item_part WHERE entity_type = 'idea'))"},
+		{"part_entry", "DELETE FROM part_entry WHERE item_part_id IN (SELECT id FROM item_part WHERE entity_type = 'idea')"},
+		{"item_part_translation", "DELETE FROM item_part_translation WHERE item_part_id IN (SELECT id FROM item_part WHERE entity_type = 'idea')"},
+		{"item_part", "DELETE FROM item_part WHERE entity_type = 'idea'"},
+		{"idea_detail_translations", "DELETE FROM idea_detail_translations WHERE idea_detail_id IN (SELECT id FROM idea_details)"},
+		{"idea_details", "DELETE FROM idea_details"},
+		{"idea_translations", "DELETE FROM idea_translations"},
+		{"idea_tags_join", "DELETE FROM idea_tags_join"},
+		{"ideas", "DELETE FROM ideas"},
+	}
+	for _, statement := range statements {
+		exists, err := databaseTableExists(db, driver, statement.table)
+		if err != nil || !exists {
+			continue
+		}
+		if _, err := db.Exec(statement.sql); err != nil {
+			log.Printf("warning: failed purging idea rows from %s: %v", statement.table, err)
+		}
+	}
 }
 
 // dropContentForeignKeys rebuilds the runtime analytics tables that an older

@@ -10,7 +10,7 @@ import (
 )
 
 // seedDB builds an in-memory sqlite DB with the `tag` / `content_tag` shape
-// the engine writes, populated with two blog posts and one idea.
+// the engine writes, populated with two blog posts and one moment.
 func seedDB(t *testing.T) *sql.DB {
 	t.Helper()
 	db, err := sql.Open("sqlite3", ":memory:")
@@ -27,7 +27,7 @@ func seedDB(t *testing.T) *sql.DB {
 		`INSERT INTO content_tag VALUES ('post-a','a','blog','easynet'),
 		                                ('post-a','a','blog','research'),
 		                                ('post-b','b','blog','easynet'),
-		                                ('idea-x','x','idea','research')`,
+		                                ('moment-x','x','moment','research')`,
 	}
 	for _, s := range stmts {
 		if _, err := db.Exec(s); err != nil {

@@ -64,7 +64,7 @@ func ListCommentsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 func CreateCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.CreateIdeaCommentRequest
+		var req types.CreateMomentCommentRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
@@ -100,7 +100,7 @@ func ToggleCommentLikeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 func DeleteCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.DeleteIdeaCommentRequest
+		var req types.DeleteMomentCommentRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return

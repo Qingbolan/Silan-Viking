@@ -171,7 +171,7 @@ func ToggleUpdateLike(ctx context.Context, svcCtx *svc.ServiceContext, req *type
 	return UpdateEngagement(ctx, svcCtx, id, req.Fingerprint, req.AuthenticatedUserID)
 }
 
-func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *types.CreateIdeaCommentRequest) (*types.UpdateCommentData, error) {
+func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *types.CreateMomentCommentRequest) (*types.UpdateCommentData, error) {
 	id, err := resolveUpdateID(ctx, svcCtx, req.ID)
 	if err != nil {
 		return nil, err
