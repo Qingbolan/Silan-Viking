@@ -1,6 +1,6 @@
 // ArticleDetailLayout — single blog article inside the Yuque-style shell.
 //
-// Unlike Idea / Series (multi-page books), a blog is a single long-form
+// Unlike Moment / Series (multi-page books), a blog is a single long-form
 // piece. So the centre never tab-switches: it renders the whole article
 // straight away. The left rail's "chapters" are anchor jumps within the
 // same page — Body / Likes / Comments — not page switches.

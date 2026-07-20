@@ -1,6 +1,6 @@
 // mapContentParts — normalize the backend `parts` payload.
 //
-// Every detail endpoint (idea, project, …) returns a `parts` array in the
+// Every detail endpoint (moment, project, ...) returns a `parts` array in the
 // type-agnostic ContentPart shape, in snake_case. This maps it to the
 // camelCase `ContentPart` the frontend uses. The list is data-driven: it is
 // whatever Parts the Item has, in `sort_order` — no role is assumed.

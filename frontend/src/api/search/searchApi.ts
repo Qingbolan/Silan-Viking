@@ -1,6 +1,7 @@
 import { get, formatLanguage } from '../utils';
+import { fetchMoments } from '../moments/momentApi';
 
-export type SearchResultKind = 'blog' | 'episode' | 'project' | 'idea';
+export type SearchResultKind = 'blog' | 'episode' | 'project' | 'moment';
 
 export interface GlobalSearchRequest {
   query: string;
@@ -29,20 +30,20 @@ export interface GlobalSearchResponse {
   partialFailures: SearchResultKind[];
 }
 
-const KINDS: SearchResultKind[] = ['blog', 'episode', 'project', 'idea'];
+const KINDS: SearchResultKind[] = ['blog', 'episode', 'project', 'moment'];
 
 const emptyGroups = (): SearchResultGroups => ({
   blog: [],
   episode: [],
   project: [],
-  idea: [],
+  moment: [],
 });
 
 const emptyCounts = (): SearchResultCounts => ({
   blog: 0,
   episode: 0,
   project: 0,
-  idea: 0,
+  moment: 0,
 });
 
 interface SearchSlice {
@@ -104,29 +105,34 @@ const searchProjects = async (
   };
 };
 
-const searchIdeas = async (
+const searchMoments = async (
   query: string,
   language: 'en' | 'zh',
   limit: number,
-  signal?: AbortSignal,
 ): Promise<SearchSlice> => {
-  const response = await get<any>('/api/v1/ideas/search', {
-    query,
-    lang: formatLanguage(language),
-    page: 1,
-    size: limit,
-  }, { signal });
+  const searchLower = query.toLowerCase();
+  const moments = (await fetchMoments(language)).filter((moment) => {
+    const haystack = [
+      moment.title,
+      moment.description,
+      moment.status,
+      moment.type,
+      moment.moment_type,
+      ...(moment.tags ?? []),
+    ].join(' ').toLowerCase();
+    return haystack.includes(searchLower);
+  });
   return {
-    total: Number(response.total ?? 0),
-    items: (response.ideas ?? []).map((idea: any): SearchResult => ({
-      id: String(idea.id),
-      kind: 'idea',
-      title: String(idea.title || ''),
-      description: String(idea.description || idea.abstract || ''),
-      path: `/ideas/${idea.id}`,
-      tags: Array.isArray(idea.tags) ? idea.tags : [],
-      date: idea.last_updated || idea.created_at || undefined,
-      context: idea.status || undefined,
+    total: moments.length,
+    items: moments.slice(0, limit).map((moment): SearchResult => ({
+      id: moment.id,
+      kind: 'moment',
+      title: moment.title,
+      description: moment.description || '',
+      path: `/moments?id=${encodeURIComponent(moment.slug || moment.id)}`,
+      tags: Array.isArray(moment.tags) ? moment.tags : [],
+      date: moment.date || moment.updated_at || moment.created_at || undefined,
+      context: moment.status || moment.type || undefined,
     })),
   };
 };
@@ -167,7 +173,7 @@ const searchers: Record<
   blog: searchBlog,
   episode: searchEpisodes,
   project: searchProjects,
-  idea: searchIdeas,
+  moment: searchMoments,
 };
 
 /**

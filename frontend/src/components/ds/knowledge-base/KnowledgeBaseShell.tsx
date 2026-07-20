@@ -27,7 +27,7 @@ export interface KnowledgeBaseShellProps {
   /**
    * Optional pinned-top item — the book's intro / overview page. Acts like a
    * normal chapter but renders with an icon (Lightbulb by default; pass a
-   * custom one for non-Idea contexts, e.g. BookOpen for a Blog series).
+   * custom one for non-Moment contexts, e.g. BookOpen for a Blog series).
    */
   overview?: {
     label: string;

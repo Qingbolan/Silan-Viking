@@ -353,7 +353,7 @@ const ContentParts: React.FC<ContentPartsProps> = ({
 
   return (
     // Project knowledge layout — the section rail is viewport-pinned like
-    // the Vlog/Idea book navigator. Below `lg` it becomes the compact
+    // the Vlog/Moment book navigator. Below `lg` it becomes the compact
     // bottom-right dock so article content never starts beneath a tall tab
     // stack on tablets or phones.
     <div className={`flex w-full flex-col gap-6 pb-32 lg:flex-row lg:gap-8 lg:pb-0 ${className || ''}`}>

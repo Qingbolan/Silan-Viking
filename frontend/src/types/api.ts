@@ -86,6 +86,19 @@ export interface Moment {
   pinned: boolean;
   created_at: string;
   updated_at: string;
+  related_outputs: MomentRelatedOutput[];
+}
+
+export interface MomentRelatedOutput {
+  kind: 'blog' | 'project';
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  path: string;
+  relation: string;
+  tags: string[];
+  date?: string;
 }
 
 

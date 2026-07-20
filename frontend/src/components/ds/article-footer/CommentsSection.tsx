@@ -264,10 +264,10 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
               disabled={submitting || !content.trim()}
               className={cn(
                 'inline-flex min-h-10 items-center justify-center gap-2 rounded-ds-sm px-4 text-ds-sm font-medium transition',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/50',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-chat/50',
                 submitting || !content.trim()
                   ? 'cursor-not-allowed bg-ds-surface-2 text-ds-fg-subtle'
-                  : 'bg-ds-primary text-white hover:bg-ds-primary/90',
+                  : 'bg-ds-chat text-ds-chat-fg hover:bg-ds-chat-hover',
               )}
             >
               {submitting && <LoaderCircle className="size-4 animate-spin" />}

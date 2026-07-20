@@ -14,7 +14,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Home,
   Briefcase,
-  Lightbulb,
+  Aperture,
   BookOpen,
   Mail,
   MoreHorizontal,
@@ -44,7 +44,7 @@ const PRIMARY_ROUTES = (zh: boolean): TabRoute[] => [
 
 // Everything else, revealed through the "More" sheet.
 const MORE_ROUTES = (zh: boolean): TabRoute[] => [
-  { path: '/ideas', label: zh ? '想法' : 'Ideas', icon: <Lightbulb size={18} strokeWidth={2} /> },
+  { path: '/moments', label: zh ? '瞬间' : 'Moments', icon: <Aperture size={18} strokeWidth={2} /> },
   { path: '/contact', label: zh ? '联系' : 'Contact', icon: <Mail size={18} strokeWidth={2} /> },
 ];
 

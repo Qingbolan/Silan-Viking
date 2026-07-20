@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Mail, Phone, MapPin, Lightbulb, Briefcase, Contact, ArrowRight, User } from 'lucide-react';
+import { Mail, Phone, MapPin, Aperture, Briefcase, Contact, ArrowRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../components/LanguageContext';
 import { Seo } from '../components/Seo';
@@ -8,7 +8,7 @@ import {
 } from '../components/InteractiveContact';
 import ModernContactForm from '../components/InteractiveContact/ModernContactForm';
 import PublicMessagesWall from '../components/InteractiveContact/PublicMessagesWall';
-import { fetchIdeas } from '../api/ideas/ideaApi';
+import { fetchMoments } from '../api/moments/momentApi';
 import { fetchPersonalInfo, fetchExpectations, type ExpectationItem } from '../api/home/resumeApi';
 import { resolveSocialLink } from '../utils/socialPlatform';
 import { useRemoteResource } from '../hooks/useRemoteResource';
@@ -68,10 +68,10 @@ const InteractiveContactPageContent: React.FC = () => {
   // The three tab bodies are independent resources. A failure in moments,
   // for example, must not erase the email/social facts from personal_info.
   const loadThoughts = useCallback(
-    async () => (await fetchIdeas({ page: 1, size: 3 }, language)).slice(0, 3).map((idea) => ({
-      id: idea.id,
-      title: idea.title,
-      description: idea.description || idea.abstract || '',
+    async () => (await fetchMoments(language)).slice(0, 3).map((moment) => ({
+      id: moment.slug || moment.id,
+      title: moment.title,
+      description: moment.description || '',
     })),
     [language],
   );
@@ -124,7 +124,7 @@ const InteractiveContactPageContent: React.FC = () => {
         lang={language as 'en' | 'zh'}
       />
       <div className="max-w-6xl mx-auto px-4">
-        {/* Hero header — same BlogHeader hero used by blog/ideas/projects,
+        {/* Hero header — same BlogHeader hero used by blog/moments/projects,
             but hero-only (no search / filter toolbar). */}
         <BlogHeader
           className="mb-12"
@@ -168,8 +168,8 @@ const InteractiveContactPageContent: React.FC = () => {
                 items={[
                   {
                     value: 'thoughts',
-                    icon: <Lightbulb />,
-                    label: language === 'en' ? 'Thoughts' : '想法',
+                    icon: <Aperture />,
+                    label: language === 'en' ? 'Moments' : '瞬间',
                   },
                   {
                     value: 'jobs',
@@ -188,18 +188,18 @@ const InteractiveContactPageContent: React.FC = () => {
               {activeTab === 'thoughts' && (
                 <div className="mt-4 space-y-2">
                   {thoughtsResource.status === 'loading' ? (
-                    <PanelLoading label={language === 'en' ? 'Loading recent thoughts' : '正在加载最新想法'} />
+                    <PanelLoading label={language === 'en' ? 'Loading recent moments' : '正在加载最新瞬间'} />
                   ) : thoughtsResource.status === 'error' ? (
                     <PanelError
-                      title={language === 'en' ? 'Recent thoughts could not be loaded' : '最新想法加载失败'}
+                      title={language === 'en' ? 'Recent moments could not be loaded' : '最新瞬间加载失败'}
                       retryLabel={language === 'en' ? 'Try again' : '重试'}
                       onRetry={thoughtsResource.reload}
                     />
                   ) : recentThoughts.length === 0 ? (
                     <EmptyState
-                      icon={<Lightbulb />}
-                      title={language === 'en' ? 'No public thoughts yet' : '还没有公开想法'}
-                      description={language === 'en' ? 'Published research ideas will appear here.' : '公开后的研究想法会显示在这里。'}
+                      icon={<Aperture />}
+                      title={language === 'en' ? 'No public moments yet' : '还没有公开瞬间'}
+                      description={language === 'en' ? 'Published moments will appear here.' : '公开后的瞬间会显示在这里。'}
                     />
                   ) : (
                     recentThoughts.map((thought) => (
@@ -207,7 +207,7 @@ const InteractiveContactPageContent: React.FC = () => {
                         key={thought.id}
                         title={thought.title}
                         description={thought.description}
-                        onClick={() => navigate(`/ideas/${thought.id}`)}
+                        onClick={() => navigate(`/moments?id=${encodeURIComponent(thought.id)}`)}
                       />
                     ))
                   )}
@@ -216,9 +216,9 @@ const InteractiveContactPageContent: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       trailingIcon={<ArrowRight />}
-                      onClick={() => navigate('/ideas')}
+                      onClick={() => navigate('/moments')}
                     >
-                      {language === 'en' ? 'Show More Ideas' : '查看更多想法'}
+                      {language === 'en' ? 'Show More Moments' : '查看更多瞬间'}
                     </Button>
                   </div>
                 </div>

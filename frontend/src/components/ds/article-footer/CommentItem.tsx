@@ -58,7 +58,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
           <div className={cn(
             'min-w-12 px-3.5 py-2.5 text-ds-sm leading-6',
             isCurrentVisitor
-              ? 'rounded-[10px_3px_10px_10px] bg-[#95ec69] text-[#182312]'
+              ? 'rounded-[10px_3px_10px_10px] bg-ds-chat-bubble text-ds-chat-bubble-fg'
               : 'rounded-[3px_10px_10px_10px] border border-ds-border/70 bg-ds-surface-1 text-ds-fg',
           )}>
             <Markdown className="[&>div]:my-0 [&_a]:break-words">
@@ -78,9 +78,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
               aria-label={language === 'zh' ? '点赞这条评论' : 'Like this comment'}
               className={cn(
                 'inline-flex min-h-8 items-center gap-1.5 rounded-full px-2 text-[11px]',
-                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/50',
+                'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-chat/50',
                 comment.likedByCurrentUser
-                  ? 'bg-ds-primary/10 text-ds-primary'
+                  ? 'bg-ds-chat-soft text-ds-chat'
                   : 'text-ds-fg-subtle hover:bg-ds-surface-1 hover:text-ds-fg',
               )}
             >

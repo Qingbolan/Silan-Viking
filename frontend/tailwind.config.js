@@ -99,6 +99,13 @@ export default {
           'accent-hover': 'var(--ds-color-accent-hover)',
           'accent-fg': 'var(--ds-color-accent-fg)',
           'accent-soft': 'var(--ds-color-accent-soft)',
+          // Chat — WeChat-inspired green for the discussion surface
+          chat: 'var(--ds-color-chat)',
+          'chat-hover': 'var(--ds-color-chat-hover)',
+          'chat-fg': 'var(--ds-color-chat-fg)',
+          'chat-soft': 'var(--ds-color-chat-soft)',
+          'chat-bubble': 'var(--ds-color-chat-bubble)',
+          'chat-bubble-fg': 'var(--ds-color-chat-bubble-fg)',
           fg: 'var(--color-textPrimary)',
           'fg-muted': 'var(--color-textSecondary)',
           'fg-subtle': 'var(--color-textTertiary)',

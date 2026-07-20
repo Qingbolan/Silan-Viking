@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
+  ArrowUpRight,
   Briefcase,
   CalendarDays,
   FileText,
@@ -13,8 +14,8 @@ import { useLanguage } from '../components/LanguageContext';
 import { Seo } from '../components/Seo';
 import { fetchMoments } from '../api/moments/momentApi';
 import type { Moment } from '../types/api';
-import Markdown from '../components/ui/Markdown';
 import MomentActions from '../components/Resume/MomentActions';
+import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
 import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 import {
   Alert,
@@ -25,7 +26,7 @@ import {
   Skeleton,
   type BadgeProps,
 } from '../components/ds';
-import { withoutRepeatedTitle } from '../lib/markdown';
+import { markdownToPlainExcerpt } from '../lib/markdown';
 
 type UpdateKind = 'work' | 'education' | 'research' | 'publication' | 'project' | 'other';
 
@@ -101,6 +102,8 @@ const Moments: React.FC = () => {
         emptyTitle: 'No moments in this view',
         emptyBody: 'Change the type or time filter to see other entries.',
         allTime: 'All time',
+        outputs: 'Outputs',
+        outputKinds: { blog: 'Article', project: 'Project' },
         priorities: { high: 'High priority', medium: 'Medium priority', low: 'Low priority' },
       }
     : {
@@ -115,6 +118,8 @@ const Moments: React.FC = () => {
         emptyTitle: '当前筛选下没有动态',
         emptyBody: '更改类型或时间筛选以查看其他内容。',
         allTime: '全部时间',
+        outputs: '输出',
+        outputKinds: { blog: '文章', project: '项目' },
         priorities: { high: '高优先级', medium: '中优先级', low: '低优先级' },
       };
 
@@ -373,6 +378,8 @@ const Moments: React.FC = () => {
                   const weekday = date?.toLocaleDateString(language === 'en' ? 'en-SG' : 'zh-CN', {
                     weekday: 'short',
                   });
+                  const momentPath = `/moments/${encodeURIComponent(moment.slug || moment.id)}`;
+                  const excerpt = markdownToPlainExcerpt(moment.description, moment.title);
 
                   return (
                     <motion.li
@@ -409,42 +416,70 @@ const Moments: React.FC = () => {
                       </div>
 
                       <article className="min-w-0">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <span className="mb-2 inline-flex items-center gap-1.5 text-ds-xs text-ds-fg-subtle">
-                              <Icon className="size-3.5" aria-hidden />
-                              {kindLabel(momentKind)}
-                            </span>
-                            <h3 className="text-balance text-ds-xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg sm:text-ds-2xl">
-                              {moment.title}
-                            </h3>
-                          </div>
-                          <div className="flex shrink-0 flex-wrap gap-1.5">
-                            {moment.status && (
-                              <Badge tone={statusTone(moment.status)} appearance="soft" dot>
-                                {moment.status}
-                              </Badge>
-                            )}
-                            {moment.priority && (
-                              <Badge tone={priorityTone(moment.priority)} appearance="outline">
-                                {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-
-                        <Markdown className="mt-4 max-w-[68ch] text-ds-base leading-8 text-ds-fg-muted [&_.vditor-reset]:!pl-0">
-                          {withoutRepeatedTitle(moment.description, moment.title)}
-                        </Markdown>
-
-                        {moment.tags?.length > 0 && (
-                          <div className="mt-5 flex flex-wrap gap-x-3 gap-y-1.5">
-                            {moment.tags.map((tag) => (
-                              <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
-                                #{tag}
+                        <Link
+                          to={momentPath}
+                          className="group block max-w-[68ch] rounded-[10px] border border-ds-border-strong bg-ds-surface-2 p-4 outline-none shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[border-color,background-color,box-shadow] hover:border-ds-fg-subtle hover:bg-ds-surface-3 hover:shadow-ds-1 focus-visible:shadow-ds-focus sm:p-5"
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div className="min-w-0">
+                              <span className="mb-2 inline-flex items-center gap-1.5 text-ds-xs text-ds-fg-subtle">
+                                <Icon className="size-3.5" aria-hidden />
+                                {kindLabel(momentKind)}
                               </span>
-                            ))}
+                              <h3 className="text-balance text-ds-xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg group-hover:text-ds-primary sm:text-ds-2xl">
+                                {moment.title}
+                              </h3>
+                            </div>
+                            <div className="flex shrink-0 flex-wrap gap-1.5">
+                              {moment.status && (
+                                <Badge tone={statusTone(moment.status)} appearance="soft" dot>
+                                  {moment.status}
+                                </Badge>
+                              )}
+                              {moment.priority && (
+                                <Badge tone={priorityTone(moment.priority)} appearance="outline">
+                                  {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
+
+                          {excerpt && (
+                            <p className="mt-3 line-clamp-3 text-ds-sm leading-6 text-ds-fg-muted sm:text-ds-base">
+                              {excerpt}
+                              <span className="ml-1 font-medium text-ds-fg-subtle group-hover:text-ds-primary">
+                                {language === 'zh' ? '更多' : 'More'}
+                              </span>
+                            </p>
+                          )}
+
+                          {moment.tags?.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5">
+                              {moment.tags.map((tag) => (
+                                <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="mt-4 flex items-center justify-end text-ds-xs font-medium text-ds-fg-subtle">
+                            <span className="inline-flex items-center gap-1 transition-colors group-hover:text-ds-primary">
+                              {language === 'zh' ? '查看详情' : 'Open detail'}
+                              <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
+                            </span>
+                          </div>
+                        </Link>
+
+                        {moment.related_outputs?.length > 0 && (
+                          <MomentRelatedOutputs
+                            outputs={moment.related_outputs}
+                            labels={{
+                              title: copy.outputs,
+                              kinds: copy.outputKinds,
+                            }}
+                            className="mt-3 max-w-[68ch]"
+                          />
                         )}
                         <MomentActions
                           momentKey={moment.slug || moment.id}

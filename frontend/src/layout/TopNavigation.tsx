@@ -4,7 +4,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Home,
   Briefcase,
-  Lightbulb,
+  Aperture,
   BookOpen,
   Mail,
   Globe,
@@ -29,7 +29,7 @@ interface Route {
 const ROUTES = (zh: boolean): Route[] => [
   { path: '/',         label: zh ? '主页' : 'Home',     icon: <Home size={16} /> },
   { path: '/projects', label: zh ? '项目' : 'Projects', icon: <Briefcase size={16} /> },
-  { path: '/ideas',    label: zh ? '想法' : 'Ideas',    icon: <Lightbulb size={16} /> },
+  { path: '/moments',  label: zh ? '瞬间' : 'Moments',  icon: <Aperture size={16} /> },
   { path: '/blog',     label: zh ? '博客' : 'Blog',     icon: <BookOpen size={16} /> },
   { path: '/contact',  label: zh ? '联系' : 'Contact',  icon: <Mail size={16} /> },
 ];
@@ -40,7 +40,6 @@ const ROUTES = (zh: boolean): Route[] => [
  * so the address bar can render e.g. `Home / Recent Moments`.
  */
 const SUBROUTES = (zh: boolean): Record<string, { parent: string; label: string }> => ({
-  '/moments': { parent: '/', label: zh ? '近期更新' : 'Recent Moments' },
   '/search': { parent: '/', label: zh ? '搜索结果' : 'Search Results' },
 });
 
@@ -154,7 +153,6 @@ export const NavAvatar: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { colors, isDarkMode } = useTheme();
-  const { capsuleBg } = useChromeTokens();
   const zh = language === 'zh';
 
   const [imgOk, setImgOk] = useState(true);
@@ -168,8 +166,7 @@ export const NavAvatar: React.FC = () => {
       aria-label={label}
       title={label}
       onClick={() => navigate('/contact')}
-      className="group flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full p-[3px] transition-transform hover:scale-105"
-      style={{ backgroundColor: capsuleBg, boxShadow: colors.shadowSm }}
+      className="group flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform hover:scale-105"
     >
       <span
         className="flex h-full w-full items-center justify-center overflow-hidden rounded-full"

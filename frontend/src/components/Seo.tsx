@@ -210,7 +210,7 @@ export const blogPostingJsonLd = (post: {
   author: { '@type': 'Person', name: post.author || SITE_NAME },
 });
 
-/** `CreativeWork` structured data for a project / idea detail page. */
+/** `CreativeWork` structured data for a project / moment detail page. */
 export const creativeWorkJsonLd = (work: {
   title: string;
   description?: string;

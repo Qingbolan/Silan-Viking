@@ -92,6 +92,15 @@ const colorSchemes = {
     dsAccentFg: 'oklch(1.00 0 0)',
     dsAccentSoft: 'oklch(0.95 0.03 256)',
 
+    // Chat — WeChat-inspired green, reserved for the discussion surface
+    // (outgoing bubble, send/like actions). Theme-aware, not a hardcoded hex.
+    dsChat: 'oklch(0.70 0.17 152)',         // send / primary chat action
+    dsChatHover: 'oklch(0.65 0.17 152)',
+    dsChatFg: 'oklch(1.00 0 0)',            // text on chat fill
+    dsChatSoft: 'oklch(0.95 0.05 150)',     // liked / active wash
+    dsChatBubble: 'oklch(0.87 0.17 140)',   // outgoing message bubble
+    dsChatBubbleFg: 'oklch(0.22 0.03 140)', // text on outgoing bubble
+
     // Status soft washes
     dsSuccessSoft: 'oklch(0.95 0.04 150)',
     dsWarningSoft: 'oklch(0.95 0.05 75)',
@@ -177,6 +186,15 @@ const colorSchemes = {
     dsAccentFg: 'oklch(0.16 0.02 256)',
     dsAccentSoft: 'oklch(0.29 0.055 256)',
 
+    // Chat — WeChat-inspired green, lifted for legibility on graphite and
+    // desaturated so the outgoing bubble does not glare in dark mode.
+    dsChat: 'oklch(0.75 0.16 152)',         // send / primary chat action
+    dsChatHover: 'oklch(0.80 0.15 152)',
+    dsChatFg: 'oklch(0.16 0.02 152)',       // text on chat fill
+    dsChatSoft: 'oklch(0.30 0.06 150)',     // liked / active wash
+    dsChatBubble: 'oklch(0.52 0.09 150)',   // outgoing message bubble
+    dsChatBubbleFg: 'oklch(0.97 0.02 150)', // text on outgoing bubble
+
     // Status soft washes
     dsSuccessSoft: 'oklch(0.27 0.05 150)',
     dsWarningSoft: 'oklch(0.29 0.06 75)',
@@ -236,6 +254,12 @@ interface ColorScheme {
   dsAccentHover: string;
   dsAccentFg: string;
   dsAccentSoft: string;
+  dsChat: string;
+  dsChatHover: string;
+  dsChatFg: string;
+  dsChatSoft: string;
+  dsChatBubble: string;
+  dsChatBubbleFg: string;
   dsSuccessSoft: string;
   dsWarningSoft: string;
   dsErrorSoft: string;

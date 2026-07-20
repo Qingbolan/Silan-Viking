@@ -1,7 +1,7 @@
-// src/components/ds/IdeaCard.tsx
+// src/components/ds/MomentCard.tsx
 //
-// Design-system IdeaCard — a dashed-outline "pinboard" card for research
-// ideas (no cover; an idea is text-led). The title is the clear focal
+// Design-system MomentCard — a dashed-outline "pinboard" card for research
+// moments (no cover; a moment is text-led). The title is the clear focal
 // point; status, category, links and date are quiet supporting metadata.
 import React from 'react';
 import { ArrowUpRight, FileText, FolderGit2 } from 'lucide-react';
@@ -10,7 +10,7 @@ import { dsRoot } from './dsAttr';
 import { Badge } from './Badge';
 
 /** The research lifecycle, in order. */
-export type IdeaStatus =
+export type MomentStatus =
   | 'draft'
   | 'hypothesis'
   | 'experimenting'
@@ -19,36 +19,36 @@ export type IdeaStatus =
   | 'concluded';
 
 /** Card width / layout. `feature` is a wide horizontal card. */
-export type IdeaCardSize = 'compact' | 'standard' | 'feature';
+export type MomentCardSize = 'compact' | 'standard' | 'feature';
 
-export interface IdeaCardData {
+export interface MomentCardData {
   id: string;
   title: string;
   description?: string;
   /** Research stage — drives the status marker. */
-  status: IdeaStatus;
+  status: MomentStatus;
   /** Topic / field category. */
   category?: string;
   tags?: string[];
   /** Created or last-updated date — any displayable string. */
   date?: string;
-  /** Number of blog posts this idea has produced. */
+  /** Number of blog posts this moment has produced. */
   linkedBlogs?: number;
-  /** Number of projects this idea is linked to. */
+  /** Number of projects this moment is linked to. */
   linkedProjects?: number;
 }
 
-export interface IdeaCardProps {
-  idea: IdeaCardData;
+export interface MomentCardProps {
+  moment: MomentCardData;
   onOpen?: (_id: string) => void;
   maxTags?: number;
   /** Card width / layout. Default `standard`. */
-  size?: IdeaCardSize;
+  size?: MomentCardSize;
   className?: string;
 }
 
 /** Per-status label + dot colour token. */
-const STATUS_META: Record<IdeaStatus, { label: string; color: string }> = {
+const STATUS_META: Record<MomentStatus, { label: string; color: string }> = {
   draft: { label: 'Draft', color: 'var(--ds-color-fg-subtle, var(--color-textTertiary))' },
   hypothesis: { label: 'Hypothesis', color: 'var(--ds-color-primary)' },
   experimenting: { label: 'Experimenting', color: 'var(--ds-color-warning)' },
@@ -58,12 +58,12 @@ const STATUS_META: Record<IdeaStatus, { label: string; color: string }> = {
 };
 
 /**
- * An idea is an inspiration note — light and informal. The card is a
+ * A moment is an inspiration note — light and informal. The card is a
  * dashed-outline pinboard card (à la a sticky note): no cover, no icon,
  * a quiet dashed border that turns solid + tinted on hover.
  */
-export const IdeaCard: React.FC<IdeaCardProps> = ({
-  idea,
+export const MomentCard: React.FC<MomentCardProps> = ({
+  moment,
   onOpen,
   maxTags = 4,
   size = 'standard',
@@ -72,7 +72,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
   const {
     id, title, description, status, category, tags = [], date,
     linkedBlogs = 0, linkedProjects = 0,
-  } = idea;
+  } = moment;
   const meta = STATUS_META[status];
   const shownTags = tags.slice(0, maxTags);
   const overflow = tags.length - shownTags.length;
@@ -145,7 +145,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
       )}
       {(hasLinks || date) && (
         <div className="flex items-center justify-between gap-3 text-ds-2xs text-ds-fg-subtle">
-          {/* Linked blogs / projects produced from this idea. */}
+          {/* Linked blogs / projects produced from this moment. */}
           <div className="flex items-center gap-3">
             {linkedBlogs > 0 && (
               <span className="inline-flex items-center gap-1" title={`${linkedBlogs} linked posts`}>
@@ -187,7 +187,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({
         'duration-ds-normal ease-ds-emphasized',
         'hover:-translate-y-0.5 hover:border-solid hover:border-ds-primary hover:shadow-ds-2',
         'outline-none focus-visible:shadow-ds-focus',
-        // `h-full` fills the grid cell so a row of idea cards stays even
+        // `h-full` fills the grid cell so a row of moment cards stays even
         // (grid stretch + body flex-1); content is never clipped.
         // feature → wide horizontal; others → vertical.
         isFeature ? 'h-56 flex-row items-stretch' : 'h-full flex-col',

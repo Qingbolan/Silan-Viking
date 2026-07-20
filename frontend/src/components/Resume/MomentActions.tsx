@@ -84,7 +84,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) =
   }, [momentKey]);
 
   return (
-    <div className="mt-6 border-t border-ds-border pt-3">
+    <div className="border-t border-ds-border">
       <div className="flex min-h-10 items-center justify-between gap-4">
         <time
           dateTime={timestamp}
@@ -106,8 +106,11 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) =
       </div>
 
       {engagement.likes > 0 && (
-        <div className="mt-3 flex min-h-12 items-center gap-3 rounded-ds-sm bg-ds-surface-2 px-3 py-2.5">
-          <Heart className="size-4 shrink-0 text-red-500" fill="currentColor" />
+        <div className="flex min-h-6 items-center gap-3 rounded-ds-sm bg-ds-surface-2 px-3 py-2.5">
+          <Heart
+            className={`size-4 shrink-0 ${engagement.is_liked_by_user ? 'text-red-500' : 'text-gray-500'}`}
+            fill="currentColor"
+          />
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             {likers.map((liker, index) => (
               <MomentLikerAvatar
@@ -126,7 +129,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) =
       )}
 
       {commentsOpen && (
-        <div className="mt-3 rounded-ds-sm bg-ds-surface-2 px-4 pb-4">
+        <div className="rounded-ds-sm bg-ds-surface-2 px-4 pb-4">
           <EntityDiscussion
             loadComments={loadComments}
             createComment={createComment}

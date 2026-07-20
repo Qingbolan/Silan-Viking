@@ -3,11 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowUpRight,
+  Aperture,
   BookOpen,
   Briefcase,
   CalendarDays,
   FileText,
-  Lightbulb,
   Search,
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
@@ -37,10 +37,10 @@ const KIND_ICONS = {
   blog: FileText,
   episode: BookOpen,
   project: Briefcase,
-  idea: Lightbulb,
+  moment: Aperture,
 } as const;
 
-const KIND_ORDER: SearchResultKind[] = ['blog', 'episode', 'project', 'idea'];
+const KIND_ORDER: SearchResultKind[] = ['blog', 'episode', 'project', 'moment'];
 
 const validDate = (value?: string): Date | null => {
   if (!value) return null;
@@ -128,14 +128,14 @@ const SearchResults: React.FC = () => {
     ? {
         eyebrow: 'Find anything',
         title: 'Search',
-        description: 'Search every published article, episode, project, and research idea.',
+        description: 'Search every published article, episode, project, and moment.',
         placeholder: 'Search the knowledge base…',
         submit: 'Search',
         all: 'All',
         blog: 'Articles',
         episode: 'Episodes',
         project: 'Projects',
-        idea: 'Ideas',
+        moment: 'Moments',
         resultsFor: 'Results for',
         loading: 'Searching published content',
         idleTitle: 'Search the knowledge base',
@@ -151,14 +151,14 @@ const SearchResults: React.FC = () => {
     : {
         eyebrow: '查找内容',
         title: '搜索',
-        description: '搜索所有已发布的文章、系列章节、项目和研究想法。',
+        description: '搜索所有已发布的文章、系列章节、项目和瞬间。',
         placeholder: '搜索知识库…',
         submit: '搜索',
         all: '全部',
         blog: '文章',
         episode: '章节',
         project: '项目',
-        idea: '想法',
+        moment: '瞬间',
         resultsFor: '搜索结果',
         loading: '正在搜索已发布内容',
         idleTitle: '搜索知识库',
@@ -215,9 +215,9 @@ const SearchResults: React.FC = () => {
       option('blog', copy.blog, counts?.blog ?? 0),
       option('episode', copy.episode, counts?.episode ?? 0),
       option('project', copy.project, counts?.project ?? 0),
-      option('idea', copy.idea, counts?.idea ?? 0),
+      option('moment', copy.moment, counts?.moment ?? 0),
     ];
-  }, [copy.all, copy.blog, copy.episode, copy.idea, copy.project, response]);
+  }, [copy.all, copy.blog, copy.episode, copy.moment, copy.project, response]);
 
   const visibleGroups = useMemo(() => {
     if (!response) return [];

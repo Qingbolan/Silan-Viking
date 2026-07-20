@@ -62,8 +62,7 @@ const Footer: React.FC = () => {
     { label: zh ? '博客' : 'Writing', to: '/blog' },
   ];
   const research: InternalLink[] = [
-    { label: zh ? '研究想法' : 'Research ideas', to: '/ideas' },
-    { label: zh ? '近期更新' : 'Recent moments', to: '/moments' },
+    { label: zh ? '瞬间' : 'Moments', to: '/moments' },
     { label: zh ? '联系' : 'Contact', to: '/contact' },
   ];
 
@@ -83,7 +82,8 @@ const Footer: React.FC = () => {
               src={publicAssetUrl('/image.png')}
               name="Silan Hu"
               size="sm"
-              className="size-10 ring-2 ring-white/75"
+              bordered={false}
+              className="size-10"
             />
             <span className="text-base font-semibold tracking-[-0.035em]">Silan Hu</span>
           </Link>

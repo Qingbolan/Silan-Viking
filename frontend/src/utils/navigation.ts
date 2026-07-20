@@ -4,7 +4,11 @@
  * navigate them through Writing/Blog.
  */
 export const primaryNavigationPath = (pathname: string): string =>
-  pathname.startsWith('/episodes/') ? '/blog' : pathname;
+  pathname.startsWith('/episodes/')
+    ? '/blog'
+    : pathname === '/ideas' || pathname.startsWith('/ideas/')
+      ? '/moments'
+      : pathname;
 
 export const isNavigationPathActive = (pathname: string, routePath: string): boolean => {
   const effectivePath = primaryNavigationPath(pathname);

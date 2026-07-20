@@ -23,7 +23,7 @@ export interface ListResponse<T> {
   // Backend API specific response structure
   projects?: T[];
   posts?: T[];
-  ideas?: T[];
+  moments?: T[];
   total_pages?: number; // Backend uses snake_case
 }
 
@@ -63,10 +63,7 @@ export interface BlogListResponse {
   total_pages: number;
 }
 
-export interface IdeaListResponse {
-  ideas: any[];
+export interface MomentListResponse {
+  moments: any[];
   total: number;
-  page: number;
-  size: number;
-  total_pages: number;
 }

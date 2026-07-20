@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  Aperture,
   BookOpen,
   Briefcase,
   FileText,
-  Lightbulb,
   Search,
 } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
@@ -25,12 +25,12 @@ interface GlobalSearchProps {
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
-const KIND_ORDER: SearchResultKind[] = ['blog', 'episode', 'project', 'idea'];
+const KIND_ORDER: SearchResultKind[] = ['blog', 'episode', 'project', 'moment'];
 const KIND_ICONS = {
   blog: FileText,
   episode: BookOpen,
   project: Briefcase,
-  idea: Lightbulb,
+  moment: Aperture,
 } as const;
 
 const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQuery = '', returnFocusRef }) => {
@@ -45,7 +45,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQue
   const copy = language === 'en'
     ? {
         title: 'Search the knowledge base',
-        description: 'Articles, episodes, projects, and research ideas.',
+        description: 'Articles, episodes, projects, and moments.',
         placeholder: 'Search by title, topic, or phrase…',
         idleTitle: 'Start with a topic or phrase',
         idleBody: 'Press Enter to open the full result page.',
@@ -59,7 +59,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQue
       }
     : {
         title: '搜索知识库',
-        description: '文章、系列章节、项目与研究想法。',
+        description: '文章、系列章节、项目与瞬间。',
         placeholder: '按标题、主题或短语搜索…',
         idleTitle: '输入主题或短语',
         idleBody: '按回车可打开完整搜索结果页。',
@@ -202,8 +202,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQue
                   <h3 id={`quick-search-${kind}`} className="mb-1.5 flex items-center gap-1.5 text-ds-xs font-semibold uppercase tracking-[0.08em] text-ds-fg-subtle">
                     <Icon className="size-3.5" aria-hidden />
                     {language === 'en'
-                      ? { blog: 'Articles', episode: 'Episodes', project: 'Projects', idea: 'Ideas' }[kind]
-                      : { blog: '文章', episode: '章节', project: '项目', idea: '想法' }[kind]}
+                      ? { blog: 'Articles', episode: 'Episodes', project: 'Projects', moment: 'Moments' }[kind]
+                      : { blog: '文章', episode: '章节', project: '项目', moment: '瞬间' }[kind]}
                     <span className="font-normal tracking-normal">{response?.counts[kind] ?? items.length}</span>
                   </h3>
                   <ul className="divide-y divide-ds-border border-y border-ds-border">

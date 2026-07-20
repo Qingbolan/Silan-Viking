@@ -85,13 +85,13 @@ export type { ProjectCardProps, ProjectCardData, CoverSize } from './ProjectCard
 export { BlogCard } from './BlogCard';
 export type { BlogCardProps, BlogCardData, BlogCoverSize } from './BlogCard';
 
-export { IdeaCard } from './IdeaCard';
+export { MomentCard } from './MomentCard';
 export type {
-  IdeaCardProps,
-  IdeaCardData,
-  IdeaStatus,
-  IdeaCardSize,
-} from './IdeaCard';
+  MomentCardProps,
+  MomentCardData,
+  MomentStatus,
+  MomentCardSize,
+} from './MomentCard';
 
 export { ArticleHeader } from './ArticleHeader';
 export type { ArticleHeaderProps, ArticleHeaderData } from './ArticleHeader';

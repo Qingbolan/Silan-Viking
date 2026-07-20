@@ -24,7 +24,7 @@ export interface BookNavChapter {
 interface BookNavProps {
   /** Optional row pinned to the top — "Overview" / book cover. Acts as the
    *  book's intro page. Caller may pass a custom icon (e.g. Lightbulb for
-   *  an Idea, FolderGit2 for a Project). */
+   *  a Moment, FolderGit2 for a Project). */
   overview?: {
     label: string;
     icon?: LucideIcon;
@@ -47,8 +47,7 @@ const BookNav: React.FC<BookNavProps> = ({
     : chapters;
 
   // Icon for the Overview row — caller-supplied or Lightbulb as a generic
-  // Idea-flavoured default (matches the global Idea icon convention used in
-  // IdeaPage.tsx and CommunityFeedback.tsx).
+  // Moment-flavoured default (matches the global Moment icon convention).
   const OverviewIcon = overview?.icon ?? Lightbulb;
 
   return (

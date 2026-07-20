@@ -41,7 +41,7 @@ import {
   StatCard,
   ProjectCard,
   BlogCard,
-  IdeaCard,
+  MomentCard,
   ArticleHeader,
   BlogHeader,
   ProfileHero,
@@ -363,7 +363,7 @@ export const CardsSection: React.FC = () => {
               id: 'vision-behind-silan',
               title: 'The Vision Behind Silan Personal Website',
               excerpt:
-                'Exploring the initial idea and significance of the project — a new approach to professional online presence.',
+                'Exploring the initial concept and significance of the project — a new approach to professional online presence.',
               tags: ['innovation', 'vision', 'silan-website'],
               date: '7/16/2024',
               author: 'Silan Hu',
@@ -527,7 +527,7 @@ export const CardsSection: React.FC = () => {
     </Subsection>
 
     <Subsection
-      title="IdeaCard"
+      title="MomentCard"
       hint="dashed pinboard card · lifecycle status · linked blog/project counts"
     >
       <Stage inset className="!block">
@@ -542,13 +542,13 @@ export const CardsSection: React.FC = () => {
               { status: 'concluded', title: 'Browser-style portfolio navigation', b: 3, p: 1 },
             ] as const
           ).map((it, i) => (
-            <IdeaCard
+            <MomentCard
               key={it.status}
-              idea={{
-                id: `idea-${it.status}`,
+              moment={{
+                id: `moment-${it.status}`,
                 title: it.title,
                 description:
-                  'A research idea moving through the lifecycle — the status marker tracks its stage.',
+                  'A research moment moving through the lifecycle - the status marker tracks its stage.',
                 status: it.status,
                 category: 'Research',
                 tags: ['ai', 'research', i % 2 ? 'systems' : 'ml'],
@@ -560,12 +560,12 @@ export const CardsSection: React.FC = () => {
             />
           ))}
         </div>
-        {/* feature — wide horizontal idea card. */}
+        {/* feature - wide horizontal moment card. */}
         <div className="mt-4">
-          <IdeaCard
+          <MomentCard
             size="feature"
-            idea={{
-              id: 'idea-feature',
+            moment={{
+              id: 'moment-feature',
               title: 'FOKE — a personalised education framework built on LLMs',
               description:
                 'The feature layout puts the title block on the left and the elaboration on the right. The title leads as the clear focal point; status, category, links and date stay quiet as supporting metadata.',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import './i18n/index'; // Initialize i18n
 import MainLayout from './layout/MainLayout';
@@ -16,11 +16,10 @@ import { Seo } from './components/Seo';
 // hero. Route boundaries are the natural ownership boundary for that code.
 const ResumeWebsite = React.lazy(() => import('./views/ResumeWebsite'));
 const Moments = React.lazy(() => import('./views/Moments'));
+const MomentDetail = React.lazy(() => import('./views/MomentDetail'));
 const InteractiveContactPage = React.lazy(() => import('./views/InteractiveContactPage'));
 const ProjectGallery = React.lazy(() => import('./views/ProjectGallery'));
 const ProjectDetail = React.lazy(() => import('./components/ProjectGallery/ProjectDetail'));
-const IdeaPage = React.lazy(() => import('./views/IdeaPage'));
-const IdeaDetail = React.lazy(() => import('./components/IdeaPage/IdeaDetail'));
 const BlogStack = React.lazy(() => import('./views/BlogStack'));
 const BlogDetail = React.lazy(() => import('./components/BlogStack/BlogDetail'));
 const EpisodeDetail = React.lazy(() => import('./components/Episode/EpisodeDetail'));
@@ -51,6 +50,11 @@ const NotFoundRoute: React.FC = () => {
   );
 };
 
+const LegacyIdeaRoute: React.FC = () => {
+  const { id } = useParams();
+  return <Navigate to={id ? `/moments?id=${encodeURIComponent(id)}` : '/moments'} replace />;
+};
+
 const LocalizedRoutes: React.FC = () => {
   const { language } = useLanguage();
 
@@ -65,11 +69,12 @@ const LocalizedRoutes: React.FC = () => {
       <Routes key={language}>
         <Route path="/" element={<ResumeWebsite />} />
         <Route path="/moments" element={<Moments />} />
+        <Route path="/moments/:slug" element={<MomentDetail />} />
         <Route path="/contact" element={<InteractiveContactPage />} />
         <Route path="/projects" element={<ProjectGallery />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />
-        <Route path="/ideas" element={<IdeaPage />} />
-        <Route path="/ideas/:id" element={<IdeaDetail />} />
+        <Route path="/ideas" element={<LegacyIdeaRoute />} />
+        <Route path="/ideas/:id" element={<LegacyIdeaRoute />} />
         <Route path="/blog" element={<BlogStack />} />
         <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/episodes/:slug" element={<EpisodeDetail />} />

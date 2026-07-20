@@ -14,6 +14,14 @@ export const fetchMoments = async (language: 'en' | 'zh' = 'en'): Promise<Moment
   return response?.moments ?? [];
 };
 
+export const fetchMoment = (
+  slug: string,
+  language: 'en' | 'zh' = 'en',
+): Promise<Moment> =>
+  get(`/api/v1/moments/${encodeURIComponent(slug)}`, {
+    lang: formatLanguage(language),
+  });
+
 export interface MomentLiker {
   kind: 'visitor' | 'user';
   country_code?: string;

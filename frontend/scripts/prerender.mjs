@@ -15,6 +15,7 @@ import {
   readFileSync,
   readdirSync,
   statSync,
+  rmSync,
 } from 'node:fs';
 import sirv from 'sirv';
 import puppeteer from 'puppeteer';
@@ -103,7 +104,8 @@ const publicUrl = (route = '/') => {
 };
 const apiUrl = (path) => new URL(path, `${trimTrailingSlash(config.apiOrigin)}/`).toString();
 
-const STATIC_ROUTES = ['/', '/blog/', '/projects/', '/ideas/', '/moments/', '/contact/', '/search/'];
+const STATIC_ROUTES = ['/', '/blog/', '/projects/', '/moments/', '/contact/', '/search/'];
+const PRERENDER_ROUTE_ROOTS = ['blog', 'projects', 'moments', 'contact', 'search', 'episodes'];
 const CONTENT_TEXT_LIMIT = 1800;
 const IDENTITY_ALIASES = ['Silan.Hu', 'Hu Silan', '胡思蓝'];
 const INCORRECT_NAME_VARIANTS = ['胡思澜', '胡司兰'];
@@ -156,7 +158,7 @@ async function fetchJson(path) {
 }
 
 const asArray = (j) =>
-  Array.isArray(j) ? j : j?.posts || j?.projects || j?.ideas || j?.series || j?.episodes || j?.data || j?.list || [];
+  Array.isArray(j) ? j : j?.posts || j?.projects || j?.moments || j?.series || j?.episodes || j?.data || j?.list || [];
 
 const localizedText = (value, lang = 'en') => {
   if (typeof value === 'string') return value;
@@ -235,15 +237,6 @@ async function detailRoutes() {
     }
   } catch (e) {
     log(`could not list projects: ${e.message}`);
-  }
-  try {
-    const ideas = asArray(await fetchJson('/api/v1/ideas?lang=en'));
-    for (const i of ideas) {
-      const seg = i.id || i.slug;
-      if (seg) routes.push(`/ideas/${seg}/`);
-    }
-  } catch (e) {
-    log(`could not list ideas: ${e.message}`);
   }
   try {
     const series = asArray(await fetchJson('/api/v1/episodes/series?lang=en'));
@@ -332,27 +325,21 @@ async function llmsEntries() {
   }
 
   try {
-    const ideas = asArray(await fetchJson('/api/v1/ideas?lang=en&size=100'));
-    for (const idea of ideas) {
-      const slug = idea.slug || idea.id;
+    const moments = asArray(await fetchJson('/api/v1/moments?lang=en'));
+    for (const moment of moments) {
+      const slug = moment.slug || moment.id;
       if (!slug) continue;
-      let detail = idea;
-      try {
-        detail = await fetchJson(`/api/v1/ideas/${encodeURIComponent(slug)}?lang=en`);
-      } catch (e) {
-        log(`could not fetch idea detail for ${slug}: ${e.message}`);
-      }
       entries.push({
-        kind: 'Idea',
-        title: detail.title || idea.title || slug,
-        path: `/ideas/${slug}/`,
-        summary: shortSummary(detail.summary, detail.description, idea.summary, idea.description),
-        tags: detail.tags || idea.tags || [],
-        text: clipText(detail.parts || detail.description || idea.description),
+        kind: 'Moment',
+        title: moment.title || slug,
+        path: `/moments/?id=${encodeURIComponent(slug)}`,
+        summary: shortSummary(moment.summary, moment.description),
+        tags: moment.tags || [],
+        text: clipText(moment.description),
       });
     }
   } catch (e) {
-    log(`could not build llms idea entries: ${e.message}`);
+    log(`could not build llms moment entries: ${e.message}`);
   }
 
   try {
@@ -461,8 +448,8 @@ function crawlerProfileText(entries) {
 const priorityFor = (route) => {
   const normalized = route.replace(/\/$/, '') || '/';
   if (normalized === '/') return '1.0';
-  if (/^\/(blog|projects|ideas)$/.test(normalized)) return '0.8';
-  if (/^\/(blog|projects|ideas|episodes)\//.test(normalized)) return '0.7';
+  if (/^\/(blog|projects|moments)$/.test(normalized)) return '0.8';
+  if (/^\/(blog|projects|episodes)\//.test(normalized)) return '0.7';
   return '0.6';
 };
 
@@ -643,6 +630,7 @@ async function ensureBackend() {
 
 function startStaticServer() {
   const assets = sirv(DIST, { dev: false, single: false });
+  const shellHtml = readFileSync(join(DIST, 'index.html'));
   const server = createServer((req, res) => {
     const original = new URL(req.url || '/', `http://localhost:${SERVE_PORT}`);
     let pathname = original.pathname;
@@ -670,12 +658,18 @@ function startStaticServer() {
 
     assets(req, res, () => {
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(readFileSync(join(DIST, 'index.html')));
+      res.end(shellHtml);
     });
   });
   return new Promise((resolveServer) => {
     server.listen(SERVE_PORT, () => resolveServer(server));
   });
+}
+
+function removeStalePrerenderOutput() {
+  for (const root of PRERENDER_ROUTE_ROOTS) {
+    rmSync(join(DIST, root), { recursive: true, force: true });
+  }
 }
 
 const chromeExecutablePath = () => CHROME_CANDIDATES.find((path) => existsSync(path));
@@ -686,6 +680,7 @@ async function main() {
   }
 
   const { backend, backendUp } = await ensureBackend();
+  removeStalePrerenderOutput();
   const server = await startStaticServer();
   log(`serving dist/ on http://localhost:${SERVE_PORT}${config.base}`);
 
