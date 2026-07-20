@@ -1,0 +1,589 @@
+/* ══════════════════════════════════════════════════════════════════
+ * Textures — opt-in atmospheric surfaces.
+ *
+ * Applied via `data-texture` attribute on <html> (or any ancestor).
+ * Each texture layer is a single fixed background image (SVG / CSS
+ * gradients) so it costs one paint and scrolls with the page.
+ *
+ * Inspired by:
+ *   - Newspaper / risograph: halftone dot pattern
+ *   - Paper: fractal noise grain
+ *   - Linen: woven crosshatch
+ *   - Graph: grid / dot grid
+ *   - Topo: contour lines (rare, decorative)
+ *
+ * The texture blends into the base via `mix-blend-mode` so it tints
+ * the canvas gently instead of overlaying a hard colour. Each texture
+ * has light and dark-mode opacity tuned so it never fights readability.
+ * ════════════════════════════════════════════════════════════════ */
+
+/* Reserve scrollbar gutter so Radix opening a modal doesn't reflow
+ * page width. Simple version (no :has selector for older browser
+ * support). */
+html {
+  scrollbar-gutter: stable;
+}
+
+
+/* Texture must never intercept pointer events. `z-index: -1` ensures
+ * it sits beneath all normal body children, and `pointer-events: none`
+ * guarantees no clicks/hover are ever eaten by the pseudo-element. */
+:root[data-texture] body::before,
+:root[data-texture] .easynet-texture-canvas::before {
+  content: "";
+  inset: 0;
+  pointer-events: none !important;
+  user-select: none;
+  transition: opacity 400ms ease;
+}
+
+:root[data-texture] body::before {
+  position: fixed;
+  z-index: -1;
+  background-attachment: fixed;
+}
+
+/* Body must establish its own stacking context so the -1 pseudo
+ * doesn't fall BEHIND html's background (which would hide the texture).
+ * Using `isolation: isolate` is the modern way; it creates a
+ * stacking context without affecting z-index on real children. */
+:root[data-texture] body {
+  isolation: isolate;
+  background: var(--background);
+}
+
+:root[data-texture] .easynet-texture-canvas {
+  position: relative;
+  isolation: isolate;
+  background: var(--background);
+}
+
+:root[data-texture] .easynet-texture-canvas::before {
+  position: absolute;
+  z-index: 0;
+}
+
+:root[data-texture] .easynet-texture-canvas > * {
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ── Paper (warm fractal noise) ─────────────────────────────────── */
+:root[data-texture="paper"] body::before,
+:root[data-texture="paper"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+  mix-blend-mode: multiply;
+  opacity: 0.065;
+}
+:root.dark[data-texture="paper"] body::before,
+:root.dark[data-texture="paper"] .easynet-texture-canvas::before {
+  mix-blend-mode: soft-light;
+  opacity: 0.10;
+}
+
+/* ── Newspaper (halftone dots + subtle noise) ───────────────────── */
+:root[data-texture="newspaper"] body::before,
+:root[data-texture="newspaper"] .easynet-texture-canvas::before {
+  background-image:
+    radial-gradient(circle at 1px 1px,
+      color-mix(in oklch, var(--foreground) 100%, transparent) 0.9px,
+      transparent 1.5px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-size: 4px 4px, 220px 220px;
+  opacity: 0.055;
+  mix-blend-mode: multiply;
+}
+:root.dark[data-texture="newspaper"] body::before,
+:root.dark[data-texture="newspaper"] .easynet-texture-canvas::before {
+  mix-blend-mode: screen;
+  opacity: 0.06;
+}
+
+/* ── Linen (crosshatch weave) ───────────────────────────────────── */
+:root[data-texture="linen"] body::before,
+:root[data-texture="linen"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M0 0h32v1H0zM0 0v32h1V0z' fill='%23000000' fill-opacity='0.08'/%3E%3Cpath d='M16 0v32M0 16h32' stroke='%23000000' stroke-opacity='0.04' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 14px 14px;
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+}
+:root.dark[data-texture="linen"] body::before,
+:root.dark[data-texture="linen"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M0 0h32v1H0zM0 0v32h1V0z' fill='%23ffffff' fill-opacity='0.08'/%3E%3Cpath d='M16 0v32M0 16h32' stroke='%23ffffff' stroke-opacity='0.04' stroke-width='1'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+  opacity: 0.6;
+}
+
+/* ── Graph paper (grid) ─────────────────────────────────────────── */
+:root[data-texture="graph"] body::before,
+:root[data-texture="graph"] .easynet-texture-canvas::before {
+  background-image:
+    linear-gradient(to right,
+      color-mix(in oklch, var(--foreground) 5%, transparent) 1px,
+      transparent 1px),
+    linear-gradient(to bottom,
+      color-mix(in oklch, var(--foreground) 5%, transparent) 1px,
+      transparent 1px);
+  background-size: 24px 24px;
+  opacity: 1;
+}
+:root.dark[data-texture="graph"] body::before,
+:root.dark[data-texture="graph"] .easynet-texture-canvas::before {
+  opacity: 0.85;
+}
+
+/* ── Dot grid (Notion / blueprint) ──────────────────────────────── */
+:root[data-texture="dots"] body::before,
+:root[data-texture="dots"] .easynet-texture-canvas::before {
+  background-image:
+    radial-gradient(circle at 1px 1px,
+      color-mix(in oklch, var(--foreground) 18%, transparent) 1px,
+      transparent 1.5px);
+  background-size: 22px 22px;
+  opacity: 1;
+}
+:root.dark[data-texture="dots"] body::before,
+:root.dark[data-texture="dots"] .easynet-texture-canvas::before {
+  opacity: 0.9;
+}
+
+/* ── Topo (contour lines) ───────────────────────────────────────── */
+:root[data-texture="topo"] body::before,
+:root[data-texture="topo"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.06' stroke-width='1'%3E%3Ccircle cx='200' cy='200' r='40'/%3E%3Ccircle cx='200' cy='200' r='80'/%3E%3Ccircle cx='200' cy='200' r='120'/%3E%3Ccircle cx='200' cy='200' r='160'/%3E%3Ccircle cx='200' cy='200' r='200'/%3E%3Ccircle cx='60' cy='320' r='30'/%3E%3Ccircle cx='60' cy='320' r='60'/%3E%3Ccircle cx='60' cy='320' r='90'/%3E%3Ccircle cx='340' cy='70' r='30'/%3E%3Ccircle cx='340' cy='70' r='60'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 480px 480px;
+  opacity: 1;
+}
+:root.dark[data-texture="topo"] body::before,
+:root.dark[data-texture="topo"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.06' stroke-width='1'%3E%3Ccircle cx='200' cy='200' r='40'/%3E%3Ccircle cx='200' cy='200' r='80'/%3E%3Ccircle cx='200' cy='200' r='120'/%3E%3Ccircle cx='200' cy='200' r='160'/%3E%3Ccircle cx='200' cy='200' r='200'/%3E%3Ccircle cx='60' cy='320' r='30'/%3E%3Ccircle cx='60' cy='320' r='60'/%3E%3Ccircle cx='60' cy='320' r='90'/%3E%3Ccircle cx='340' cy='70' r='30'/%3E%3Ccircle cx='340' cy='70' r='60'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Waves (flowing horizontal curves) ──────────────────────────── */
+:root[data-texture="waves"] body::before,
+:root[data-texture="waves"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='160' viewBox='0 0 400 160'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.09' stroke-width='1.2'%3E%3Cpath d='M0 20 Q 50 0 100 20 T 200 20 T 300 20 T 400 20'/%3E%3Cpath d='M0 50 Q 50 30 100 50 T 200 50 T 300 50 T 400 50'/%3E%3Cpath d='M0 80 Q 50 60 100 80 T 200 80 T 300 80 T 400 80'/%3E%3Cpath d='M0 110 Q 50 90 100 110 T 200 110 T 300 110 T 400 110'/%3E%3Cpath d='M0 140 Q 50 120 100 140 T 200 140 T 300 140 T 400 140'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 400px 160px;
+  opacity: 1;
+}
+:root.dark[data-texture="waves"] body::before,
+:root.dark[data-texture="waves"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='160' viewBox='0 0 400 160'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.07' stroke-width='1.2'%3E%3Cpath d='M0 20 Q 50 0 100 20 T 200 20 T 300 20 T 400 20'/%3E%3Cpath d='M0 50 Q 50 30 100 50 T 200 50 T 300 50 T 400 50'/%3E%3Cpath d='M0 80 Q 50 60 100 80 T 200 80 T 300 80 T 400 80'/%3E%3Cpath d='M0 110 Q 50 90 100 110 T 200 110 T 300 110 T 400 110'/%3E%3Cpath d='M0 140 Q 50 120 100 140 T 200 140 T 300 140 T 400 140'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Guilloché (overlapping circles — banknote-style rosette) ──── */
+:root[data-texture="guilloche"] body::before,
+:root[data-texture="guilloche"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.08' stroke-width='0.7'%3E%3Ccircle cx='130' cy='130' r='40'/%3E%3Ccircle cx='130' cy='130' r='60'/%3E%3Ccircle cx='130' cy='130' r='80'/%3E%3Ccircle cx='130' cy='130' r='100'/%3E%3Ccircle cx='70' cy='130' r='60'/%3E%3Ccircle cx='190' cy='130' r='60'/%3E%3Ccircle cx='130' cy='70' r='60'/%3E%3Ccircle cx='130' cy='190' r='60'/%3E%3Ccircle cx='85' cy='85' r='45'/%3E%3Ccircle cx='175' cy='85' r='45'/%3E%3Ccircle cx='85' cy='175' r='45'/%3E%3Ccircle cx='175' cy='175' r='45'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 260px 260px;
+  opacity: 1;
+}
+:root.dark[data-texture="guilloche"] body::before,
+:root.dark[data-texture="guilloche"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.06' stroke-width='0.7'%3E%3Ccircle cx='130' cy='130' r='40'/%3E%3Ccircle cx='130' cy='130' r='60'/%3E%3Ccircle cx='130' cy='130' r='80'/%3E%3Ccircle cx='130' cy='130' r='100'/%3E%3Ccircle cx='70' cy='130' r='60'/%3E%3Ccircle cx='190' cy='130' r='60'/%3E%3Ccircle cx='130' cy='70' r='60'/%3E%3Ccircle cx='130' cy='190' r='60'/%3E%3Ccircle cx='85' cy='85' r='45'/%3E%3Ccircle cx='175' cy='85' r='45'/%3E%3Ccircle cx='85' cy='175' r='45'/%3E%3Ccircle cx='175' cy='175' r='45'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Seigaiha (Japanese wave scales — offset arc pattern) ──────── */
+:root[data-texture="seigaiha"] body::before,
+:root[data-texture="seigaiha"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40' viewBox='0 0 80 40'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.10' stroke-width='1'%3E%3Cpath d='M0 40 A 40 40 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 30 30 0 0 1 60 40'/%3E%3Cpath d='M20 40 A 30 30 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 20 20 0 0 1 40 40'/%3E%3Cpath d='M40 40 A 20 20 0 0 1 80 40'/%3E%3Cpath d='M-40 20 A 40 40 0 0 1 40 20'/%3E%3Cpath d='M40 20 A 40 40 0 0 1 120 20'/%3E%3Cpath d='M-40 20 A 30 30 0 0 1 20 20'/%3E%3Cpath d='M20 20 A 30 30 0 0 1 80 20'/%3E%3Cpath d='M60 20 A 30 30 0 0 1 120 20'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 80px 40px;
+  opacity: 1;
+}
+:root.dark[data-texture="seigaiha"] body::before,
+:root.dark[data-texture="seigaiha"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40' viewBox='0 0 80 40'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.08' stroke-width='1'%3E%3Cpath d='M0 40 A 40 40 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 30 30 0 0 1 60 40'/%3E%3Cpath d='M20 40 A 30 30 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 20 20 0 0 1 40 40'/%3E%3Cpath d='M40 40 A 20 20 0 0 1 80 40'/%3E%3Cpath d='M-40 20 A 40 40 0 0 1 40 20'/%3E%3Cpath d='M40 20 A 40 40 0 0 1 120 20'/%3E%3Cpath d='M-40 20 A 30 30 0 0 1 20 20'/%3E%3Cpath d='M20 20 A 30 30 0 0 1 80 20'/%3E%3Cpath d='M60 20 A 30 30 0 0 1 120 20'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Field lines (flowing vector-field curves) ─────────────────── */
+:root[data-texture="field"] body::before,
+:root[data-texture="field"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='240' viewBox='0 0 480 240'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.08' stroke-width='1'%3E%3Cpath d='M-40 40 C 80 80, 160 0, 280 40 S 440 80, 520 40'/%3E%3Cpath d='M-40 100 C 80 140, 160 60, 280 100 S 440 140, 520 100'/%3E%3Cpath d='M-40 160 C 80 200, 160 120, 280 160 S 440 200, 520 160'/%3E%3Cpath d='M-40 220 C 80 200, 160 260, 280 220 S 440 200, 520 220'/%3E%3Cpath d='M-40 10 C 80 -10, 160 50, 280 10 S 440 -10, 520 10'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 480px 240px;
+  opacity: 1;
+}
+:root.dark[data-texture="field"] body::before,
+:root.dark[data-texture="field"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='240' viewBox='0 0 480 240'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.06' stroke-width='1'%3E%3Cpath d='M-40 40 C 80 80, 160 0, 280 40 S 440 80, 520 40'/%3E%3Cpath d='M-40 100 C 80 140, 160 60, 280 100 S 440 140, 520 100'/%3E%3Cpath d='M-40 160 C 80 200, 160 120, 280 160 S 440 200, 520 160'/%3E%3Cpath d='M-40 220 C 80 200, 160 260, 280 220 S 440 200, 520 220'/%3E%3Cpath d='M-40 10 C 80 -10, 160 50, 280 10 S 440 -10, 520 10'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Jupiter (concentric arcs, Hero Patterns by Steve Schoger, CC BY 4.0) ── */
+:root[data-texture="jupiter"] body::before,
+:root[data-texture="jupiter"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23000000' stroke-opacity='0.09' stroke-width='1'%3E%3Cpath d='M0 70 L140 70'/%3E%3Cpath d='M70 0 L70 140'/%3E%3Cpath d='M0 0 L140 140'/%3E%3Cpath d='M0 140 L140 0'/%3E%3Ccircle cx='70' cy='70' r='10'/%3E%3Ccircle cx='70' cy='70' r='22'/%3E%3Ccircle cx='70' cy='70' r='34'/%3E%3Ccircle cx='70' cy='70' r='46'/%3E%3Ccircle cx='70' cy='70' r='58'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  opacity: 1;
+}
+:root.dark[data-texture="jupiter"] body::before,
+:root.dark[data-texture="jupiter"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1'%3E%3Cpath d='M0 70 L140 70'/%3E%3Cpath d='M70 0 L70 140'/%3E%3Cpath d='M0 0 L140 140'/%3E%3Cpath d='M0 140 L140 0'/%3E%3Ccircle cx='70' cy='70' r='10'/%3E%3Ccircle cx='70' cy='70' r='22'/%3E%3Ccircle cx='70' cy='70' r='34'/%3E%3Ccircle cx='70' cy='70' r='46'/%3E%3Ccircle cx='70' cy='70' r='58'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Bubbles (filled dots, two sizes, Hero Patterns, CC BY 4.0) ── */
+:root[data-texture="bubbles"] body::before,
+:root[data-texture="bubbles"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='%23000000' fill-opacity='0.065'%3E%3Ccircle cx='50' cy='50' r='20'/%3E%3Ccircle cx='0' cy='0' r='10'/%3E%3Ccircle cx='100' cy='0' r='10'/%3E%3Ccircle cx='0' cy='100' r='10'/%3E%3Ccircle cx='100' cy='100' r='10'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100px 100px;
+  opacity: 1;
+}
+:root.dark[data-texture="bubbles"] body::before,
+:root.dark[data-texture="bubbles"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='50' cy='50' r='20'/%3E%3Ccircle cx='0' cy='0' r='10'/%3E%3Ccircle cx='100' cy='0' r='10'/%3E%3Ccircle cx='0' cy='100' r='10'/%3E%3Ccircle cx='100' cy='100' r='10'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Anchors Away (hooked curves, Hero Patterns, CC BY 4.0) ───── */
+:root[data-texture="anchors"] body::before,
+:root[data-texture="anchors"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%23000000' stroke-opacity='0.09' stroke-width='1.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-size: 60px 60px;
+  opacity: 1;
+}
+:root.dark[data-texture="anchors"] body::before,
+:root.dark[data-texture="anchors"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Diamonds (rotated squares, Hero Patterns, CC BY 4.0) ──────── */
+:root[data-texture="diamonds"] body::before,
+:root[data-texture="diamonds"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.055'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  opacity: 1;
+}
+:root.dark[data-texture="diamonds"] body::before,
+:root.dark[data-texture="diamonds"] .easynet-texture-canvas::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ── Aurora (coloured ambient orbs) ─────────────────────────────── */
+:root[data-texture="aurora"] body::before,
+:root[data-texture="aurora"] .easynet-texture-canvas::before {
+  background:
+    radial-gradient(1100px 720px at 12% -5%,
+      color-mix(in oklch, var(--primary) 22%, transparent) 0%, transparent 55%),
+    radial-gradient(900px 620px at 110% 10%,
+      color-mix(in oklch, var(--accent) 18%, transparent) 0%, transparent 50%),
+    radial-gradient(800px 600px at 50% 110%,
+      color-mix(in oklch, var(--success) 14%, transparent) 0%, transparent 55%);
+  opacity: 0.55;
+}
+:root.dark[data-texture="aurora"] body::before,
+:root.dark[data-texture="aurora"] .easynet-texture-canvas::before {
+  opacity: 0.30;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Card materials (VLDB-inspired fluent / acrylic recipes)
+ * ──────────────────────────────────────────────────────────────── */
+
+/* Fluent card — translucent + blur + hairline + ambient shadow */
+.easynet-fluent-card {
+  background: transparent;
+  border-radius: 10px;
+  box-shadow: none;
+  transition: none;
+}
+.easynet-fluent-card:hover {
+  box-shadow: none;
+  transform: none;
+}
+.dark .easynet-fluent-card {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Glass card — stronger blur for floating panels */
+.easynet-glass-card {
+  background: color-mix(in oklch, var(--background) 55%, transparent);
+  backdrop-filter: saturate(200%) blur(32px);
+  -webkit-backdrop-filter: saturate(200%) blur(32px);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--background) 60%, transparent),
+    0 2px 4px oklch(0 0 0 / 0.05),
+    0 24px 48px oklch(0 0 0 / 0.10);
+}
+.dark .easynet-glass-card {
+  background: color-mix(in oklch, var(--card) 65%, transparent);
+}
+
+/* Paper card — matte, slight inner shadow, no glass */
+.easynet-paper-card {
+  background: var(--card);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklch, var(--background) 40%, transparent),
+    0 1px 0 color-mix(in oklch, var(--foreground) 4%, transparent),
+    0 2px 4px oklch(0 0 0 / 0.04);
+}
+
+/* Ridged card — like a dev-tool panel with visible top-bar groove */
+.easynet-ridge-card {
+  background: var(--card);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.easynet-ridge-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklch, var(--primary) 50%, transparent) 30%,
+    color-mix(in oklch, var(--accent) 50%, transparent) 70%,
+    transparent
+  );
+}
+
+/* Reveal-border — VLDB's gradient hover effect */
+.easynet-reveal-border {
+  position: relative;
+  isolation: isolate;
+}
+.easynet-reveal-border::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    color-mix(in oklch, var(--primary) 50%, transparent) 45%,
+    color-mix(in oklch, var(--accent) 40%, transparent) 65%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1);
+  z-index: -1;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  padding: 1px;
+}
+.easynet-reveal-border:hover::after {
+  opacity: 0.9;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Texture swatches — self-contained preview tiles.
+ *
+ * Unlike `.easynet-texture-canvas`, these do NOT require an ancestor
+ * `data-texture` attribute. Each swatch hosts its own texture via its
+ * own `data-texture` attribute, so the Settings page can render a
+ * grid of 16 swatches showing every texture side-by-side.
+ * ──────────────────────────────────────────────────────────────── */
+
+.easynet-texture-swatch {
+  position: relative;
+  isolation: isolate;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.easynet-texture-swatch[data-texture]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.easynet-texture-swatch > * {
+  position: relative;
+  z-index: 1;
+}
+
+.easynet-texture-swatch[data-texture="paper"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+  mix-blend-mode: multiply;
+  opacity: 0.065;
+}
+.dark .easynet-texture-swatch[data-texture="paper"]::before {
+  mix-blend-mode: soft-light;
+  opacity: 0.10;
+}
+.easynet-texture-swatch[data-texture="newspaper"]::before {
+  background-image:
+    radial-gradient(circle at 1px 1px,
+      color-mix(in oklch, var(--foreground) 100%, transparent) 0.9px,
+      transparent 1.5px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  background-size: 4px 4px, 220px 220px;
+  opacity: 0.055;
+  mix-blend-mode: multiply;
+}
+.dark .easynet-texture-swatch[data-texture="newspaper"]::before {
+  mix-blend-mode: screen;
+  opacity: 0.06;
+}
+.easynet-texture-swatch[data-texture="linen"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M0 0h32v1H0zM0 0v32h1V0z' fill='%23000000' fill-opacity='0.08'/%3E%3Cpath d='M16 0v32M0 16h32' stroke='%23000000' stroke-opacity='0.04' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 14px 14px;
+  opacity: 0.85;
+  mix-blend-mode: multiply;
+}
+.dark .easynet-texture-swatch[data-texture="linen"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M0 0h32v1H0zM0 0v32h1V0z' fill='%23ffffff' fill-opacity='0.08'/%3E%3Cpath d='M16 0v32M0 16h32' stroke='%23ffffff' stroke-opacity='0.04' stroke-width='1'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+  opacity: 0.6;
+}
+.easynet-texture-swatch[data-texture="graph"]::before {
+  background-image:
+    linear-gradient(to right,
+      color-mix(in oklch, var(--foreground) 5%, transparent) 1px,
+      transparent 1px),
+    linear-gradient(to bottom,
+      color-mix(in oklch, var(--foreground) 5%, transparent) 1px,
+      transparent 1px);
+  background-size: 24px 24px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="graph"]::before {
+  opacity: 0.85;
+}
+.easynet-texture-swatch[data-texture="dots"]::before {
+  background-image:
+    radial-gradient(circle at 1px 1px,
+      color-mix(in oklch, var(--foreground) 18%, transparent) 1px,
+      transparent 1.5px);
+  background-size: 22px 22px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="dots"]::before {
+  opacity: 0.9;
+}
+.easynet-texture-swatch[data-texture="topo"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.06' stroke-width='1'%3E%3Ccircle cx='200' cy='200' r='40'/%3E%3Ccircle cx='200' cy='200' r='80'/%3E%3Ccircle cx='200' cy='200' r='120'/%3E%3Ccircle cx='200' cy='200' r='160'/%3E%3Ccircle cx='200' cy='200' r='200'/%3E%3Ccircle cx='60' cy='320' r='30'/%3E%3Ccircle cx='60' cy='320' r='60'/%3E%3Ccircle cx='60' cy='320' r='90'/%3E%3Ccircle cx='340' cy='70' r='30'/%3E%3Ccircle cx='340' cy='70' r='60'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 480px 480px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="topo"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.06' stroke-width='1'%3E%3Ccircle cx='200' cy='200' r='40'/%3E%3Ccircle cx='200' cy='200' r='80'/%3E%3Ccircle cx='200' cy='200' r='120'/%3E%3Ccircle cx='200' cy='200' r='160'/%3E%3Ccircle cx='200' cy='200' r='200'/%3E%3Ccircle cx='60' cy='320' r='30'/%3E%3Ccircle cx='60' cy='320' r='60'/%3E%3Ccircle cx='60' cy='320' r='90'/%3E%3Ccircle cx='340' cy='70' r='30'/%3E%3Ccircle cx='340' cy='70' r='60'/%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="waves"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='160' viewBox='0 0 400 160'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.09' stroke-width='1.2'%3E%3Cpath d='M0 20 Q 50 0 100 20 T 200 20 T 300 20 T 400 20'/%3E%3Cpath d='M0 50 Q 50 30 100 50 T 200 50 T 300 50 T 400 50'/%3E%3Cpath d='M0 80 Q 50 60 100 80 T 200 80 T 300 80 T 400 80'/%3E%3Cpath d='M0 110 Q 50 90 100 110 T 200 110 T 300 110 T 400 110'/%3E%3Cpath d='M0 140 Q 50 120 100 140 T 200 140 T 300 140 T 400 140'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 400px 160px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="waves"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='160' viewBox='0 0 400 160'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.07' stroke-width='1.2'%3E%3Cpath d='M0 20 Q 50 0 100 20 T 200 20 T 300 20 T 400 20'/%3E%3Cpath d='M0 50 Q 50 30 100 50 T 200 50 T 300 50 T 400 50'/%3E%3Cpath d='M0 80 Q 50 60 100 80 T 200 80 T 300 80 T 400 80'/%3E%3Cpath d='M0 110 Q 50 90 100 110 T 200 110 T 300 110 T 400 110'/%3E%3Cpath d='M0 140 Q 50 120 100 140 T 200 140 T 300 140 T 400 140'/%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="guilloche"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.08' stroke-width='0.7'%3E%3Ccircle cx='130' cy='130' r='40'/%3E%3Ccircle cx='130' cy='130' r='60'/%3E%3Ccircle cx='130' cy='130' r='80'/%3E%3Ccircle cx='130' cy='130' r='100'/%3E%3Ccircle cx='70' cy='130' r='60'/%3E%3Ccircle cx='190' cy='130' r='60'/%3E%3Ccircle cx='130' cy='70' r='60'/%3E%3Ccircle cx='130' cy='190' r='60'/%3E%3Ccircle cx='85' cy='85' r='45'/%3E%3Ccircle cx='175' cy='85' r='45'/%3E%3Ccircle cx='85' cy='175' r='45'/%3E%3Ccircle cx='175' cy='175' r='45'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 260px 260px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="guilloche"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.06' stroke-width='0.7'%3E%3Ccircle cx='130' cy='130' r='40'/%3E%3Ccircle cx='130' cy='130' r='60'/%3E%3Ccircle cx='130' cy='130' r='80'/%3E%3Ccircle cx='130' cy='130' r='100'/%3E%3Ccircle cx='70' cy='130' r='60'/%3E%3Ccircle cx='190' cy='130' r='60'/%3E%3Ccircle cx='130' cy='70' r='60'/%3E%3Ccircle cx='130' cy='190' r='60'/%3E%3Ccircle cx='85' cy='85' r='45'/%3E%3Ccircle cx='175' cy='85' r='45'/%3E%3Ccircle cx='85' cy='175' r='45'/%3E%3Ccircle cx='175' cy='175' r='45'/%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="seigaiha"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40' viewBox='0 0 80 40'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.10' stroke-width='1'%3E%3Cpath d='M0 40 A 40 40 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 30 30 0 0 1 60 40'/%3E%3Cpath d='M20 40 A 30 30 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 20 20 0 0 1 40 40'/%3E%3Cpath d='M40 40 A 20 20 0 0 1 80 40'/%3E%3Cpath d='M-40 20 A 40 40 0 0 1 40 20'/%3E%3Cpath d='M40 20 A 40 40 0 0 1 120 20'/%3E%3Cpath d='M-40 20 A 30 30 0 0 1 20 20'/%3E%3Cpath d='M20 20 A 30 30 0 0 1 80 20'/%3E%3Cpath d='M60 20 A 30 30 0 0 1 120 20'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 80px 40px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="seigaiha"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40' viewBox='0 0 80 40'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.08' stroke-width='1'%3E%3Cpath d='M0 40 A 40 40 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 30 30 0 0 1 60 40'/%3E%3Cpath d='M20 40 A 30 30 0 0 1 80 40'/%3E%3Cpath d='M0 40 A 20 20 0 0 1 40 40'/%3E%3Cpath d='M40 40 A 20 20 0 0 1 80 40'/%3E%3Cpath d='M-40 20 A 40 40 0 0 1 40 20'/%3E%3Cpath d='M40 20 A 40 40 0 0 1 120 20'/%3E%3Cpath d='M-40 20 A 30 30 0 0 1 20 20'/%3E%3Cpath d='M20 20 A 30 30 0 0 1 80 20'/%3E%3Cpath d='M60 20 A 30 30 0 0 1 120 20'/%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="field"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='240' viewBox='0 0 480 240'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.08' stroke-width='1'%3E%3Cpath d='M-40 40 C 80 80, 160 0, 280 40 S 440 80, 520 40'/%3E%3Cpath d='M-40 100 C 80 140, 160 60, 280 100 S 440 140, 520 100'/%3E%3Cpath d='M-40 160 C 80 200, 160 120, 280 160 S 440 200, 520 160'/%3E%3Cpath d='M-40 220 C 80 200, 160 260, 280 220 S 440 200, 520 220'/%3E%3Cpath d='M-40 10 C 80 -10, 160 50, 280 10 S 440 -10, 520 10'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 480px 240px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="field"]::before {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='240' viewBox='0 0 480 240'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.06' stroke-width='1'%3E%3Cpath d='M-40 40 C 80 80, 160 0, 280 40 S 440 80, 520 40'/%3E%3Cpath d='M-40 100 C 80 140, 160 60, 280 100 S 440 140, 520 100'/%3E%3Cpath d='M-40 160 C 80 200, 160 120, 280 160 S 440 200, 520 160'/%3E%3Cpath d='M-40 220 C 80 200, 160 260, 280 220 S 440 200, 520 220'/%3E%3Cpath d='M-40 10 C 80 -10, 160 50, 280 10 S 440 -10, 520 10'/%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="jupiter"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23000000' stroke-opacity='0.09' stroke-width='1'%3E%3Cpath d='M0 70 L140 70'/%3E%3Cpath d='M70 0 L70 140'/%3E%3Cpath d='M0 0 L140 140'/%3E%3Cpath d='M0 140 L140 0'/%3E%3Ccircle cx='70' cy='70' r='10'/%3E%3Ccircle cx='70' cy='70' r='22'/%3E%3Ccircle cx='70' cy='70' r='34'/%3E%3Ccircle cx='70' cy='70' r='46'/%3E%3Ccircle cx='70' cy='70' r='58'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 140px 140px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="jupiter"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1'%3E%3Cpath d='M0 70 L140 70'/%3E%3Cpath d='M70 0 L70 140'/%3E%3Cpath d='M0 0 L140 140'/%3E%3Cpath d='M0 140 L140 0'/%3E%3Ccircle cx='70' cy='70' r='10'/%3E%3Ccircle cx='70' cy='70' r='22'/%3E%3Ccircle cx='70' cy='70' r='34'/%3E%3Ccircle cx='70' cy='70' r='46'/%3E%3Ccircle cx='70' cy='70' r='58'/%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="bubbles"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='%23000000' fill-opacity='0.065'%3E%3Ccircle cx='50' cy='50' r='20'/%3E%3Ccircle cx='0' cy='0' r='10'/%3E%3Ccircle cx='100' cy='0' r='10'/%3E%3Ccircle cx='0' cy='100' r='10'/%3E%3Ccircle cx='100' cy='100' r='10'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100px 100px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="bubbles"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='50' cy='50' r='20'/%3E%3Ccircle cx='0' cy='0' r='10'/%3E%3Ccircle cx='100' cy='0' r='10'/%3E%3Ccircle cx='0' cy='100' r='10'/%3E%3Ccircle cx='100' cy='100' r='10'/%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="anchors"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%23000000' stroke-opacity='0.09' stroke-width='1.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-size: 60px 60px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="anchors"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="diamonds"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.055'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  opacity: 1;
+}
+.dark .easynet-texture-swatch[data-texture="diamonds"]::before {
+  background-image:
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.easynet-texture-swatch[data-texture="aurora"]::before {
+  background:
+    radial-gradient(1100px 720px at 12% -5%,
+      color-mix(in oklch, var(--primary) 22%, transparent) 0%, transparent 55%),
+    radial-gradient(900px 620px at 110% 10%,
+      color-mix(in oklch, var(--accent) 18%, transparent) 0%, transparent 50%),
+    radial-gradient(800px 600px at 50% 110%,
+      color-mix(in oklch, var(--success) 14%, transparent) 0%, transparent 55%);
+  opacity: 0.55;
+}
+.dark .easynet-texture-swatch[data-texture="aurora"]::before {
+  opacity: 0.30;
+}

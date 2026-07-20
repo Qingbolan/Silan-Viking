@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+    <meta charset="UTF-8" />
+    <title>流体背景复刻示例</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #333;
+        }
+
+        #bgCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="bgCanvas"></canvas>
+    <script>
+        (function () {
+            const canvas = document.getElementById('bgCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                draw();
+            }
+            window.addEventListener('resize', resize);
+
+            function draw() {
+                const w = canvas.width;
+                const h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                // 大色块
+                drawBlob([
+                    { x: 0.15 * w, y: 0.25 * h, cx1: 0.35 * w, cy1: -0.2 * h, cx2: 0.65 * w, cy2: 0.1 * h },
+                    { x: 0.85 * w, y: 0.2 * h, cx1: 1.10 * w, cy1: 0.35 * h, cx2: 0.90 * w, cy2: 0.60 * h },
+                    { x: 0.60 * w, y: 0.75 * h, cx1: 0.40 * w, cy1: 0.40 * h, cx2: 0.20 * w, cy2: 0.80 * h },
+                    { x: 0.20 * w, y: 0.65 * h, cx1: -0.10 * w, cy1: 0.60 * h, cx2: -0.20 * w, cy2: 0.30 * h }
+                ], ['#53BDFD', '#6983FF'], 180);
+
+                // 中等色块
+                drawBlob([
+                    { x: 0.40 * w, y: 0.15 * h, cx1: 0.60 * w, cy1: -0.15 * h, cx2: 0.80 * w, cy2: 0.10 * h },
+                    { x: 0.95 * w, y: 0.50 * h, cx1: 1.20 * w, cy1: 0.30 * h, cx2: 1.05 * w, cy2: 0.80 * h },
+                    { x: 0.55 * w, y: 0.85 * h, cx1: 0.35 * w, cy1: 0.60 * h, cx2: 0.15 * w, cy2: 0.90 * h },
+                    { x: 0.25 * w, y: 0.55 * h, cx1: -0.05 * w, cy1: 0.50 * h, cx2: -0.10 * w, cy2: 0.20 * h }
+                ], ['#A0E9FD', '#63B8FF'], 120);
+
+                // 小色块
+                drawBlob([
+                    { x: 0.65 * w, y: 0.05 * h, cx1: 0.85 * w, cy1: -0.10 * h, cx2: 1.05 * w, cy2: 0.10 * h },
+                    { x: 1.05 * w, y: 0.35 * h, cx1: 1.25 * w, cy1: 0.15 * h, cx2: 1.10 * w, cy2: 0.55 * h },
+                    { x: 0.75 * w, y: 0.45 * h, cx1: 0.55 * w, cy1: 0.35 * h, cx2: 0.45 * w, cy2: 0.65 * h },
+                    { x: 0.45 * w, y: 0.15 * h, cx1: 0.25 * w, cy1: 0.05 * h, cx2: 0.35 * w, cy2: -0.05 * h }
+                ], ['#FF92C4', '#FF6DBC'], 100);
+            }
+
+            /**
+             * points: Array of {x, y, cx1, cy1, cx2, cy2}
+             * colors: [startColor, endColor]
+             * blur: gaussian blur radius(px)
+             */
+            function drawBlob(points, colors, blur) {
+                const w = canvas.width;
+                const h = canvas.height;
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, colors[0]);
+                grad.addColorStop(1, colors[1]);
+
+                ctx.save();
+                ctx.fillStyle = grad;
+                ctx.filter = `blur(${blur}px)`;
+                ctx.beginPath();
+                // 从最后一个点开始，保证闭合
+                const last = points[points.length - 1];
+                ctx.moveTo(last.x, last.y);
+                for (const p of points) {
+                    ctx.bezierCurveTo(p.cx1, p.cy1, p.cx2, p.cy2, p.x, p.y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 初次渲染
+            resize();
+        })();
+    </script>
+</body>
+
+</html>

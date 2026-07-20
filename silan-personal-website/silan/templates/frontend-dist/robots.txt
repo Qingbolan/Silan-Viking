@@ -1,0 +1,103 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+User-agent: ClaudeBot
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+User-agent: Claude-User
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+User-agent: Claude-SearchBot
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+User-agent: Claude-Code
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+User-agent: claude-code
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+User-agent: Claude-Web
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+User-agent: anthropic-ai
+Allow: /
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+# Internal pages — not for indexing.
+Disallow: /search
+Disallow: /gallery
+Disallow: /design
+# Private machine and identity APIs — public content remains crawlable.
+Disallow: /api/v1/stats/snapshot
+Disallow: /api/v1/stats/bots
+Disallow: /api/v1/stats/crawlers
+Disallow: /api/v1/stats/sources
+Disallow: /api/v1/stats/visitors
+Disallow: /api/v1/content/status
+Disallow: /api/v1/auth/
+
+Sitemap: https://silan.tech/sitemap.xml
