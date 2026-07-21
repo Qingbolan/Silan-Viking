@@ -149,6 +149,20 @@ func (cc *CommentCreate) SetNillableIPAddress(s *string) *CommentCreate {
 	return cc
 }
 
+// SetCountryCode sets the "country_code" field.
+func (cc *CommentCreate) SetCountryCode(s string) *CommentCreate {
+	cc.mutation.SetCountryCode(s)
+	return cc
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (cc *CommentCreate) SetNillableCountryCode(s *string) *CommentCreate {
+	if s != nil {
+		cc.SetCountryCode(*s)
+	}
+	return cc
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (cc *CommentCreate) SetUserAgent(s string) *CommentCreate {
 	cc.mutation.SetUserAgent(s)
@@ -387,6 +401,11 @@ func (cc *CommentCreate) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "Comment.ip_address": %w`, err)}
 		}
 	}
+	if v, ok := cc.mutation.CountryCode(); ok {
+		if err := comment.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "Comment.country_code": %w`, err)}
+		}
+	}
 	if v, ok := cc.mutation.UserAgent(); ok {
 		if err := comment.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "Comment.user_agent": %w`, err)}
@@ -473,6 +492,10 @@ func (cc *CommentCreate) createSpec() (*Comment, *sqlgraph.CreateSpec) {
 	if value, ok := cc.mutation.IPAddress(); ok {
 		_spec.SetField(comment.FieldIPAddress, field.TypeString, value)
 		_node.IPAddress = value
+	}
+	if value, ok := cc.mutation.CountryCode(); ok {
+		_spec.SetField(comment.FieldCountryCode, field.TypeString, value)
+		_node.CountryCode = value
 	}
 	if value, ok := cc.mutation.UserAgent(); ok {
 		_spec.SetField(comment.FieldUserAgent, field.TypeString, value)

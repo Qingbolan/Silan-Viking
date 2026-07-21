@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Heart } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Heart, MessageCircle } from 'lucide-react';
 import {
   createMomentComment,
   deleteMomentComment,
@@ -19,6 +19,7 @@ import MomentLikerAvatar from './MomentLikerAvatar';
 interface MomentActionsProps {
   momentKey: string;
   timestamp: string;
+  variant?: 'full' | 'compact';
 }
 
 const EMPTY_ENGAGEMENT: MomentEngagement = {
@@ -28,12 +29,13 @@ const EMPTY_ENGAGEMENT: MomentEngagement = {
   likers: [],
 };
 
-const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) => {
+const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, variant = 'full' }) => {
   const { language } = useLanguage();
   const [engagement, setEngagement] = useState(EMPTY_ENGAGEMENT);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [likePending, setLikePending] = useState(false);
   const likers = engagement.likers ?? [];
+  const mutatedRef = useRef(false);
   const formattedTimestamp = (() => {
     const date = new Date(timestamp);
     if (Number.isNaN(date.getTime())) return timestamp;
@@ -48,8 +50,9 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) =
 
   useEffect(() => {
     let active = true;
+    mutatedRef.current = false;
     void fetchMomentEngagement(momentKey, getClientFingerprint())
-      .then((value) => { if (active) setEngagement(value); })
+      .then((value) => { if (active && !mutatedRef.current) setEngagement(value); })
       .catch(() => undefined);
     return () => { active = false; };
   }, [momentKey]);
@@ -58,7 +61,9 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) =
     if (likePending) return;
     setLikePending(true);
     try {
-      setEngagement(await toggleMomentLike(momentKey, getClientFingerprint()));
+      const result = await toggleMomentLike(momentKey, getClientFingerprint());
+      mutatedRef.current = true;
+      setEngagement(result);
     } finally {
       setLikePending(false);
     }
@@ -79,9 +84,66 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp }) =
       draft.authorName,
       draft.authorEmail,
     );
+    mutatedRef.current = true;
     setEngagement((current) => ({ ...current, comments: current.comments + 1 }));
     return created;
   }, [momentKey]);
+
+  if (variant === 'compact') {
+    const likeLabel = language === 'zh' ? `点赞，${engagement.likes} 个赞` : `Like, ${engagement.likes} likes`;
+    const commentLabel = language === 'zh' ? `评论，${engagement.comments} 条评论` : `Comment, ${engagement.comments} comments`;
+
+    return (
+      <div className="border-t border-ds-border">
+        <div className="flex min-h-10 items-center justify-between gap-4 px-4 sm:px-5">
+          <time
+            dateTime={timestamp}
+            className="font-mono text-ds-xs tabular-nums text-ds-fg-subtle"
+          >
+            {formattedTimestamp}
+          </time>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label={likeLabel}
+              disabled={likePending}
+              onClick={(event) => { event.preventDefault(); void toggleLike(); }}
+              className={`inline-flex items-center gap-1.5 text-ds-xs font-medium tabular-nums transition-colors disabled:cursor-wait disabled:opacity-50 ${
+                engagement.is_liked_by_user ? 'text-red-500' : 'text-ds-fg-subtle hover:text-ds-fg'
+              }`}
+            >
+              <Heart className="size-4" fill={engagement.is_liked_by_user ? 'currentColor' : 'none'} />
+              {engagement.likes}
+            </button>
+            <button
+              type="button"
+              aria-label={commentLabel}
+              onClick={(event) => { event.preventDefault(); setCommentsOpen((value) => !value); }}
+              className={`inline-flex items-center gap-1.5 text-ds-xs font-medium tabular-nums transition-colors ${
+                commentsOpen ? 'text-ds-fg' : 'text-ds-fg-subtle hover:text-ds-fg'
+              }`}
+            >
+              <MessageCircle className="size-4" />
+              {engagement.comments}
+            </button>
+          </div>
+        </div>
+
+        {commentsOpen && (
+          <div className="border-t border-ds-border bg-ds-surface-1 px-4 pb-4 pt-3 sm:px-5">
+            <EntityDiscussion
+              variant="compact"
+              loadComments={loadComments}
+              createComment={createComment}
+              toggleCommentLike={(commentId, fingerprint) => toggleMomentCommentLike(commentId, fingerprint)}
+              deleteComment={(commentId, fingerprint) => deleteMomentComment(commentId, fingerprint)}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="border-t border-ds-border">

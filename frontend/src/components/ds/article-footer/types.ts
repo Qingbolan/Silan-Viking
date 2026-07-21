@@ -4,6 +4,7 @@ export interface ArticleComment {
   id: string;
   authorName: string;
   avatarUrl?: string;
+  countryCode?: string;
   content: string;
   createdAt: string;
   likesCount: number;

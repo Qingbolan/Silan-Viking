@@ -30,8 +30,6 @@ import { markdownToPlainExcerpt } from '../lib/markdown';
 
 type UpdateKind = 'work' | 'education' | 'research' | 'publication' | 'project' | 'other';
 
-const KIND_ORDER: UpdateKind[] = ['project', 'research', 'publication', 'work', 'education', 'other'];
-
 const normalizeKind = (value: string): UpdateKind => {
   const kind = value.toLowerCase();
   if (['work', 'job', 'career'].includes(kind)) return 'work';
@@ -83,7 +81,6 @@ const Moments: React.FC = () => {
   const { language } = useLanguage();
   const [moments, setUpdates] = useState<Moment[]>([]);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [kind, setKind] = useState<'all' | UpdateKind>('all');
   const [selectedTime, setSelectedTime] = useState<{ year: number; month?: number } | null>(null);
   const [searchParams] = useSearchParams();
   const selectedMomentId = searchParams.get('id');
@@ -94,13 +91,11 @@ const Moments: React.FC = () => {
         eyebrow: 'Now',
         title: 'Recent moments',
         description: 'A concise log of current research, projects, and milestones.',
-        type: 'Type',
-        all: 'All',
         errorTitle: 'Moments could not be loaded',
         errorBody: 'The content service did not respond. Try again without losing your filters.',
         retry: 'Try again',
         emptyTitle: 'No moments in this view',
-        emptyBody: 'Change the type or time filter to see other entries.',
+        emptyBody: 'Change the time filter to see other entries.',
         allTime: 'All time',
         outputs: 'Outputs',
         outputKinds: { blog: 'Article', project: 'Project' },
@@ -110,13 +105,11 @@ const Moments: React.FC = () => {
         eyebrow: '近况',
         title: '最新动态',
         description: '研究、项目与阶段成果的简洁时间线。',
-        type: '类型',
-        all: '全部',
         errorTitle: '动态加载失败',
         errorBody: '内容服务暂未响应。重试不会丢失当前筛选。',
         retry: '重试',
         emptyTitle: '当前筛选下没有动态',
-        emptyBody: '更改类型或时间筛选以查看其他内容。',
+        emptyBody: '更改时间筛选以查看其他内容。',
         allTime: '全部时间',
         outputs: '输出',
         outputKinds: { blog: '文章', project: '项目' },
@@ -141,15 +134,6 @@ const Moments: React.FC = () => {
     () => moments.map((moment) => ({ moment, kind: normalizeKind(moment.type) })),
     [moments],
   );
-
-  const availableKinds = useMemo(() => {
-    const present = new Set(normalized.map((item) => item.kind));
-    return KIND_ORDER.filter((item) => present.has(item));
-  }, [normalized]);
-
-  useEffect(() => {
-    if (kind !== 'all' && !availableKinds.includes(kind)) setKind('all');
-  }, [availableKinds, kind]);
 
   const monthNames = useMemo(
     () =>
@@ -219,8 +203,7 @@ const Moments: React.FC = () => {
   );
 
   const filtered = useMemo(
-    () => normalized.filter(({ moment, kind: momentKind }) => {
-      if (kind !== 'all' && momentKind !== kind) return false;
+    () => normalized.filter(({ moment }) => {
       if (!selectedTime) return true;
       const date = validDate(moment.date);
       if (!date || date.getFullYear() !== selectedTime.year) return false;
@@ -228,7 +211,7 @@ const Moments: React.FC = () => {
     }).sort((left, right) =>
       (validDate(right.moment.date)?.getTime() ?? 0) - (validDate(left.moment.date)?.getTime() ?? 0),
     ),
-    [normalized, kind, selectedTime],
+    [normalized, selectedTime],
   );
 
   const monthGroups = useMemo<MomentMonthGroup[]>(() => {
@@ -268,7 +251,6 @@ const Moments: React.FC = () => {
       moment.id === selectedMomentId || moment.slug === selectedMomentId
     );
     if (!selected) return;
-    setKind('all');
     setSelectedTime(null);
     requestAnimationFrame(() => {
       momentElements.current.get(selected.id)?.scrollIntoView({
@@ -278,18 +260,12 @@ const Moments: React.FC = () => {
     });
   }, [loadState, moments, selectedMomentId]);
 
-  const kindLabel = (value: UpdateKind | 'all') => {
-    if (value === 'all') return copy.all;
+  const kindLabel = (value: UpdateKind) => {
     const labels = language === 'en'
       ? { work: 'Work', education: 'Education', research: 'Research', publication: 'Publication', project: 'Project', other: 'Other' }
       : { work: '工作', education: '教育', research: '研究', publication: '论文', project: '项目', other: '其他' };
     return labels[value];
   };
-
-  const typeOptions = ['all', ...availableKinds].map((value) => ({
-    value,
-    label: kindLabel(value as UpdateKind | 'all'),
-  }));
 
   return (
     <motion.div
@@ -309,10 +285,6 @@ const Moments: React.FC = () => {
         eyebrow={copy.eyebrow}
         title={copy.title}
         description={copy.description}
-        typeOptions={typeOptions}
-        selectedType={kind}
-        onTypeChange={(value) => setKind(value as 'all' | UpdateKind)}
-        typeLabel={copy.type}
       />
 
       {loadState === 'loading' && (
@@ -344,9 +316,9 @@ const Moments: React.FC = () => {
           icon={<CalendarDays />}
           title={copy.emptyTitle}
           description={copy.emptyBody}
-          action={(kind !== 'all' || selectedTime) ? (
-            <Button variant="outline" size="sm" onClick={() => { setKind('all'); setSelectedTime(null); }}>
-              {copy.all}
+          action={selectedTime ? (
+            <Button variant="outline" size="sm" onClick={() => setSelectedTime(null)}>
+              {copy.allTime}
             </Button>
           ) : undefined}
         />
@@ -366,7 +338,7 @@ const Moments: React.FC = () => {
                 </h2>
               </header>
 
-              <ol className="divide-y divide-ds-border">
+              <ol className="space-y-6 sm:space-y-8">
                 {group.items.map(({ moment, kind: momentKind }, index) => {
                   const Icon = KIND_ICONS[momentKind];
                   const date = validDate(moment.date);
@@ -388,12 +360,12 @@ const Moments: React.FC = () => {
                         if (node) momentElements.current.set(moment.id, node);
                         else momentElements.current.delete(moment.id);
                       }}
-                      className="grid scroll-mt-24 grid-cols-1 gap-4 py-7 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7 sm:py-10"
+                      className="grid scroll-mt-24 grid-cols-1 gap-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7"
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.2) }}
                     >
-                      <div className="flex items-center gap-3 sm:block">
+                      <div className="flex items-center gap-3 sm:block sm:pt-4">
                         {moment.pinned ? (
                           <span className="font-mono text-ds-lg font-medium tracking-[-0.03em] text-ds-fg sm:text-ds-xl">
                             {language === 'en' ? 'Pin' : '置顶'}
@@ -416,79 +388,86 @@ const Moments: React.FC = () => {
                       </div>
 
                       <article className="min-w-0">
-                        <Link
-                          to={momentPath}
-                          className="group block max-w-[68ch] rounded-[10px] border border-ds-border-strong bg-ds-surface-2 p-4 outline-none shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[border-color,background-color,box-shadow] hover:border-ds-fg-subtle hover:bg-ds-surface-3 hover:shadow-ds-1 focus-visible:shadow-ds-focus sm:p-5"
-                        >
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <span className="mb-2 inline-flex items-center gap-1.5 text-ds-xs text-ds-fg-subtle">
-                                <Icon className="size-3.5" aria-hidden />
-                                {kindLabel(momentKind)}
-                              </span>
-                              <h3 className="text-balance text-ds-xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg group-hover:text-ds-primary sm:text-ds-2xl">
-                                {moment.title}
-                              </h3>
-                            </div>
-                            <div className="flex shrink-0 flex-wrap gap-1.5">
-                              {moment.status && (
-                                <Badge tone={statusTone(moment.status)} appearance="soft" dot>
-                                  {moment.status}
-                                </Badge>
-                              )}
-                              {moment.priority && (
-                                <Badge tone={priorityTone(moment.priority)} appearance="outline">
-                                  {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          {excerpt && (
-                            <p className="mt-3 line-clamp-3 text-ds-sm leading-6 text-ds-fg-muted sm:text-ds-base">
-                              {excerpt}
-                              <span className="ml-1 font-medium text-ds-fg-subtle group-hover:text-ds-primary">
-                                {language === 'zh' ? '更多' : 'More'}
-                              </span>
-                            </p>
-                          )}
-
-                          {moment.tags?.length > 0 && (
-                            <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5">
-                              {moment.tags.map((tag) => (
-                                <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
-                                  #{tag}
+                        <div className="group max-w-[68ch] overflow-hidden rounded-[10px] border border-ds-border-strong bg-ds-surface-2 shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[border-color,background-color,box-shadow] hover:border-ds-fg-subtle hover:bg-ds-surface-3 hover:shadow-ds-1">
+                          <Link
+                            to={momentPath}
+                            className={`block p-4 outline-none focus-visible:shadow-ds-focus sm:p-5 ${
+                              moment.related_outputs?.length > 0 ? 'pb-3 sm:pb-3' : ''
+                            }`}
+                          >
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <span className="mb-2 inline-flex items-center gap-1.5 text-ds-xs text-ds-fg-subtle">
+                                  <Icon className="size-3.5" aria-hidden />
+                                  {kindLabel(momentKind)}
                                 </span>
-                              ))}
+                                <h3 className="text-balance text-ds-xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg group-hover:text-ds-primary sm:text-ds-2xl">
+                                  {moment.title}
+                                </h3>
+                              </div>
+                              <div className="flex shrink-0 flex-wrap gap-1.5">
+                                {moment.status && (
+                                  <Badge tone={statusTone(moment.status)} appearance="soft" dot>
+                                    {moment.status}
+                                  </Badge>
+                                )}
+                                {moment.priority && (
+                                  <Badge tone={priorityTone(moment.priority)} appearance="outline">
+                                    {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
+
+                            {excerpt && (
+                              <p className="mt-3 line-clamp-3 text-ds-sm leading-6 text-ds-fg-muted sm:text-ds-base">
+                                {excerpt}
+                                <span className="ml-1 font-medium text-ds-fg-subtle group-hover:text-ds-primary">
+                                  {language === 'zh' ? '更多' : 'More'}
+                                </span>
+                              </p>
+                            )}
+
+                            {moment.tags?.length > 0 && (
+                              <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5">
+                                {moment.tags.map((tag) => (
+                                  <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {!(moment.related_outputs?.length > 0) && (
+                              <div className="mt-4 flex items-center justify-end text-ds-xs font-medium text-ds-fg-subtle">
+                                <span className="inline-flex items-center gap-1 transition-colors group-hover:text-ds-primary">
+                                  {language === 'zh' ? '查看详情' : 'Open detail'}
+                                  <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
+                                </span>
+                              </div>
+                            )}
+                          </Link>
+
+                          {moment.related_outputs?.length > 0 && (
+                            <MomentRelatedOutputs
+                              outputs={moment.related_outputs}
+                              labels={{
+                                title: copy.outputs,
+                                kinds: copy.outputKinds,
+                              }}
+                              className="px-4 pb-4 sm:px-5"
+                            />
                           )}
-
-                          <div className="mt-4 flex items-center justify-end text-ds-xs font-medium text-ds-fg-subtle">
-                            <span className="inline-flex items-center gap-1 transition-colors group-hover:text-ds-primary">
-                              {language === 'zh' ? '查看详情' : 'Open detail'}
-                              <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
-                            </span>
-                          </div>
-                        </Link>
-
-                        {moment.related_outputs?.length > 0 && (
-                          <MomentRelatedOutputs
-                            outputs={moment.related_outputs}
-                            labels={{
-                              title: copy.outputs,
-                              kinds: copy.outputKinds,
-                            }}
-                            className="mt-3 max-w-[68ch]"
+                          <MomentActions
+                            momentKey={moment.slug || moment.id}
+                            timestamp={
+                              moment.created_at && !moment.created_at.startsWith('0001-')
+                                ? moment.created_at
+                                : `${moment.date}T00:00:00`
+                            }
+                            variant="compact"
                           />
-                        )}
-                        <MomentActions
-                          momentKey={moment.slug || moment.id}
-                          timestamp={
-                            moment.created_at && !moment.created_at.startsWith('0001-')
-                              ? moment.created_at
-                              : `${moment.date}T00:00:00`
-                          }
-                        />
+                        </div>
                       </article>
                     </motion.li>
                   );

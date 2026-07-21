@@ -39,6 +39,8 @@ const (
 	FieldIsApproved = "is_approved"
 	// FieldIPAddress holds the string denoting the ip_address field in the database.
 	FieldIPAddress = "ip_address"
+	// FieldCountryCode holds the string denoting the country_code field in the database.
+	FieldCountryCode = "country_code"
 	// FieldUserAgent holds the string denoting the user_agent field in the database.
 	FieldUserAgent = "user_agent"
 	// FieldUserIdentityID holds the string denoting the user_identity_id field in the database.
@@ -89,6 +91,7 @@ var Columns = []string{
 	FieldAttachmentID,
 	FieldIsApproved,
 	FieldIPAddress,
+	FieldCountryCode,
 	FieldUserAgent,
 	FieldUserIdentityID,
 	FieldLikesCount,
@@ -123,6 +126,8 @@ var (
 	DefaultIsApproved bool
 	// IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
 	IPAddressValidator func(string) error
+	// CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	CountryCodeValidator func(string) error
 	// UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
 	UserAgentValidator func(string) error
 	// DefaultLikesCount holds the default value on creation for the "likes_count" field.
@@ -260,6 +265,11 @@ func ByIsApproved(opts ...sql.OrderTermOption) OrderOption {
 // ByIPAddress orders the results by the ip_address field.
 func ByIPAddress(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIPAddress, opts...).ToFunc()
+}
+
+// ByCountryCode orders the results by the country_code field.
+func ByCountryCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCountryCode, opts...).ToFunc()
 }
 
 // ByUserAgent orders the results by the user_agent field.

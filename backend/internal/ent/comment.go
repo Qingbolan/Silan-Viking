@@ -42,6 +42,8 @@ type Comment struct {
 	IsApproved bool `json:"is_approved,omitempty"`
 	// IPAddress holds the value of the "ip_address" field.
 	IPAddress string `json:"ip_address,omitempty"`
+	// CountryCode holds the value of the "country_code" field.
+	CountryCode string `json:"country_code,omitempty"`
 	// UserAgent holds the value of the "user_agent" field.
 	UserAgent string `json:"user_agent,omitempty"`
 	// Link to authenticated user identity if available
@@ -111,7 +113,7 @@ func (*Comment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case comment.FieldLikesCount:
 			values[i] = new(sql.NullInt64)
-		case comment.FieldID, comment.FieldEntityType, comment.FieldEntityID, comment.FieldParentID, comment.FieldAuthorName, comment.FieldAuthorEmail, comment.FieldAuthorWebsite, comment.FieldContent, comment.FieldType, comment.FieldReferenceID, comment.FieldAttachmentID, comment.FieldIPAddress, comment.FieldUserAgent, comment.FieldUserIdentityID:
+		case comment.FieldID, comment.FieldEntityType, comment.FieldEntityID, comment.FieldParentID, comment.FieldAuthorName, comment.FieldAuthorEmail, comment.FieldAuthorWebsite, comment.FieldContent, comment.FieldType, comment.FieldReferenceID, comment.FieldAttachmentID, comment.FieldIPAddress, comment.FieldCountryCode, comment.FieldUserAgent, comment.FieldUserIdentityID:
 			values[i] = new(sql.NullString)
 		case comment.FieldCreatedAt, comment.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -207,6 +209,12 @@ func (c *Comment) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field ip_address", values[i])
 			} else if value.Valid {
 				c.IPAddress = value.String
+			}
+		case comment.FieldCountryCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field country_code", values[i])
+			} else if value.Valid {
+				c.CountryCode = value.String
 			}
 		case comment.FieldUserAgent:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -324,6 +332,9 @@ func (c *Comment) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("ip_address=")
 	builder.WriteString(c.IPAddress)
+	builder.WriteString(", ")
+	builder.WriteString("country_code=")
+	builder.WriteString(c.CountryCode)
 	builder.WriteString(", ")
 	builder.WriteString("user_agent=")
 	builder.WriteString(c.UserAgent)

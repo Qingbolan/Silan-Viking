@@ -208,11 +208,18 @@ func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *t
 	if req.ClientIP != "" {
 		builder.SetIPAddress(req.ClientIP)
 	}
+	countryCode := strings.ToUpper(req.CountryCode)
+	if countryCode == "" && req.ClientIP != "" && svcCtx.CountryResolver != nil {
+		countryCode = strings.ToUpper(svcCtx.CountryResolver.Resolve(req.ClientIP).CountryCode)
+	}
+	if countryCode != "" {
+		builder.SetCountryCode(countryCode)
+	}
 	row, err := builder.Save(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: authorName, AuthorAvatarURL: avatar, Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: true, Replies: []types.UpdateCommentData{}}, nil
+	return &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: authorName, AuthorAvatarURL: avatar, CountryCode: countryCode, Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: true, Replies: []types.UpdateCommentData{}}, nil
 }
 
 func ListUpdateComments(ctx context.Context, svcCtx *svc.ServiceContext, key, fingerprint, identity string) (*types.UpdateCommentListResponse, error) {
@@ -234,7 +241,7 @@ func ListUpdateComments(ctx context.Context, svcCtx *svc.ServiceContext, key, fi
 		if user, lookupErr := svcCtx.DB.UserIdentity.Query().Where(useridentity.EmailEQ(row.AuthorEmail)).Order(ent.Desc(useridentity.FieldUpdatedAt)).First(ctx); lookupErr == nil {
 			avatar = user.AvatarURL
 		}
-		comments[row.ID] = &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: row.AuthorName, AuthorAvatarURL: avatar, Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: actor.CanDelete(row), LikesCount: row.LikesCount, Replies: []types.UpdateCommentData{}}
+		comments[row.ID] = &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: row.AuthorName, AuthorAvatarURL: avatar, CountryCode: strings.ToUpper(row.CountryCode), Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: actor.CanDelete(row), LikesCount: row.LikesCount, Replies: []types.UpdateCommentData{}}
 		order = append(order, row.ID)
 	}
 	if len(order) > 0 && (identity != "" || fingerprint != "") {

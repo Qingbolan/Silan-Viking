@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '../../../lib/utils';
 
 interface AvatarProps {
   name: string;
   src?: string;
+  countryCode?: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -33,7 +34,23 @@ const SIZE = {
   lg: 'h-9 w-9 text-sm',
 } as const;
 
-const Avatar: React.FC<AvatarProps> = ({ name, src, size = 'md', className }) => {
+const Avatar: React.FC<AvatarProps> = ({ name, src, countryCode, size = 'md', className }) => {
+  const [flagFailed, setFlagFailed] = useState(false);
+
+  if (!src && countryCode && !flagFailed) {
+    return (
+      <img
+        src={`https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`}
+        alt=""
+        title={name}
+        className={cn('shrink-0 rounded-[7px] border border-ds-border object-cover', SIZE[size], className)}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFlagFailed(true)}
+      />
+    );
+  }
+
   if (src) {
     return (
       <img

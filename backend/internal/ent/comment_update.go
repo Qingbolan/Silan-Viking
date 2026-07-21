@@ -227,6 +227,26 @@ func (cu *CommentUpdate) ClearIPAddress() *CommentUpdate {
 	return cu
 }
 
+// SetCountryCode sets the "country_code" field.
+func (cu *CommentUpdate) SetCountryCode(s string) *CommentUpdate {
+	cu.mutation.SetCountryCode(s)
+	return cu
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (cu *CommentUpdate) SetNillableCountryCode(s *string) *CommentUpdate {
+	if s != nil {
+		cu.SetCountryCode(*s)
+	}
+	return cu
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (cu *CommentUpdate) ClearCountryCode() *CommentUpdate {
+	cu.mutation.ClearCountryCode()
+	return cu
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (cu *CommentUpdate) SetUserAgent(s string) *CommentUpdate {
 	cu.mutation.SetUserAgent(s)
@@ -446,6 +466,11 @@ func (cu *CommentUpdate) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "Comment.ip_address": %w`, err)}
 		}
 	}
+	if v, ok := cu.mutation.CountryCode(); ok {
+		if err := comment.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "Comment.country_code": %w`, err)}
+		}
+	}
 	if v, ok := cu.mutation.UserAgent(); ok {
 		if err := comment.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "Comment.user_agent": %w`, err)}
@@ -510,6 +535,12 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if cu.mutation.IPAddressCleared() {
 		_spec.ClearField(comment.FieldIPAddress, field.TypeString)
+	}
+	if value, ok := cu.mutation.CountryCode(); ok {
+		_spec.SetField(comment.FieldCountryCode, field.TypeString, value)
+	}
+	if cu.mutation.CountryCodeCleared() {
+		_spec.ClearField(comment.FieldCountryCode, field.TypeString)
 	}
 	if value, ok := cu.mutation.UserAgent(); ok {
 		_spec.SetField(comment.FieldUserAgent, field.TypeString, value)
@@ -853,6 +884,26 @@ func (cuo *CommentUpdateOne) ClearIPAddress() *CommentUpdateOne {
 	return cuo
 }
 
+// SetCountryCode sets the "country_code" field.
+func (cuo *CommentUpdateOne) SetCountryCode(s string) *CommentUpdateOne {
+	cuo.mutation.SetCountryCode(s)
+	return cuo
+}
+
+// SetNillableCountryCode sets the "country_code" field if the given value is not nil.
+func (cuo *CommentUpdateOne) SetNillableCountryCode(s *string) *CommentUpdateOne {
+	if s != nil {
+		cuo.SetCountryCode(*s)
+	}
+	return cuo
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (cuo *CommentUpdateOne) ClearCountryCode() *CommentUpdateOne {
+	cuo.mutation.ClearCountryCode()
+	return cuo
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (cuo *CommentUpdateOne) SetUserAgent(s string) *CommentUpdateOne {
 	cuo.mutation.SetUserAgent(s)
@@ -1085,6 +1136,11 @@ func (cuo *CommentUpdateOne) check() error {
 			return &ValidationError{Name: "ip_address", err: fmt.Errorf(`ent: validator failed for field "Comment.ip_address": %w`, err)}
 		}
 	}
+	if v, ok := cuo.mutation.CountryCode(); ok {
+		if err := comment.CountryCodeValidator(v); err != nil {
+			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "Comment.country_code": %w`, err)}
+		}
+	}
 	if v, ok := cuo.mutation.UserAgent(); ok {
 		if err := comment.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "Comment.user_agent": %w`, err)}
@@ -1166,6 +1222,12 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 	}
 	if cuo.mutation.IPAddressCleared() {
 		_spec.ClearField(comment.FieldIPAddress, field.TypeString)
+	}
+	if value, ok := cuo.mutation.CountryCode(); ok {
+		_spec.SetField(comment.FieldCountryCode, field.TypeString, value)
+	}
+	if cuo.mutation.CountryCodeCleared() {
+		_spec.ClearField(comment.FieldCountryCode, field.TypeString)
 	}
 	if value, ok := cuo.mutation.UserAgent(); ok {
 		_spec.SetField(comment.FieldUserAgent, field.TypeString, value)

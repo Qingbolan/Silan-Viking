@@ -115,6 +115,11 @@ func IPAddress(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldIPAddress, v))
 }
 
+// CountryCode applies equality check predicate on the "country_code" field. It's identical to CountryCodeEQ.
+func CountryCode(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldCountryCode, v))
+}
+
 // UserAgent applies equality check predicate on the "user_agent" field. It's identical to UserAgentEQ.
 func UserAgent(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldEQ(FieldUserAgent, v))
@@ -823,6 +828,81 @@ func IPAddressEqualFold(v string) predicate.Comment {
 // IPAddressContainsFold applies the ContainsFold predicate on the "ip_address" field.
 func IPAddressContainsFold(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldContainsFold(FieldIPAddress, v))
+}
+
+// CountryCodeEQ applies the EQ predicate on the "country_code" field.
+func CountryCodeEQ(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEQ(FieldCountryCode, v))
+}
+
+// CountryCodeNEQ applies the NEQ predicate on the "country_code" field.
+func CountryCodeNEQ(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldNEQ(FieldCountryCode, v))
+}
+
+// CountryCodeIn applies the In predicate on the "country_code" field.
+func CountryCodeIn(vs ...string) predicate.Comment {
+	return predicate.Comment(sql.FieldIn(FieldCountryCode, vs...))
+}
+
+// CountryCodeNotIn applies the NotIn predicate on the "country_code" field.
+func CountryCodeNotIn(vs ...string) predicate.Comment {
+	return predicate.Comment(sql.FieldNotIn(FieldCountryCode, vs...))
+}
+
+// CountryCodeGT applies the GT predicate on the "country_code" field.
+func CountryCodeGT(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldGT(FieldCountryCode, v))
+}
+
+// CountryCodeGTE applies the GTE predicate on the "country_code" field.
+func CountryCodeGTE(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldGTE(FieldCountryCode, v))
+}
+
+// CountryCodeLT applies the LT predicate on the "country_code" field.
+func CountryCodeLT(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldLT(FieldCountryCode, v))
+}
+
+// CountryCodeLTE applies the LTE predicate on the "country_code" field.
+func CountryCodeLTE(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldLTE(FieldCountryCode, v))
+}
+
+// CountryCodeContains applies the Contains predicate on the "country_code" field.
+func CountryCodeContains(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldContains(FieldCountryCode, v))
+}
+
+// CountryCodeHasPrefix applies the HasPrefix predicate on the "country_code" field.
+func CountryCodeHasPrefix(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldHasPrefix(FieldCountryCode, v))
+}
+
+// CountryCodeHasSuffix applies the HasSuffix predicate on the "country_code" field.
+func CountryCodeHasSuffix(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldHasSuffix(FieldCountryCode, v))
+}
+
+// CountryCodeIsNil applies the IsNil predicate on the "country_code" field.
+func CountryCodeIsNil() predicate.Comment {
+	return predicate.Comment(sql.FieldIsNull(FieldCountryCode))
+}
+
+// CountryCodeNotNil applies the NotNil predicate on the "country_code" field.
+func CountryCodeNotNil() predicate.Comment {
+	return predicate.Comment(sql.FieldNotNull(FieldCountryCode))
+}
+
+// CountryCodeEqualFold applies the EqualFold predicate on the "country_code" field.
+func CountryCodeEqualFold(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldEqualFold(FieldCountryCode, v))
+}
+
+// CountryCodeContainsFold applies the ContainsFold predicate on the "country_code" field.
+func CountryCodeContainsFold(v string) predicate.Comment {
+	return predicate.Comment(sql.FieldContainsFold(FieldCountryCode, v))
 }
 
 // UserAgentEQ applies the EQ predicate on the "user_agent" field.

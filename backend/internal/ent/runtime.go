@@ -394,20 +394,24 @@ func init() {
 	commentDescIPAddress := commentFields[12].Descriptor()
 	// comment.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
 	comment.IPAddressValidator = commentDescIPAddress.Validators[0].(func(string) error)
+	// commentDescCountryCode is the schema descriptor for country_code field.
+	commentDescCountryCode := commentFields[13].Descriptor()
+	// comment.CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
+	comment.CountryCodeValidator = commentDescCountryCode.Validators[0].(func(string) error)
 	// commentDescUserAgent is the schema descriptor for user_agent field.
-	commentDescUserAgent := commentFields[13].Descriptor()
+	commentDescUserAgent := commentFields[14].Descriptor()
 	// comment.UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
 	comment.UserAgentValidator = commentDescUserAgent.Validators[0].(func(string) error)
 	// commentDescLikesCount is the schema descriptor for likes_count field.
-	commentDescLikesCount := commentFields[15].Descriptor()
+	commentDescLikesCount := commentFields[16].Descriptor()
 	// comment.DefaultLikesCount holds the default value on creation for the likes_count field.
 	comment.DefaultLikesCount = commentDescLikesCount.Default.(int)
 	// commentDescCreatedAt is the schema descriptor for created_at field.
-	commentDescCreatedAt := commentFields[16].Descriptor()
+	commentDescCreatedAt := commentFields[17].Descriptor()
 	// comment.DefaultCreatedAt holds the default value on creation for the created_at field.
 	comment.DefaultCreatedAt = commentDescCreatedAt.Default.(func() time.Time)
 	// commentDescUpdatedAt is the schema descriptor for updated_at field.
-	commentDescUpdatedAt := commentFields[17].Descriptor()
+	commentDescUpdatedAt := commentFields[18].Descriptor()
 	// comment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	comment.DefaultUpdatedAt = commentDescUpdatedAt.Default.(func() time.Time)
 	// comment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

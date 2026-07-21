@@ -7299,6 +7299,7 @@ type CommentMutation struct {
 	attachment_id        *string
 	is_approved          *bool
 	ip_address           *string
+	country_code         *string
 	user_agent           *string
 	likes_count          *int
 	addlikes_count       *int
@@ -7918,6 +7919,55 @@ func (m *CommentMutation) ResetIPAddress() {
 	delete(m.clearedFields, comment.FieldIPAddress)
 }
 
+// SetCountryCode sets the "country_code" field.
+func (m *CommentMutation) SetCountryCode(s string) {
+	m.country_code = &s
+}
+
+// CountryCode returns the value of the "country_code" field in the mutation.
+func (m *CommentMutation) CountryCode() (r string, exists bool) {
+	v := m.country_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCountryCode returns the old "country_code" field's value of the Comment entity.
+// If the Comment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommentMutation) OldCountryCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCountryCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCountryCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCountryCode: %w", err)
+	}
+	return oldValue.CountryCode, nil
+}
+
+// ClearCountryCode clears the value of the "country_code" field.
+func (m *CommentMutation) ClearCountryCode() {
+	m.country_code = nil
+	m.clearedFields[comment.FieldCountryCode] = struct{}{}
+}
+
+// CountryCodeCleared returns if the "country_code" field was cleared in this mutation.
+func (m *CommentMutation) CountryCodeCleared() bool {
+	_, ok := m.clearedFields[comment.FieldCountryCode]
+	return ok
+}
+
+// ResetCountryCode resets all changes to the "country_code" field.
+func (m *CommentMutation) ResetCountryCode() {
+	m.country_code = nil
+	delete(m.clearedFields, comment.FieldCountryCode)
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (m *CommentMutation) SetUserAgent(s string) {
 	m.user_agent = &s
@@ -8312,7 +8362,7 @@ func (m *CommentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CommentMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 18)
 	if m.entity_type != nil {
 		fields = append(fields, comment.FieldEntityType)
 	}
@@ -8348,6 +8398,9 @@ func (m *CommentMutation) Fields() []string {
 	}
 	if m.ip_address != nil {
 		fields = append(fields, comment.FieldIPAddress)
+	}
+	if m.country_code != nil {
+		fields = append(fields, comment.FieldCountryCode)
 	}
 	if m.user_agent != nil {
 		fields = append(fields, comment.FieldUserAgent)
@@ -8396,6 +8449,8 @@ func (m *CommentMutation) Field(name string) (ent.Value, bool) {
 		return m.IsApproved()
 	case comment.FieldIPAddress:
 		return m.IPAddress()
+	case comment.FieldCountryCode:
+		return m.CountryCode()
 	case comment.FieldUserAgent:
 		return m.UserAgent()
 	case comment.FieldUserIdentityID:
@@ -8439,6 +8494,8 @@ func (m *CommentMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldIsApproved(ctx)
 	case comment.FieldIPAddress:
 		return m.OldIPAddress(ctx)
+	case comment.FieldCountryCode:
+		return m.OldCountryCode(ctx)
 	case comment.FieldUserAgent:
 		return m.OldUserAgent(ctx)
 	case comment.FieldUserIdentityID:
@@ -8542,6 +8599,13 @@ func (m *CommentMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIPAddress(v)
 		return nil
+	case comment.FieldCountryCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCountryCode(v)
+		return nil
 	case comment.FieldUserAgent:
 		v, ok := value.(string)
 		if !ok {
@@ -8637,6 +8701,9 @@ func (m *CommentMutation) ClearedFields() []string {
 	if m.FieldCleared(comment.FieldIPAddress) {
 		fields = append(fields, comment.FieldIPAddress)
 	}
+	if m.FieldCleared(comment.FieldCountryCode) {
+		fields = append(fields, comment.FieldCountryCode)
+	}
 	if m.FieldCleared(comment.FieldUserAgent) {
 		fields = append(fields, comment.FieldUserAgent)
 	}
@@ -8677,6 +8744,9 @@ func (m *CommentMutation) ClearField(name string) error {
 		return nil
 	case comment.FieldIPAddress:
 		m.ClearIPAddress()
+		return nil
+	case comment.FieldCountryCode:
+		m.ClearCountryCode()
 		return nil
 	case comment.FieldUserAgent:
 		m.ClearUserAgent()
@@ -8733,6 +8803,9 @@ func (m *CommentMutation) ResetField(name string) error {
 		return nil
 	case comment.FieldIPAddress:
 		m.ResetIPAddress()
+		return nil
+	case comment.FieldCountryCode:
+		m.ResetCountryCode()
 		return nil
 	case comment.FieldUserAgent:
 		m.ResetUserAgent()

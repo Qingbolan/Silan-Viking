@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getClientFingerprint } from '../../utils/fingerprint';
 import CommentsSection from './article-footer/CommentsSection';
+import CompactComments from './article-footer/CompactComments';
 import type {
   ArticleComment,
   CommentDraft,
@@ -12,6 +13,7 @@ export interface RemoteDiscussionComment {
   id: string;
   author_name: string;
   author_avatar_url?: string;
+  country_code?: string;
   content: string;
   created_at: string;
   likes_count: number;
@@ -45,12 +47,14 @@ export interface EntityDiscussionProps {
     fingerprint: string,
     language: 'en' | 'zh',
   ) => Promise<void>;
+  variant?: 'full' | 'compact';
 }
 
 const mapComment = (comment: RemoteDiscussionComment): ArticleComment => ({
   id: comment.id,
   authorName: comment.author_name,
   avatarUrl: comment.author_avatar_url,
+  countryCode: comment.country_code,
   content: comment.content,
   createdAt: comment.created_at,
   likesCount: comment.likes_count ?? 0,
@@ -80,6 +84,7 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
   createComment,
   toggleCommentLike,
   deleteComment,
+  variant = 'full',
 }) => {
   const { language } = useLanguage();
   const [comments, setComments] = useState<ArticleComment[]>([]);
@@ -199,18 +204,31 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
           {interactionError}
         </p>
       )}
-      <CommentsSection
-        comments={comments}
-        state={state}
-        error={error}
-        submitting={submitting}
-        onRetry={reload}
-        onSubmit={submit}
-        onCommentLike={toggleLike}
-        isCommentLikePending={isLikePending}
-        onCommentDelete={deleteOne}
-        isCommentDeletePending={isDeletePending}
-      />
+      {variant === 'compact' ? (
+        <CompactComments
+          comments={comments}
+          state={state}
+          error={error}
+          submitting={submitting}
+          onRetry={reload}
+          onSubmit={submit}
+          onCommentLike={toggleLike}
+          isCommentLikePending={isLikePending}
+        />
+      ) : (
+        <CommentsSection
+          comments={comments}
+          state={state}
+          error={error}
+          submitting={submitting}
+          onRetry={reload}
+          onSubmit={submit}
+          onCommentLike={toggleLike}
+          isCommentLikePending={isLikePending}
+          onCommentDelete={deleteOne}
+          isCommentDeletePending={isDeletePending}
+        />
+      )}
     </div>
   );
 };

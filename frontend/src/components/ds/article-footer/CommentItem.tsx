@@ -43,6 +43,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
         <Avatar
           name={comment.authorName}
           src={comment.avatarUrl}
+          countryCode={comment.countryCode}
           size="md"
           className="rounded-ds-sm"
         />

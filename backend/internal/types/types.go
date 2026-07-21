@@ -243,6 +243,7 @@ type CreateMomentCommentRequest struct {
 	Fingerprint         string `json:"fingerprint"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	ClientIP            string `json:"client_ip,optional"`
+	CountryCode         string `json:"-" form:"-"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	Language            string `form:"lang,default=en"`
 }
@@ -398,6 +399,10 @@ type GraphRequest struct {
 
 type HealthResponse struct {
 	Status string `json:"status"`
+}
+
+type VisitorGeoResponse struct {
+	CountryCode string `json:"country_code,optional"`
 }
 
 type ContentStatusResponse struct {
@@ -712,6 +717,7 @@ type UpdateCommentData struct {
 	ParentID        string              `json:"parent_id,optional"`
 	AuthorName      string              `json:"author_name"`
 	AuthorAvatarURL string              `json:"author_avatar_url,optional"`
+	CountryCode     string              `json:"country_code,optional"`
 	Content         string              `json:"content"`
 	CreatedAt       string              `json:"created_at"`
 	CanDelete       bool                `json:"can_delete"`

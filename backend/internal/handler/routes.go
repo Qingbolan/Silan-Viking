@@ -218,6 +218,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/health",
 				Handler: health.HealthHandler(serverCtx),
 			},
+			{
+				// Coarse visitor geolocation, for UI that shows a flag before any write action
+				Method:  http.MethodGet,
+				Path:    "/geo",
+				Handler: health.VisitorGeoHandler(serverCtx),
+			},
 		},
 		rest.WithPrefix("/api/v1"),
 	)

@@ -68,6 +68,9 @@ func (Comment) Fields() []ent.Field {
 		field.String("ip_address").
 			Optional().
 			MaxLen(45),
+		field.String("country_code").
+			Optional().
+			MaxLen(2),
 		field.String("user_agent").
 			Optional().
 			MaxLen(500),

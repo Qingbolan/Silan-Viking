@@ -207,6 +207,7 @@ var (
 		{Name: "attachment_id", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "is_approved", Type: field.TypeBool, Default: false},
 		{Name: "ip_address", Type: field.TypeString, Nullable: true, Size: 45},
+		{Name: "country_code", Type: field.TypeString, Nullable: true, Size: 2},
 		{Name: "user_agent", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "likes_count", Type: field.TypeInt, Default: 0},
 		{Name: "created_at", Type: field.TypeTime, Nullable: true},
@@ -222,13 +223,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "comments_comments_parent",
-				Columns:    []*schema.Column{CommentsColumns[16]},
+				Columns:    []*schema.Column{CommentsColumns[17]},
 				RefColumns: []*schema.Column{CommentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "comments_user_identities_user_identity",
-				Columns:    []*schema.Column{CommentsColumns[17]},
+				Columns:    []*schema.Column{CommentsColumns[18]},
 				RefColumns: []*schema.Column{UserIdentitiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -242,7 +243,7 @@ var (
 			{
 				Name:    "comment_parent_id",
 				Unique:  false,
-				Columns: []*schema.Column{CommentsColumns[16]},
+				Columns: []*schema.Column{CommentsColumns[17]},
 			},
 		},
 	}
