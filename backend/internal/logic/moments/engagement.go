@@ -179,13 +179,13 @@ func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *t
 	if strings.TrimSpace(req.Content) == "" {
 		return nil, fmt.Errorf("content is required")
 	}
-	authorName, authorEmail, avatar := strings.TrimSpace(req.AuthorName), strings.TrimSpace(req.AuthorEmail), ""
+	authorName, authorEmail, avatar, provider := strings.TrimSpace(req.AuthorName), strings.TrimSpace(req.AuthorEmail), "", ""
 	if req.AuthenticatedUserID != "" {
 		user, err := svcCtx.DB.UserIdentity.Get(ctx, req.AuthenticatedUserID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid user identity")
 		}
-		authorName, authorEmail, avatar = user.DisplayName, user.Email, user.AvatarURL
+		authorName, authorEmail, avatar, provider = user.DisplayName, user.Email, user.AvatarURL, user.Provider
 	} else if authorName == "" || !strings.Contains(authorEmail, "@") {
 		return nil, fmt.Errorf("author_name and a valid author_email are required")
 	}
@@ -219,7 +219,7 @@ func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *t
 	if err != nil {
 		return nil, err
 	}
-	return &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: authorName, AuthorAvatarURL: avatar, CountryCode: countryCode, Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: true, Replies: []types.UpdateCommentData{}}, nil
+	return &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: authorName, AuthorAvatarURL: avatar, AuthProvider: provider, CountryCode: countryCode, Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: true, Replies: []types.UpdateCommentData{}}, nil
 }
 
 func ListUpdateComments(ctx context.Context, svcCtx *svc.ServiceContext, key, fingerprint, identity string) (*types.UpdateCommentListResponse, error) {
@@ -237,11 +237,11 @@ func ListUpdateComments(ctx context.Context, svcCtx *svc.ServiceContext, key, fi
 	comments := make(map[string]*types.UpdateCommentData, len(rows))
 	order := make([]string, 0, len(rows))
 	for _, row := range rows {
-		avatar := ""
+		avatar, provider := "", ""
 		if user, lookupErr := svcCtx.DB.UserIdentity.Query().Where(useridentity.EmailEQ(row.AuthorEmail)).Order(ent.Desc(useridentity.FieldUpdatedAt)).First(ctx); lookupErr == nil {
-			avatar = user.AvatarURL
+			avatar, provider = user.AvatarURL, user.Provider
 		}
-		comments[row.ID] = &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: row.AuthorName, AuthorAvatarURL: avatar, CountryCode: strings.ToUpper(row.CountryCode), Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: actor.CanDelete(row), LikesCount: row.LikesCount, Replies: []types.UpdateCommentData{}}
+		comments[row.ID] = &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: row.AuthorName, AuthorAvatarURL: avatar, AuthProvider: provider, CountryCode: strings.ToUpper(row.CountryCode), Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: actor.CanDelete(row), LikesCount: row.LikesCount, Replies: []types.UpdateCommentData{}}
 		order = append(order, row.ID)
 	}
 	if len(order) > 0 && (identity != "" || fingerprint != "") {

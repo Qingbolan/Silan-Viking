@@ -717,6 +717,7 @@ type UpdateCommentData struct {
 	ParentID        string              `json:"parent_id,optional"`
 	AuthorName      string              `json:"author_name"`
 	AuthorAvatarURL string              `json:"author_avatar_url,optional"`
+	AuthProvider    string              `json:"auth_provider,optional"`
 	CountryCode     string              `json:"country_code,optional"`
 	Content         string              `json:"content"`
 	CreatedAt       string              `json:"created_at"`

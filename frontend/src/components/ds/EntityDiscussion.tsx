@@ -14,6 +14,7 @@ export interface RemoteDiscussionComment {
   author_name: string;
   author_avatar_url?: string;
   country_code?: string;
+  auth_provider?: string;
   content: string;
   created_at: string;
   likes_count: number;
@@ -55,6 +56,7 @@ const mapComment = (comment: RemoteDiscussionComment): ArticleComment => ({
   authorName: comment.author_name,
   avatarUrl: comment.author_avatar_url,
   countryCode: comment.country_code,
+  authProvider: comment.auth_provider,
   content: comment.content,
   createdAt: comment.created_at,
   likesCount: comment.likes_count ?? 0,

@@ -7,6 +7,7 @@ import { fetchVisitorCountryCode } from '../../../api/geo';
 import { readCommenter } from '../../../lib/commenterIdentity';
 import { dsRoot } from '../dsAttr';
 import Avatar from './Avatar';
+import AuthProviderBadge from './AuthProviderBadge';
 import Markdown from '../../ui/Markdown';
 import { buildCommentTimeline, formatTimelineTime } from './commentTimeline';
 import type { ArticleComment, CommentDraft, CommentLoadState } from './types';
@@ -155,7 +156,10 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
                 <Avatar name={comment.authorName} src={comment.avatarUrl} countryCode={comment.countryCode} size="sm" />
                 <div className="min-w-0 flex-1">
                   <div className="rounded-ds-md bg-ds-surface-2 px-3 py-2">
-                    <span className="block text-ds-xs font-semibold text-ds-fg">{comment.authorName}</span>
+                    <span className="mb-0.5 flex items-center gap-1 text-ds-xs font-semibold text-ds-fg">
+                      {comment.authorName}
+                      <AuthProviderBadge provider={comment.authProvider} className="size-3 shrink-0 text-ds-fg-subtle" />
+                    </span>
                     <Markdown className="text-ds-sm text-ds-fg [&>div]:my-0 [&_a]:break-words">
                       {comment.content}
                     </Markdown>
