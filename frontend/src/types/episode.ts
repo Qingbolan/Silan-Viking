@@ -20,6 +20,7 @@ export interface EpisodeSeriesData {
   slug: string;
   title: string;
   description?: string;
+  cover_url?: string;
   status: string;
   episodes: EpisodeData[];
   created_at: string;

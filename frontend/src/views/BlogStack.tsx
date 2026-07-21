@@ -7,6 +7,7 @@ import { Seo } from '../components/Seo';
 import { BlogData } from '../components/BlogStack/types/blog';
 import { fetchBlogPosts } from '../api/blog/blogApi';
 import { fetchEpisodeSeriesList } from '../api/episodes/episodeApi';
+import { mediaUrl } from '../api/utils';
 import type { EpisodeSeriesData } from '../types/episode';
 import {
   BlogHeader,
@@ -60,7 +61,7 @@ function seriesToBlogData(series: EpisodeSeriesData): BlogData | null {
     seriesTitleZh: '',
     seriesDescription: description,
     seriesDescriptionZh: '',
-    seriesImage: '',
+    seriesImage: series.cover_url ? mediaUrl(series.cover_url) : '',
     episodeNumber: 1,
     totalEpisodes: series.episodes.length,
     // Stash the latest episode on the record so toBlogCardData can pass it
