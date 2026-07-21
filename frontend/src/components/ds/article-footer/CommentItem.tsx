@@ -53,12 +53,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
           isCurrentVisitor ? 'items-end' : 'items-start',
         )}>
           <span className="mb-1 flex items-center gap-1 px-1 text-[11px] leading-4 text-ds-fg-subtle">
-            {isCurrentVisitor ? (language === 'zh' ? '我' : 'Me') : (
-              <>
-                {comment.authorName}
-                <AuthProviderBadge provider={comment.authProvider} className="size-3 shrink-0" />
-              </>
-            )}
+            {isCurrentVisitor ? (language === 'zh' ? '我' : 'Me') : comment.authorName}
+            <AuthProviderBadge provider={comment.authProvider} className="size-3 shrink-0" />
           </span>
           <div className={cn(
             'min-w-12 px-3.5 py-2.5 text-ds-sm leading-6',
