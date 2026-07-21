@@ -2,6 +2,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { User } from '../../types/contact';
 import { apiUrl } from '../../api/utils';
 
+/** Shared with OAuthPopupClose.tsx — the popup writes 'success', the opener
+ *  polls for it. See loginWithGitHub for why this exists instead of relying
+ *  only on postMessage. */
+export const GITHUB_POPUP_RESULT_KEY = 'silan-auth-github-popup-result';
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -125,6 +130,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const loginWithGitHub = useCallback((): Promise<boolean> => new Promise((resolve) => {
+    // GitHub's own authorize page navigates the popup cross-origin and back;
+    // several browsers sever `window.opener` on that hop (Cross-Origin-
+    // Opener-Policy and similar isolation), which silently breaks a
+    // postMessage-only handshake — the popup closes but the opener never
+    // hears from it. localStorage is disk-level, same-origin storage that
+    // survives the round trip regardless of whether `opener` still points
+    // anywhere, so it is the primary signal; postMessage is kept as a faster
+    // best-effort path when the opener reference does survive.
+    localStorage.removeItem(GITHUB_POPUP_RESULT_KEY);
+
     const width = 520;
     const height = 640;
     const left = window.screenX + Math.max(0, (window.outerWidth - width) / 2);
@@ -142,20 +157,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       settled = true;
       window.removeEventListener('message', onMessage);
       window.clearInterval(pollId);
+      window.clearTimeout(timeoutId);
+      localStorage.removeItem(GITHUB_POPUP_RESULT_KEY);
       resolve(success);
     };
+    const succeed = () => { void refreshSession().then(() => finish(true)); };
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.data?.source !== 'silan-auth') return;
-      if (event.data.status === 'success') {
-        void refreshSession().then(() => finish(true));
-      } else {
-        finish(false);
-      }
+      if (event.data.status === 'success') succeed();
+      else finish(false);
     };
     window.addEventListener('message', onMessage);
     const pollId = window.setInterval(() => {
+      const raw = localStorage.getItem(GITHUB_POPUP_RESULT_KEY);
+      if (raw) {
+        if (raw === 'success') succeed();
+        else finish(false);
+        return;
+      }
       if (popup.closed) finish(false);
-    }, 500);
+    }, 400);
+    // Never poll forever if the popup is left open on an error page.
+    const timeoutId = window.setTimeout(() => finish(false), 5 * 60 * 1000);
   }), [refreshSession]);
 
   return (

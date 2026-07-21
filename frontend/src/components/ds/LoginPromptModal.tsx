@@ -56,6 +56,7 @@ export const LoginPromptModal: React.FC<LoginPromptModalProps> = ({ open, onClos
     try {
       const success = await loginWithGitHub();
       if (success) onResolved();
+      else setError(language === 'zh' ? 'GitHub 登录未完成，请重试。' : 'GitHub sign-in did not complete. Please try again.');
     } finally {
       setGithubPending(false);
     }
