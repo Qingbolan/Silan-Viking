@@ -123,40 +123,6 @@ function toBlogCardData(post: BlogData, language: string): BlogCardData {
   };
 }
 
-const arrangePostsForGrid = (posts: BlogData[]): BlogData[] => {
-  const series = posts.filter(isSeriesPost);
-  const singles = posts.filter((post) => !isSeriesPost(post));
-
-  if (series.length === 0 || singles.length === 0) {
-    return posts;
-  }
-
-  const arranged: BlogData[] = [];
-  let seriesIndex = 0;
-  let singleIndex = 0;
-
-  while (seriesIndex < series.length || singleIndex < singles.length) {
-    if (seriesIndex < series.length && singleIndex < singles.length) {
-      arranged.push(series[seriesIndex]);
-      arranged.push(singles[singleIndex]);
-      seriesIndex += 1;
-      singleIndex += 1;
-      continue;
-    }
-
-    if (seriesIndex < series.length) {
-      arranged.push(series[seriesIndex]);
-      seriesIndex += 1;
-      continue;
-    }
-
-    arranged.push(singles[singleIndex]);
-    singleIndex += 1;
-  }
-
-  return arranged;
-};
-
 const BlogStack: React.FC = () => {
   const { language } = useLanguage();
   const navigate = useNavigate();
@@ -252,11 +218,6 @@ const BlogStack: React.FC = () => {
 
     return filtered;
   }, [posts, selectedTag, selectedType, searchTerm]);
-
-  const arrangedPosts = useMemo(
-    () => arrangePostsForGrid(filteredPostsMemo),
-    [filteredPostsMemo],
-  );
 
   // Topic chips — 'all' is the reset chip, followed by every unique tag.
   const tags = useMemo(
@@ -368,8 +329,7 @@ const BlogStack: React.FC = () => {
           </Alert>
         )}
 
-        {/* Blog Posts Grid — masonry / waterfall layout. Series posts
-            span 2 columns with the wide `feature` layout. */}
+        {/* Blog Posts Grid — masonry / waterfall layout. */}
         <AnimatePresence mode="wait">
           <motion.div
             key={`${selectedTag}-${selectedType}-${searchTerm}`}
@@ -379,12 +339,11 @@ const BlogStack: React.FC = () => {
             transition={{ duration: 0.3 }}
           >
             <Masonry
-              items={arrangedPosts}
+              items={filteredPostsMemo}
               getKey={(post) => post.id}
-              getSpan={(post) => (isSeriesPost(post) ? 2 : 1)}
               renderItem={(post) => (
                 <BlogCard
-                  coverSize={isSeriesPost(post) ? 'feature' : 'standard'}
+                  coverSize="standard"
                   post={toBlogCardData(post, language)}
                   onOpen={() => handlePostClick(post)}
                 />
