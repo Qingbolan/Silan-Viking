@@ -84,6 +84,22 @@ impl GitRepo {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
+        let raw = self.run_raw(cwd, args)?;
+        Ok(GitOutput {
+            stdout: raw.stdout.trim().to_owned(),
+        })
+    }
+
+    /// Like [`GitRepo::run`], but never trims stdout. Machine-readable
+    /// formats such as `git status --porcelain` use a leading space as a
+    /// meaningful "no change in this column" value — `run`'s `.trim()` would
+    /// silently eat that space (and shift every field after it) whenever the
+    /// first byte of output happens to be blank.
+    pub fn run_raw<I, S>(&self, cwd: &Path, args: I) -> Result<GitOutput, GitError>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
         let args: Vec<String> = args.into_iter().map(|s| s.as_ref().to_owned()).collect();
         let output = Command::new("git")
             .args(&args)
@@ -92,7 +108,7 @@ impl GitRepo {
             .map_err(|e| GitError::Spawn(e.to_string()))?;
         if output.status.success() {
             Ok(GitOutput {
-                stdout: String::from_utf8_lossy(&output.stdout).trim().to_owned(),
+                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
             })
         } else {
             Err(GitError::Command {

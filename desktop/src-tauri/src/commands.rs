@@ -7,6 +7,7 @@ use crate::model::{
     EngagementStats, EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource,
     GeoInsightReport, ImportedMediaAsset, MomentsSettings, ResumeEntryInput, ResumePartSource,
     ResumeProfile, ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus,
+    WorkspaceFileChange,
 };
 use silan_viking_app::{OPENAI_KEYCHAIN_ACCOUNT, OPENAI_KEYCHAIN_SERVICE};
 
@@ -60,6 +61,46 @@ pub(crate) async fn verify_remote_content() -> Result<DeployVerificationResult, 
 #[tauri::command]
 pub(crate) fn get_moments_settings() -> Result<MomentsSettings, String> {
     DesktopWorkspace::from_environment()?.moments_settings()
+}
+
+#[tauri::command]
+pub(crate) async fn get_workspace_changes() -> Result<Vec<WorkspaceFileChange>, String> {
+    run_background("workspace changes", || {
+        DesktopWorkspace::from_environment()?.workspace_changes()
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn get_workspace_file_diff(path: String, staged: bool) -> Result<String, String> {
+    run_background("workspace file diff", move || {
+        DesktopWorkspace::from_environment()?.workspace_file_diff(&path, staged)
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn stage_workspace_paths(paths: Vec<String>) -> Result<(), String> {
+    run_background("stage workspace paths", move || {
+        DesktopWorkspace::from_environment()?.stage_workspace_paths(&paths)
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn unstage_workspace_paths(paths: Vec<String>) -> Result<(), String> {
+    run_background("unstage workspace paths", move || {
+        DesktopWorkspace::from_environment()?.unstage_workspace_paths(&paths)
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn commit_workspace_changes(message: String) -> Result<DeliverySyncStatus, String> {
+    run_background("commit workspace changes", move || {
+        DesktopWorkspace::from_environment()?.commit_workspace(&message)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -134,6 +175,16 @@ pub(crate) fn import_resume_media_asset(
     bytes: Vec<u8>,
 ) -> Result<ImportedMediaAsset, String> {
     DesktopWorkspace::from_environment()?.import_resume_media_asset(&file_name, &bytes)
+}
+
+#[tauri::command]
+pub(crate) fn import_episode_series_media_asset(
+    series_slug: String,
+    file_name: String,
+    bytes: Vec<u8>,
+) -> Result<ImportedMediaAsset, String> {
+    DesktopWorkspace::from_environment()?
+        .import_episode_series_media_asset(&series_slug, &file_name, &bytes)
 }
 
 #[tauri::command]

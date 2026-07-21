@@ -19,6 +19,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::capture_blog,
             commands::capture_moment,
+            commands::commit_workspace_changes,
             commands::create_project,
             commands::deploy_content,
             commands::get_episode_series_source,
@@ -32,7 +33,10 @@ fn main() {
             commands::get_resume_profile,
             commands::get_resume_sections,
             commands::get_version_status,
+            commands::get_workspace_changes,
+            commands::get_workspace_file_diff,
             commands::generate_missing_translation,
+            commands::import_episode_series_media_asset,
             commands::import_media_asset,
             commands::import_resume_media_asset,
             commands::list_documents,
@@ -45,8 +49,10 @@ fn main() {
             commands::save_resume_entries,
             commands::save_resume_profile,
             commands::save_resume_summary,
+            commands::stage_workspace_paths,
             commands::sync_stats,
             commands::transcribe_audio,
+            commands::unstage_workspace_paths,
             commands::verify_remote_content
         ])
         .run(tauri::generate_context!())

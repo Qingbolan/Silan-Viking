@@ -250,7 +250,7 @@ function EntryView({ role, entry }: { role: string; entry: ResumeEntry }) {
 
 /* --- Block: edit form ------------------------------------------------------ */
 
-function ResumeMediaField({
+export function ResumeMediaField({
   fieldKey,
   value,
   previewUrl,

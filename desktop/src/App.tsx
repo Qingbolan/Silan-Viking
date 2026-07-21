@@ -52,9 +52,10 @@ import { CommitWall, TrafficWall } from './components/CommitWall';
 import { ContentCard } from './components/ContentCard';
 import { LanguageCloseControls, type LanguageCloseTab } from './components/LanguageCloseControls';
 import { NewProjectDialog } from './components/NewProjectDialog';
-import { ResumePage } from './components/ResumePage';
+import { ResumePage, ResumeMediaField } from './components/ResumePage';
 import { RefreshConfirmDialog } from './components/RefreshConfirmDialog';
 import { SeriesDetail } from './components/SeriesDetail';
+import { GitChangesPanel } from './components/GitChangesPanel';
 import { MomentFeed } from './components/MomentFeed';
 import {
   arrangeBlogGroupsForGrid,
@@ -73,7 +74,7 @@ import {
   type SeriesLifecycleAction,
 } from './lib/contentLifecycle';
 import { formatSyncedAgo } from './lib/format';
-import { cssBackgroundImage } from './lib/media';
+import { cssBackgroundImage, toWebviewMediaUrl } from './lib/media';
 import type {
   CapturePhase,
   CaptureTarget,
@@ -355,6 +356,7 @@ export default function App() {
   const [geoLoading, setGeoLoading] = React.useState(false);
   const [geoError, setGeoError] = React.useState<string | null>(null);
   const [stateSavingId, setStateSavingId] = React.useState('');
+  const [gitPanelOpen, setGitPanelOpen] = React.useState(false);
   const [seriesEditingSlug, setSeriesEditingSlug] = React.useState('');
   const [seriesSource, setSeriesSource] = React.useState<EpisodeSeriesSource | null>(null);
   const [seriesDraft, setSeriesDraft] = React.useState<EpisodeSeriesInput>({
@@ -366,6 +368,9 @@ export default function App() {
   const [seriesEditorLoading, setSeriesEditorLoading] = React.useState(false);
   const [seriesEditorSaving, setSeriesEditorSaving] = React.useState(false);
   const [seriesEditorError, setSeriesEditorError] = React.useState<string | null>(null);
+  const [seriesCoverBusy, setSeriesCoverBusy] = React.useState(false);
+  const [seriesCoverError, setSeriesCoverError] = React.useState<string | undefined>(undefined);
+  const [seriesCoverLocalPreview, setSeriesCoverLocalPreview] = React.useState('');
   const hostRef = React.useRef<HTMLDivElement | null>(null);
   const editorRef = React.useRef<Vditor | null>(null);
   const captureInputRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -1847,6 +1852,8 @@ export default function App() {
       status: 'ongoing',
     });
     setSeriesEditorError(null);
+    setSeriesCoverError(undefined);
+    setSeriesCoverLocalPreview('');
     setSeriesEditorLoading(true);
     try {
       const source = await invoke<EpisodeSeriesSource>('get_episode_series_source', { slug: series.slug });
@@ -1869,6 +1876,8 @@ export default function App() {
     setSeriesEditingSlug('');
     setSeriesSource(null);
     setSeriesEditorError(null);
+    setSeriesCoverError(undefined);
+    setSeriesCoverLocalPreview('');
   };
 
   const saveSeriesEditor = async () => {
@@ -1898,6 +1907,7 @@ export default function App() {
         cover_url: saved.cover_url,
         status: saved.status || 'ongoing',
       });
+      setSeriesCoverLocalPreview('');
       await loadDocuments();
       setSeriesEditingSlug('');
     } catch (reason) {
@@ -2414,25 +2424,40 @@ export default function App() {
               </section>
 
               <section className="attention-panel ds-acrylic" data-ds="">
-                <span>Needs attention</span>
-                <strong>{attentionCount}</strong>
-                <p className="attention-status" data-state={deliverySyncStatus?.state || 'loading'}>
-                  {!deliverySyncStatus
-                    ? 'Comparing local and deployed versions…'
-                    : workspaceChangeCount > 0
-                      ? `${workspaceChangeCount} uncommitted ${workspaceChangeCount === 1 ? 'change' : 'changes'} must be committed first`
-                      : localDeliveryCount > 0
-                        ? `${localDeliveryCount} committed ${localDeliveryCount === 1 ? 'moment' : 'moments'} ready to deploy`
-                        : remoteDeliveryCount > 0
-                          ? `${remoteDeliveryCount} ${remoteDeliveryCount === 1 ? 'moment exists' : 'moments exist'} on the deployed version`
-                          : 'Local and deployed content match'}
-                </p>
-                {deliverySyncStatus && (
-                  <div className="attention-version-pair" aria-label="Local and deployed content versions">
-                    <span>Local <b>{deliverySyncStatus.local_head.slice(0, 7)}</b></span>
-                    <span>Deployed <b>{deliverySyncStatus.remote_head.slice(0, 7)}</b></span>
-                  </div>
-                )}
+                <div
+                  className="attention-summary"
+                  data-clickable={workspaceChangeCount > 0}
+                  role={workspaceChangeCount > 0 ? 'button' : undefined}
+                  tabIndex={workspaceChangeCount > 0 ? 0 : undefined}
+                  onClick={() => { if (workspaceChangeCount > 0) setGitPanelOpen(true); }}
+                  onKeyDown={(event) => {
+                    if (workspaceChangeCount > 0 && (event.key === 'Enter' || event.key === ' ')) {
+                      event.preventDefault();
+                      setGitPanelOpen(true);
+                    }
+                  }}
+                  title={workspaceChangeCount > 0 ? 'Review and commit uncommitted changes' : undefined}
+                >
+                  <span>Needs attention</span>
+                  <strong>{attentionCount}</strong>
+                  <p className="attention-status" data-state={deliverySyncStatus?.state || 'loading'}>
+                    {!deliverySyncStatus
+                      ? 'Comparing local and deployed versions…'
+                      : workspaceChangeCount > 0
+                        ? `${workspaceChangeCount} uncommitted ${workspaceChangeCount === 1 ? 'change' : 'changes'} must be committed first`
+                        : localDeliveryCount > 0
+                          ? `${localDeliveryCount} committed ${localDeliveryCount === 1 ? 'moment' : 'moments'} ready to deploy`
+                          : remoteDeliveryCount > 0
+                            ? `${remoteDeliveryCount} ${remoteDeliveryCount === 1 ? 'moment exists' : 'moments exist'} on the deployed version`
+                            : 'Local and deployed content match'}
+                  </p>
+                  {deliverySyncStatus && (
+                    <div className="attention-version-pair" aria-label="Local and deployed content versions">
+                      <span>Local <b>{deliverySyncStatus.local_head.slice(0, 7)}</b></span>
+                      <span>Deployed <b>{deliverySyncStatus.remote_head.slice(0, 7)}</b></span>
+                    </div>
+                  )}
+                </div>
                 {localDeliveryCount > 0 && (
                   <div className="attention-actions">
                     <button
@@ -3178,16 +3203,41 @@ export default function App() {
                           rows={5}
                         />
                       </label>
-                      <label className="content-settings-field content-settings-field--wide">
-                        <span>Cover URL</span>
-                        <input
-                          type="text"
+                      <div className="content-settings-field content-settings-field--wide">
+                        <ResumeMediaField
+                          fieldKey="cover_url"
                           value={seriesDraft.cover_url}
-                          onChange={(event) => setSeriesDraft((current) => ({ ...current, cover_url: event.target.value }))}
-                          disabled={seriesEditorLoading || seriesEditorSaving}
-                          placeholder="silan://resources/episode/series/assets/cover.png"
+                          previewUrl={seriesCoverLocalPreview || toWebviewMediaUrl(seriesSource?.cover_media) || ''}
+                          saving={seriesEditorLoading || seriesEditorSaving}
+                          busy={seriesCoverBusy}
+                          error={seriesCoverError}
+                          onRemove={() => {
+                            setSeriesDraft((current) => ({ ...current, cover_url: '' }));
+                            setSeriesCoverError(undefined);
+                            setSeriesCoverLocalPreview('');
+                          }}
+                          onUpload={async (file) => {
+                            setSeriesCoverBusy(true);
+                            setSeriesCoverError(undefined);
+                            try {
+                              const bytes = Array.from(new Uint8Array(await file.arrayBuffer()));
+                              const imported = await invoke<ImportedMediaAsset>('import_episode_series_media_asset', {
+                                seriesSlug: seriesEditingSlug,
+                                fileName: file.name,
+                                bytes,
+                              });
+                              setSeriesDraft((current) => ({ ...current, cover_url: imported.uri }));
+                              setSeriesCoverLocalPreview(
+                                imported.local_path ? toWebviewMediaUrl(imported.local_path) : URL.createObjectURL(file),
+                              );
+                            } catch (reason) {
+                              setSeriesCoverError(String(reason));
+                            } finally {
+                              setSeriesCoverBusy(false);
+                            }
+                          }}
                         />
-                      </label>
+                      </div>
                     </div>
                   </section>
 
@@ -3240,6 +3290,13 @@ export default function App() {
               </button>
             </div>
           </section>
+        )}
+
+        {gitPanelOpen && (
+          <GitChangesPanel
+            onClose={() => setGitPanelOpen(false)}
+            onCommitted={() => { void Promise.all([loadDeploymentPlan(), loadDeliverySyncStatus()]); }}
+          />
         )}
 
         {contentEditorOpen && selectedContentGroup && selected && editableMasonryContentKinds.has(selected.entity_type) && (

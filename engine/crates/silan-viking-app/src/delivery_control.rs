@@ -34,6 +34,10 @@ pub enum DeliveryControlError {
     UnsupportedScope(String),
     #[error("{0} has no updates to release")]
     NothingToRelease(String),
+    #[error("commit message is required")]
+    EmptyCommitMessage,
+    #[error("no files are staged for commit")]
+    NothingStaged,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
@@ -90,6 +94,20 @@ impl ReleaseScope {
 pub struct VersionChange {
     pub status: String,
     pub path: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct WorkspaceFileChange {
+    pub path: String,
+    /// Human label derived from the porcelain XY code: "Modified", "Added",
+    /// "Deleted", "Renamed", or "Untracked".
+    pub status: String,
+    /// The index (staged) column is not blank/`?` — this change is already
+    /// staged and will be included in the next commit.
+    pub staged: bool,
+    /// The worktree column is not blank — there is an edit beyond whatever
+    /// is currently staged.
+    pub unstaged: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -376,6 +394,104 @@ impl DeliveryControl {
             workspace_changes,
             state: state.to_owned(),
         })
+    }
+
+    /// Every changed path in the content repo, regardless of scope — the
+    /// full picture behind the `workspace_changes` count on the sync-status
+    /// card, so a caller can list and select individual files instead of
+    /// only seeing a total.
+    pub fn workspace_changes(&self) -> Result<Vec<WorkspaceFileChange>, DeliveryControlError> {
+        let repo = self.repo()?;
+        // `-z` NUL-terminates each record instead of newline-joining them, so
+        // a rename's `old -> new` never has to be told apart from a literal
+        // " -> " inside an ordinary path by string splitting. `run_raw` (not
+        // `run`) matters just as much here: the first column of the first
+        // record is blank whenever that file has nothing staged, and a plain
+        // `.trim()` would eat that meaningful leading space.
+        Ok(parse_workspace_changes_z(&run_raw(
+            &repo,
+            ["status", "--porcelain", "-z"],
+        )?))
+    }
+
+    /// Diff for one path. Staged changes (already `git add`-ed) diff against
+    /// the index; everything else diffs the working tree, with a brand new
+    /// untracked file rendered as a synthetic all-added diff since git has no
+    /// blob to diff it against yet.
+    pub fn file_diff(&self, path: &str, staged: bool) -> Result<String, DeliveryControlError> {
+        let repo = self.repo()?;
+        if staged {
+            return run(&repo, ["diff", "--cached", "--", path]);
+        }
+        let is_untracked = run(&repo, ["status", "--porcelain", "--", path])?
+            .lines()
+            .next()
+            .is_some_and(|line| line.starts_with("??"));
+        if is_untracked {
+            let contents = fs::read_to_string(self.content_root.join(path))
+                .map_err(|error| DeliveryControlError::Repository(error.to_string()))?;
+            let body = contents
+                .lines()
+                .map(|line| format!("+{line}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+            return Ok(format!("--- /dev/null\n+++ b/{path}\n{body}"));
+        }
+        run(&repo, ["diff", "--", path])
+    }
+
+    /// Stage the given paths (`git add`), so they will be included the next
+    /// time `commit_workspace` runs.
+    pub fn stage_paths(&self, paths: &[String]) -> Result<(), DeliveryControlError> {
+        if paths.is_empty() {
+            return Ok(());
+        }
+        let repo = self.repo()?;
+        let mut args = vec!["add".to_owned(), "--".to_owned()];
+        args.extend(paths.iter().cloned());
+        run(&repo, args)?;
+        Ok(())
+    }
+
+    /// Unstage the given paths (`git restore --staged`) without touching
+    /// the working-tree edits themselves.
+    pub fn unstage_paths(&self, paths: &[String]) -> Result<(), DeliveryControlError> {
+        if paths.is_empty() {
+            return Ok(());
+        }
+        let repo = self.repo()?;
+        let mut args = vec!["restore".to_owned(), "--staged".to_owned(), "--".to_owned()];
+        args.extend(paths.iter().cloned());
+        run(&repo, args)?;
+        Ok(())
+    }
+
+    /// Commit whatever is currently staged in the content repo. Errors if
+    /// nothing is staged, so a caller cannot produce an accidental empty
+    /// commit.
+    pub fn commit_workspace(&self, message: &str) -> Result<String, DeliveryControlError> {
+        let message = message.trim();
+        if message.is_empty() {
+            return Err(DeliveryControlError::EmptyCommitMessage);
+        }
+        let repo = self.repo()?;
+        let staged = run(&repo, ["diff", "--cached", "--name-only"])?;
+        if staged.trim().is_empty() {
+            return Err(DeliveryControlError::NothingStaged);
+        }
+        run(
+            &repo,
+            [
+                "-c".to_owned(),
+                format!("user.name={AUTHOR_NAME}"),
+                "-c".to_owned(),
+                format!("user.email={AUTHOR_EMAIL}"),
+                "commit".to_owned(),
+                "-m".to_owned(),
+                message.to_owned(),
+            ],
+        )?;
+        run(&repo, ["rev-parse", "HEAD"])
     }
 
     fn commit_activity(
@@ -692,6 +808,19 @@ where
         .map_err(|error| DeliveryControlError::Repository(error.to_string()))
 }
 
+/// Like [`run`], but preserves a meaningful leading space instead of
+/// trimming it away — required for `git status --porcelain`, whose first
+/// column is blank exactly when nothing is staged for that file.
+fn run_raw<I, S>(repo: &GitRepo, args: I) -> Result<String, DeliveryControlError>
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    repo.run_raw(repo.root(), args)
+        .map(|output| output.stdout)
+        .map_err(|error| DeliveryControlError::Repository(error.to_string()))
+}
+
 fn revision_count(repo: &GitRepo, revision: &str) -> Option<usize> {
     repo.run(["rev-list", "--count", revision])
         .ok()?
@@ -804,6 +933,56 @@ fn parse_status(line: &str) -> Option<VersionChange> {
         status: line.get(..2)?.trim().to_owned(),
         path: line.get(3..)?.split(" -> ").last()?.trim().to_owned(),
     })
+}
+
+/// Parse the NUL-terminated `git status --porcelain -z` stream. Unlike the
+/// newline form, a rename or copy is two separate NUL-delimited fields (the
+/// current path, then the original path) rather than one line joined by the
+/// literal text `" -> "` — which a path containing that exact substring could
+/// otherwise be confused for.
+fn parse_workspace_changes_z(raw: &str) -> Vec<WorkspaceFileChange> {
+    let label = |code: u8| match code {
+        b'A' => Some("Added"),
+        b'D' => Some("Deleted"),
+        b'R' => Some("Renamed"),
+        b'C' => Some("Copied"),
+        b'M' => Some("Modified"),
+        _ => None,
+    };
+
+    let mut fields = raw.split('\x00');
+    let mut changes = Vec::new();
+    while let Some(entry) = fields.next() {
+        if entry.is_empty() {
+            continue;
+        }
+        let Some(code) = entry.get(..2) else { continue };
+        let Some(path) = entry.get(3..) else { continue };
+        let (index, worktree) = (code.as_bytes()[0], code.as_bytes()[1]);
+        // A rename/copy carries the original path as its own NUL-delimited
+        // field right after this one; consume and discard it so the next
+        // loop iteration starts at the following real entry.
+        if index == b'R' || index == b'C' || worktree == b'R' || worktree == b'C' {
+            fields.next();
+        }
+        if index == b'?' && worktree == b'?' {
+            changes.push(WorkspaceFileChange {
+                path: path.to_owned(),
+                status: "Untracked".to_owned(),
+                staged: false,
+                unstaged: true,
+            });
+            continue;
+        }
+        let status = label(index).or_else(|| label(worktree)).unwrap_or("Modified");
+        changes.push(WorkspaceFileChange {
+            path: path.to_owned(),
+            status: status.to_owned(),
+            staged: index != b' ',
+            unstaged: worktree != b' ',
+        });
+    }
+    changes
 }
 
 fn parse_log(line: &str) -> Option<VersionCommit> {

@@ -209,6 +209,13 @@ export type DeliverySyncStatus = {
   state: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown';
 };
 
+export type WorkspaceFileChange = {
+  path: string;
+  status: string;
+  staged: boolean;
+  unstaged: boolean;
+};
+
 export type DeployRunStatus = {
   success: boolean;
   content_commit: string;
@@ -287,6 +294,7 @@ export type EpisodeSeriesSource = {
   title: string;
   description: string;
   cover_url: string;
+  cover_media?: string;
   status: string;
   revision: string;
   relative_path: string;

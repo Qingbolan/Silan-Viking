@@ -10,6 +10,7 @@ use crate::model::{
     RemoteContentVersion, ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource,
     ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry,
     TrafficEvidence, TrafficSource, VersionChange, VersionCommit, VersionStatus, VisitorLocation,
+    WorkspaceFileChange,
 };
 use serde::Deserialize;
 use silan_viking_app::{
@@ -314,6 +315,48 @@ impl DesktopWorkspace {
         })
     }
 
+    pub(crate) fn workspace_changes(&self) -> Result<Vec<WorkspaceFileChange>, String> {
+        self.delivery_control
+            .workspace_changes()
+            .map(|changes| {
+                changes
+                    .into_iter()
+                    .map(|change| WorkspaceFileChange {
+                        path: change.path,
+                        status: change.status,
+                        staged: change.staged,
+                        unstaged: change.unstaged,
+                    })
+                    .collect()
+            })
+            .map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn workspace_file_diff(&self, path: &str, staged: bool) -> Result<String, String> {
+        self.delivery_control
+            .file_diff(path, staged)
+            .map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn stage_workspace_paths(&self, paths: &[String]) -> Result<(), String> {
+        self.delivery_control
+            .stage_paths(paths)
+            .map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn unstage_workspace_paths(&self, paths: &[String]) -> Result<(), String> {
+        self.delivery_control
+            .unstage_paths(paths)
+            .map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn commit_workspace(&self, message: &str) -> Result<DeliverySyncStatus, String> {
+        self.delivery_control
+            .commit_workspace(message)
+            .map_err(|error| error.to_string())?;
+        self.delivery_sync_status()
+    }
+
     pub(crate) fn deploy_content(&self) -> Result<DeployRunStatus, String> {
         let status = self
             .delivery_control
@@ -385,11 +428,13 @@ impl DesktopWorkspace {
             .content
             .read_episode_series_metadata(series_slug)
             .map_err(|error| error.to_string())?;
+        let cover_media = self.resolve_media_reference(&source.cover_url);
         Ok(EpisodeSeriesSource {
             slug: source.slug,
             title: source.title,
             description: source.description,
             cover_url: source.cover_url,
+            cover_media,
             status: source.status,
             revision: source.revision,
             relative_path: source.relative_path,
@@ -414,11 +459,13 @@ impl DesktopWorkspace {
                 &self.db_path,
             )
             .map_err(|error| error.to_string())?;
+        let cover_media = self.resolve_media_reference(&saved.cover_url);
         Ok(EpisodeSeriesSource {
             slug: saved.slug,
             title: saved.title,
             description: saved.description,
             cover_url: saved.cover_url,
+            cover_media,
             status: saved.status,
             revision: saved.revision,
             relative_path: saved.relative_path,
@@ -674,6 +721,24 @@ impl DesktopWorkspace {
         file_name: &str,
         bytes: &[u8],
     ) -> Result<ImportedMediaAsset, String> {
+        self.import_asset_into("resume/assets", file_name, bytes)
+    }
+
+    pub(crate) fn import_episode_series_media_asset(
+        &self,
+        series_slug: &str,
+        file_name: &str,
+        bytes: &[u8],
+    ) -> Result<ImportedMediaAsset, String> {
+        self.import_asset_into(&format!("episode/{series_slug}/assets"), file_name, bytes)
+    }
+
+    fn import_asset_into(
+        &self,
+        relative_dir: &str,
+        file_name: &str,
+        bytes: &[u8],
+    ) -> Result<ImportedMediaAsset, String> {
         let extension = Path::new(file_name)
             .extension()
             .and_then(|value| value.to_str())
@@ -692,7 +757,7 @@ impl DesktopWorkspace {
                 .and_then(|value| value.to_str())
                 .unwrap_or("asset"),
         );
-        let assets_dir = self.content_root.join("resources/resume/assets");
+        let assets_dir = self.content_root.join("resources").join(relative_dir);
         fs::create_dir_all(&assets_dir)
             .map_err(|error| format!("cannot create `{}`: {error}", assets_dir.display()))?;
 
@@ -710,7 +775,7 @@ impl DesktopWorkspace {
             .and_then(|value| value.to_str())
             .unwrap_or("asset")
             .to_owned();
-        let relative_path = format!("resume/assets/{file_name}");
+        let relative_path = format!("{relative_dir}/{file_name}");
         let uri = format!("silan://resources/{relative_path}");
         Ok(ImportedMediaAsset {
             markdown: format!("![{}]({uri})", alt_text_for_asset(&file_name)),

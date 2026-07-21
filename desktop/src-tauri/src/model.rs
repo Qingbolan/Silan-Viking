@@ -223,6 +223,14 @@ pub(crate) struct VersionChange {
     pub(crate) path: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct WorkspaceFileChange {
+    pub(crate) path: String,
+    pub(crate) status: String,
+    pub(crate) staged: bool,
+    pub(crate) unstaged: bool,
+}
+
 #[derive(Debug, Serialize)]
 pub(crate) struct VersionCommit {
     pub(crate) hash: String,
@@ -390,6 +398,7 @@ pub(crate) struct EpisodeSeriesSource {
     pub(crate) title: String,
     pub(crate) description: String,
     pub(crate) cover_url: String,
+    pub(crate) cover_media: Option<String>,
     pub(crate) status: String,
     pub(crate) revision: String,
     pub(crate) relative_path: String,
