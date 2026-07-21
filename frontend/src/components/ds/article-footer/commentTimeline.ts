@@ -1,39 +1,3 @@
-import type { ArticleComment } from './types';
-
-export interface TimelineMessage {
-  comment: ArticleComment;
-  showTime: boolean;
-}
-
-const TIME_GROUP_INTERVAL_MS = 5 * 60 * 1000;
-
-const readTimestamp = (value: string): number | undefined => {
-  const timestamp = new Date(value).getTime();
-  return Number.isNaN(timestamp) ? undefined : timestamp;
-};
-
-const flattenConversation = (comments: ArticleComment[]): ArticleComment[] =>
-  comments.flatMap((comment) => [
-    comment,
-    ...flattenConversation(comment.replies),
-  ]);
-
-export const buildCommentTimeline = (comments: ArticleComment[]): TimelineMessage[] => {
-  const conversation = flattenConversation(comments);
-
-  return conversation.map((comment, index) => {
-    if (index === 0) return { comment, showTime: true };
-
-    const current = readTimestamp(comment.createdAt);
-    const previous = readTimestamp(conversation[index - 1].createdAt);
-    const showTime = current === undefined
-      || previous === undefined
-      || Math.abs(current - previous) >= TIME_GROUP_INTERVAL_MS;
-
-    return { comment, showTime };
-  });
-};
-
 const isSameDay = (left: Date, right: Date): boolean =>
   left.getFullYear() === right.getFullYear()
   && left.getMonth() === right.getMonth()

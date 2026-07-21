@@ -23,6 +23,7 @@ func CreateBlogCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// Extract client info
 		req.ClientIP = utils.GetClientIP(r)
 		req.UserAgentFull = utils.GetUserAgent(r)
+			req.CountryCode = utils.GetCountryCode(r, svcCtx.CountryResolver)
 		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := blog.NewCreateBlogCommentLogic(r.Context(), svcCtx)

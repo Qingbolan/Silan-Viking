@@ -121,7 +121,11 @@ export const updateBlogLikes = async (id: string, increment: boolean = true, lan
 export interface BlogCommentData {
   id: string;
   blog_post_id: string;
+  parent_id?: string;
   author_name: string;
+  author_avatar_url?: string;
+  auth_provider?: string;
+  country_code?: string;
   content: string;
   created_at: string;
   can_delete: boolean;
@@ -156,14 +160,16 @@ export const createBlogComment = async (
   authorEmail: string,
   content: string,
   fingerprint: string,
-  language: 'en' | 'zh' = 'en'
+  language: 'en' | 'zh' = 'en',
+  parentId?: string,
 ): Promise<BlogCommentData> => {
   const res = await post<BlogCommentData>(`/api/v1/blog/posts/${postId}/comments`, {
     author_name: authorName,
     author_email: authorEmail,
     content,
     fingerprint,
-    lang: formatLanguage(language)
+    lang: formatLanguage(language),
+    ...(parentId ? { parent_id: parentId } : {}),
   });
   return res;
 };

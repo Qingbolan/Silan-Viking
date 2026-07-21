@@ -38,6 +38,7 @@ const ProjectDiscussion: React.FC<ProjectDiscussionProps> = ({ projectId }) => {
     type: 'general',
     authorName: draft.authorName,
     authorEmail: draft.authorEmail,
+    parentId: draft.parentId,
     language,
   }), [projectId]);
 

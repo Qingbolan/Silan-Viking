@@ -53,7 +53,7 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 
 	// Handle authentication
 	var userIdentity *ent.UserIdentity
-	var authorName, authorEmail, avatarURL string
+	var authorName, authorEmail, avatarURL, authProvider string
 
 	if req.AuthenticatedUserID != "" && strings.TrimSpace(req.AuthenticatedUserID) != "" {
 		userIdentity, err = l.svcCtx.DB.UserIdentity.Get(l.ctx, req.AuthenticatedUserID)
@@ -63,6 +63,7 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		authorName = userIdentity.DisplayName
 		authorEmail = userIdentity.Email
 		avatarURL = userIdentity.AvatarURL
+		authProvider = userIdentity.Provider
 	} else {
 		// Anonymous user - require name and email
 		if req.AuthorName == "" {
@@ -109,6 +110,11 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		createBuilder = createBuilder.SetUserIdentityID(userIdentity.ID)
 	}
 
+	countryCode := strings.ToUpper(req.CountryCode)
+	if countryCode != "" {
+		createBuilder = createBuilder.SetCountryCode(countryCode)
+	}
+
 	c, err := createBuilder.Save(l.ctx)
 	if err != nil {
 		return nil, err
@@ -133,6 +139,8 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		ParentID:        parentID,
 		AuthorName:      c.AuthorName,
 		AuthorAvatarURL: avatarURL,
+		AuthProvider:    authProvider,
+		CountryCode:     countryCode,
 		Content:         c.Content,
 		CreatedAt:       c.CreatedAt.Format(time.RFC3339),
 		CanDelete:       true,

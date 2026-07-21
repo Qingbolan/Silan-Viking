@@ -66,6 +66,7 @@ export const createMomentComment = (
   fingerprint: string,
   authorName: string,
   authorEmail: string,
+  parentId?: string,
 ): Promise<RemoteDiscussionComment> =>
   post(`/api/v1/moments/${encodeURIComponent(momentKey)}/comments`, {
     content,
@@ -73,6 +74,7 @@ export const createMomentComment = (
     fingerprint,
     author_name: authorName,
     author_email: authorEmail,
+    ...(parentId ? { parent_id: parentId } : {}),
   });
 
 export const toggleMomentCommentLike = (

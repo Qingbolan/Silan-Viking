@@ -87,32 +87,45 @@ func (l *ListProjectCommentsLogic) ListProjectComments(req *types.ProjectComment
 		}
 	}
 
-	lookupAvatar := func(email string) string {
+	type identityInfo struct {
+		avatar   string
+		provider string
+	}
+	identityCache := map[string]identityInfo{}
+	lookupIdentity := func(email string) identityInfo {
 		if email == "" {
-			return ""
+			return identityInfo{}
 		}
-		// Use entgo to lookup avatar
+		if v, ok := identityCache[email]; ok {
+			return v
+		}
+		// Use entgo to lookup avatar/provider
 		identity, err := l.svcCtx.DB.UserIdentity.
 			Query().
 			Where(useridentity.EmailEQ(email)).
 			Order(ent.Desc(useridentity.FieldUpdatedAt)).
 			First(l.ctx)
-		if err == nil && identity.AvatarURL != "" {
-			return identity.AvatarURL
+		info := identityInfo{}
+		if err == nil {
+			info = identityInfo{avatar: identity.AvatarURL, provider: identity.Provider}
 		}
-		return ""
+		identityCache[email] = info
+		return info
 	}
 
 	commentMap := make(map[string]*types.ProjectCommentData)
 	var order []string
 	for _, comment := range comments {
 		_, isLiked := likedCommentIDs[comment.ID]
+		identity := lookupIdentity(comment.AuthorEmail)
 		commentData := types.ProjectCommentData{
 			ID:              comment.ID,
 			ProjectID:       comment.EntityID,
 			ParentID:        comment.ParentID,
 			AuthorName:      comment.AuthorName,
-			AuthorAvatarURL: lookupAvatar(comment.AuthorEmail),
+			AuthorAvatarURL: identity.avatar,
+			AuthProvider:    identity.provider,
+			CountryCode:     strings.ToUpper(comment.CountryCode),
 			Content:         comment.Content,
 			Type:            string(comment.Type),
 			CreatedAt:       comment.CreatedAt.Format(time.RFC3339),

@@ -13,9 +13,8 @@ import { getClientFingerprint } from '../../utils/fingerprint';
 import { EntityDiscussion, type RemoteDiscussionComment } from '../ds/EntityDiscussion';
 import type { CommentDraft } from '../ds/article-footer/types';
 import { useLanguage } from '../LanguageContext';
-import { useAuth } from '../InteractiveContact';
 import { LoginPromptModal } from '../ds';
-import { readCommenter, hasStoredCommenter } from '../../lib/commenterIdentity';
+import { useRequireIdentity } from '../../lib/useRequireIdentity';
 import MomentActionMenu from './MomentActionMenu';
 import MomentLikerAvatar from './MomentLikerAvatar';
 
@@ -34,12 +33,11 @@ const EMPTY_ENGAGEMENT: MomentEngagement = {
 
 const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, variant = 'full' }) => {
   const { language } = useLanguage();
-  const { isAuthenticated } = useAuth();
   const [engagement, setEngagement] = useState(EMPTY_ENGAGEMENT);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [likePending, setLikePending] = useState(false);
-  const [loginPromptOpen, setLoginPromptOpen] = useState(false);
-  const pendingActionRef = useRef<'like' | 'comment' | null>(null);
+  const { loginPromptOpen, requireIdentity: requireIdentityGate, resolveLogin, closeLoginPrompt } =
+    useRequireIdentity<'like' | 'comment'>();
   const likers = engagement.likers ?? [];
   const mutatedRef = useRef(false);
   const formattedTimestamp = (() => {
@@ -80,25 +78,8 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
     else setCommentsOpen((value) => !value);
   };
 
-  // Like and comment both need an identity behind them (an account or a
-  // saved guest name/email) — gate the first attempt on a login prompt
-  // instead of letting comments fail post-hoc after the user has already
-  // typed something.
-  const requireIdentity = (action: 'like' | 'comment') => {
-    if (isAuthenticated || hasStoredCommenter(readCommenter())) {
-      performAction(action);
-      return;
-    }
-    pendingActionRef.current = action;
-    setLoginPromptOpen(true);
-  };
-
-  const handleLoginResolved = () => {
-    setLoginPromptOpen(false);
-    const action = pendingActionRef.current;
-    pendingActionRef.current = null;
-    if (action) performAction(action);
-  };
+  const requireIdentity = (action: 'like' | 'comment') => requireIdentityGate(action, performAction);
+  const handleLoginResolved = () => resolveLogin(performAction);
 
   const loadComments = useCallback((
     fingerprint: string,
@@ -114,6 +95,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
       fingerprint,
       draft.authorName,
       draft.authorEmail,
+      draft.parentId,
     );
     mutatedRef.current = true;
     setEngagement((current) => ({ ...current, comments: current.comments + 1 }));
@@ -168,7 +150,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
         {commentsOpen && (
           <div className="border-t border-ds-border bg-ds-surface-1 px-4 pb-4 pt-3 sm:px-5">
             <EntityDiscussion
-              variant="compact"
+              visibleCount={3}
               loadComments={loadComments}
               createComment={createComment}
               toggleCommentLike={(commentId, fingerprint) => toggleMomentCommentLike(commentId, fingerprint)}
@@ -179,7 +161,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
 
         <LoginPromptModal
           open={loginPromptOpen}
-          onClose={() => { setLoginPromptOpen(false); pendingActionRef.current = null; }}
+          onClose={closeLoginPrompt}
           onResolved={handleLoginResolved}
         />
       </div>
@@ -247,7 +229,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
 
       <LoginPromptModal
         open={loginPromptOpen}
-        onClose={() => { setLoginPromptOpen(false); pendingActionRef.current = null; }}
+        onClose={closeLoginPrompt}
         onResolved={handleLoginResolved}
       />
     </div>

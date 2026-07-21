@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { getClientFingerprint } from '../../utils/fingerprint';
-import CommentsSection from './article-footer/CommentsSection';
 import CompactComments from './article-footer/CompactComments';
 import type {
   ArticleComment,
@@ -48,7 +47,8 @@ export interface EntityDiscussionProps {
     fingerprint: string,
     language: 'en' | 'zh',
   ) => Promise<void>;
-  variant?: 'full' | 'compact';
+  /** Cap top-level comments before a "view all" expand — omit to show all. */
+  visibleCount?: number;
 }
 
 const mapComment = (comment: RemoteDiscussionComment): ArticleComment => ({
@@ -81,12 +81,23 @@ const removeComment = (comments: ArticleComment[], commentId: string): ArticleCo
     .filter((comment) => comment.id !== commentId)
     .map((comment) => ({ ...comment, replies: removeComment(comment.replies, commentId) }));
 
+const insertReply = (
+  comments: ArticleComment[],
+  parentId: string,
+  reply: ArticleComment,
+): ArticleComment[] =>
+  comments.map((comment) => {
+    if (comment.id === parentId) return { ...comment, replies: [...comment.replies, reply] };
+    if (comment.replies.length === 0) return comment;
+    return { ...comment, replies: insertReply(comment.replies, parentId, reply) };
+  });
+
 export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
   loadComments,
   createComment,
   toggleCommentLike,
   deleteComment,
-  variant = 'full',
+  visibleCount,
 }) => {
   const { language } = useLanguage();
   const [comments, setComments] = useState<ArticleComment[]>([]);
@@ -126,7 +137,10 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
         getClientFingerprint(),
         language,
       );
-      setComments((current) => [mapComment(created), ...current]);
+      const mapped = mapComment(created);
+      setComments((current) =>
+        draft.parentId ? insertReply(current, draft.parentId, mapped) : [mapped, ...current],
+      );
       setState('ready');
     } catch (submitError) {
       setInteractionError(
@@ -206,31 +220,19 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
           {interactionError}
         </p>
       )}
-      {variant === 'compact' ? (
-        <CompactComments
-          comments={comments}
-          state={state}
-          error={error}
-          submitting={submitting}
-          onRetry={reload}
-          onSubmit={submit}
-          onCommentLike={toggleLike}
-          isCommentLikePending={isLikePending}
-        />
-      ) : (
-        <CommentsSection
-          comments={comments}
-          state={state}
-          error={error}
-          submitting={submitting}
-          onRetry={reload}
-          onSubmit={submit}
-          onCommentLike={toggleLike}
-          isCommentLikePending={isLikePending}
-          onCommentDelete={deleteOne}
-          isCommentDeletePending={isDeletePending}
-        />
-      )}
+      <CompactComments
+        comments={comments}
+        state={state}
+        error={error}
+        submitting={submitting}
+        onRetry={reload}
+        onSubmit={submit}
+        onCommentLike={toggleLike}
+        isCommentLikePending={isLikePending}
+        onCommentDelete={deleteOne}
+        isCommentDeletePending={isDeletePending}
+        visibleCount={visibleCount}
+      />
     </div>
   );
 };

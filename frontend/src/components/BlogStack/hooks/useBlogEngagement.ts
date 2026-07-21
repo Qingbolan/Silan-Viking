@@ -24,6 +24,9 @@ interface UseBlogEngagementOptions {
 const mapComment = (comment: BlogCommentData): ArticleComment => ({
   id: comment.id,
   authorName: comment.author_name,
+  avatarUrl: comment.author_avatar_url,
+  countryCode: comment.country_code,
+  authProvider: comment.auth_provider,
   content: comment.content,
   createdAt: comment.created_at,
   likesCount: comment.likes_count ?? 0,
@@ -48,6 +51,17 @@ const countComments = (comments: ArticleComment[]): number =>
     (total, comment) => total + 1 + countComments(comment.replies),
     0,
   );
+
+const insertReply = (
+  comments: ArticleComment[],
+  parentId: string,
+  reply: ArticleComment,
+): ArticleComment[] =>
+  comments.map((comment) => {
+    if (comment.id === parentId) return { ...comment, replies: [...comment.replies, reply] };
+    if (comment.replies.length === 0) return comment;
+    return { ...comment, replies: insertReply(comment.replies, parentId, reply) };
+  });
 
 const removeComment = (comments: ArticleComment[], commentId: string): ArticleComment[] =>
   comments
@@ -142,8 +156,12 @@ export const useBlogEngagement = ({
           draft.content,
           getClientFingerprint(),
           language,
+          draft.parentId,
         );
-        setComments((current) => [mapComment(created), ...current]);
+        const mapped = mapComment(created);
+        setComments((current) =>
+          draft.parentId ? insertReply(current, draft.parentId, mapped) : [mapped, ...current],
+        );
         setCommentsState('ready');
       } catch (error) {
         setInteractionError(

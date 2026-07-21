@@ -8,6 +8,7 @@ import (
 	"silan-backend/internal/logic/projects"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
+	"silan-backend/internal/utils"
 )
 
 // Create a comment for a project
@@ -18,6 +19,9 @@ func CreateProjectCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
+		req.ClientIP = utils.GetClientIP(r)
+		req.UserAgentFull = utils.GetUserAgent(r)
+		req.CountryCode = utils.GetCountryCode(r, svcCtx.CountryResolver)
 		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := projects.NewCreateProjectCommentLogic(r.Context(), svcCtx)

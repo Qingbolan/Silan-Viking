@@ -3,6 +3,7 @@ package blog
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"silan-backend/internal/commentruntime"
@@ -42,37 +43,39 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 		return nil, err
 	}
 
-	// cache avatar lookups per email within this request
-	avatarCache := map[string]string{}
+	// cache avatar/provider lookups per email within this request
+	type identityInfo struct {
+		avatar   string
+		provider string
+	}
+	identityCache := map[string]identityInfo{}
 
-	lookupAvatar := func(email string) string {
+	lookupIdentity := func(email string) identityInfo {
 		if email == "" {
-			return ""
+			return identityInfo{}
 		}
-		if v, ok := avatarCache[email]; ok {
+		if v, ok := identityCache[email]; ok {
 			return v
 		}
 		var (
-			url sql.NullString
-			drv = l.svcCtx.Config.Database.Driver
+			url      sql.NullString
+			provider sql.NullString
+			drv      = l.svcCtx.Config.Database.Driver
 		)
 		if drv == "postgres" || drv == "postgresql" {
 			_ = l.svcCtx.RawDB.QueryRowContext(l.ctx,
-				"SELECT avatar_url FROM user_identities WHERE email = $1 ORDER BY updated_at DESC LIMIT 1",
+				"SELECT avatar_url, provider FROM user_identities WHERE email = $1 ORDER BY updated_at DESC LIMIT 1",
 				email,
-			).Scan(&url)
+			).Scan(&url, &provider)
 		} else {
 			_ = l.svcCtx.RawDB.QueryRowContext(l.ctx,
-				"SELECT avatar_url FROM user_identities WHERE email = ? ORDER BY updated_at DESC LIMIT 1",
+				"SELECT avatar_url, provider FROM user_identities WHERE email = ? ORDER BY updated_at DESC LIMIT 1",
 				email,
-			).Scan(&url)
+			).Scan(&url, &provider)
 		}
-		if url.Valid {
-			avatarCache[email] = url.String
-			return url.String
-		}
-		avatarCache[email] = ""
-		return ""
+		info := identityInfo{avatar: url.String, provider: provider.String}
+		identityCache[email] = info
+		return info
 	}
 
 	// Build comment tree structure
@@ -81,12 +84,15 @@ func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListReque
 
 	// First pass: create all comment objects
 	for _, c := range list {
+		identity := lookupIdentity(c.AuthorEmail)
 		comment := types.BlogCommentData{
 			ID:              c.ID,
 			BlogPostID:      c.EntityID,
 			ParentID:        c.ParentID,
 			AuthorName:      c.AuthorName,
-			AuthorAvatarURL: lookupAvatar(c.AuthorEmail),
+			AuthorAvatarURL: identity.avatar,
+			AuthProvider:    identity.provider,
+			CountryCode:     strings.ToUpper(c.CountryCode),
 			Content:         c.Content,
 			CreatedAt:       c.CreatedAt.Format(time.RFC3339),
 			CanDelete:       actor.CanDelete(c),

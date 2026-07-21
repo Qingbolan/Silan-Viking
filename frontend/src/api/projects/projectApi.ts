@@ -173,6 +173,8 @@ export interface ProjectCommentData {
   parent_id?: string;
   author_name: string;
   author_avatar_url?: string;
+  auth_provider?: string;
+  country_code?: string;
   content: string;
   type: string;
   created_at: string;

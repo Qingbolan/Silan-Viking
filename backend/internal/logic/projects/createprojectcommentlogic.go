@@ -57,6 +57,7 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 	authorName := req.AuthorName
 	authorEmail := req.AuthorEmail
 	avatarURL := ""
+	authProvider := ""
 	if req.AuthenticatedUserID != "" && strings.TrimSpace(req.AuthenticatedUserID) != "" {
 		user, err := l.svcCtx.DB.UserIdentity.Get(l.ctx, req.AuthenticatedUserID)
 		if err != nil {
@@ -65,6 +66,7 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		authorName = user.DisplayName
 		authorEmail = user.Email
 		avatarURL = user.AvatarURL
+		authProvider = user.Provider
 	} else {
 		if authorName == "" {
 			return nil, fmt.Errorf("author_name is required for anonymous comments")
@@ -120,6 +122,11 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		commentBuilder = commentBuilder.SetUserIdentityID(req.AuthenticatedUserID)
 	}
 
+	countryCode := strings.ToUpper(req.CountryCode)
+	if countryCode != "" {
+		commentBuilder = commentBuilder.SetCountryCode(countryCode)
+	}
+
 	comment, err := commentBuilder.Save(l.ctx)
 	if err != nil {
 		return nil, err
@@ -131,6 +138,8 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		ParentID:        comment.ParentID,
 		AuthorName:      comment.AuthorName,
 		AuthorAvatarURL: avatarURL,
+		AuthProvider:    authProvider,
+		CountryCode:     countryCode,
 		Content:         comment.Content,
 		Type:            string(comment.Type),
 		CreatedAt:       comment.CreatedAt.Format(time.RFC3339),

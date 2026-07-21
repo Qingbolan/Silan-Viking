@@ -29,6 +29,8 @@ type BlogCommentData struct {
 	ParentID        string            `json:"parent_id,optional"`
 	AuthorName      string            `json:"author_name"`
 	AuthorAvatarURL string            `json:"author_avatar_url,optional"`
+	AuthProvider    string            `json:"auth_provider,optional"`
+	CountryCode     string            `json:"country_code,optional"`
 	Content         string            `json:"content"`
 	CreatedAt       string            `json:"created_at"`
 	CanDelete       bool              `json:"can_delete"`
@@ -227,6 +229,7 @@ type CreateBlogCommentRequest struct {
 	Fingerprint         string `json:"fingerprint"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	ClientIP            string `json:"client_ip,optional"`
+	CountryCode         string `json:"-" form:"-"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	Language            string `form:"lang,default=en"`
 }
@@ -260,6 +263,7 @@ type CreateProjectCommentRequest struct {
 	Fingerprint         string `json:"fingerprint"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	ClientIP            string `json:"client_ip,optional"`
+	CountryCode         string `json:"-" form:"-"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	Language            string `form:"lang,default=en"`
 }
@@ -536,6 +540,8 @@ type ProjectCommentData struct {
 	ParentID        string               `json:"parent_id,optional"`
 	AuthorName      string               `json:"author_name"`
 	AuthorAvatarURL string               `json:"author_avatar_url,optional"`
+	AuthProvider    string               `json:"auth_provider,optional"`
+	CountryCode     string               `json:"country_code,optional"`
 	Content         string               `json:"content"`
 	Type            string               `json:"type"`
 	CreatedAt       string               `json:"created_at"`

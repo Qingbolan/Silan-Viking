@@ -25,6 +25,7 @@ import ProjectTabs from './ProjectTabs';
 import type { ProjectDetail as ProjectDetailType } from '../../types/api';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
+import { useRequireIdentity } from '../../lib/useRequireIdentity';
 import {
   Container,
   Section,
@@ -34,6 +35,7 @@ import {
   BrandLoading,
   ErrorState,
   NetworkError,
+  LoginPromptModal,
 } from '../../components/ds';
 
 const ProjectDetail: React.FC = () => {
@@ -43,6 +45,8 @@ const ProjectDetail: React.FC = () => {
   const [metrics, setMetrics] = useState<ProjectMetricsResponse | null>(null);
   const [fingerprint, setFingerprint] = useState<string>('');
   const [liking, setLiking] = useState(false);
+  const { loginPromptOpen, requireIdentity, resolveLogin, closeLoginPrompt } =
+    useRequireIdentity<() => void>();
 
   const loadProject = useCallback(
     () => id ? fetchProjectDetailById(id, language as 'en' | 'zh') : Promise.resolve(null),
@@ -301,7 +305,7 @@ const ProjectDetail: React.FC = () => {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-ds-sm text-ds-fg-muted">
                 <button
                   type="button"
-                  onClick={handleLikeProject}
+                  onClick={() => requireIdentity(handleLikeProject, (action) => void action())}
                   disabled={liking}
                   className={`inline-flex items-center gap-1.5 rounded-ds-sm px-1 py-0.5 transition-colors hover:text-ds-error ${
                     metrics?.is_liked_by_user ? 'text-ds-error' : ''
@@ -359,6 +363,11 @@ const ProjectDetail: React.FC = () => {
           </div>
         </Section>
       </Container>
+      <LoginPromptModal
+        open={loginPromptOpen}
+        onClose={closeLoginPrompt}
+        onResolved={() => resolveLogin((action) => void action())}
+      />
     </motion.div>
   );
 };

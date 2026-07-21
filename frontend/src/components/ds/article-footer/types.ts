@@ -21,4 +21,5 @@ export interface CommentDraft {
   authorName: string;
   authorEmail: string;
   content: string;
+  parentId?: string;
 }
