@@ -137,6 +137,9 @@ export type { ErrorStateProps } from './ErrorState';
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 
+export { LoginPromptModal } from './LoginPromptModal';
+export type { LoginPromptModalProps } from './LoginPromptModal';
+
 export { Tooltip } from './Tooltip';
 export type { TooltipProps } from './Tooltip';
 

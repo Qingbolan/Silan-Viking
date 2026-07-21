@@ -24,6 +24,7 @@ const BlogStack = React.lazy(() => import('./views/BlogStack'));
 const BlogDetail = React.lazy(() => import('./components/BlogStack/BlogDetail'));
 const EpisodeDetail = React.lazy(() => import('./components/Episode/EpisodeDetail'));
 const SearchResults = React.lazy(() => import('./views/SearchResults'));
+const OAuthPopupClose = React.lazy(() => import('./views/OAuthPopupClose'));
 
 // The component gallery is an internal design-system workbench. Keep it out
 // of the public application surface and production bundle.
@@ -79,6 +80,7 @@ const LocalizedRoutes: React.FC = () => {
         <Route path="/blog/:id" element={<BlogDetail />} />
         <Route path="/episodes/:slug" element={<EpisodeDetail />} />
         <Route path="/search" element={<SearchResults />} />
+        <Route path="/auth/popup-closed" element={<OAuthPopupClose />} />
         {DesignGallery && (
           <>
             <Route path="/gallery" element={<DesignGallery />} />

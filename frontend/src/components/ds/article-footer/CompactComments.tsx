@@ -4,7 +4,8 @@ import { cn } from '../../../lib/utils';
 import { useLanguage } from '../../LanguageContext';
 import { useAuth } from '../../InteractiveContact';
 import { fetchVisitorCountryCode } from '../../../api/geo';
-import { Input } from '../Input';
+import { readCommenter } from '../../../lib/commenterIdentity';
+import { dsRoot } from '../dsAttr';
 import Avatar from './Avatar';
 import Markdown from '../../ui/Markdown';
 import { buildCommentTimeline, formatTimelineTime } from './commentTimeline';
@@ -21,33 +22,6 @@ interface CompactCommentsProps {
   isCommentLikePending: (commentId: string) => boolean;
 }
 
-interface StoredCommenter {
-  authorName: string;
-  authorEmail: string;
-}
-
-const COMMENTER_KEY = 'article-commenter-v1';
-
-const readCommenter = (): StoredCommenter => {
-  try {
-    const stored = JSON.parse(localStorage.getItem(COMMENTER_KEY) ?? '{}');
-    return {
-      authorName: typeof stored.authorName === 'string' ? stored.authorName : '',
-      authorEmail: typeof stored.authorEmail === 'string' ? stored.authorEmail : '',
-    };
-  } catch {
-    return { authorName: '', authorEmail: '' };
-  }
-};
-
-const persistCommenter = (commenter: StoredCommenter) => {
-  try {
-    localStorage.setItem(COMMENTER_KEY, JSON.stringify(commenter));
-  } catch {
-    // A blocked storage API must not prevent commenting.
-  }
-};
-
 const VISIBLE_COUNT = 3;
 
 const CompactComments: React.FC<CompactCommentsProps> = ({
@@ -62,11 +36,11 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
 }) => {
   const { language } = useLanguage();
   const { user, isAuthenticated } = useAuth();
-  const [identity, setIdentity] = useState<StoredCommenter>(readCommenter);
-  const [hadStoredIdentity, setHadStoredIdentity] = useState(
-    () => Boolean(identity.authorName && identity.authorEmail),
-  );
-  const [needsIdentity, setNeedsIdentity] = useState(false);
+  // The identity gate (LoginPromptModal) runs before this panel is ever
+  // opened, so by the time it mounts there is either an authenticated
+  // session or a saved guest name/email — read once rather than re-deriving
+  // on every render.
+  const [identity] = useState(readCommenter);
   const [content, setContent] = useState('');
   const [formError, setFormError] = useState<string>();
   const [expanded, setExpanded] = useState(false);
@@ -83,8 +57,6 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
   const visible = expanded ? timeline : timeline.slice(0, VISIBLE_COUNT);
   const hiddenCount = timeline.length - visible.length;
 
-  const showIdentityFields = !isAuthenticated && !hadStoredIdentity && needsIdentity;
-
   const composerName = isAuthenticated ? user?.username || '' : identity.authorName;
   const composerAvatar = isAuthenticated ? user?.avatar : undefined;
   const composerCountryCode = isAuthenticated ? undefined : visitorCountryCode;
@@ -97,25 +69,14 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
     if (!comment) return;
 
     if (!authorName || !authorEmail) {
-      setNeedsIdentity(true);
-      setFormError(language === 'zh' ? '请先填写姓名和邮箱。' : 'Add your name and email first.');
-      return;
-    }
-    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(authorEmail);
-    if (!isAuthenticated && !validEmail) {
-      setFormError(language === 'zh' ? '请输入有效的邮箱地址。' : 'Enter a valid email address.');
+      setFormError(language === 'zh' ? '请先登录或以访客身份继续。' : 'Sign in or continue as a guest first.');
       return;
     }
 
     setFormError(undefined);
     try {
       await onSubmit({ authorName, authorEmail, content: comment });
-      if (!isAuthenticated) {
-        persistCommenter({ authorName, authorEmail });
-        setHadStoredIdentity(true);
-      }
       setContent('');
-      setNeedsIdentity(false);
     } catch {
       setFormError(language === 'zh' ? '评论未能发布，请重试。' : 'The comment was not published. Please retry.');
     }
@@ -132,32 +93,11 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
           className="mt-0.5"
         />
         <div className="min-w-0 flex-1 space-y-2">
-          {showIdentityFields && (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Input
-                value={identity.authorName}
-                onChange={(event) => setIdentity((current) => ({ ...current, authorName: event.target.value }))}
-                autoComplete="name"
-                maxLength={80}
-                size="sm"
-                placeholder={language === 'zh' ? '你的姓名' : 'Your name'}
-              />
-              <Input
-                type="email"
-                value={identity.authorEmail}
-                onChange={(event) => setIdentity((current) => ({ ...current, authorEmail: event.target.value }))}
-                autoComplete="email"
-                maxLength={160}
-                size="sm"
-                placeholder={language === 'zh' ? '邮箱（不会公开）' : 'Email (not published)'}
-              />
-            </div>
-          )}
           <div className="flex items-center gap-2 rounded-full border border-ds-border-strong bg-ds-surface-3 pl-4 pr-1.5 focus-within:border-ds-primary focus-within:shadow-[0_0_0_3px_var(--ds-color-ring)]">
             <input
+              {...dsRoot}
               value={content}
               onChange={(event) => setContent(event.target.value)}
-              onFocus={() => { if (!isAuthenticated && !hadStoredIdentity) setNeedsIdentity(true); }}
               maxLength={4000}
               placeholder={language === 'zh' ? '我说两句…' : 'Add a comment…'}
               className="min-h-10 flex-1 bg-transparent text-ds-sm text-ds-fg outline-none placeholder:text-ds-fg-subtle"

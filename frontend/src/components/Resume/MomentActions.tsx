@@ -13,6 +13,9 @@ import { getClientFingerprint } from '../../utils/fingerprint';
 import { EntityDiscussion, type RemoteDiscussionComment } from '../ds/EntityDiscussion';
 import type { CommentDraft } from '../ds/article-footer/types';
 import { useLanguage } from '../LanguageContext';
+import { useAuth } from '../InteractiveContact';
+import { LoginPromptModal } from '../ds';
+import { readCommenter, hasStoredCommenter } from '../../lib/commenterIdentity';
 import MomentActionMenu from './MomentActionMenu';
 import MomentLikerAvatar from './MomentLikerAvatar';
 
@@ -31,9 +34,12 @@ const EMPTY_ENGAGEMENT: MomentEngagement = {
 
 const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, variant = 'full' }) => {
   const { language } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const [engagement, setEngagement] = useState(EMPTY_ENGAGEMENT);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [likePending, setLikePending] = useState(false);
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+  const pendingActionRef = useRef<'like' | 'comment' | null>(null);
   const likers = engagement.likers ?? [];
   const mutatedRef = useRef(false);
   const formattedTimestamp = (() => {
@@ -67,6 +73,31 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
     } finally {
       setLikePending(false);
     }
+  };
+
+  const performAction = (action: 'like' | 'comment') => {
+    if (action === 'like') void toggleLike();
+    else setCommentsOpen((value) => !value);
+  };
+
+  // Like and comment both need an identity behind them (an account or a
+  // saved guest name/email) — gate the first attempt on a login prompt
+  // instead of letting comments fail post-hoc after the user has already
+  // typed something.
+  const requireIdentity = (action: 'like' | 'comment') => {
+    if (isAuthenticated || hasStoredCommenter(readCommenter())) {
+      performAction(action);
+      return;
+    }
+    pendingActionRef.current = action;
+    setLoginPromptOpen(true);
+  };
+
+  const handleLoginResolved = () => {
+    setLoginPromptOpen(false);
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (action) performAction(action);
   };
 
   const loadComments = useCallback((
@@ -108,7 +139,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
               type="button"
               aria-label={likeLabel}
               disabled={likePending}
-              onClick={(event) => { event.preventDefault(); void toggleLike(); }}
+              onClick={(event) => { event.preventDefault(); requireIdentity('like'); }}
               className={`inline-flex items-center gap-1.5 text-ds-xs font-medium tabular-nums transition-colors disabled:cursor-wait disabled:opacity-50 ${
                 engagement.is_liked_by_user ? 'text-red-500' : 'text-ds-fg-subtle hover:text-ds-fg'
               }`}
@@ -119,7 +150,11 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
             <button
               type="button"
               aria-label={commentLabel}
-              onClick={(event) => { event.preventDefault(); setCommentsOpen((value) => !value); }}
+              onClick={(event) => {
+                event.preventDefault();
+                if (commentsOpen) setCommentsOpen(false);
+                else requireIdentity('comment');
+              }}
               className={`inline-flex items-center gap-1.5 text-ds-xs font-medium tabular-nums transition-colors ${
                 commentsOpen ? 'text-ds-fg' : 'text-ds-fg-subtle hover:text-ds-fg'
               }`}
@@ -141,6 +176,12 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
             />
           </div>
         )}
+
+        <LoginPromptModal
+          open={loginPromptOpen}
+          onClose={() => { setLoginPromptOpen(false); pendingActionRef.current = null; }}
+          onResolved={handleLoginResolved}
+        />
       </div>
     );
   }
@@ -162,8 +203,11 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
           liked={engagement.is_liked_by_user}
           likePending={likePending}
           commentsOpen={commentsOpen}
-          onLike={() => { void toggleLike(); }}
-          onComment={() => setCommentsOpen((value) => !value)}
+          onLike={() => requireIdentity('like')}
+          onComment={() => {
+            if (commentsOpen) setCommentsOpen(false);
+            else requireIdentity('comment');
+          }}
         />
       </div>
 
@@ -200,6 +244,12 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
           />
         </div>
       )}
+
+      <LoginPromptModal
+        open={loginPromptOpen}
+        onClose={() => { setLoginPromptOpen(false); pendingActionRef.current = null; }}
+        onResolved={handleLoginResolved}
+      />
     </div>
   );
 };
