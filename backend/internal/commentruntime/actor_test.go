@@ -29,3 +29,10 @@ func TestActorWithoutIdentityCannotDelete(t *testing.T) {
 		t.Fatal("anonymous actor without a fingerprint was authorized")
 	}
 }
+
+func TestFingerprintExtractsStoredAnonymousFingerprint(t *testing.T) {
+	got := Fingerprint(&ent.Comment{UserAgent: "fp:browser-10 | Safari"})
+	if got != "browser-10" {
+		t.Fatalf("Fingerprint() = %q, want browser-10", got)
+	}
+}

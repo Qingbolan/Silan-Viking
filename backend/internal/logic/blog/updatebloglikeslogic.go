@@ -29,12 +29,16 @@ func NewUpdateBlogLikesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 }
 
 func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest) (resp *types.UpdateBlogLikesResponse, err error) {
+	if _, err := l.svcCtx.DB.BlogPost.Get(l.ctx, req.ID); err != nil {
+		return nil, err
+	}
+	return l.UpdateContentLikes(req, contentinteraction.EntityTypeBlog)
+}
+
+func (l *UpdateBlogLikesLogic) UpdateContentLikes(req *types.UpdateBlogLikesRequest, entityType contentinteraction.EntityType) (resp *types.UpdateBlogLikesResponse, err error) {
 	postID := req.ID
 	if req.AuthenticatedUserID == "" && req.Fingerprint == "" {
 		return nil, fmt.Errorf("fingerprint or user_identity_id is required")
-	}
-	if _, err := l.svcCtx.DB.BlogPost.Get(l.ctx, postID); err != nil {
-		return nil, err
 	}
 
 	tx, err := l.svcCtx.DB.Tx(l.ctx)
@@ -44,13 +48,25 @@ func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest
 	defer func() { _ = tx.Rollback() }()
 	client := tx.Client()
 
-	existingLike, err := engagement.IsBlogLiked(
-		l.ctx,
-		client,
-		postID,
-		req.AuthenticatedUserID,
-		req.Fingerprint,
-	)
+	var existingLike bool
+	if entityType == contentinteraction.EntityTypeBlog {
+		existingLike, err = engagement.IsBlogLiked(
+			l.ctx,
+			client,
+			postID,
+			req.AuthenticatedUserID,
+			req.Fingerprint,
+		)
+	} else {
+		existingLike, err = engagement.IsContentLiked(
+			l.ctx,
+			client,
+			entityType,
+			postID,
+			req.AuthenticatedUserID,
+			req.Fingerprint,
+		)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +74,7 @@ func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest
 	if req.Increment {
 		if !existingLike {
 			if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, l.svcCtx.CountryResolver, analytics.InteractionEvent{
-				EntityType:     "blog",
+				EntityType:     string(entityType),
 				EntityID:       postID,
 				Kind:           "like",
 				UserIdentityID: req.AuthenticatedUserID,
@@ -72,7 +88,7 @@ func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest
 		}
 	} else if existingLike {
 		deleteQuery := client.ContentInteraction.Delete().
-			Where(contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeBlog)).
+			Where(contentinteraction.EntityTypeEQ(entityType)).
 			Where(contentinteraction.EntityIDEQ(postID)).
 			Where(contentinteraction.KindEQ(contentinteraction.KindLike))
 		if req.AuthenticatedUserID != "" && req.Fingerprint != "" {
@@ -90,7 +106,7 @@ func (l *UpdateBlogLikesLogic) UpdateBlogLikes(req *types.UpdateBlogLikesRequest
 		}
 	}
 
-	counts, err := engagement.BlogCount(l.ctx, client, postID)
+	counts, err := engagement.ContentCount(l.ctx, client, entityType, postID)
 	if err != nil {
 		return nil, err
 	}

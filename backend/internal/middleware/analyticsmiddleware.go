@@ -2,13 +2,13 @@ package middleware
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/traffic"
+	"silan-backend/internal/utils"
 )
 
 type AnalyticsMiddleware struct {
@@ -80,11 +80,11 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			SetDurationMs(int(duration)).
 			SetReferrer(r.Referer()).
 			SetUserAgent(r.UserAgent()).
-			SetIP(clientIP(r)).
+			SetIP(utils.GetClientIP(r)).
 			SetLang(r.URL.Query().Get("lang")).
 			SetIsBot(isBot).
 			SetBotName(botName)
-		location := m.countries.Resolve(clientIP(r))
+		location := m.countries.Resolve(utils.GetClientIP(r))
 		if country := edgeCountryCode(r); country != "" {
 			location.CountryCode = country
 		}
@@ -114,19 +114,4 @@ func edgeCountryCode(r *http.Request) string {
 		}
 	}
 	return ""
-}
-
-func clientIP(r *http.Request) string {
-	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-		parts := strings.Split(forwarded, ",")
-		return strings.TrimSpace(parts[0])
-	}
-	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
-		return strings.TrimSpace(realIP)
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil {
-		return host
-	}
-	return r.RemoteAddr
 }

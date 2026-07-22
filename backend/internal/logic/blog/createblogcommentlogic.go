@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"silan-backend/internal/ent"
+	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -30,6 +31,10 @@ func NewCreateBlogCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentRequest) (resp *types.BlogCommentData, err error) {
+	return l.CreateComment(req, comment.EntityTypeBlog)
+}
+
+func (l *CreateBlogCommentLogic) CreateComment(req *types.CreateBlogCommentRequest, entityType comment.EntityType) (resp *types.BlogCommentData, err error) {
 	if req.Content == "" {
 		return nil, fmt.Errorf("content is required")
 	}
@@ -46,6 +51,9 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 		}
 		if parentComment.EntityID != postID {
 			return nil, fmt.Errorf("parent comment belongs to different post")
+		}
+		if parentComment.EntityType != entityType {
+			return nil, fmt.Errorf("parent comment belongs to different content type")
 		}
 
 		parentID = req.ParentId
@@ -89,7 +97,7 @@ func (l *CreateBlogCommentLogic) CreateBlogComment(req *types.CreateBlogCommentR
 
 	// Create comment
 	createBuilder := l.svcCtx.DB.Comment.Create().
-		SetEntityType("blog").
+		SetEntityType(entityType).
 		SetEntityID(postID).
 		SetAuthorName(authorName).
 		SetAuthorEmail(authorEmail).

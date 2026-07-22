@@ -30,7 +30,7 @@ func NewDeleteBlogCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 func (l *DeleteBlogCommentLogic) DeleteBlogComment(req *types.DeleteBlogCommentRequest) error {
 	cid := req.CommentID
 
-	c, err := l.svcCtx.DB.Comment.Query().Where(comment.IDEQ(cid), comment.EntityTypeEQ("blog")).Only(l.ctx)
+	c, err := l.svcCtx.DB.Comment.Query().Where(comment.IDEQ(cid)).Only(l.ctx)
 	if err != nil {
 		return err
 	}
@@ -45,5 +45,5 @@ func (l *DeleteBlogCommentLogic) DeleteBlogComment(req *types.DeleteBlogCommentR
 	l.Infof("User authorized to delete comment %s (userID: %s, ip: %s, fingerprint: %s)",
 		req.CommentID, req.AuthenticatedUserID, req.ClientIP, req.Fingerprint)
 
-	return commentruntime.DeleteTree(l.ctx, l.svcCtx.DB, cid, comment.EntityTypeBlog)
+	return commentruntime.DeleteTree(l.ctx, l.svcCtx.DB, cid, c.EntityType)
 }

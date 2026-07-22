@@ -34,6 +34,13 @@ func (a Actor) CanDelete(comment *ent.Comment) bool {
 	return a.Fingerprint != "" && storedFingerprint(comment.UserAgent) == a.Fingerprint
 }
 
+func Fingerprint(comment *ent.Comment) string {
+	if comment == nil {
+		return ""
+	}
+	return storedFingerprint(comment.UserAgent)
+}
+
 func storedFingerprint(userAgent string) string {
 	const prefix = "fp:"
 	if !strings.HasPrefix(userAgent, prefix) {

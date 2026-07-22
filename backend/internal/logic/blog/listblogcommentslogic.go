@@ -31,12 +31,16 @@ func NewListBlogCommentsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *ListBlogCommentsLogic) ListBlogComments(req *types.BlogCommentListRequest, clientIP, userAgent, fingerprint, userIdentityID string) (resp *types.BlogCommentListResponse, err error) {
+	return l.ListComments(req, comment.EntityTypeBlog, clientIP, userAgent, fingerprint, userIdentityID)
+}
+
+func (l *ListBlogCommentsLogic) ListComments(req *types.BlogCommentListRequest, entityType comment.EntityType, clientIP, userAgent, fingerprint, userIdentityID string) (resp *types.BlogCommentListResponse, err error) {
 	postID := req.ID
 	actor := commentruntime.NewActor(userIdentityID, fingerprint)
 
 	list, err := l.svcCtx.DB.Comment.
 		Query().
-		Where(comment.EntityIDEQ(postID), comment.EntityTypeEQ("blog")).
+		Where(comment.EntityIDEQ(postID), comment.EntityTypeEQ(entityType)).
 		Order(comment.ByCreatedAt()).
 		All(l.ctx)
 	if err != nil {

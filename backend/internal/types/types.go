@@ -314,11 +314,15 @@ type EpisodeData struct {
 	PublishDate     string        `json:"publish_date,omitempty"`
 	DurationMinutes int           `json:"duration_minutes,omitempty"`
 	Content         []BlogContent `json:"content,omitempty"`
+	Likes           int64         `json:"likes"`
+	IsLikedByUser   bool          `json:"is_liked_by_user"`
 }
 
 type EpisodeRequest struct {
-	Slug     string `path:"slug"`
-	Language string `form:"lang,default=en"`
+	Slug                string `path:"slug"`
+	Fingerprint         string `form:"fingerprint,optional"`
+	AuthenticatedUserID string `json:"-" form:"-"`
+	Language            string `form:"lang,default=en"`
 }
 
 type EpisodeSearchRequest struct {
@@ -725,6 +729,7 @@ type UpdateCommentData struct {
 	AuthorAvatarURL string              `json:"author_avatar_url,optional"`
 	AuthProvider    string              `json:"auth_provider,optional"`
 	CountryCode     string              `json:"country_code,optional"`
+	VisitorNumber   string              `json:"visitor_number,optional"`
 	Content         string              `json:"content"`
 	CreatedAt       string              `json:"created_at"`
 	CanDelete       bool                `json:"can_delete"`

@@ -3,7 +3,9 @@ package episodes
 import (
 	"context"
 
+	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/episode"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -53,6 +55,25 @@ func (l *GetEpisodeLogic) GetEpisode(req *types.EpisodeRequest) (*types.EpisodeD
 				Language: resolveLang(req.Language),
 			},
 		}
+	}
+	counts, err := engagement.ContentCount(l.ctx, l.svcCtx.DB, contentinteraction.EntityTypeEpisode, ep.ID)
+	if err != nil {
+		return nil, err
+	}
+	data.Likes = int64(counts.Likes)
+	if req.AuthenticatedUserID != "" || req.Fingerprint != "" {
+		liked, err := engagement.IsContentLiked(
+			l.ctx,
+			l.svcCtx.DB,
+			contentinteraction.EntityTypeEpisode,
+			ep.ID,
+			req.AuthenticatedUserID,
+			req.Fingerprint,
+		)
+		if err != nil {
+			return nil, err
+		}
+		data.IsLikedByUser = liked
 	}
 
 	return &data, nil

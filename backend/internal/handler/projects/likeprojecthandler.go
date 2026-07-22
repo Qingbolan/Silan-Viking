@@ -8,6 +8,7 @@ import (
 	"silan-backend/internal/logic/projects"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
+	"silan-backend/internal/utils"
 )
 
 // Like/Unlike a project
@@ -19,7 +20,7 @@ func LikeProjectHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 		if req.ClientIP == "" {
-			req.ClientIP = r.RemoteAddr
+			req.ClientIP = utils.GetClientIP(r)
 		}
 		if req.UserAgentFull == "" {
 			req.UserAgentFull = r.UserAgent()

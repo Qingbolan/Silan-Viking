@@ -96,20 +96,20 @@ func IsProjectLiked(ctx context.Context, client *ent.Client, projectID, userIden
 	return query.Exist(ctx)
 }
 
-// BlogCounts batches active likes and deduplicated view rows from the unified
-// runtime interaction table. Unlike removes the actor's like row; views remain
-// immutable events.
-func BlogCounts(ctx context.Context, client *ent.Client, blogIDs []string) (map[string]Counts, error) {
-	counts := make(map[string]Counts, len(blogIDs))
-	if len(blogIDs) == 0 {
+// ContentCounts batches active likes and deduplicated view rows from the
+// unified runtime interaction table. Unlike removes the actor's like row;
+// views remain immutable events.
+func ContentCounts(ctx context.Context, client *ent.Client, entityType contentinteraction.EntityType, entityIDs []string) (map[string]Counts, error) {
+	counts := make(map[string]Counts, len(entityIDs))
+	if len(entityIDs) == 0 {
 		return counts, nil
 	}
 
 	var rows []contentCountRow
 	if err := client.ContentInteraction.Query().
 		Where(
-			contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeBlog),
-			contentinteraction.EntityIDIn(blogIDs...),
+			contentinteraction.EntityTypeEQ(entityType),
+			contentinteraction.EntityIDIn(entityIDs...),
 		).
 		GroupBy(contentinteraction.FieldEntityID, contentinteraction.FieldKind).
 		Aggregate(ent.Count()).
@@ -130,21 +130,20 @@ func BlogCounts(ctx context.Context, client *ent.Client, blogIDs []string) (map[
 	return counts, nil
 }
 
-// BlogCount reads one blog post's runtime counters.
-func BlogCount(ctx context.Context, client *ent.Client, blogID string) (Counts, error) {
-	counts, err := BlogCounts(ctx, client, []string{blogID})
+// ContentCount reads one content item's runtime counters.
+func ContentCount(ctx context.Context, client *ent.Client, entityType contentinteraction.EntityType, entityID string) (Counts, error) {
+	counts, err := ContentCounts(ctx, client, entityType, []string{entityID})
 	if err != nil {
 		return Counts{}, err
 	}
-	return counts[blogID], nil
+	return counts[entityID], nil
 }
 
-// IsBlogLiked reports the current actor state. It deliberately mirrors the
-// actor precedence used by project likes.
-func IsBlogLiked(ctx context.Context, client *ent.Client, blogID, userIdentityID, fingerprint string) (bool, error) {
+// IsContentLiked reports the current actor state for one content item.
+func IsContentLiked(ctx context.Context, client *ent.Client, entityType contentinteraction.EntityType, entityID, userIdentityID, fingerprint string) (bool, error) {
 	query := client.ContentInteraction.Query().Where(
-		contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeBlog),
-		contentinteraction.EntityIDEQ(blogID),
+		contentinteraction.EntityTypeEQ(entityType),
+		contentinteraction.EntityIDEQ(entityID),
 		contentinteraction.KindEQ(contentinteraction.KindLike),
 	)
 	switch {
@@ -161,4 +160,22 @@ func IsBlogLiked(ctx context.Context, client *ent.Client, blogID, userIdentityID
 		return false, nil
 	}
 	return query.Exist(ctx)
+}
+
+// BlogCounts batches active likes and deduplicated view rows from the unified
+// runtime interaction table. Unlike removes the actor's like row; views remain
+// immutable events.
+func BlogCounts(ctx context.Context, client *ent.Client, blogIDs []string) (map[string]Counts, error) {
+	return ContentCounts(ctx, client, contentinteraction.EntityTypeBlog, blogIDs)
+}
+
+// BlogCount reads one blog post's runtime counters.
+func BlogCount(ctx context.Context, client *ent.Client, blogID string) (Counts, error) {
+	return ContentCount(ctx, client, contentinteraction.EntityTypeBlog, blogID)
+}
+
+// IsBlogLiked reports the current actor state. It deliberately mirrors the
+// actor precedence used by project likes.
+func IsBlogLiked(ctx context.Context, client *ent.Client, blogID, userIdentityID, fingerprint string) (bool, error) {
+	return IsContentLiked(ctx, client, contentinteraction.EntityTypeBlog, blogID, userIdentityID, fingerprint)
 }

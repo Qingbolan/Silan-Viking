@@ -188,6 +188,24 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: episodes.SearchEpisodesHandler(serverCtx),
 				},
 				{
+					// List comments for an episode
+					Method:  http.MethodGet,
+					Path:    "/:id/comments",
+					Handler: episodes.ListEpisodeCommentsHandler(serverCtx),
+				},
+				{
+					// Create a comment for an episode
+					Method:  http.MethodPost,
+					Path:    "/:id/comments",
+					Handler: episodes.CreateEpisodeCommentHandler(serverCtx),
+				},
+				{
+					// Update episode like count
+					Method:  http.MethodPost,
+					Path:    "/:id/likes",
+					Handler: episodes.UpdateEpisodeLikesHandler(serverCtx),
+				},
+				{
 					// Get episode by slug
 					Method:  http.MethodGet,
 					Path:    "/:slug",

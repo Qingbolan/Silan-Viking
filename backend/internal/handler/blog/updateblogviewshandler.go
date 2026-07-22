@@ -8,6 +8,7 @@ import (
 	"silan-backend/internal/logic/blog"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
+	"silan-backend/internal/utils"
 )
 
 // Update blog post view count
@@ -19,7 +20,7 @@ func UpdateBlogViewsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 		if req.ClientIP == "" {
-			req.ClientIP = r.RemoteAddr
+			req.ClientIP = utils.GetClientIP(r)
 		}
 		if req.UserAgentFull == "" {
 			req.UserAgentFull = r.UserAgent()
