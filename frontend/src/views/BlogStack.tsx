@@ -130,7 +130,7 @@ const BlogStack: React.FC = () => {
 
   const [posts, setPosts] = useState<BlogData[]>([]);
   // `selectedTag` holds the raw tag string ('all' = the reset chip).
-  // `selectedType` holds a stable key: 'all' | 'article' | 'vlog' | 'episode'.
+  // `selectedType` holds a stable key: 'all' | 'article' | 'vlog' | 'series'.
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -142,8 +142,11 @@ const BlogStack: React.FC = () => {
   // Handle URL parameters — `?type=` maps directly to a Segmented key.
   useEffect(() => {
     const typeParam = new URLSearchParams(location.search).get('type');
-    const validKeys = ['article', 'vlog', 'episode'];
-    setSelectedType(typeParam && validKeys.includes(typeParam) ? typeParam : 'all');
+    const normalizedType = typeParam === 'episode' ? 'series' : typeParam;
+    const validKeys = ['article', 'vlog', 'series'];
+    setSelectedType(
+      normalizedType && validKeys.includes(normalizedType) ? normalizedType : 'all',
+    );
   }, [location.search]);
 
   // Load posts
@@ -202,7 +205,10 @@ const BlogStack: React.FC = () => {
     }
 
     if (selectedType !== 'all') {
-      filtered = filtered.filter(post => (post.type || 'article') === selectedType);
+      filtered = filtered.filter((post) => {
+        if (selectedType === 'series') return isSeriesPost(post);
+        return (post.type || 'article') === selectedType;
+      });
     }
 
     if (searchTerm) {
@@ -231,7 +237,7 @@ const BlogStack: React.FC = () => {
       { value: 'all', label: language === 'en' ? 'All' : '全部', icon: <Layers /> },
       { value: 'article', label: language === 'en' ? 'Articles' : '文章', icon: <FileText /> },
       { value: 'vlog', label: language === 'en' ? 'Videos' : '视频', icon: <Film /> },
-      { value: 'episode', label: language === 'en' ? 'Series' : '系列', icon: <List /> },
+      { value: 'series', label: language === 'en' ? 'Series' : '系列', icon: <List /> },
     ],
     [language],
   );
@@ -341,6 +347,7 @@ const BlogStack: React.FC = () => {
             <Masonry
               items={filteredPostsMemo}
               getKey={(post) => post.id}
+              bottomPadding={64}
               renderItem={(post) => (
                 <BlogCard
                   coverSize="standard"

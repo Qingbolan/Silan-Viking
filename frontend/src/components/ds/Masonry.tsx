@@ -47,6 +47,8 @@ export interface MasonryProps<T> {
   getSpan?: (_item: T) => number;
   /** Stagger between item entrance animations, in seconds. */
   stagger?: number;
+  /** Extra space reserved after the lowest tile for shadows or following sections. */
+  bottomPadding?: number;
   className?: string;
 }
 
@@ -81,6 +83,7 @@ export function Masonry<T>({
   gap = 16,
   getSpan,
   stagger = 0.05,
+  bottomPadding = 0,
   className,
 }: MasonryProps<T>) {
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -185,6 +188,26 @@ export function Masonry<T>({
     };
   }, [items, width]);
 
+  /* --- Re-pack when text wrapping, fonts, or theme changes alter tile height. --- */
+  React.useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return;
+    const nodes = Array.from(tileRefs.current.values());
+    if (nodes.length === 0) return;
+
+    let frame = 0;
+    const schedule = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => setReflowToken((t) => t + 1));
+    };
+    const ro = new ResizeObserver(schedule);
+    nodes.forEach((node) => ro.observe(node));
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
+  }, [items, width, columns]);
+
   /* --- Animate tiles to their placements with GSAP. --- */
   React.useLayoutEffect(() => {
     placements.forEach((p, i) => {
@@ -226,7 +249,7 @@ export function Masonry<T>({
       {...dsRoot}
       ref={containerRef}
       className={cn('relative w-full', className)}
-      style={{ height: containerHeight }}
+      style={{ height: containerHeight + bottomPadding }}
     >
       {items.map((item) => {
         const key = getKey(item);
