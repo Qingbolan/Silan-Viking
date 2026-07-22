@@ -167,7 +167,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
 
         {/* Centre — flow content. */}
         <div className="min-w-0">
-          <div ref={centreRef} className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-10">
+          <div ref={centreRef} className="mx-auto max-w-3xl py-6 sm:py-8 lg:px-10">
             {children}
           </div>
         </div>

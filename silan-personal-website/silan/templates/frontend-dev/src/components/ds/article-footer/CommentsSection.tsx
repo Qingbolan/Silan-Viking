@@ -59,7 +59,7 @@ const countAll = (comments: ArticleComment[]): number =>
   );
 
 const CommentsSkeleton = () => (
-  <div className="space-y-5 rounded-ds-md bg-ds-surface-2/70 px-4 py-6 sm:px-6" aria-hidden>
+  <div className="space-y-5 rounded-ds-md bg-ds-surface-2/70" aria-hidden>
     {[0, 1].map((item) => (
       <div key={item} className={cn('flex animate-pulse gap-3', item === 1 && 'flex-row-reverse')}>
         <div className="size-10 shrink-0 rounded-ds-sm bg-ds-surface-1" />

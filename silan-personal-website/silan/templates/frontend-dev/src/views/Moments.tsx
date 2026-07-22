@@ -18,11 +18,11 @@ import Markdown from '../components/ui/Markdown';
 import MomentActions from '../components/Resume/MomentActions';
 import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 import {
-  Alert,
   Badge,
   BlogHeader,
   Button,
   EmptyState,
+  ErrorState,
   Skeleton,
   type BadgeProps,
 } from '../components/ds';
@@ -98,7 +98,6 @@ const Moments: React.FC = () => {
         all: 'All',
         errorTitle: 'Moments could not be loaded',
         errorBody: 'The content service did not respond. Try again without losing your filters.',
-        retry: 'Try again',
         emptyTitle: 'No moments in this view',
         emptyBody: 'Change the type or time filter to see other entries.',
         allTime: 'All time',
@@ -114,7 +113,6 @@ const Moments: React.FC = () => {
         all: '全部',
         errorTitle: '动态加载失败',
         errorBody: '内容服务暂未响应。重试不会丢失当前筛选。',
-        retry: '重试',
         emptyTitle: '当前筛选下没有动态',
         emptyBody: '更改类型或时间筛选以查看其他内容。',
         allTime: '全部时间',
@@ -291,6 +289,17 @@ const Moments: React.FC = () => {
     label: kindLabel(value as UpdateKind | 'all'),
   }));
 
+  if (loadState === 'error') {
+    return (
+      <ErrorState
+        variant="page"
+        title={copy.errorTitle}
+        description={copy.errorBody}
+        onRetry={() => void load()}
+      />
+    );
+  }
+
   return (
     <motion.div
       className="mx-auto min-h-screen max-w-5xl px-4 py-12 sm:px-8 sm:py-16"
@@ -328,15 +337,6 @@ const Moments: React.FC = () => {
             </div>
           ))}
         </div>
-      )}
-
-      {loadState === 'error' && (
-        <Alert tone="error" title={copy.errorTitle}>
-          <p>{copy.errorBody}</p>
-          <Button variant="ghost" size="sm" className="mt-2" onClick={() => void load()}>
-            {copy.retry}
-          </Button>
-        </Alert>
       )}
 
       {loadState === 'ready' && filtered.length === 0 && (
