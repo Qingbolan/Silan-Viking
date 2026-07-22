@@ -67,7 +67,7 @@ const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="relative mt-16 overflow-hidden bg-[#17181a] text-white sm:mt-24">
+    <footer className="relative overflow-hidden bg-[#17181a] text-white">
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-white/10" />
       <div aria-hidden className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-[#305d9f]/15 blur-3xl" />
 

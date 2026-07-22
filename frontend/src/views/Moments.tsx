@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Outlet, useSearchParams } from 'react-router-dom';
 import {
   ArrowUpRight,
   Briefcase,
@@ -18,11 +18,11 @@ import MomentActions from '../components/Resume/MomentActions';
 import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
 import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 import {
-  Alert,
   Badge,
   BlogHeader,
   Button,
   EmptyState,
+  ErrorState,
   Skeleton,
   type BadgeProps,
 } from '../components/ds';
@@ -93,7 +93,6 @@ const Moments: React.FC = () => {
         description: 'A concise log of current research, projects, and milestones.',
         errorTitle: 'Moments could not be loaded',
         errorBody: 'The content service did not respond. Try again without losing your filters.',
-        retry: 'Try again',
         emptyTitle: 'No moments in this view',
         emptyBody: 'Change the time filter to see other entries.',
         allTime: 'All time',
@@ -107,7 +106,6 @@ const Moments: React.FC = () => {
         description: '研究、项目与阶段成果的简洁时间线。',
         errorTitle: '动态加载失败',
         errorBody: '内容服务暂未响应。重试不会丢失当前筛选。',
-        retry: '重试',
         emptyTitle: '当前筛选下没有动态',
         emptyBody: '更改时间筛选以查看其他内容。',
         allTime: '全部时间',
@@ -267,6 +265,26 @@ const Moments: React.FC = () => {
     return labels[value];
   };
 
+  if (loadState === 'error') {
+    return (
+      <>
+        <Seo
+          title={copy.errorTitle}
+          description={copy.errorBody}
+          path="/moments"
+          lang={language as 'en' | 'zh'}
+        />
+        <ErrorState
+          variant="page"
+          title={copy.errorTitle}
+          description={copy.errorBody}
+          onRetry={() => void load()}
+        />
+        <Outlet />
+      </>
+    );
+  }
+
   return (
     <motion.div
       className="mx-auto min-h-screen max-w-5xl px-4 py-12 sm:px-8 sm:py-16"
@@ -300,15 +318,6 @@ const Moments: React.FC = () => {
             </div>
           ))}
         </div>
-      )}
-
-      {loadState === 'error' && (
-        <Alert tone="error" title={copy.errorTitle}>
-          <p>{copy.errorBody}</p>
-          <Button variant="ghost" size="sm" className="mt-2" onClick={() => void load()}>
-            {copy.retry}
-          </Button>
-        </Alert>
       )}
 
       {loadState === 'ready' && filtered.length === 0 && (
@@ -477,6 +486,10 @@ const Moments: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* The detail overlay renders here when the route matches
+          /moments/:slug — a modal on top of this list, not a page swap. */}
+      <Outlet />
     </motion.div>
   );
 };

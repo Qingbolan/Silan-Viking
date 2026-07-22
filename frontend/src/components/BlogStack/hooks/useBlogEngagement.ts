@@ -7,6 +7,11 @@ import {
   updateBlogLikes,
   type BlogCommentData,
 } from '../../../api/blog/blogApi';
+import {
+  createEpisodeComment,
+  listEpisodeComments,
+  updateEpisodeLikes,
+} from '../../../api/episodes/episodeApi';
 import { getClientFingerprint } from '../../../utils/fingerprint';
 import type {
   ArticleComment,
@@ -19,6 +24,8 @@ interface UseBlogEngagementOptions {
   initialLikes: number;
   initialLiked: boolean;
   language: 'en' | 'zh';
+  kind?: 'blog' | 'episode';
+  enabled?: boolean;
 }
 
 const mapComment = (comment: BlogCommentData): ArticleComment => ({
@@ -73,6 +80,8 @@ export const useBlogEngagement = ({
   initialLikes,
   initialLiked,
   language,
+  kind = 'blog',
+  enabled = true,
 }: UseBlogEngagementOptions) => {
   const [likes, setLikes] = useState(Math.max(0, initialLikes));
   const [liked, setLiked] = useState(initialLiked);
@@ -96,14 +105,19 @@ export const useBlogEngagement = ({
   }, [postId, initialLiked, initialLikes]);
 
   const loadComments = useCallback(async () => {
+    if (!enabled || !postId) {
+      setComments([]);
+      setCommentsState('ready');
+      setCommentsError(undefined);
+      return;
+    }
     setCommentsState('loading');
     setCommentsError(undefined);
     try {
-      const response = await listBlogComments(
-        postId,
-        getClientFingerprint(),
-        language,
-      );
+      const fingerprint = getClientFingerprint();
+      const response = kind === 'episode'
+        ? await listEpisodeComments(postId, fingerprint, language)
+        : await listBlogComments(postId, fingerprint, language);
       setComments(response.map(mapComment));
       setCommentsState('ready');
     } catch {
@@ -112,7 +126,7 @@ export const useBlogEngagement = ({
       );
       setCommentsState('error');
     }
-  }, [language, postId]);
+  }, [enabled, kind, language, postId]);
 
   useEffect(() => {
     void loadComments();
@@ -120,6 +134,7 @@ export const useBlogEngagement = ({
 
   const toggleLike = useCallback(async () => {
     if (likePending) return;
+    if (!enabled || !postId) return;
     const previousLiked = liked;
     const previousLikes = likes;
     const nextLiked = !previousLiked;
@@ -129,7 +144,9 @@ export const useBlogEngagement = ({
     setLiked(nextLiked);
     setLikes(Math.max(0, previousLikes + (nextLiked ? 1 : -1)));
     try {
-      const response = await updateBlogLikes(postId, nextLiked, language);
+      const response = kind === 'episode'
+        ? await updateEpisodeLikes(postId, nextLiked, language)
+        : await updateBlogLikes(postId, nextLiked, language);
       setLikes(Math.max(0, response.likes));
       setLiked(response.is_liked_by_user);
     } catch {
@@ -141,23 +158,35 @@ export const useBlogEngagement = ({
     } finally {
       setLikePending(false);
     }
-  }, [language, liked, likePending, likes, postId]);
+  }, [enabled, kind, language, liked, likePending, likes, postId]);
 
   const submitComment = useCallback(
     async (draft: CommentDraft) => {
       if (commentSubmitting) return;
+      if (!enabled || !postId) return;
       setCommentSubmitting(true);
       setInteractionError(undefined);
       try {
-        const created = await createBlogComment(
-          postId,
-          draft.authorName,
-          draft.authorEmail,
-          draft.content,
-          getClientFingerprint(),
-          language,
-          draft.parentId,
-        );
+        const fingerprint = getClientFingerprint();
+        const created = kind === 'episode'
+          ? await createEpisodeComment(
+              postId,
+              draft.authorName,
+              draft.authorEmail,
+              draft.content,
+              fingerprint,
+              language,
+              draft.parentId,
+            )
+          : await createBlogComment(
+              postId,
+              draft.authorName,
+              draft.authorEmail,
+              draft.content,
+              fingerprint,
+              language,
+              draft.parentId,
+            );
         const mapped = mapComment(created);
         setComments((current) =>
           draft.parentId ? insertReply(current, draft.parentId, mapped) : [mapped, ...current],
@@ -172,7 +201,7 @@ export const useBlogEngagement = ({
         setCommentSubmitting(false);
       }
     },
-    [commentSubmitting, language, postId],
+    [commentSubmitting, enabled, kind, language, postId],
   );
 
   const toggleCommentLike = useCallback(

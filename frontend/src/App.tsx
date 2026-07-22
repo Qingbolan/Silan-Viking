@@ -69,8 +69,13 @@ const LocalizedRoutes: React.FC = () => {
     >
       <Routes key={language}>
         <Route path="/" element={<ResumeWebsite />} />
-        <Route path="/moments" element={<Moments />} />
-        <Route path="/moments/:slug" element={<MomentDetail />} />
+        {/* MomentDetail renders as a modal overlay on top of the Moments
+            list (Xiaohongshu-style), so the detail route is nested under
+            the list route and rendered through its <Outlet /> rather than
+            replacing the whole page. */}
+        <Route path="/moments" element={<Moments />}>
+          <Route path=":slug" element={<MomentDetail />} />
+        </Route>
         <Route path="/contact" element={<InteractiveContactPage />} />
         <Route path="/projects" element={<ProjectGallery />} />
         <Route path="/projects/:id" element={<ProjectDetail />} />

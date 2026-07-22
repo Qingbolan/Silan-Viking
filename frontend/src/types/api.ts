@@ -446,6 +446,12 @@ export interface ProjectDetail {
   };
   github?: string;
   demo?: string;
+  /** Public project homepage. Defaults to the demo URL when no custom home is authored. */
+  homepageUrl?: string;
+  /** URL used for the embedded project home surface. Can differ from homepageUrl. */
+  embedUrl?: string;
+  homepageTitle?: string;
+  homepageDescription?: string;
   planId?: string;
   year: number;
 }

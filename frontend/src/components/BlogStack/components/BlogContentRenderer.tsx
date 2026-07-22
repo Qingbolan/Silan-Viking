@@ -15,6 +15,7 @@ interface BlogContentRendererProps {
   content: BlogContent[];
   isWideScreen: boolean;
   readOnly?: boolean;
+  documentTitle?: string;
   userAnnotations?: Record<string, UserAnnotation>;
   annotations?: Record<string, boolean>;
   showAnnotationForm?: string | null;
@@ -179,6 +180,7 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
     content,
     isWideScreen,
     readOnly = false,
+    documentTitle,
     userAnnotations = EMPTY_ANNOTATIONS,
     annotations = EMPTY_ANNOTATIONS,
     showAnnotationForm = null,
@@ -233,7 +235,11 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
     }
 
     return (
-      <Markdown key={item.id} className="max-w-none text-theme-text-primary">
+      <Markdown
+        key={item.id}
+        className="max-w-none text-theme-text-primary"
+        documentTitle={documentTitle}
+      >
         {md}
       </Markdown>
     );
@@ -269,6 +275,7 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
             key={item.id}
             item={item}
             index={item.kindIndex}
+            isWideScreen={isWideScreen}
             interactiveAnnotations={!readOnly}
             userAnnotations={userAnnotations}
             annotations={annotations}

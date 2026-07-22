@@ -40,6 +40,8 @@ export interface ExtraTab {
   key: string;
   label: React.ReactNode;
   icon?: React.ReactNode;
+  /** Set false when the rendered panel already owns its visible heading. */
+  showHeading?: boolean;
   /** The panel rendered when this tab is active. */
   render: () => React.ReactNode;
 }
@@ -290,35 +292,53 @@ const ContentParts: React.FC<ContentPartsProps> = ({
   if (layout === 'long') {
     return (
       <div className={`space-y-12 ${className || ''}`}>
-        {visible.map((p) => (
-          <section key={p.role} id={p.role} className="scroll-mt-24">
-            <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
-              <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
-                {ROLE_ICONS[p.role] ?? <ListTree size={16} />}
-              </span>
-              {roleLabel(p.role, language)}
-            </h2>
-            {p.shape === 'entry_list' ? (
-              <div className="space-y-3">
-                {[...p.entries]
-                  .sort((a, b) => a.sortOrder - b.sortOrder)
-                  .map((e) => (
-                    <EntryCard key={e.id} entry={e} />
-                  ))}
-              </div>
-            ) : (
-              <Markdown documentTitle={documentTitle}>{partBody(p, language)}</Markdown>
-            )}
-          </section>
-        ))}
+        {visible.map((p) => {
+          const label = roleLabel(p.role, language);
+          const summaryStyle = p.role === 'overview';
+          return (
+            <section key={p.role} id={p.role} className="scroll-mt-24">
+              {!summaryStyle && (
+                <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
+                  <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
+                    {ROLE_ICONS[p.role] ?? <ListTree size={16} />}
+                  </span>
+                  {label}
+                </h2>
+              )}
+              {p.shape === 'entry_list' ? (
+                <div className="space-y-3">
+                  {[...p.entries]
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((e) => (
+                      <EntryCard key={e.id} entry={e} />
+                    ))}
+                </div>
+              ) : summaryStyle ? (
+                <div className="max-w-[68rem]">
+                  <Markdown
+                    className="text-[19px] font-medium leading-[1.65] text-ds-fg"
+                    documentTitle={documentTitle}
+                    sectionTitle={label}
+                  >
+                    {partBody(p, language)}
+                  </Markdown>
+                </div>
+              ) : (
+                <Markdown documentTitle={documentTitle} sectionTitle={label}>{partBody(p, language)}</Markdown>
+              )}
+            </section>
+          );
+        })}
         {extraTabs.map((t) => (
           <section key={t.key} id={`tab-${t.key}`} className="scroll-mt-24">
-            <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
-              <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
-                {t.icon}
-              </span>
-              {t.label}
-            </h2>
+            {t.showHeading !== false && (
+              <h2 className="mb-4 inline-flex items-center gap-2 text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
+                <span className="text-ds-fg-subtle [&_svg]:size-[18px]">
+                  {t.icon}
+                </span>
+                {t.label}
+              </h2>
+            )}
             {t.render()}
           </section>
         ))}
@@ -342,7 +362,9 @@ const ContentParts: React.FC<ContentPartsProps> = ({
             ))}
         </div>
       ) : activePart ? (
-        <Markdown documentTitle={documentTitle}>{partBody(activePart, language)}</Markdown>
+        <Markdown documentTitle={documentTitle} sectionTitle={roleLabel(activePart.role, language)}>
+          {partBody(activePart, language)}
+        </Markdown>
       ) : null}
     </article>
   );

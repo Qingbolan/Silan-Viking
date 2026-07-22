@@ -9,7 +9,7 @@ interface MomentActionMenuProps {
   comments: number;
   liked: boolean;
   likePending: boolean;
-  commentsOpen: boolean;
+  composerOpen: boolean;
   onLike: () => void;
   onComment: () => void;
 }
@@ -20,7 +20,7 @@ const MomentActionMenu: React.FC<MomentActionMenuProps> = ({
   comments,
   liked,
   likePending,
-  commentsOpen,
+  composerOpen,
   onLike,
   onComment,
 }) => {
@@ -90,7 +90,7 @@ const MomentActionMenu: React.FC<MomentActionMenuProps> = ({
                 className={cn(
                   'inline-flex items-center justify-center gap-1.5 rounded-[3px] px-2.5 text-ds-xs font-semibold tabular-nums text-white/90 transition-colors',
                   'hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45',
-                  commentsOpen && 'bg-white/10 text-white',
+                  composerOpen && 'bg-white/10 text-white',
                 )}
               >
                 <MessageCircle className="size-[15px]" strokeWidth={2.2} />

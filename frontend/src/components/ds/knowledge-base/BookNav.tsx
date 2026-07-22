@@ -1,16 +1,14 @@
 // BookNav — Yuque-aligned left rail.
 //
-// Layout reads top-down: a search input (with ⌘+J hint), a dedicated
-// `Overview` row (home icon, the book's intro page), and a `ToC` header
-// followed by a flat list of chapters. Active chapter is a tonal-grey
-// pill with bold black text — never primary-orange (matches the user's
-// Yuque reference).
+// Layout reads top-down: a dedicated `Overview` row (book title), then a
+// compact flat list of chapters. Active chapter uses the site theme color,
+// but remains visually subordinate to the document title in the centre pane.
 //
 // No book-title banner, no sub-heading expansion. Sub-headings belong to
 // the right-rail Outline, not here.
-import React, { useState } from 'react';
+import React from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Search, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
 export interface BookNavChapter {
@@ -40,76 +38,44 @@ const BookNav: React.FC<BookNavProps> = ({
   chapters,
   currentId,
 }) => {
-  const [search, setSearch] = useState('');
-
-  const filtered = search
-    ? chapters.filter((c) => c.label.toLowerCase().includes(search.toLowerCase()))
-    : chapters;
-
   // Icon for the Overview row — caller-supplied or Lightbulb as a generic
   // Moment-flavoured default (matches the global Moment icon convention).
   const OverviewIcon = overview?.icon ?? Lightbulb;
 
   return (
-    <div className="flex h-full flex-col bg-ds-surface-1">
-      {/* Overview — book title row, pinned top, no separator above */}
+    <div className="flex min-h-0 flex-1 flex-col bg-transparent">
+      {/* Overview — compact series title row, aligned with article chrome. */}
       {overview && (
-        <div className="px-2 pt-4">
+        <div className="shrink-0 pb-5">
           <button
             type="button"
             onClick={overview.onClick}
             className={cn(
-              'flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[15px]',
-              'transition-colors duration-150',
+              'flex w-full items-center gap-2.5 rounded-ds-md px-2 py-1.5 text-left text-[15px] leading-6',
+              'transition-colors duration-ds-fast',
               overview.isActive
-                ? 'bg-ds-surface-2 font-semibold text-ds-fg'
-                : 'text-ds-fg-muted hover:bg-ds-surface-2 hover:text-ds-fg',
+                ? 'font-semibold text-ds-primary'
+                : 'font-semibold text-ds-fg hover:text-ds-primary',
             )}
           >
-            <OverviewIcon size={17} className="shrink-0" strokeWidth={1.7} />
+            <OverviewIcon
+              size={17}
+              className={cn(
+                'shrink-0',
+                overview.isActive ? 'text-ds-primary' : 'text-ds-fg-muted',
+              )}
+              strokeWidth={1.8}
+            />
             <span className="min-w-0 flex-1 truncate">{overview.label}</span>
           </button>
         </div>
       )}
 
-      {/* Search — square (not pill), tonal grey, ⌘+J kbd hint on the right.
-          Sits under Overview (the book title) — like Yuque's nav. */}
-      <div className="px-3 pt-3 pb-2">
-        <div className="relative">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-ds-fg-subtle"
-          />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search"
-            className={cn(
-              'h-9 w-full rounded-md pl-9 pr-16 text-[14px]',
-              'bg-ds-surface-2 text-ds-fg placeholder:text-ds-fg-subtle',
-              'border border-transparent focus:border-ds-primary/40',
-              'focus:outline-none',
-            )}
-          />
-          <kbd
-            className={cn(
-              'absolute right-2.5 top-1/2 -translate-y-1/2',
-              'pointer-events-none select-none',
-              'text-[12px] text-ds-fg-subtle font-sans',
-            )}
-            aria-hidden
-          >
-            ⌘ + J
-          </kbd>
-        </div>
-      </div>
-
-      {/* Chapter list — flat, no badges, no sub-tree expansion. Active row
-          is a tonal-grey pill with bold black text (Yuque-style). */}
-      <nav className="flex-1 overflow-y-auto px-2 pb-4">
-        <ul className="space-y-px">
-          {filtered.map((c) => {
+      {/* Chapter list — flat and compact. Sub-headings belong to the right
+          outline; the left rail is only for switching episodes. */}
+      <nav className="min-h-0 flex-1 overflow-y-auto pb-3">
+        <ul className="space-y-0.5">
+          {chapters.map((c) => {
             const active = c.id === currentId;
             return (
               <li key={c.id}>
@@ -117,11 +83,11 @@ const BookNav: React.FC<BookNavProps> = ({
                   type="button"
                   onClick={c.onClick}
                   className={cn(
-                    'flex w-full items-center gap-2 rounded-md px-8 py-2 text-left text-[15px]',
-                    'transition-colors duration-150',
+                    'flex w-full items-center gap-2 rounded-ds-md px-2 py-1.5 text-left text-[13px] leading-5',
+                    'transition-colors duration-ds-fast',
                     active
-                      ? 'bg-ds-surface-2 font-semibold text-ds-fg'
-                      : 'text-ds-fg-muted hover:bg-ds-surface-2 hover:text-ds-fg',
+                      ? 'font-semibold text-ds-primary'
+                      : 'text-ds-fg-muted hover:text-ds-primary',
                   )}
                 >
                   <span className="min-w-0 flex-1 truncate">{c.label}</span>

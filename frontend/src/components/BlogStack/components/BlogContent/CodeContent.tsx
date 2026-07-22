@@ -3,6 +3,7 @@ import { BlogContent } from '../../types/blog';
 import { useLanguage } from '../../../LanguageContext';
 import { Copy, Check } from 'lucide-react';
 import { Badge, Button, useToast } from '../../../ds';
+import { codeLanguageClass, highlightCodeToHtml, normalizeCodeLanguage } from '../../../../utils/syntaxHighlight';
 
 interface CodeContentProps {
   item: BlogContent;
@@ -22,6 +23,12 @@ export const CodeContent: React.FC<CodeContentProps> = ({ item, isWideScreen }) 
     text = text.replace(/\r\n?/g, '\n');
     return text;
   }, [item.content]);
+  const codeLanguage = normalizeCodeLanguage(item.language || 'text') || 'text';
+  const languageClass = codeLanguageClass(codeLanguage);
+  const highlightedCode = useMemo(
+    () => highlightCodeToHtml(code, codeLanguage),
+    [code, codeLanguage],
+  );
 
   useEffect(() => {
     return () => {
@@ -45,7 +52,7 @@ export const CodeContent: React.FC<CodeContentProps> = ({ item, isWideScreen }) 
       <div className="overflow-hidden rounded-ds-xl border border-ds-border bg-ds-surface-1 shadow-ds-1">
         <div className="flex items-center justify-between border-b border-ds-border bg-ds-surface-2 px-4 py-3 sm:px-5">
           <Badge tone="neutral" appearance="outline" size="sm" className="font-mono uppercase tracking-[0.08em]">
-            {item.language || 'text'}
+            {codeLanguage}
           </Badge>
           <Button
             type="button"
@@ -59,8 +66,11 @@ export const CodeContent: React.FC<CodeContentProps> = ({ item, isWideScreen }) 
           </Button>
         </div>
 
-        <pre className="max-h-[42rem] overflow-auto bg-[oklch(0.16_0.008_264)] p-5 text-[0.82rem] leading-6 text-[oklch(0.9_0.01_264)] sm:p-6 sm:text-sm">
-          <code className="font-mono">{code}</code>
+        <pre className={`max-h-[42rem] overflow-auto bg-[oklch(0.16_0.008_264)] p-5 text-[0.82rem] leading-6 text-[oklch(0.9_0.01_264)] sm:p-6 sm:text-sm ${languageClass}`}>
+          <code
+            className={`font-mono ${languageClass}`}
+            dangerouslySetInnerHTML={{ __html: highlightedCode }}
+          />
         </pre>
 
         {item.caption && (

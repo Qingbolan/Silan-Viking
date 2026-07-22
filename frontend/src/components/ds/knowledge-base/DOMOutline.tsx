@@ -5,9 +5,9 @@
 // blog (BlogContentRenderer DOM), idea/project (parts ContentParts DOM),
 // future episode (single-blob markdown). It targets a CSS selector you pass
 // in (default `.prose-content, .markdown-body`).
-import React, { useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '../../../lib/utils';
+import { scrollToAnchor } from '../../../lib/scrollToAnchor';
 
 interface DOMOutlineProps {
   // Selector for the content root the outline should scan. Default covers
@@ -48,7 +48,6 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
 }) => {
   const [headings, setHeadings] = useState<HeadingEntry[]>([]);
   const [activeId, setActiveId] = useState<string>('');
-  const [hidden, setHidden] = useState<boolean>(false);
 
   // Scan + observe — re-runs whenever the content DOM changes (e.g. tab
   // switch, late-arriving data).
@@ -120,66 +119,38 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
     return () => obs.disconnect();
   }, [headings]);
 
-  const items = useMemo(() => headings, [headings]);
-
-  if (items.length < 2) return null;
-
-  const handleClick = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
-    if (scrollRoot) {
-      const top = el.getBoundingClientRect().top - scrollRoot.getBoundingClientRect().top + scrollRoot.scrollTop - 24;
-      scrollRoot.scrollTo({ top, behavior: 'smooth' });
-    } else {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+  if (headings.length < 2) return null;
 
   return (
-    <div className={cn('w-full', className)}>
-      {/* Header — "Outline" + a toggleable hide-eye icon (Yuque parity).
-          Click the eye to collapse the list down to just the header row,
-          click again to bring it back. */}
-      <div className="mb-4 flex items-center gap-2 text-[15px] font-medium text-ds-fg">
-        Outline
-        <button
-          type="button"
-          onClick={() => setHidden((h) => !h)}
-          aria-label={hidden ? 'Show outline' : 'Hide outline'}
-          className="text-ds-fg-subtle transition-colors hover:text-ds-fg"
-        >
-          {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
-        </button>
-      </div>
-
-      {/* Plain text list — no bullets, no rail, no orange. Active item is
-          just bold black; others are muted grey. Mirrors the Yuque outline. */}
-      {!hidden && (
-        <ul className="space-y-2.5">
-          {items.map((h) => {
-            const active = h.id === activeId;
-            return (
-              <li key={h.id}>
-                <button
-                  type="button"
-                  onClick={() => handleClick(h.id)}
-                  className={cn(
-                    'block w-full text-left text-[15px] leading-[1.5] transition-colors',
-                    h.level === 3 && 'pl-4',
-                    active
-                      ? 'font-semibold text-ds-fg'
-                      : 'text-ds-fg-muted hover:text-ds-fg',
-                  )}
-                >
-                  {h.text}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+    <nav aria-label="Outline" className={cn('w-full', className)}>
+      <ol className="space-y-1">
+        {headings.map((h) => {
+          const active = h.id === activeId;
+          return (
+            <li key={h.id}>
+              <button
+                type="button"
+                onClick={() => scrollToAnchor(h.id)}
+                className={cn(
+                  'block w-full rounded-ds-sm py-1.5 pr-1 text-left leading-[1.45] transition-colors',
+                  'break-words focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/30',
+                  h.level === 1 && 'text-[15px]',
+                  h.level === 2 && 'pl-3 text-[14px]',
+                  h.level === 3 && 'pl-5 text-[13.5px]',
+                  active
+                    ? 'font-semibold text-ds-primary'
+                    : h.level === 1
+                      ? 'font-semibold text-ds-fg hover:text-ds-primary'
+                      : 'font-medium text-ds-fg-muted hover:text-ds-primary',
+                )}
+              >
+                {h.text}
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 };
 

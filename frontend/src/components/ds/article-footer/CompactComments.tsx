@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, LoaderCircle, MessageSquareText, Send, ThumbsUp, Trash2 } from 'lucide-react';
+import { AlertCircle, Heart, LoaderCircle, MessageCircle, MessageSquareText, Send, Trash2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useLanguage } from '../../LanguageContext';
 import { useAuth } from '../../InteractiveContact';
@@ -28,15 +28,27 @@ interface CompactCommentsProps {
   /** Cap the number of top-level comments shown before a "view all" expand.
    *  Omit for full-page contexts where every comment should render. */
   visibleCount?: number;
+  /** Where the new-comment composer renders relative to the list — 'top'
+   *  (default) for feed-style panels, 'bottom' for a chat-like sidebar where
+   *  the list scrolls above a pinned input. */
+  composerPosition?: 'top' | 'bottom';
+  /** Allows parent action bars to reveal the composer without hiding comments. */
+  composerVisible?: boolean;
+  labels?: {
+    placeholder?: string;
+    postAria?: string;
+    empty?: string;
+    count?: (count: number) => string;
+    viewAll?: (count: number) => string;
+  };
 }
 
 const Composer: React.FC<{
-  autoFocus?: boolean;
   placeholder: string;
+  postAria: string;
   submitting: boolean;
   onSubmit: (content: string) => void | Promise<void>;
-  onCancel?: () => void;
-}> = ({ autoFocus, placeholder, submitting, onSubmit, onCancel }) => {
+}> = ({ placeholder, postAria, submitting, onSubmit }) => {
   const { language } = useLanguage();
   const { user, isAuthenticated } = useAuth();
   const [identity] = useState(readCommenter);
@@ -63,23 +75,18 @@ const Composer: React.FC<{
   };
 
   return (
-    <form onSubmit={(event) => { void handleSubmit(event); }} className="flex items-start gap-2.5">
+    <form onSubmit={(event) => { void handleSubmit(event); }} className="flex items-center gap-2.5">
       <Avatar
         name={composerName || (language === 'zh' ? '访客' : 'Guest')}
         src={composerAvatar}
         countryCode={composerCountryCode}
         size="sm"
-        className="mt-0.5"
       />
-      <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-ds-border-strong bg-ds-surface-3 pl-4 pr-1.5 focus-within:border-ds-primary focus-within:shadow-[0_0_0_3px_var(--ds-color-ring)]">
+      <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-ds-surface-3 pl-4 pr-1.5">
         <input
           {...dsRoot}
-          autoFocus={autoFocus}
           value={content}
           onChange={(event) => setContent(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape' && onCancel) onCancel();
-          }}
           maxLength={4000}
           placeholder={placeholder}
           className="min-h-10 flex-1 bg-transparent text-ds-sm text-ds-fg outline-none placeholder:text-ds-fg-subtle"
@@ -87,7 +94,7 @@ const Composer: React.FC<{
         <button
           type="submit"
           disabled={submitting || !content.trim()}
-          aria-label={language === 'zh' ? '发布评论' : 'Post comment'}
+          aria-label={postAria}
           className={cn(
             'inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/45',
@@ -103,124 +110,121 @@ const Composer: React.FC<{
   );
 };
 
+// A single row in the Xiaohongshu-style comment list: avatar, author, content,
+// then time/reaction actions. Replies use the same row with a smaller avatar
+// and an inline "Reply to name:" prefix.
 const CommentRow: React.FC<{
   comment: ArticleComment;
-  depth: number;
+  replyToName?: string;
+  compact?: boolean;
   language: 'en' | 'zh';
   onLike: (commentId: string) => void;
   isLikePending: (commentId: string) => boolean;
   onDelete?: (comment: ArticleComment) => void;
   isDeletePending: (commentId: string) => boolean;
   onReply: (comment: ArticleComment) => void;
-  replyTargetId?: string;
-  replySubmitting: boolean;
-  onSubmitReply: (content: string) => void | Promise<void>;
-  onCancelReply: () => void;
 }> = ({
   comment,
-  depth,
+  replyToName,
+  compact = false,
   language,
   onLike,
   isLikePending,
   onDelete,
   isDeletePending,
   onReply,
-  replyTargetId,
-  replySubmitting,
-  onSubmitReply,
-  onCancelReply,
 }) => {
   const pending = isLikePending(comment.id);
+  const avatarSize = compact ? 'xs' : 'md';
+  const ipRegion = commentIpRegion(comment, language);
 
   return (
-    <div className={cn(depth > 0 && 'ml-10 border-l border-ds-border/60 pl-3')}>
-      <div className="flex items-start gap-2.5">
-        <Avatar name={comment.authorName} src={comment.avatarUrl} countryCode={comment.countryCode} size="sm" />
-        <div className="min-w-0 flex-1">
-          <div className="rounded-ds-md bg-ds-surface-2 px-3 py-2">
-            <span className="mb-0.5 flex items-center gap-1 text-ds-xs font-semibold text-ds-fg">
-              {comment.authorName}
-              <AuthProviderBadge provider={comment.authProvider} className="size-3 shrink-0 text-ds-fg-subtle" />
+    <div className={cn('flex items-start', compact ? 'gap-2.5' : 'gap-3')}>
+      <Avatar
+        name={comment.authorName}
+        src={comment.avatarUrl}
+        countryCode={comment.countryCode}
+        visitorNumber={comment.visitorNumber}
+        size={avatarSize}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex min-h-5 items-center gap-1.5 text-[15px] font-medium leading-5 text-ds-fg-muted">
+          {comment.authorName}
+          <AuthProviderBadge provider={comment.authProvider} className="size-3 shrink-0 text-ds-fg-subtle" />
+        </div>
+        <div className="mt-1 text-[16px] leading-6 text-ds-fg">
+          {replyToName && (
+            <span className="mr-1 text-ds-fg-subtle">
+              {language === 'zh' ? '回复 ' : 'Reply to '}
+              <span className="font-medium text-ds-fg-muted">{replyToName}</span>
+              {language === 'zh' ? '：' : ': '}
             </span>
-            <Markdown className="text-ds-sm text-ds-fg [&>div]:my-0 [&_a]:break-words">
-              {comment.content}
-            </Markdown>
-          </div>
-          <div className="mt-1 flex items-center gap-3 px-1 text-[11px] text-ds-fg-subtle">
-            <span>{formatTimelineTime(comment.createdAt, language)}</span>
-            <button
-              type="button"
-              onClick={() => onLike(comment.id)}
-              disabled={pending}
-              aria-pressed={comment.likedByCurrentUser}
-              className={cn(
-                'inline-flex items-center gap-1 font-medium transition-colors',
-                comment.likedByCurrentUser ? 'text-ds-primary' : 'hover:text-ds-fg',
-              )}
-            >
-              {pending ? <LoaderCircle className="size-3 animate-spin" /> : <ThumbsUp className="size-3" />}
-              {comment.likesCount > 0 ? comment.likesCount : language === 'zh' ? '赞' : 'Like'}
-            </button>
-            <button
-              type="button"
-              onClick={() => onReply(comment)}
-              className="font-medium transition-colors hover:text-ds-fg"
-            >
-              {language === 'zh' ? '回复' : 'Reply'}
-            </button>
-            {comment.canDelete && onDelete && (
-              <button
-                type="button"
-                onClick={() => onDelete(comment)}
-                disabled={isDeletePending(comment.id)}
-                className="inline-flex items-center gap-1 font-medium text-ds-fg-subtle transition-colors hover:text-ds-error"
-              >
-                {isDeletePending(comment.id)
-                  ? <LoaderCircle className="size-3 animate-spin" />
-                  : <Trash2 className="size-3" />}
-                {language === 'zh' ? '删除' : 'Delete'}
-              </button>
-            )}
-          </div>
-
-          {replyTargetId === comment.id && (
-            <div className="mt-2">
-              <Composer
-                autoFocus
-                placeholder={language === 'zh' ? `回复 ${comment.authorName}…` : `Reply to ${comment.authorName}…`}
-                submitting={replySubmitting}
-                onSubmit={onSubmitReply}
-                onCancel={onCancelReply}
-              />
-            </div>
           )}
-
-          {comment.replies.length > 0 && (
-            <div className="mt-3 space-y-3">
-              {comment.replies.map((reply) => (
-                <CommentRow
-                  key={reply.id}
-                  comment={reply}
-                  depth={depth + 1}
-                  language={language}
-                  onLike={onLike}
-                  isLikePending={isLikePending}
-                  onDelete={onDelete}
-                  isDeletePending={isDeletePending}
-                  onReply={onReply}
-                  replyTargetId={replyTargetId}
-                  replySubmitting={replySubmitting}
-                  onSubmitReply={onSubmitReply}
-                  onCancelReply={onCancelReply}
-                />
-              ))}
-            </div>
+          <Markdown inline richLinks={false} className="comment-markdown">
+            {comment.content}
+          </Markdown>
+        </div>
+        <div className="mt-1.5 flex items-center gap-2 text-[14px] leading-5 text-ds-fg-subtle">
+          <span>{formatTimelineTime(comment.createdAt, language)}</span>
+          {ipRegion && <span>{ipRegion}</span>}
+        </div>
+        <div className="mt-2 flex items-center gap-5 text-[14px] font-medium leading-none text-ds-fg-muted">
+          <button
+            type="button"
+            onClick={() => onLike(comment.id)}
+            disabled={pending}
+            aria-pressed={comment.likedByCurrentUser}
+            className={cn(
+              'inline-flex items-center gap-1 transition-colors',
+              comment.likedByCurrentUser ? 'text-ds-primary' : 'hover:text-ds-fg',
+            )}
+          >
+            {pending ? <LoaderCircle className="size-4 animate-spin" /> : <Heart className="size-[18px]" />}
+            {comment.likesCount > 0 ? comment.likesCount : language === 'zh' ? '赞' : 'Like'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onReply(comment)}
+            className="inline-flex items-center gap-1 transition-colors hover:text-ds-fg"
+          >
+            <MessageCircle className="size-[18px]" />
+            {language === 'zh' ? '回复' : 'Reply'}
+          </button>
+          {comment.canDelete && onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(comment)}
+              disabled={isDeletePending(comment.id)}
+              className="inline-flex items-center gap-1 font-medium text-ds-fg-subtle transition-colors hover:text-ds-error"
+            >
+              {isDeletePending(comment.id)
+                ? <LoaderCircle className="size-3 animate-spin" />
+                : <Trash2 className="size-3" />}
+              {language === 'zh' ? '删除' : 'Delete'}
+            </button>
           )}
         </div>
       </div>
     </div>
   );
 };
+
+const countThread = (comment: ArticleComment): number =>
+  1 + comment.replies.reduce((sum, reply) => sum + countThread(reply), 0);
+
+const countryRegionName = (countryCode: string | undefined, language: 'en' | 'zh'): string | undefined => {
+  if (!countryCode) return undefined;
+  const normalized = countryCode.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(normalized)) return normalized;
+  try {
+    return new Intl.DisplayNames([language === 'zh' ? 'zh-CN' : 'en'], { type: 'region' }).of(normalized) || normalized;
+  } catch {
+    return normalized;
+  }
+};
+
+const commentIpRegion = (comment: ArticleComment, language: 'en' | 'zh'): string | undefined =>
+  comment.ipRegion || countryRegionName(comment.countryCode, language);
 
 const CompactComments: React.FC<CompactCommentsProps> = ({
   comments,
@@ -234,6 +238,9 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
   onCommentDelete,
   isCommentDeletePending = () => false,
   visibleCount,
+  composerPosition = 'top',
+  composerVisible = true,
+  labels,
 }) => {
   const { language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -242,15 +249,17 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
   const { loginPromptOpen, requireIdentity, resolveLogin, closeLoginPrompt } =
     useRequireIdentity<() => void>();
 
-  const visible = visibleCount === undefined || expanded ? comments : comments.slice(0, visibleCount);
-  const hiddenCount = comments.length - visible.length;
+  const visibleThreads = visibleCount === undefined || expanded ? comments : comments.slice(0, visibleCount);
+  const hiddenCount = comments.length - visibleThreads.length;
+  const totalCount = comments.reduce((sum, root) => sum + countThread(root), 0);
+  const showComposer = composerVisible || Boolean(replyTarget);
 
   const submitDraft = async (content: string, parentId?: string) => {
     const identity = readCommenter();
     setFormError(undefined);
     try {
       await onSubmit({ authorName: identity.authorName, authorEmail: identity.authorEmail, content, parentId });
-      if (parentId) setReplyTarget(null);
+      setReplyTarget(null);
     } catch {
       setFormError(language === 'zh' ? '评论未能发布，请重试。' : 'The comment was not published. Please retry.');
     }
@@ -258,13 +267,64 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
 
   const gated = (run: () => void) => requireIdentity(run, (action) => action());
 
-  return (
-    <div className="space-y-3">
+  const renderCommentRow = (
+    comment: ArticleComment,
+    options: { compact?: boolean; replyToName?: string } = {},
+  ) => (
+    <CommentRow
+      comment={comment}
+      replyToName={options.replyToName}
+      compact={options.compact}
+      language={language as 'en' | 'zh'}
+      onLike={(commentId) => gated(() => { void onCommentLike(commentId); })}
+      isLikePending={isCommentLikePending}
+      onDelete={onCommentDelete ? (target) => { void onCommentDelete(target.id); } : undefined}
+      isDeletePending={isCommentDeletePending}
+      onReply={(target) => gated(() => setReplyTarget(target))}
+    />
+  );
+
+  const renderReplies = (replies: ArticleComment[], parentName: string): React.ReactNode =>
+    replies.map((reply) => (
+      <li key={reply.id}>
+        {renderCommentRow(reply, { compact: true, replyToName: parentName })}
+        {reply.replies.length > 0 && (
+          <ul className="mt-3 space-y-3">
+            {renderReplies(reply.replies, reply.authorName)}
+          </ul>
+        )}
+      </li>
+    ));
+
+  const replyBanner = replyTarget && (
+    <div className="flex items-center justify-between gap-2 rounded-ds-sm bg-ds-surface-2 px-3 py-1.5 text-ds-xs text-ds-fg-subtle">
+      <span>{language === 'zh' ? `回复 ${replyTarget.authorName}` : `Replying to ${replyTarget.authorName}`}</span>
+      <button type="button" onClick={() => setReplyTarget(null)} className="font-medium hover:text-ds-fg">
+        {language === 'zh' ? '取消' : 'Cancel'}
+      </button>
+    </div>
+  );
+
+  const composer = (
+    <div className="space-y-1.5">
+      {replyBanner}
       <Composer
-        placeholder={language === 'zh' ? '我说两句…' : 'Add a comment…'}
+        placeholder={
+          labels?.placeholder && !replyTarget
+            ? labels.placeholder
+            : replyTarget
+            ? language === 'zh' ? `回复 ${replyTarget.authorName}…` : `Reply to ${replyTarget.authorName}…`
+            : language === 'zh' ? '说点什么…' : 'Add a comment…'
+        }
+        postAria={labels?.postAria || (language === 'zh' ? '发布评论' : 'Post comment')}
         submitting={submitting}
-        onSubmit={(content) => gated(() => { void submitDraft(content); })}
+        onSubmit={(content) => gated(() => { void submitDraft(content, replyTarget?.id); })}
       />
+    </div>
+  );
+
+  const list = (
+    <div className="space-y-4">
       {formError && (
         <p className="flex items-center gap-1.5 text-ds-xs text-red-600" role="alert">
           <AlertCircle className="size-3.5" />
@@ -273,7 +333,7 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
       )}
 
       {state === 'loading' && (
-        <div className="space-y-3" aria-hidden>
+        <div className="space-y-4" aria-hidden>
           {[0, 1].map((item) => (
             <div key={item} className="flex animate-pulse gap-2.5">
               <div className="size-8 shrink-0 rounded-full bg-ds-surface-1" />
@@ -296,32 +356,29 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
         <div className="flex flex-col items-center px-2 py-6 text-center">
           <MessageSquareText className="size-5 text-ds-fg-subtle" />
           <p className="mt-2 text-ds-xs text-ds-fg-subtle">
-            {language === 'zh' ? '还没有评论' : 'No comments yet'}
+            {labels?.empty || (language === 'zh' ? '还没有评论' : 'No comments yet')}
           </p>
         </div>
       )}
 
-      {state === 'ready' && visible.length > 0 && (
-        <ul className="space-y-3">
-          {visible.map((comment) => (
-            <li key={comment.id}>
-              <CommentRow
-                comment={comment}
-                depth={0}
-                language={language as 'en' | 'zh'}
-                onLike={(commentId) => gated(() => { void onCommentLike(commentId); })}
-                isLikePending={isCommentLikePending}
-                onDelete={onCommentDelete ? (target) => { void onCommentDelete(target.id); } : undefined}
-                isDeletePending={isCommentDeletePending}
-                onReply={(target) => gated(() => setReplyTarget(target))}
-                replyTargetId={replyTarget?.id}
-                replySubmitting={submitting}
-                onSubmitReply={(content) => submitDraft(content, replyTarget?.id)}
-                onCancelReply={() => setReplyTarget(null)}
-              />
-            </li>
-          ))}
-        </ul>
+      {state === 'ready' && totalCount > 0 && (
+        <>
+          <div className="text-ds-xs text-ds-fg-subtle">
+            {labels?.count?.(totalCount) || (language === 'zh' ? `共 ${totalCount} 条评论` : `${totalCount} comments`)}
+          </div>
+          <ul className="space-y-4">
+            {visibleThreads.map((root) => (
+              <li key={root.id}>
+                {renderCommentRow(root)}
+                {root.replies.length > 0 && (
+                  <ul className="mt-3 space-y-3 pl-[52px]">
+                    {renderReplies(root.replies, root.authorName)}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {!expanded && hiddenCount > 0 && (
@@ -330,10 +387,32 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
           onClick={() => setExpanded(true)}
           className="text-ds-xs font-medium text-ds-fg-subtle hover:text-ds-fg"
         >
-          {language === 'zh' ? `查看全部 ${comments.length} 条评论` : `View all ${comments.length} comments`}
+          {labels?.viewAll?.(comments.length) || (language === 'zh' ? `查看全部 ${comments.length} 条评论` : `View all ${comments.length} comments`)}
         </button>
       )}
+    </div>
+  );
 
+  if (composerPosition === 'bottom') {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="compact-comments-scroll min-h-0 flex-1 overflow-y-auto pb-3">{list}</div>
+        {showComposer && (
+          <div className="shrink-0 border-t border-ds-border bg-ds-surface-2 pt-3">{composer}</div>
+        )}
+        <LoginPromptModal
+          open={loginPromptOpen}
+          onClose={closeLoginPrompt}
+          onResolved={() => resolveLogin((action) => action())}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {showComposer && composer}
+      {list}
       <LoginPromptModal
         open={loginPromptOpen}
         onClose={closeLoginPrompt}

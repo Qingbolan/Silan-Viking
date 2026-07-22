@@ -13,6 +13,8 @@ export interface EpisodeData {
   publish_date?: string;
   duration_minutes?: number;
   content?: BlogContent[];
+  likes?: number;
+  is_liked_by_user?: boolean;
 }
 
 export interface EpisodeSeriesData {

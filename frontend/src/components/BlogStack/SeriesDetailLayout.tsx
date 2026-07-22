@@ -10,13 +10,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Calendar, Clock, User } from 'lucide-react';
+import { BookOpen, Calendar, Clock } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { fetchEpisodeSeries } from '../../api/episodes/episodeApi';
 import type { EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
+import AuthorByline from './components/AuthorByline';
+import SeriesDocumentFrame, {
+  SERIES_BODY_ID,
+  SERIES_COMMENTS_ID,
+  SERIES_HEADER_ID,
+  SERIES_LIKES_ID,
+  SERIES_SUMMARY_ID,
+} from './components/SeriesDocumentFrame';
 import { useBlogEngagement } from './hooks/useBlogEngagement';
+import { stripLeadingMetadataDuplicates } from './utils/contentText';
+import { scrollToAnchor } from '../../lib/scrollToAnchor';
 import {
   ArticleFooter,
   KnowledgeBaseShell,
@@ -44,6 +54,14 @@ interface SeriesDetailLayoutProps {
 
 const SERIES_OVERVIEW_ID = '__series_overview__';
 
+const usableEpisodeSummary = (value?: string): string | undefined => {
+  const text = value?.trim();
+  if (!text) return undefined;
+  if (text.length > 360) return undefined;
+  if (/^#{1,6}\s/.test(text)) return undefined;
+  return text;
+};
+
 const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   post,
   userAnnotations,
@@ -67,6 +85,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   // Active chapter: the current episode id, or the overview sentinel
   // when the user lands on / clicks the series cover.
   const [activeChapter, setActiveChapter] = useState<string>(post.id);
+  const [activeSection, setActiveSection] = useState<string>(SERIES_HEADER_ID);
   const engagement = useBlogEngagement({
     postId: post.id,
     initialLikes: post.likes ?? 0,
@@ -78,6 +97,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   // BlogDetail re-renders with a new `post` after navigation.
   useEffect(() => {
     setActiveChapter(post.id);
+    setActiveSection(SERIES_HEADER_ID);
   }, [post.id]);
 
   // Fetch the sibling episode list for the left rail.
@@ -121,6 +141,41 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   const isOverview = activeChapter === SERIES_OVERVIEW_ID;
   const seriesTitle =
     post.seriesTitle || post.seriesSlug || (language === 'en' ? 'Series' : '系列');
+  const episodeSummary = usableEpisodeSummary(post.summary);
+  const episodeContent = useMemo(
+    () => stripLeadingMetadataDuplicates(post.content || [], post.title, episodeSummary),
+    [episodeSummary, post.content, post.title],
+  );
+  const episodeEyebrow = [
+    language === 'zh' ? '系列文档' : 'Series document',
+    post.episodeNumber ? `${language === 'zh' ? '第' : 'Episode'} ${post.episodeNumber}` : '',
+  ].filter(Boolean).join(' · ');
+
+  useEffect(() => {
+    if (isOverview) return;
+    const ids = [
+      SERIES_HEADER_ID,
+      SERIES_SUMMARY_ID,
+      SERIES_BODY_ID,
+      SERIES_LIKES_ID,
+      SERIES_COMMENTS_ID,
+    ];
+    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const hit = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (hit) setActiveSection(hit.target.id);
+      },
+      { root: scrollRoot, rootMargin: '-80px 0px -70% 0px', threshold: 0 },
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    }
+    return () => obs.disconnect();
+  }, [isOverview, post.id]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -136,29 +191,40 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
         wordCount={wordCount}
         likes={engagement.likes}
         commentsCount={engagement.commentsCount}
+        contentClassName="max-w-[82rem] lg:px-12"
+        outlineHeadingSelector="header h1, h2, h3"
       >
         {isOverview ? (
           // Series cover — title, episode count, abstract / description, and
           // a quick list of all episodes so the reader can pick one.
           <>
-            <div className="space-y-2">
-              <div className="text-[12px] font-medium uppercase tracking-[0.1em] text-ds-fg-subtle">
+            <header className="pb-8 pt-6">
+              <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[12px] leading-5 text-ds-fg-subtle">
                 {language === 'en' ? 'Series' : '系列'}
                 {seriesData?.episodes.length
                   ? ` · ${seriesData.episodes.length} ${language === 'en' ? 'episodes' : '集'}`
                   : ''}
               </div>
-              <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.02em] text-ds-fg">
+              <h1
+                className="max-w-[70rem] text-balance font-display text-ds-fg"
+                style={{
+                  fontSize: 'clamp(3.8rem, 5.8vw, 5.6rem)',
+                  lineHeight: 1.04,
+                  fontWeight: 520,
+                  letterSpacing: '-0.034em',
+                }}
+              >
                 {seriesTitle}
               </h1>
-            </div>
+            </header>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-ds-fg-muted">
               {typeof post.author === 'string' && post.author && (
-                <span className="inline-flex items-center gap-1.5">
-                  <User className="size-3.5" />
-                  {post.author}
-                </span>
+                <AuthorByline
+                  name={post.author}
+                  className="gap-1.5 text-ds-fg-muted"
+                  avatarClassName="size-4"
+                />
               )}
               {post.publishDate && (
                 <span className="inline-flex items-center gap-1.5">
@@ -175,18 +241,23 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
             </div>
 
             {post.seriesDescription && (
-              <p className="mt-8 text-[15px] leading-[1.8] text-ds-fg-muted">
+              <section className="mt-8 rounded-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8">
+                <p className="max-w-[58rem] text-pretty text-[19px] font-medium leading-[1.55] text-ds-fg">
                 {post.seriesDescription}
-              </p>
+                </p>
+              </section>
             )}
 
             {/* Episode quicklist */}
             {seriesData && seriesData.episodes.length > 0 && (
-              <div className="mt-10 space-y-1">
-                <div className="mb-3 text-[12px] uppercase tracking-[0.1em] text-ds-fg-subtle">
+              <div className="mt-12 max-w-[68rem] space-y-1">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
                   {language === 'en' ? 'Episodes' : '章节'}
+                  </span>
+                  <span className="h-px flex-1 bg-ds-border" aria-hidden />
                 </div>
-                <ol className="space-y-2">
+                <ol className="space-y-1.5">
                   {seriesData.episodes.map((ep, i) => (
                     <li key={ep.id}>
                       <button
@@ -195,12 +266,12 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
                           setActiveChapter(ep.id);
                           navigate(`/blog/${ep.id}`);
                         }}
-                        className="group flex w-full items-baseline gap-3 rounded-md px-2 py-2 text-left hover:bg-ds-surface-2"
+                        className="group flex w-full items-baseline gap-4 rounded-ds-md px-3 py-2.5 text-left transition-colors hover:bg-ds-surface-2"
                       >
                         <span className="font-mono text-[12px] text-ds-fg-subtle">
                           {String(i + 1).padStart(2, '0')}
                         </span>
-                        <span className="flex-1 text-[15px] text-ds-fg group-hover:text-ds-primary">
+                        <span className="flex-1 text-[17px] font-medium leading-7 text-ds-fg group-hover:text-ds-primary">
                           {ep.title}
                         </span>
                       </button>
@@ -213,13 +284,36 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
         ) : (
           // Episode body — markdown content rendered by BlogContentRenderer,
           // which preserves annotation / vlog handling intact.
-          <div id="kb-active-part" className="prose-content markdown-body w-full">
-            <h1 className="mb-6 text-[32px] font-bold leading-[1.3] tracking-[-0.01em] text-ds-fg">
-              {post.title}
-            </h1>
+          <SeriesDocumentFrame
+            language={language}
+            eyebrow={episodeEyebrow}
+            title={post.title}
+            summary={episodeSummary}
+            activeSection={activeSection}
+            likes={engagement.likes}
+            commentsCount={engagement.commentsCount}
+            onSectionClick={scrollToAnchor}
+            meta={[
+              ...(typeof post.author === 'string' && post.author
+                ? [{
+                    label: post.author,
+                    content: (
+                      <AuthorByline
+                        name={post.author}
+                        className="gap-1.5 text-ds-fg-subtle"
+                        avatarClassName="size-4"
+                      />
+                    ),
+                  }]
+                : []),
+              ...(post.publishDate ? [{ icon: Calendar, label: post.publishDate }] : []),
+              ...(post.readTime ? [{ icon: Clock, label: post.readTime }] : []),
+            ]}
+          >
             <BlogContentRenderer
-              content={post.content}
+              content={episodeContent}
               isWideScreen={true}
+              documentTitle={post.title}
               userAnnotations={userAnnotations}
               annotations={annotations}
               showAnnotationForm={showAnnotationForm}
@@ -235,7 +329,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
               onHighlightAnnotation={onHighlightAnnotation}
               onCancelAnnotation={onCancelAnnotation}
             />
-          </div>
+          </SeriesDocumentFrame>
         )}
 
         <ArticleFooter

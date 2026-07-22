@@ -19,6 +19,7 @@ import BookNav, { type BookNavChapter } from './BookNav';
 import DOMOutline from './DOMOutline';
 import EngagementFAB from './EngagementFAB';
 import { Select } from '../Controls';
+import { scrollToAnchor } from '../../../lib/scrollToAnchor';
 
 const MOBILE_OVERVIEW_ID = '__mobile_overview__';
 
@@ -43,12 +44,15 @@ export interface KnowledgeBaseShellProps {
    */
   currentChapterId?: string;
   wordCount?: number;
+  showLeftRail?: boolean;
 
   // Centre
   children: React.ReactNode;
+  contentClassName?: string;
 
   // Right rail Outline behaviour
   outlineContainerSelector?: string;
+  outlineHeadingSelector?: string;
 
   // FAB
   likes?: number;
@@ -63,8 +67,11 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
   chapters,
   currentChapterId,
   wordCount,
+  showLeftRail = true,
   children,
+  contentClassName,
   outlineContainerSelector,
+  outlineHeadingSelector,
   likes,
   commentsCount,
   commentsAnchor = '#kb-comments',
@@ -78,6 +85,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
     ...(overview ? [{ value: MOBILE_OVERVIEW_ID, label: overview.label }] : []),
     ...chapters.map((chapter) => ({ value: chapter.id, label: chapter.label })),
   ];
+  const showMobileChapterNav = showLeftRail && mobileOptions.length > 1;
   const handleMobileChapterChange = (value: string) => {
     if (value === MOBILE_OVERVIEW_ID) {
       overview?.onClick();
@@ -87,27 +95,11 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
   };
 
   const handleLikeClick = () => {
-    const el = document.querySelector('#kb-likes');
-    if (!el) return;
-    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
-    if (scrollRoot) {
-      const top = (el as HTMLElement).getBoundingClientRect().top - scrollRoot.getBoundingClientRect().top + scrollRoot.scrollTop - 24;
-      scrollRoot.scrollTo({ top, behavior: 'smooth' });
-    } else {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    scrollToAnchor('#kb-likes');
   };
 
   const handleCommentClick = () => {
-    const el = document.querySelector(commentsAnchor);
-    if (!el) return;
-    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
-    if (scrollRoot) {
-      const top = (el as HTMLElement).getBoundingClientRect().top - scrollRoot.getBoundingClientRect().top + scrollRoot.scrollTop - 24;
-      scrollRoot.scrollTo({ top, behavior: 'smooth' });
-    } else {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    scrollToAnchor(commentsAnchor);
   };
 
   return (
@@ -115,8 +107,9 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
       {/* Compact chapter navigation below desktop breakpoints. A native
           select keeps long book titles usable and invokes the platform's
           accessible picker on touch devices. */}
-      {mobileOptions.length > 1 && (
+      {showMobileChapterNav && (
         <nav
+          data-ds
           aria-label="Reading sections"
           className="sticky top-0 z-20 border-b border-ds-border bg-ds-surface-1/92 px-4 py-2 backdrop-blur-md lg:hidden"
         >
@@ -133,41 +126,64 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
         </nav>
       )}
 
-      <div className="lg:grid lg:grid-cols-[18rem_minmax(0,1fr)_15rem]">
+      <div
+        className={cn(
+          'lg:grid lg:min-h-[calc(100dvh-3.5rem)] lg:items-stretch',
+          showLeftRail
+            ? [
+                'lg:grid-cols-[16.5rem_minmax(0,1fr)_15rem]',
+                // MainLayout supplies page padding. Reading shells with a
+                // chapter rail are full reading surfaces, so their rails must
+                // align to that surface edge instead of inheriting inner text
+                // padding as a fake sidebar margin.
+                'lg:relative lg:left-1/2 lg:w-[calc(100%+4rem)] lg:-translate-x-1/2',
+                'xl:w-[calc(100%+4rem)]',
+              ]
+            : 'lg:grid-cols-[minmax(0,1fr)_15rem]',
+        )}
+      >
         {/* Left rail — book nav. Hidden below lg. Width matches Yuque
             (288px). Border is inline-styled because Tailwind's `border-r`
             was being reset to 0px by an upstream reset elsewhere in the
             project. */}
-        <aside
-          data-kb-left-rail
-          className={cn(
-            'relative z-30 hidden bg-ds-surface-1 lg:block',
-            'min-h-full',
-          )}
-          style={{ borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)' }}
-        >
-          <div className="sticky top-0 flex max-h-[calc(100dvh-4rem)] min-h-[calc(100dvh-4rem)] flex-col">
-            <BookNav
-              overview={overview}
-              chapters={chapters}
-              currentId={activeChapter}
-            />
-            {typeof wordCount === 'number' && (
-              <div
-                className={cn(
-                  'pointer-events-none shrink-0 select-none px-4 pb-3 pt-2',
-                  'font-mono text-[12px] text-ds-fg-subtle',
-                )}
-              >
-                {wordCount} Word
-              </div>
+        {showLeftRail && (
+          <aside
+            data-kb-left-rail
+            className={cn(
+              'relative z-30 hidden self-stretch lg:block',
+              'min-h-full',
             )}
-          </div>
-        </aside>
+            style={{
+              backgroundColor: 'var(--color-backgroundSecondary, #f5f5f5)',
+              borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)',
+            }}
+          >
+            <div className="sticky top-0 flex max-h-dvh flex-col px-3.5 py-5">
+              <BookNav
+                overview={overview}
+                chapters={chapters}
+                currentId={activeChapter}
+              />
+              {typeof wordCount === 'number' && (
+                <div
+                  className={cn(
+                    'pointer-events-none shrink-0 select-none px-2 pt-4',
+                    'font-mono text-[10.5px] leading-5 text-ds-fg-subtle',
+                  )}
+                >
+                  {wordCount} Word
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
 
         {/* Centre — flow content. */}
         <div className="min-w-0">
-          <div ref={centreRef} className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-10">
+          <div
+            ref={centreRef}
+            className={cn('mx-auto max-w-3xl py-6 sm:py-8 lg:px-10', contentClassName)}
+          >
             {children}
           </div>
         </div>
@@ -180,7 +196,11 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
           )}
         >
           <div className="sticky top-0 max-h-[calc(100dvh-4rem)] overflow-y-auto pt-6">
-            <DOMOutline containerSelector={outlineContainerSelector} activeKey={activeChapter} />
+            <DOMOutline
+              containerSelector={outlineContainerSelector}
+              headingSelector={outlineHeadingSelector}
+              activeKey={activeChapter}
+            />
           </div>
         </aside>
       </div>

@@ -2,7 +2,7 @@ import React, { ReactNode, useRef, useEffect, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, RotateCw } from 'lucide-react';
-import TopNavigation, { NavBefore, NavAfter, NavAvatar } from './TopNavigation';
+import TopNavigation, { NavAfter, NavAvatar } from './TopNavigation';
 import { useTheme } from '../components/ThemeContext';
 import { useLanguage } from '../components/LanguageContext';
 import { MobileTabBar } from '../components/ds';
@@ -136,11 +136,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </ControlButton>
         </div>
 
-        {/* Pages ordered before the current one — desktop only. Mobile uses
-            the bottom action bar / address-bar popover instead. */}
-        <div className="hidden sm:contents">
-          <NavBefore />
-        </div>
+        {/* Desktop page shortcuts used to split around the active route here.
+            That click-after navigation movement is disabled; the fixed
+            desktop shortcut group now lives on the right side only. */}
 
         {/* Address bar — leads with the current page's icon */}
         <TopNavigation />
@@ -180,7 +178,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {/* Content-window background — plain windowBg (set on motion.main).
             Per silan 2026-05-22: dropped the inner NoiseBackground too. */}
 
-        <div className="relative z-10 mx-auto px-4 pt-2 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto  lg:px-8">
           {children}
         </div>
         <Footer />

@@ -89,6 +89,18 @@ export const fetchProjectDetailById = async (
   const dependenciesDoc: string | undefined = projectDetail?.dependance || projectDetail?.dependencies || undefined;
   const license: string | undefined = projectDetail?.license || undefined;
   const licenseText: string | undefined = projectDetail?.license_text || undefined;
+  const homepageUrl: string | undefined =
+    projectDetail?.homepage_url ||
+    projectDetail?.homepageUrl ||
+    projectDetail?.custom_homepage_url ||
+    projectDetail?.project_homepage_url ||
+    basicProject.demoUrl ||
+    undefined;
+  const embedUrl: string | undefined =
+    projectDetail?.embed_url ||
+    projectDetail?.embedUrl ||
+    projectDetail?.homepage_embed_url ||
+    homepageUrl;
   const timeline = projectDetail?.timeline;
   const rawMetrics = projectDetail?.metrics;
   const hasTimeline = timeline && (timeline.start || timeline.end || timeline.duration);
@@ -147,6 +159,10 @@ export const fetchProjectDetailById = async (
     dependencies: dependenciesDoc
       ? { production: [], development: [], raw: dependenciesDoc }
       : undefined,
+    homepageUrl,
+    embedUrl,
+    homepageTitle: projectDetail?.homepage_title || projectDetail?.homepageTitle || undefined,
+    homepageDescription: projectDetail?.homepage_description || projectDetail?.homepageDescription || undefined,
   };
 
   if (licenseText) {

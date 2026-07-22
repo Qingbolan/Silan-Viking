@@ -29,7 +29,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
 
   return (
     <motion.section
-      className="px-4 py-6 sm:px-6 sm:py-8"
+      className="py-6 sm:py-8"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay }}

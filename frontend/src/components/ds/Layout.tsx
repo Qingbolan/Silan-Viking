@@ -30,7 +30,7 @@ export const Container: React.FC<ContainerProps> = ({
   ...props
 }) => (
   <div
-    className={cn('mx-auto w-full px-4 sm:px-6 lg:px-8', containerWidths[width], className)}
+    className={cn('mx-auto w-full  lg:px-8', containerWidths[width], className)}
     {...props}
   />
 );

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Heart, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   createMomentComment,
   deleteMomentComment,
@@ -15,13 +16,15 @@ import type { CommentDraft } from '../ds/article-footer/types';
 import { useLanguage } from '../LanguageContext';
 import { LoginPromptModal } from '../ds';
 import { useRequireIdentity } from '../../lib/useRequireIdentity';
+import { markdownToPlainExcerpt } from '../../lib/markdown';
 import MomentActionMenu from './MomentActionMenu';
 import MomentLikerAvatar from './MomentLikerAvatar';
+import Avatar from '../ds/article-footer/Avatar';
 
 interface MomentActionsProps {
   momentKey: string;
   timestamp: string;
-  variant?: 'full' | 'compact';
+  variant?: 'full' | 'compact' | 'sidebar';
 }
 
 const EMPTY_ENGAGEMENT: MomentEngagement = {
@@ -31,10 +34,28 @@ const EMPTY_ENGAGEMENT: MomentEngagement = {
   likers: [],
 };
 
+const flattenComments = (comments: RemoteDiscussionComment[]): RemoteDiscussionComment[] =>
+  comments.flatMap((comment) => [
+    comment,
+    ...flattenComments(comment.replies ?? []),
+  ]);
+
+const pickHottestComment = (comments: RemoteDiscussionComment[]): RemoteDiscussionComment | null => {
+  const all = flattenComments(comments);
+  if (all.length === 0) return null;
+  return [...all].sort((a, b) => {
+    const likes = (b.likes_count ?? 0) - (a.likes_count ?? 0);
+    if (likes !== 0) return likes;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  })[0];
+};
+
 const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, variant = 'full' }) => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const [engagement, setEngagement] = useState(EMPTY_ENGAGEMENT);
-  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [compactPreview, setCompactPreview] = useState<RemoteDiscussionComment | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [likePending, setLikePending] = useState(false);
   const { loginPromptOpen, requireIdentity: requireIdentityGate, resolveLogin, closeLoginPrompt } =
     useRequireIdentity<'like' | 'comment'>();
@@ -75,7 +96,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
 
   const performAction = (action: 'like' | 'comment') => {
     if (action === 'like') void toggleLike();
-    else setCommentsOpen((value) => !value);
+    else setComposerOpen((value) => !value);
   };
 
   const requireIdentity = (action: 'like' | 'comment') => requireIdentityGate(action, performAction);
@@ -102,9 +123,33 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
     return created;
   }, [momentKey]);
 
+  useEffect(() => {
+    if (variant !== 'compact' || engagement.comments <= 0) {
+      setCompactPreview(null);
+      return;
+    }
+    let active = true;
+    void listMomentComments(momentKey, getClientFingerprint())
+      .then((comments) => {
+        if (active) setCompactPreview(pickHottestComment(comments));
+      })
+      .catch(() => {
+        if (active) setCompactPreview(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [engagement.comments, momentKey, variant]);
+
   if (variant === 'compact') {
     const likeLabel = language === 'zh' ? `点赞，${engagement.likes} 个赞` : `Like, ${engagement.likes} likes`;
     const commentLabel = language === 'zh' ? `评论，${engagement.comments} 条评论` : `Comment, ${engagement.comments} comments`;
+    const detailLabel = language === 'zh' ? '点击详情查看' : 'Open detail';
+    const openDetail = () => navigate(`/moments/${encodeURIComponent(momentKey)}`);
+    const omittedCount = Math.max(0, engagement.comments - (compactPreview ? 1 : 0));
+    const previewText = compactPreview
+      ? markdownToPlainExcerpt(compactPreview.content, '', 96)
+      : '';
 
     return (
       <div className="border-t border-ds-border">
@@ -134,12 +179,9 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
               aria-label={commentLabel}
               onClick={(event) => {
                 event.preventDefault();
-                if (commentsOpen) setCommentsOpen(false);
-                else requireIdentity('comment');
+                openDetail();
               }}
-              className={`inline-flex items-center gap-1.5 text-ds-xs font-medium tabular-nums transition-colors ${
-                commentsOpen ? 'text-ds-fg' : 'text-ds-fg-subtle hover:text-ds-fg'
-              }`}
+              className="inline-flex items-center gap-1.5 text-ds-xs font-medium tabular-nums text-ds-fg-subtle transition-colors hover:text-ds-fg"
             >
               <MessageCircle className="size-4" />
               {engagement.comments}
@@ -147,15 +189,67 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
           </div>
         </div>
 
-        {commentsOpen && (
-          <div className="border-t border-ds-border bg-ds-surface-1 px-4 pb-4 pt-3 sm:px-5">
-            <EntityDiscussion
-              visibleCount={3}
-              loadComments={loadComments}
-              createComment={createComment}
-              toggleCommentLike={(commentId, fingerprint) => toggleMomentCommentLike(commentId, fingerprint)}
-              deleteComment={(commentId, fingerprint) => deleteMomentComment(commentId, fingerprint)}
-            />
+        {engagement.comments > 0 && (
+          <div className="border-t border-ds-border px-4 py-3 sm:px-5">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                openDetail();
+              }}
+              className="flex w-full flex-col gap-2 rounded-ds-sm bg-ds-surface-3 px-3 py-2.5 text-left transition-colors hover:bg-ds-surface-1"
+            >
+              <span className="flex w-full items-center justify-between gap-3">
+                <span className="inline-flex min-w-0 items-center gap-2 text-ds-xs font-medium text-ds-fg-muted">
+                  <MessageCircle className="size-3.5 shrink-0" aria-hidden />
+                  <span>
+                    {language === 'zh'
+                      ? `${engagement.comments} 条评论`
+                      : `${engagement.comments} ${engagement.comments === 1 ? 'comment' : 'comments'}`}
+                  </span>
+                </span>
+                <span className="shrink-0 text-ds-xs font-medium text-ds-fg-subtle">
+                  {detailLabel}
+                </span>
+              </span>
+
+              {compactPreview && (
+                <span className="flex w-full min-w-0 items-start gap-2.5">
+                  <Avatar
+                    name={compactPreview.author_name}
+                    src={compactPreview.author_avatar_url}
+                    countryCode={compactPreview.country_code}
+                    visitorNumber={compactPreview.visitor_number}
+                    size="xs"
+                    className="mt-0.5"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-ds-xs font-semibold text-ds-fg-muted">
+                        {compactPreview.author_name}
+                      </span>
+                      {(compactPreview.likes_count ?? 0) > 0 && (
+                        <span className="inline-flex shrink-0 items-center gap-1 font-mono text-[10px] tabular-nums text-ds-primary">
+                          <Heart className="size-3" fill="currentColor" aria-hidden />
+                          {compactPreview.likes_count}
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-0.5 line-clamp-2 text-ds-sm leading-5 text-ds-fg">
+                      {previewText}
+                    </span>
+                  </span>
+                </span>
+              )}
+
+              {omittedCount > 0 && (
+                <span className="text-ds-xs text-ds-fg-subtle">
+                  {language === 'zh'
+                    ? `其余 ${omittedCount} 条已省略`
+                    : `${omittedCount} more omitted`}
+                </span>
+              )}
+            </button>
           </div>
         )}
 
@@ -167,6 +261,60 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
       </div>
     );
   }
+
+  if (variant === 'sidebar') {
+    const likeLabel = language === 'zh' ? `点赞，${engagement.likes} 个赞` : `Like, ${engagement.likes} likes`;
+
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="shrink-0 border-b border-ds-border bg-ds-surface-3 px-3 py-1.5 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              aria-label={likeLabel}
+              disabled={likePending}
+              onClick={() => requireIdentity('like')}
+              className={`inline-flex shrink-0 items-center gap-1.5 text-ds-sm font-medium tabular-nums transition-colors disabled:cursor-wait disabled:opacity-50 ${
+                engagement.is_liked_by_user ? 'text-red-500' : 'text-ds-fg-subtle hover:text-ds-fg'
+              }`}
+            >
+              <Heart className="size-4" fill={engagement.is_liked_by_user ? 'currentColor' : 'none'} />
+            </button>
+
+            {likers.length > 0 && (
+              <div className="flex min-w-0 items-center gap-2 rounded-[9px] bg-ds-fg/10 px-2 py-1.5 shadow-inner">
+                {likers.slice(0, 4).map((liker, index) => (
+                  <MomentLikerAvatar
+                    key={`${liker.kind}-${liker.visitor_number || liker.avatar_url || index}`}
+                    liker={liker}
+                    language={language as 'en' | 'zh'}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col pb-3 pl-4 pr-0 pt-3 sm:pl-5 sm:pr-0">
+          <EntityDiscussion
+            composerPosition="bottom"
+            loadComments={loadComments}
+            createComment={createComment}
+            toggleCommentLike={(commentId, fingerprint) => toggleMomentCommentLike(commentId, fingerprint)}
+            deleteComment={(commentId, fingerprint) => deleteMomentComment(commentId, fingerprint)}
+          />
+        </div>
+
+        <LoginPromptModal
+          open={loginPromptOpen}
+          onClose={closeLoginPrompt}
+          onResolved={handleLoginResolved}
+        />
+      </div>
+    );
+  }
+
+  const discussionVisible = composerOpen || engagement.comments > 0;
 
   return (
     <div className="border-t border-ds-border">
@@ -184,10 +332,10 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
           comments={engagement.comments}
           liked={engagement.is_liked_by_user}
           likePending={likePending}
-          commentsOpen={commentsOpen}
+          composerOpen={composerOpen}
           onLike={() => requireIdentity('like')}
           onComment={() => {
-            if (commentsOpen) setCommentsOpen(false);
+            if (composerOpen) setComposerOpen(false);
             else requireIdentity('comment');
           }}
         />
@@ -207,18 +355,14 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
                 language={language as 'en' | 'zh'}
               />
             ))}
-            {engagement.likes > likers.length && (
-              <span className="ml-0.5 font-mono text-ds-xs tabular-nums text-ds-fg-subtle">
-                +{engagement.likes - likers.length}
-              </span>
-            )}
           </div>
         </div>
       )}
 
-      {commentsOpen && (
+      {discussionVisible && (
         <div className="rounded-ds-sm bg-ds-surface-2 px-4 pb-4">
           <EntityDiscussion
+            composerVisible={composerOpen}
             loadComments={loadComments}
             createComment={createComment}
             toggleCommentLike={(commentId, fingerprint) => toggleMomentCommentLike(commentId, fingerprint)}

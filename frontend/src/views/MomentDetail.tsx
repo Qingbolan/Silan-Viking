@@ -1,7 +1,8 @@
-import React, { useCallback } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Briefcase, CalendarDays, FileText, FolderGit2, GraduationCap, Lightbulb } from 'lucide-react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Briefcase, CalendarDays, FileText, FolderGit2, GraduationCap, Lightbulb, X } from 'lucide-react';
 import { fetchMoment } from '../api/moments/momentApi';
 import type { Moment } from '../types/api';
 import Markdown from '../components/ui/Markdown';
@@ -9,7 +10,7 @@ import MomentActions from '../components/Resume/MomentActions';
 import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
 import { useLanguage } from '../components/LanguageContext';
 import { Seo, creativeWorkJsonLd } from '../components/Seo';
-import { Badge, BrandLoading, Button, ErrorState, NetworkError, type BadgeProps } from '../components/ds';
+import { Badge, BrandLoading, NetworkError, type BadgeProps } from '../components/ds';
 import { useRemoteResource } from '../hooks/useRemoteResource';
 import { useSetPageTitle } from '../layout/PageTitleContext';
 import { markdownToPlainExcerpt, withoutRepeatedTitle } from '../lib/markdown';
@@ -64,11 +65,17 @@ const formatMomentDate = (moment: Moment, language: 'en' | 'zh') => {
   }).format(date);
 };
 
+// Xiaohongshu-style detail overlay: a centered modal (article left, a
+// full-height interaction rail right) on a scrim over whatever page is
+// behind it — never a full-page navigation. `/moments/:slug` still resolves
+// directly (shared links, refresh) by rendering this same overlay on top of
+// an empty scrim.
 const MomentDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { language } = useLanguage();
   const lang = language as 'en' | 'zh';
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const loadMoment = useCallback(
     () => slug ? fetchMoment(slug, lang) : Promise.resolve(null),
@@ -76,6 +83,8 @@ const MomentDetail: React.FC = () => {
   );
   const resource = useRemoteResource<Moment>(slug, loadMoment);
   const moment = resource.data;
+
+  const close = useCallback(() => navigate('/moments'), [navigate]);
 
   useSetPageTitle(
     moment
@@ -86,6 +95,24 @@ const MomentDetail: React.FC = () => {
           ? (lang === 'zh' ? '动态暂不可用' : 'Moment unavailable')
           : null,
   );
+
+  // Esc closes, body scroll locks while the overlay is open — same contract
+  // as the ds Modal, reimplemented here because this dialog needs a fully
+  // custom two-pane body rather than the standard title/description/footer
+  // shape.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => panelRef.current?.focus());
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [close]);
 
   const copy = lang === 'zh'
     ? {
@@ -107,133 +134,167 @@ const MomentDetail: React.FC = () => {
         priorities: { high: 'High priority', medium: 'Medium priority', low: 'Low priority' },
       };
 
-  if (resource.status === 'loading') {
-    return <BrandLoading inline message={copy.loading} />;
-  }
+  const detailPath = `/moments/${slug ?? ''}`;
+  const description = moment ? markdownToPlainExcerpt(moment.description, moment.title, 180) : '';
 
-  if (resource.status === 'error') {
-    return <NetworkError onRetry={resource.reload} error={resource.error} />;
-  }
+  const body = resource.status === 'loading' ? (
+    <div className="flex min-h-[24rem] items-center justify-center">
+      <BrandLoading inline message={copy.loading} />
+    </div>
+  ) : resource.status === 'error' ? (
+    <div className="flex min-h-[24rem] items-center justify-center p-8">
+      <NetworkError onRetry={resource.reload} error={resource.error} />
+    </div>
+  ) : !moment ? (
+    <div className="flex min-h-[24rem] flex-col items-center justify-center gap-4 p-8 text-center">
+      <h1 className="text-ds-xl font-semibold text-ds-fg">{copy.notFoundTitle}</h1>
+      <p className="max-w-sm text-ds-sm text-ds-fg-muted">{copy.notFoundBody}</p>
+    </div>
+  ) : (
+    <MomentDetailBody moment={moment} lang={lang} copy={copy} />
+  );
 
-  if (!moment) {
-    return (
-      <>
-        <Seo
-          title={copy.notFoundTitle}
-          description={copy.notFoundBody}
-          path={`/moments/${slug ?? ''}`}
-          noindex
-          lang={lang}
+  return createPortal(
+    <AnimatePresence>
+      <div
+        className="fixed inset-0 flex items-center justify-center p-3 sm:p-6"
+        style={{ zIndex: 1100 }}
+        role="dialog"
+        aria-modal="true"
+      >
+        {moment && (
+          <Seo
+            title={moment.title}
+            description={description}
+            path={detailPath}
+            type="article"
+            lang={lang}
+            jsonLd={creativeWorkJsonLd({ title: moment.title, description, path: detailPath })}
+          />
+        )}
+
+        <motion.div
+          className="absolute inset-0 bg-ds-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          onClick={close}
         />
-        <ErrorState
-          variant="page"
-          title={copy.notFoundTitle}
-          description={copy.notFoundBody}
-          actions={
-            <Link to="/moments">
-              <Button variant="outline" size="sm">
-                {copy.back}
-              </Button>
-            </Link>
-          }
-        />
-      </>
-    );
-  }
 
+        <motion.div
+          ref={panelRef}
+          tabIndex={-1}
+          className="relative flex h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-ds-xl bg-ds-surface-1 shadow-[var(--ds-elevation-4)] sm:h-[calc(100dvh-3rem)]"
+          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, y: 8 }}
+          transition={{ duration: 0.24, ease: [0.34, 1.56, 0.64, 1] }}
+        >
+          <button
+            type="button"
+            onClick={close}
+            aria-label={copy.back}
+            className="absolute left-3 top-3 z-10 inline-flex size-9 items-center justify-center rounded-full bg-ds-surface-1/90 text-ds-fg shadow-ds-2 backdrop-blur transition-colors hover:bg-ds-surface-2 focus-visible:outline-none focus-visible:shadow-ds-focus"
+          >
+            <X className="size-5" aria-hidden />
+          </button>
+
+          {body}
+        </motion.div>
+      </div>
+    </AnimatePresence>,
+    document.body,
+  );
+};
+
+// The two-pane body — article on the left (scrolls on its own), the
+// interaction rail on the right (fixed to the panel's full height, its own
+// comment list scrolls independently). Below lg it collapses to a single
+// scrolling column with the actions inline at the bottom, same as the old
+// full-page layout.
+const MomentDetailBody: React.FC<{
+  moment: Moment;
+  lang: 'en' | 'zh';
+  copy: {
+    outputs: string;
+    outputKinds: { blog: string; project: string };
+    priorities: { high: string; medium: string; low: string };
+  };
+}> = ({ moment, lang, copy }) => {
   const kind = normalizeKind(moment.type);
   const Icon = KIND_ICONS[kind];
-  const body = withoutRepeatedTitle(moment.description, moment.title);
-  const detailPath = `/moments/${moment.slug || moment.id}`;
+  const bodyText = withoutRepeatedTitle(moment.description, moment.title);
   const timestamp =
     moment.created_at && !moment.created_at.startsWith('0001-')
       ? moment.created_at
       : `${moment.date}T00:00:00`;
-  const description = markdownToPlainExcerpt(moment.description, moment.title, 180);
   const formattedDate = formatMomentDate(moment, lang);
 
   return (
-    <motion.main
-      className="mx-auto min-h-screen max-w-3xl px-4 py-10 sm:px-8 sm:py-14"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <Seo
-        title={moment.title}
-        description={description}
-        path={detailPath}
-        type="article"
-        lang={lang}
-        jsonLd={creativeWorkJsonLd({
-          title: moment.title,
-          description,
-          path: detailPath,
-        })}
-      />
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+      <article className="min-w-0 px-5 pb-8 pt-14 sm:px-8 lg:h-full lg:flex-1 lg:overflow-y-auto">
+        <div className="mx-auto max-w-2xl">
+          <header className="border-b border-ds-border pb-0">
+            <h1 className="text-balance text-ds-3xl font-semibold leading-[1.15] tracking-[-0.03em] text-ds-fg sm:text-ds-4xl">
+              {moment.title}
+            </h1>
 
-      <button
-        type="button"
-        onClick={() => navigate('/moments')}
-        className="mb-8 inline-flex items-center gap-2 text-ds-sm font-medium text-ds-fg-muted transition-colors hover:text-ds-fg focus-visible:outline-none focus-visible:shadow-ds-focus"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        {copy.back}
-      </button>
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="inline-flex items-center gap-1.5 text-ds-xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
+                <Icon className="size-3.5" aria-hidden />
+                {kindLabel(kind, lang)}
+              </span>
+              <time dateTime={moment.date} className="font-mono text-ds-xs tabular-nums text-ds-fg-subtle">
+                {formattedDate}
+              </time>
+              {moment.status && (
+                <Badge tone={statusTone(moment.status)} appearance="soft" dot>
+                  {moment.status}
+                </Badge>
+              )}
+              {moment.priority && (
+                <Badge tone={priorityTone(moment.priority)} appearance="outline">
+                  {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
+                </Badge>
+              )}
+              {moment.tags?.map((tag) => (
+                <Badge key={tag} tone="neutral" appearance="soft">
+                  #{tag}
+                </Badge>
+              ))}
+            </div>
+          </header>
 
-      <article>
-        <header className="border-b border-ds-border pb-6">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 text-ds-xs font-medium uppercase tracking-[0.08em] text-ds-fg-subtle">
-              <Icon className="size-3.5" aria-hidden />
-              {kindLabel(kind, lang)}
-            </span>
-            <span className="font-mono text-ds-xs tabular-nums text-ds-fg-subtle">
-              {formattedDate}
-            </span>
+          <Markdown
+            documentTitle={moment.title}
+            className="mt-4 text-ds-base leading-8 text-ds-fg-muted [&_.vditor-reset]:!pl-0"
+          >
+            {bodyText}
+          </Markdown>
+
+          <MomentRelatedOutputs
+            outputs={moment.related_outputs ?? []}
+            labels={{
+              title: copy.outputs,
+              kinds: copy.outputKinds,
+            }}
+            className="mt-8"
+          />
+
+          {/* Below lg, the interaction rail collapses back into the
+              article flow — the sidebar variant only makes sense with
+              room beside the text. */}
+          <div className="lg:hidden">
+            <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} />
           </div>
-
-          <h1 className="text-balance text-ds-4xl font-semibold leading-[1.1] tracking-[-0.03em] text-ds-fg sm:text-ds-5xl">
-            {moment.title}
-          </h1>
-
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {moment.status && (
-              <Badge tone={statusTone(moment.status)} appearance="soft" dot>
-                {moment.status}
-              </Badge>
-            )}
-            {moment.priority && (
-              <Badge tone={priorityTone(moment.priority)} appearance="outline">
-                {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
-              </Badge>
-            )}
-            {moment.tags?.map((tag) => (
-              <Badge key={tag} tone="neutral" appearance="soft">
-                #{tag}
-              </Badge>
-            ))}
-          </div>
-        </header>
-
-        <Markdown
-          documentTitle={moment.title}
-          className="mt-8 text-ds-base leading-8 text-ds-fg-muted [&_.vditor-reset]:!pl-0"
-        >
-          {body}
-        </Markdown>
-
-        <MomentRelatedOutputs
-          outputs={moment.related_outputs ?? []}
-          labels={{
-            title: copy.outputs,
-            kinds: copy.outputKinds,
-          }}
-          className="mt-8"
-        />
-
-        <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} />
+        </div>
       </article>
-    </motion.main>
+
+      <aside className="hidden h-full shrink-0 border-l-2 border-ds-border bg-ds-surface-2 lg:flex lg:w-[27rem] lg:flex-col">
+        <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} variant="sidebar" />
+      </aside>
+    </div>
   );
 };
 

@@ -8,15 +8,26 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Calendar, Clock } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { Seo } from '../Seo';
 import { fetchEpisode, fetchEpisodeSeries } from '../../api/episodes/episodeApi';
 import type { EpisodeData, EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from '../BlogStack/components/BlogContentRenderer';
+import SeriesDocumentFrame, {
+  SERIES_BODY_ID,
+  SERIES_COMMENTS_ID,
+  SERIES_HEADER_ID,
+  SERIES_LIKES_ID,
+  SERIES_SUMMARY_ID,
+} from '../BlogStack/components/SeriesDocumentFrame';
+import { stripLeadingMetadataDuplicates } from '../BlogStack/utils/contentText';
+import { useBlogEngagement } from '../BlogStack/hooks/useBlogEngagement';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
+import { scrollToAnchor } from '../../lib/scrollToAnchor';
 import {
+  ArticleFooter,
   KnowledgeBaseShell,
   type BookNavChapter,
   BrandLoading,
@@ -27,6 +38,14 @@ import {
 
 const SERIES_OVERVIEW_ID = '__series_overview__';
 
+const usableEpisodeSummary = (value?: string): string | undefined => {
+  const text = value?.trim();
+  if (!text) return undefined;
+  if (text.length > 360) return undefined;
+  if (/^#{1,6}\s/.test(text)) return undefined;
+  return text;
+};
+
 const EpisodeDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -34,6 +53,7 @@ const EpisodeDetail: React.FC = () => {
 
   const [seriesData, setSeriesData] = useState<EpisodeSeriesData | null>(null);
   const [activeChapter, setActiveChapter] = useState<string>('');
+  const [activeSection, setActiveSection] = useState<string>(SERIES_HEADER_ID);
 
   const loadEpisode = useCallback(
     () => slug ? fetchEpisode(slug, language as 'en' | 'zh') : Promise.resolve(null),
@@ -61,6 +81,7 @@ const EpisodeDetail: React.FC = () => {
     }
     let cancelled = false;
     setActiveChapter(episode.id);
+    setActiveSection(SERIES_HEADER_ID);
     setSeriesData(null);
     if (episode.series_slug) {
       void fetchEpisodeSeries(episode.series_slug, language as 'en' | 'zh')
@@ -103,6 +124,41 @@ const EpisodeDetail: React.FC = () => {
       ),
     [episode?.content],
   );
+  const isOverview = activeChapter === SERIES_OVERVIEW_ID;
+  const engagement = useBlogEngagement({
+    postId: episode?.id ?? '',
+    initialLikes: episode?.likes ?? 0,
+    initialLiked: Boolean(episode?.is_liked_by_user),
+    language,
+    kind: 'episode',
+    enabled: Boolean(episode),
+  });
+
+  useEffect(() => {
+    if (!episode || isOverview) return;
+    const ids = [
+      SERIES_HEADER_ID,
+      SERIES_SUMMARY_ID,
+      SERIES_BODY_ID,
+      SERIES_LIKES_ID,
+      SERIES_COMMENTS_ID,
+    ];
+    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const hit = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (hit) setActiveSection(hit.target.id);
+      },
+      { root: scrollRoot, rootMargin: '-80px 0px -70% 0px', threshold: 0 },
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    }
+    return () => obs.disconnect();
+  }, [episode, isOverview]);
 
   if (episodeResource.status === 'loading') return <BrandLoading />;
   if (episodeResource.status === 'error') {
@@ -132,9 +188,18 @@ const EpisodeDetail: React.FC = () => {
     );
   }
 
-  const isOverview = activeChapter === SERIES_OVERVIEW_ID;
   const seriesTitle =
     seriesData?.title || episode.series_slug || (language === 'en' ? 'Series' : '系列');
+  const episodeSummary = usableEpisodeSummary(episode.description);
+  const episodeContent = stripLeadingMetadataDuplicates(
+    episode.content || [],
+    episode.title,
+    episodeSummary,
+  );
+  const episodeEyebrow = [
+    language === 'zh' ? '系列文档' : 'Series document',
+    episode.episode_number ? `${language === 'zh' ? '第' : 'Episode'} ${episode.episode_number}` : '',
+  ].filter(Boolean).join(' · ');
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -155,33 +220,50 @@ const EpisodeDetail: React.FC = () => {
         chapters={chapters}
         currentChapterId={activeChapter}
         wordCount={wordCount}
+        likes={!isOverview ? engagement.likes : undefined}
+        commentsCount={!isOverview ? engagement.commentsCount : undefined}
+        contentClassName="max-w-[82rem] lg:px-12"
+        outlineHeadingSelector="header h1, h2, h3"
       >
         {isOverview ? (
           <>
-            <div className="space-y-2">
-              <div className="text-[12px] font-medium uppercase tracking-[0.1em] text-ds-fg-subtle">
+            <header className="pb-8 pt-6">
+              <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[12px] leading-5 text-ds-fg-subtle">
                 {language === 'en' ? 'Series' : '系列'}
                 {seriesData?.episodes.length
                   ? ` · ${seriesData.episodes.length} ${language === 'en' ? 'episodes' : '集'}`
                   : ''}
               </div>
-              <h1 className="text-[40px] font-bold leading-[1.2] tracking-[-0.02em] text-ds-fg">
+              <h1
+                className="max-w-[70rem] text-balance font-display text-ds-fg"
+                style={{
+                  fontSize: 'clamp(3.8rem, 5.8vw, 5.6rem)',
+                  lineHeight: 1.04,
+                  fontWeight: 520,
+                  letterSpacing: '-0.034em',
+                }}
+              >
                 {seriesTitle}
               </h1>
-            </div>
+            </header>
 
             {seriesData?.description && (
-              <p className="mt-8 text-[15px] leading-[1.8] text-ds-fg-muted">
-                {seriesData.description}
-              </p>
+              <section className="mt-8 rounded-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8">
+                <p className="max-w-[58rem] text-pretty text-[19px] font-medium leading-[1.55] text-ds-fg">
+                  {seriesData.description}
+                </p>
+              </section>
             )}
 
             {seriesData && seriesData.episodes.length > 0 && (
-              <div className="mt-10 space-y-1">
-                <div className="mb-3 text-[12px] uppercase tracking-[0.1em] text-ds-fg-subtle">
-                  {language === 'en' ? 'Episodes' : '章节'}
+              <div className="mt-12 max-w-[68rem] space-y-1">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
+                    {language === 'en' ? 'Episodes' : '章节'}
+                  </span>
+                  <span className="h-px flex-1 bg-ds-border" aria-hidden />
                 </div>
-                <ol className="space-y-2">
+                <ol className="space-y-1.5">
                   {seriesData.episodes.map((ep, i) => (
                     <li key={ep.id}>
                       <button
@@ -190,12 +272,12 @@ const EpisodeDetail: React.FC = () => {
                           setActiveChapter(ep.id);
                           navigate(`/episodes/${ep.slug}`);
                         }}
-                        className="group flex w-full items-baseline gap-3 rounded-md px-2 py-2 text-left hover:bg-ds-surface-2"
+                        className="group flex w-full items-baseline gap-4 rounded-ds-md px-3 py-2.5 text-left transition-colors hover:bg-ds-surface-2"
                       >
                         <span className="font-mono text-[12px] text-ds-fg-subtle">
                           {String(ep.episode_number || i + 1).padStart(2, '0')}
                         </span>
-                        <span className="flex-1 text-[15px] text-ds-fg group-hover:text-ds-primary">
+                        <span className="flex-1 text-[17px] font-medium leading-7 text-ds-fg group-hover:text-ds-primary">
                           {ep.title}
                         </span>
                       </button>
@@ -212,13 +294,52 @@ const EpisodeDetail: React.FC = () => {
           //
           // `#kb-active-part` is the contract DOMOutline scans for headings;
           // KnowledgeBaseShell's right-rail Outline finds h2/h3 inside it.
-          <div id="kb-active-part" className="prose-content markdown-body w-full">
+          <SeriesDocumentFrame
+            language={language}
+            eyebrow={episodeEyebrow}
+            title={episode.title}
+            summary={episodeSummary}
+            activeSection={activeSection}
+            likes={engagement.likes}
+            commentsCount={engagement.commentsCount}
+            onSectionClick={scrollToAnchor}
+            meta={[
+              ...(episode.publish_date ? [{ icon: Calendar, label: episode.publish_date }] : []),
+              ...(episode.duration_minutes
+                ? [{ icon: Clock, label: `${episode.duration_minutes} min` }]
+                : []),
+            ]}
+          >
             <BlogContentRenderer
-              content={episode.content || []}
+              content={episodeContent}
               isWideScreen={true}
+              documentTitle={episode.title}
               readOnly
             />
-          </div>
+          </SeriesDocumentFrame>
+        )}
+        {!isOverview && (
+          <ArticleFooter
+            likes={engagement.likes}
+            liked={engagement.liked}
+            likePending={engagement.likePending}
+            contributors={['Silan Hu']}
+            publishedAt={episode.publish_date}
+            viewCount={0}
+            shareTitle={episode.title}
+            comments={engagement.comments}
+            commentsState={engagement.commentsState}
+            commentsError={engagement.commentsError}
+            commentSubmitting={engagement.commentSubmitting}
+            interactionError={engagement.interactionError}
+            onLike={engagement.toggleLike}
+            onRetryComments={engagement.reloadComments}
+            onComment={engagement.submitComment}
+            onCommentLike={engagement.toggleCommentLike}
+            isCommentLikePending={engagement.isCommentLikePending}
+            onCommentDelete={engagement.deleteComment}
+            isCommentDeletePending={engagement.isCommentDeletePending}
+          />
         )}
       </KnowledgeBaseShell>
     </motion.div>

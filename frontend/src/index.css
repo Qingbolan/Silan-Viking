@@ -885,13 +885,20 @@ code[class*="language-"] .token.keyword {
   color: var(--color-primary, #42b883);
 }
 code[class*="language-"] .token.function,
-code[class*="language-"] .token.class-name {
+code[class*="language-"] .token.class-name,
+code[class*="language-"] .token.macro {
   color: #a78bfa; /* violet-400 */
 }
 code[class*="language-"] .token.regex,
 code[class*="language-"] .token.important,
-code[class*="language-"] .token.variable {
+code[class*="language-"] .token.variable,
+code[class*="language-"] .token.lifetime,
+code[class*="language-"] .token.decorator {
   color: #ef4444; /* red-500 */
+}
+code[class*="language-"] .token.type,
+code[class*="language-"] .token.parameter {
+  color: #0ea5e9; /* sky-500 */
 }
 code[class*="language-"] .token.bold { font-weight: 700; }
 code[class*="language-"] .token.italic { font-style: italic; }
@@ -1353,10 +1360,10 @@ code[class*="language-"] .token.italic { font-style: italic; }
    src/components/ui/Markdown.tsx; this block only maps generated HTML onto
    the site's design tokens. */
 .vditor-markdown .vditor-reset {
-  color: var(--color-textSecondary, #525252);
+  color: color-mix(in srgb, var(--color-textPrimary, #171717) 84%, transparent);
   font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.8;
+  font-size: 18px;
+  line-height: 1.74;
 }
 
 .vditor-markdown .vditor-reset h1,
@@ -1367,16 +1374,16 @@ code[class*="language-"] .token.italic { font-style: italic; }
 .vditor-markdown .vditor-reset h6 {
   color: var(--color-textPrimary, #171717);
   font-family: var(--font-display);
-  font-weight: 650;
-  letter-spacing: 0;
-  line-height: 1.35;
+  font-weight: 680;
+  letter-spacing: -0.012em;
+  line-height: 1.26;
   scroll-margin-top: 6rem;
 }
 
-.vditor-markdown .vditor-reset h1 { margin: 2rem 0 1rem; font-size: 2rem; font-weight: 750; }
-.vditor-markdown .vditor-reset h2 { margin: 1.75rem 0 0.75rem; font-size: 1.375rem; }
-.vditor-markdown .vditor-reset h3 { margin: 1.5rem 0 0.625rem; font-size: 1.125rem; }
-.vditor-markdown .vditor-reset h4 { margin: 1.25rem 0 0.5rem; font-size: 1rem; }
+.vditor-markdown .vditor-reset h1 { margin: 3.25rem 0 1.05rem; font-size: 2.25rem; font-weight: 760; line-height: 1.16; }
+.vditor-markdown .vditor-reset h2 { margin: 3.25rem 0 1.05rem; font-size: 2rem; font-weight: 760; line-height: 1.16; }
+.vditor-markdown .vditor-reset h3 { margin: 2.4rem 0 0.85rem; font-size: 1.55rem; font-weight: 680; }
+.vditor-markdown .vditor-reset h4 { margin: 1.9rem 0 0.7rem; font-size: 1.28rem; }
 .vditor-markdown .vditor-reset h5,
 .vditor-markdown .vditor-reset h6 {
   margin: 1.25rem 0 0.5rem;
@@ -1396,7 +1403,7 @@ code[class*="language-"] .token.italic { font-style: italic; }
   margin-bottom: 1rem;
 }
 
-.vditor-markdown .vditor-reset p { color: var(--color-textSecondary, #525252); }
+.vditor-markdown .vditor-reset p { color: color-mix(in srgb, var(--color-textPrimary, #171717) 84%, transparent); }
 .vditor-markdown .vditor-reset strong { color: var(--color-textPrimary, #171717); font-weight: 650; }
 .vditor-markdown .vditor-reset a {
   color: var(--color-accent, #f97316);
@@ -1462,20 +1469,65 @@ code[class*="language-"] .token.italic { font-style: italic; }
   padding: 0.25rem 0 0.25rem 1rem;
 }
 .vditor-markdown .vditor-reset code {
-  background: var(--color-surface, #f5f5f5);
-  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--color-textPrimary, #171717) 7%, var(--color-background, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--color-textPrimary, #171717) 10%, transparent);
+  border-radius: 0.3rem;
   color: var(--color-textPrimary, #171717);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  padding: 0.12rem 0.36rem;
+  font-size: 0.86em;
+  font-weight: 500;
+  padding: 0.1rem 0.34rem;
 }
 .vditor-markdown .vditor-reset pre {
-  background: var(--color-surface, #f5f5f5);
-  border-radius: 0.5rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-background, #ffffff) 12%, transparent),
+      transparent 34%
+    ),
+    color-mix(in srgb, var(--color-textPrimary, #171717) 5%, var(--color-background, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--color-textPrimary, #171717) 16%, transparent);
+  border-radius: 0.7rem;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-background, #ffffff) 76%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--color-textPrimary, #171717) 5%, transparent);
+  color: var(--color-textPrimary, #171717);
+  margin: 1.4rem 0 1.75rem;
   overflow-x: auto;
-  padding: 1rem;
+  padding: 1rem 1.125rem;
+  scrollbar-width: thin;
 }
-.vditor-markdown .vditor-reset pre code { background: transparent; padding: 0; }
+.vditor-markdown .vditor-reset pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.75;
+  min-width: max-content;
+  padding: 0;
+}
+.dark .vditor-markdown .vditor-reset pre {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 38%),
+    #121316;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+  color: rgba(255, 255, 255, 0.88);
+}
+.dark .vditor-markdown .vditor-reset code {
+  background: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+.dark .vditor-markdown .vditor-reset pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+}
 .vditor-markdown .vditor-reset table { border-collapse: collapse; display: table; width: 100%; }
 .vditor-markdown .vditor-reset th,
 .vditor-markdown .vditor-reset td {
@@ -1490,9 +1542,78 @@ code[class*="language-"] .token.italic { font-style: italic; }
 }
 .vditor-markdown .vditor-reset img { border-radius: 0.5rem; margin: 1.25rem 0; }
 .vditor-markdown--inline .vditor-reset,
-.vditor-markdown--inline .vditor-reset p { display: inline; margin: 0; }
+.vditor-markdown--inline .vditor-reset p {
+  color: inherit;
+  display: inline;
+  font-size: inherit;
+  line-height: inherit;
+  margin: 0;
+}
 .vditor-markdown--inline .vditor-reset ul,
 .vditor-markdown--inline .vditor-reset ol { display: inline; margin: 0; padding-left: 1rem; }
+
+.comment-markdown,
+.comment-markdown .vditor-reset {
+  color: inherit;
+  display: inline;
+  font-family: var(--font-body);
+  font-size: inherit;
+  line-height: inherit;
+  padding-left: 0 !important;
+}
+
+.comment-markdown .vditor-reset--anchor {
+  padding-left: 0 !important;
+}
+
+.comment-markdown .vditor-reset p,
+.comment-markdown .vditor-reset ul,
+.comment-markdown .vditor-reset ol,
+.comment-markdown .vditor-reset blockquote,
+.comment-markdown .vditor-reset pre,
+.comment-markdown .vditor-reset table {
+  margin: 0;
+  padding-left: 0 !important;
+}
+
+.comment-markdown .vditor-reset p {
+  color: inherit;
+  display: inline;
+}
+
+.comment-markdown .vditor-reset a {
+  color: var(--ds-color-primary, var(--color-accent, #f97316));
+  font-weight: 520;
+  text-decoration-thickness: 1px;
+}
+
+.comment-markdown .vditor-reset code {
+  border-radius: 0.25rem;
+  font-size: 0.86em;
+  padding: 0.06rem 0.24rem;
+}
+
+.compact-comments-scroll {
+  scrollbar-color: color-mix(in srgb, var(--color-textPrimary, #171717) 36%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+.compact-comments-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.compact-comments-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.compact-comments-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-textPrimary, #171717) 34%, transparent);
+  border-radius: 999px;
+}
+
+.compact-comments-scroll::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-textPrimary, #171717) 46%, transparent);
+}
 
 /* Homepage moments are summaries, not article bodies. Constrain both the
    Vditor host and its generated child so WebKit, Chromium, and Firefox all
@@ -1513,4 +1634,14 @@ code[class*="language-"] .token.italic { font-style: italic; }
 .moment-home-summary .vditor-reset > * {
   display: inline;
   margin: 0;
+}
+
+.project-detail-section-nav {
+  border-top: 6px double #000 !important;
+  border-bottom: 6px double #000 !important;
+}
+
+.dark .project-detail-section-nav {
+  border-top-color: #fff !important;
+  border-bottom-color: #fff !important;
 }

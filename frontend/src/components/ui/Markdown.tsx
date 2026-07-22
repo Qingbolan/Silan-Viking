@@ -8,14 +8,19 @@ import { useNavigate } from 'react-router-dom';
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
 import { iconSrcForHref } from '../../utils/linkIcon';
+import { highlightCodeElement } from '../../utils/syntaxHighlight';
 
 interface MarkdownProps {
   children: string;
   className?: string;
   /** Page-level title already rendered outside this embedded markdown. */
   documentTitle?: string;
+  /** Section-level title already rendered by the caller. */
+  sectionTitle?: string;
   /** Compact inline/table-cell rendering. */
   inline?: boolean;
+  /** Turn plain links into rich favicon pills. Disable for dense UI text. */
+  richLinks?: boolean;
 }
 
 const normalizedHeading = (value: string): string =>
@@ -26,10 +31,10 @@ const normalizedHeading = (value: string): string =>
     .trim()
     .toLocaleLowerCase();
 
-const embeddedBody = (markdown: string, documentTitle?: string): string => {
-  if (!documentTitle) return markdown;
-  const leadingHeading = markdown.match(/^\s*#\s+([^\r\n]+)\r?\n/);
-  if (!leadingHeading || normalizedHeading(leadingHeading[1]) !== normalizedHeading(documentTitle)) {
+const stripLeadingHeading = (markdown: string, renderedTitle?: string): string => {
+  if (!renderedTitle) return markdown;
+  const leadingHeading = markdown.match(/^\s*#{1,6}\s+([^\r\n]+)\r?\n/);
+  if (!leadingHeading || normalizedHeading(leadingHeading[1]) !== normalizedHeading(renderedTitle)) {
     return markdown;
   }
   return markdown.slice(leadingHeading[0].length).replace(/^\s*\r?\n/, '');
@@ -40,8 +45,47 @@ const shiftLocalOutline = (markdown: string): string => {
   return markdown.replace(/^( {0,3})(#{1,5})(?=\s)/gm, '$1#$2');
 };
 
-const prepareMarkdown = (markdown: string, documentTitle?: string): string =>
-  shiftLocalOutline(embeddedBody(markdown ?? '', documentTitle));
+// A line that opens (or continues) a block construct — never merged into the
+// paragraph above it.
+const BLOCK_LINE = /^(\s{4,}|\t|\s*(#{1,6}\s|[-*+]\s|\d+[.)]\s|>|\||`{3,}|~{3,}|<|\$\$|[-*_]\s*[-*_]\s*[-*_][-*_\s]*$|=+\s*$|:::))/;
+
+// Lute (Vditor's renderer) turns soft line breaks into hard <br> breaks by
+// default and exposes no switch for it, while our sources are hard-wrapped
+// at ~80 columns — every source newline became a rendered line break with a
+// ragged right edge. Re-join wrapped paragraph lines; explicit hard breaks
+// (trailing double-space or backslash), fenced code, and block syntax are
+// left untouched.
+const unwrapSoftBreaks = (markdown: string): string => {
+  const out: string[] = [];
+  let fence: string | null = null;
+  for (const line of markdown.split('\n')) {
+    const fenceMark = line.match(/^\s*(`{3,}|~{3,})/)?.[1]?.[0] ?? null;
+    if (fenceMark && (!fence || fence === fenceMark)) {
+      fence = fence ? null : fenceMark;
+      out.push(line);
+      continue;
+    }
+    const prev = out[out.length - 1];
+    if (
+      !fence &&
+      prev !== undefined && prev.trim() !== '' && line.trim() !== '' &&
+      !/(\s{2}|\\)$/.test(prev) &&
+      !BLOCK_LINE.test(prev) && !BLOCK_LINE.test(line)
+    ) {
+      out[out.length - 1] = `${prev.replace(/\s+$/, '')} ${line.trim()}`;
+    } else {
+      out.push(line);
+    }
+  }
+  return out.join('\n');
+};
+
+const prepareMarkdown = (markdown: string, documentTitle?: string, sectionTitle?: string): string =>
+  unwrapSoftBreaks(
+    shiftLocalOutline(
+      stripLeadingHeading(stripLeadingHeading(markdown ?? '', documentTitle), sectionTitle),
+    ),
+  );
 
 const shouldEnhanceAnchor = (anchor: HTMLAnchorElement): boolean => {
   const href = anchor.getAttribute('href') || '';
@@ -70,10 +114,20 @@ const enhanceAnchor = (anchor: HTMLAnchorElement) => {
   anchor.prepend(icon);
 };
 
-const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle, inline = false }) => {
+const Markdown: React.FC<MarkdownProps> = ({
+  children,
+  className,
+  documentTitle,
+  sectionTitle,
+  inline = false,
+  richLinks = true,
+}) => {
   const navigate = useNavigate();
   const previewRef = React.useRef<HTMLDivElement | null>(null);
-  const content = React.useMemo(() => prepareMarkdown(children, documentTitle), [children, documentTitle]);
+  const content = React.useMemo(
+    () => prepareMarkdown(children, documentTitle, sectionTitle),
+    [children, documentTitle, sectionTitle],
+  );
 
   React.useEffect(() => {
     const element = previewRef.current;
@@ -81,9 +135,18 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle,
     element.innerHTML = '';
 
     let cancelled = false;
+    const highlightTimers: number[] = [];
+    const applySyntaxHighlight = () => {
+      if (cancelled) return;
+      element.querySelectorAll<HTMLElement>('pre code').forEach(highlightCodeElement);
+    };
+    const observer = new MutationObserver(() => {
+      window.requestAnimationFrame(applySyntaxHighlight);
+    });
+    observer.observe(element, { childList: true, subtree: true, characterData: true });
     Vditor.preview(element, content, {
       mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-      anchor: 1,
+      anchor: inline ? 0 : 1,
       lang: 'en_US',
       markdown: {
         autoSpace: true,
@@ -104,13 +167,16 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle,
       },
       after() {
         if (cancelled) return;
+        applySyntaxHighlight();
+        window.requestAnimationFrame(applySyntaxHighlight);
+        highlightTimers.push(window.setTimeout(applySyntaxHighlight, 80));
         element.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((anchor) => {
           const href = anchor.getAttribute('href') || '';
           if (/^https?:\/\//i.test(href)) {
             anchor.target = '_blank';
             anchor.rel = 'noopener noreferrer';
           }
-          if (shouldEnhanceAnchor(anchor)) {
+          if (richLinks && shouldEnhanceAnchor(anchor)) {
             enhanceAnchor(anchor);
           }
         });
@@ -124,8 +190,10 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle,
 
     return () => {
       cancelled = true;
+      observer.disconnect();
+      highlightTimers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [content]);
+  }, [content, inline, richLinks]);
 
   const onClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     const target = event.target as Element | null;
@@ -145,7 +213,10 @@ const Markdown: React.FC<MarkdownProps> = ({ children, className, documentTitle,
     <div
       data-ds
       className={[
-        'vditor-markdown font-article text-[15px] leading-[1.8] text-theme-secondary',
+        'vditor-markdown font-article',
+        inline
+          ? 'text-[15px] leading-[1.8] text-theme-secondary'
+          : 'text-[18px] leading-[1.74] text-theme-text-primary',
         inline ? 'vditor-markdown--inline' : '',
         className || '',
       ].filter(Boolean).join(' ')}

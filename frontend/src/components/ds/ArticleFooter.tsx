@@ -1,6 +1,6 @@
 import React from 'react';
 import LikePanel from './article-footer/LikePanel';
-import ArticleMeta from './article-footer/ArticleMeta';
+import ArticleMeta, { type ShareTarget } from './article-footer/ArticleMeta';
 import CompactComments from './article-footer/CompactComments';
 import { LoginPromptModal } from './LoginPromptModal';
 import { useRequireIdentity } from '../../lib/useRequireIdentity';
@@ -32,7 +32,7 @@ export interface ArticleFooterProps {
   isCommentLikePending: (commentId: string) => boolean;
   onCommentDelete?: (commentId: string) => void | Promise<void>;
   isCommentDeletePending?: (commentId: string) => boolean;
-  onShare?: (target: 'weibo' | 'wechat') => void | Promise<void>;
+  onShare?: (target: ShareTarget) => void | Promise<void>;
 }
 
 const ArticleFooter: React.FC<ArticleFooterProps> = ({

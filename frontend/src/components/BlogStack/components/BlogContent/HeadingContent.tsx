@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link2 } from 'lucide-react';
 import { BlogContent } from '../../types/blog';
-import Markdown from '../../../ui/Markdown';
 import { useLanguage } from '../../../LanguageContext';
 import { useToast } from '../../../ds';
 
@@ -40,10 +39,10 @@ export const HeadingContent: React.FC<HeadingContentProps> = ({
   // Font scale — wide-screen bumps each level up a notch. Font weight steps
   // down as level increases (h1 bold, h2 semibold, h3+ medium).
   const sizeClass = isWideScreen
-    ? ['', 'text-[2rem]', 'text-[1.75rem]', 'text-[1.5rem]', 'text-[1.25rem]', 'text-[1.125rem]', 'text-[1rem]'][level]
-    : ['', 'text-[1.75rem]', 'text-[1.5rem]', 'text-[1.25rem]', 'text-[1.125rem]', 'text-[1rem]', 'text-[0.9rem]'][level];
-  const weightClass = level === 1 ? 'font-bold' : level === 2 ? 'font-semibold' : 'font-medium';
-  const leadingClass = level === 1 ? 'leading-[1.2]' : 'leading-[1.3]';
+    ? ['', 'text-[2.25rem]', 'text-[2rem]', 'text-[1.55rem]', 'text-[1.28rem]', 'text-[1.1rem]', 'text-[0.98rem]'][level]
+    : ['', 'text-[1.9rem]', 'text-[1.72rem]', 'text-[1.35rem]', 'text-[1.12rem]', 'text-[0.98rem]', 'text-[0.9rem]'][level];
+  const weightClass = level <= 2 ? 'font-bold' : level === 3 ? 'font-semibold' : 'font-medium';
+  const leadingClass = level <= 2 ? 'leading-[1.16]' : 'leading-[1.26]';
 
   // Asymmetric spacing — a section break needs more air above it than
   // below it, so the heading reads as "new section starts here" rather
@@ -51,8 +50,17 @@ export const HeadingContent: React.FC<HeadingContentProps> = ({
   // title) skips the top gap since it has nothing above it to separate
   // from; deeper levels (h3+) get a smaller break since they're
   // sub-divisions of the section, not a fresh one.
-  const marginTop = level === 1 ? '0' : level === 2 ? '3.5rem' : '2.5rem';
-  const marginBottom = level === 1 ? '1.5rem' : '1rem';
+  const marginTop = level === 1 ? '0' : level === 2 ? '3.25rem' : '2.35rem';
+  const marginBottom = level === 1 ? '1.35rem' : level === 2 ? '1.05rem' : '0.9rem';
+  const headingStyle: React.CSSProperties = {
+    color: 'var(--color-textPrimary, #171717)',
+    fontSize: isWideScreen
+      ? ['', '2.25rem', '2rem', '1.55rem', '1.28rem', '1.1rem', '0.98rem'][level]
+      : ['', '1.9rem', '1.72rem', '1.35rem', '1.12rem', '0.98rem', '0.9rem'][level],
+    fontWeight: level <= 2 ? 760 : level === 3 ? 680 : 560,
+    lineHeight: level <= 2 ? 1.16 : 1.26,
+    letterSpacing: level <= 3 ? '-0.012em' : 0,
+  };
 
   return (
     <div
@@ -64,8 +72,11 @@ export const HeadingContent: React.FC<HeadingContentProps> = ({
         marginBottom
       }}
     >
-      <Tag className={`font-display pr-9 text-theme-text-primary tracking-[-0.01em] ${sizeClass} ${weightClass} ${leadingClass}`}>
-        <Markdown inline>{item.content}</Markdown>
+      <Tag
+        className={`font-display pr-9 text-theme-text-primary tracking-[-0.01em] ${sizeClass} ${weightClass} ${leadingClass}`}
+        style={headingStyle}
+      >
+        {item.content}
       </Tag>
       <a
         href={`#${anchorId}`}

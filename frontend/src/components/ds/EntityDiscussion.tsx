@@ -13,6 +13,9 @@ export interface RemoteDiscussionComment {
   author_name: string;
   author_avatar_url?: string;
   country_code?: string;
+  visitor_number?: string;
+  ip_region?: string;
+  ip_location?: string;
   auth_provider?: string;
   content: string;
   created_at: string;
@@ -49,6 +52,10 @@ export interface EntityDiscussionProps {
   ) => Promise<void>;
   /** Cap top-level comments before a "view all" expand — omit to show all. */
   visibleCount?: number;
+  /** 'top' (default) or 'bottom' — see CompactComments. */
+  composerPosition?: 'top' | 'bottom';
+  /** Whether the root composer should be shown; comment rows remain visible. */
+  composerVisible?: boolean;
 }
 
 const mapComment = (comment: RemoteDiscussionComment): ArticleComment => ({
@@ -56,6 +63,8 @@ const mapComment = (comment: RemoteDiscussionComment): ArticleComment => ({
   authorName: comment.author_name,
   avatarUrl: comment.author_avatar_url,
   countryCode: comment.country_code,
+  visitorNumber: comment.visitor_number,
+  ipRegion: comment.ip_region || comment.ip_location,
   authProvider: comment.auth_provider,
   content: comment.content,
   createdAt: comment.created_at,
@@ -98,6 +107,8 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
   toggleCommentLike,
   deleteComment,
   visibleCount,
+  composerPosition,
+  composerVisible,
 }) => {
   const { language } = useLanguage();
   const [comments, setComments] = useState<ArticleComment[]>([]);
@@ -214,25 +225,29 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
   );
 
   return (
-    <div>
+    <div className={composerPosition === 'bottom' ? 'flex h-full min-h-0 flex-col' : undefined}>
       {interactionError && (
-        <p className="mb-3 text-ds-xs text-red-600" role="status">
+        <p className="mb-3 shrink-0 text-ds-xs text-red-600" role="status">
           {interactionError}
         </p>
       )}
-      <CompactComments
-        comments={comments}
-        state={state}
-        error={error}
-        submitting={submitting}
-        onRetry={reload}
-        onSubmit={submit}
-        onCommentLike={toggleLike}
-        isCommentLikePending={isLikePending}
-        onCommentDelete={deleteOne}
-        isCommentDeletePending={isDeletePending}
-        visibleCount={visibleCount}
-      />
+      <div className={composerPosition === 'bottom' ? 'min-h-0 flex-1' : undefined}>
+        <CompactComments
+          comments={comments}
+          state={state}
+          error={error}
+          submitting={submitting}
+          onRetry={reload}
+          onSubmit={submit}
+          onCommentLike={toggleLike}
+          isCommentLikePending={isLikePending}
+          onCommentDelete={deleteOne}
+          isCommentDeletePending={isDeletePending}
+          visibleCount={visibleCount}
+          composerPosition={composerPosition}
+          composerVisible={composerVisible}
+        />
+      </div>
     </div>
   );
 };

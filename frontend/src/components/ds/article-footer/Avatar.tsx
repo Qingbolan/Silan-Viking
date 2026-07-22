@@ -5,7 +5,8 @@ interface AvatarProps {
   name: string;
   src?: string;
   countryCode?: string;
-  size?: 'sm' | 'md' | 'lg';
+  visitorNumber?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
 }
 
@@ -29,25 +30,32 @@ const firstChar = (name: string): string => {
 };
 
 const SIZE = {
+  xs: 'h-6 w-6 text-[10px]',
   sm: 'h-8 w-8 text-xs',
   md: 'h-10 w-10 text-sm',
   lg: 'h-9 w-9 text-sm',
 } as const;
 
-const Avatar: React.FC<AvatarProps> = ({ name, src, countryCode, size = 'md', className }) => {
+const Avatar: React.FC<AvatarProps> = ({ name, src, countryCode, visitorNumber, size = 'md', className }) => {
   const [flagFailed, setFlagFailed] = useState(false);
 
   if (!src && countryCode && !flagFailed) {
     return (
-      <img
-        src={`https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`}
-        alt=""
-        title={name}
-        className={cn('shrink-0 rounded-[7px] border border-ds-border object-cover', SIZE[size], className)}
-        loading="lazy"
-        decoding="async"
-        onError={() => setFlagFailed(true)}
-      />
+      <span className={cn('relative inline-flex shrink-0', SIZE[size], className)} title={name} aria-label={name}>
+        <img
+          src={`https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`}
+          alt=""
+          className="h-full w-full rounded-[7px] border border-ds-border bg-white object-contain p-[1px]"
+          loading="lazy"
+          decoding="async"
+          onError={() => setFlagFailed(true)}
+        />
+        {visitorNumber && (
+          <span className="absolute bottom-0 right-0 flex min-w-[16px] items-center justify-center rounded-[5px] border border-ds-surface-1 bg-ds-fg px-0.5 font-mono text-[8px] font-semibold leading-[12px] tabular-nums text-ds-surface-1 shadow-sm">
+            {visitorNumber}
+          </span>
+        )}
+      </span>
     );
   }
 

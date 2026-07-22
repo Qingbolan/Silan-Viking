@@ -52,49 +52,49 @@ const SUBROUTES = (zh: boolean): Record<string, { parent: string; label: string 
  * the avatar, control, and nav capsules from drifting apart.
  */
 const useChromeTokens = () => {
-  const { isDarkMode } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   return useMemo(
     () => ({
       capsuleBg: isDarkMode ? 'oklch(0.21 0.012 264)' : 'oklch(1 0 0)',
       hoverBg: isDarkMode ? 'oklch(0.27 0.014 264)' : 'oklch(0.95 0 0)',
-      activeBg: isDarkMode ? 'oklch(0.31 0.018 264)' : 'oklch(0.93 0.006 264)',
+      accent: colors.dsPrimary,
+      accentSoft: colors.dsPrimarySoft,
     }),
-    [isDarkMode],
+    [colors.dsPrimary, colors.dsPrimarySoft, isDarkMode],
   );
 };
 
 /**
- * Splits the route list around the current page.
+ * Desktop route shortcuts.
  *
- * The primary navigation renders as three capsule groups keyed off the
- * page you are on: the routes ordered *before* it, the current page
- * itself, and the routes *after* it. Walking the address bar forward is
- * the same as walking left-to-right across these groups.
+ * Keep every page shortcut in one stable right-side capsule. The earlier
+ * split-left/split-right model made icons move after navigation, so clicks
+ * now only update the active tint while the desktop layout stays fixed.
  */
-const useNavGroups = () => {
+const useDesktopRouteShortcuts = () => {
   const { pathname } = useLocation();
   const { language } = useLanguage();
   const zh = language === 'zh';
   const routes = useMemo(() => ROUTES(zh), [zh]);
 
   return useMemo(() => {
-    const effectivePath = primaryNavigationPath(pathname);
-    let idx = routes.findIndex((r) => isNavigationPathActive(effectivePath, r.path));
-    if (idx < 0) idx = 0;
     return {
-      before: routes.slice(0, idx),
-      current: routes[idx],
-      after: routes.slice(idx + 1),
+      routes,
+      activePath: primaryNavigationPath(pathname),
       zh,
     };
   }, [routes, pathname, zh]);
 };
 
-/** One icon-only capsule group (the before / after segments). */
-const NavGroup: React.FC<{ routes: Route[]; ariaLabel: string }> = ({ routes, ariaLabel }) => {
+/** One icon-only capsule group. */
+const NavGroup: React.FC<{ routes: Route[]; activePath: string; ariaLabel: string }> = ({
+  routes,
+  activePath,
+  ariaLabel,
+}) => {
   const navigate = useNavigate();
   const { colors } = useTheme();
-  const { capsuleBg, hoverBg } = useChromeTokens();
+  const { capsuleBg, hoverBg, accent, accentSoft } = useChromeTokens();
 
   if (routes.length === 0) return null;
 
@@ -104,41 +104,47 @@ const NavGroup: React.FC<{ routes: Route[]; ariaLabel: string }> = ({ routes, ar
       className="flex flex-shrink-0 items-center gap-1 rounded-full p-1"
       style={{ backgroundColor: capsuleBg, boxShadow: colors.shadowSm }}
     >
-      {routes.map((r) => (
-        <button
-          key={r.path}
-          type="button"
-          aria-label={r.label}
-          title={r.label}
-          onClick={() => navigate(r.path)}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors"
-          style={{ color: colors.textSecondary }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = hoverBg;
-            e.currentTarget.style.color = colors.textPrimary;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = colors.textSecondary;
-          }}
-        >
-          {r.icon}
-        </button>
-      ))}
+      {routes.map((r) => {
+        const active = isNavigationPathActive(activePath, r.path);
+        return (
+          <button
+            key={r.path}
+            type="button"
+            aria-label={r.label}
+            aria-current={active ? 'page' : undefined}
+            title={r.label}
+            onClick={() => navigate(r.path)}
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors"
+            style={{
+              color: active ? accent : colors.textSecondary,
+              backgroundColor: active ? accentSoft : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = active ? accentSoft : hoverBg;
+              e.currentTarget.style.color = active ? accent : colors.textPrimary;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = active ? accentSoft : 'transparent';
+              e.currentTarget.style.color = active ? accent : colors.textSecondary;
+            }}
+          >
+            {r.icon}
+          </button>
+        );
+      })}
     </nav>
   );
 };
 
-/** Routes ordered before the current page — far-left chrome capsule. */
+/** Disabled: desktop shortcuts no longer split left/right after clicks. */
 export const NavBefore: React.FC = () => {
-  const { before, zh } = useNavGroups();
-  return <NavGroup routes={before} ariaLabel={zh ? '前面的页面' : 'Earlier pages'} />;
+  return null;
 };
 
-/** Routes ordered after the current page — far-right chrome capsule. */
+/** Fixed right-side desktop shortcuts. */
 export const NavAfter: React.FC = () => {
-  const { after, zh } = useNavGroups();
-  return <NavGroup routes={after} ariaLabel={zh ? '后面的页面' : 'Later pages'} />;
+  const { routes, activePath, zh } = useDesktopRouteShortcuts();
+  return <NavGroup routes={routes} activePath={activePath} ariaLabel={zh ? '主导航' : 'Primary navigation'} />;
 };
 
 /**
@@ -184,7 +190,7 @@ export const NavAvatar: React.FC = () => {
           <span
             aria-hidden
             className="text-[13px] font-semibold leading-none"
-            style={{ color: colors.accent }}
+            style={{ color: colors.dsPrimary }}
           >
             S
           </span>
@@ -255,7 +261,7 @@ const MenuCrumb: React.FC<{
   onSelect: (value: string) => void;
 }> = ({ label, items, activeValue, ariaLabel, onSelect }) => {
   const { colors, isDarkMode } = useTheme();
-  const { hoverBg } = useChromeTokens();
+  const { hoverBg, accent, accentSoft } = useChromeTokens();
   const reduceMotion = useReducedMotion();
   const { pathname } = useLocation();
 
@@ -289,7 +295,7 @@ const MenuCrumb: React.FC<{
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="flex items-center rounded-full px-1.5 py-0.5 font-medium transition-colors"
-        style={{ color: colors.accent }}
+        style={{ color: accent }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
@@ -325,8 +331,8 @@ const MenuCrumb: React.FC<{
                     className="flex w-full items-center gap-2 rounded-lg py-1.5 pr-3 text-left transition-colors"
                     style={{
                       paddingLeft: it.level ? `${0.75 + it.level * 1}rem` : '0.75rem',
-                      color: active ? colors.accent : colors.textSecondary,
-                      backgroundColor: active ? hoverBg : 'transparent',
+                      color: active ? accent : colors.textSecondary,
+                      backgroundColor: active ? accentSoft : 'transparent',
                       fontWeight: active ? 600 : 400,
                     }}
                     onMouseEnter={(e) => {
@@ -439,7 +445,7 @@ const TopNavigation: React.FC = () => {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const { capsuleBg: fieldBg, hoverBg } = useChromeTokens();
+  const { capsuleBg: fieldBg, hoverBg, accent } = useChromeTokens();
 
   // Trailing tool icon.
   const Tool: React.FC<{
@@ -475,7 +481,7 @@ const TopNavigation: React.FC = () => {
       <div className="relative min-w-0 flex-1">
         {/* ── Address field ── */}
         <div
-          className="flex items-center gap-1 rounded-full py-1 pl-1.5 pr-1.5"
+          className="flex items-center gap-1 rounded-full py-0.5 pl-1 pr-1"
           style={{ backgroundColor: fieldBg, boxShadow: colors.shadowSm }}
         >
           {/* Breadcrumb trail — section, then the content title on detail pages */}
@@ -498,7 +504,7 @@ const TopNavigation: React.FC = () => {
                       onClick={() => navigate(c.to!)}
                       className="flex flex-shrink-0 items-center gap-1.5 rounded-full px-1 transition-colors [&_svg]:h-[14px] [&_svg]:w-[14px]"
                       style={{ color: colors.textTertiary }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = colors.accent)}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = accent)}
                       onMouseLeave={(e) => (e.currentTarget.style.color = colors.textTertiary)}
                     >
                       {c.icon && <span aria-hidden className="flex">{c.icon}</span>}

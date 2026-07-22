@@ -265,12 +265,11 @@ const PageError: React.FC<ErrorStateProps> = ({
       {...dsRoot}
       role="alert"
       className={cn(
-        // Fill the content area edge-to-edge. The page error renders inside
-        // MainLayout's padded content wrapper; the negative margins cancel
-        // that padding so the error surface (and its NUS noise field)
-        // reaches the window edges, and `min-h` covers the full height.
-        'relative flex min-h-[calc(100dvh-3.5rem)] items-center justify-center overflow-hidden',
-        '-mx-4 -mb-16 -mt-2 px-6 py-16 sm:-mx-6 lg:-mx-8',
+        // Fill a full viewport-height route surface edge-to-edge. Footer is
+        // rendered after route content in MainLayout, so this block must not
+        // use a negative bottom margin or the footer enters the first screen.
+        'relative flex min-h-dvh items-center justify-center overflow-hidden',
+        '-mx-4 -mt-2 px-6 py-16 sm:-mx-6 lg:-mx-8',
         className,
       )}
     >

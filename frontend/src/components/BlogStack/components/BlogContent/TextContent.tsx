@@ -10,6 +10,7 @@ import Markdown from '../../../ui/Markdown';
 interface TextContentProps {
   item: BlogContent;
   index: number;
+  isWideScreen: boolean;
   interactiveAnnotations: boolean;
   userAnnotations: Record<string, UserAnnotation>;
   annotations: Record<string, boolean>;
@@ -30,6 +31,7 @@ interface TextContentProps {
 export const TextContent: React.FC<TextContentProps> = ({
   item,
   index,
+  isWideScreen,
   interactiveAnnotations,
   userAnnotations,
   annotations,
@@ -266,11 +268,11 @@ export const TextContent: React.FC<TextContentProps> = ({
           <span className="sm:hidden">{firstChar}</span>
           <span
             key="drop-cap"
-            className="font-display hidden sm:block float-left text-5xl lg:text-6xl xl:text-7xl leading-none
-                       text-theme-accent font-bold mr-2 mt-1"
+            className="font-display hidden sm:block float-left text-4xl lg:text-5xl leading-none
+                       text-theme-accent font-semibold mr-2.5 mt-1"
             style={{
-              lineHeight: '0.8',
-              paddingTop: '4px'
+              lineHeight: '0.86',
+              paddingTop: '3px'
             }}
           >
             {firstChar}
@@ -381,7 +383,7 @@ export const TextContent: React.FC<TextContentProps> = ({
   const isHeader = item.content.match(/^#+\s/);
 
   return (
-    <article className="mb-12 break-inside-avoid group relative" onClick={handleOutsideClick}>
+    <article className="mb-8 break-inside-avoid group relative" onClick={handleOutsideClick}>
       {/* Main Text Content */}
       <div 
         id={item.id}
@@ -402,12 +404,14 @@ export const TextContent: React.FC<TextContentProps> = ({
             } else {
               // Render regular text with <p> wrapper
               return (
-                <p className={`font-article text-theme-text-primary leading-[1.8] font-normal
+                <p className={`font-article text-theme-text-primary/85 leading-[1.74] font-normal
                                selection:bg-theme-accent/20
-                               text-[15px] sm:text-base lg:text-[17px] ${
+                               ${
                                  isFirstParagraph ? 'first-letter:text-theme-accent first-letter:font-bold' : ''
                                }`}
                    style={{
+                     fontSize: isWideScreen ? '18px' : '16px',
+                     color: 'color-mix(in oklch, var(--color-textPrimary) 76%, var(--color-textSecondary))',
                      textRendering: 'optimizeLegibility',
                      WebkitFontSmoothing: 'antialiased',
                      MozOsxFontSmoothing: 'grayscale'

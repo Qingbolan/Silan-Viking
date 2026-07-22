@@ -16,7 +16,7 @@ interface BlogListRequest extends PaginationRequest {
   search?: string;
 }
 
-interface UpdateBlogLikesResponse {
+export interface UpdateBlogLikesResponse {
   likes: number;
   is_liked_by_user: boolean;
 }
@@ -79,8 +79,8 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
 /**
  * Update blog views
  */
-export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'): Promise<void> => {
-  if (isPrerenderRuntime()) return;
+export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'): Promise<boolean> => {
+  if (isPrerenderRuntime()) return false;
 
   try {
     const response = await fetch(apiUrl(`/api/v1/blog/posts/${id}/views?lang=${formatLanguage(language)}`), {
@@ -98,9 +98,12 @@ export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'):
     
     if (!response.ok) {
       console.warn(`Failed to update blog views: ${response.status} ${response.statusText}`);
+      return false;
     }
+    return true;
   } catch (error) {
     console.warn('Failed to update blog views (non-critical):', error);
+    return false;
   }
 };
 

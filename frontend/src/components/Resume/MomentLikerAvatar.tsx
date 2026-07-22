@@ -6,6 +6,7 @@ import type { MomentLiker } from '../../api/moments/momentApi';
 interface MomentLikerAvatarProps {
   liker: MomentLiker;
   language: 'en' | 'zh';
+  showVisitorNumber?: boolean;
 }
 
 const countryName = (code: string, language: 'en' | 'zh'): string => {
@@ -18,7 +19,11 @@ const countryName = (code: string, language: 'en' | 'zh'): string => {
   }
 };
 
-const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({ liker, language }) => {
+const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({
+  liker,
+  language,
+  showVisitorNumber = true,
+}) => {
   const [imageFailed, setImageFailed] = useState(false);
   const countryCode = liker.country_code?.toUpperCase() ?? '';
   const isVisitor = liker.kind === 'visitor';
@@ -44,7 +49,7 @@ const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({ liker, language }
         <img
           src={`https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`}
           alt=""
-          className="size-8 rounded-[7px] border border-ds-border object-cover shadow-sm"
+          className="size-8 rounded-[7px] border border-ds-border bg-white object-contain p-[1px] shadow-sm"
           loading="lazy"
           decoding="async"
           onError={() => setImageFailed(true)}
@@ -67,8 +72,8 @@ const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({ liker, language }
         </span>
       )}
 
-      {isVisitor && liker.visitor_number && (
-        <span className="absolute bottom-0 right-0 flex min-w-[16px] translate-x-[2px] translate-y-[2px] items-center justify-center rounded-[5px] border border-ds-surface-1 bg-ds-fg px-0.5 font-mono text-[8px] font-semibold leading-[12px] tabular-nums text-ds-surface-1 shadow-sm">
+      {showVisitorNumber && isVisitor && liker.visitor_number && (
+        <span className="absolute bottom-0 right-0 flex min-w-[16px] items-center justify-center rounded-[5px] border border-ds-surface-1 bg-ds-fg px-0.5 font-mono text-[8px] font-semibold leading-[12px] tabular-nums text-ds-surface-1 shadow-sm">
           {liker.visitor_number}
         </span>
       )}
