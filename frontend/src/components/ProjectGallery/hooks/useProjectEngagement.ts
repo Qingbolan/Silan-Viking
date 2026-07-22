@@ -73,6 +73,7 @@ const initialMetrics: ProjectMetricsResponse = {
   likes_count: 0,
   views_count: 0,
   is_liked_by_user: false,
+  likers: [],
 };
 
 export const useProjectEngagement = ({
@@ -161,6 +162,7 @@ export const useProjectEngagement = ({
         ...current,
         likes_count: response.likes_count,
         is_liked_by_user: response.is_liked_by_user,
+        likers: response.likers ?? [],
       }));
     } catch {
       setMetrics(previous);

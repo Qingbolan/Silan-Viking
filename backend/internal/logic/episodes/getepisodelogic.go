@@ -5,6 +5,7 @@ import (
 
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/episode"
+	bloglogic "silan-backend/internal/logic/blog"
 	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -61,6 +62,12 @@ func (l *GetEpisodeLogic) GetEpisode(req *types.EpisodeRequest) (*types.EpisodeD
 		return nil, err
 	}
 	data.Likes = int64(counts.Likes)
+	data.Views = int64(counts.Views)
+	likers, err := engagement.ContentLikers(l.ctx, l.svcCtx.DB, contentinteraction.EntityTypeEpisode, ep.ID, 24)
+	if err != nil {
+		return nil, err
+	}
+	data.Likers = bloglogic.UpdateLikers(likers)
 	if req.AuthenticatedUserID != "" || req.Fingerprint != "" {
 		liked, err := engagement.IsContentLiked(
 			l.ctx,

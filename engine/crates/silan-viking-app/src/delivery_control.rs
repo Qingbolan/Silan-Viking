@@ -974,7 +974,9 @@ fn parse_workspace_changes_z(raw: &str) -> Vec<WorkspaceFileChange> {
             });
             continue;
         }
-        let status = label(index).or_else(|| label(worktree)).unwrap_or("Modified");
+        let status = label(index)
+            .or_else(|| label(worktree))
+            .unwrap_or("Modified");
         changes.push(WorkspaceFileChange {
             path: path.to_owned(),
             status: status.to_owned(),

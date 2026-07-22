@@ -7,6 +7,8 @@ interface MomentLikerAvatarProps {
   liker: MomentLiker;
   language: 'en' | 'zh';
   showVisitorNumber?: boolean;
+  size?: 'sm' | 'md';
+  className?: string;
 }
 
 const countryName = (code: string, language: 'en' | 'zh'): string => {
@@ -23,10 +25,14 @@ const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({
   liker,
   language,
   showVisitorNumber = true,
+  size = 'md',
+  className,
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
   const countryCode = liker.country_code?.toUpperCase() ?? '';
   const isVisitor = liker.kind === 'visitor';
+  const boxSize = size === 'sm' ? 'size-7' : 'size-8';
+  const iconSize = size === 'sm' ? 'size-3.5' : 'size-4';
   const label = liker.label || (
     isVisitor
       ? countryCode
@@ -41,7 +47,7 @@ const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({
 
   return (
     <span
-      className="group relative inline-flex size-8 shrink-0"
+      className={cn('group relative inline-flex shrink-0', boxSize, className)}
       title={label}
       aria-label={label}
     >
@@ -49,7 +55,7 @@ const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({
         <img
           src={`https://flagcdn.com/w80/${countryCode.toLowerCase()}.png`}
           alt=""
-          className="size-8 rounded-[7px] border border-ds-border bg-white object-contain p-[1px] shadow-sm"
+          className={cn(boxSize, 'rounded-[7px] border border-ds-border bg-white object-contain p-[1px] shadow-sm')}
           loading="lazy"
           decoding="async"
           onError={() => setImageFailed(true)}
@@ -58,17 +64,18 @@ const MomentLikerAvatar: React.FC<MomentLikerAvatarProps> = ({
         <img
           src={liker.avatar_url}
           alt=""
-          className="size-8 rounded-[7px] border border-ds-border object-cover shadow-sm"
+          className={cn(boxSize, 'rounded-[7px] border border-ds-border object-cover shadow-sm')}
           loading="lazy"
           decoding="async"
           onError={() => setImageFailed(true)}
         />
       ) : (
         <span className={cn(
-          'flex size-8 items-center justify-center rounded-[7px] border border-ds-border bg-ds-surface-1 text-ds-fg-subtle shadow-sm',
+          'flex items-center justify-center rounded-[7px] border border-ds-border bg-ds-surface-1 text-ds-fg-subtle shadow-sm',
+          boxSize,
           isVisitor ? 'bg-ds-surface-2' : 'bg-ds-primary/10 text-ds-primary',
         )}>
-          {isVisitor ? <Globe2 className="size-4" /> : <UserRound className="size-4" />}
+          {isVisitor ? <Globe2 className={iconSize} /> : <UserRound className={iconSize} />}
         </span>
       )}
 

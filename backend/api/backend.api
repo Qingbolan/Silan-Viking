@@ -144,12 +144,23 @@ type (
 	// Project types
 	// Project types (updated to match frontend exactly)
 	Project {
-		ID          string   `json:"id"`
-		Name        string   `json:"name"`
-		Description string   `json:"description"`
-		Tags        []string `json:"tags"`
-		Year        int      `json:"year"`
-		IsFeatured  bool     `json:"is_featured"`
+		ID               string   `json:"id"`
+		Slug             string   `json:"slug"`
+		Name             string   `json:"name"`
+		Description      string   `json:"description"`
+		Tags             []string `json:"tags"`
+		Year             int      `json:"year"`
+		IsFeatured       bool     `json:"is_featured"`
+		Status           string   `json:"status"`
+		StartDate        string   `json:"start_date,omitempty"`
+		EndDate          string   `json:"end_date,omitempty"`
+		GithubURL        string   `json:"github_url,omitempty"`
+		DemoURL          string   `json:"demo_url,omitempty"`
+		DocumentationURL string   `json:"documentation_url,omitempty"`
+		ThumbnailURL     string   `json:"thumbnail_url,omitempty"`
+		CoverSourceType  string   `json:"cover_source_type,omitempty"`
+		CoverWebsiteURL  string   `json:"cover_website_url,omitempty"`
+		UpdatedAt        string   `json:"updated_at,omitempty"`
 	}
 	// Extended project for detailed views
 	ProjectExtended {
@@ -168,6 +179,8 @@ type (
 		DemoURL          string   `json:"demo_url,omitempty"`
 		DocumentationURL string   `json:"documentation_url,omitempty"`
 		ThumbnailURL     string   `json:"thumbnail_url,omitempty"`
+		CoverSourceType  string   `json:"cover_source_type,omitempty"`
+		CoverWebsiteURL  string   `json:"cover_website_url,omitempty"`
 		IsFeatured       bool     `json:"is_featured"`
 		IsPublic         bool     `json:"is_public"`
 		ViewCount        int64    `json:"view_count"`
@@ -328,6 +341,7 @@ type (
 		Content             []BlogContent `json:"content"`
 		Likes               int64         `json:"likes"`
 		IsLikedByUser       bool          `json:"is_liked_by_user"`
+		Likers              []UpdateLiker `json:"likers"`
 		Views               int64         `json:"views"`
 		Summary             string        `json:"summary"`
 		SummaryZh           string        `json:"summary_zh,omitempty"`
@@ -373,6 +387,10 @@ type (
 		PublishDate     string        `json:"publish_date,omitempty"`
 		DurationMinutes int           `json:"duration_minutes,omitempty"`
 		Content         []BlogContent `json:"content,omitempty"`
+		Likes           int64         `json:"likes"`
+		IsLikedByUser   bool          `json:"is_liked_by_user"`
+		Likers          []UpdateLiker `json:"likers"`
+		Views           int64         `json:"views"`
 	}
 	EpisodeSeriesData {
 		ID          string        `json:"id"`
@@ -541,8 +559,9 @@ type (
 		Language       string `form:"lang,default=en"`
 	}
 	UpdateBlogLikesResponse {
-		Likes         int64 `json:"likes"`
-		IsLikedByUser bool  `json:"is_liked_by_user"`
+		Likes         int64         `json:"likes"`
+		IsLikedByUser bool          `json:"is_liked_by_user"`
+		Likers        []UpdateLiker `json:"likers"`
 	}
 	// ----- Project comments -----
 	ProjectCommentData {
@@ -598,8 +617,16 @@ type (
 		Language       string `form:"lang,default=en"`
 	}
 	LikeProjectResponse {
-		LikesCount    int  `json:"likes_count"`
-		IsLikedByUser bool `json:"is_liked_by_user"`
+		LikesCount    int           `json:"likes_count"`
+		IsLikedByUser bool          `json:"is_liked_by_user"`
+		Likers        []UpdateLiker `json:"likers"`
+	}
+	UpdateLiker {
+		Kind          string `json:"kind"`
+		CountryCode   string `json:"country_code,omitempty"`
+		VisitorNumber string `json:"visitor_number,omitempty"`
+		AvatarURL     string `json:"avatar_url,omitempty"`
+		Label         string `json:"label,omitempty"`
 	}
 	RecordProjectViewRequest {
 		ProjectID      string `path:"id"`
@@ -620,9 +647,10 @@ type (
 		Language       string `form:"lang,default=en"`
 	}
 	ProjectMetricsResponse {
-		LikesCount    int  `json:"likes_count"`
-		ViewsCount    int  `json:"views_count"`
-		IsLikedByUser bool `json:"is_liked_by_user"`
+		LikesCount    int           `json:"likes_count"`
+		ViewsCount    int           `json:"views_count"`
+		IsLikedByUser bool          `json:"is_liked_by_user"`
+		Likers        []UpdateLiker `json:"likers"`
 	}
 	// Search request types
 	BlogSearchRequest {
@@ -839,6 +867,10 @@ service backend-api {
 	@doc "Get episode by slug"
 	@handler GetEpisode
 	get /:slug (EpisodeRequest) returns (EpisodeData)
+
+	@doc "Update episode view count"
+	@handler UpdateEpisodeViews
+	post /:id/views (UpdateBlogViewsRequest)
 }
 
 // ========== MOMENTS GROUP ==========

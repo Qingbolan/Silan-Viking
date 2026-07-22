@@ -171,6 +171,8 @@ func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types
 		DemoURL:          proj.DemoURL,
 		DocumentationURL: proj.DocumentationURL,
 		ThumbnailURL:     proj.ThumbnailURL,
+		CoverSourceType:  projectCoverSourceType(l.ctx, l.svcCtx, proj.ID),
+		CoverWebsiteURL:  projectCoverWebsiteURL(l.ctx, l.svcCtx, proj.ID),
 		UpdatedAt:        formatContentTime(proj.UpdatedAt, "2006-01-02T15:04:05Z07:00"),
 	}
 }

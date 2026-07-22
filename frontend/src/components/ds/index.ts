@@ -46,6 +46,7 @@ export { useSpotlight } from './useSpotlight';
 
 export { Badge, badgeVariants } from './Badge';
 export type { BadgeProps } from './Badge';
+export { ProjectLivePreview, ProjectPlaceholder } from './ProjectPreviewSurface';
 
 export { Input, Textarea, Field } from './Input';
 export type { InputProps, TextareaProps, FieldProps } from './Input';

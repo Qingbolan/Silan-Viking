@@ -23,6 +23,10 @@ pub(crate) struct EditorDocument {
     pub(crate) pinned: bool,
     pub(crate) updated_at: String,
     pub(crate) cover_url: Option<String>,
+    pub(crate) cover_source_type: Option<String>,
+    pub(crate) cover_website_url: Option<String>,
+    pub(crate) github_url: Option<String>,
+    pub(crate) demo_url: Option<String>,
     pub(crate) engagement: EngagementStats,
     pub(crate) translations: Vec<EditorTranslation>,
 }
@@ -53,6 +57,10 @@ pub(crate) struct ContentMetadataInput {
     pub(crate) title: String,
     pub(crate) description: Option<String>,
     pub(crate) cover_url: Option<String>,
+    pub(crate) cover_source_type: Option<String>,
+    pub(crate) cover_website_url: Option<String>,
+    pub(crate) github_url: Option<String>,
+    pub(crate) demo_url: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

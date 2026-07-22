@@ -492,11 +492,16 @@ function rewriteManifest() {
 }
 
 function rewriteHtmlMetadata(routes) {
+  const localServeOrigin = `http://localhost:${SERVE_PORT}`;
+  const localBackendOrigin = `http://localhost:${BACKEND_PORT}`;
+  const publicOrigin = trimTrailingSlash(config.publicOrigin);
   for (const route of routes) {
     const path = join(routeDir(route), 'index.html');
     if (!existsSync(path)) continue;
     const canonical = publicUrl(withTrailingSlash(route));
     let html = readFileSync(path, 'utf8');
+    html = html.replaceAll(`${localServeOrigin}/api/`, `${publicOrigin}/api/`);
+    html = html.replaceAll(`${localBackendOrigin}/api/`, `${publicOrigin}/api/`);
     html = html.replace(/(rel="canonical"\s+href=")[^"]*(")/g, `$1${canonical}$2`);
     html = html.replace(/(property="og:url"\s+content=")[^"]*(")/g, `$1${canonical}$2`);
     writeFileSync(path, html, 'utf8');

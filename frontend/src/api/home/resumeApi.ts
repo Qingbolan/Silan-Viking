@@ -316,7 +316,6 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
         content: portfolioProjects.map((project) => ({
             id: project.slug || project.id,
             title: project.name,
-            location: language === 'zh' ? '公开项目' : 'Public portfolio',
             date: project.year ? String(project.year) : '',
             details: [project.description].filter(Boolean),
             image: optionalMediaUrl(project.thumbnailUrl),

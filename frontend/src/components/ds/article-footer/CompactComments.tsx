@@ -34,6 +34,7 @@ interface CompactCommentsProps {
   composerPosition?: 'top' | 'bottom';
   /** Allows parent action bars to reveal the composer without hiding comments. */
   composerVisible?: boolean;
+  surface?: 'default' | 'sidebar';
   labels?: {
     placeholder?: string;
     postAria?: string;
@@ -47,8 +48,9 @@ const Composer: React.FC<{
   placeholder: string;
   postAria: string;
   submitting: boolean;
+  surface?: 'default' | 'sidebar';
   onSubmit: (content: string) => void | Promise<void>;
-}> = ({ placeholder, postAria, submitting, onSubmit }) => {
+}> = ({ placeholder, postAria, submitting, surface = 'default', onSubmit }) => {
   const { language } = useLanguage();
   const { user, isAuthenticated } = useAuth();
   const [identity] = useState(readCommenter);
@@ -74,22 +76,40 @@ const Composer: React.FC<{
     setContent('');
   };
 
+  const composerAvatarNode = (
+    <Avatar
+      name={composerName || (language === 'zh' ? '访客' : 'Guest')}
+      src={composerAvatar}
+      countryCode={composerCountryCode}
+      size={surface === 'sidebar' ? 'xs' : 'sm'}
+    />
+  );
+
   return (
-    <form onSubmit={(event) => { void handleSubmit(event); }} className="flex items-center gap-2.5">
-      <Avatar
-        name={composerName || (language === 'zh' ? '访客' : 'Guest')}
-        src={composerAvatar}
-        countryCode={composerCountryCode}
-        size="sm"
-      />
-      <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-ds-surface-3 pl-4 pr-1.5">
+    <form
+      onSubmit={(event) => { void handleSubmit(event); }}
+      className={cn('flex items-center', surface === 'sidebar' ? 'gap-0' : 'gap-2.5')}
+    >
+      {surface !== 'sidebar' && composerAvatarNode}
+      <div
+        className={cn(
+          'flex min-w-0 flex-1 items-center gap-2 rounded-full',
+          surface === 'sidebar'
+            ? 'min-h-12 border border-ds-border bg-ds-surface-1 px-2 shadow-ds-1'
+            : 'bg-ds-surface-3 pl-4 pr-1.5',
+        )}
+      >
+        {surface === 'sidebar' && composerAvatarNode}
         <input
           {...dsRoot}
           value={content}
           onChange={(event) => setContent(event.target.value)}
           maxLength={4000}
           placeholder={placeholder}
-          className="min-h-10 flex-1 bg-transparent text-ds-sm text-ds-fg outline-none placeholder:text-ds-fg-subtle"
+          className={cn(
+            'min-h-10 flex-1 bg-transparent text-ds-sm text-ds-fg outline-none placeholder:text-ds-fg-subtle',
+            surface === 'sidebar' && 'min-w-0 text-[15px]',
+          )}
         />
         <button
           type="submit"
@@ -100,6 +120,8 @@ const Composer: React.FC<{
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/45',
             submitting || !content.trim()
               ? 'text-ds-fg-subtle'
+              : surface === 'sidebar'
+              ? 'bg-ds-primary text-ds-primary-fg shadow-ds-1 hover:bg-ds-primary-hover'
               : 'text-ds-primary hover:bg-ds-primary/10',
           )}
         >
@@ -117,6 +139,7 @@ const CommentRow: React.FC<{
   comment: ArticleComment;
   replyToName?: string;
   compact?: boolean;
+  surface?: 'default' | 'sidebar';
   language: 'en' | 'zh';
   onLike: (commentId: string) => void;
   isLikePending: (commentId: string) => boolean;
@@ -127,6 +150,7 @@ const CommentRow: React.FC<{
   comment,
   replyToName,
   compact = false,
+  surface = 'default',
   language,
   onLike,
   isLikePending,
@@ -135,11 +159,12 @@ const CommentRow: React.FC<{
   onReply,
 }) => {
   const pending = isLikePending(comment.id);
-  const avatarSize = compact ? 'xs' : 'md';
+  const sidebar = surface === 'sidebar';
+  const avatarSize = compact || sidebar ? 'xs' : 'md';
   const ipRegion = commentIpRegion(comment, language);
 
   return (
-    <div className={cn('flex items-start', compact ? 'gap-2.5' : 'gap-3')}>
+    <div className={cn('flex items-start', compact || sidebar ? 'gap-2.5' : 'gap-3')}>
       <Avatar
         name={comment.authorName}
         src={comment.avatarUrl}
@@ -148,11 +173,14 @@ const CommentRow: React.FC<{
         size={avatarSize}
       />
       <div className="min-w-0 flex-1">
-        <div className="flex min-h-5 items-center gap-1.5 text-[15px] font-medium leading-5 text-ds-fg-muted">
+        <div className={cn(
+          'flex min-h-5 items-center gap-1.5 font-medium leading-5 text-ds-fg-muted',
+          sidebar ? 'text-[14px]' : 'text-[15px]',
+        )}>
           {comment.authorName}
           <AuthProviderBadge provider={comment.authProvider} className="size-3 shrink-0 text-ds-fg-subtle" />
         </div>
-        <div className="mt-1 text-[16px] leading-6 text-ds-fg">
+        <div className={cn('mt-1 leading-6 text-ds-fg', sidebar ? 'text-[15px]' : 'text-[16px]')}>
           {replyToName && (
             <span className="mr-1 text-ds-fg-subtle">
               {language === 'zh' ? '回复 ' : 'Reply to '}
@@ -164,11 +192,17 @@ const CommentRow: React.FC<{
             {comment.content}
           </Markdown>
         </div>
-        <div className="mt-1.5 flex items-center gap-2 text-[14px] leading-5 text-ds-fg-subtle">
+        <div className={cn(
+          'mt-1.5 flex items-center gap-2 leading-5 text-ds-fg-subtle',
+          sidebar ? 'text-[12px]' : 'text-[14px]',
+        )}>
           <span>{formatTimelineTime(comment.createdAt, language)}</span>
           {ipRegion && <span>{ipRegion}</span>}
         </div>
-        <div className="mt-2 flex items-center gap-5 text-[14px] font-medium leading-none text-ds-fg-muted">
+        <div className={cn(
+          'mt-2 flex items-center font-medium leading-none text-ds-fg-muted',
+          sidebar ? 'gap-4 text-[13px]' : 'gap-5 text-[14px]',
+        )}>
           <button
             type="button"
             onClick={() => onLike(comment.id)}
@@ -179,7 +213,7 @@ const CommentRow: React.FC<{
               comment.likedByCurrentUser ? 'text-ds-primary' : 'hover:text-ds-fg',
             )}
           >
-            {pending ? <LoaderCircle className="size-4 animate-spin" /> : <Heart className="size-[18px]" />}
+            {pending ? <LoaderCircle className="size-4 animate-spin" /> : <Heart className={sidebar ? 'size-4' : 'size-[18px]'} />}
             {comment.likesCount > 0 ? comment.likesCount : language === 'zh' ? '赞' : 'Like'}
           </button>
           <button
@@ -187,7 +221,7 @@ const CommentRow: React.FC<{
             onClick={() => onReply(comment)}
             className="inline-flex items-center gap-1 transition-colors hover:text-ds-fg"
           >
-            <MessageCircle className="size-[18px]" />
+            <MessageCircle className={sidebar ? 'size-4' : 'size-[18px]'} />
             {language === 'zh' ? '回复' : 'Reply'}
           </button>
           {comment.canDelete && onDelete && (
@@ -240,6 +274,7 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
   visibleCount,
   composerPosition = 'top',
   composerVisible = true,
+  surface = 'default',
   labels,
 }) => {
   const { language } = useLanguage();
@@ -271,11 +306,12 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
     comment: ArticleComment,
     options: { compact?: boolean; replyToName?: string } = {},
   ) => (
-    <CommentRow
-      comment={comment}
-      replyToName={options.replyToName}
-      compact={options.compact}
-      language={language as 'en' | 'zh'}
+      <CommentRow
+        comment={comment}
+        replyToName={options.replyToName}
+        compact={options.compact}
+        surface={surface}
+        language={language as 'en' | 'zh'}
       onLike={(commentId) => gated(() => { void onCommentLike(commentId); })}
       isLikePending={isCommentLikePending}
       onDelete={onCommentDelete ? (target) => { void onCommentDelete(target.id); } : undefined}
@@ -318,6 +354,7 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
         }
         postAria={labels?.postAria || (language === 'zh' ? '发布评论' : 'Post comment')}
         submitting={submitting}
+        surface={surface}
         onSubmit={(content) => gated(() => { void submitDraft(content, replyTarget?.id); })}
       />
     </div>
@@ -396,9 +433,19 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
   if (composerPosition === 'bottom') {
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <div className="compact-comments-scroll min-h-0 flex-1 overflow-y-auto pb-3">{list}</div>
+        <div className={cn(
+          'compact-comments-scroll min-h-0 flex-1 overflow-y-auto',
+          surface === 'sidebar' ? 'pb-4 pr-1' : 'pb-3',
+        )}>
+          {list}
+        </div>
         {showComposer && (
-          <div className="shrink-0 border-t border-ds-border bg-ds-surface-2 pt-3">{composer}</div>
+          <div className={cn(
+            'shrink-0 border-t border-ds-border',
+            surface === 'sidebar' ? 'bg-ds-surface-2/95 px-0 pb-1 pt-3' : 'bg-ds-surface-2 pt-3',
+          )}>
+            {composer}
+          </div>
         )}
         <LoginPromptModal
           open={loginPromptOpen}

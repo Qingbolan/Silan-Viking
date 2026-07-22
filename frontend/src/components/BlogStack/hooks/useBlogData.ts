@@ -4,26 +4,9 @@ import { fetchBlogById, updateBlogViews } from '../../../api/blog/blogApi';
 import { ApiError } from '../../../api/utils';
 import { useLanguage } from '../../LanguageContext';
 import { calculateReadingTime } from '../../../utils/readingTime';
+import { shouldCreditViewDisplay } from '../../../utils/viewDisplayCredit';
 
 export type BlogLoadState = 'loading' | 'ready' | 'not-found' | 'error';
-
-const VIEW_DISPLAY_TTL_MS = 60 * 60 * 1000;
-
-const shouldCreditViewDisplay = (postId: string): boolean => {
-  if (typeof window === 'undefined') return false;
-  const key = `silan:blog-view-display:${postId}`;
-  const now = Date.now();
-  try {
-    const previous = Number(window.localStorage.getItem(key) || 0);
-    if (Number.isFinite(previous) && now - previous < VIEW_DISPLAY_TTL_MS) {
-      return false;
-    }
-    window.localStorage.setItem(key, String(now));
-    return true;
-  } catch {
-    return true;
-  }
-};
 
 export const useBlogData = (id: string | undefined, retryKey = 0) => {
   const [blog, setBlog] = useState<BlogData | null>(null);
@@ -53,7 +36,7 @@ export const useBlogData = (id: string | undefined, retryKey = 0) => {
           // Try to update view count, but don't fail if it doesn't work
           try {
             const viewRecorded = await updateBlogViews(blogData.id, language as 'en' | 'zh');
-            if (active && viewRecorded && shouldCreditViewDisplay(blogData.id)) {
+            if (active && viewRecorded && shouldCreditViewDisplay('blog', blogData.id)) {
               setBlog((current) => current && current.id === blogData.id
                 ? { ...current, views: Math.max(0, current.views || 0) + 1 }
                 : current);

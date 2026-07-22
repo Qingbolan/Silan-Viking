@@ -157,7 +157,7 @@ const MomentDetail: React.FC = () => {
   return createPortal(
     <AnimatePresence>
       <div
-        className="fixed inset-0 flex items-center justify-center p-3 sm:p-6"
+        className="fixed inset-0 flex items-stretch justify-center bg-ds-surface-1 p-0 sm:items-center sm:bg-transparent sm:p-4 lg:p-6"
         style={{ zIndex: 1100 }}
         role="dialog"
         aria-modal="true"
@@ -174,7 +174,7 @@ const MomentDetail: React.FC = () => {
         )}
 
         <motion.div
-          className="absolute inset-0 bg-ds-overlay"
+          className="absolute inset-0 hidden bg-ds-overlay sm:block"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -183,9 +183,10 @@ const MomentDetail: React.FC = () => {
         />
 
         <motion.div
+          data-ds
           ref={panelRef}
           tabIndex={-1}
-          className="relative flex h-[calc(100dvh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-ds-xl bg-ds-surface-1 shadow-[var(--ds-elevation-4)] sm:h-[calc(100dvh-3rem)]"
+          className="relative flex h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-ds-surface-1 [box-shadow:none] focus:outline-none focus-visible:outline-none sm:h-[min(90dvh,54rem)] sm:w-[min(94vw,76rem)] sm:rounded-ds-xl sm:[box-shadow:var(--ds-elevation-4)] xl:w-[min(88vw,82rem)]"
           initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: 8 }}
@@ -195,7 +196,7 @@ const MomentDetail: React.FC = () => {
             type="button"
             onClick={close}
             aria-label={copy.back}
-            className="absolute left-3 top-3 z-10 inline-flex size-9 items-center justify-center rounded-full bg-ds-surface-1/90 text-ds-fg shadow-ds-2 backdrop-blur transition-colors hover:bg-ds-surface-2 focus-visible:outline-none focus-visible:shadow-ds-focus"
+            className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-10 inline-flex size-10 items-center justify-center rounded-full bg-ds-surface-1/90 text-ds-fg shadow-ds-2 backdrop-blur transition-colors hover:bg-ds-surface-2 focus-visible:outline-none focus-visible:shadow-ds-focus sm:left-3 sm:top-3 sm:size-9"
           >
             <X className="size-5" aria-hidden />
           </button>
@@ -210,9 +211,8 @@ const MomentDetail: React.FC = () => {
 
 // The two-pane body — article on the left (scrolls on its own), the
 // interaction rail on the right (fixed to the panel's full height, its own
-// comment list scrolls independently). Below lg it collapses to a single
-// scrolling column with the actions inline at the bottom, same as the old
-// full-page layout.
+// comment list scrolls independently). Below lg it becomes a full-screen
+// detail page: one scroll root, content first, actions/comments in flow.
 const MomentDetailBody: React.FC<{
   moment: Moment;
   lang: 'en' | 'zh';
@@ -232,11 +232,11 @@ const MomentDetailBody: React.FC<{
   const formattedDate = formatMomentDate(moment, lang);
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
-      <article className="min-w-0 px-5 pb-8 pt-14 sm:px-8 lg:h-full lg:flex-1 lg:overflow-y-auto">
-        <div className="mx-auto max-w-2xl">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_26rem]">
+      <article className="min-w-0 px-5 pb-8 pt-[calc(4.75rem+env(safe-area-inset-top))] sm:px-8 sm:pt-16 lg:h-full lg:overflow-y-auto lg:px-12 lg:pb-12 lg:pt-16">
+        <div className="mx-auto max-w-[44rem]">
           <header className="border-b border-ds-border pb-0">
-            <h1 className="text-balance text-ds-3xl font-semibold leading-[1.15] tracking-[-0.03em] text-ds-fg sm:text-ds-4xl">
+            <h1 className="text-balance text-[2rem] font-semibold leading-[1.12] tracking-[-0.03em] text-ds-fg sm:text-ds-4xl lg:text-[2.75rem]">
               {moment.title}
             </h1>
 
@@ -268,7 +268,7 @@ const MomentDetailBody: React.FC<{
 
           <Markdown
             documentTitle={moment.title}
-            className="mt-4 text-ds-base leading-8 text-ds-fg-muted [&_.vditor-reset]:!pl-0"
+            className="mt-5 text-ds-base leading-8 text-ds-fg-muted sm:text-[1.05rem] [&_.vditor-reset]:!pl-0"
           >
             {bodyText}
           </Markdown>
@@ -285,13 +285,13 @@ const MomentDetailBody: React.FC<{
           {/* Below lg, the interaction rail collapses back into the
               article flow — the sidebar variant only makes sense with
               room beside the text. */}
-          <div className="lg:hidden">
+          <div className="mt-8 lg:hidden">
             <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} />
           </div>
         </div>
       </article>
 
-      <aside className="hidden h-full shrink-0 border-l-2 border-ds-border bg-ds-surface-2 lg:flex lg:w-[27rem] lg:flex-col">
+      <aside className="hidden h-full min-w-0 border-l border-ds-border bg-ds-surface-2 lg:flex lg:flex-col">
         <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} variant="sidebar" />
       </aside>
     </div>

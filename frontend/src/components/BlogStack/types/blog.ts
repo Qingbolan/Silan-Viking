@@ -1,5 +1,13 @@
 import { ReactNode } from 'react';
 
+export interface BlogLiker {
+  kind: 'user' | 'visitor' | string;
+  country_code?: string;
+  visitor_number?: string;
+  avatar_url?: string;
+  label?: string;
+}
+
 export interface BlogContent {
   id: string;
   type: 'text' | 'image' | 'video' | 'quote' | 'code' | 'heading' | 'markdown';
@@ -29,6 +37,7 @@ export interface BlogData {
   content: BlogContent[];
   likes: number;
   isLikedByUser?: boolean;
+  likers?: BlogLiker[];
   views: number;
   summary: string;
   summaryZh?: string;

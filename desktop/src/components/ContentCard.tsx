@@ -48,8 +48,18 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
     >
       <button type="button" className="content-card-open" onClick={() => onOpen(group)}>
         {coverUrl && (
-          <span className="content-card-cover">
-            <img src={coverUrl} alt="" loading="lazy" />
+          <span className="content-card-cover" data-mode={group.coverSourceType || 'image'}>
+            {group.coverSourceType === 'website' ? (
+              <iframe
+                src={coverUrl}
+                title={`${group.title} cover preview`}
+                loading="lazy"
+                scrolling="no"
+                sandbox="allow-scripts allow-same-origin"
+              />
+            ) : (
+              <img src={coverUrl} alt="" loading="lazy" />
+            )}
           </span>
         )}
         <span className="content-card-body">

@@ -32,7 +32,11 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 	if _, err := l.svcCtx.DB.BlogPost.Get(l.ctx, postID); err != nil {
 		return err
 	}
+	return l.UpdateContentViews(req, contentinteraction.EntityTypeBlog)
+}
 
+func (l *UpdateBlogViewsLogic) UpdateContentViews(req *types.UpdateBlogViewsRequest, entityType contentinteraction.EntityType) error {
+	entityID := req.ID
 	tx, err := l.svcCtx.DB.Tx(l.ctx)
 	if err != nil {
 		return err
@@ -49,8 +53,8 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 	oneHourAgo := time.Now().Add(-1 * time.Hour)
 	if req.AuthenticatedUserID != "" || req.Fingerprint != "" {
 		query := client.ContentInteraction.Query().Where(
-			contentinteraction.EntityTypeEQ(contentinteraction.EntityTypeBlog),
-			contentinteraction.EntityIDEQ(postID),
+			contentinteraction.EntityTypeEQ(entityType),
+			contentinteraction.EntityIDEQ(entityID),
 			contentinteraction.KindEQ(contentinteraction.KindView),
 			contentinteraction.CreatedAtGT(oneHourAgo),
 		)
@@ -76,8 +80,8 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 	}
 
 	if err := analytics.RecordContentInteraction(l.ctx, client, l.svcCtx.Traffic, l.svcCtx.CountryResolver, analytics.InteractionEvent{
-		EntityType:      "blog",
-		EntityID:        postID,
+		EntityType:      string(entityType),
+		EntityID:        entityID,
 		Kind:            "view",
 		UserIdentityID:  req.AuthenticatedUserID,
 		Fingerprint:     req.Fingerprint,
@@ -94,7 +98,7 @@ func (l *UpdateBlogViewsLogic) UpdateBlogViews(req *types.UpdateBlogViewsRequest
 		return err
 	}
 
-	l.Logger.Infof("View recorded for post %s", req.ID)
+	l.Logger.Infof("View recorded for %s %s", entityType, req.ID)
 
 	return nil
 }

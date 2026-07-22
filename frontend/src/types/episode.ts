@@ -1,4 +1,4 @@
-import type { BlogContent } from '../components/BlogStack/types/blog';
+import type { BlogContent, BlogLiker } from '../components/BlogStack/types/blog';
 
 export interface EpisodeData {
   id: string;
@@ -15,6 +15,8 @@ export interface EpisodeData {
   content?: BlogContent[];
   likes?: number;
   is_liked_by_user?: boolean;
+  likers?: BlogLiker[];
+  views?: number;
 }
 
 export interface EpisodeSeriesData {

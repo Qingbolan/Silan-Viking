@@ -7,6 +7,7 @@ import { get, post, del, formatLanguage } from '../utils';
 import { type PaginationRequest, type ListResponse } from '../config';
 import { mapContentParts } from '../contentParts';
 import { isPrerenderRuntime } from '../../utils/runtimeContext';
+import { normalizeProjectCoverSourceType } from '../../utils/projectCover';
 
 // Backend API request/response types
 interface ProjectListRequest extends PaginationRequest {
@@ -32,23 +33,30 @@ const normalizeContentTimestamp = (value: unknown): string | undefined => {
   return Number.isNaN(date.getTime()) || date.getUTCFullYear() <= 1 ? undefined : value;
 };
 
-const normalizeProject = (raw: any): Project => ({
-  id: String(raw.id),
-  slug: raw.slug || '',
-  name: raw.name || raw.title || '',
-  description: raw.description || '',
-  tags: Array.isArray(raw.tags) ? raw.tags : [],
-  year: Number.isFinite(Number(raw.year)) ? Number(raw.year) : 0,
-  isFeatured: Boolean(raw.isFeatured ?? raw.is_featured),
-  status: raw.status || undefined,
-  startDate: raw.startDate || raw.start_date || undefined,
-  endDate: raw.endDate || raw.end_date || undefined,
-  githubUrl: raw.githubUrl || raw.github_url || undefined,
-  demoUrl: raw.demoUrl || raw.demo_url || undefined,
-  documentationUrl: raw.documentationUrl || raw.documentation_url || undefined,
-  thumbnailUrl: raw.thumbnailUrl || raw.thumbnail_url || undefined,
-  updatedAt: normalizeContentTimestamp(raw.updatedAt || raw.updated_at),
-});
+const normalizeProject = (raw: any): Project => {
+  const thumbnailUrl = raw.thumbnailUrl || raw.thumbnail_url || undefined;
+  const coverSourceType = normalizeProjectCoverSourceType(raw.coverSourceType || raw.cover_source_type);
+  const coverWebsiteUrl = raw.coverWebsiteUrl || raw.cover_website_url || undefined;
+  return {
+    id: String(raw.id),
+    slug: raw.slug || '',
+    name: raw.name || raw.title || '',
+    description: raw.description || '',
+    tags: Array.isArray(raw.tags) ? raw.tags : [],
+    year: Number.isFinite(Number(raw.year)) ? Number(raw.year) : 0,
+    isFeatured: Boolean(raw.isFeatured ?? raw.is_featured),
+    status: raw.status || undefined,
+    startDate: raw.startDate || raw.start_date || undefined,
+    endDate: raw.endDate || raw.end_date || undefined,
+    githubUrl: raw.githubUrl || raw.github_url || undefined,
+    demoUrl: raw.demoUrl || raw.demo_url || undefined,
+    documentationUrl: raw.documentationUrl || raw.documentation_url || undefined,
+    thumbnailUrl,
+    coverSourceType,
+    coverWebsiteUrl,
+    updatedAt: normalizeContentTimestamp(raw.updatedAt || raw.updated_at),
+  };
+};
 
 
 // API Functions
@@ -101,6 +109,9 @@ export const fetchProjectDetailById = async (
     projectDetail?.embedUrl ||
     projectDetail?.homepage_embed_url ||
     homepageUrl;
+  const coverWebsiteUrl = basicProject.coverWebsiteUrl;
+  const resolvedHomepageUrl = homepageUrl || coverWebsiteUrl;
+  const resolvedEmbedUrl = embedUrl || resolvedHomepageUrl;
   const timeline = projectDetail?.timeline;
   const rawMetrics = projectDetail?.metrics;
   const hasTimeline = timeline && (timeline.start || timeline.end || timeline.duration);
@@ -112,6 +123,8 @@ export const fetchProjectDetailById = async (
     description: basicProject.description,
     fullDescription: projectDetail?.detailed_description || projectDetail?.project_details || basicProject.description,
     image: basicProject.thumbnailUrl,
+    coverSourceType: basicProject.coverSourceType,
+    coverWebsiteUrl,
     goals: projectDetail?.goals || undefined,
     challenges: projectDetail?.challenges || undefined,
     solutions: projectDetail?.solutions || undefined,
@@ -159,8 +172,8 @@ export const fetchProjectDetailById = async (
     dependencies: dependenciesDoc
       ? { production: [], development: [], raw: dependenciesDoc }
       : undefined,
-    homepageUrl,
-    embedUrl,
+    homepageUrl: resolvedHomepageUrl,
+    embedUrl: resolvedEmbedUrl,
     homepageTitle: projectDetail?.homepage_title || projectDetail?.homepageTitle || undefined,
     homepageDescription: projectDetail?.homepage_description || projectDetail?.homepageDescription || undefined,
   };
@@ -457,6 +470,7 @@ export const deleteProjectIssue = async (
 export interface LikeProjectResponse {
   likes_count: number;
   is_liked_by_user: boolean;
+  likers: ProjectLiker[];
 }
 
 export interface RecordProjectViewResponse {
@@ -468,6 +482,15 @@ export interface ProjectMetricsResponse {
   likes_count: number;
   views_count: number;
   is_liked_by_user: boolean;
+  likers: ProjectLiker[];
+}
+
+export interface ProjectLiker {
+  kind: 'user' | 'visitor' | string;
+  country_code?: string;
+  visitor_number?: string;
+  avatar_url?: string;
+  label?: string;
 }
 
 /**

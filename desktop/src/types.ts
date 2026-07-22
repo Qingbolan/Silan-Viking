@@ -22,6 +22,10 @@ export type EditorDocument = {
   pinned?: boolean;
   updated_at: string;
   cover_url?: string | null;
+  cover_source_type?: 'image' | 'website' | null;
+  cover_website_url?: string | null;
+  github_url?: string | null;
+  demo_url?: string | null;
   engagement: EngagementStats;
   translations: EditorTranslation[];
 };
@@ -267,6 +271,10 @@ export type ContentGroup = {
   date?: string | null;
   pinned?: boolean;
   coverUrl?: string;
+  coverSourceType?: 'image' | 'website';
+  coverWebsiteUrl?: string;
+  githubUrl?: string;
+  demoUrl?: string;
   description?: string | null;
   language?: string;
   documents: EditorDocument[];

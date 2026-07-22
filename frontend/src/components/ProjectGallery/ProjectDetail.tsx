@@ -18,7 +18,6 @@ import {
   Lightbulb,
   ListTree,
   MessageSquareText,
-  Monitor,
   Rocket,
   Tag,
   Target,
@@ -29,11 +28,11 @@ import { useLanguage } from '../LanguageContext';
 import { Seo, creativeWorkJsonLd } from '../Seo';
 import {
   fetchProjectDetailById,
+  type ProjectLiker,
 } from '../../api/projects/projectApi';
 import type { ProjectDetail as ProjectDetailType } from '../../types/api';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
-import ProjectHomepageEmbed from './ProjectHomepageEmbed';
 import { useProjectEngagement } from './hooks/useProjectEngagement';
 import { cn } from '../../lib/utils';
 import { scrollToAnchor } from '../../lib/scrollToAnchor';
@@ -51,10 +50,10 @@ import {
 } from '../../components/ds';
 import Markdown from '../ui/Markdown';
 import CompactComments from '../ds/article-footer/CompactComments';
+import LikerAvatar from '../ds/article-footer/Avatar';
 import { useRequireIdentity } from '../../lib/useRequireIdentity';
 
 const PROJECT_HEADER_ID = 'project-header';
-const PROJECT_HOME_ID = 'project-home';
 const PROJECT_FEEDBACK_ID = 'tab-issues';
 
 const ROLE_LABELS: Record<string, { en: string; zh: string }> = {
@@ -140,11 +139,13 @@ const PartPanel: React.FC<{
   label: string;
   language: string;
   documentTitle: string;
-}> = ({ part, label, language, documentTitle }) => {
+  coverNode?: React.ReactNode;
+}> = ({ part, label, language, documentTitle, coverNode }) => {
   const body = partBody(part, language);
   if (part.role === 'overview') {
     return (
       <section id={part.role} className="max-w-[68rem] scroll-mt-24">
+        {coverNode}
         <Markdown
           className="text-[19px] font-medium leading-[1.65] text-ds-fg"
           documentTitle={documentTitle}
@@ -174,8 +175,80 @@ const PartPanel: React.FC<{
   );
 };
 
+const ProjectCoverBlock: React.FC<{
+  title: string;
+  image?: string;
+  websiteUrl?: string;
+  language: 'en' | 'zh';
+}> = ({ title, image, websiteUrl, language }) => {
+  const src = websiteUrl?.trim() || '';
+  const normalizedSrc = src && /^https?:\/\//i.test(src) ? src : src ? `https://${src}` : '';
+  const openLabel = language === 'zh' ? `打开 ${title}` : `Open ${title}`;
+
+  if (!image) return null;
+
+  const media = <img src={image} alt={title} className="size-full object-cover" />;
+
+  return (
+    <div className="mb-8">
+      <div className="h-80 overflow-hidden rounded-ds-lg border border-ds-border bg-ds-surface-2 shadow-ds-2">
+        {normalizedSrc ? (
+          <a
+            href={normalizedSrc}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={openLabel}
+            className="block size-full transition duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent"
+          >
+            {media}
+          </a>
+        ) : media}
+      </div>
+    </div>
+  );
+};
+
+const ProjectLikerWall: React.FC<{
+  likers: ProjectLiker[];
+  likesCount: number;
+  language: 'en' | 'zh';
+}> = ({ likers, likesCount, language }) => {
+  if (likesCount <= 0 || likers.length === 0) return null;
+
+  const label = language === 'zh'
+    ? `${likesCount} 位读者点赞`
+    : `${likesCount} reader${likesCount === 1 ? '' : 's'} liked this`;
+
+  return (
+    <div
+      className="mb-6 mt-4 grid max-w-[34rem] grid-cols-[repeat(auto-fill,minmax(2.25rem,2.25rem))] gap-2"
+      aria-label={label}
+    >
+      {likers.map((liker, index) => {
+        const name = liker.label
+          || (liker.kind === 'visitor'
+            ? (language === 'zh' ? `访客 ${liker.visitor_number || index + 1}` : `Visitor ${liker.visitor_number || index + 1}`)
+            : (language === 'zh' ? '读者' : 'Reader'));
+        return (
+          <LikerAvatar
+            key={`${liker.kind}-${liker.label || liker.visitor_number || index}`}
+            name={name}
+            src={liker.avatar_url}
+            countryCode={liker.country_code}
+            visitorNumber={liker.visitor_number}
+            size="lg"
+            className="rounded-[8px]"
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 const ProjectFeedbackPanel: React.FC<{
   language: 'en' | 'zh';
+  likers: ProjectLiker[];
+  likesCount: number;
   comments: ReturnType<typeof useProjectEngagement>['comments'];
   commentsCount: number;
   commentsState: ReturnType<typeof useProjectEngagement>['commentsState'];
@@ -190,6 +263,8 @@ const ProjectFeedbackPanel: React.FC<{
   isCommentDeletePending: ReturnType<typeof useProjectEngagement>['isCommentDeletePending'];
 }> = ({
   language,
+  likers,
+  likesCount,
   comments,
   commentsCount,
   commentsState,
@@ -238,6 +313,12 @@ const ProjectFeedbackPanel: React.FC<{
           </p>
         </div>
       </header>
+
+      <ProjectLikerWall
+        likers={likers}
+        likesCount={likesCount}
+        language={language}
+      />
 
       {interactionError && (
         <p className="mb-3 text-ds-xs text-red-600" role="status">
@@ -311,12 +392,6 @@ const ProjectDetail: React.FC = () => {
   const title = project
     ? (language === 'zh' && project.titleZh ? project.titleZh : project.title)
     : '';
-  const homepageTitle = project?.homepageTitle || (language === 'zh' ? '项目主页' : 'Project home');
-  const homepageDescription =
-    project?.homepageDescription ||
-    (language === 'zh'
-      ? '自定义项目主页以内嵌网站形式展示，可直接检查真实运行状态。'
-      : 'Custom project home embedded as a live website preview.');
 
   const wordCount = useMemo(() => {
     const text = [
@@ -329,13 +404,6 @@ const ProjectDetail: React.FC = () => {
 
   const chapters: BookNavChapter[] = useMemo(() => {
     const entries: BookNavChapter[] = [];
-    if (homepageUrl) {
-      entries.push({
-        id: PROJECT_HOME_ID,
-        label: language === 'zh' ? '项目主页' : 'Project home',
-        onClick: () => scrollToAnchor(PROJECT_HOME_ID),
-      });
-    }
     if (visibleParts.length > 0) {
       entries.push(
         ...visibleParts.map((part) => ({
@@ -354,20 +422,12 @@ const ProjectDetail: React.FC = () => {
     );
     return entries;
   }, [
-    homepageUrl,
     language,
     visibleParts,
   ]);
 
   const sectionTabs = useMemo(
     () => [
-      ...(homepageUrl
-        ? [{
-            id: PROJECT_HOME_ID,
-            label: language === 'zh' ? '主页' : 'Home',
-            icon: Monitor,
-          }]
-        : []),
       ...visibleParts.map((part) => ({
         id: part.role,
         label: roleLabel(part.role, language),
@@ -381,25 +441,25 @@ const ProjectDetail: React.FC = () => {
         icon: MessageSquareText,
       },
     ],
-    [engagement.commentsCount, homepageUrl, language, visibleParts],
+    [engagement.commentsCount, language, visibleParts],
   );
 
-  const defaultPanel = homepageUrl || visibleParts.length === 0
-    ? (homepageUrl ? PROJECT_HOME_ID : PROJECT_FEEDBACK_ID)
+  const defaultPanel = visibleParts.length === 0
+    ? PROJECT_FEEDBACK_ID
     : visibleParts[0].role;
   const [activePanel, setActivePanel] = useState<string>(defaultPanel);
   const activePart = visibleParts.find((part) => part.role === activePanel) ?? null;
 
   useEffect(() => {
-    const nextPanel = homepageUrl || visibleParts.length === 0
-      ? (homepageUrl ? PROJECT_HOME_ID : PROJECT_FEEDBACK_ID)
+    const nextPanel = visibleParts.length === 0
+      ? PROJECT_FEEDBACK_ID
       : visibleParts[0].role;
     setActivePanel(nextPanel);
     setActiveSection(nextPanel);
     const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
     if (scrollRoot) scrollRoot.scrollTo({ top: 0 });
     else window.scrollTo({ top: 0 });
-  }, [homepageUrl, project?.id, visibleParts]);
+  }, [project?.id, visibleParts]);
 
   useEffect(() => {
     setActiveSection(activePanel);
@@ -448,6 +508,14 @@ const ProjectDetail: React.FC = () => {
   const downloadableAsset = project.versions?.releases
     ?.flatMap((release) => release.assets ?? [])
     .find((asset) => Boolean(asset.downloadUrl));
+  const overviewCoverNode = activePart?.role === 'overview' ? (
+    <ProjectCoverBlock
+      title={title}
+      image={project.image}
+      websiteUrl={project.coverSourceType === 'website' ? project.coverWebsiteUrl || homepageUrl : undefined}
+      language={language as 'en' | 'zh'}
+    />
+  ) : undefined;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -595,13 +663,6 @@ const ProjectDetail: React.FC = () => {
               </div>
             )}
 
-            {project.image && !homepageUrl && (
-              <img
-                src={project.image}
-                alt={title}
-                className="mt-8 h-80 w-full rounded-ds-lg border border-ds-border object-cover"
-              />
-            )}
           </header>
 
           <nav
@@ -633,28 +694,21 @@ const ProjectDetail: React.FC = () => {
           </nav>
 
           <div className="mt-8">
-            {activePanel === PROJECT_HOME_ID && homepageUrl && (
-              <ProjectHomepageEmbed
-                url={homepageUrl}
-                title={homepageTitle}
-                description={homepageDescription}
-                language={language as 'en' | 'zh'}
-                immersive
-              />
-            )}
-
             {activePart && (
               <PartPanel
                 part={activePart}
                 label={roleLabel(activePart.role, language)}
                 language={language}
                 documentTitle={title}
+                coverNode={overviewCoverNode}
               />
             )}
 
             {activePanel === PROJECT_FEEDBACK_ID && (
               <ProjectFeedbackPanel
                 language={language as 'en' | 'zh'}
+                likers={engagement.metrics.likers ?? []}
+                likesCount={engagement.metrics.likes_count}
                 comments={engagement.comments}
                 commentsCount={engagement.commentsCount}
                 commentsState={engagement.commentsState}

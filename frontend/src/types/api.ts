@@ -143,7 +143,7 @@ export interface ResumeData {
       content: {
         id: string;
         title: string;
-        location: string;
+        location?: string;
         date: string;
         details: string[];
         /** Optional cover image for the research project card. */
@@ -315,6 +315,8 @@ export interface Project {
   demoUrl?: string;
   documentationUrl?: string;
   thumbnailUrl?: string;
+  coverSourceType?: 'image' | 'website';
+  coverWebsiteUrl?: string;
   updatedAt?: string;
 }
 
@@ -327,6 +329,8 @@ export interface ProjectDetail {
   fullDescription: string;
   fullDescriptionZh?: string;
   image?: string;
+  coverSourceType?: 'image' | 'website';
+  coverWebsiteUrl?: string;
   tags: string[];
 
   // The silan-viking content model gives a `project` seven prose Parts.

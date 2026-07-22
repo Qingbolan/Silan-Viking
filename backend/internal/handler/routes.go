@@ -206,6 +206,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: episodes.UpdateEpisodeLikesHandler(serverCtx),
 				},
 				{
+					// Update episode view count
+					Method:  http.MethodPost,
+					Path:    "/:id/views",
+					Handler: episodes.UpdateEpisodeViewsHandler(serverCtx),
+				},
+				{
 					// Get episode by slug
 					Method:  http.MethodGet,
 					Path:    "/:slug",

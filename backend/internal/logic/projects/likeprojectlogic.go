@@ -8,6 +8,7 @@ import (
 	"silan-backend/internal/ent/contentinteraction"
 	"silan-backend/internal/ent/projectlike"
 	"silan-backend/internal/logic/analytics"
+	"silan-backend/internal/logic/engagement"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -129,6 +130,10 @@ func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *typ
 	if err != nil {
 		return nil, err
 	}
+	likers, err := engagement.ProjectLikers(l.ctx, client, projectID, 24)
+	if err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -136,5 +141,20 @@ func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *typ
 	return &types.LikeProjectResponse{
 		LikesCount:    likesCount,
 		IsLikedByUser: !isLiked,
+		Likers:        projectLikers(likers),
 	}, nil
+}
+
+func projectLikers(likers []engagement.Liker) []types.UpdateLiker {
+	result := make([]types.UpdateLiker, 0, len(likers))
+	for _, liker := range likers {
+		result = append(result, types.UpdateLiker{
+			Kind:          liker.Kind,
+			CountryCode:   liker.CountryCode,
+			VisitorNumber: liker.VisitorNumber,
+			AvatarURL:     liker.AvatarURL,
+			Label:         liker.Label,
+		})
+	}
+	return result
 }

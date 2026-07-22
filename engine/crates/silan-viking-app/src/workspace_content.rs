@@ -47,6 +47,10 @@ pub struct EditableDocument {
     pub visibility: String,
     pub updated_at: String,
     pub cover_uri: Option<String>,
+    pub cover_source_type: Option<String>,
+    pub cover_website_url: Option<String>,
+    pub github_url: Option<String>,
+    pub demo_url: Option<String>,
     pub date: Option<String>,
     pub pinned: bool,
     pub parts: Vec<EditablePart>,
@@ -95,6 +99,10 @@ pub struct SaveMetadataInput {
     pub title: String,
     pub description: Option<String>,
     pub cover_url: Option<String>,
+    pub cover_source_type: Option<String>,
+    pub cover_website_url: Option<String>,
+    pub github_url: Option<String>,
+    pub demo_url: Option<String>,
     pub expected_revision: String,
 }
 
@@ -257,6 +265,26 @@ impl WorkspaceContent {
                     .or_else(|| parsed.main().text("featured_image_url"))
                     .or_else(|| parsed.main().text("thumbnail_url"))
                     .map(str::to_owned),
+                cover_source_type: match item.kind() {
+                    ContentKind::Project => Some(normalize_cover_source_type(
+                        parsed.main().text("cover_source_type"),
+                    )),
+                    _ => None,
+                },
+                cover_website_url: match item.kind() {
+                    ContentKind::Project => {
+                        parsed.main().text("cover_website_url").map(str::to_owned)
+                    }
+                    _ => None,
+                },
+                github_url: match item.kind() {
+                    ContentKind::Project => parsed.main().text("github_url").map(str::to_owned),
+                    _ => None,
+                },
+                demo_url: match item.kind() {
+                    ContentKind::Project => parsed.main().text("demo_url").map(str::to_owned),
+                    _ => None,
+                },
                 date: parsed
                     .main()
                     .text("date")
@@ -468,6 +496,39 @@ impl WorkspaceContent {
                     .to_owned(),
             ));
         }
+        if kind == ContentKind::Project {
+            owned_fields.push((
+                "cover_source_type",
+                normalize_cover_source_type(input.cover_source_type.as_deref()),
+            ));
+            owned_fields.push((
+                "cover_website_url",
+                input
+                    .cover_website_url
+                    .as_deref()
+                    .unwrap_or_default()
+                    .trim()
+                    .to_owned(),
+            ));
+            owned_fields.push((
+                "github_url",
+                input
+                    .github_url
+                    .as_deref()
+                    .unwrap_or_default()
+                    .trim()
+                    .to_owned(),
+            ));
+            owned_fields.push((
+                "demo_url",
+                input
+                    .demo_url
+                    .as_deref()
+                    .unwrap_or_default()
+                    .trim()
+                    .to_owned(),
+            ));
+        }
         let fields = owned_fields
             .iter()
             .map(|(key, value)| (*key, value.as_str()))
@@ -578,6 +639,13 @@ fn cover_field_for(kind: ContentKind) -> Option<&'static str> {
         ContentKind::Blog => Some("featured_image_url"),
         ContentKind::Project => Some("thumbnail_url"),
         _ => None,
+    }
+}
+
+fn normalize_cover_source_type(value: Option<&str>) -> String {
+    match value.map(str::trim) {
+        Some("website") => "website".to_owned(),
+        _ => "image".to_owned(),
     }
 }
 

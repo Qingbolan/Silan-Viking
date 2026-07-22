@@ -18,11 +18,13 @@ import type {
   CommentDraft,
   CommentLoadState,
 } from '../../ds/article-footer/types';
+import type { BlogLiker } from '../types/blog';
 
 interface UseBlogEngagementOptions {
   postId: string;
   initialLikes: number;
   initialLiked: boolean;
+  initialLikers?: BlogLiker[];
   language: 'en' | 'zh';
   kind?: 'blog' | 'episode';
   enabled?: boolean;
@@ -79,12 +81,14 @@ export const useBlogEngagement = ({
   postId,
   initialLikes,
   initialLiked,
+  initialLikers = [],
   language,
   kind = 'blog',
   enabled = true,
 }: UseBlogEngagementOptions) => {
   const [likes, setLikes] = useState(Math.max(0, initialLikes));
   const [liked, setLiked] = useState(initialLiked);
+  const [likers, setLikers] = useState<BlogLiker[]>(initialLikers);
   const [likePending, setLikePending] = useState(false);
   const [comments, setComments] = useState<ArticleComment[]>([]);
   const [commentsState, setCommentsState] = useState<CommentLoadState>('loading');
@@ -101,8 +105,9 @@ export const useBlogEngagement = ({
   useEffect(() => {
     setLikes(Math.max(0, initialLikes));
     setLiked(initialLiked);
+    setLikers(initialLikers);
     setInteractionError(undefined);
-  }, [postId, initialLiked, initialLikes]);
+  }, [postId, initialLiked, initialLikes, initialLikers]);
 
   const loadComments = useCallback(async () => {
     if (!enabled || !postId) {
@@ -149,6 +154,7 @@ export const useBlogEngagement = ({
         : await updateBlogLikes(postId, nextLiked, language);
       setLikes(Math.max(0, response.likes));
       setLiked(response.is_liked_by_user);
+      setLikers(response.likers ?? []);
     } catch {
       setLiked(previousLiked);
       setLikes(previousLikes);
@@ -270,6 +276,7 @@ export const useBlogEngagement = ({
   return {
     likes,
     liked,
+    likers,
     likePending,
     toggleLike,
     comments,

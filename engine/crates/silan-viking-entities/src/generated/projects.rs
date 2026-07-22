@@ -30,6 +30,10 @@ pub struct Model {
     pub documentation_url: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub thumbnail_url: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub cover_source_type: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub cover_website_url: Option<String>,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub is_featured: String,
     #[sea_orm(column_type = "Text")]

@@ -74,13 +74,14 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
   })();
 
   useEffect(() => {
+    if (variant === 'sidebar') return;
     let active = true;
     mutatedRef.current = false;
     void fetchMomentEngagement(momentKey, getClientFingerprint())
       .then((value) => { if (active && !mutatedRef.current) setEngagement(value); })
       .catch(() => undefined);
     return () => { active = false; };
-  }, [momentKey]);
+  }, [momentKey, variant]);
 
   const toggleLike = async () => {
     if (likePending) return;
@@ -263,53 +264,18 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
   }
 
   if (variant === 'sidebar') {
-    const likeLabel = language === 'zh' ? `点赞，${engagement.likes} 个赞` : `Like, ${engagement.likes} likes`;
-
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <div className="shrink-0 border-b border-ds-border bg-ds-surface-3 px-3 py-1.5 sm:px-4">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <button
-              type="button"
-              aria-label={likeLabel}
-              disabled={likePending}
-              onClick={() => requireIdentity('like')}
-              className={`inline-flex shrink-0 items-center gap-1.5 text-ds-sm font-medium tabular-nums transition-colors disabled:cursor-wait disabled:opacity-50 ${
-                engagement.is_liked_by_user ? 'text-red-500' : 'text-ds-fg-subtle hover:text-ds-fg'
-              }`}
-            >
-              <Heart className="size-4" fill={engagement.is_liked_by_user ? 'currentColor' : 'none'} />
-            </button>
-
-            {likers.length > 0 && (
-              <div className="flex min-w-0 items-center gap-2 rounded-[9px] bg-ds-fg/10 px-2 py-1.5 shadow-inner">
-                {likers.slice(0, 4).map((liker, index) => (
-                  <MomentLikerAvatar
-                    key={`${liker.kind}-${liker.visitor_number || liker.avatar_url || index}`}
-                    liker={liker}
-                    language={language as 'en' | 'zh'}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex min-h-0 flex-1 flex-col pb-3 pl-4 pr-0 pt-3 sm:pl-5 sm:pr-0">
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-3 pt-4 sm:px-5">
           <EntityDiscussion
             composerPosition="bottom"
+            surface="sidebar"
             loadComments={loadComments}
             createComment={createComment}
             toggleCommentLike={(commentId, fingerprint) => toggleMomentCommentLike(commentId, fingerprint)}
             deleteComment={(commentId, fingerprint) => deleteMomentComment(commentId, fingerprint)}
           />
         </div>
-
-        <LoginPromptModal
-          open={loginPromptOpen}
-          onClose={closeLoginPrompt}
-          onResolved={handleLoginResolved}
-        />
       </div>
     );
   }

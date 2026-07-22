@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, Calendar, Clock } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { Seo } from '../Seo';
-import { fetchEpisode, fetchEpisodeSeries } from '../../api/episodes/episodeApi';
+import { fetchEpisode, fetchEpisodeSeries, updateEpisodeViews } from '../../api/episodes/episodeApi';
 import type { EpisodeData, EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from '../BlogStack/components/BlogContentRenderer';
 import SeriesDocumentFrame, {
@@ -26,6 +26,7 @@ import { useBlogEngagement } from '../BlogStack/hooks/useBlogEngagement';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
 import { scrollToAnchor } from '../../lib/scrollToAnchor';
+import { shouldCreditViewDisplay } from '../../utils/viewDisplayCredit';
 import {
   ArticleFooter,
   KnowledgeBaseShell,
@@ -54,6 +55,7 @@ const EpisodeDetail: React.FC = () => {
   const [seriesData, setSeriesData] = useState<EpisodeSeriesData | null>(null);
   const [activeChapter, setActiveChapter] = useState<string>('');
   const [activeSection, setActiveSection] = useState<string>(SERIES_HEADER_ID);
+  const [displayViews, setDisplayViews] = useState(0);
 
   const loadEpisode = useCallback(
     () => slug ? fetchEpisode(slug, language as 'en' | 'zh') : Promise.resolve(null),
@@ -61,6 +63,15 @@ const EpisodeDetail: React.FC = () => {
   );
   const episodeResource = useRemoteResource<EpisodeData>(slug, loadEpisode);
   const episode = episodeResource.data;
+  const isOverview = activeChapter === SERIES_OVERVIEW_ID;
+
+  useEffect(() => {
+    if (!episode) {
+      setDisplayViews(0);
+      return;
+    }
+    setDisplayViews(Math.max(0, episode.views ?? 0));
+  }, [episode?.id, episode?.views, episode]);
 
   useSetPageTitle(
     episode
@@ -97,6 +108,23 @@ const EpisodeDetail: React.FC = () => {
     };
   }, [episode, language]);
 
+  useEffect(() => {
+    if (!episode || isOverview) return;
+    let cancelled = false;
+    void updateEpisodeViews(episode.id, language as 'en' | 'zh')
+      .then((viewRecorded) => {
+        if (!cancelled && viewRecorded && shouldCreditViewDisplay('episode', episode.id)) {
+          setDisplayViews((current) => current + 1);
+        }
+      })
+      .catch(() => {
+        // View tracking is non-blocking; episode rendering remains usable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [episode?.id, episode, isOverview, language]);
+
   const chapters: BookNavChapter[] = useMemo(() => {
     if (!seriesData) return [];
     return seriesData.episodes.map((ep) => ({
@@ -124,11 +152,11 @@ const EpisodeDetail: React.FC = () => {
       ),
     [episode?.content],
   );
-  const isOverview = activeChapter === SERIES_OVERVIEW_ID;
   const engagement = useBlogEngagement({
     postId: episode?.id ?? '',
     initialLikes: episode?.likes ?? 0,
     initialLiked: Boolean(episode?.is_liked_by_user),
+    initialLikers: episode?.likers ?? [],
     language,
     kind: 'episode',
     enabled: Boolean(episode),
@@ -323,9 +351,10 @@ const EpisodeDetail: React.FC = () => {
             likes={engagement.likes}
             liked={engagement.liked}
             likePending={engagement.likePending}
+            likers={engagement.likers}
             contributors={['Silan Hu']}
             publishedAt={episode.publish_date}
-            viewCount={0}
+            viewCount={displayViews}
             shareTitle={episode.title}
             comments={engagement.comments}
             commentsState={engagement.commentsState}

@@ -4,12 +4,13 @@
 // masonry grid (cover, title, summary, tags, year) instead of a flat
 // timeline. A research project reads like a project: visual-led.
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Masonry, ProjectCard, type ProjectCardData } from '../../components/ds';
 
 export interface ResearchGridItem {
   id: string;
   title: string;
-  location: string;
+  location?: string;
   date: string;
   details: string[];
   image?: string;
@@ -31,7 +32,6 @@ const toCardData = (item: ResearchGridItem): ProjectCardData => ({
   description: item.details[0],
   tags: item.tags,
   year: extractYear(item.date),
-  author: item.location || undefined,
   coverImage: item.image,
 });
 
@@ -41,7 +41,13 @@ const ResearchGrid: React.FC<ResearchGridProps> = ({ items }) => (
     getKey={(item) => item.id}
     gap={16}
     renderItem={(item) => (
-      <ProjectCard project={toCardData(item)} coverSize="standard" hoverChrome={false} />
+      <Link
+        to={`/projects/${encodeURIComponent(item.id)}`}
+        className="block rounded-ds-lg no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary focus-visible:ring-offset-2 focus-visible:ring-offset-ds-surface-0"
+        aria-label={`Open project: ${item.title}`}
+      >
+        <ProjectCard project={toCardData(item)} coverSize="standard" hoverChrome={false} />
+      </Link>
     )}
   />
 );

@@ -1,24 +1,23 @@
 //! Thin Tauri-facing adapters over the public `silan-viking-app` use cases.
 
 use crate::model::{
-    ContentMetadataInput,
-    CommitActivityDay, DailyContentTraffic, DailyTraffic, DashboardData, DashboardItem,
-    DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats, DeploymentPlan,
-    DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation, EngagementStats,
-    EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction,
-    GeoEvidence, GeoInsightReport, GeoMetric, ImportedMediaAsset, MomentsCover, MomentsProfile, MomentsSettings,
-    RemoteContentVersion, ResumeEntryInput, ResumePartSource, ResumeProfile, ResumeProfileSource,
-    ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem, TrafficCountry,
-    TrafficEvidence, TrafficSource, VersionChange, VersionCommit, VersionStatus, VisitorLocation,
-    WorkspaceFileChange,
+    CommitActivityDay, ContentMetadataInput, DailyContentTraffic, DailyTraffic, DashboardData,
+    DashboardItem, DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats,
+    DeploymentPlan, DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation,
+    EngagementStats, EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource,
+    GeoAction, GeoEvidence, GeoInsightReport, GeoMetric, ImportedMediaAsset, MomentsCover,
+    MomentsProfile, MomentsSettings, RemoteContentVersion, ResumeEntryInput, ResumePartSource,
+    ResumeProfile, ResumeProfileSource, ResumeSection, ResumeSocialLink, StatsSyncReport,
+    TopContentItem, TrafficCountry, TrafficEvidence, TrafficSource, VersionChange, VersionCommit,
+    VersionStatus, VisitorLocation, WorkspaceFileChange,
 };
 use serde::Deserialize;
 use silan_viking_app::{
-    api_base_url, ContentCreator, ContentEditor, ContentKind, CreateTranslationInput, DeliveryControl, EditableDocument,
-    EditablePart, EditableSection, GeoAdvisor, IdeaCategory, MediaLibrary, ReleaseScope,
-    MarkdownTranslationRequest, OpenAiApiKey, OpenAiMarkdownTranslator, SaveLifecycleInput,
-    SaveMetadataInput, SaveTranslationInput, StatsCache, StatsError, WebsiteInsights,
-    WorkspaceContent,
+    api_base_url, ContentCreator, ContentEditor, ContentKind, CreateTranslationInput,
+    DeliveryControl, EditableDocument, EditablePart, EditableSection, GeoAdvisor, IdeaCategory,
+    MarkdownTranslationRequest, MediaLibrary, OpenAiApiKey, OpenAiMarkdownTranslator, ReleaseScope,
+    SaveLifecycleInput, SaveMetadataInput, SaveTranslationInput, StatsCache, StatsError,
+    WebsiteInsights, WorkspaceContent,
 };
 use std::collections::BTreeMap;
 use std::env;
@@ -655,7 +654,8 @@ impl DesktopWorkspace {
         }
 
         let api_key = OpenAiApiKey::parse(api_key.to_owned()).map_err(|error| error.to_string())?;
-        let model = env::var("SILAN_OPENAI_TRANSLATION_MODEL").unwrap_or_else(|_| "gpt-5".to_owned());
+        let model =
+            env::var("SILAN_OPENAI_TRANSLATION_MODEL").unwrap_or_else(|_| "gpt-5".to_owned());
         let translator = OpenAiMarkdownTranslator::new("https://api.openai.com", model);
         let generated = translator
             .translate(
@@ -744,9 +744,8 @@ impl DesktopWorkspace {
             .and_then(|value| value.to_str())
             .map(str::to_ascii_lowercase)
             .ok_or_else(|| "media file must have an extension".to_owned())?;
-        const SUPPORTED_EXTENSIONS: &[&str] = &[
-            "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico",
-        ];
+        const SUPPORTED_EXTENSIONS: &[&str] =
+            &["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico"];
         if !SUPPORTED_EXTENSIONS.contains(&extension.as_str()) {
             return Err(format!("unsupported media extension `{extension}`"));
         }
@@ -875,6 +874,10 @@ impl DesktopWorkspace {
                     title: metadata.title,
                     description: metadata.description,
                     cover_url: metadata.cover_url,
+                    cover_source_type: metadata.cover_source_type,
+                    cover_website_url: metadata.cover_website_url,
+                    github_url: metadata.github_url,
+                    demo_url: metadata.demo_url,
                     expected_revision: expected_revision.to_owned(),
                 },
                 &self.db_path,
@@ -1019,7 +1022,9 @@ impl DesktopWorkspace {
         let mut media = BTreeMap::new();
         for field in MEDIA_FIELDS {
             let value = json_text(shared, field).or_else(|| json_text(localized, field));
-            if let Some(resolved) = value.and_then(|reference| self.resolve_media_reference(reference)) {
+            if let Some(resolved) =
+                value.and_then(|reference| self.resolve_media_reference(reference))
+            {
                 media.insert((*field).to_owned(), resolved);
             }
         }
@@ -1294,6 +1299,10 @@ fn map_editable_document(
         visibility,
         updated_at,
         cover_uri,
+        cover_source_type,
+        cover_website_url,
+        github_url,
+        demo_url,
         date,
         pinned,
         parts,
@@ -1332,6 +1341,10 @@ fn map_editable_document(
                 pinned,
                 updated_at: updated_at.clone(),
                 cover_url: cover_uri.clone(),
+                cover_source_type: cover_source_type.clone(),
+                cover_website_url: cover_website_url.clone(),
+                github_url: github_url.clone(),
+                demo_url: demo_url.clone(),
                 engagement: item_engagement.clone(),
                 translations: translations
                     .into_iter()

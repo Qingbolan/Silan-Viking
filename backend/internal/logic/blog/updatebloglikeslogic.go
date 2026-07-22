@@ -110,6 +110,10 @@ func (l *UpdateBlogLikesLogic) UpdateContentLikes(req *types.UpdateBlogLikesRequ
 	if err != nil {
 		return nil, err
 	}
+	likers, err := engagement.ContentLikers(l.ctx, client, entityType, postID, 24)
+	if err != nil {
+		return nil, err
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -117,5 +121,20 @@ func (l *UpdateBlogLikesLogic) UpdateContentLikes(req *types.UpdateBlogLikesRequ
 	return &types.UpdateBlogLikesResponse{
 		Likes:         int64(counts.Likes),
 		IsLikedByUser: req.Increment,
+		Likers:        UpdateLikers(likers),
 	}, nil
+}
+
+func UpdateLikers(likers []engagement.Liker) []types.UpdateLiker {
+	result := make([]types.UpdateLiker, 0, len(likers))
+	for _, liker := range likers {
+		result = append(result, types.UpdateLiker{
+			Kind:          liker.Kind,
+			CountryCode:   liker.CountryCode,
+			VisitorNumber: liker.VisitorNumber,
+			AvatarURL:     liker.AvatarURL,
+			Label:         liker.Label,
+		})
+	}
+	return result
 }

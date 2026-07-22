@@ -90,6 +90,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
     postId: post.id,
     initialLikes: post.likes ?? 0,
     initialLiked: Boolean(post.isLikedByUser),
+    initialLikers: post.likers ?? [],
     language,
   });
 
@@ -336,6 +337,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
           likes={engagement.likes}
           liked={engagement.liked}
           likePending={engagement.likePending}
+          likers={engagement.likers}
           contributors={[typeof post.author === 'string' ? post.author : 'Silan Hu']}
           publishedAt={post.publishDate}
           viewCount={post.views}

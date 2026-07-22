@@ -23,6 +23,7 @@ import {
   Folder,
   FolderPlus,
   GitBranch,
+  Globe2,
   LoaderCircle,
   Menu,
   MessageCircle,
@@ -73,6 +74,7 @@ import {
   type LifecycleAction,
   type SeriesLifecycleAction,
 } from './lib/contentLifecycle';
+import { inferCoverSourceType, type CoverSourceType } from './lib/coverSource';
 import { formatSyncedAgo } from './lib/format';
 import { cssBackgroundImage, toWebviewMediaUrl } from './lib/media';
 import type {
@@ -322,7 +324,23 @@ export default function App() {
   const [contentEditorOpen, setContentEditorOpen] = React.useState(false);
   const [contentRailPanel, setContentRailPanel] = React.useState<ContentRailPanel>('parts');
   const [contentRailMode, setContentRailMode] = React.useState<ContentRailMode>('files');
-  const [metadataDraft, setMetadataDraft] = React.useState({ title: '', description: '', cover_url: '' });
+  const [metadataDraft, setMetadataDraft] = React.useState<{
+    title: string;
+    description: string;
+    cover_url: string;
+    cover_source_type: CoverSourceType;
+    cover_website_url: string;
+    github_url: string;
+    demo_url: string;
+  }>({
+    title: '',
+    description: '',
+    cover_url: '',
+    cover_source_type: 'image',
+    cover_website_url: '',
+    github_url: '',
+    demo_url: '',
+  });
   const [metadataSavingId, setMetadataSavingId] = React.useState('');
   const [metadataError, setMetadataError] = React.useState<string | null>(null);
   const [reactionDraft, setReactionDraft] = React.useState({ likes: '0', comments: '0' });
@@ -430,6 +448,10 @@ export default function App() {
           date: document.date || null,
           pinned: Boolean(document.pinned),
           coverUrl: document.cover_url || undefined,
+          coverSourceType: document.cover_source_type || 'image',
+          coverWebsiteUrl: document.cover_website_url || undefined,
+          githubUrl: document.github_url || undefined,
+          demoUrl: document.demo_url || undefined,
           engagement: document.engagement,
           documents: [],
           cardKind: document.entity_type === 'blog' ? 'article' : undefined,
@@ -1679,6 +1701,10 @@ export default function App() {
         title: saved.title,
         description: saved.description,
         cover_url: saved.cover_url,
+        cover_source_type: saved.cover_source_type,
+        cover_website_url: saved.cover_website_url,
+        github_url: saved.github_url,
+        demo_url: saved.demo_url,
         status: saved.status,
         visibility: saved.visibility,
         pinned: saved.pinned,
@@ -1986,10 +2012,17 @@ export default function App() {
   const selectedMetadataTranslation = selectedMetadataTarget?.translation || null;
   const selectedMetadataSummaryLabel = selectedContentGroup ? metadataSummaryLabel(selectedContentGroup.kind) : '';
   const selectedMetadataCoverLabel = selectedContentGroup ? metadataCoverLabel(selectedContentGroup.kind) : '';
+  const selectedCoverPreviewUrl = selectedMetadataCoverLabel
+    ? toWebviewMediaUrl(metadataDraft.cover_url)
+    : '';
   const metadataDirty = Boolean(selectedContentGroup && (
     metadataDraft.title.trim() !== selectedContentGroup.title
     || metadataDraft.description.trim() !== (selectedContentGroup.description || '')
     || metadataDraft.cover_url.trim() !== (selectedContentGroup.coverUrl || '')
+    || metadataDraft.cover_source_type !== (selectedContentGroup.coverSourceType || 'image')
+    || metadataDraft.cover_website_url.trim() !== (selectedContentGroup.coverWebsiteUrl || '')
+    || metadataDraft.github_url.trim() !== (selectedContentGroup.githubUrl || '')
+    || metadataDraft.demo_url.trim() !== (selectedContentGroup.demoUrl || '')
   ));
   const reactionDirty = Boolean(selectedContentGroup && (
     Number.parseInt(reactionDraft.likes, 10) !== selectedContentGroup.engagement.likes
@@ -2002,6 +2035,10 @@ export default function App() {
       title: selectedContentGroup.title,
       description: selectedContentGroup.description || '',
       cover_url: selectedContentGroup.coverUrl || '',
+      cover_source_type: selectedContentGroup.coverSourceType || inferCoverSourceType(selectedContentGroup.coverUrl),
+      cover_website_url: selectedContentGroup.coverWebsiteUrl || '',
+      github_url: selectedContentGroup.githubUrl || '',
+      demo_url: selectedContentGroup.demoUrl || '',
     });
     setMetadataError(null);
   }, [
@@ -2009,6 +2046,10 @@ export default function App() {
     selectedContentGroup?.title,
     selectedContentGroup?.description,
     selectedContentGroup?.coverUrl,
+    selectedContentGroup?.coverSourceType,
+    selectedContentGroup?.coverWebsiteUrl,
+    selectedContentGroup?.githubUrl,
+    selectedContentGroup?.demoUrl,
     metadataSavingId,
   ]);
 
@@ -2031,6 +2072,10 @@ export default function App() {
       title: group.title,
       description: group.description || '',
       cover_url: group.coverUrl || '',
+      cover_source_type: group.coverSourceType || inferCoverSourceType(group.coverUrl),
+      cover_website_url: group.coverWebsiteUrl || '',
+      github_url: group.githubUrl || '',
+      demo_url: group.demoUrl || '',
     });
     setMetadataError(null);
   };
@@ -2067,6 +2112,10 @@ export default function App() {
           title,
           description: selectedMetadataSummaryLabel ? metadataDraft.description.trim() : null,
           cover_url: selectedMetadataCoverLabel ? metadataDraft.cover_url.trim() : null,
+          cover_source_type: selectedContentGroup.kind === 'project' ? metadataDraft.cover_source_type : null,
+          cover_website_url: selectedContentGroup.kind === 'project' ? metadataDraft.cover_website_url.trim() : null,
+          github_url: selectedContentGroup.kind === 'project' ? metadataDraft.github_url.trim() : null,
+          demo_url: selectedContentGroup.kind === 'project' ? metadataDraft.demo_url.trim() : null,
         },
         expectedRevision: selectedMetadataTranslation.revision,
       });
@@ -2075,6 +2124,10 @@ export default function App() {
         title: saved.title,
         description: saved.description || '',
         cover_url: saved.cover_url || '',
+        cover_source_type: saved.cover_source_type || inferCoverSourceType(saved.cover_url),
+        cover_website_url: saved.cover_website_url || '',
+        github_url: saved.github_url || '',
+        demo_url: saved.demo_url || '',
       });
     } catch (reason) {
       setMetadataError(String(reason));
@@ -3520,13 +3573,83 @@ export default function App() {
                       </header>
                       <div className="resume-editor-body">
                         <aside className="resume-editor-outline" aria-label="Settings sections">
+                          {selectedMetadataCoverLabel && <a href="#content-settings-cover">Cover</a>}
                           <a href="#content-settings-identity">Identity</a>
-                          {(selectedMetadataSummaryLabel || selectedMetadataCoverLabel) && <a href="#content-settings-presentation">Presentation</a>}
+                          {selectedContentGroup.kind === 'project' && <a href="#content-settings-links">Links</a>}
+                          {selectedMetadataSummaryLabel && <a href="#content-settings-copy">Copy</a>}
                           <a href="#content-settings-lifecycle">Lifecycle</a>
                           <a href="#content-settings-source">Source</a>
                         </aside>
                         <main className="resume-editor-canvas">
                           <div className="resume-form resume-form--workspace content-settings-form">
+                            {selectedMetadataCoverLabel && (
+                              <section id="content-settings-cover" className="resume-editor-section content-settings-section content-settings-cover-section">
+                                <h3>Cover</h3>
+                                <div className="content-cover-settings">
+                                  <div
+                                    className="content-cover-preview"
+                                    data-empty={!selectedCoverPreviewUrl}
+                                    data-mode={metadataDraft.cover_source_type}
+                                    aria-hidden="true"
+                                  >
+                                    {selectedCoverPreviewUrl ? (
+                                      <img src={selectedCoverPreviewUrl} alt="" loading="lazy" />
+                                    ) : (
+                                      <span>{selectedContentGroup.title.trim()[0]?.toUpperCase() || 'S'}</span>
+                                    )}
+                                  </div>
+                                  <div className="content-cover-controls">
+                                    <div className="content-cover-type-group" role="radiogroup" aria-label="Cover type">
+                                      <button
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={metadataDraft.cover_source_type === 'image'}
+                                        className={metadataDraft.cover_source_type === 'image' ? 'active' : ''}
+                                        disabled={metadataSavingId === selectedContentGroup.id}
+                                        onClick={() => setMetadataDraft((current) => ({ ...current, cover_source_type: 'image' }))}
+                                      >
+                                        <FileImage size={14} />
+                                        Image
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={metadataDraft.cover_source_type === 'website'}
+                                        className={metadataDraft.cover_source_type === 'website' ? 'active' : ''}
+                                        disabled={metadataSavingId === selectedContentGroup.id}
+                                        onClick={() => setMetadataDraft((current) => ({ ...current, cover_source_type: 'website' }))}
+                                      >
+                                        <Globe2 size={14} />
+                                        Website
+                                      </button>
+                                    </div>
+                                    <label className="content-settings-field content-settings-field--wide">
+                                      <span>{selectedMetadataCoverLabel}</span>
+                                      <input
+                                        type="text"
+                                        value={metadataDraft.cover_url}
+                                        onChange={(event) => setMetadataDraft((current) => ({ ...current, cover_url: event.target.value }))}
+                                        disabled={metadataSavingId === selectedContentGroup.id}
+                                        placeholder="silan:// or https://image.png"
+                                      />
+                                    </label>
+                                    {selectedContentGroup.kind === 'project' && metadataDraft.cover_source_type === 'website' && (
+                                      <label className="content-settings-field content-settings-field--wide">
+                                        <span>Website URL</span>
+                                        <input
+                                          type="text"
+                                          value={metadataDraft.cover_website_url}
+                                          onChange={(event) => setMetadataDraft((current) => ({ ...current, cover_website_url: event.target.value }))}
+                                          disabled={metadataSavingId === selectedContentGroup.id}
+                                          placeholder="https://silan.tech"
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
+                              </section>
+                            )}
+
                             <section id="content-settings-identity" className="resume-editor-section content-settings-section">
                               <h3>Identity</h3>
                               <div className="content-settings-grid">
@@ -3550,33 +3673,47 @@ export default function App() {
                               </div>
                             </section>
 
-                          {(selectedMetadataSummaryLabel || selectedMetadataCoverLabel) && (
-                            <section id="content-settings-presentation" className="resume-editor-section content-settings-section">
-                              <h3>Presentation</h3>
-                              <div className="content-settings-grid">
-                                {selectedMetadataSummaryLabel && (
+                            {selectedContentGroup.kind === 'project' && (
+                              <section id="content-settings-links" className="resume-editor-section content-settings-section">
+                                <h3>Links</h3>
+                                <div className="content-settings-grid">
                                   <label className="content-settings-field content-settings-field--wide">
-                                    <span>{selectedMetadataSummaryLabel}</span>
-                                    <textarea
-                                      rows={4}
-                                      value={metadataDraft.description}
-                                      onChange={(event) => setMetadataDraft((current) => ({ ...current, description: event.target.value }))}
-                                      disabled={metadataSavingId === selectedContentGroup.id}
-                                    />
-                                  </label>
-                                )}
-                                {selectedMetadataCoverLabel && (
-                                  <label className="content-settings-field content-settings-field--wide">
-                                    <span>{selectedMetadataCoverLabel}</span>
+                                    <span>github_url</span>
                                     <input
                                       type="text"
-                                      value={metadataDraft.cover_url}
-                                      onChange={(event) => setMetadataDraft((current) => ({ ...current, cover_url: event.target.value }))}
+                                      value={metadataDraft.github_url}
+                                      onChange={(event) => setMetadataDraft((current) => ({ ...current, github_url: event.target.value }))}
                                       disabled={metadataSavingId === selectedContentGroup.id}
-                                      placeholder="silan:// or https://"
+                                      placeholder="https://github.com/owner/repo"
                                     />
                                   </label>
-                                )}
+                                  <label className="content-settings-field content-settings-field--wide">
+                                    <span>demo_url</span>
+                                    <input
+                                      type="text"
+                                      value={metadataDraft.demo_url}
+                                      onChange={(event) => setMetadataDraft((current) => ({ ...current, demo_url: event.target.value }))}
+                                      disabled={metadataSavingId === selectedContentGroup.id}
+                                      placeholder="https://example.com"
+                                    />
+                                  </label>
+                                </div>
+                              </section>
+                            )}
+
+                          {selectedMetadataSummaryLabel && (
+                            <section id="content-settings-copy" className="resume-editor-section content-settings-section">
+                              <h3>Copy</h3>
+                              <div className="content-settings-grid">
+                                <label className="content-settings-field content-settings-field--wide">
+                                  <span>{selectedMetadataSummaryLabel}</span>
+                                  <textarea
+                                    rows={4}
+                                    value={metadataDraft.description}
+                                    onChange={(event) => setMetadataDraft((current) => ({ ...current, description: event.target.value }))}
+                                    disabled={metadataSavingId === selectedContentGroup.id}
+                                  />
+                                </label>
                               </div>
                             </section>
                           )}

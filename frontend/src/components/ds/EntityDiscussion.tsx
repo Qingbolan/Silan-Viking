@@ -56,6 +56,7 @@ export interface EntityDiscussionProps {
   composerPosition?: 'top' | 'bottom';
   /** Whether the root composer should be shown; comment rows remain visible. */
   composerVisible?: boolean;
+  surface?: 'default' | 'sidebar';
 }
 
 const mapComment = (comment: RemoteDiscussionComment): ArticleComment => ({
@@ -109,6 +110,7 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
   visibleCount,
   composerPosition,
   composerVisible,
+  surface,
 }) => {
   const { language } = useLanguage();
   const [comments, setComments] = useState<ArticleComment[]>([]);
@@ -246,6 +248,7 @@ export const EntityDiscussion: React.FC<EntityDiscussionProps> = ({
           visibleCount={visibleCount}
           composerPosition={composerPosition}
           composerVisible={composerVisible}
+          surface={surface}
         />
       </div>
     </div>

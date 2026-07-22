@@ -3,11 +3,10 @@
 use crate::application::DesktopWorkspace;
 use crate::model::{
     ContentMetadataInput, DashboardData, DeliverySyncStatus, DeployRunStatus,
-    DeployVerificationResult, DeploymentPlan, DocumentStateInput, EditorDocument,
-    EngagementStats, EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource,
-    GeoInsightReport, ImportedMediaAsset, MomentsSettings, ResumeEntryInput, ResumePartSource,
-    ResumeProfile, ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus,
-    WorkspaceFileChange,
+    DeployVerificationResult, DeploymentPlan, DocumentStateInput, EditorDocument, EngagementStats,
+    EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoInsightReport,
+    ImportedMediaAsset, MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile,
+    ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus, WorkspaceFileChange,
 };
 use silan_viking_app::{OPENAI_KEYCHAIN_ACCOUNT, OPENAI_KEYCHAIN_SERVICE};
 
@@ -96,7 +95,9 @@ pub(crate) async fn unstage_workspace_paths(paths: Vec<String>) -> Result<(), St
 }
 
 #[tauri::command]
-pub(crate) async fn commit_workspace_changes(message: String) -> Result<DeliverySyncStatus, String> {
+pub(crate) async fn commit_workspace_changes(
+    message: String,
+) -> Result<DeliverySyncStatus, String> {
     run_background("commit workspace changes", move || {
         DesktopWorkspace::from_environment()?.commit_workspace(&message)
     })
@@ -145,11 +146,7 @@ pub(crate) fn save_content_metadata(
     metadata: ContentMetadataInput,
     expected_revision: String,
 ) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.save_content_metadata(
-        &id,
-        metadata,
-        &expected_revision,
-    )
+    DesktopWorkspace::from_environment()?.save_content_metadata(&id, metadata, &expected_revision)
 }
 
 #[tauri::command]
@@ -183,8 +180,11 @@ pub(crate) fn import_episode_series_media_asset(
     file_name: String,
     bytes: Vec<u8>,
 ) -> Result<ImportedMediaAsset, String> {
-    DesktopWorkspace::from_environment()?
-        .import_episode_series_media_asset(&series_slug, &file_name, &bytes)
+    DesktopWorkspace::from_environment()?.import_episode_series_media_asset(
+        &series_slug,
+        &file_name,
+        &bytes,
+    )
 }
 
 #[tauri::command]
@@ -286,8 +286,7 @@ fn openai_api_key() -> Result<String, String> {
     match entry.get_password() {
         Ok(secret) => Ok(secret),
         Err(keyring::Error::NoEntry) => Err(
-            "OpenAI features need an API key; run `silan-viking credentials openai set`"
-                .to_owned(),
+            "OpenAI features need an API key; run `silan-viking credentials openai set`".to_owned(),
         ),
         Err(error) => Err(format!(
             "Could not read OpenAI API key from Keychain: {error}"

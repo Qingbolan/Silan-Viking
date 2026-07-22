@@ -64,6 +64,10 @@ func blogDetailData(
 	if err != nil {
 		return nil, err
 	}
+	likers, err := engagement.ContentLikers(ctx, svcCtx.DB, "blog", post.ID, 24)
+	if err != nil {
+		return nil, err
+	}
 
 	readTime := ""
 	if post.ReadingTimeMinutes > 0 {
@@ -87,6 +91,7 @@ func blogDetailData(
 		Content:          []types.BlogContent{{Type: "text", Content: body, ID: post.ID + "-content"}},
 		Likes:            int64(counts.Likes),
 		IsLikedByUser:    liked,
+		Likers:           UpdateLikers(likers),
 		Views:            int64(counts.Views),
 		Summary:          excerpt,
 		FeaturedImageURL: post.FeaturedImageURL,

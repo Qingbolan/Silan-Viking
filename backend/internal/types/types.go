@@ -71,6 +71,7 @@ type BlogData struct {
 	Content             []BlogContent `json:"content"`
 	Likes               int64         `json:"likes"`
 	IsLikedByUser       bool          `json:"is_liked_by_user"`
+	Likers              []UpdateLiker `json:"likers"`
 	Views               int64         `json:"views"`
 	Summary             string        `json:"summary"`
 	SummaryZh           string        `json:"summary_zh,omitempty"`
@@ -316,6 +317,8 @@ type EpisodeData struct {
 	Content         []BlogContent `json:"content,omitempty"`
 	Likes           int64         `json:"likes"`
 	IsLikedByUser   bool          `json:"is_liked_by_user"`
+	Likers          []UpdateLiker `json:"likers"`
+	Views           int64         `json:"views"`
 }
 
 type EpisodeRequest struct {
@@ -472,8 +475,9 @@ type LikeProjectRequest struct {
 }
 
 type LikeProjectResponse struct {
-	LikesCount    int  `json:"likes_count"`
-	IsLikedByUser bool `json:"is_liked_by_user"`
+	LikesCount    int           `json:"likes_count"`
+	IsLikedByUser bool          `json:"is_liked_by_user"`
+	Likers        []UpdateLiker `json:"likers"`
 }
 
 type MediaRequest struct {
@@ -517,6 +521,8 @@ type Project struct {
 	DemoURL          string   `json:"demo_url,omitempty"`
 	DocumentationURL string   `json:"documentation_url,omitempty"`
 	ThumbnailURL     string   `json:"thumbnail_url,omitempty"`
+	CoverSourceType  string   `json:"cover_source_type,omitempty"`
+	CoverWebsiteURL  string   `json:"cover_website_url,omitempty"`
 	UpdatedAt        string   `json:"updated_at,omitempty"`
 }
 
@@ -616,6 +622,8 @@ type ProjectExtended struct {
 	DemoURL          string   `json:"demo_url,omitempty"`
 	DocumentationURL string   `json:"documentation_url,omitempty"`
 	ThumbnailURL     string   `json:"thumbnail_url,omitempty"`
+	CoverSourceType  string   `json:"cover_source_type,omitempty"`
+	CoverWebsiteURL  string   `json:"cover_website_url,omitempty"`
 	IsFeatured       bool     `json:"is_featured"`
 	IsPublic         bool     `json:"is_public"`
 	ViewCount        int64    `json:"view_count"`
@@ -667,9 +675,10 @@ type ProjectMetricsRequest struct {
 }
 
 type ProjectMetricsResponse struct {
-	LikesCount    int  `json:"likes_count"`
-	ViewsCount    int  `json:"views_count"`
-	IsLikedByUser bool `json:"is_liked_by_user"`
+	LikesCount    int           `json:"likes_count"`
+	ViewsCount    int           `json:"views_count"`
+	IsLikedByUser bool          `json:"is_liked_by_user"`
+	Likers        []UpdateLiker `json:"likers"`
 }
 
 type ProjectRequest struct {
@@ -874,8 +883,9 @@ type UpdateBlogLikesRequest struct {
 }
 
 type UpdateBlogLikesResponse struct {
-	Likes         int64 `json:"likes"`
-	IsLikedByUser bool  `json:"is_liked_by_user"`
+	Likes         int64         `json:"likes"`
+	IsLikedByUser bool          `json:"is_liked_by_user"`
+	Likers        []UpdateLiker `json:"likers"`
 }
 
 type UpdateBlogViewsRequest struct {

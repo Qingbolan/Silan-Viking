@@ -108,6 +108,8 @@ types:
       - { name: demo_url,           type: string,                                     required: false, default: null,            source: "py,ent", column: "projects.demo_url" }
       - { name: documentation_url,  type: string,                                     required: false, default: null,            source: "py,ent", column: "projects.documentation_url" }
       - { name: thumbnail_url,      type: string,                                     required: false, default: null,            source: "py,ent", column: "projects.thumbnail_url" }
+      - { name: cover_source_type,  type: "enum(image,website)",                     required: false, default: image,           source: new,      column: "projects.cover_source_type" }
+      - { name: cover_website_url,  type: string,                                     required: false, default: null,            source: new,      column: "projects.cover_website_url" }
       - { name: tech_stack,         type: "list<string>",                            required: false, default: [],              source: "py,ent", column: "project_technologies" }
       - { name: license,           type: "string(SPDX)",                            required: false, default: null,            source: "py,ent", column: "project_details.license" }
       - { name: version,           type: string,                                     required: false, default: null,            source: "py,ent", column: "project_details.version" }

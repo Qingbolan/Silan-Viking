@@ -97,7 +97,7 @@ const ProjectGallery: React.FC = () => {
     tags: project.tags,
     year: project.year,
     githubUrl: project.githubUrl,
-    demoUrl: project.demoUrl,
+    demoUrl: project.demoUrl || project.coverWebsiteUrl,
     coverImage: project.thumbnailUrl,
   }), []);
 

@@ -369,13 +369,19 @@ func ensureProjectionMetadataSchema(ctx context.Context, dsn string) error {
 	}
 	defer db.Close()
 
-	_, err = db.ExecContext(ctx, `
+	if _, err = db.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS sync_meta (
 			content_commit TEXT,
 			content_hash TEXT,
 			items_total BIGINT,
 			generated_at TEXT
-		)`)
+		)`); err != nil {
+		return err
+	}
+	if _, err = db.ExecContext(ctx, `ALTER TABLE projects ADD COLUMN IF NOT EXISTS cover_source_type TEXT`); err != nil {
+		return err
+	}
+	_, err = db.ExecContext(ctx, `ALTER TABLE projects ADD COLUMN IF NOT EXISTS cover_website_url TEXT`)
 	return err
 }
 

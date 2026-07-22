@@ -1,4 +1,4 @@
-import type { BlogData } from '../../components/BlogStack/types/blog';
+import type { BlogData, BlogLiker } from '../../components/BlogStack/types/blog';
 import { get, post, formatLanguage, del, apiUrl } from '../utils';
 import { type PaginationRequest } from '../config';
 import { processRawContent } from '../../utils/markdownParser';
@@ -19,6 +19,7 @@ interface BlogListRequest extends PaginationRequest {
 export interface UpdateBlogLikesResponse {
   likes: number;
   is_liked_by_user: boolean;
+  likers: BlogLiker[];
 }
 
 // API functions

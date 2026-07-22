@@ -38,6 +38,7 @@ const SIZE = {
 
 const Avatar: React.FC<AvatarProps> = ({ name, src, countryCode, visitorNumber, size = 'md', className }) => {
   const [flagFailed, setFlagFailed] = useState(false);
+  const fallbackText = visitorNumber || firstChar(name);
 
   if (!src && countryCode && !flagFailed) {
     return (
@@ -73,6 +74,7 @@ const Avatar: React.FC<AvatarProps> = ({ name, src, countryCode, visitorNumber, 
     <div
       className={cn(
         'flex shrink-0 items-center justify-center rounded-full font-medium text-white',
+        visitorNumber && 'font-mono text-[11px] tabular-nums',
         PALETTE[hashIndex(name)],
         SIZE[size],
         className,
@@ -80,7 +82,7 @@ const Avatar: React.FC<AvatarProps> = ({ name, src, countryCode, visitorNumber, 
       title={name}
       aria-label={name}
     >
-      {firstChar(name)}
+      {fallbackText}
     </div>
   );
 };

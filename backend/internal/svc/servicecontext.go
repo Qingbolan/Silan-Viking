@@ -79,6 +79,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	if err != nil {
 		log.Fatalf("failed opening raw DB connection: %v", err)
 	}
+	if err := ensureProjectPresentationSchema(rawDB, c.Database.Driver); err != nil {
+		log.Fatalf("failed ensuring project presentation schema: %v", err)
+	}
 
 	// request_logs — a runtime access-log table written by the analytics
 	// middleware via the ent client. The table itself mirrors the ent
@@ -409,6 +412,39 @@ func databaseColumnExists(db *sql.DB, driver, table, column string) (bool, error
 		}
 	}
 	return false, rows.Err()
+}
+
+func ensureProjectPresentationSchema(db *sql.DB, driver string) error {
+	exists, err := databaseTableExists(db, driver, "projects")
+	if err != nil || !exists {
+		return err
+	}
+
+	columns := []struct {
+		name      string
+		mysqlType string
+		sqlType   string
+	}{
+		{name: "cover_source_type", mysqlType: "VARCHAR(32)", sqlType: "TEXT"},
+		{name: "cover_website_url", mysqlType: "TEXT", sqlType: "TEXT"},
+	}
+	for _, column := range columns {
+		hasColumn, err := databaseColumnExists(db, driver, "projects", column.name)
+		if err != nil {
+			return err
+		}
+		if hasColumn {
+			continue
+		}
+		columnType := column.sqlType
+		if driver == "mysql" {
+			columnType = column.mysqlType
+		}
+		if _, err := db.Exec("ALTER TABLE projects ADD COLUMN " + column.name + " " + columnType); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func purgeIdeaRows(db *sql.DB, driver string) {
