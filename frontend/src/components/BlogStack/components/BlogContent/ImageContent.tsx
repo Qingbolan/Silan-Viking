@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Maximize2 } from 'lucide-react';
 import { BlogContent } from '../../types/blog';
 import { useLanguage } from '../../../LanguageContext';
@@ -14,6 +14,7 @@ interface ImageContentProps {
 
 export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideScreen }) => {
   const { language } = useLanguage();
+  const imageRef = useRef<HTMLImageElement>(null);
   const [loading, setLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -26,6 +27,16 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
     setImageError(false);
     setAttempt(0);
   }, [item.content]);
+
+  useEffect(() => {
+    if (unpublished) return;
+
+    const image = imageRef.current;
+    if (!image || !image.complete) return;
+
+    setLoading(false);
+    setImageError(image.naturalWidth === 0);
+  }, [attempt, source, unpublished]);
 
   const retry = () => {
     setLoading(true);
@@ -51,6 +62,7 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
                 aria-label={language === 'zh' ? `查看原图：${alt}` : `Open full-size image: ${alt}`}
               >
                 <img
+                  ref={imageRef}
                   key={`${source}-${attempt}`}
                   src={source}
                   alt={alt}
