@@ -7,12 +7,21 @@
 // cover image is given it's used; otherwise a branded NUS-gradient
 // placeholder shows the title's initial letter.
 import React from 'react';
-import { Github, ExternalLink, ArrowUpRight, Calendar, User } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BookOpen,
+  Calendar,
+  Code2,
+  ExternalLink,
+  Github,
+  Globe2,
+  MonitorUp,
+  User,
+} from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { dsRoot } from './dsAttr';
 import { Card } from './Card';
 import { Badge } from './Badge';
-import { IconButton } from './IconButton';
 import { ProjectLivePreview, ProjectPlaceholder } from './ProjectPreviewSurface';
 
 /**
@@ -36,6 +45,12 @@ export interface ProjectCardData {
   author?: string;
   githubUrl?: string;
   demoUrl?: string;
+  documentationUrl?: string;
+  relatedLinks?: Array<{
+    title: string;
+    href: string;
+    kind?: 'blog' | 'series' | 'article' | 'episode';
+  }>;
 
   /* --- Cover content — first one set wins, in this order ---------------- */
   /** A static preview image / screenshot. */
@@ -49,6 +64,7 @@ export interface ProjectCardData {
    * image/video is set. Falls back to the placeholder if embedding fails.
    */
   livePreview?: boolean;
+  coverSourceType?: 'image' | 'website';
 
   /** Optional status pill (e.g. "Active", "Archived"). */
   status?: { label: string; tone?: 'success' | 'neutral' | 'warning' };
@@ -65,6 +81,23 @@ export interface ProjectCardProps {
   hoverChrome?: boolean;
   className?: string;
 }
+
+type ProjectCapability = {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  tone?: 'primary' | 'neutral';
+};
+
+type ProjectActionLink = {
+  key: string;
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  primary: boolean;
+};
+
+const present = <T,>(item: T | null | undefined): item is T => item != null;
 
 // Only the COVER has a fixed height (it's an image/preview region). The
 // card body sizes to its content; a row of cards is kept even by the CSS
@@ -108,7 +141,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   const {
     id, title, description, tags = [],
     coverImage, coverVideo, coverPoster, livePreview,
-    year, author, githubUrl, demoUrl, status,
+    year, author, githubUrl, demoUrl, documentationUrl, relatedLinks = [],
+    coverSourceType, status,
   } = project;
 
   const shownTags = tags.slice(0, maxTags);
@@ -117,6 +151,101 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   // Cover priority: image → video → live demo preview → branded placeholder.
   const showLivePreview =
     !coverImage && !coverVideo && livePreview && !!demoUrl;
+
+  const primaryCapability: ProjectCapability | undefined = demoUrl
+    ? {
+        key: 'demo',
+        label: 'Live demo',
+        icon: <MonitorUp />,
+        tone: 'primary' as const,
+      }
+    : githubUrl
+      ? {
+          key: 'source',
+          label: 'Source code',
+          icon: <Code2 />,
+          tone: 'primary' as const,
+        }
+      : relatedLinks.length > 0
+        ? {
+            key: 'related',
+            label: relatedLinks.length === 1 ? 'Related writing' : `${relatedLinks.length} related`,
+            icon: <BookOpen />,
+            tone: 'primary' as const,
+          }
+        : undefined;
+
+  const secondaryCapabilities: ProjectCapability[] = [
+    githubUrl && primaryCapability?.key !== 'source'
+      ? {
+          key: 'source',
+          label: 'Source',
+          icon: <Github />,
+        }
+      : null,
+    demoUrl && primaryCapability?.key !== 'demo'
+      ? {
+          key: 'demo',
+          label: 'Demo',
+          icon: <ExternalLink />,
+        }
+      : null,
+    documentationUrl
+      ? {
+          key: 'docs',
+          label: 'Docs',
+          icon: <BookOpen />,
+        }
+      : null,
+    relatedLinks.length > 0 && primaryCapability?.key !== 'related'
+      ? {
+          key: 'related',
+          label: relatedLinks.length === 1 ? 'Writing' : `${relatedLinks.length} writing`,
+          icon: <BookOpen />,
+        }
+      : null,
+    coverSourceType === 'website'
+      ? {
+          key: 'cover',
+          label: 'Website cover',
+          icon: <Globe2 />,
+        }
+      : null,
+  ].filter(present);
+
+  const capabilities = primaryCapability
+    ? [primaryCapability, ...secondaryCapabilities.slice(0, 3)]
+    : secondaryCapabilities.slice(0, 4);
+
+  const actionLinks: ProjectActionLink[] = [
+    demoUrl
+      ? {
+          key: 'demo',
+          label: 'Demo',
+          href: demoUrl,
+          icon: <ExternalLink />,
+          primary: true,
+        }
+      : null,
+    githubUrl
+      ? {
+          key: 'source',
+          label: 'Source',
+          href: githubUrl,
+          icon: <Github />,
+          primary: false,
+        }
+      : null,
+    !demoUrl && !githubUrl && relatedLinks[0]
+      ? {
+          key: 'related',
+          label: 'Read',
+          href: relatedLinks[0].href,
+          icon: <BookOpen />,
+          primary: false,
+        }
+      : null,
+  ].filter(present);
 
   // `feature` is a wide, horizontal card (cover left, body right); the other
   // sizes are the standard vertical card (cover on top).
@@ -206,8 +335,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     >
       <h3
         className={cn(
-          'font-semibold leading-snug tracking-[-0.01em] text-ds-fg',
-          isFeature ? 'text-ds-xl' : 'text-ds-base',
+          'font-semibold leading-snug tracking-[-0.012em] text-ds-fg',
+          isFeature ? 'text-ds-2xl sm:text-[1.65rem]' : 'text-ds-base',
         )}
       >
         {title}
@@ -224,9 +353,26 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </p>
       )}
 
+      {capabilities.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {capabilities.map((capability, index) => (
+            <Badge
+              key={capability.key}
+              tone={index === 0 && capability.tone === 'primary' ? 'primary' : 'neutral'}
+              appearance="soft"
+              size="sm"
+              className={!hoverChrome ? 'border-0' : undefined}
+            >
+              {capability.icon}
+              {capability.label}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       {/* Tag chips. */}
       {shownTags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 pt-1">
           {shownTags.map((tag) => (
             <Badge key={tag} tone="neutral" appearance="soft" size="sm" className={!hoverChrome ? 'border-0' : undefined}>
               {tag}
@@ -241,29 +387,33 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       )}
 
       {/* --- Footer: links ----------------------------------------------- */}
-      {(githubUrl || demoUrl) && (
+      {actionLinks.length > 0 && (
         <div
           className={cn(
-            'mt-auto flex items-center gap-0.5 pt-2',
+            'mt-auto flex flex-wrap items-center gap-1.5 pt-2',
             hoverChrome && 'border-t border-ds-border',
           )}
           // Stop link clicks from also triggering the card's onOpen.
           onClick={(e) => e.stopPropagation()}
         >
-          {githubUrl && (
-            <a href={githubUrl} target="_blank" rel="noopener noreferrer" {...dsRoot}>
-              <IconButton label="View source on GitHub" size="sm" variant="ghost">
-                <Github />
-              </IconButton>
+          {actionLinks.map((action) => (
+            <a
+              key={action.key}
+              href={action.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              {...dsRoot}
+              className={cn(
+                'inline-flex h-7 items-center gap-1.5 rounded-ds-md px-2.5 text-ds-2xs font-medium transition-[background-color,color,border-color,transform] duration-ds-fast active:scale-[0.97] [&_svg]:size-3.5',
+                action.primary
+                  ? 'bg-ds-primary text-ds-primary-fg shadow-ds-1 hover:bg-ds-primary-hover'
+                  : 'border border-ds-border bg-ds-surface-2 text-ds-fg-muted hover:border-ds-border-strong hover:bg-ds-surface-3 hover:text-ds-fg',
+              )}
+            >
+              {action.icon}
+              {action.label}
             </a>
-          )}
-          {demoUrl && (
-            <a href={demoUrl} target="_blank" rel="noopener noreferrer" {...dsRoot}>
-              <IconButton label="Open live demo" size="sm" variant="ghost">
-                <ExternalLink />
-              </IconButton>
-            </a>
-          )}
+          ))}
         </div>
       )}
     </div>

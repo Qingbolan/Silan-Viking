@@ -54,6 +54,7 @@ const normalizeProject = (raw: any): Project => {
     thumbnailUrl,
     coverSourceType,
     coverWebsiteUrl,
+    relatedBlogs: raw.relatedBlogs || raw.related_blogs || undefined,
     updatedAt: normalizeContentTimestamp(raw.updatedAt || raw.updated_at),
   };
 };

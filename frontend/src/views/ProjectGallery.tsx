@@ -97,8 +97,15 @@ const ProjectGallery: React.FC = () => {
     tags: project.tags,
     year: project.year,
     githubUrl: project.githubUrl,
+    documentationUrl: project.documentationUrl,
     demoUrl: project.demoUrl || project.coverWebsiteUrl,
     coverImage: project.thumbnailUrl,
+    coverSourceType: project.coverSourceType,
+    relatedLinks: project.relatedBlogs?.slice(0, 3).map((blog) => ({
+      title: blog.title,
+      href: blog.url || `/blog/${blog.id}`,
+      kind: 'blog',
+    })),
   }), []);
 
   if (loading) return <BrandLoading message={t('projects.loadingProjects')} />;
@@ -157,6 +164,7 @@ const ProjectGallery: React.FC = () => {
             <Masonry
               items={filteredProjects}
               getKey={projectKey}
+              bottomPadding={96}
               breakpoints={filteredProjects.length === 1 ? SINGLE_PROJECT_BREAKPOINTS : undefined}
               getSpan={filteredProjects.length === 1 ? spanFeatureProject : undefined}
               renderItem={(project) => (

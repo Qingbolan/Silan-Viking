@@ -317,6 +317,7 @@ export interface Project {
   thumbnailUrl?: string;
   coverSourceType?: 'image' | 'website';
   coverWebsiteUrl?: string;
+  relatedBlogs?: ProjectBlogReference[];
   updatedAt?: string;
 }
 
