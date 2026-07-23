@@ -1,7 +1,8 @@
 //! Release and deployment application control plane.
 
 use crate::{
-    api_base_url, workspace_stats_sync_token, GitRepo, Workspace, WorkspaceSync, WorkspaceSyncState,
+    api_base_url, hash_optimized_media_asset, optimize_media_asset, workspace_stats_sync_token,
+    GitRepo, Workspace, WorkspaceSync, WorkspaceSyncState,
 };
 use flate2::{write::GzEncoder, Compression};
 use rusqlite::Connection;
@@ -624,11 +625,19 @@ impl DeliveryControl {
         let media = scan
             .assets()
             .iter()
-            .map(|asset| MediaAssetManifest {
-                path: asset.rel_path.clone(),
-                hash: asset.hash.to_string(),
+            .map(|asset| {
+                let hash = hash_optimized_media_asset(&asset.abs_path).map_err(|error| {
+                    DeliveryControlError::Runner(format!(
+                        "hash optimized media {}: {error}",
+                        asset.rel_path
+                    ))
+                })?;
+                Ok(MediaAssetManifest {
+                    path: asset.rel_path.clone(),
+                    hash: hash.to_string(),
+                })
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, DeliveryControlError>>()?;
         let agent = deploy_http_agent(&self.content_root, &base);
         let url = format!("{base}/api/v1/content/deploy");
         let empty_upload = BTreeSet::new();
@@ -733,8 +742,17 @@ impl DeliveryControl {
             .iter()
             .filter(|asset| upload_paths.contains(&asset.rel_path))
         {
+            let optimized = tempfile::NamedTempFile::new().map_err(|error| {
+                DeliveryControlError::Runner(format!("stage optimized media: {error}"))
+            })?;
+            optimize_media_asset(&asset.abs_path, optimized.path()).map_err(|error| {
+                DeliveryControlError::Runner(format!(
+                    "optimize media {} for bundle: {error}",
+                    asset.rel_path
+                ))
+            })?;
             archive
-                .append_path_with_name(&asset.abs_path, format!("media/{}", asset.rel_path))
+                .append_path_with_name(optimized.path(), format!("media/{}", asset.rel_path))
                 .map_err(|error| DeliveryControlError::Runner(format!("bundle media: {error}")))?;
         }
         let encoder = archive

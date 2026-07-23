@@ -29,6 +29,7 @@ pub mod geo_advisor;
 pub mod github_oauth_credentials;
 pub mod google_oauth_credentials;
 pub mod media_library;
+pub mod media_optimizer;
 pub mod openai_credentials;
 pub mod parser;
 pub mod proposal;
@@ -69,6 +70,11 @@ pub use google_oauth_credentials::{
     GOOGLE_OAUTH_KEYCHAIN_SERVICE,
 };
 pub use media_library::{MediaAssetRef, MediaLibrary, MediaLibraryError, MediaReferenceStatus};
+pub use media_optimizer::{
+    hash_optimized_media_asset, optimize_media_asset, optimize_media_tree, MediaOptimizationError,
+    MediaOptimizationReport, MediaOptimizationStatus, MediaTreeOptimizationReport,
+    MEDIA_OPTIMIZER_VERSION,
+};
 pub use openai_credentials::{
     OpenAiApiKey, OpenAiCredentialError, OpenAiCredentialVerifier, OpenAiVerification,
     OPENAI_KEYCHAIN_ACCOUNT, OPENAI_KEYCHAIN_SERVICE,

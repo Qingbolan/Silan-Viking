@@ -8,7 +8,8 @@ mod skill;
 
 use rusqlite::{params, Connection, OptionalExtension};
 use silan_viking_app::{
-    ContentKind, CredentialProfile, Identified, ProposalId, ScannedAsset, Workspace,
+    optimize_media_asset, optimize_media_tree, ContentKind, CredentialProfile, Identified,
+    ProposalId, ScannedAsset, Workspace, MEDIA_OPTIMIZER_VERSION,
 };
 use std::env;
 use std::fs;
@@ -2705,6 +2706,16 @@ fn build_frontend_target(
     if target.is_default() {
         assert_seo_prerender(&dist)?;
     }
+    let optimization = optimize_media_tree(&dist)
+        .map_err(|error| format!("[frontend] optimize dist media: {error}"))?;
+    if optimization.files_seen > 0 {
+        println!(
+            "[frontend] optimized {}/{} media file(s), saved {} bytes",
+            optimization.files_optimized,
+            optimization.files_seen,
+            optimization.saved_bytes(),
+        );
+    }
     Ok(dist)
 }
 
@@ -4004,6 +4015,8 @@ fn media_generation_hash(assets: &[ScannedAsset]) -> String {
     let mut ordered = assets.iter().collect::<Vec<_>>();
     ordered.sort_by(|left, right| left.rel_path.cmp(&right.rel_path));
     let mut digest = md5::Context::new();
+    digest.consume(MEDIA_OPTIMIZER_VERSION.as_bytes());
+    digest.consume([0]);
     for asset in ordered {
         digest.consume(asset.rel_path.as_bytes());
         digest.consume([0]);
@@ -4885,15 +4898,28 @@ fn stage_media(staging: &Path, assets: &[ScannedAsset]) -> Result<Option<PathBuf
     // A clean tree each deploy: the staged set IS the desired server state
     // (mirror semantics), so a stale file from a previous run must not linger.
     let _ = fs::remove_dir_all(&media_root);
+    let mut optimized_files = 0usize;
+    let mut bytes_before = 0u64;
+    let mut bytes_after = 0u64;
     for asset in assets {
         let dest = media_root.join(&asset.rel_path);
-        if let Some(parent) = dest.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| format!("staging media dir {}: {e}", parent.display()))?;
-        }
-        fs::copy(&asset.abs_path, &dest)
+        let report = optimize_media_asset(&asset.abs_path, &dest)
             .map_err(|e| format!("staging media file {}: {e}", asset.rel_path))?;
+        bytes_before += report.original_bytes;
+        bytes_after += report.output_bytes;
+        if matches!(
+            report.status,
+            silan_viking_app::MediaOptimizationStatus::Optimized
+        ) {
+            optimized_files += 1;
+        }
     }
+    println!(
+        "[content] optimized {}/{} media file(s), saved {} bytes",
+        optimized_files,
+        assets.len(),
+        bytes_before.saturating_sub(bytes_after),
+    );
     Ok(Some(media_root))
 }
 
