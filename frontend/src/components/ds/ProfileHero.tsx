@@ -105,9 +105,9 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   return (
     <section
       {...dsRoot}
-      className={cn('relative -mx-4 isolate overflow-hidden px-6 py-8 sm:mx-auto sm:max-w-5xl sm:px-10 sm:py-14', className)}
+      className={cn('relative isolate w-full max-w-full overflow-hidden px-4 py-8 xs:px-6 sm:mx-auto sm:max-w-5xl sm:px-10 sm:py-14', className)}
     >
-      <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-ds-primary/10 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute right-0 top-0 size-64 rounded-full bg-ds-primary/10 blur-3xl sm:-translate-y-1/3 sm:translate-x-1/3 sm:size-80" />
       <div aria-hidden className="pointer-events-none absolute left-6 top-0 h-20 w-px bg-ds-primary/50 sm:left-10" />
 
       {avatarSrc && (
@@ -130,7 +130,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
         </motion.div>
       )}
 
-      <div className="relative z-10 max-w-3xl pt-24 sm:pt-20">
+      <div className="relative z-10 min-w-0 max-w-3xl pt-24 sm:pt-20">
         <motion.p
           {...fade(0.03)}
           className="max-w-[12rem] font-mono text-[0.6875rem] font-medium uppercase leading-5 tracking-[0.18em] text-ds-primary sm:max-w-none"

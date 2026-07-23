@@ -74,7 +74,7 @@ const BlogPlaceholder: React.FC<{ id: string }> = ({ id }) => (
       }}
     />
     {/* The reference code is the placeholder's centred focal element. */}
-    <span className="relative select-none whitespace-nowrap font-mono text-ds-sm uppercase tracking-[0.18em] text-ds-fg-subtle">
+    <span className="relative max-w-[calc(100%-2rem)] select-none overflow-hidden text-ellipsis whitespace-nowrap font-mono text-ds-sm uppercase tracking-[0.18em] text-ds-fg-subtle">
       {refCode(id)}
     </span>
   </div>

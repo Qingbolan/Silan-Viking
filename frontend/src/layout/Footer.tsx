@@ -69,7 +69,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="relative overflow-hidden bg-[#17181a] text-white">
       <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-white/10" />
-      <div aria-hidden className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-[#305d9f]/15 blur-3xl" />
+      <div aria-hidden className="absolute left-0 top-0 h-72 w-72 rounded-full bg-[#305d9f]/15 blur-3xl sm:-translate-x-1/3" />
 
       <div className="relative mx-auto grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 px-5 pb-12 pt-12 sm:px-10 sm:pb-16 sm:pt-16 lg:grid-cols-[1.35fr_0.65fr_0.65fr_0.8fr] lg:gap-8 lg:px-12">
         <section className="col-span-2 max-w-sm lg:col-span-1">

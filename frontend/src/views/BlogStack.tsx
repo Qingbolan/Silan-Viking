@@ -274,7 +274,7 @@ const BlogStack: React.FC = () => {
 
   return (
     <motion.div
-      className="min-h-screen py-20"
+      className="min-h-screen w-full max-w-full min-w-0 py-16 sm:py-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -289,7 +289,7 @@ const BlogStack: React.FC = () => {
         path="/blog"
         lang={language as 'en' | 'zh'}
       />
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="mx-auto w-full max-w-6xl min-w-0 px-4">
         {/* Header — title + search + content-type + topic filters. */}
         <motion.div
           className="mb-12"

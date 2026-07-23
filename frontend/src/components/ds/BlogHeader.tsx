@@ -68,7 +68,7 @@ const TagChip: React.FC<{
     onClick={onClick}
     aria-pressed={active}
     className={cn(
-      'rounded-full border px-3 py-1 text-ds-xs font-medium',
+      'max-w-full min-w-0 rounded-full border px-3 py-1 text-ds-xs font-medium',
       'transition-colors duration-ds-fast ease-ds-standard outline-none',
       'focus-visible:shadow-ds-focus',
       active
@@ -76,7 +76,9 @@ const TagChip: React.FC<{
         : 'border-ds-border bg-ds-surface-1 text-ds-fg-muted hover:border-ds-fg-subtle hover:text-ds-fg',
     )}
   >
-    {label}
+    <span className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+      {label}
+    </span>
   </button>
 );
 
@@ -117,74 +119,77 @@ export const BlogHeader: React.FC<BlogHeaderProps> = ({
   const showTags = !!tags && tags.length > 0 && typeof onTagChange === 'function';
 
   return (
-  <header {...dsRoot} className={cn('w-full', className)}>
-    {/* Group 1 — hero. Centered, the title is the sole focal point. */}
-    <div className="mx-auto max-w-2xl text-center">
-      {eyebrow && (
-        <div className="mb-2 text-ds-xs font-medium uppercase tracking-[0.14em] text-ds-primary">
-          {eyebrow}
-        </div>
-      )}
-      <h1 className="text-5xl font-bold leading-[1.05] tracking-[-0.025em] text-ds-fg md:text-6xl">
-        {title}
-      </h1>
-      {description && (
-        <p className="mx-auto mt-4 max-w-xl text-lg leading-[1.6] text-ds-fg-muted">
-          {description}
-        </p>
-      )}
-    </div>
-
-    {/* Optional context strip — between the hero and the toolbar. */}
-    {afterHero && <div className="mt-6">{afterHero}</div>}
-
-    {/* Group 2 — tools: search + content-type + topic chips. The whole
-        toolbar is omitted for a hero-only header (no search, no filters). */}
-    {(showSearch || showSegmented || showTags) && (
-      <div className="mt-10 border-t border-ds-border pt-5">
-        {(showSearch || showSegmented) && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {showSearch && (
-              <div className="w-full sm:max-w-xs">
-                <Input
-                  leadingIcon={<Search />}
-                  placeholder={searchPlaceholder}
-                  value={search}
-                  onChange={(e) => onSearchChange?.(e.target.value)}
-                  aria-label={searchPlaceholder}
-                />
-              </div>
-            )}
-            {showSegmented && (
-              <div className="flex items-center gap-2.5">
-                <FilterLabel icon={<LayoutGrid />}>{typeLabel}</FilterLabel>
-                <Segmented
-                  tone="primary"
-                  value={selectedType ?? ''}
-                  onChange={(v) => onTypeChange?.(v)}
-                  options={typeOptions ?? []}
-                />
-              </div>
-            )}
+    <header {...dsRoot} className={cn('w-full max-w-full min-w-0 overflow-hidden', className)}>
+      {/* Group 1 — hero. Centered, the title is the sole focal point. */}
+      <div className="mx-auto max-w-2xl min-w-0 text-center">
+        {eyebrow && (
+          <div className="mb-2 text-ds-xs font-medium uppercase tracking-[0.14em] text-ds-primary">
+            {eyebrow}
           </div>
         )}
-
-        {/* Group 3 — topic chips. */}
-        {showTags && (
-          <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2">
-            <FilterLabel icon={<TagIcon />}>{tagLabel}</FilterLabel>
-            {tags!.map((tag) => (
-              <TagChip
-                key={tag}
-                label={formatTag ? formatTag(tag) : tag}
-                active={tag === selectedTag}
-                onClick={() => onTagChange!(tag)}
-              />
-            ))}
-          </div>
+        <h1 className="text-4xl font-bold leading-[1.05] tracking-[-0.025em] text-ds-fg sm:text-5xl md:text-6xl">
+          {title}
+        </h1>
+        {description && (
+          <p className="mx-auto mt-4 max-w-xl text-base leading-[1.6] text-ds-fg-muted sm:text-lg">
+            {description}
+          </p>
         )}
       </div>
-    )}
-  </header>
+
+      {/* Optional context strip — between the hero and the toolbar. */}
+      {afterHero && <div className="mt-6 min-w-0 max-w-full">{afterHero}</div>}
+
+      {/* Group 2 — tools: search + content-type + topic chips. The whole
+          toolbar is omitted for a hero-only header (no search, no filters). */}
+      {(showSearch || showSegmented || showTags) && (
+        <div className="mt-8 min-w-0 max-w-full border-t border-ds-border pt-5 sm:mt-10">
+          {(showSearch || showSegmented) && (
+            <div className="flex min-w-0 max-w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {showSearch && (
+                <div className="w-full min-w-0 sm:max-w-xs">
+                  <Input
+                    leadingIcon={<Search />}
+                    placeholder={searchPlaceholder}
+                    value={search}
+                    onChange={(e) => onSearchChange?.(e.target.value)}
+                    aria-label={searchPlaceholder}
+                  />
+                </div>
+              )}
+              {showSegmented && (
+                <div className="flex w-full min-w-0 flex-col items-start gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2.5">
+                  <FilterLabel icon={<LayoutGrid />}>{typeLabel}</FilterLabel>
+                  <Segmented
+                    className="w-full sm:w-auto"
+                    tone="primary"
+                    value={selectedType ?? ''}
+                    onChange={(v) => onTypeChange?.(v)}
+                    options={typeOptions ?? []}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Group 3 — topic chips. */}
+          {showTags && (
+            <div className="mt-4 grid min-w-0 max-w-full gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-2.5 sm:gap-y-2">
+              <FilterLabel icon={<TagIcon />}>{tagLabel}</FilterLabel>
+              <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:contents">
+                {tags!.map((tag) => (
+                  <TagChip
+                    key={tag}
+                    label={formatTag ? formatTag(tag) : tag}
+                    active={tag === selectedTag}
+                    onClick={() => onTagChange!(tag)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </header>
   );
 };

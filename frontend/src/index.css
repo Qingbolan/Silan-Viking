@@ -79,6 +79,9 @@
 html {
   scroll-behavior: smooth;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -89,6 +92,15 @@ body {
   font-weight: 400;
   overflow-x: hidden;
   font-size: 16px; /* Modern standard font size */
+  width: 100%;
+  max-width: 100%;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 /* Remove all default borders and outlines for LEGACY (non-design-system)

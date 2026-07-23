@@ -271,7 +271,7 @@ const ResumeWebsite: React.FC = () => {
   return (
     <motion.section
       aria-label={t('resume.page_label', { defaultValue: 'Resume' })}
-      className="min-h-screen relative"
+      className="relative min-h-screen w-full max-w-full min-w-0 overflow-x-hidden"
       initial={reduceMotion ? false : { opacity: 0 }}
       animate={reduceMotion ? undefined : { opacity: 1 }}
       transition={reduceMotion ? undefined : { duration: 0.5 }}
@@ -318,7 +318,7 @@ const ResumeWebsite: React.FC = () => {
       </div>
 
       {/* Content Sections */}
-      <div className="mx-auto max-w-6xl px-1 pb-12 xs:pb-16 sm:pb-20 space-y-6 xs:space-y-8 sm:space-y-12">
+      <div className="mx-auto w-full max-w-6xl min-w-0 px-3 pb-12 xs:pb-16 sm:px-4 sm:pb-20 space-y-6 xs:space-y-8 sm:space-y-12">
         {/* About Me Section — the résumé summary prose, leads the content. */}
         {resumeData.sections?.about && resumeData.sections.about.content && (
           <div id="about-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">

@@ -154,7 +154,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         id="browser-window"
         tabIndex={-1}
         aria-label={language === 'zh' ? '页面主要内容' : 'Page content'}
-        className="relative z-10 mx-1.5 mb-1.5 flex-1 overflow-y-auto rounded-xl sm:mx-2 sm:mb-2"
+        className="relative z-10 mx-1.5 mb-1.5 flex-1 overflow-x-hidden overflow-y-auto rounded-xl sm:mx-2 sm:mb-2"
         style={{ backgroundColor: windowBg }}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -178,7 +178,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {/* Content-window background — plain windowBg (set on motion.main).
             Per silan 2026-05-22: dropped the inner NoiseBackground too. */}
 
-        <div className="relative z-10 mx-auto  lg:px-8">
+        <div className="relative z-10 mx-auto w-full max-w-full min-w-0 lg:px-8">
           {children}
         </div>
         <Footer />

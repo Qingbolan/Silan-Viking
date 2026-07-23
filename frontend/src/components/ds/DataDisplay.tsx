@@ -100,7 +100,7 @@ export const Segmented: React.FC<SegmentedProps> = ({
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-ds-md bg-ds-surface-2 p-0.5 border border-ds-border',
+        'inline-flex max-w-full min-w-0 items-center gap-0.5 overflow-x-auto overscroll-x-contain rounded-ds-md bg-ds-surface-2 p-0.5 border border-ds-border no-scrollbar',
         className,
       )}
     >
@@ -115,7 +115,7 @@ export const Segmented: React.FC<SegmentedProps> = ({
             aria-selected={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              'relative inline-flex items-center gap-1.5 rounded-ds-sm font-medium',
+              'relative inline-flex shrink-0 items-center gap-1.5 rounded-ds-sm font-medium',
               'transition-colors duration-ds-fast ease-ds-standard outline-none',
               'focus-visible:shadow-ds-focus [&_svg]:size-3.5',
               size === 'sm' ? 'h-7 px-2.5 text-ds-xs' : 'h-8 px-3 text-ds-sm',
