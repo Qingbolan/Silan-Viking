@@ -1,29 +1,37 @@
-//! Lossless media optimization for deploy-time staging.
+//! Media staging and lossless optimization.
 //!
-//! The content source tree remains authoritative and untouched. Optimization
-//! happens only on the bytes staged for upload, so authors keep original
-//! files while the website receives smaller losslessly-reencoded assets.
+//! Deployment and batch optimization have different lifecycle requirements.
+//! Deployment must be fast and bounded, so it stages source bytes directly.
+//! Batch optimization can spend extra CPU on lossless tools because it is an
+//! explicit maintenance action.
 
 use silan_viking_base::ContentHash;
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use tempfile::NamedTempFile;
+use std::thread;
+use std::time::{Duration, Instant};
 use thiserror::Error;
 
-/// Bump this when optimizer tools or arguments change. Deploy generation
-/// hashes include it so already-published media gets refreshed even when the
-/// source image bytes did not change.
-pub const MEDIA_OPTIMIZER_VERSION: &str = "lossless-media-v1";
+/// Bump this when optimizer tools or arguments change. The legacy CLI's
+/// whole-media generation hash includes it, while HTTP deploy manifests keep
+/// per-file hashes as raw byte hashes because the server verifies uploaded
+/// media directly.
+pub const MEDIA_OPTIMIZER_VERSION: &str = "deploy-media-v1-source-bytes";
+const OPTIMIZER_COMMAND_TIMEOUT: Duration = Duration::from_secs(20);
+const MAX_PNG_OPTIMIZATION_BYTES: u64 = 1_000_000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MediaOptimizationStatus {
     Optimized,
     KeptOriginal,
+    StagedOriginal,
     UnsupportedFormat,
     ToolUnavailable,
     ToolFailed(String),
+    ToolTimedOut(String),
+    SkippedLargeFile,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,17 +65,19 @@ impl MediaOptimizationReport {
     }
 }
 
-pub fn hash_optimized_media_asset(source: &Path) -> Result<ContentHash, MediaOptimizationError> {
-    let temp = NamedTempFile::new().map_err(|error| MediaOptimizationError::Write {
+pub fn hash_deploy_media_asset(source: &Path) -> Result<ContentHash, MediaOptimizationError> {
+    let bytes = fs::read(source).map_err(|error| MediaOptimizationError::Inspect {
         path: source.display().to_string(),
         detail: error.to_string(),
     })?;
-    optimize_media_asset(source, temp.path())?;
-    let bytes = fs::read(temp.path()).map_err(|error| MediaOptimizationError::Inspect {
-        path: temp.path().display().to_string(),
-        detail: error.to_string(),
-    })?;
     Ok(ContentHash::of(&bytes))
+}
+
+pub fn stage_deploy_media_asset(
+    source: &Path,
+    destination: &Path,
+) -> Result<MediaOptimizationReport, MediaOptimizationError> {
+    copy_media_asset(source, destination, MediaOptimizationStatus::StagedOriginal)
 }
 
 /// Copy `source` to `destination`, then losslessly optimize supported image
@@ -76,22 +86,12 @@ pub fn optimize_media_asset(
     source: &Path,
     destination: &Path,
 ) -> Result<MediaOptimizationReport, MediaOptimizationError> {
-    if let Some(parent) = destination.parent() {
-        fs::create_dir_all(parent).map_err(|error| MediaOptimizationError::CreateParent {
-            path: parent.display().to_string(),
-            detail: error.to_string(),
-        })?;
-    }
-    if source != destination {
-        fs::copy(source, destination).map_err(|error| MediaOptimizationError::Copy {
-            source_path: source.display().to_string(),
-            destination: destination.display().to_string(),
-            detail: error.to_string(),
-        })?;
-    }
-
+    copy_media_asset(source, destination, MediaOptimizationStatus::KeptOriginal)?;
     let original_bytes = file_len(destination)?;
     let status = match media_kind(source) {
+        Some(MediaKind::Png) if original_bytes > MAX_PNG_OPTIMIZATION_BYTES => {
+            Ok(MediaOptimizationStatus::SkippedLargeFile)
+        }
         Some(MediaKind::Png) => optimize_with_candidate(destination, |input, output| {
             command_status(
                 Command::new("zopflipng")
@@ -123,6 +123,32 @@ pub fn optimize_media_asset(
         status,
         original_bytes,
         output_bytes,
+    })
+}
+
+fn copy_media_asset(
+    source: &Path,
+    destination: &Path,
+    status: MediaOptimizationStatus,
+) -> Result<MediaOptimizationReport, MediaOptimizationError> {
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent).map_err(|error| MediaOptimizationError::CreateParent {
+            path: parent.display().to_string(),
+            detail: error.to_string(),
+        })?;
+    }
+    if source != destination {
+        fs::copy(source, destination).map_err(|error| MediaOptimizationError::Copy {
+            source_path: source.display().to_string(),
+            destination: destination.display().to_string(),
+            detail: error.to_string(),
+        })?;
+    }
+    let bytes = file_len(destination)?;
+    Ok(MediaOptimizationReport {
+        status,
+        original_bytes: bytes,
+        output_bytes: bytes,
     })
 }
 
@@ -245,15 +271,33 @@ where
 
 fn command_status(command: &mut Command) -> Result<MediaOptimizationStatus, String> {
     let program = command.get_program().to_string_lossy().to_string();
-    match command.status() {
-        Ok(status) if status.success() => Ok(MediaOptimizationStatus::Optimized),
-        Ok(status) => Ok(MediaOptimizationStatus::ToolFailed(format!(
-            "{program} exited with {status}"
-        ))),
+    let started = Instant::now();
+    let mut child = match command.spawn() {
+        Ok(child) => child,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-            Ok(MediaOptimizationStatus::ToolUnavailable)
+            return Ok(MediaOptimizationStatus::ToolUnavailable);
         }
-        Err(error) => Err(format!("{program}: {error}")),
+        Err(error) => return Err(format!("{program}: {error}")),
+    };
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => return Ok(MediaOptimizationStatus::Optimized),
+            Ok(Some(status)) => {
+                return Ok(MediaOptimizationStatus::ToolFailed(format!(
+                    "{program} exited with {status}"
+                )));
+            }
+            Ok(None) if started.elapsed() >= OPTIMIZER_COMMAND_TIMEOUT => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Ok(MediaOptimizationStatus::ToolTimedOut(format!(
+                    "{program} exceeded {}s",
+                    OPTIMIZER_COMMAND_TIMEOUT.as_secs()
+                )));
+            }
+            Ok(None) => thread::sleep(Duration::from_millis(50)),
+            Err(error) => return Err(format!("{program}: {error}")),
+        }
     }
 }
 
@@ -301,9 +345,43 @@ mod tests {
         let source = dir.path().join("photo.gif");
         fs::write(&source, b"same bytes").expect("write source");
 
-        let hash = hash_optimized_media_asset(&source).expect("hash media");
+        let hash = hash_deploy_media_asset(&source).expect("hash media");
 
         assert_eq!(hash, ContentHash::of(b"same bytes"));
+    }
+
+    #[test]
+    fn deployment_staging_does_not_run_external_optimizers() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let source = dir.path().join("image.png");
+        let destination = dir.path().join("out/image.png");
+        fs::write(&source, b"png bytes").expect("write source");
+
+        let report = stage_deploy_media_asset(&source, &destination).expect("stage media");
+
+        assert_eq!(report.status, MediaOptimizationStatus::StagedOriginal);
+        assert_eq!(
+            fs::read(&destination).expect("read destination"),
+            b"png bytes"
+        );
+    }
+
+    #[test]
+    fn large_png_is_kept_out_of_interactive_optimizer() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let source = dir.path().join("large.png");
+        let destination = dir.path().join("out/large.png");
+        fs::write(
+            &source,
+            vec![0_u8; (MAX_PNG_OPTIMIZATION_BYTES + 1) as usize],
+        )
+        .expect("write source");
+
+        let report = optimize_media_asset(&source, &destination).expect("stage media");
+
+        assert_eq!(report.status, MediaOptimizationStatus::SkippedLargeFile);
+        assert_eq!(report.original_bytes, MAX_PNG_OPTIMIZATION_BYTES + 1);
+        assert_eq!(report.output_bytes, MAX_PNG_OPTIMIZATION_BYTES + 1);
     }
 
     #[test]

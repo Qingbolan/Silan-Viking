@@ -20,6 +20,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const normalizedPathname = pathname.replace(/\/+$/, '') || '/';
+  const isSearchRoute = normalizedPathname === '/search';
   // The progress bar is driven straight through a ref — writing `transform`
   // on every animation frame, never via React state, so scrolling does not
   // re-render MainLayout (and the heavy NoiseBackground) on every event.
@@ -91,7 +93,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <div
-      className="relative flex h-dvh w-full flex-col overflow-hidden"
+      className={[
+        'relative flex w-full flex-col overflow-hidden',
+        isSearchRoute ? 'h-[100svh] sm:h-dvh' : 'h-dvh',
+      ].join(' ')}
       style={{ backgroundColor: deskBg }}
     >
       <a
@@ -116,7 +121,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           back gestures and the page has a bottom action bar already, so on
           mobile we hide everything except the avatar + address bar and let
           TopNavigation own the row. Desktop (sm+) keeps the full chrome. */}
-      <header className="relative z-10 flex flex-shrink-0 items-center gap-2 px-3 py-1.5 sm:gap-2.5 sm:px-4">
+      <header
+        className={[
+          'relative z-10 flex-shrink-0 items-center gap-2 px-3 py-1.5 sm:gap-2.5 sm:px-4',
+          isSearchRoute ? 'hidden sm:flex' : 'flex',
+        ].join(' ')}
+      >
         {/* Personal avatar — leads to the contact page */}
         <NavAvatar />
 
@@ -154,8 +164,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         id="browser-window"
         tabIndex={-1}
         aria-label={language === 'zh' ? '页面主要内容' : 'Page content'}
-        className="relative z-10 mx-1.5 mb-1.5 flex-1 overflow-x-hidden overflow-y-auto rounded-xl sm:mx-2 sm:mb-2"
-        style={{ backgroundColor: windowBg }}
+        className={[
+          'relative z-10 flex-1 overflow-x-hidden overflow-y-auto',
+          isSearchRoute
+            ? 'mx-0 mb-0 rounded-none sm:mx-2 sm:mb-2 sm:rounded-xl'
+            : 'mx-1.5 mb-1.5 rounded-xl sm:mx-2 sm:mb-2',
+        ].join(' ')}
+        style={{ backgroundColor: isSearchRoute ? undefined : windowBg }}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
@@ -181,14 +196,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <div className="relative z-10 mx-auto w-full max-w-full min-w-0 lg:px-8">
           {children}
         </div>
-        <Footer />
+        {isSearchRoute ? <div className="hidden sm:block"><Footer /></div> : <Footer />}
       </motion.main>
 
       {/* Mobile-only glass dock — the primary nav on viewports where the
           desktop chrome capsules (NavBefore/NavAfter) are hidden. Purely
           `fixed` + z-40, floating above scrolling content like iOS's own
           floating tab bars — it never reserves layout space of its own. */}
-      <MobileTabBar />
+      {!isSearchRoute && <MobileTabBar />}
     </div>
   );
 };

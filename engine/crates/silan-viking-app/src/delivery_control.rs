@@ -1,7 +1,7 @@
 //! Release and deployment application control plane.
 
 use crate::{
-    api_base_url, hash_optimized_media_asset, optimize_media_asset, workspace_stats_sync_token,
+    api_base_url, hash_deploy_media_asset, stage_deploy_media_asset, workspace_stats_sync_token,
     GitRepo, Workspace, WorkspaceSync, WorkspaceSyncState,
 };
 use flate2::{write::GzEncoder, Compression};
@@ -626,9 +626,9 @@ impl DeliveryControl {
             .assets()
             .iter()
             .map(|asset| {
-                let hash = hash_optimized_media_asset(&asset.abs_path).map_err(|error| {
+                let hash = hash_deploy_media_asset(&asset.abs_path).map_err(|error| {
                     DeliveryControlError::Runner(format!(
-                        "hash optimized media {}: {error}",
+                        "hash deploy media {}: {error}",
                         asset.rel_path
                     ))
                 })?;
@@ -745,9 +745,9 @@ impl DeliveryControl {
             let optimized = tempfile::NamedTempFile::new().map_err(|error| {
                 DeliveryControlError::Runner(format!("stage optimized media: {error}"))
             })?;
-            optimize_media_asset(&asset.abs_path, optimized.path()).map_err(|error| {
+            stage_deploy_media_asset(&asset.abs_path, optimized.path()).map_err(|error| {
                 DeliveryControlError::Runner(format!(
-                    "optimize media {} for bundle: {error}",
+                    "stage media {} for bundle: {error}",
                     asset.rel_path
                 ))
             })?;

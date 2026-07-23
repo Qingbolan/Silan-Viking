@@ -373,6 +373,7 @@ const MenuCrumb: React.FC<{
  */
 const TopNavigation: React.FC = () => {
   const { pathname } = useLocation();
+  const normalizedPathname = pathname.replace(/\/+$/, '') || '/';
   const navigate = useNavigate();
   const { language, setLanguage } = useLanguage();
   const { colors, isDarkMode, toggleTheme } = useTheme();
@@ -380,6 +381,34 @@ const TopNavigation: React.FC = () => {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
+  const primeMobileKeyboard = useCallback(() => {
+    if (!window.matchMedia('(max-width: 639px)').matches) return;
+
+    const handoffInput = document.createElement('input');
+    handoffInput.type = 'search';
+    handoffInput.autocapitalize = 'none';
+    handoffInput.autocomplete = 'off';
+    handoffInput.spellcheck = false;
+    handoffInput.setAttribute('aria-hidden', 'true');
+    handoffInput.style.position = 'fixed';
+    handoffInput.style.left = '0';
+    handoffInput.style.top = '0';
+    handoffInput.style.width = '1px';
+    handoffInput.style.height = '1px';
+    handoffInput.style.opacity = '0';
+    handoffInput.style.pointerEvents = 'none';
+    document.body.appendChild(handoffInput);
+    handoffInput.focus({ preventScroll: true });
+    window.setTimeout(() => handoffInput.remove(), 800);
+  }, []);
+  const openSearch = useCallback(() => {
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      primeMobileKeyboard();
+      navigate('/search');
+      return;
+    }
+    setSearchOpen(true);
+  }, [navigate, primeMobileKeyboard]);
 
   const routes = useMemo(() => ROUTES(zh), [zh]);
   const detailTitle = usePageTitle();
@@ -392,8 +421,8 @@ const TopNavigation: React.FC = () => {
   );
 
   const isActive = useCallback(
-    (path: string) => isNavigationPathActive(pathname, path),
-    [pathname],
+    (path: string) => isNavigationPathActive(normalizedPathname, path),
+    [normalizedPathname],
   );
 
   const section = useMemo(
@@ -404,7 +433,7 @@ const TopNavigation: React.FC = () => {
   // Trail: leading section crumb, plus a sub-page crumb or — on a content
   // detail page — the content title.
   const crumbs = useMemo<Crumb[]>(() => {
-    const subroute = SUBROUTES(zh)[pathname];
+    const subroute = SUBROUTES(zh)[normalizedPathname];
     const root = subroute
       ? routes.find((r) => r.path === subroute.parent) ?? section
       : section;
@@ -414,7 +443,7 @@ const TopNavigation: React.FC = () => {
         label: root.label,
         icon: root.icon,
         // The root crumb links back unless we are already on it.
-        to: pathname === root.path ? undefined : root.path,
+        to: normalizedPathname === root.path ? undefined : root.path,
       },
     ];
 
@@ -424,14 +453,14 @@ const TopNavigation: React.FC = () => {
     } else {
       // A detail route is the section path + one more segment (/blog/:id).
       const isDetail =
-        (section.path !== '/' && pathname.startsWith(section.path + '/')) ||
-        pathname.startsWith('/episodes/');
+        (section.path !== '/' && normalizedPathname.startsWith(section.path + '/')) ||
+        normalizedPathname.startsWith('/episodes/');
       if (isDetail) {
         trail.push({ label: detailTitle ?? (zh ? '加载中…' : 'Loading…') });
       }
     }
     return trail;
-  }, [section, routes, pathname, detailTitle, zh]);
+  }, [section, routes, normalizedPathname, detailTitle, zh]);
 
   // ⌘K / Ctrl+K opens search.
   useEffect(() => {
@@ -454,12 +483,14 @@ const TopNavigation: React.FC = () => {
     children: React.ReactNode;
     className?: string;
     buttonRef?: React.Ref<HTMLButtonElement>;
+    onPointerDown?: () => void;
   }> = ({
     label,
     onClick,
     children,
     className,
     buttonRef,
+    onPointerDown,
   }) => (
     <button
       ref={buttonRef}
@@ -467,6 +498,7 @@ const TopNavigation: React.FC = () => {
       aria-label={label}
       title={label}
       onClick={onClick}
+      onPointerDown={onPointerDown}
       className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-colors sm:h-7 sm:w-7 ${className ?? ''}`}
       style={{ color: colors.textSecondary }}
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
@@ -567,7 +599,7 @@ const TopNavigation: React.FC = () => {
 
           {/* Tools */}
           <div className="flex flex-shrink-0 items-center">
-            <Tool buttonRef={searchTriggerRef} label={zh ? '搜索' : 'Search'} onClick={() => setSearchOpen(true)}>
+            <Tool buttonRef={searchTriggerRef} label={zh ? '搜索' : 'Search'} onClick={openSearch} onPointerDown={primeMobileKeyboard}>
               <Search size={15} />
             </Tool>
             <Tool

@@ -5,9 +5,8 @@
 // narrow viewports those hide (see MainLayout) and this dock is the only
 // primary navigation.
 //
-// Shows a restrained 3 core destinations + a "More" tab that expands the
-// rest in a glass sheet — mirroring how iOS system apps (Files, App Store)
-// keep a tab bar to a handful of items instead of cramming every route in.
+// Shows the four primary content destinations in a stable order, with a
+// compact "More" tab for utilities that should not compete with page hops.
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -35,16 +34,16 @@ interface TabRoute {
   icon: React.ReactNode;
 }
 
-// The 3 destinations that stay pinned in the dock.
+// The content destinations that stay pinned in the dock.
 const PRIMARY_ROUTES = (zh: boolean): TabRoute[] => [
   { path: '/', label: zh ? '主页' : 'Home', icon: <Home size={18} strokeWidth={2} /> },
+  { path: '/moments', label: zh ? '朋友圈' : 'Moments', icon: <Aperture size={18} strokeWidth={2} /> },
+  { path: '/blog', label: zh ? '文章' : 'Articles', icon: <BookOpen size={18} strokeWidth={2} /> },
   { path: '/projects', label: zh ? '项目' : 'Projects', icon: <Briefcase size={18} strokeWidth={2} /> },
-  { path: '/blog', label: zh ? '博客' : 'Blog', icon: <BookOpen size={18} strokeWidth={2} /> },
 ];
 
 // Everything else, revealed through the "More" sheet.
 const MORE_ROUTES = (zh: boolean): TabRoute[] => [
-  { path: '/moments', label: zh ? '瞬间' : 'Moments', icon: <Aperture size={18} strokeWidth={2} /> },
   { path: '/contact', label: zh ? '联系' : 'Contact', icon: <Mail size={18} strokeWidth={2} /> },
 ];
 

@@ -71,9 +71,9 @@ pub use google_oauth_credentials::{
 };
 pub use media_library::{MediaAssetRef, MediaLibrary, MediaLibraryError, MediaReferenceStatus};
 pub use media_optimizer::{
-    hash_optimized_media_asset, optimize_media_asset, optimize_media_tree, MediaOptimizationError,
-    MediaOptimizationReport, MediaOptimizationStatus, MediaTreeOptimizationReport,
-    MEDIA_OPTIMIZER_VERSION,
+    hash_deploy_media_asset, optimize_media_asset, optimize_media_tree, stage_deploy_media_asset,
+    MediaOptimizationError, MediaOptimizationReport, MediaOptimizationStatus,
+    MediaTreeOptimizationReport, MEDIA_OPTIMIZER_VERSION,
 };
 pub use openai_credentials::{
     OpenAiApiKey, OpenAiCredentialError, OpenAiCredentialVerifier, OpenAiVerification,
