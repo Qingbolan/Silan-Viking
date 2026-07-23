@@ -14,15 +14,14 @@
 //! The whole run is one `#[tracing::instrument]` span (`09` §9.2.2).
 
 use super::error::SyncError;
-use super::mapper::media_uri;
-use super::mapper::MapperRegistry;
+use super::mapper::{media_uri, MapperRegistry, MediaCatalog};
 use super::rows::{Row, RowSet, RowSetBatch, SqlValue};
 use super::sink::{Sink, SqliteSink};
 use crate::parser::{IssuePolicy, ParserRegistry};
 use crate::schema::Schema;
 use crate::workspace::ScanReport;
 use silan_viking_base::ContentHash;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// The outcome of a sync run.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -129,6 +128,7 @@ fn build_batch(
     scan: &ScanReport,
 ) -> Result<RowSetBatch, SyncError> {
     let mut batch = RowSetBatch::new();
+    let media = media_catalog(scan);
 
     for item in scan.items() {
         let span = tracing::debug_span!(
@@ -163,7 +163,7 @@ fn build_batch(
         let type_spec = schema
             .type_spec(parsed.kind())
             .expect("every ContentKind has a TypeSpec");
-        batch.push(mapper.map(&parsed, type_spec)?);
+        batch.push(mapper.map(&parsed, type_spec, &media)?);
     }
 
     // One `episode_series` row per scanned series. This is a batch-level
@@ -174,7 +174,7 @@ fn build_batch(
     // foreign key points at one of these rows — without them `promote` fails
     // the `episodes_episode_series_episodes` FK at COMMIT.
     if !scan.series().is_empty() {
-        batch.push(episode_series_rows(scan));
+        batch.push(episode_series_rows(scan, &media));
     }
 
     // Language is a shared dictionary entity. Translation mappers emit the
@@ -196,6 +196,15 @@ fn build_batch(
     batch.dedup_table_by("tag", "id");
 
     Ok(batch)
+}
+
+fn media_catalog(scan: &ScanReport) -> MediaCatalog {
+    MediaCatalog::new(
+        scan.assets()
+            .iter()
+            .map(|asset| (asset.rel_path.clone(), asset.hash.to_string()))
+            .collect::<BTreeMap<_, _>>(),
+    )
 }
 
 fn language_rows(batch: &RowSetBatch) -> RowSet {
@@ -235,7 +244,7 @@ fn language_names(code: &str) -> (&str, &str) {
 /// the FK resolves. `title` / `description` / `status` come from the
 /// `series.toml` the scan read; `status` defaults to `ongoing` upstream so it
 /// is always a valid non-NULL value for the column's NOT NULL constraint.
-fn episode_series_rows(scan: &ScanReport) -> RowSet {
+fn episode_series_rows(scan: &ScanReport, media: &MediaCatalog) -> RowSet {
     let mut set = RowSet::new();
     for series in scan.series() {
         set.push(
@@ -246,7 +255,7 @@ fn episode_series_rows(scan: &ScanReport) -> RowSet {
                 .with("description", SqlValue::Text(series.description.clone()))
                 .with(
                     "cover_url",
-                    SqlValue::Text(media_uri::rewrite_reference(&series.cover_url)),
+                    SqlValue::Text(media_uri::rewrite_reference(&series.cover_url, media)),
                 )
                 .with("status", SqlValue::Text(series.status.clone())),
         );

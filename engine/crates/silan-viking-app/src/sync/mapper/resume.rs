@@ -17,7 +17,7 @@
 
 use super::media_uri;
 use super::table_names;
-use super::Mapper;
+use super::{Mapper, MediaCatalog};
 use crate::parser::{EntryValue, FieldValue, Parsed};
 use crate::sync::error::MapError;
 use crate::sync::rows::{Row, RowSet, SqlValue};
@@ -39,6 +39,7 @@ impl Mapper for ResumeMapper {
         &self,
         parsed: &Parsed,
         _type_spec: &crate::schema::TypeSpec,
+        media: &MediaCatalog,
     ) -> Result<RowSet, MapError> {
         if parsed.kind() != ContentKind::Resume {
             return Err(MapError::KindMismatch {
@@ -53,8 +54,8 @@ impl Mapper for ResumeMapper {
         push_personal_info_translations(&item_id, parsed, &mut rows);
         push_social_links_rows(&item_id, parsed, &mut rows);
         push_item_part_rows(&item_id, parsed, &mut rows);
-        push_summary_rows(&item_id, parsed, &mut rows);
-        push_entry_rows(&item_id, parsed, &mut rows);
+        push_summary_rows(&item_id, parsed, media, &mut rows);
+        push_entry_rows(&item_id, parsed, media, &mut rows);
 
         Ok(rows)
     }
@@ -180,7 +181,7 @@ fn push_item_part_rows(item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
 
 /// One `item_part_translation` row per language for the `summary` prose Part.
 /// `item_part_id` is the `summary` Part's stable `part_id` (`11` §11.5).
-fn push_summary_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+fn push_summary_rows(_item_id: &str, parsed: &Parsed, media: &MediaCatalog, rows: &mut RowSet) {
     let summary_part_id = parsed
         .part_id("summary")
         .map(|p| p.as_str().to_owned())
@@ -192,7 +193,10 @@ fn push_summary_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
                     .with("id", SqlValue::Text(format!("{summary_part_id}_{lang}")))
                     .with("item_part_id", SqlValue::Text(summary_part_id.clone()))
                     .with("language_code", SqlValue::Text(lang.to_string()))
-                    .with("body", SqlValue::Text(body.to_owned())),
+                    .with(
+                        "body",
+                        SqlValue::Text(media_uri::rewrite_prose(body, media)),
+                    ),
             );
         }
     }
@@ -204,7 +208,7 @@ fn push_summary_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
 /// column per entry field; `part_entry.id` and the translation's
 /// `part_entry_id` are the entry's stable `entry_id`; `item_part_id` is the
 /// owning Part's `part_id`.
-fn push_entry_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+fn push_entry_rows(_item_id: &str, parsed: &Parsed, media: &MediaCatalog, rows: &mut RowSet) {
     // `part_entry` (language-neutral) — emitted once per distinct entry id.
     let mut emitted_shared: Vec<String> = Vec::new();
     for variant in parsed.langs().values() {
@@ -226,7 +230,7 @@ fn push_entry_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
                         .with("sort_order", SqlValue::Int(order as i64))
                         .with(
                             "shared_payload",
-                            SqlValue::Text(payload_json(entry.shared())),
+                            SqlValue::Text(payload_json(entry.shared(), media)),
                         ),
                 );
             }
@@ -245,7 +249,7 @@ fn push_entry_rows(_item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
                         .with("language_code", SqlValue::Text(lang.to_string()))
                         .with(
                             "localized_payload",
-                            SqlValue::Text(payload_json(entry.localized())),
+                            SqlValue::Text(payload_json(entry.localized(), media)),
                         ),
                 );
             }
@@ -274,9 +278,9 @@ fn field_sql(value: &FieldValue) -> SqlValue {
 /// entry field holding a `silan://resources/…` reference (`education`'s
 /// `institution_logo_url`, `publications`' `image_url`, …) is stored as the
 /// servable `/api/v1/media/…` path; non-reference strings are unchanged.
-fn entry_json(value: &EntryValue) -> serde_json::Value {
+fn entry_json(value: &EntryValue, media: &MediaCatalog) -> serde_json::Value {
     match value {
-        EntryValue::Text(s) => serde_json::Value::String(media_uri::rewrite_reference(s)),
+        EntryValue::Text(s) => serde_json::Value::String(media_uri::rewrite_reference(s, media)),
         EntryValue::Int(i) => serde_json::Value::from(*i),
         EntryValue::Float(f) => serde_json::Value::from(*f),
         EntryValue::Bool(b) => serde_json::Value::Bool(*b),
@@ -294,10 +298,13 @@ fn entry_json(value: &EntryValue) -> serde_json::Value {
 /// the `shared_payload` / `localized_payload` column of `part_entry` /
 /// `part_entry_translation` (`11` §11.5.1: the payload is SCHEMA-validated
 /// typed JSON, one column, not one column per entry field).
-fn payload_json(pairs: &std::collections::BTreeMap<String, EntryValue>) -> String {
+fn payload_json(
+    pairs: &std::collections::BTreeMap<String, EntryValue>,
+    media: &MediaCatalog,
+) -> String {
     let map: serde_json::Map<String, serde_json::Value> = pairs
         .iter()
-        .map(|(key, value)| (key.clone(), entry_json(value)))
+        .map(|(key, value)| (key.clone(), entry_json(value, media)))
         .collect();
     serde_json::Value::Object(map).to_string()
 }

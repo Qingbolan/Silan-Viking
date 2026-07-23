@@ -1,6 +1,9 @@
 package media
 
 import (
+	"fmt"
+	"hash/fnv"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -40,6 +43,17 @@ func GetMediaHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
+		etag, err := mediaETag(full)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("ETag", etag)
+		w.Header().Set("Cache-Control", mediaCacheControl(r.URL.Query().Get("v"), etag))
+		if matchesIfNoneMatch(r.Header.Get("If-None-Match"), etag) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
 		file, err := os.Open(full)
 		if err != nil {
 			http.NotFound(w, r)
@@ -49,9 +63,38 @@ func GetMediaHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		// `ServeContent` sets Content-Type from the extension, handles range
 		// requests, and emits Last-Modified / conditional-GET headers.
-		w.Header().Set("Cache-Control", "public, max-age=3600")
 		http.ServeContent(w, r, info.Name(), info.ModTime(), file)
 	}
+}
+
+func mediaCacheControl(version, etag string) string {
+	if version != "" && `"`+version+`"` == etag {
+		return "public, max-age=31536000, immutable"
+	}
+	return "public, max-age=3600, stale-while-revalidate=86400"
+}
+
+func mediaETag(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	hash := fnv.New64a()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`"%016x"`, hash.Sum64()), nil
+}
+
+func matchesIfNoneMatch(header, etag string) bool {
+	for _, candidate := range strings.Split(header, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == etag || candidate == "*" {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveMediaPath joins a request's `f` value onto the media root and

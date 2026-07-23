@@ -4,7 +4,7 @@
 //! [`ProseMapper`](super::prose_mapper::ProseMapper).
 
 use super::prose_mapper::ProseMapper;
-use super::Mapper;
+use super::{Mapper, MediaCatalog};
 use crate::parser::Parsed;
 use crate::sync::error::MapError;
 use crate::sync::rows::RowSet;
@@ -23,7 +23,8 @@ impl Mapper for EpisodeMapper {
         &self,
         parsed: &Parsed,
         type_spec: &crate::schema::TypeSpec,
+        media: &MediaCatalog,
     ) -> Result<RowSet, MapError> {
-        ProseMapper::map(ContentKind::Episode, parsed, type_spec)
+        ProseMapper::map(ContentKind::Episode, parsed, type_spec, media)
     }
 }

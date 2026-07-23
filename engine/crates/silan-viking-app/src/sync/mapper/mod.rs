@@ -20,6 +20,7 @@ mod registry;
 mod resume;
 mod table_names;
 
+pub(crate) use media_uri::MediaCatalog;
 pub use registry::MapperRegistry;
 
 use crate::parser::Parsed;
@@ -33,9 +34,11 @@ use silan_viking_content::ContentKind;
 /// `map` is a pure function: a `Parsed` and the type's `TypeSpec` in, a
 /// `RowSet` out, no IO. The `TypeSpec` is what makes the SCHEMA the single
 /// source of truth for column routing — a mapper reads each field's
-/// `FieldColumn` instead of hardcoding table/column names. All implementations
-/// keep their per-table helper logic in private `fn`s; the trait surface is
-/// just `content_type` and `map`.
+/// `FieldColumn` instead of hardcoding table/column names. `MediaCatalog`
+/// carries the scan's asset hashes so rewritten media URLs can be content
+/// versioned without giving every mapper filesystem access. All
+/// implementations keep their per-table helper logic in private `fn`s; the
+/// trait surface is just `content_type` and `map`.
 pub trait Mapper {
     /// The content type this mapper handles.
     fn content_type(&self) -> ContentKind;
@@ -45,5 +48,10 @@ pub trait Mapper {
     ///
     /// Returns [`MapError::KindMismatch`] if `parsed.kind()` does not match
     /// [`content_type`](Self::content_type).
-    fn map(&self, parsed: &Parsed, type_spec: &TypeSpec) -> Result<RowSet, MapError>;
+    fn map(
+        &self,
+        parsed: &Parsed,
+        type_spec: &TypeSpec,
+        media: &MediaCatalog,
+    ) -> Result<RowSet, MapError>;
 }

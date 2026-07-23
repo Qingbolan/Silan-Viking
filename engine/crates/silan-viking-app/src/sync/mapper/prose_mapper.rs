@@ -14,6 +14,7 @@
 
 use super::media_uri;
 use super::table_names;
+use super::MediaCatalog;
 use crate::parser::{FieldValue, Parsed};
 use crate::schema::{FieldColumn, TypeSpec};
 use crate::sync::error::MapError;
@@ -30,6 +31,7 @@ impl ProseMapper {
         expected: ContentKind,
         parsed: &Parsed,
         type_spec: &TypeSpec,
+        media: &MediaCatalog,
     ) -> Result<RowSet, MapError> {
         if parsed.kind() != expected {
             return Err(MapError::KindMismatch {
@@ -40,11 +42,11 @@ impl ProseMapper {
         let mut rows = RowSet::new();
         let item_id = parsed.item_id().as_str().to_owned();
 
-        rows.push(main_row(expected, &item_id, parsed, type_spec));
-        push_side_rows(expected, &item_id, parsed, type_spec, &mut rows);
-        push_translation_rows(expected, &item_id, parsed, &mut rows);
+        rows.push(main_row(expected, &item_id, parsed, type_spec, media));
+        push_side_rows(expected, &item_id, parsed, type_spec, media, &mut rows);
+        push_translation_rows(expected, &item_id, parsed, media, &mut rows);
         push_item_part_rows(expected, &item_id, parsed, type_spec, &mut rows);
-        push_part_rows(parsed, &mut rows);
+        push_part_rows(parsed, media, &mut rows);
         push_relation_rows(expected, parsed, &mut rows);
         push_tag_rows(expected, &item_id, parsed, &mut rows);
 
@@ -66,6 +68,7 @@ fn push_side_rows(
     item_id: &str,
     parsed: &Parsed,
     type_spec: &TypeSpec,
+    media: &MediaCatalog,
     rows: &mut RowSet,
 ) {
     use std::collections::BTreeMap;
@@ -89,7 +92,7 @@ fn push_side_rows(
                     SqlValue::Text(item_id.to_owned()),
                 )
         });
-        *row = row.clone().with(column.clone(), sql_value(value));
+        *row = row.clone().with(column.clone(), sql_value(value, media));
     }
 
     for (_, row) in side_rows {
@@ -114,7 +117,13 @@ fn push_side_rows(
 /// A field with no SCHEMA spec at all is skipped — an unknown frontmatter key
 /// must never become a column the Entity layer does not declare (which the
 /// sink's schema gate would reject, aborting the sync).
-fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed, type_spec: &TypeSpec) -> Row {
+fn main_row(
+    kind: ContentKind,
+    item_id: &str,
+    parsed: &Parsed,
+    type_spec: &TypeSpec,
+    media: &MediaCatalog,
+) -> Row {
     let mut row =
         Row::new(table_names::main_table(kind)).with("id", SqlValue::Text(item_id.to_owned()));
     for name in parsed.main().field_names() {
@@ -125,7 +134,7 @@ fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed, type_spec: &TypeS
             continue; // Side / FanOut / None — not a main-table column
         };
         if let Some(value) = parsed.main().get(name) {
-            row = row.with(column.clone(), sql_value(value));
+            row = row.with(column.clone(), sql_value(value, media));
         }
     }
     row
@@ -133,7 +142,13 @@ fn main_row(kind: ContentKind, item_id: &str, parsed: &Parsed, type_spec: &TypeS
 
 /// Build one translation row per language, carrying that language's
 /// translatable scalar fields.
-fn push_translation_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows: &mut RowSet) {
+fn push_translation_rows(
+    kind: ContentKind,
+    item_id: &str,
+    parsed: &Parsed,
+    media: &MediaCatalog,
+    rows: &mut RowSet,
+) {
     for (lang, variant) in parsed.langs() {
         // The translation row points back at its main row via the
         // type-specific FK column (`blog_post_id`, `idea_id`, …) — the
@@ -151,7 +166,7 @@ fn push_translation_rows(kind: ContentKind, item_id: &str, parsed: &Parsed, rows
         // The translatable scalar fields of this language (`title`, …).
         for name in ["title", "excerpt", "abstract", "description"] {
             if let Some(value) = variant.get(name) {
-                row = row.with(name.to_owned(), sql_value(value));
+                row = row.with(name.to_owned(), sql_value(value, media));
             }
         }
         rows.push(row);
@@ -244,7 +259,7 @@ fn push_item_part_rows(
 /// Columns match the Entity (`11` §11.5): `item_part_id` is the parent
 /// `item_part`'s id (= the Part's `part_id`); `role` is **not** a column here
 /// — it lives on `item_part`, not on the translation.
-fn push_part_rows(parsed: &Parsed, rows: &mut RowSet) {
+fn push_part_rows(parsed: &Parsed, media: &MediaCatalog, rows: &mut RowSet) {
     for (lang, variant) in parsed.langs() {
         for role in variant.prose_roles() {
             let Some(body) = variant.prose(role) else {
@@ -264,7 +279,10 @@ fn push_part_rows(parsed: &Parsed, rows: &mut RowSet) {
                     .with("id", SqlValue::Text(format!("{item_part_id}_{lang}")))
                     .with("item_part_id", SqlValue::Text(item_part_id))
                     .with("language_code", SqlValue::Text(lang.to_string()))
-                    .with("body", SqlValue::Text(media_uri::rewrite_prose(body))),
+                    .with(
+                        "body",
+                        SqlValue::Text(media_uri::rewrite_prose(body, media)),
+                    ),
             );
         }
     }
@@ -392,9 +410,9 @@ fn tag_slug(label: &str) -> String {
 /// holding a `silan://resources/…` resource reference (`featured_image_url`,
 /// `thumbnail_url`, …) is rewritten to its `/api/v1/media/…` path, and every
 /// other string is returned verbatim (the rewrite is a prefix-gated no-op).
-fn sql_value(value: &FieldValue) -> SqlValue {
+fn sql_value(value: &FieldValue, media: &MediaCatalog) -> SqlValue {
     match value {
-        FieldValue::Text(s) => SqlValue::Text(media_uri::rewrite_reference(s)),
+        FieldValue::Text(s) => SqlValue::Text(media_uri::rewrite_reference(s, media)),
         FieldValue::Int(i) => SqlValue::Int(*i),
         FieldValue::Float(f) => SqlValue::Float(*f),
         FieldValue::Bool(b) => SqlValue::Bool(*b),
