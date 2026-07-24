@@ -168,7 +168,7 @@ const RecentSection: React.FC<RecentSectionProps> = ({ data, title, delay = 0 })
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay }}
     >
-      <div className="p-7">
+      <div>
           {/* Header — title + a primary-tone Segmented type filter. */}
           <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <h3 className="text-xl font-bold tracking-[-0.015em] text-ds-fg sm:text-2xl">
