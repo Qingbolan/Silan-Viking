@@ -28,7 +28,28 @@ export const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN || runtimeOrigin()).r
 
 export const apiUrl = (path: string): string => new URL(path, `${API_ORIGIN}/`).toString();
 
+const contentResourcePath = (path: string): string | null => {
+  if (path.startsWith('silan://resources/')) {
+    return path.slice('silan://resources/'.length);
+  }
+  if (path.startsWith('resources/')) {
+    return path.slice('resources/'.length);
+  }
+  return null;
+};
+
+/**
+ * Resolve either an API media path or a canonical content-resource reference.
+ *
+ * Content metadata legitimately reaches the frontend in two source shapes:
+ * `silan://resources/...` from authored content and `resources/...` from the
+ * indexed projection. Both address the same backend-owned media root.
+ */
 export const mediaUrl = (path: string): string => {
+  const resourcePath = contentResourcePath(path);
+  if (resourcePath) {
+    return apiUrl(`/api/v1/media?f=${encodeURIComponent(resourcePath)}`);
+  }
   if (!path.startsWith('/api/')) return path;
   return apiUrl(path);
 };

@@ -13,20 +13,23 @@ import {
 import { useLanguage } from '../components/LanguageContext';
 import { Seo } from '../components/Seo';
 import { fetchMoments } from '../api/moments/momentApi';
-import type { Moment } from '../types/api';
+import { fetchPersonalInfo } from '../api/home/resumeApi';
+import { mediaUrl } from '../api/utils';
+import type { Moment, PersonalInfo } from '../types/api';
 import MomentActions from '../components/Resume/MomentActions';
 import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
+import MomentsProfileHero from '../components/Moments/MomentsProfileHero';
 import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 import {
-  Badge,
-  BlogHeader,
   Button,
   EmptyState,
   ErrorState,
   Skeleton,
-  type BadgeProps,
 } from '../components/ds';
 import { markdownToPlainExcerpt } from '../lib/markdown';
+import { cn } from '../lib/utils';
+import { publicAssetUrl } from '../utils/publicAsset';
+import { dsRoot } from '../components/ds/dsAttr';
 
 type UpdateKind = 'work' | 'education' | 'research' | 'publication' | 'project' | 'other';
 
@@ -49,18 +52,6 @@ const KIND_ICONS = {
   other: CalendarDays,
 } as const;
 
-const statusTone = (status: string): NonNullable<BadgeProps['tone']> => {
-  if (status === 'completed') return 'success';
-  if (status === 'active' || status === 'ongoing') return 'primary';
-  return 'neutral';
-};
-
-const priorityTone = (priority: string): NonNullable<BadgeProps['tone']> => {
-  if (priority === 'high') return 'error';
-  if (priority === 'medium') return 'warning';
-  return 'neutral';
-};
-
 const validDate = (value: string): Date | null => {
   const date = new Date(`${value}T00:00:00`);
   return Number.isNaN(date.getTime()) ? null : date;
@@ -71,15 +62,23 @@ interface MomentTimelineItem {
   kind: UpdateKind;
 }
 
-interface MomentMonthGroup {
+interface MomentDateGroup {
   key: string;
-  label: string;
+  date: Date | null;
   items: MomentTimelineItem[];
 }
+
+interface MomentYearGroup {
+  year: string;
+  dateGroups: MomentDateGroup[];
+}
+
+const TIMELINE_CONTAINER_CLASS = 'mx-auto w-full max-w-[1440px] px-4 sm:px-8';
 
 const Moments: React.FC = () => {
   const { language } = useLanguage();
   const [moments, setUpdates] = useState<Moment[]>([]);
+  const [profile, setProfile] = useState<PersonalInfo | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [selectedTime, setSelectedTime] = useState<{ year: number; month?: number } | null>(null);
   const [searchParams] = useSearchParams();
@@ -91,6 +90,7 @@ const Moments: React.FC = () => {
         eyebrow: 'Now',
         title: 'Recent moments',
         description: 'A concise log of current research, projects, and milestones.',
+        coverAlt: 'NUS School of Computing',
         errorTitle: 'Moments could not be loaded',
         errorBody: 'The content service did not respond. Try again without losing your filters.',
         emptyTitle: 'No moments in this view',
@@ -98,12 +98,12 @@ const Moments: React.FC = () => {
         allTime: 'All time',
         outputs: 'Outputs',
         outputKinds: { blog: 'Article', project: 'Project' },
-        priorities: { high: 'High priority', medium: 'Medium priority', low: 'Low priority' },
       }
     : {
         eyebrow: '近况',
         title: '最新动态',
         description: '研究、项目与阶段成果的简洁时间线。',
+        coverAlt: '新加坡国立大学计算机学院',
         errorTitle: '动态加载失败',
         errorBody: '内容服务暂未响应。重试不会丢失当前筛选。',
         emptyTitle: '当前筛选下没有动态',
@@ -111,15 +111,21 @@ const Moments: React.FC = () => {
         allTime: '全部时间',
         outputs: '输出',
         outputKinds: { blog: '文章', project: '项目' },
-        priorities: { high: '高优先级', medium: '中优先级', low: '低优先级' },
       };
 
   const load = useCallback(async () => {
     setLoadState('loading');
-    try {
-      setUpdates(await fetchMoments(language as 'en' | 'zh'));
+    const [momentsResult, profileResult] = await Promise.allSettled([
+      fetchMoments(language as 'en' | 'zh'),
+      fetchPersonalInfo(language as 'en' | 'zh'),
+    ]);
+    if (profileResult.status === 'fulfilled') {
+      setProfile(profileResult.value);
+    }
+    if (momentsResult.status === 'fulfilled') {
+      setUpdates(momentsResult.value);
       setLoadState('ready');
-    } catch {
+    } else {
       setLoadState('error');
     }
   }, [language]);
@@ -212,36 +218,50 @@ const Moments: React.FC = () => {
     [normalized, selectedTime],
   );
 
-  const monthGroups = useMemo<MomentMonthGroup[]>(() => {
-    const groups = new Map<string, MomentMonthGroup>();
+  const yearGroups = useMemo<MomentYearGroup[]>(() => {
+    const groups = new Map<string, Map<string, MomentDateGroup>>();
     filtered.forEach((item) => {
       const date = validDate(item.moment.date);
-      const key = date
-        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        : 'undated';
-      if (!groups.has(key)) {
-        groups.set(key, {
-          key,
-          label: date
-            ? new Intl.DateTimeFormat(language === 'en' ? 'en-SG' : 'zh-CN', {
-                month: 'long',
-                year: 'numeric',
-              }).format(date)
-            : language === 'en' ? 'Undated' : '未标注日期',
-          items: [],
-        });
+      const year = date ? String(date.getFullYear()) : language === 'en' ? 'Undated' : '未标注日期';
+      if (!groups.has(year)) {
+        groups.set(year, new Map());
       }
-      groups.get(key)!.items.push(item);
+      const dateKey = date ? item.moment.date : 'undated';
+      const dateGroups = groups.get(year)!;
+      if (!dateGroups.has(dateKey)) {
+        dateGroups.set(dateKey, { key: dateKey, date, items: [] });
+      }
+      dateGroups.get(dateKey)!.items.push(item);
     });
 
-    return [...groups.values()].map((group) => ({
-      ...group,
-      items: [...group.items].sort((left, right) =>
-        Number(Boolean(right.moment.pinned)) - Number(Boolean(left.moment.pinned))
-        || (validDate(right.moment.date)?.getTime() ?? 0) - (validDate(left.moment.date)?.getTime() ?? 0),
-      ),
+    return [...groups.entries()].map(([year, dateGroups]) => ({
+      year,
+      dateGroups: [...dateGroups.values()]
+        .map((dateGroup) => ({
+          ...dateGroup,
+          items: [...dateGroup.items].sort((left, right) =>
+            Number(Boolean(right.moment.pinned)) - Number(Boolean(left.moment.pinned)),
+          ),
+        }))
+        .sort((left, right) => {
+          const pinnedOrder =
+            Number(right.items.some(({ moment }) => moment.pinned))
+            - Number(left.items.some(({ moment }) => moment.pinned));
+          return pinnedOrder || (right.date?.getTime() ?? 0) - (left.date?.getTime() ?? 0);
+        }),
     }));
   }, [filtered, language]);
+
+  const profileName = profile?.full_name || 'Silan Hu';
+  const profileRole = profile?.title || (
+    language === 'en'
+      ? 'AI systems researcher and full-stack engineer'
+      : 'AI 系统研究者与全栈工程师'
+  );
+  const avatarUrl = profile?.avatar_url
+    ? mediaUrl(profile.avatar_url)
+    : publicAssetUrl('/image.png');
+  const coverUrl = mediaUrl('silan://resources/resume/assets/nus-computing-cover.png');
 
   useEffect(() => {
     if (loadState !== 'ready' || !selectedMomentId) return;
@@ -287,7 +307,7 @@ const Moments: React.FC = () => {
 
   return (
     <motion.div
-      className="mx-auto min-h-screen max-w-5xl px-4 py-12 sm:px-8 sm:py-16"
+      className="min-h-screen w-full pb-12 sm:pb-16"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
@@ -298,22 +318,34 @@ const Moments: React.FC = () => {
         lang={language as 'en' | 'zh'}
       />
 
-      <BlogHeader
-        className="mb-10"
+      <MomentsProfileHero
         eyebrow={copy.eyebrow}
         title={copy.title}
         description={copy.description}
+        name={profileName}
+        role={profileRole}
+        avatarUrl={avatarUrl}
+        coverUrl={coverUrl}
+        coverAlt={copy.coverAlt}
       />
 
       {loadState === 'loading' && (
-        <div aria-label={language === 'en' ? 'Loading moments' : '正在加载动态'} className="space-y-0 divide-y divide-ds-border">
+        <div
+          {...dsRoot}
+          aria-label={language === 'en' ? 'Loading moments' : '正在加载动态'}
+          className={cn(TIMELINE_CONTAINER_CLASS, 'divide-y divide-ds-border border-t border-ds-border')}
+        >
           {[0, 1, 2].map((item) => (
-            <div key={item} className="grid grid-cols-[5rem_1fr] gap-5 py-7 sm:grid-cols-[7rem_1fr]">
-              <Skeleton className="w-16" />
-              <div className="space-y-3">
-                <Skeleton className="w-2/3" />
-                <Skeleton className="w-full" />
-                <Skeleton className="w-4/5" />
+            <div key={item} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-7 sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-6">
+              <Skeleton className="w-12" />
+              <div className="grid gap-8 xl:grid-cols-2">
+                {[0, 1].map((column) => (
+                  <div key={column} className="space-y-3">
+                    <Skeleton className="w-2/3" />
+                    <Skeleton className="w-full" />
+                    <Skeleton className="w-4/5" />
+                  </div>
+                ))}
               </div>
             </div>
           ))}
@@ -321,164 +353,166 @@ const Moments: React.FC = () => {
       )}
 
       {loadState === 'ready' && filtered.length === 0 && (
-        <EmptyState
-          icon={<CalendarDays />}
-          title={copy.emptyTitle}
-          description={copy.emptyBody}
-          action={selectedTime ? (
-            <Button variant="outline" size="sm" onClick={() => setSelectedTime(null)}>
-              {copy.allTime}
-            </Button>
-          ) : undefined}
-        />
+        <div className={TIMELINE_CONTAINER_CLASS}>
+          <EmptyState
+            icon={<CalendarDays />}
+            title={copy.emptyTitle}
+            description={copy.emptyBody}
+            action={selectedTime ? (
+              <Button variant="outline" size="sm" onClick={() => setSelectedTime(null)}>
+                {copy.allTime}
+              </Button>
+            ) : undefined}
+          />
+        </div>
       )}
 
       {loadState === 'ready' && filtered.length > 0 && (
-        <div className="space-y-16">
-          {monthGroups.map((group) => (
-            <section key={group.key} aria-labelledby={`month-${group.key}`}>
-              <header className="grid grid-cols-1 border-b border-ds-border pb-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7">
-                <div aria-hidden />
+        <div className={cn(TIMELINE_CONTAINER_CLASS, 'space-y-14')}>
+          {yearGroups.map((group) => (
+            <section {...dsRoot} key={group.year} aria-labelledby={`year-${group.year}`}>
+              <header className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-end gap-3 border-b border-ds-border pb-4 sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-6 sm:pb-5">
                 <h2
-                  id={`month-${group.key}`}
-                  className="font-mono text-ds-sm font-semibold uppercase tracking-[0.12em] text-ds-fg-muted"
+                  id={`year-${group.year}`}
+                  className="font-mono text-xl font-semibold leading-none tabular-nums tracking-[-0.06em] text-ds-fg sm:text-2xl lg:text-3xl"
                 >
-                  {group.label}
+                  {group.year}
                 </h2>
+                <div aria-hidden />
               </header>
 
-              <ol className="space-y-6 sm:space-y-8">
-                {group.items.map(({ moment, kind: momentKind }, index) => {
-                  const Icon = KIND_ICONS[momentKind];
-                  const date = validDate(moment.date);
-                  const previousDate = index > 0 ? group.items[index - 1].moment.date : undefined;
-                  const showDay = moment.pinned || moment.date !== previousDate;
-                  const day = date
-                    ? String(date.getDate()).padStart(2, '0')
-                    : moment.date;
-                  const weekday = date?.toLocaleDateString(language === 'en' ? 'en-SG' : 'zh-CN', {
-                    weekday: 'short',
-                  });
-                  const momentPath = `/moments/${encodeURIComponent(moment.slug || moment.id)}`;
-                  const excerpt = markdownToPlainExcerpt(moment.description, moment.title);
-
+              <ol>
+                {group.dateGroups.map((dateGroup) => {
+                  const isMultiEntryDay = dateGroup.items.length > 1;
+                  const day = dateGroup.date
+                    ? String(dateGroup.date.getDate())
+                    : dateGroup.items[0]?.moment.date;
+                  const month = dateGroup.date
+                    ? dateGroup.date.toLocaleDateString(
+                      language === 'en' ? 'en-SG' : 'zh-CN',
+                      { month: 'short' },
+                    )
+                    : '';
                   return (
-                    <motion.li
-                      key={moment.id}
-                      ref={(node) => {
-                        if (node) momentElements.current.set(moment.id, node);
-                        else momentElements.current.delete(moment.id);
-                      }}
-                      className="grid scroll-mt-24 grid-cols-1 gap-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-7"
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.2) }}
+                    <li
+                      key={dateGroup.key}
+                      className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 border-b border-ds-border sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-6"
                     >
-                      <div className="flex items-center gap-3 sm:block sm:pt-4">
-                        {moment.pinned ? (
-                          <span className="font-mono text-ds-lg font-medium tracking-[-0.03em] text-ds-fg sm:text-ds-xl">
-                            {language === 'en' ? 'Pin' : '置顶'}
-                          </span>
-                        ) : showDay ? (
-                          <>
-                            <time
-                              dateTime={moment.date}
-                              className="font-mono text-3xl font-medium leading-none tabular-nums tracking-[-0.05em] text-ds-fg sm:text-4xl"
-                            >
-                              {day}
-                            </time>
-                            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ds-fg-subtle sm:mt-2 sm:block">
-                              {weekday}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="hidden h-8 sm:block" aria-hidden />
-                        )}
+                      <div className="pt-7 sm:pt-8">
+                        <time
+                          dateTime={dateGroup.key}
+                          className="block font-mono text-2xl font-medium leading-none tabular-nums tracking-[-0.06em] text-ds-fg sm:text-3xl"
+                        >
+                          {day}
+                        </time>
+                        <span className="mt-1 block font-mono text-[10px] uppercase tracking-[0.1em] text-ds-fg-subtle">
+                          {month}
+                        </span>
                       </div>
 
-                      <article className="min-w-0">
-                        <div className="group max-w-[68ch] overflow-hidden rounded-[10px] border border-ds-border-strong bg-ds-surface-2 shadow-[0_1px_0_rgba(17,17,17,0.03)] transition-[border-color,background-color,box-shadow] hover:border-ds-fg-subtle hover:bg-ds-surface-3 hover:shadow-ds-1">
-                          <Link
-                            to={momentPath}
-                            className={`block p-4 outline-none focus-visible:shadow-ds-focus sm:p-5 ${
-                              moment.related_outputs?.length > 0 ? 'pb-3 sm:pb-3' : ''
-                            }`}
-                          >
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="min-w-0">
-                                <span className="mb-2 inline-flex items-center gap-1.5 text-ds-xs text-ds-fg-subtle">
-                                  <Icon className="size-3.5" aria-hidden />
-                                  {kindLabel(momentKind)}
-                                </span>
-                                <h3 className="text-balance text-ds-xl font-semibold leading-tight tracking-[-0.02em] text-ds-fg group-hover:text-ds-primary sm:text-ds-2xl">
-                                  {moment.title}
-                                </h3>
-                              </div>
-                              <div className="flex shrink-0 flex-wrap gap-1.5">
-                                {moment.status && (
-                                  <Badge tone={statusTone(moment.status)} appearance="soft" dot>
-                                    {moment.status}
-                                  </Badge>
-                                )}
-                                {moment.priority && (
-                                  <Badge tone={priorityTone(moment.priority)} appearance="outline">
-                                    {copy.priorities[moment.priority as keyof typeof copy.priorities] ?? moment.priority}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
+                      <div
+                        className={cn(
+                          'grid min-w-0 gap-x-8 xl:gap-x-10',
+                          isMultiEntryDay && 'xl:grid-cols-2',
+                        )}
+                      >
+                        {dateGroup.items.map(({ moment, kind: momentKind }, index) => {
+                          const Icon = KIND_ICONS[momentKind];
+                          const momentPath = `/moments/${encodeURIComponent(moment.slug || moment.id)}`;
+                          const excerpt = markdownToPlainExcerpt(moment.description, moment.title);
 
-                            {excerpt && (
-                              <p className="mt-3 line-clamp-3 text-ds-sm leading-6 text-ds-fg-muted sm:text-ds-base">
-                                {excerpt}
-                                <span className="ml-1 font-medium text-ds-fg-subtle group-hover:text-ds-primary">
-                                  {language === 'zh' ? '更多' : 'More'}
-                                </span>
-                              </p>
-                            )}
-
-                            {moment.tags?.length > 0 && (
-                              <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5">
-                                {moment.tags.map((tag) => (
-                                  <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
-                                    #{tag}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
-                            {!(moment.related_outputs?.length > 0) && (
-                              <div className="mt-4 flex items-center justify-end text-ds-xs font-medium text-ds-fg-subtle">
-                                <span className="inline-flex items-center gap-1 transition-colors group-hover:text-ds-primary">
-                                  {language === 'zh' ? '查看详情' : 'Open detail'}
-                                  <ArrowUpRight className="size-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />
-                                </span>
-                              </div>
-                            )}
-                          </Link>
-
-                          {moment.related_outputs?.length > 0 && (
-                            <MomentRelatedOutputs
-                              outputs={moment.related_outputs}
-                              labels={{
-                                title: copy.outputs,
-                                kinds: copy.outputKinds,
+                          return (
+                            <motion.article
+                              key={moment.id}
+                              ref={(node) => {
+                                if (node) momentElements.current.set(moment.id, node);
+                                else momentElements.current.delete(moment.id);
                               }}
-                              className="px-4 pb-4 sm:px-5"
-                            />
-                          )}
-                          <MomentActions
-                            momentKey={moment.slug || moment.id}
-                            timestamp={
-                              moment.created_at && !moment.created_at.startsWith('0001-')
-                                ? moment.created_at
-                                : `${moment.date}T00:00:00`
-                            }
-                            variant="compact"
-                          />
-                        </div>
-                      </article>
-                    </motion.li>
+                              className={cn(
+                                'min-w-0 scroll-mt-24 py-7 sm:py-8',
+                                index > 0 && 'border-t border-ds-border',
+                                isMultiEntryDay && index % 2 === 1 && 'xl:border-l xl:pl-10',
+                                isMultiEntryDay && index === 1 && 'xl:border-t-0',
+                              )}
+                              initial={{ opacity: 0, y: 12 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.15) }}
+                            >
+                              <div className={cn('group', !isMultiEntryDay && 'max-w-[82ch]')}>
+                                <Link
+                                  to={momentPath}
+                                  className="block rounded-ds-sm outline-none focus-visible:shadow-ds-focus"
+                                >
+                                  <span className="mb-2 inline-flex items-center gap-2 text-ds-xs text-ds-fg-subtle">
+                                    <span className="inline-flex items-center gap-1.5">
+                                      <Icon className="size-3.5" aria-hidden />
+                                      {kindLabel(momentKind)}
+                                    </span>
+                                    {moment.pinned && (
+                                      <>
+                                        <span aria-hidden>·</span>
+                                        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-ds-primary">
+                                          {language === 'en' ? 'Pin' : '置顶'}
+                                        </span>
+                                      </>
+                                    )}
+                                  </span>
+                                  <div className="flex items-start gap-3">
+                                    <h3 className="min-w-0 flex-1 text-balance text-ds-xl font-semibold leading-tight tracking-[-0.025em] text-ds-fg transition-colors group-hover:text-ds-primary sm:text-ds-2xl">
+                                      {moment.title}
+                                    </h3>
+                                    <ArrowUpRight className="mt-1 size-4 shrink-0 text-ds-fg-subtle opacity-0 transition-[opacity,transform,color] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-ds-primary group-hover:opacity-100" aria-hidden />
+                                  </div>
+
+                                  {excerpt && (
+                                    <p
+                                      className={cn(
+                                        'mt-3 text-pretty text-ds-sm leading-6 text-ds-fg-muted sm:text-ds-base sm:leading-7',
+                                        isMultiEntryDay ? 'line-clamp-3' : 'line-clamp-4',
+                                      )}
+                                    >
+                                      {excerpt}
+                                    </p>
+                                  )}
+
+                                  {moment.tags?.length > 0 && (
+                                    <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1.5">
+                                      {moment.tags.map((tag) => (
+                                        <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
+                                          #{tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </Link>
+
+                                {moment.related_outputs?.length > 0 && (
+                                  <MomentRelatedOutputs
+                                    outputs={moment.related_outputs}
+                                    variant="feed"
+                                    labels={{
+                                      title: copy.outputs,
+                                      kinds: copy.outputKinds,
+                                    }}
+                                    className="mt-5"
+                                  />
+                                )}
+                                <MomentActions
+                                  momentKey={moment.slug || moment.id}
+                                  timestamp={
+                                    moment.created_at && !moment.created_at.startsWith('0001-')
+                                      ? moment.created_at
+                                      : `${moment.date}T00:00:00`
+                                  }
+                                  variant="compact"
+                                  timestampDisplay="hidden"
+                                />
+                              </div>
+                            </motion.article>
+                          );
+                        })}
+                      </div>
+                    </li>
                   );
                 })}
               </ol>

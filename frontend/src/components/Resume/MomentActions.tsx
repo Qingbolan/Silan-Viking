@@ -25,6 +25,7 @@ interface MomentActionsProps {
   momentKey: string;
   timestamp: string;
   variant?: 'full' | 'compact' | 'sidebar';
+  timestampDisplay?: 'date-time' | 'time' | 'hidden';
 }
 
 const EMPTY_ENGAGEMENT: MomentEngagement = {
@@ -50,7 +51,12 @@ const pickHottestComment = (comments: RemoteDiscussionComment[]): RemoteDiscussi
   })[0];
 };
 
-const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, variant = 'full' }) => {
+const MomentActions: React.FC<MomentActionsProps> = ({
+  momentKey,
+  timestamp,
+  variant = 'full',
+  timestampDisplay = 'date-time',
+}) => {
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [engagement, setEngagement] = useState(EMPTY_ENGAGEMENT);
@@ -65,11 +71,15 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
     const date = new Date(timestamp);
     if (Number.isNaN(date.getTime())) return timestamp;
     return new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-SG', {
-      year: 'numeric',
-      month: 'short',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+      ...(timestampDisplay === 'time'
+        ? { hour: '2-digit' as const, minute: '2-digit' as const }
+        : {
+            year: 'numeric' as const,
+            month: 'short' as const,
+            day: '2-digit' as const,
+            hour: '2-digit' as const,
+            minute: '2-digit' as const,
+          }),
     }).format(date);
   })();
 
@@ -145,7 +155,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
   if (variant === 'compact') {
     const likeLabel = language === 'zh' ? `点赞，${engagement.likes} 个赞` : `Like, ${engagement.likes} likes`;
     const commentLabel = language === 'zh' ? `评论，${engagement.comments} 条评论` : `Comment, ${engagement.comments} comments`;
-    const detailLabel = language === 'zh' ? '点击详情查看' : 'Open detail';
+    const detailLabel = language === 'zh' ? '查看讨论' : 'View thread';
     const openDetail = () => navigate(`/moments/${encodeURIComponent(momentKey)}`);
     const omittedCount = Math.max(0, engagement.comments - (compactPreview ? 1 : 0));
     const previewText = compactPreview
@@ -153,14 +163,16 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
       : '';
 
     return (
-      <div className="border-t border-ds-border">
-        <div className="flex min-h-10 items-center justify-between gap-4 px-4 sm:px-5">
-          <time
-            dateTime={timestamp}
-            className="font-mono text-ds-xs tabular-nums text-ds-fg-subtle"
-          >
-            {formattedTimestamp}
-          </time>
+      <div>
+        <div className="flex min-h-9 items-center justify-end gap-4">
+          {timestampDisplay !== 'hidden' && (
+            <time
+              dateTime={timestamp}
+              className="mr-auto font-mono text-ds-xs tabular-nums text-ds-fg-subtle"
+            >
+              {formattedTimestamp}
+            </time>
+          )}
 
           <div className="flex items-center gap-3">
             <button
@@ -191,7 +203,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({ momentKey, timestamp, var
         </div>
 
         {engagement.comments > 0 && (
-          <div className="border-t border-ds-border px-4 py-3 sm:px-5">
+          <div className="mt-2 border-t border-ds-border py-3">
             <button
               type="button"
               onClick={(event) => {
