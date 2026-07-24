@@ -277,6 +277,46 @@ func (ciu *ContentInteractionUpdate) ClearCountryCode() *ContentInteractionUpdat
 	return ciu
 }
 
+// SetRegionCode sets the "region_code" field.
+func (ciu *ContentInteractionUpdate) SetRegionCode(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetRegionCode(s)
+	return ciu
+}
+
+// SetNillableRegionCode sets the "region_code" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableRegionCode(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetRegionCode(*s)
+	}
+	return ciu
+}
+
+// ClearRegionCode clears the value of the "region_code" field.
+func (ciu *ContentInteractionUpdate) ClearRegionCode() *ContentInteractionUpdate {
+	ciu.mutation.ClearRegionCode()
+	return ciu
+}
+
+// SetRegionName sets the "region_name" field.
+func (ciu *ContentInteractionUpdate) SetRegionName(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetRegionName(s)
+	return ciu
+}
+
+// SetNillableRegionName sets the "region_name" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableRegionName(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetRegionName(*s)
+	}
+	return ciu
+}
+
+// ClearRegionName clears the value of the "region_name" field.
+func (ciu *ContentInteractionUpdate) ClearRegionName() *ContentInteractionUpdate {
+	ciu.mutation.ClearRegionName()
+	return ciu
+}
+
 // SetCity sets the "city" field.
 func (ciu *ContentInteractionUpdate) SetCity(s string) *ContentInteractionUpdate {
 	ciu.mutation.SetCity(s)
@@ -294,6 +334,93 @@ func (ciu *ContentInteractionUpdate) SetNillableCity(s *string) *ContentInteract
 // ClearCity clears the value of the "city" field.
 func (ciu *ContentInteractionUpdate) ClearCity() *ContentInteractionUpdate {
 	ciu.mutation.ClearCity()
+	return ciu
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (ciu *ContentInteractionUpdate) SetPostalCode(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetPostalCode(s)
+	return ciu
+}
+
+// SetNillablePostalCode sets the "postal_code" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillablePostalCode(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetPostalCode(*s)
+	}
+	return ciu
+}
+
+// ClearPostalCode clears the value of the "postal_code" field.
+func (ciu *ContentInteractionUpdate) ClearPostalCode() *ContentInteractionUpdate {
+	ciu.mutation.ClearPostalCode()
+	return ciu
+}
+
+// SetPlaceName sets the "place_name" field.
+func (ciu *ContentInteractionUpdate) SetPlaceName(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetPlaceName(s)
+	return ciu
+}
+
+// SetNillablePlaceName sets the "place_name" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillablePlaceName(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetPlaceName(*s)
+	}
+	return ciu
+}
+
+// ClearPlaceName clears the value of the "place_name" field.
+func (ciu *ContentInteractionUpdate) ClearPlaceName() *ContentInteractionUpdate {
+	ciu.mutation.ClearPlaceName()
+	return ciu
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (ciu *ContentInteractionUpdate) SetPlaceFeatureCode(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetPlaceFeatureCode(s)
+	return ciu
+}
+
+// SetNillablePlaceFeatureCode sets the "place_feature_code" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillablePlaceFeatureCode(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetPlaceFeatureCode(*s)
+	}
+	return ciu
+}
+
+// ClearPlaceFeatureCode clears the value of the "place_feature_code" field.
+func (ciu *ContentInteractionUpdate) ClearPlaceFeatureCode() *ContentInteractionUpdate {
+	ciu.mutation.ClearPlaceFeatureCode()
+	return ciu
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (ciu *ContentInteractionUpdate) SetPlaceDistanceKm(f float64) *ContentInteractionUpdate {
+	ciu.mutation.ResetPlaceDistanceKm()
+	ciu.mutation.SetPlaceDistanceKm(f)
+	return ciu
+}
+
+// SetNillablePlaceDistanceKm sets the "place_distance_km" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillablePlaceDistanceKm(f *float64) *ContentInteractionUpdate {
+	if f != nil {
+		ciu.SetPlaceDistanceKm(*f)
+	}
+	return ciu
+}
+
+// AddPlaceDistanceKm adds f to the "place_distance_km" field.
+func (ciu *ContentInteractionUpdate) AddPlaceDistanceKm(f float64) *ContentInteractionUpdate {
+	ciu.mutation.AddPlaceDistanceKm(f)
+	return ciu
+}
+
+// ClearPlaceDistanceKm clears the value of the "place_distance_km" field.
+func (ciu *ContentInteractionUpdate) ClearPlaceDistanceKm() *ContentInteractionUpdate {
+	ciu.mutation.ClearPlaceDistanceKm()
 	return ciu
 }
 
@@ -348,6 +475,53 @@ func (ciu *ContentInteractionUpdate) AddLongitude(f float64) *ContentInteraction
 // ClearLongitude clears the value of the "longitude" field.
 func (ciu *ContentInteractionUpdate) ClearLongitude() *ContentInteractionUpdate {
 	ciu.mutation.ClearLongitude()
+	return ciu
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (ciu *ContentInteractionUpdate) SetTimeZone(s string) *ContentInteractionUpdate {
+	ciu.mutation.SetTimeZone(s)
+	return ciu
+}
+
+// SetNillableTimeZone sets the "time_zone" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableTimeZone(s *string) *ContentInteractionUpdate {
+	if s != nil {
+		ciu.SetTimeZone(*s)
+	}
+	return ciu
+}
+
+// ClearTimeZone clears the value of the "time_zone" field.
+func (ciu *ContentInteractionUpdate) ClearTimeZone() *ContentInteractionUpdate {
+	ciu.mutation.ClearTimeZone()
+	return ciu
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (ciu *ContentInteractionUpdate) SetAccuracyRadius(i int) *ContentInteractionUpdate {
+	ciu.mutation.ResetAccuracyRadius()
+	ciu.mutation.SetAccuracyRadius(i)
+	return ciu
+}
+
+// SetNillableAccuracyRadius sets the "accuracy_radius" field if the given value is not nil.
+func (ciu *ContentInteractionUpdate) SetNillableAccuracyRadius(i *int) *ContentInteractionUpdate {
+	if i != nil {
+		ciu.SetAccuracyRadius(*i)
+	}
+	return ciu
+}
+
+// AddAccuracyRadius adds i to the "accuracy_radius" field.
+func (ciu *ContentInteractionUpdate) AddAccuracyRadius(i int) *ContentInteractionUpdate {
+	ciu.mutation.AddAccuracyRadius(i)
+	return ciu
+}
+
+// ClearAccuracyRadius clears the value of the "accuracy_radius" field.
+func (ciu *ContentInteractionUpdate) ClearAccuracyRadius() *ContentInteractionUpdate {
+	ciu.mutation.ClearAccuracyRadius()
 	return ciu
 }
 
@@ -462,9 +636,39 @@ func (ciu *ContentInteractionUpdate) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.country_code": %w`, err)}
 		}
 	}
+	if v, ok := ciu.mutation.RegionCode(); ok {
+		if err := contentinteraction.RegionCodeValidator(v); err != nil {
+			return &ValidationError{Name: "region_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.region_code": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.RegionName(); ok {
+		if err := contentinteraction.RegionNameValidator(v); err != nil {
+			return &ValidationError{Name: "region_name", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.region_name": %w`, err)}
+		}
+	}
 	if v, ok := ciu.mutation.City(); ok {
 		if err := contentinteraction.CityValidator(v); err != nil {
 			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.city": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.PostalCode(); ok {
+		if err := contentinteraction.PostalCodeValidator(v); err != nil {
+			return &ValidationError{Name: "postal_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.postal_code": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.PlaceName(); ok {
+		if err := contentinteraction.PlaceNameValidator(v); err != nil {
+			return &ValidationError{Name: "place_name", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.place_name": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.PlaceFeatureCode(); ok {
+		if err := contentinteraction.PlaceFeatureCodeValidator(v); err != nil {
+			return &ValidationError{Name: "place_feature_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.place_feature_code": %w`, err)}
+		}
+	}
+	if v, ok := ciu.mutation.TimeZone(); ok {
+		if err := contentinteraction.TimeZoneValidator(v); err != nil {
+			return &ValidationError{Name: "time_zone", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.time_zone": %w`, err)}
 		}
 	}
 	return nil
@@ -551,11 +755,50 @@ func (ciu *ContentInteractionUpdate) sqlSave(ctx context.Context) (n int, err er
 	if ciu.mutation.CountryCodeCleared() {
 		_spec.ClearField(contentinteraction.FieldCountryCode, field.TypeString)
 	}
+	if value, ok := ciu.mutation.RegionCode(); ok {
+		_spec.SetField(contentinteraction.FieldRegionCode, field.TypeString, value)
+	}
+	if ciu.mutation.RegionCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldRegionCode, field.TypeString)
+	}
+	if value, ok := ciu.mutation.RegionName(); ok {
+		_spec.SetField(contentinteraction.FieldRegionName, field.TypeString, value)
+	}
+	if ciu.mutation.RegionNameCleared() {
+		_spec.ClearField(contentinteraction.FieldRegionName, field.TypeString)
+	}
 	if value, ok := ciu.mutation.City(); ok {
 		_spec.SetField(contentinteraction.FieldCity, field.TypeString, value)
 	}
 	if ciu.mutation.CityCleared() {
 		_spec.ClearField(contentinteraction.FieldCity, field.TypeString)
+	}
+	if value, ok := ciu.mutation.PostalCode(); ok {
+		_spec.SetField(contentinteraction.FieldPostalCode, field.TypeString, value)
+	}
+	if ciu.mutation.PostalCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldPostalCode, field.TypeString)
+	}
+	if value, ok := ciu.mutation.PlaceName(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceName, field.TypeString, value)
+	}
+	if ciu.mutation.PlaceNameCleared() {
+		_spec.ClearField(contentinteraction.FieldPlaceName, field.TypeString)
+	}
+	if value, ok := ciu.mutation.PlaceFeatureCode(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceFeatureCode, field.TypeString, value)
+	}
+	if ciu.mutation.PlaceFeatureCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldPlaceFeatureCode, field.TypeString)
+	}
+	if value, ok := ciu.mutation.PlaceDistanceKm(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if value, ok := ciu.mutation.AddedPlaceDistanceKm(); ok {
+		_spec.AddField(contentinteraction.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if ciu.mutation.PlaceDistanceKmCleared() {
+		_spec.ClearField(contentinteraction.FieldPlaceDistanceKm, field.TypeFloat64)
 	}
 	if value, ok := ciu.mutation.Latitude(); ok {
 		_spec.SetField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
@@ -574,6 +817,21 @@ func (ciu *ContentInteractionUpdate) sqlSave(ctx context.Context) (n int, err er
 	}
 	if ciu.mutation.LongitudeCleared() {
 		_spec.ClearField(contentinteraction.FieldLongitude, field.TypeFloat64)
+	}
+	if value, ok := ciu.mutation.TimeZone(); ok {
+		_spec.SetField(contentinteraction.FieldTimeZone, field.TypeString, value)
+	}
+	if ciu.mutation.TimeZoneCleared() {
+		_spec.ClearField(contentinteraction.FieldTimeZone, field.TypeString)
+	}
+	if value, ok := ciu.mutation.AccuracyRadius(); ok {
+		_spec.SetField(contentinteraction.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if value, ok := ciu.mutation.AddedAccuracyRadius(); ok {
+		_spec.AddField(contentinteraction.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if ciu.mutation.AccuracyRadiusCleared() {
+		_spec.ClearField(contentinteraction.FieldAccuracyRadius, field.TypeInt)
 	}
 	if value, ok := ciu.mutation.SessionDuration(); ok {
 		_spec.SetField(contentinteraction.FieldSessionDuration, field.TypeInt, value)
@@ -860,6 +1118,46 @@ func (ciuo *ContentInteractionUpdateOne) ClearCountryCode() *ContentInteractionU
 	return ciuo
 }
 
+// SetRegionCode sets the "region_code" field.
+func (ciuo *ContentInteractionUpdateOne) SetRegionCode(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetRegionCode(s)
+	return ciuo
+}
+
+// SetNillableRegionCode sets the "region_code" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableRegionCode(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetRegionCode(*s)
+	}
+	return ciuo
+}
+
+// ClearRegionCode clears the value of the "region_code" field.
+func (ciuo *ContentInteractionUpdateOne) ClearRegionCode() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearRegionCode()
+	return ciuo
+}
+
+// SetRegionName sets the "region_name" field.
+func (ciuo *ContentInteractionUpdateOne) SetRegionName(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetRegionName(s)
+	return ciuo
+}
+
+// SetNillableRegionName sets the "region_name" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableRegionName(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetRegionName(*s)
+	}
+	return ciuo
+}
+
+// ClearRegionName clears the value of the "region_name" field.
+func (ciuo *ContentInteractionUpdateOne) ClearRegionName() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearRegionName()
+	return ciuo
+}
+
 // SetCity sets the "city" field.
 func (ciuo *ContentInteractionUpdateOne) SetCity(s string) *ContentInteractionUpdateOne {
 	ciuo.mutation.SetCity(s)
@@ -877,6 +1175,93 @@ func (ciuo *ContentInteractionUpdateOne) SetNillableCity(s *string) *ContentInte
 // ClearCity clears the value of the "city" field.
 func (ciuo *ContentInteractionUpdateOne) ClearCity() *ContentInteractionUpdateOne {
 	ciuo.mutation.ClearCity()
+	return ciuo
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (ciuo *ContentInteractionUpdateOne) SetPostalCode(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetPostalCode(s)
+	return ciuo
+}
+
+// SetNillablePostalCode sets the "postal_code" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillablePostalCode(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetPostalCode(*s)
+	}
+	return ciuo
+}
+
+// ClearPostalCode clears the value of the "postal_code" field.
+func (ciuo *ContentInteractionUpdateOne) ClearPostalCode() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearPostalCode()
+	return ciuo
+}
+
+// SetPlaceName sets the "place_name" field.
+func (ciuo *ContentInteractionUpdateOne) SetPlaceName(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetPlaceName(s)
+	return ciuo
+}
+
+// SetNillablePlaceName sets the "place_name" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillablePlaceName(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetPlaceName(*s)
+	}
+	return ciuo
+}
+
+// ClearPlaceName clears the value of the "place_name" field.
+func (ciuo *ContentInteractionUpdateOne) ClearPlaceName() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearPlaceName()
+	return ciuo
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (ciuo *ContentInteractionUpdateOne) SetPlaceFeatureCode(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetPlaceFeatureCode(s)
+	return ciuo
+}
+
+// SetNillablePlaceFeatureCode sets the "place_feature_code" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillablePlaceFeatureCode(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetPlaceFeatureCode(*s)
+	}
+	return ciuo
+}
+
+// ClearPlaceFeatureCode clears the value of the "place_feature_code" field.
+func (ciuo *ContentInteractionUpdateOne) ClearPlaceFeatureCode() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearPlaceFeatureCode()
+	return ciuo
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (ciuo *ContentInteractionUpdateOne) SetPlaceDistanceKm(f float64) *ContentInteractionUpdateOne {
+	ciuo.mutation.ResetPlaceDistanceKm()
+	ciuo.mutation.SetPlaceDistanceKm(f)
+	return ciuo
+}
+
+// SetNillablePlaceDistanceKm sets the "place_distance_km" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillablePlaceDistanceKm(f *float64) *ContentInteractionUpdateOne {
+	if f != nil {
+		ciuo.SetPlaceDistanceKm(*f)
+	}
+	return ciuo
+}
+
+// AddPlaceDistanceKm adds f to the "place_distance_km" field.
+func (ciuo *ContentInteractionUpdateOne) AddPlaceDistanceKm(f float64) *ContentInteractionUpdateOne {
+	ciuo.mutation.AddPlaceDistanceKm(f)
+	return ciuo
+}
+
+// ClearPlaceDistanceKm clears the value of the "place_distance_km" field.
+func (ciuo *ContentInteractionUpdateOne) ClearPlaceDistanceKm() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearPlaceDistanceKm()
 	return ciuo
 }
 
@@ -931,6 +1316,53 @@ func (ciuo *ContentInteractionUpdateOne) AddLongitude(f float64) *ContentInterac
 // ClearLongitude clears the value of the "longitude" field.
 func (ciuo *ContentInteractionUpdateOne) ClearLongitude() *ContentInteractionUpdateOne {
 	ciuo.mutation.ClearLongitude()
+	return ciuo
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (ciuo *ContentInteractionUpdateOne) SetTimeZone(s string) *ContentInteractionUpdateOne {
+	ciuo.mutation.SetTimeZone(s)
+	return ciuo
+}
+
+// SetNillableTimeZone sets the "time_zone" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableTimeZone(s *string) *ContentInteractionUpdateOne {
+	if s != nil {
+		ciuo.SetTimeZone(*s)
+	}
+	return ciuo
+}
+
+// ClearTimeZone clears the value of the "time_zone" field.
+func (ciuo *ContentInteractionUpdateOne) ClearTimeZone() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearTimeZone()
+	return ciuo
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (ciuo *ContentInteractionUpdateOne) SetAccuracyRadius(i int) *ContentInteractionUpdateOne {
+	ciuo.mutation.ResetAccuracyRadius()
+	ciuo.mutation.SetAccuracyRadius(i)
+	return ciuo
+}
+
+// SetNillableAccuracyRadius sets the "accuracy_radius" field if the given value is not nil.
+func (ciuo *ContentInteractionUpdateOne) SetNillableAccuracyRadius(i *int) *ContentInteractionUpdateOne {
+	if i != nil {
+		ciuo.SetAccuracyRadius(*i)
+	}
+	return ciuo
+}
+
+// AddAccuracyRadius adds i to the "accuracy_radius" field.
+func (ciuo *ContentInteractionUpdateOne) AddAccuracyRadius(i int) *ContentInteractionUpdateOne {
+	ciuo.mutation.AddAccuracyRadius(i)
+	return ciuo
+}
+
+// ClearAccuracyRadius clears the value of the "accuracy_radius" field.
+func (ciuo *ContentInteractionUpdateOne) ClearAccuracyRadius() *ContentInteractionUpdateOne {
+	ciuo.mutation.ClearAccuracyRadius()
 	return ciuo
 }
 
@@ -1058,9 +1490,39 @@ func (ciuo *ContentInteractionUpdateOne) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.country_code": %w`, err)}
 		}
 	}
+	if v, ok := ciuo.mutation.RegionCode(); ok {
+		if err := contentinteraction.RegionCodeValidator(v); err != nil {
+			return &ValidationError{Name: "region_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.region_code": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.RegionName(); ok {
+		if err := contentinteraction.RegionNameValidator(v); err != nil {
+			return &ValidationError{Name: "region_name", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.region_name": %w`, err)}
+		}
+	}
 	if v, ok := ciuo.mutation.City(); ok {
 		if err := contentinteraction.CityValidator(v); err != nil {
 			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.city": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.PostalCode(); ok {
+		if err := contentinteraction.PostalCodeValidator(v); err != nil {
+			return &ValidationError{Name: "postal_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.postal_code": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.PlaceName(); ok {
+		if err := contentinteraction.PlaceNameValidator(v); err != nil {
+			return &ValidationError{Name: "place_name", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.place_name": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.PlaceFeatureCode(); ok {
+		if err := contentinteraction.PlaceFeatureCodeValidator(v); err != nil {
+			return &ValidationError{Name: "place_feature_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.place_feature_code": %w`, err)}
+		}
+	}
+	if v, ok := ciuo.mutation.TimeZone(); ok {
+		if err := contentinteraction.TimeZoneValidator(v); err != nil {
+			return &ValidationError{Name: "time_zone", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.time_zone": %w`, err)}
 		}
 	}
 	return nil
@@ -1164,11 +1626,50 @@ func (ciuo *ContentInteractionUpdateOne) sqlSave(ctx context.Context) (_node *Co
 	if ciuo.mutation.CountryCodeCleared() {
 		_spec.ClearField(contentinteraction.FieldCountryCode, field.TypeString)
 	}
+	if value, ok := ciuo.mutation.RegionCode(); ok {
+		_spec.SetField(contentinteraction.FieldRegionCode, field.TypeString, value)
+	}
+	if ciuo.mutation.RegionCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldRegionCode, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.RegionName(); ok {
+		_spec.SetField(contentinteraction.FieldRegionName, field.TypeString, value)
+	}
+	if ciuo.mutation.RegionNameCleared() {
+		_spec.ClearField(contentinteraction.FieldRegionName, field.TypeString)
+	}
 	if value, ok := ciuo.mutation.City(); ok {
 		_spec.SetField(contentinteraction.FieldCity, field.TypeString, value)
 	}
 	if ciuo.mutation.CityCleared() {
 		_spec.ClearField(contentinteraction.FieldCity, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.PostalCode(); ok {
+		_spec.SetField(contentinteraction.FieldPostalCode, field.TypeString, value)
+	}
+	if ciuo.mutation.PostalCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldPostalCode, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.PlaceName(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceName, field.TypeString, value)
+	}
+	if ciuo.mutation.PlaceNameCleared() {
+		_spec.ClearField(contentinteraction.FieldPlaceName, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.PlaceFeatureCode(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceFeatureCode, field.TypeString, value)
+	}
+	if ciuo.mutation.PlaceFeatureCodeCleared() {
+		_spec.ClearField(contentinteraction.FieldPlaceFeatureCode, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.PlaceDistanceKm(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if value, ok := ciuo.mutation.AddedPlaceDistanceKm(); ok {
+		_spec.AddField(contentinteraction.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if ciuo.mutation.PlaceDistanceKmCleared() {
+		_spec.ClearField(contentinteraction.FieldPlaceDistanceKm, field.TypeFloat64)
 	}
 	if value, ok := ciuo.mutation.Latitude(); ok {
 		_spec.SetField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
@@ -1187,6 +1688,21 @@ func (ciuo *ContentInteractionUpdateOne) sqlSave(ctx context.Context) (_node *Co
 	}
 	if ciuo.mutation.LongitudeCleared() {
 		_spec.ClearField(contentinteraction.FieldLongitude, field.TypeFloat64)
+	}
+	if value, ok := ciuo.mutation.TimeZone(); ok {
+		_spec.SetField(contentinteraction.FieldTimeZone, field.TypeString, value)
+	}
+	if ciuo.mutation.TimeZoneCleared() {
+		_spec.ClearField(contentinteraction.FieldTimeZone, field.TypeString)
+	}
+	if value, ok := ciuo.mutation.AccuracyRadius(); ok {
+		_spec.SetField(contentinteraction.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if value, ok := ciuo.mutation.AddedAccuracyRadius(); ok {
+		_spec.AddField(contentinteraction.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if ciuo.mutation.AccuracyRadiusCleared() {
+		_spec.ClearField(contentinteraction.FieldAccuracyRadius, field.TypeInt)
 	}
 	if value, ok := ciuo.mutation.SessionDuration(); ok {
 		_spec.SetField(contentinteraction.FieldSessionDuration, field.TypeInt, value)

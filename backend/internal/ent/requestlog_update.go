@@ -221,6 +221,46 @@ func (rlu *RequestLogUpdate) ClearCountryCode() *RequestLogUpdate {
 	return rlu
 }
 
+// SetRegionCode sets the "region_code" field.
+func (rlu *RequestLogUpdate) SetRegionCode(s string) *RequestLogUpdate {
+	rlu.mutation.SetRegionCode(s)
+	return rlu
+}
+
+// SetNillableRegionCode sets the "region_code" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableRegionCode(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetRegionCode(*s)
+	}
+	return rlu
+}
+
+// ClearRegionCode clears the value of the "region_code" field.
+func (rlu *RequestLogUpdate) ClearRegionCode() *RequestLogUpdate {
+	rlu.mutation.ClearRegionCode()
+	return rlu
+}
+
+// SetRegionName sets the "region_name" field.
+func (rlu *RequestLogUpdate) SetRegionName(s string) *RequestLogUpdate {
+	rlu.mutation.SetRegionName(s)
+	return rlu
+}
+
+// SetNillableRegionName sets the "region_name" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableRegionName(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetRegionName(*s)
+	}
+	return rlu
+}
+
+// ClearRegionName clears the value of the "region_name" field.
+func (rlu *RequestLogUpdate) ClearRegionName() *RequestLogUpdate {
+	rlu.mutation.ClearRegionName()
+	return rlu
+}
+
 // SetCity sets the "city" field.
 func (rlu *RequestLogUpdate) SetCity(s string) *RequestLogUpdate {
 	rlu.mutation.SetCity(s)
@@ -238,6 +278,93 @@ func (rlu *RequestLogUpdate) SetNillableCity(s *string) *RequestLogUpdate {
 // ClearCity clears the value of the "city" field.
 func (rlu *RequestLogUpdate) ClearCity() *RequestLogUpdate {
 	rlu.mutation.ClearCity()
+	return rlu
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (rlu *RequestLogUpdate) SetPostalCode(s string) *RequestLogUpdate {
+	rlu.mutation.SetPostalCode(s)
+	return rlu
+}
+
+// SetNillablePostalCode sets the "postal_code" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillablePostalCode(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetPostalCode(*s)
+	}
+	return rlu
+}
+
+// ClearPostalCode clears the value of the "postal_code" field.
+func (rlu *RequestLogUpdate) ClearPostalCode() *RequestLogUpdate {
+	rlu.mutation.ClearPostalCode()
+	return rlu
+}
+
+// SetPlaceName sets the "place_name" field.
+func (rlu *RequestLogUpdate) SetPlaceName(s string) *RequestLogUpdate {
+	rlu.mutation.SetPlaceName(s)
+	return rlu
+}
+
+// SetNillablePlaceName sets the "place_name" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillablePlaceName(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetPlaceName(*s)
+	}
+	return rlu
+}
+
+// ClearPlaceName clears the value of the "place_name" field.
+func (rlu *RequestLogUpdate) ClearPlaceName() *RequestLogUpdate {
+	rlu.mutation.ClearPlaceName()
+	return rlu
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (rlu *RequestLogUpdate) SetPlaceFeatureCode(s string) *RequestLogUpdate {
+	rlu.mutation.SetPlaceFeatureCode(s)
+	return rlu
+}
+
+// SetNillablePlaceFeatureCode sets the "place_feature_code" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillablePlaceFeatureCode(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetPlaceFeatureCode(*s)
+	}
+	return rlu
+}
+
+// ClearPlaceFeatureCode clears the value of the "place_feature_code" field.
+func (rlu *RequestLogUpdate) ClearPlaceFeatureCode() *RequestLogUpdate {
+	rlu.mutation.ClearPlaceFeatureCode()
+	return rlu
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (rlu *RequestLogUpdate) SetPlaceDistanceKm(f float64) *RequestLogUpdate {
+	rlu.mutation.ResetPlaceDistanceKm()
+	rlu.mutation.SetPlaceDistanceKm(f)
+	return rlu
+}
+
+// SetNillablePlaceDistanceKm sets the "place_distance_km" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillablePlaceDistanceKm(f *float64) *RequestLogUpdate {
+	if f != nil {
+		rlu.SetPlaceDistanceKm(*f)
+	}
+	return rlu
+}
+
+// AddPlaceDistanceKm adds f to the "place_distance_km" field.
+func (rlu *RequestLogUpdate) AddPlaceDistanceKm(f float64) *RequestLogUpdate {
+	rlu.mutation.AddPlaceDistanceKm(f)
+	return rlu
+}
+
+// ClearPlaceDistanceKm clears the value of the "place_distance_km" field.
+func (rlu *RequestLogUpdate) ClearPlaceDistanceKm() *RequestLogUpdate {
+	rlu.mutation.ClearPlaceDistanceKm()
 	return rlu
 }
 
@@ -292,6 +419,53 @@ func (rlu *RequestLogUpdate) AddLongitude(f float64) *RequestLogUpdate {
 // ClearLongitude clears the value of the "longitude" field.
 func (rlu *RequestLogUpdate) ClearLongitude() *RequestLogUpdate {
 	rlu.mutation.ClearLongitude()
+	return rlu
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (rlu *RequestLogUpdate) SetTimeZone(s string) *RequestLogUpdate {
+	rlu.mutation.SetTimeZone(s)
+	return rlu
+}
+
+// SetNillableTimeZone sets the "time_zone" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableTimeZone(s *string) *RequestLogUpdate {
+	if s != nil {
+		rlu.SetTimeZone(*s)
+	}
+	return rlu
+}
+
+// ClearTimeZone clears the value of the "time_zone" field.
+func (rlu *RequestLogUpdate) ClearTimeZone() *RequestLogUpdate {
+	rlu.mutation.ClearTimeZone()
+	return rlu
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (rlu *RequestLogUpdate) SetAccuracyRadius(i int) *RequestLogUpdate {
+	rlu.mutation.ResetAccuracyRadius()
+	rlu.mutation.SetAccuracyRadius(i)
+	return rlu
+}
+
+// SetNillableAccuracyRadius sets the "accuracy_radius" field if the given value is not nil.
+func (rlu *RequestLogUpdate) SetNillableAccuracyRadius(i *int) *RequestLogUpdate {
+	if i != nil {
+		rlu.SetAccuracyRadius(*i)
+	}
+	return rlu
+}
+
+// AddAccuracyRadius adds i to the "accuracy_radius" field.
+func (rlu *RequestLogUpdate) AddAccuracyRadius(i int) *RequestLogUpdate {
+	rlu.mutation.AddAccuracyRadius(i)
+	return rlu
+}
+
+// ClearAccuracyRadius clears the value of the "accuracy_radius" field.
+func (rlu *RequestLogUpdate) ClearAccuracyRadius() *RequestLogUpdate {
+	rlu.mutation.ClearAccuracyRadius()
 	return rlu
 }
 
@@ -398,9 +572,39 @@ func (rlu *RequestLogUpdate) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
 		}
 	}
+	if v, ok := rlu.mutation.RegionCode(); ok {
+		if err := requestlog.RegionCodeValidator(v); err != nil {
+			return &ValidationError{Name: "region_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.region_code": %w`, err)}
+		}
+	}
+	if v, ok := rlu.mutation.RegionName(); ok {
+		if err := requestlog.RegionNameValidator(v); err != nil {
+			return &ValidationError{Name: "region_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.region_name": %w`, err)}
+		}
+	}
 	if v, ok := rlu.mutation.City(); ok {
 		if err := requestlog.CityValidator(v); err != nil {
 			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "RequestLog.city": %w`, err)}
+		}
+	}
+	if v, ok := rlu.mutation.PostalCode(); ok {
+		if err := requestlog.PostalCodeValidator(v); err != nil {
+			return &ValidationError{Name: "postal_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.postal_code": %w`, err)}
+		}
+	}
+	if v, ok := rlu.mutation.PlaceName(); ok {
+		if err := requestlog.PlaceNameValidator(v); err != nil {
+			return &ValidationError{Name: "place_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.place_name": %w`, err)}
+		}
+	}
+	if v, ok := rlu.mutation.PlaceFeatureCode(); ok {
+		if err := requestlog.PlaceFeatureCodeValidator(v); err != nil {
+			return &ValidationError{Name: "place_feature_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.place_feature_code": %w`, err)}
+		}
+	}
+	if v, ok := rlu.mutation.TimeZone(); ok {
+		if err := requestlog.TimeZoneValidator(v); err != nil {
+			return &ValidationError{Name: "time_zone", err: fmt.Errorf(`ent: validator failed for field "RequestLog.time_zone": %w`, err)}
 		}
 	}
 	if v, ok := rlu.mutation.BotName(); ok {
@@ -483,11 +687,50 @@ func (rlu *RequestLogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if rlu.mutation.CountryCodeCleared() {
 		_spec.ClearField(requestlog.FieldCountryCode, field.TypeString)
 	}
+	if value, ok := rlu.mutation.RegionCode(); ok {
+		_spec.SetField(requestlog.FieldRegionCode, field.TypeString, value)
+	}
+	if rlu.mutation.RegionCodeCleared() {
+		_spec.ClearField(requestlog.FieldRegionCode, field.TypeString)
+	}
+	if value, ok := rlu.mutation.RegionName(); ok {
+		_spec.SetField(requestlog.FieldRegionName, field.TypeString, value)
+	}
+	if rlu.mutation.RegionNameCleared() {
+		_spec.ClearField(requestlog.FieldRegionName, field.TypeString)
+	}
 	if value, ok := rlu.mutation.City(); ok {
 		_spec.SetField(requestlog.FieldCity, field.TypeString, value)
 	}
 	if rlu.mutation.CityCleared() {
 		_spec.ClearField(requestlog.FieldCity, field.TypeString)
+	}
+	if value, ok := rlu.mutation.PostalCode(); ok {
+		_spec.SetField(requestlog.FieldPostalCode, field.TypeString, value)
+	}
+	if rlu.mutation.PostalCodeCleared() {
+		_spec.ClearField(requestlog.FieldPostalCode, field.TypeString)
+	}
+	if value, ok := rlu.mutation.PlaceName(); ok {
+		_spec.SetField(requestlog.FieldPlaceName, field.TypeString, value)
+	}
+	if rlu.mutation.PlaceNameCleared() {
+		_spec.ClearField(requestlog.FieldPlaceName, field.TypeString)
+	}
+	if value, ok := rlu.mutation.PlaceFeatureCode(); ok {
+		_spec.SetField(requestlog.FieldPlaceFeatureCode, field.TypeString, value)
+	}
+	if rlu.mutation.PlaceFeatureCodeCleared() {
+		_spec.ClearField(requestlog.FieldPlaceFeatureCode, field.TypeString)
+	}
+	if value, ok := rlu.mutation.PlaceDistanceKm(); ok {
+		_spec.SetField(requestlog.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if value, ok := rlu.mutation.AddedPlaceDistanceKm(); ok {
+		_spec.AddField(requestlog.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if rlu.mutation.PlaceDistanceKmCleared() {
+		_spec.ClearField(requestlog.FieldPlaceDistanceKm, field.TypeFloat64)
 	}
 	if value, ok := rlu.mutation.Latitude(); ok {
 		_spec.SetField(requestlog.FieldLatitude, field.TypeFloat64, value)
@@ -506,6 +749,21 @@ func (rlu *RequestLogUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if rlu.mutation.LongitudeCleared() {
 		_spec.ClearField(requestlog.FieldLongitude, field.TypeFloat64)
+	}
+	if value, ok := rlu.mutation.TimeZone(); ok {
+		_spec.SetField(requestlog.FieldTimeZone, field.TypeString, value)
+	}
+	if rlu.mutation.TimeZoneCleared() {
+		_spec.ClearField(requestlog.FieldTimeZone, field.TypeString)
+	}
+	if value, ok := rlu.mutation.AccuracyRadius(); ok {
+		_spec.SetField(requestlog.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if value, ok := rlu.mutation.AddedAccuracyRadius(); ok {
+		_spec.AddField(requestlog.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if rlu.mutation.AccuracyRadiusCleared() {
+		_spec.ClearField(requestlog.FieldAccuracyRadius, field.TypeInt)
 	}
 	if value, ok := rlu.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)
@@ -733,6 +991,46 @@ func (rluo *RequestLogUpdateOne) ClearCountryCode() *RequestLogUpdateOne {
 	return rluo
 }
 
+// SetRegionCode sets the "region_code" field.
+func (rluo *RequestLogUpdateOne) SetRegionCode(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetRegionCode(s)
+	return rluo
+}
+
+// SetNillableRegionCode sets the "region_code" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableRegionCode(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetRegionCode(*s)
+	}
+	return rluo
+}
+
+// ClearRegionCode clears the value of the "region_code" field.
+func (rluo *RequestLogUpdateOne) ClearRegionCode() *RequestLogUpdateOne {
+	rluo.mutation.ClearRegionCode()
+	return rluo
+}
+
+// SetRegionName sets the "region_name" field.
+func (rluo *RequestLogUpdateOne) SetRegionName(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetRegionName(s)
+	return rluo
+}
+
+// SetNillableRegionName sets the "region_name" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableRegionName(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetRegionName(*s)
+	}
+	return rluo
+}
+
+// ClearRegionName clears the value of the "region_name" field.
+func (rluo *RequestLogUpdateOne) ClearRegionName() *RequestLogUpdateOne {
+	rluo.mutation.ClearRegionName()
+	return rluo
+}
+
 // SetCity sets the "city" field.
 func (rluo *RequestLogUpdateOne) SetCity(s string) *RequestLogUpdateOne {
 	rluo.mutation.SetCity(s)
@@ -750,6 +1048,93 @@ func (rluo *RequestLogUpdateOne) SetNillableCity(s *string) *RequestLogUpdateOne
 // ClearCity clears the value of the "city" field.
 func (rluo *RequestLogUpdateOne) ClearCity() *RequestLogUpdateOne {
 	rluo.mutation.ClearCity()
+	return rluo
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (rluo *RequestLogUpdateOne) SetPostalCode(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetPostalCode(s)
+	return rluo
+}
+
+// SetNillablePostalCode sets the "postal_code" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillablePostalCode(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetPostalCode(*s)
+	}
+	return rluo
+}
+
+// ClearPostalCode clears the value of the "postal_code" field.
+func (rluo *RequestLogUpdateOne) ClearPostalCode() *RequestLogUpdateOne {
+	rluo.mutation.ClearPostalCode()
+	return rluo
+}
+
+// SetPlaceName sets the "place_name" field.
+func (rluo *RequestLogUpdateOne) SetPlaceName(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetPlaceName(s)
+	return rluo
+}
+
+// SetNillablePlaceName sets the "place_name" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillablePlaceName(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetPlaceName(*s)
+	}
+	return rluo
+}
+
+// ClearPlaceName clears the value of the "place_name" field.
+func (rluo *RequestLogUpdateOne) ClearPlaceName() *RequestLogUpdateOne {
+	rluo.mutation.ClearPlaceName()
+	return rluo
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (rluo *RequestLogUpdateOne) SetPlaceFeatureCode(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetPlaceFeatureCode(s)
+	return rluo
+}
+
+// SetNillablePlaceFeatureCode sets the "place_feature_code" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillablePlaceFeatureCode(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetPlaceFeatureCode(*s)
+	}
+	return rluo
+}
+
+// ClearPlaceFeatureCode clears the value of the "place_feature_code" field.
+func (rluo *RequestLogUpdateOne) ClearPlaceFeatureCode() *RequestLogUpdateOne {
+	rluo.mutation.ClearPlaceFeatureCode()
+	return rluo
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (rluo *RequestLogUpdateOne) SetPlaceDistanceKm(f float64) *RequestLogUpdateOne {
+	rluo.mutation.ResetPlaceDistanceKm()
+	rluo.mutation.SetPlaceDistanceKm(f)
+	return rluo
+}
+
+// SetNillablePlaceDistanceKm sets the "place_distance_km" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillablePlaceDistanceKm(f *float64) *RequestLogUpdateOne {
+	if f != nil {
+		rluo.SetPlaceDistanceKm(*f)
+	}
+	return rluo
+}
+
+// AddPlaceDistanceKm adds f to the "place_distance_km" field.
+func (rluo *RequestLogUpdateOne) AddPlaceDistanceKm(f float64) *RequestLogUpdateOne {
+	rluo.mutation.AddPlaceDistanceKm(f)
+	return rluo
+}
+
+// ClearPlaceDistanceKm clears the value of the "place_distance_km" field.
+func (rluo *RequestLogUpdateOne) ClearPlaceDistanceKm() *RequestLogUpdateOne {
+	rluo.mutation.ClearPlaceDistanceKm()
 	return rluo
 }
 
@@ -804,6 +1189,53 @@ func (rluo *RequestLogUpdateOne) AddLongitude(f float64) *RequestLogUpdateOne {
 // ClearLongitude clears the value of the "longitude" field.
 func (rluo *RequestLogUpdateOne) ClearLongitude() *RequestLogUpdateOne {
 	rluo.mutation.ClearLongitude()
+	return rluo
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (rluo *RequestLogUpdateOne) SetTimeZone(s string) *RequestLogUpdateOne {
+	rluo.mutation.SetTimeZone(s)
+	return rluo
+}
+
+// SetNillableTimeZone sets the "time_zone" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableTimeZone(s *string) *RequestLogUpdateOne {
+	if s != nil {
+		rluo.SetTimeZone(*s)
+	}
+	return rluo
+}
+
+// ClearTimeZone clears the value of the "time_zone" field.
+func (rluo *RequestLogUpdateOne) ClearTimeZone() *RequestLogUpdateOne {
+	rluo.mutation.ClearTimeZone()
+	return rluo
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (rluo *RequestLogUpdateOne) SetAccuracyRadius(i int) *RequestLogUpdateOne {
+	rluo.mutation.ResetAccuracyRadius()
+	rluo.mutation.SetAccuracyRadius(i)
+	return rluo
+}
+
+// SetNillableAccuracyRadius sets the "accuracy_radius" field if the given value is not nil.
+func (rluo *RequestLogUpdateOne) SetNillableAccuracyRadius(i *int) *RequestLogUpdateOne {
+	if i != nil {
+		rluo.SetAccuracyRadius(*i)
+	}
+	return rluo
+}
+
+// AddAccuracyRadius adds i to the "accuracy_radius" field.
+func (rluo *RequestLogUpdateOne) AddAccuracyRadius(i int) *RequestLogUpdateOne {
+	rluo.mutation.AddAccuracyRadius(i)
+	return rluo
+}
+
+// ClearAccuracyRadius clears the value of the "accuracy_radius" field.
+func (rluo *RequestLogUpdateOne) ClearAccuracyRadius() *RequestLogUpdateOne {
+	rluo.mutation.ClearAccuracyRadius()
 	return rluo
 }
 
@@ -923,9 +1355,39 @@ func (rluo *RequestLogUpdateOne) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
 		}
 	}
+	if v, ok := rluo.mutation.RegionCode(); ok {
+		if err := requestlog.RegionCodeValidator(v); err != nil {
+			return &ValidationError{Name: "region_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.region_code": %w`, err)}
+		}
+	}
+	if v, ok := rluo.mutation.RegionName(); ok {
+		if err := requestlog.RegionNameValidator(v); err != nil {
+			return &ValidationError{Name: "region_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.region_name": %w`, err)}
+		}
+	}
 	if v, ok := rluo.mutation.City(); ok {
 		if err := requestlog.CityValidator(v); err != nil {
 			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "RequestLog.city": %w`, err)}
+		}
+	}
+	if v, ok := rluo.mutation.PostalCode(); ok {
+		if err := requestlog.PostalCodeValidator(v); err != nil {
+			return &ValidationError{Name: "postal_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.postal_code": %w`, err)}
+		}
+	}
+	if v, ok := rluo.mutation.PlaceName(); ok {
+		if err := requestlog.PlaceNameValidator(v); err != nil {
+			return &ValidationError{Name: "place_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.place_name": %w`, err)}
+		}
+	}
+	if v, ok := rluo.mutation.PlaceFeatureCode(); ok {
+		if err := requestlog.PlaceFeatureCodeValidator(v); err != nil {
+			return &ValidationError{Name: "place_feature_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.place_feature_code": %w`, err)}
+		}
+	}
+	if v, ok := rluo.mutation.TimeZone(); ok {
+		if err := requestlog.TimeZoneValidator(v); err != nil {
+			return &ValidationError{Name: "time_zone", err: fmt.Errorf(`ent: validator failed for field "RequestLog.time_zone": %w`, err)}
 		}
 	}
 	if v, ok := rluo.mutation.BotName(); ok {
@@ -1025,11 +1487,50 @@ func (rluo *RequestLogUpdateOne) sqlSave(ctx context.Context) (_node *RequestLog
 	if rluo.mutation.CountryCodeCleared() {
 		_spec.ClearField(requestlog.FieldCountryCode, field.TypeString)
 	}
+	if value, ok := rluo.mutation.RegionCode(); ok {
+		_spec.SetField(requestlog.FieldRegionCode, field.TypeString, value)
+	}
+	if rluo.mutation.RegionCodeCleared() {
+		_spec.ClearField(requestlog.FieldRegionCode, field.TypeString)
+	}
+	if value, ok := rluo.mutation.RegionName(); ok {
+		_spec.SetField(requestlog.FieldRegionName, field.TypeString, value)
+	}
+	if rluo.mutation.RegionNameCleared() {
+		_spec.ClearField(requestlog.FieldRegionName, field.TypeString)
+	}
 	if value, ok := rluo.mutation.City(); ok {
 		_spec.SetField(requestlog.FieldCity, field.TypeString, value)
 	}
 	if rluo.mutation.CityCleared() {
 		_spec.ClearField(requestlog.FieldCity, field.TypeString)
+	}
+	if value, ok := rluo.mutation.PostalCode(); ok {
+		_spec.SetField(requestlog.FieldPostalCode, field.TypeString, value)
+	}
+	if rluo.mutation.PostalCodeCleared() {
+		_spec.ClearField(requestlog.FieldPostalCode, field.TypeString)
+	}
+	if value, ok := rluo.mutation.PlaceName(); ok {
+		_spec.SetField(requestlog.FieldPlaceName, field.TypeString, value)
+	}
+	if rluo.mutation.PlaceNameCleared() {
+		_spec.ClearField(requestlog.FieldPlaceName, field.TypeString)
+	}
+	if value, ok := rluo.mutation.PlaceFeatureCode(); ok {
+		_spec.SetField(requestlog.FieldPlaceFeatureCode, field.TypeString, value)
+	}
+	if rluo.mutation.PlaceFeatureCodeCleared() {
+		_spec.ClearField(requestlog.FieldPlaceFeatureCode, field.TypeString)
+	}
+	if value, ok := rluo.mutation.PlaceDistanceKm(); ok {
+		_spec.SetField(requestlog.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if value, ok := rluo.mutation.AddedPlaceDistanceKm(); ok {
+		_spec.AddField(requestlog.FieldPlaceDistanceKm, field.TypeFloat64, value)
+	}
+	if rluo.mutation.PlaceDistanceKmCleared() {
+		_spec.ClearField(requestlog.FieldPlaceDistanceKm, field.TypeFloat64)
 	}
 	if value, ok := rluo.mutation.Latitude(); ok {
 		_spec.SetField(requestlog.FieldLatitude, field.TypeFloat64, value)
@@ -1048,6 +1549,21 @@ func (rluo *RequestLogUpdateOne) sqlSave(ctx context.Context) (_node *RequestLog
 	}
 	if rluo.mutation.LongitudeCleared() {
 		_spec.ClearField(requestlog.FieldLongitude, field.TypeFloat64)
+	}
+	if value, ok := rluo.mutation.TimeZone(); ok {
+		_spec.SetField(requestlog.FieldTimeZone, field.TypeString, value)
+	}
+	if rluo.mutation.TimeZoneCleared() {
+		_spec.ClearField(requestlog.FieldTimeZone, field.TypeString)
+	}
+	if value, ok := rluo.mutation.AccuracyRadius(); ok {
+		_spec.SetField(requestlog.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if value, ok := rluo.mutation.AddedAccuracyRadius(); ok {
+		_spec.AddField(requestlog.FieldAccuracyRadius, field.TypeInt, value)
+	}
+	if rluo.mutation.AccuracyRadiusCleared() {
+		_spec.ClearField(requestlog.FieldAccuracyRadius, field.TypeInt)
 	}
 	if value, ok := rluo.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)

@@ -13,6 +13,8 @@ import (
 func CrawlerHitHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := analyticslogic.RecordCrawlerHit(r.Context(), svcCtx, analyticslogic.CrawlerHit{
+			RequestID:  r.Header.Get("X-Silan-Request-ID"),
+			Method:     r.Header.Get("X-Silan-Original-Method"),
 			RequestURI: r.Header.Get("X-Silan-Original-URI"),
 			UserAgent:  r.UserAgent(),
 			Referrer:   r.Referer(),

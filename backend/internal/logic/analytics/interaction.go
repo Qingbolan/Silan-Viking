@@ -68,18 +68,44 @@ func RecordContentInteraction(ctx context.Context, client *ent.Client, classifie
 	if crawlerName != "" {
 		builder.SetCrawlerName(crawlerName)
 	}
-	if visitorKind == "human" && event.CountryCode != "" {
-		builder.SetCountryCode(event.CountryCode)
-	} else if visitorKind == "human" && resolver != nil {
-		location := resolver.Resolve(event.IPAddress)
+	if visitorKind == "human" {
+		location := traffic.GeoLocation{}
+		if resolver != nil {
+			location = resolver.Resolve(event.IPAddress)
+		}
+		if event.CountryCode != "" {
+			location.CountryCode = event.CountryCode
+		}
 		if location.CountryCode != "" {
 			builder.SetCountryCode(location.CountryCode)
+		}
+		if location.RegionCode != "" {
+			builder.SetRegionCode(location.RegionCode)
+		}
+		if location.RegionName != "" {
+			builder.SetRegionName(location.RegionName)
 		}
 		if location.City != "" {
 			builder.SetCity(location.City)
 		}
+		if location.PostalCode != "" {
+			builder.SetPostalCode(location.PostalCode)
+		}
+		if location.PlaceName != "" {
+			builder.SetPlaceName(location.PlaceName)
+			builder.SetPlaceDistanceKm(location.PlaceDistance)
+		}
+		if location.PlaceFeature != "" {
+			builder.SetPlaceFeatureCode(location.PlaceFeature)
+		}
 		if location.Latitude != 0 || location.Longitude != 0 {
 			builder.SetLatitude(location.Latitude).SetLongitude(location.Longitude)
+		}
+		if location.TimeZone != "" {
+			builder.SetTimeZone(location.TimeZone)
+		}
+		if location.AccuracyRadius > 0 {
+			builder.SetAccuracyRadius(location.AccuracyRadius)
 		}
 	}
 	_, err := builder.Save(ctx)

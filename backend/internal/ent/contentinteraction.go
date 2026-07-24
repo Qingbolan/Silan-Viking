@@ -45,12 +45,28 @@ type ContentInteraction struct {
 	CrawlerName *string `json:"crawler_name,omitempty"`
 	// CountryCode holds the value of the "country_code" field.
 	CountryCode string `json:"country_code,omitempty"`
+	// RegionCode holds the value of the "region_code" field.
+	RegionCode string `json:"region_code,omitempty"`
+	// RegionName holds the value of the "region_name" field.
+	RegionName string `json:"region_name,omitempty"`
 	// City holds the value of the "city" field.
 	City string `json:"city,omitempty"`
+	// PostalCode holds the value of the "postal_code" field.
+	PostalCode string `json:"postal_code,omitempty"`
+	// PlaceName holds the value of the "place_name" field.
+	PlaceName string `json:"place_name,omitempty"`
+	// PlaceFeatureCode holds the value of the "place_feature_code" field.
+	PlaceFeatureCode string `json:"place_feature_code,omitempty"`
+	// PlaceDistanceKm holds the value of the "place_distance_km" field.
+	PlaceDistanceKm float64 `json:"place_distance_km,omitempty"`
 	// Latitude holds the value of the "latitude" field.
 	Latitude float64 `json:"latitude,omitempty"`
 	// Longitude holds the value of the "longitude" field.
 	Longitude float64 `json:"longitude,omitempty"`
+	// TimeZone holds the value of the "time_zone" field.
+	TimeZone string `json:"time_zone,omitempty"`
+	// AccuracyRadius holds the value of the "accuracy_radius" field.
+	AccuracyRadius int `json:"accuracy_radius,omitempty"`
 	// SessionDuration holds the value of the "session_duration" field.
 	SessionDuration int `json:"session_duration,omitempty"`
 	// ScrollProgress holds the value of the "scroll_progress" field.
@@ -65,11 +81,11 @@ func (*ContentInteraction) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case contentinteraction.FieldLatitude, contentinteraction.FieldLongitude, contentinteraction.FieldScrollProgress:
+		case contentinteraction.FieldPlaceDistanceKm, contentinteraction.FieldLatitude, contentinteraction.FieldLongitude, contentinteraction.FieldScrollProgress:
 			values[i] = new(sql.NullFloat64)
-		case contentinteraction.FieldSessionDuration:
+		case contentinteraction.FieldAccuracyRadius, contentinteraction.FieldSessionDuration:
 			values[i] = new(sql.NullInt64)
-		case contentinteraction.FieldID, contentinteraction.FieldEntityType, contentinteraction.FieldEntityID, contentinteraction.FieldSectionAnchor, contentinteraction.FieldKind, contentinteraction.FieldUserIdentityID, contentinteraction.FieldFingerprint, contentinteraction.FieldIPAddress, contentinteraction.FieldUserAgent, contentinteraction.FieldVisitorKind, contentinteraction.FieldReferrerKind, contentinteraction.FieldReferrer, contentinteraction.FieldLandingURL, contentinteraction.FieldCrawlerName, contentinteraction.FieldCountryCode, contentinteraction.FieldCity:
+		case contentinteraction.FieldID, contentinteraction.FieldEntityType, contentinteraction.FieldEntityID, contentinteraction.FieldSectionAnchor, contentinteraction.FieldKind, contentinteraction.FieldUserIdentityID, contentinteraction.FieldFingerprint, contentinteraction.FieldIPAddress, contentinteraction.FieldUserAgent, contentinteraction.FieldVisitorKind, contentinteraction.FieldReferrerKind, contentinteraction.FieldReferrer, contentinteraction.FieldLandingURL, contentinteraction.FieldCrawlerName, contentinteraction.FieldCountryCode, contentinteraction.FieldRegionCode, contentinteraction.FieldRegionName, contentinteraction.FieldCity, contentinteraction.FieldPostalCode, contentinteraction.FieldPlaceName, contentinteraction.FieldPlaceFeatureCode, contentinteraction.FieldTimeZone:
 			values[i] = new(sql.NullString)
 		case contentinteraction.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -186,11 +202,47 @@ func (ci *ContentInteraction) assignValues(columns []string, values []any) error
 			} else if value.Valid {
 				ci.CountryCode = value.String
 			}
+		case contentinteraction.FieldRegionCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field region_code", values[i])
+			} else if value.Valid {
+				ci.RegionCode = value.String
+			}
+		case contentinteraction.FieldRegionName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field region_name", values[i])
+			} else if value.Valid {
+				ci.RegionName = value.String
+			}
 		case contentinteraction.FieldCity:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field city", values[i])
 			} else if value.Valid {
 				ci.City = value.String
+			}
+		case contentinteraction.FieldPostalCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field postal_code", values[i])
+			} else if value.Valid {
+				ci.PostalCode = value.String
+			}
+		case contentinteraction.FieldPlaceName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field place_name", values[i])
+			} else if value.Valid {
+				ci.PlaceName = value.String
+			}
+		case contentinteraction.FieldPlaceFeatureCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field place_feature_code", values[i])
+			} else if value.Valid {
+				ci.PlaceFeatureCode = value.String
+			}
+		case contentinteraction.FieldPlaceDistanceKm:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field place_distance_km", values[i])
+			} else if value.Valid {
+				ci.PlaceDistanceKm = value.Float64
 			}
 		case contentinteraction.FieldLatitude:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -203,6 +255,18 @@ func (ci *ContentInteraction) assignValues(columns []string, values []any) error
 				return fmt.Errorf("unexpected type %T for field longitude", values[i])
 			} else if value.Valid {
 				ci.Longitude = value.Float64
+			}
+		case contentinteraction.FieldTimeZone:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field time_zone", values[i])
+			} else if value.Valid {
+				ci.TimeZone = value.String
+			}
+		case contentinteraction.FieldAccuracyRadius:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field accuracy_radius", values[i])
+			} else if value.Valid {
+				ci.AccuracyRadius = int(value.Int64)
 			}
 		case contentinteraction.FieldSessionDuration:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -316,14 +380,38 @@ func (ci *ContentInteraction) String() string {
 	builder.WriteString("country_code=")
 	builder.WriteString(ci.CountryCode)
 	builder.WriteString(", ")
+	builder.WriteString("region_code=")
+	builder.WriteString(ci.RegionCode)
+	builder.WriteString(", ")
+	builder.WriteString("region_name=")
+	builder.WriteString(ci.RegionName)
+	builder.WriteString(", ")
 	builder.WriteString("city=")
 	builder.WriteString(ci.City)
+	builder.WriteString(", ")
+	builder.WriteString("postal_code=")
+	builder.WriteString(ci.PostalCode)
+	builder.WriteString(", ")
+	builder.WriteString("place_name=")
+	builder.WriteString(ci.PlaceName)
+	builder.WriteString(", ")
+	builder.WriteString("place_feature_code=")
+	builder.WriteString(ci.PlaceFeatureCode)
+	builder.WriteString(", ")
+	builder.WriteString("place_distance_km=")
+	builder.WriteString(fmt.Sprintf("%v", ci.PlaceDistanceKm))
 	builder.WriteString(", ")
 	builder.WriteString("latitude=")
 	builder.WriteString(fmt.Sprintf("%v", ci.Latitude))
 	builder.WriteString(", ")
 	builder.WriteString("longitude=")
 	builder.WriteString(fmt.Sprintf("%v", ci.Longitude))
+	builder.WriteString(", ")
+	builder.WriteString("time_zone=")
+	builder.WriteString(ci.TimeZone)
+	builder.WriteString(", ")
+	builder.WriteString("accuracy_radius=")
+	builder.WriteString(fmt.Sprintf("%v", ci.AccuracyRadius))
 	builder.WriteString(", ")
 	builder.WriteString("session_duration=")
 	builder.WriteString(fmt.Sprintf("%v", ci.SessionDuration))

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"silan-backend/internal/config"
 	"silan-backend/internal/contentdeploy"
@@ -31,6 +32,7 @@ type ServiceContext struct {
 	RawDB           *sql.DB
 	ContentTags     *contenttag.Repository
 	Traffic         *traffic.Classifier
+	CrawlerHits     *traffic.ObservationDeduplicator
 	CountryResolver *traffic.CountryResolver
 	ContentDeploy   *contentdeploy.Service
 }
@@ -102,9 +104,17 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			ip TEXT,
 			lang TEXT,
 			country_code TEXT,
+			region_code TEXT,
+			region_name TEXT,
 			city TEXT,
+			postal_code TEXT,
+			place_name TEXT,
+			place_feature_code TEXT,
+			place_distance_km REAL,
 			latitude REAL,
 			longitude REAL,
+			time_zone TEXT,
+			accuracy_radius INTEGER,
 			is_bot BOOLEAN DEFAULT 0,
 			bot_name TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -121,9 +131,17 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			ip VARCHAR(64),
 			lang VARCHAR(8),
 			country_code VARCHAR(2),
+			region_code VARCHAR(16),
+			region_name VARCHAR(128),
 			city VARCHAR(128),
+			postal_code VARCHAR(32),
+			place_name VARCHAR(128),
+			place_feature_code VARCHAR(16),
+			place_distance_km DOUBLE,
 			latitude DOUBLE,
 			longitude DOUBLE,
+			time_zone VARCHAR(64),
+			accuracy_radius INT,
 			is_bot TINYINT(1) DEFAULT 0,
 			bot_name VARCHAR(64),
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -140,9 +158,17 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			ip TEXT,
 			lang TEXT,
 			country_code TEXT,
+			region_code TEXT,
+			region_name TEXT,
 			city TEXT,
+			postal_code TEXT,
+			place_name TEXT,
+			place_feature_code TEXT,
+			place_distance_km DOUBLE PRECISION,
 			latitude DOUBLE PRECISION,
 			longitude DOUBLE PRECISION,
+			time_zone TEXT,
+			accuracy_radius INT,
 			is_bot BOOLEAN DEFAULT FALSE,
 			bot_name TEXT,
 			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -236,6 +262,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 
 	createAnalyticsTables(rawDB, c.Database.Driver)
+	ensureGeoLocationColumns(rawDB, c.Database.Driver, "request_logs")
+	ensureGeoLocationColumns(rawDB, c.Database.Driver, "content_interaction")
 	createContentRelationTable(rawDB, c.Database.Driver)
 	dropContentForeignKeys(rawDB, c.Database.Driver)
 	purgeIdeaRows(rawDB, c.Database.Driver)
@@ -243,6 +271,18 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	countryResolver, countryErr := traffic.OpenCountryResolver("/var/lib/GeoIP/country.mmdb")
 	if countryErr != nil {
 		log.Printf("warning: country database unavailable: %v", countryErr)
+	}
+	placeResolver, placeErr := traffic.OpenPlaceResolver("/var/lib/GeoIP/geonames-cities500.txt")
+	if placeErr != nil {
+		log.Printf("warning: offline place database unavailable: %v", placeErr)
+	} else if countryResolver != nil {
+		countryResolver.SetPlaceResolver(placeResolver)
+	}
+	locationOverrides, overrideErr := traffic.OpenLocationOverrideResolver("/var/lib/GeoIP/location-overrides.tsv")
+	if overrideErr != nil {
+		log.Printf("warning: location override database unavailable: %v", overrideErr)
+	} else if countryResolver != nil {
+		countryResolver.SetLocationOverrideResolver(locationOverrides)
 	}
 
 	return &ServiceContext{
@@ -254,6 +294,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		RawDB:           rawDB,
 		ContentTags:     contenttag.NewRepository(rawDB, c.Database.Driver),
 		Traffic:         trafficClassifier,
+		CrawlerHits:     traffic.NewObservationDeduplicator(30*time.Second, 4096),
 		CountryResolver: countryResolver,
 		ContentDeploy: contentdeploy.NewService(contentdeploy.Config{
 			Driver:         c.Database.Driver,
@@ -738,6 +779,18 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 				referrer TEXT,
 				landing_url TEXT,
 				crawler_name TEXT,
+				country_code TEXT,
+				region_code TEXT,
+				region_name TEXT,
+				city TEXT,
+				postal_code TEXT,
+				place_name TEXT,
+				place_feature_code TEXT,
+				place_distance_km REAL,
+				latitude REAL,
+				longitude REAL,
+				time_zone TEXT,
+				accuracy_radius INTEGER,
 				session_duration INTEGER NOT NULL DEFAULT 0,
 				scroll_progress REAL NOT NULL DEFAULT 0,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -792,6 +845,18 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 				referrer TEXT,
 				landing_url TEXT,
 				crawler_name VARCHAR(255),
+				country_code VARCHAR(2),
+				region_code VARCHAR(16),
+				region_name VARCHAR(128),
+				city VARCHAR(128),
+				postal_code VARCHAR(32),
+				place_name VARCHAR(128),
+				place_feature_code VARCHAR(16),
+				place_distance_km DOUBLE,
+				latitude DOUBLE,
+				longitude DOUBLE,
+				time_zone VARCHAR(64),
+				accuracy_radius INT,
 				session_duration INT NOT NULL DEFAULT 0,
 				scroll_progress DOUBLE NOT NULL DEFAULT 0,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -846,6 +911,18 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 				referrer TEXT,
 				landing_url TEXT,
 				crawler_name TEXT,
+				country_code TEXT,
+				region_code TEXT,
+				region_name TEXT,
+				city TEXT,
+				postal_code TEXT,
+				place_name TEXT,
+				place_feature_code TEXT,
+				place_distance_km DOUBLE PRECISION,
+				latitude DOUBLE PRECISION,
+				longitude DOUBLE PRECISION,
+				time_zone TEXT,
+				accuracy_radius INT,
 				session_duration INT NOT NULL DEFAULT 0,
 				scroll_progress DOUBLE PRECISION NOT NULL DEFAULT 0,
 				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -862,6 +939,48 @@ func createAnalyticsTables(db *sql.DB, driver string) {
 		if _, err := db.Exec(ddl); err != nil {
 			log.Printf("warning: failed creating analytics table/index: %v", err)
 		}
+	}
+}
+
+func ensureGeoLocationColumns(db *sql.DB, driver, table string) {
+	textType := "TEXT"
+	shortTextType := "TEXT"
+	mediumTextType := "TEXT"
+	coordinateType := "REAL"
+	intType := "INTEGER"
+	if driver == "mysql" {
+		textType = "VARCHAR(64)"
+		shortTextType = "VARCHAR(16)"
+		mediumTextType = "VARCHAR(128)"
+		coordinateType = "DOUBLE"
+		intType = "INT"
+	} else if driver == "postgres" || driver == "postgresql" {
+		coordinateType = "DOUBLE PRECISION"
+		intType = "INT"
+	}
+	columns := []struct {
+		name string
+		typ  string
+	}{
+		{"country_code", "TEXT"},
+		{"region_code", shortTextType},
+		{"region_name", mediumTextType},
+		{"city", mediumTextType},
+		{"postal_code", shortTextType},
+		{"place_name", mediumTextType},
+		{"place_feature_code", shortTextType},
+		{"place_distance_km", coordinateType},
+		{"latitude", coordinateType},
+		{"longitude", coordinateType},
+		{"time_zone", textType},
+		{"accuracy_radius", intType},
+	}
+	for _, column := range columns {
+		statement := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column.name, column.typ)
+		if driver == "postgres" || driver == "postgresql" {
+			statement = fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s %s", table, column.name, column.typ)
+		}
+		_, _ = db.Exec(statement)
 	}
 }
 

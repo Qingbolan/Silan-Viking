@@ -91,11 +91,33 @@ func (m *AnalyticsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		if location.CountryCode != "" {
 			builder.SetCountryCode(location.CountryCode)
 		}
+		if location.RegionCode != "" {
+			builder.SetRegionCode(location.RegionCode)
+		}
+		if location.RegionName != "" {
+			builder.SetRegionName(location.RegionName)
+		}
 		if location.City != "" {
 			builder.SetCity(location.City)
 		}
+		if location.PostalCode != "" {
+			builder.SetPostalCode(location.PostalCode)
+		}
+		if location.PlaceName != "" {
+			builder.SetPlaceName(location.PlaceName)
+			builder.SetPlaceDistanceKm(location.PlaceDistance)
+		}
+		if location.PlaceFeature != "" {
+			builder.SetPlaceFeatureCode(location.PlaceFeature)
+		}
 		if location.Latitude != 0 || location.Longitude != 0 {
 			builder.SetLatitude(location.Latitude).SetLongitude(location.Longitude)
+		}
+		if location.TimeZone != "" {
+			builder.SetTimeZone(location.TimeZone)
+		}
+		if location.AccuracyRadius > 0 {
+			builder.SetAccuracyRadius(location.AccuracyRadius)
 		}
 		_, _ = builder.Save(ctx)
 	}

@@ -102,10 +102,18 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		return countryLogs[i].CreatedAt.After(countryLogs[j].CreatedAt)
 	})
 	type locationKey struct {
-		country   string
-		city      string
-		latitude  float64
-		longitude float64
+		country        string
+		regionCode     string
+		regionName     string
+		city           string
+		postalCode     string
+		placeName      string
+		placeFeature   string
+		placeDistance  float64
+		latitude       float64
+		longitude      float64
+		timeZone       string
+		accuracyRadius int
 	}
 	locationVisitors := make(map[locationKey]map[string]struct{})
 	seenVisitors := make(map[string]struct{})
@@ -118,10 +126,18 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		}
 		seenVisitors[row.IP] = struct{}{}
 		key := locationKey{
-			country:   row.CountryCode,
-			city:      row.City,
-			latitude:  row.Latitude,
-			longitude: row.Longitude,
+			country:        row.CountryCode,
+			regionCode:     row.RegionCode,
+			regionName:     row.RegionName,
+			city:           row.City,
+			postalCode:     row.PostalCode,
+			placeName:      row.PlaceName,
+			placeFeature:   row.PlaceFeatureCode,
+			placeDistance:  row.PlaceDistanceKm,
+			latitude:       row.Latitude,
+			longitude:      row.Longitude,
+			timeZone:       row.TimeZone,
+			accuracyRadius: row.AccuracyRadius,
 		}
 		if locationVisitors[key] == nil {
 			locationVisitors[key] = make(map[string]struct{})
@@ -136,12 +152,20 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		}
 		sort.Strings(ipAddresses)
 		countries = append(countries, types.CountryRow{
-			CountryCode: location.country,
-			City:        location.city,
-			Latitude:    location.latitude,
-			Longitude:   location.longitude,
-			IPAddresses: ipAddresses,
-			Count:       len(visitors),
+			CountryCode:    location.country,
+			RegionCode:     location.regionCode,
+			RegionName:     location.regionName,
+			City:           location.city,
+			PostalCode:     location.postalCode,
+			PlaceName:      location.placeName,
+			PlaceFeature:   location.placeFeature,
+			PlaceDistance:  location.placeDistance,
+			Latitude:       location.latitude,
+			Longitude:      location.longitude,
+			TimeZone:       location.timeZone,
+			AccuracyRadius: location.accuracyRadius,
+			IPAddresses:    ipAddresses,
+			Count:          len(visitors),
 		})
 	}
 	sort.Slice(countries, func(i, j int) bool {
@@ -311,27 +335,43 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 			crawlerName = *row.CrawlerName
 		}
 		location := traffic.GeoLocation{
-			CountryCode: row.CountryCode,
-			City:        row.City,
-			Latitude:    row.Latitude,
-			Longitude:   row.Longitude,
+			CountryCode:    row.CountryCode,
+			RegionCode:     row.RegionCode,
+			RegionName:     row.RegionName,
+			City:           row.City,
+			PostalCode:     row.PostalCode,
+			PlaceName:      row.PlaceName,
+			PlaceFeature:   row.PlaceFeatureCode,
+			PlaceDistance:  row.PlaceDistanceKm,
+			Latitude:       row.Latitude,
+			Longitude:      row.Longitude,
+			TimeZone:       row.TimeZone,
+			AccuracyRadius: row.AccuracyRadius,
 		}
 		if location.CountryCode == "" {
 			location = legacyLocations[ip]
 		}
 		visitors = append(visitors, types.VisitorRow{
-			Fingerprint:  fp,
-			IPMasked:     maskIP(ip),
-			VisitorKind:  row.VisitorKind.String(),
-			ReferrerKind: row.ReferrerKind.String(),
-			Referrer:     referrer,
-			LandingURL:   landingURL,
-			CrawlerName:  crawlerName,
-			CountryCode:  location.CountryCode,
-			City:         location.City,
-			Latitude:     location.Latitude,
-			Longitude:    location.Longitude,
-			LastSeenAt:   row.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			Fingerprint:    fp,
+			IPMasked:       maskIP(ip),
+			VisitorKind:    row.VisitorKind.String(),
+			ReferrerKind:   row.ReferrerKind.String(),
+			Referrer:       referrer,
+			LandingURL:     landingURL,
+			CrawlerName:    crawlerName,
+			CountryCode:    location.CountryCode,
+			RegionCode:     location.RegionCode,
+			RegionName:     location.RegionName,
+			City:           location.City,
+			PostalCode:     location.PostalCode,
+			PlaceName:      location.PlaceName,
+			PlaceFeature:   location.PlaceFeature,
+			PlaceDistance:  location.PlaceDistance,
+			Latitude:       location.Latitude,
+			Longitude:      location.Longitude,
+			TimeZone:       location.TimeZone,
+			AccuracyRadius: location.AccuracyRadius,
+			LastSeenAt:     row.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		})
 	}
 	return &types.VisitorsResponse{
@@ -381,10 +421,18 @@ func (l *StatsLogic) legacyVisitorLocations(rows []*ent.ContentInteraction) (map
 	for _, row := range logs {
 		if _, exists := locations[row.IP]; !exists {
 			locations[row.IP] = traffic.GeoLocation{
-				CountryCode: row.CountryCode,
-				City:        row.City,
-				Latitude:    row.Latitude,
-				Longitude:   row.Longitude,
+				CountryCode:    row.CountryCode,
+				RegionCode:     row.RegionCode,
+				RegionName:     row.RegionName,
+				City:           row.City,
+				PostalCode:     row.PostalCode,
+				PlaceName:      row.PlaceName,
+				PlaceFeature:   row.PlaceFeatureCode,
+				PlaceDistance:  row.PlaceDistanceKm,
+				Latitude:       row.Latitude,
+				Longitude:      row.Longitude,
+				TimeZone:       row.TimeZone,
+				AccuracyRadius: row.AccuracyRadius,
 			}
 		}
 	}

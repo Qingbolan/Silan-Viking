@@ -192,6 +192,34 @@ func (cic *ContentInteractionCreate) SetNillableCountryCode(s *string) *ContentI
 	return cic
 }
 
+// SetRegionCode sets the "region_code" field.
+func (cic *ContentInteractionCreate) SetRegionCode(s string) *ContentInteractionCreate {
+	cic.mutation.SetRegionCode(s)
+	return cic
+}
+
+// SetNillableRegionCode sets the "region_code" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableRegionCode(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetRegionCode(*s)
+	}
+	return cic
+}
+
+// SetRegionName sets the "region_name" field.
+func (cic *ContentInteractionCreate) SetRegionName(s string) *ContentInteractionCreate {
+	cic.mutation.SetRegionName(s)
+	return cic
+}
+
+// SetNillableRegionName sets the "region_name" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableRegionName(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetRegionName(*s)
+	}
+	return cic
+}
+
 // SetCity sets the "city" field.
 func (cic *ContentInteractionCreate) SetCity(s string) *ContentInteractionCreate {
 	cic.mutation.SetCity(s)
@@ -202,6 +230,62 @@ func (cic *ContentInteractionCreate) SetCity(s string) *ContentInteractionCreate
 func (cic *ContentInteractionCreate) SetNillableCity(s *string) *ContentInteractionCreate {
 	if s != nil {
 		cic.SetCity(*s)
+	}
+	return cic
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (cic *ContentInteractionCreate) SetPostalCode(s string) *ContentInteractionCreate {
+	cic.mutation.SetPostalCode(s)
+	return cic
+}
+
+// SetNillablePostalCode sets the "postal_code" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillablePostalCode(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetPostalCode(*s)
+	}
+	return cic
+}
+
+// SetPlaceName sets the "place_name" field.
+func (cic *ContentInteractionCreate) SetPlaceName(s string) *ContentInteractionCreate {
+	cic.mutation.SetPlaceName(s)
+	return cic
+}
+
+// SetNillablePlaceName sets the "place_name" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillablePlaceName(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetPlaceName(*s)
+	}
+	return cic
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (cic *ContentInteractionCreate) SetPlaceFeatureCode(s string) *ContentInteractionCreate {
+	cic.mutation.SetPlaceFeatureCode(s)
+	return cic
+}
+
+// SetNillablePlaceFeatureCode sets the "place_feature_code" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillablePlaceFeatureCode(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetPlaceFeatureCode(*s)
+	}
+	return cic
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (cic *ContentInteractionCreate) SetPlaceDistanceKm(f float64) *ContentInteractionCreate {
+	cic.mutation.SetPlaceDistanceKm(f)
+	return cic
+}
+
+// SetNillablePlaceDistanceKm sets the "place_distance_km" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillablePlaceDistanceKm(f *float64) *ContentInteractionCreate {
+	if f != nil {
+		cic.SetPlaceDistanceKm(*f)
 	}
 	return cic
 }
@@ -230,6 +314,34 @@ func (cic *ContentInteractionCreate) SetLongitude(f float64) *ContentInteraction
 func (cic *ContentInteractionCreate) SetNillableLongitude(f *float64) *ContentInteractionCreate {
 	if f != nil {
 		cic.SetLongitude(*f)
+	}
+	return cic
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (cic *ContentInteractionCreate) SetTimeZone(s string) *ContentInteractionCreate {
+	cic.mutation.SetTimeZone(s)
+	return cic
+}
+
+// SetNillableTimeZone sets the "time_zone" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableTimeZone(s *string) *ContentInteractionCreate {
+	if s != nil {
+		cic.SetTimeZone(*s)
+	}
+	return cic
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (cic *ContentInteractionCreate) SetAccuracyRadius(i int) *ContentInteractionCreate {
+	cic.mutation.SetAccuracyRadius(i)
+	return cic
+}
+
+// SetNillableAccuracyRadius sets the "accuracy_radius" field if the given value is not nil.
+func (cic *ContentInteractionCreate) SetNillableAccuracyRadius(i *int) *ContentInteractionCreate {
+	if i != nil {
+		cic.SetAccuracyRadius(*i)
 	}
 	return cic
 }
@@ -403,9 +515,39 @@ func (cic *ContentInteractionCreate) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.country_code": %w`, err)}
 		}
 	}
+	if v, ok := cic.mutation.RegionCode(); ok {
+		if err := contentinteraction.RegionCodeValidator(v); err != nil {
+			return &ValidationError{Name: "region_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.region_code": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.RegionName(); ok {
+		if err := contentinteraction.RegionNameValidator(v); err != nil {
+			return &ValidationError{Name: "region_name", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.region_name": %w`, err)}
+		}
+	}
 	if v, ok := cic.mutation.City(); ok {
 		if err := contentinteraction.CityValidator(v); err != nil {
 			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.city": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.PostalCode(); ok {
+		if err := contentinteraction.PostalCodeValidator(v); err != nil {
+			return &ValidationError{Name: "postal_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.postal_code": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.PlaceName(); ok {
+		if err := contentinteraction.PlaceNameValidator(v); err != nil {
+			return &ValidationError{Name: "place_name", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.place_name": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.PlaceFeatureCode(); ok {
+		if err := contentinteraction.PlaceFeatureCodeValidator(v); err != nil {
+			return &ValidationError{Name: "place_feature_code", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.place_feature_code": %w`, err)}
+		}
+	}
+	if v, ok := cic.mutation.TimeZone(); ok {
+		if err := contentinteraction.TimeZoneValidator(v); err != nil {
+			return &ValidationError{Name: "time_zone", err: fmt.Errorf(`ent: validator failed for field "ContentInteraction.time_zone": %w`, err)}
 		}
 	}
 	if _, ok := cic.mutation.SessionDuration(); !ok {
@@ -505,9 +647,33 @@ func (cic *ContentInteractionCreate) createSpec() (*ContentInteraction, *sqlgrap
 		_spec.SetField(contentinteraction.FieldCountryCode, field.TypeString, value)
 		_node.CountryCode = value
 	}
+	if value, ok := cic.mutation.RegionCode(); ok {
+		_spec.SetField(contentinteraction.FieldRegionCode, field.TypeString, value)
+		_node.RegionCode = value
+	}
+	if value, ok := cic.mutation.RegionName(); ok {
+		_spec.SetField(contentinteraction.FieldRegionName, field.TypeString, value)
+		_node.RegionName = value
+	}
 	if value, ok := cic.mutation.City(); ok {
 		_spec.SetField(contentinteraction.FieldCity, field.TypeString, value)
 		_node.City = value
+	}
+	if value, ok := cic.mutation.PostalCode(); ok {
+		_spec.SetField(contentinteraction.FieldPostalCode, field.TypeString, value)
+		_node.PostalCode = value
+	}
+	if value, ok := cic.mutation.PlaceName(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceName, field.TypeString, value)
+		_node.PlaceName = value
+	}
+	if value, ok := cic.mutation.PlaceFeatureCode(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceFeatureCode, field.TypeString, value)
+		_node.PlaceFeatureCode = value
+	}
+	if value, ok := cic.mutation.PlaceDistanceKm(); ok {
+		_spec.SetField(contentinteraction.FieldPlaceDistanceKm, field.TypeFloat64, value)
+		_node.PlaceDistanceKm = value
 	}
 	if value, ok := cic.mutation.Latitude(); ok {
 		_spec.SetField(contentinteraction.FieldLatitude, field.TypeFloat64, value)
@@ -516,6 +682,14 @@ func (cic *ContentInteractionCreate) createSpec() (*ContentInteraction, *sqlgrap
 	if value, ok := cic.mutation.Longitude(); ok {
 		_spec.SetField(contentinteraction.FieldLongitude, field.TypeFloat64, value)
 		_node.Longitude = value
+	}
+	if value, ok := cic.mutation.TimeZone(); ok {
+		_spec.SetField(contentinteraction.FieldTimeZone, field.TypeString, value)
+		_node.TimeZone = value
+	}
+	if value, ok := cic.mutation.AccuracyRadius(); ok {
+		_spec.SetField(contentinteraction.FieldAccuracyRadius, field.TypeInt, value)
+		_node.AccuracyRadius = value
 	}
 	if value, ok := cic.mutation.SessionDuration(); ok {
 		_spec.SetField(contentinteraction.FieldSessionDuration, field.TypeInt, value)

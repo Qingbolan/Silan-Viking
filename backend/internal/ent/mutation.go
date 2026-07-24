@@ -11181,37 +11181,47 @@ func (m *ContactMessageMutation) ResetEdge(name string) error {
 // ContentInteractionMutation represents an operation that mutates the ContentInteraction nodes in the graph.
 type ContentInteractionMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *string
-	entity_type         *contentinteraction.EntityType
-	entity_id           *string
-	section_anchor      *string
-	kind                *contentinteraction.Kind
-	user_identity_id    *string
-	fingerprint         *string
-	ip_address          *string
-	user_agent          *string
-	visitor_kind        *contentinteraction.VisitorKind
-	referrer_kind       *contentinteraction.ReferrerKind
-	referrer            *string
-	landing_url         *string
-	crawler_name        *string
-	country_code        *string
-	city                *string
-	latitude            *float64
-	addlatitude         *float64
-	longitude           *float64
-	addlongitude        *float64
-	session_duration    *int
-	addsession_duration *int
-	scroll_progress     *float64
-	addscroll_progress  *float64
-	created_at          *time.Time
-	clearedFields       map[string]struct{}
-	done                bool
-	oldValue            func(context.Context) (*ContentInteraction, error)
-	predicates          []predicate.ContentInteraction
+	op                   Op
+	typ                  string
+	id                   *string
+	entity_type          *contentinteraction.EntityType
+	entity_id            *string
+	section_anchor       *string
+	kind                 *contentinteraction.Kind
+	user_identity_id     *string
+	fingerprint          *string
+	ip_address           *string
+	user_agent           *string
+	visitor_kind         *contentinteraction.VisitorKind
+	referrer_kind        *contentinteraction.ReferrerKind
+	referrer             *string
+	landing_url          *string
+	crawler_name         *string
+	country_code         *string
+	region_code          *string
+	region_name          *string
+	city                 *string
+	postal_code          *string
+	place_name           *string
+	place_feature_code   *string
+	place_distance_km    *float64
+	addplace_distance_km *float64
+	latitude             *float64
+	addlatitude          *float64
+	longitude            *float64
+	addlongitude         *float64
+	time_zone            *string
+	accuracy_radius      *int
+	addaccuracy_radius   *int
+	session_duration     *int
+	addsession_duration  *int
+	scroll_progress      *float64
+	addscroll_progress   *float64
+	created_at           *time.Time
+	clearedFields        map[string]struct{}
+	done                 bool
+	oldValue             func(context.Context) (*ContentInteraction, error)
+	predicates           []predicate.ContentInteraction
 }
 
 var _ ent.Mutation = (*ContentInteractionMutation)(nil)
@@ -11939,6 +11949,104 @@ func (m *ContentInteractionMutation) ResetCountryCode() {
 	delete(m.clearedFields, contentinteraction.FieldCountryCode)
 }
 
+// SetRegionCode sets the "region_code" field.
+func (m *ContentInteractionMutation) SetRegionCode(s string) {
+	m.region_code = &s
+}
+
+// RegionCode returns the value of the "region_code" field in the mutation.
+func (m *ContentInteractionMutation) RegionCode() (r string, exists bool) {
+	v := m.region_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRegionCode returns the old "region_code" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldRegionCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRegionCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRegionCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRegionCode: %w", err)
+	}
+	return oldValue.RegionCode, nil
+}
+
+// ClearRegionCode clears the value of the "region_code" field.
+func (m *ContentInteractionMutation) ClearRegionCode() {
+	m.region_code = nil
+	m.clearedFields[contentinteraction.FieldRegionCode] = struct{}{}
+}
+
+// RegionCodeCleared returns if the "region_code" field was cleared in this mutation.
+func (m *ContentInteractionMutation) RegionCodeCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldRegionCode]
+	return ok
+}
+
+// ResetRegionCode resets all changes to the "region_code" field.
+func (m *ContentInteractionMutation) ResetRegionCode() {
+	m.region_code = nil
+	delete(m.clearedFields, contentinteraction.FieldRegionCode)
+}
+
+// SetRegionName sets the "region_name" field.
+func (m *ContentInteractionMutation) SetRegionName(s string) {
+	m.region_name = &s
+}
+
+// RegionName returns the value of the "region_name" field in the mutation.
+func (m *ContentInteractionMutation) RegionName() (r string, exists bool) {
+	v := m.region_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRegionName returns the old "region_name" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldRegionName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRegionName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRegionName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRegionName: %w", err)
+	}
+	return oldValue.RegionName, nil
+}
+
+// ClearRegionName clears the value of the "region_name" field.
+func (m *ContentInteractionMutation) ClearRegionName() {
+	m.region_name = nil
+	m.clearedFields[contentinteraction.FieldRegionName] = struct{}{}
+}
+
+// RegionNameCleared returns if the "region_name" field was cleared in this mutation.
+func (m *ContentInteractionMutation) RegionNameCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldRegionName]
+	return ok
+}
+
+// ResetRegionName resets all changes to the "region_name" field.
+func (m *ContentInteractionMutation) ResetRegionName() {
+	m.region_name = nil
+	delete(m.clearedFields, contentinteraction.FieldRegionName)
+}
+
 // SetCity sets the "city" field.
 func (m *ContentInteractionMutation) SetCity(s string) {
 	m.city = &s
@@ -11986,6 +12094,223 @@ func (m *ContentInteractionMutation) CityCleared() bool {
 func (m *ContentInteractionMutation) ResetCity() {
 	m.city = nil
 	delete(m.clearedFields, contentinteraction.FieldCity)
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (m *ContentInteractionMutation) SetPostalCode(s string) {
+	m.postal_code = &s
+}
+
+// PostalCode returns the value of the "postal_code" field in the mutation.
+func (m *ContentInteractionMutation) PostalCode() (r string, exists bool) {
+	v := m.postal_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPostalCode returns the old "postal_code" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldPostalCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPostalCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPostalCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPostalCode: %w", err)
+	}
+	return oldValue.PostalCode, nil
+}
+
+// ClearPostalCode clears the value of the "postal_code" field.
+func (m *ContentInteractionMutation) ClearPostalCode() {
+	m.postal_code = nil
+	m.clearedFields[contentinteraction.FieldPostalCode] = struct{}{}
+}
+
+// PostalCodeCleared returns if the "postal_code" field was cleared in this mutation.
+func (m *ContentInteractionMutation) PostalCodeCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldPostalCode]
+	return ok
+}
+
+// ResetPostalCode resets all changes to the "postal_code" field.
+func (m *ContentInteractionMutation) ResetPostalCode() {
+	m.postal_code = nil
+	delete(m.clearedFields, contentinteraction.FieldPostalCode)
+}
+
+// SetPlaceName sets the "place_name" field.
+func (m *ContentInteractionMutation) SetPlaceName(s string) {
+	m.place_name = &s
+}
+
+// PlaceName returns the value of the "place_name" field in the mutation.
+func (m *ContentInteractionMutation) PlaceName() (r string, exists bool) {
+	v := m.place_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlaceName returns the old "place_name" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldPlaceName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlaceName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlaceName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlaceName: %w", err)
+	}
+	return oldValue.PlaceName, nil
+}
+
+// ClearPlaceName clears the value of the "place_name" field.
+func (m *ContentInteractionMutation) ClearPlaceName() {
+	m.place_name = nil
+	m.clearedFields[contentinteraction.FieldPlaceName] = struct{}{}
+}
+
+// PlaceNameCleared returns if the "place_name" field was cleared in this mutation.
+func (m *ContentInteractionMutation) PlaceNameCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldPlaceName]
+	return ok
+}
+
+// ResetPlaceName resets all changes to the "place_name" field.
+func (m *ContentInteractionMutation) ResetPlaceName() {
+	m.place_name = nil
+	delete(m.clearedFields, contentinteraction.FieldPlaceName)
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (m *ContentInteractionMutation) SetPlaceFeatureCode(s string) {
+	m.place_feature_code = &s
+}
+
+// PlaceFeatureCode returns the value of the "place_feature_code" field in the mutation.
+func (m *ContentInteractionMutation) PlaceFeatureCode() (r string, exists bool) {
+	v := m.place_feature_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlaceFeatureCode returns the old "place_feature_code" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldPlaceFeatureCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlaceFeatureCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlaceFeatureCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlaceFeatureCode: %w", err)
+	}
+	return oldValue.PlaceFeatureCode, nil
+}
+
+// ClearPlaceFeatureCode clears the value of the "place_feature_code" field.
+func (m *ContentInteractionMutation) ClearPlaceFeatureCode() {
+	m.place_feature_code = nil
+	m.clearedFields[contentinteraction.FieldPlaceFeatureCode] = struct{}{}
+}
+
+// PlaceFeatureCodeCleared returns if the "place_feature_code" field was cleared in this mutation.
+func (m *ContentInteractionMutation) PlaceFeatureCodeCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldPlaceFeatureCode]
+	return ok
+}
+
+// ResetPlaceFeatureCode resets all changes to the "place_feature_code" field.
+func (m *ContentInteractionMutation) ResetPlaceFeatureCode() {
+	m.place_feature_code = nil
+	delete(m.clearedFields, contentinteraction.FieldPlaceFeatureCode)
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (m *ContentInteractionMutation) SetPlaceDistanceKm(f float64) {
+	m.place_distance_km = &f
+	m.addplace_distance_km = nil
+}
+
+// PlaceDistanceKm returns the value of the "place_distance_km" field in the mutation.
+func (m *ContentInteractionMutation) PlaceDistanceKm() (r float64, exists bool) {
+	v := m.place_distance_km
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlaceDistanceKm returns the old "place_distance_km" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldPlaceDistanceKm(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlaceDistanceKm is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlaceDistanceKm requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlaceDistanceKm: %w", err)
+	}
+	return oldValue.PlaceDistanceKm, nil
+}
+
+// AddPlaceDistanceKm adds f to the "place_distance_km" field.
+func (m *ContentInteractionMutation) AddPlaceDistanceKm(f float64) {
+	if m.addplace_distance_km != nil {
+		*m.addplace_distance_km += f
+	} else {
+		m.addplace_distance_km = &f
+	}
+}
+
+// AddedPlaceDistanceKm returns the value that was added to the "place_distance_km" field in this mutation.
+func (m *ContentInteractionMutation) AddedPlaceDistanceKm() (r float64, exists bool) {
+	v := m.addplace_distance_km
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPlaceDistanceKm clears the value of the "place_distance_km" field.
+func (m *ContentInteractionMutation) ClearPlaceDistanceKm() {
+	m.place_distance_km = nil
+	m.addplace_distance_km = nil
+	m.clearedFields[contentinteraction.FieldPlaceDistanceKm] = struct{}{}
+}
+
+// PlaceDistanceKmCleared returns if the "place_distance_km" field was cleared in this mutation.
+func (m *ContentInteractionMutation) PlaceDistanceKmCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldPlaceDistanceKm]
+	return ok
+}
+
+// ResetPlaceDistanceKm resets all changes to the "place_distance_km" field.
+func (m *ContentInteractionMutation) ResetPlaceDistanceKm() {
+	m.place_distance_km = nil
+	m.addplace_distance_km = nil
+	delete(m.clearedFields, contentinteraction.FieldPlaceDistanceKm)
 }
 
 // SetLatitude sets the "latitude" field.
@@ -12126,6 +12451,125 @@ func (m *ContentInteractionMutation) ResetLongitude() {
 	m.longitude = nil
 	m.addlongitude = nil
 	delete(m.clearedFields, contentinteraction.FieldLongitude)
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (m *ContentInteractionMutation) SetTimeZone(s string) {
+	m.time_zone = &s
+}
+
+// TimeZone returns the value of the "time_zone" field in the mutation.
+func (m *ContentInteractionMutation) TimeZone() (r string, exists bool) {
+	v := m.time_zone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimeZone returns the old "time_zone" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldTimeZone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimeZone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimeZone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimeZone: %w", err)
+	}
+	return oldValue.TimeZone, nil
+}
+
+// ClearTimeZone clears the value of the "time_zone" field.
+func (m *ContentInteractionMutation) ClearTimeZone() {
+	m.time_zone = nil
+	m.clearedFields[contentinteraction.FieldTimeZone] = struct{}{}
+}
+
+// TimeZoneCleared returns if the "time_zone" field was cleared in this mutation.
+func (m *ContentInteractionMutation) TimeZoneCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldTimeZone]
+	return ok
+}
+
+// ResetTimeZone resets all changes to the "time_zone" field.
+func (m *ContentInteractionMutation) ResetTimeZone() {
+	m.time_zone = nil
+	delete(m.clearedFields, contentinteraction.FieldTimeZone)
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (m *ContentInteractionMutation) SetAccuracyRadius(i int) {
+	m.accuracy_radius = &i
+	m.addaccuracy_radius = nil
+}
+
+// AccuracyRadius returns the value of the "accuracy_radius" field in the mutation.
+func (m *ContentInteractionMutation) AccuracyRadius() (r int, exists bool) {
+	v := m.accuracy_radius
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccuracyRadius returns the old "accuracy_radius" field's value of the ContentInteraction entity.
+// If the ContentInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ContentInteractionMutation) OldAccuracyRadius(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccuracyRadius is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccuracyRadius requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccuracyRadius: %w", err)
+	}
+	return oldValue.AccuracyRadius, nil
+}
+
+// AddAccuracyRadius adds i to the "accuracy_radius" field.
+func (m *ContentInteractionMutation) AddAccuracyRadius(i int) {
+	if m.addaccuracy_radius != nil {
+		*m.addaccuracy_radius += i
+	} else {
+		m.addaccuracy_radius = &i
+	}
+}
+
+// AddedAccuracyRadius returns the value that was added to the "accuracy_radius" field in this mutation.
+func (m *ContentInteractionMutation) AddedAccuracyRadius() (r int, exists bool) {
+	v := m.addaccuracy_radius
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAccuracyRadius clears the value of the "accuracy_radius" field.
+func (m *ContentInteractionMutation) ClearAccuracyRadius() {
+	m.accuracy_radius = nil
+	m.addaccuracy_radius = nil
+	m.clearedFields[contentinteraction.FieldAccuracyRadius] = struct{}{}
+}
+
+// AccuracyRadiusCleared returns if the "accuracy_radius" field was cleared in this mutation.
+func (m *ContentInteractionMutation) AccuracyRadiusCleared() bool {
+	_, ok := m.clearedFields[contentinteraction.FieldAccuracyRadius]
+	return ok
+}
+
+// ResetAccuracyRadius resets all changes to the "accuracy_radius" field.
+func (m *ContentInteractionMutation) ResetAccuracyRadius() {
+	m.accuracy_radius = nil
+	m.addaccuracy_radius = nil
+	delete(m.clearedFields, contentinteraction.FieldAccuracyRadius)
 }
 
 // SetSessionDuration sets the "session_duration" field.
@@ -12323,7 +12767,7 @@ func (m *ContentInteractionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ContentInteractionMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 28)
 	if m.entity_type != nil {
 		fields = append(fields, contentinteraction.FieldEntityType)
 	}
@@ -12366,14 +12810,38 @@ func (m *ContentInteractionMutation) Fields() []string {
 	if m.country_code != nil {
 		fields = append(fields, contentinteraction.FieldCountryCode)
 	}
+	if m.region_code != nil {
+		fields = append(fields, contentinteraction.FieldRegionCode)
+	}
+	if m.region_name != nil {
+		fields = append(fields, contentinteraction.FieldRegionName)
+	}
 	if m.city != nil {
 		fields = append(fields, contentinteraction.FieldCity)
+	}
+	if m.postal_code != nil {
+		fields = append(fields, contentinteraction.FieldPostalCode)
+	}
+	if m.place_name != nil {
+		fields = append(fields, contentinteraction.FieldPlaceName)
+	}
+	if m.place_feature_code != nil {
+		fields = append(fields, contentinteraction.FieldPlaceFeatureCode)
+	}
+	if m.place_distance_km != nil {
+		fields = append(fields, contentinteraction.FieldPlaceDistanceKm)
 	}
 	if m.latitude != nil {
 		fields = append(fields, contentinteraction.FieldLatitude)
 	}
 	if m.longitude != nil {
 		fields = append(fields, contentinteraction.FieldLongitude)
+	}
+	if m.time_zone != nil {
+		fields = append(fields, contentinteraction.FieldTimeZone)
+	}
+	if m.accuracy_radius != nil {
+		fields = append(fields, contentinteraction.FieldAccuracyRadius)
 	}
 	if m.session_duration != nil {
 		fields = append(fields, contentinteraction.FieldSessionDuration)
@@ -12420,12 +12888,28 @@ func (m *ContentInteractionMutation) Field(name string) (ent.Value, bool) {
 		return m.CrawlerName()
 	case contentinteraction.FieldCountryCode:
 		return m.CountryCode()
+	case contentinteraction.FieldRegionCode:
+		return m.RegionCode()
+	case contentinteraction.FieldRegionName:
+		return m.RegionName()
 	case contentinteraction.FieldCity:
 		return m.City()
+	case contentinteraction.FieldPostalCode:
+		return m.PostalCode()
+	case contentinteraction.FieldPlaceName:
+		return m.PlaceName()
+	case contentinteraction.FieldPlaceFeatureCode:
+		return m.PlaceFeatureCode()
+	case contentinteraction.FieldPlaceDistanceKm:
+		return m.PlaceDistanceKm()
 	case contentinteraction.FieldLatitude:
 		return m.Latitude()
 	case contentinteraction.FieldLongitude:
 		return m.Longitude()
+	case contentinteraction.FieldTimeZone:
+		return m.TimeZone()
+	case contentinteraction.FieldAccuracyRadius:
+		return m.AccuracyRadius()
 	case contentinteraction.FieldSessionDuration:
 		return m.SessionDuration()
 	case contentinteraction.FieldScrollProgress:
@@ -12469,12 +12953,28 @@ func (m *ContentInteractionMutation) OldField(ctx context.Context, name string) 
 		return m.OldCrawlerName(ctx)
 	case contentinteraction.FieldCountryCode:
 		return m.OldCountryCode(ctx)
+	case contentinteraction.FieldRegionCode:
+		return m.OldRegionCode(ctx)
+	case contentinteraction.FieldRegionName:
+		return m.OldRegionName(ctx)
 	case contentinteraction.FieldCity:
 		return m.OldCity(ctx)
+	case contentinteraction.FieldPostalCode:
+		return m.OldPostalCode(ctx)
+	case contentinteraction.FieldPlaceName:
+		return m.OldPlaceName(ctx)
+	case contentinteraction.FieldPlaceFeatureCode:
+		return m.OldPlaceFeatureCode(ctx)
+	case contentinteraction.FieldPlaceDistanceKm:
+		return m.OldPlaceDistanceKm(ctx)
 	case contentinteraction.FieldLatitude:
 		return m.OldLatitude(ctx)
 	case contentinteraction.FieldLongitude:
 		return m.OldLongitude(ctx)
+	case contentinteraction.FieldTimeZone:
+		return m.OldTimeZone(ctx)
+	case contentinteraction.FieldAccuracyRadius:
+		return m.OldAccuracyRadius(ctx)
 	case contentinteraction.FieldSessionDuration:
 		return m.OldSessionDuration(ctx)
 	case contentinteraction.FieldScrollProgress:
@@ -12588,12 +13088,54 @@ func (m *ContentInteractionMutation) SetField(name string, value ent.Value) erro
 		}
 		m.SetCountryCode(v)
 		return nil
+	case contentinteraction.FieldRegionCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRegionCode(v)
+		return nil
+	case contentinteraction.FieldRegionName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRegionName(v)
+		return nil
 	case contentinteraction.FieldCity:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCity(v)
+		return nil
+	case contentinteraction.FieldPostalCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPostalCode(v)
+		return nil
+	case contentinteraction.FieldPlaceName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlaceName(v)
+		return nil
+	case contentinteraction.FieldPlaceFeatureCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlaceFeatureCode(v)
+		return nil
+	case contentinteraction.FieldPlaceDistanceKm:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlaceDistanceKm(v)
 		return nil
 	case contentinteraction.FieldLatitude:
 		v, ok := value.(float64)
@@ -12608,6 +13150,20 @@ func (m *ContentInteractionMutation) SetField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLongitude(v)
+		return nil
+	case contentinteraction.FieldTimeZone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimeZone(v)
+		return nil
+	case contentinteraction.FieldAccuracyRadius:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccuracyRadius(v)
 		return nil
 	case contentinteraction.FieldSessionDuration:
 		v, ok := value.(int)
@@ -12638,11 +13194,17 @@ func (m *ContentInteractionMutation) SetField(name string, value ent.Value) erro
 // this mutation.
 func (m *ContentInteractionMutation) AddedFields() []string {
 	var fields []string
+	if m.addplace_distance_km != nil {
+		fields = append(fields, contentinteraction.FieldPlaceDistanceKm)
+	}
 	if m.addlatitude != nil {
 		fields = append(fields, contentinteraction.FieldLatitude)
 	}
 	if m.addlongitude != nil {
 		fields = append(fields, contentinteraction.FieldLongitude)
+	}
+	if m.addaccuracy_radius != nil {
+		fields = append(fields, contentinteraction.FieldAccuracyRadius)
 	}
 	if m.addsession_duration != nil {
 		fields = append(fields, contentinteraction.FieldSessionDuration)
@@ -12658,10 +13220,14 @@ func (m *ContentInteractionMutation) AddedFields() []string {
 // was not set, or was not defined in the schema.
 func (m *ContentInteractionMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
+	case contentinteraction.FieldPlaceDistanceKm:
+		return m.AddedPlaceDistanceKm()
 	case contentinteraction.FieldLatitude:
 		return m.AddedLatitude()
 	case contentinteraction.FieldLongitude:
 		return m.AddedLongitude()
+	case contentinteraction.FieldAccuracyRadius:
+		return m.AddedAccuracyRadius()
 	case contentinteraction.FieldSessionDuration:
 		return m.AddedSessionDuration()
 	case contentinteraction.FieldScrollProgress:
@@ -12675,6 +13241,13 @@ func (m *ContentInteractionMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *ContentInteractionMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case contentinteraction.FieldPlaceDistanceKm:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPlaceDistanceKm(v)
+		return nil
 	case contentinteraction.FieldLatitude:
 		v, ok := value.(float64)
 		if !ok {
@@ -12688,6 +13261,13 @@ func (m *ContentInteractionMutation) AddField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddLongitude(v)
+		return nil
+	case contentinteraction.FieldAccuracyRadius:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAccuracyRadius(v)
 		return nil
 	case contentinteraction.FieldSessionDuration:
 		v, ok := value.(int)
@@ -12738,14 +13318,38 @@ func (m *ContentInteractionMutation) ClearedFields() []string {
 	if m.FieldCleared(contentinteraction.FieldCountryCode) {
 		fields = append(fields, contentinteraction.FieldCountryCode)
 	}
+	if m.FieldCleared(contentinteraction.FieldRegionCode) {
+		fields = append(fields, contentinteraction.FieldRegionCode)
+	}
+	if m.FieldCleared(contentinteraction.FieldRegionName) {
+		fields = append(fields, contentinteraction.FieldRegionName)
+	}
 	if m.FieldCleared(contentinteraction.FieldCity) {
 		fields = append(fields, contentinteraction.FieldCity)
+	}
+	if m.FieldCleared(contentinteraction.FieldPostalCode) {
+		fields = append(fields, contentinteraction.FieldPostalCode)
+	}
+	if m.FieldCleared(contentinteraction.FieldPlaceName) {
+		fields = append(fields, contentinteraction.FieldPlaceName)
+	}
+	if m.FieldCleared(contentinteraction.FieldPlaceFeatureCode) {
+		fields = append(fields, contentinteraction.FieldPlaceFeatureCode)
+	}
+	if m.FieldCleared(contentinteraction.FieldPlaceDistanceKm) {
+		fields = append(fields, contentinteraction.FieldPlaceDistanceKm)
 	}
 	if m.FieldCleared(contentinteraction.FieldLatitude) {
 		fields = append(fields, contentinteraction.FieldLatitude)
 	}
 	if m.FieldCleared(contentinteraction.FieldLongitude) {
 		fields = append(fields, contentinteraction.FieldLongitude)
+	}
+	if m.FieldCleared(contentinteraction.FieldTimeZone) {
+		fields = append(fields, contentinteraction.FieldTimeZone)
+	}
+	if m.FieldCleared(contentinteraction.FieldAccuracyRadius) {
+		fields = append(fields, contentinteraction.FieldAccuracyRadius)
 	}
 	if m.FieldCleared(contentinteraction.FieldCreatedAt) {
 		fields = append(fields, contentinteraction.FieldCreatedAt)
@@ -12791,14 +13395,38 @@ func (m *ContentInteractionMutation) ClearField(name string) error {
 	case contentinteraction.FieldCountryCode:
 		m.ClearCountryCode()
 		return nil
+	case contentinteraction.FieldRegionCode:
+		m.ClearRegionCode()
+		return nil
+	case contentinteraction.FieldRegionName:
+		m.ClearRegionName()
+		return nil
 	case contentinteraction.FieldCity:
 		m.ClearCity()
+		return nil
+	case contentinteraction.FieldPostalCode:
+		m.ClearPostalCode()
+		return nil
+	case contentinteraction.FieldPlaceName:
+		m.ClearPlaceName()
+		return nil
+	case contentinteraction.FieldPlaceFeatureCode:
+		m.ClearPlaceFeatureCode()
+		return nil
+	case contentinteraction.FieldPlaceDistanceKm:
+		m.ClearPlaceDistanceKm()
 		return nil
 	case contentinteraction.FieldLatitude:
 		m.ClearLatitude()
 		return nil
 	case contentinteraction.FieldLongitude:
 		m.ClearLongitude()
+		return nil
+	case contentinteraction.FieldTimeZone:
+		m.ClearTimeZone()
+		return nil
+	case contentinteraction.FieldAccuracyRadius:
+		m.ClearAccuracyRadius()
 		return nil
 	case contentinteraction.FieldCreatedAt:
 		m.ClearCreatedAt()
@@ -12853,14 +13481,38 @@ func (m *ContentInteractionMutation) ResetField(name string) error {
 	case contentinteraction.FieldCountryCode:
 		m.ResetCountryCode()
 		return nil
+	case contentinteraction.FieldRegionCode:
+		m.ResetRegionCode()
+		return nil
+	case contentinteraction.FieldRegionName:
+		m.ResetRegionName()
+		return nil
 	case contentinteraction.FieldCity:
 		m.ResetCity()
+		return nil
+	case contentinteraction.FieldPostalCode:
+		m.ResetPostalCode()
+		return nil
+	case contentinteraction.FieldPlaceName:
+		m.ResetPlaceName()
+		return nil
+	case contentinteraction.FieldPlaceFeatureCode:
+		m.ResetPlaceFeatureCode()
+		return nil
+	case contentinteraction.FieldPlaceDistanceKm:
+		m.ResetPlaceDistanceKm()
 		return nil
 	case contentinteraction.FieldLatitude:
 		m.ResetLatitude()
 		return nil
 	case contentinteraction.FieldLongitude:
 		m.ResetLongitude()
+		return nil
+	case contentinteraction.FieldTimeZone:
+		m.ResetTimeZone()
+		return nil
+	case contentinteraction.FieldAccuracyRadius:
+		m.ResetAccuracyRadius()
 		return nil
 	case contentinteraction.FieldSessionDuration:
 		m.ResetSessionDuration()
@@ -47008,32 +47660,42 @@ func (m *PublicationTranslationMutation) ResetEdge(name string) error {
 // RequestLogMutation represents an operation that mutates the RequestLog nodes in the graph.
 type RequestLogMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	method         *string
-	_path          *string
-	status         *int
-	addstatus      *int
-	duration_ms    *int
-	addduration_ms *int
-	referrer       *string
-	user_agent     *string
-	ip             *string
-	lang           *string
-	country_code   *string
-	city           *string
-	latitude       *float64
-	addlatitude    *float64
-	longitude      *float64
-	addlongitude   *float64
-	is_bot         *bool
-	bot_name       *string
-	created_at     *time.Time
-	clearedFields  map[string]struct{}
-	done           bool
-	oldValue       func(context.Context) (*RequestLog, error)
-	predicates     []predicate.RequestLog
+	op                   Op
+	typ                  string
+	id                   *int
+	method               *string
+	_path                *string
+	status               *int
+	addstatus            *int
+	duration_ms          *int
+	addduration_ms       *int
+	referrer             *string
+	user_agent           *string
+	ip                   *string
+	lang                 *string
+	country_code         *string
+	region_code          *string
+	region_name          *string
+	city                 *string
+	postal_code          *string
+	place_name           *string
+	place_feature_code   *string
+	place_distance_km    *float64
+	addplace_distance_km *float64
+	latitude             *float64
+	addlatitude          *float64
+	longitude            *float64
+	addlongitude         *float64
+	time_zone            *string
+	accuracy_radius      *int
+	addaccuracy_radius   *int
+	is_bot               *bool
+	bot_name             *string
+	created_at           *time.Time
+	clearedFields        map[string]struct{}
+	done                 bool
+	oldValue             func(context.Context) (*RequestLog, error)
+	predicates           []predicate.RequestLog
 }
 
 var _ ent.Mutation = (*RequestLogMutation)(nil)
@@ -47623,6 +48285,104 @@ func (m *RequestLogMutation) ResetCountryCode() {
 	delete(m.clearedFields, requestlog.FieldCountryCode)
 }
 
+// SetRegionCode sets the "region_code" field.
+func (m *RequestLogMutation) SetRegionCode(s string) {
+	m.region_code = &s
+}
+
+// RegionCode returns the value of the "region_code" field in the mutation.
+func (m *RequestLogMutation) RegionCode() (r string, exists bool) {
+	v := m.region_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRegionCode returns the old "region_code" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldRegionCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRegionCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRegionCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRegionCode: %w", err)
+	}
+	return oldValue.RegionCode, nil
+}
+
+// ClearRegionCode clears the value of the "region_code" field.
+func (m *RequestLogMutation) ClearRegionCode() {
+	m.region_code = nil
+	m.clearedFields[requestlog.FieldRegionCode] = struct{}{}
+}
+
+// RegionCodeCleared returns if the "region_code" field was cleared in this mutation.
+func (m *RequestLogMutation) RegionCodeCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldRegionCode]
+	return ok
+}
+
+// ResetRegionCode resets all changes to the "region_code" field.
+func (m *RequestLogMutation) ResetRegionCode() {
+	m.region_code = nil
+	delete(m.clearedFields, requestlog.FieldRegionCode)
+}
+
+// SetRegionName sets the "region_name" field.
+func (m *RequestLogMutation) SetRegionName(s string) {
+	m.region_name = &s
+}
+
+// RegionName returns the value of the "region_name" field in the mutation.
+func (m *RequestLogMutation) RegionName() (r string, exists bool) {
+	v := m.region_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRegionName returns the old "region_name" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldRegionName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRegionName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRegionName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRegionName: %w", err)
+	}
+	return oldValue.RegionName, nil
+}
+
+// ClearRegionName clears the value of the "region_name" field.
+func (m *RequestLogMutation) ClearRegionName() {
+	m.region_name = nil
+	m.clearedFields[requestlog.FieldRegionName] = struct{}{}
+}
+
+// RegionNameCleared returns if the "region_name" field was cleared in this mutation.
+func (m *RequestLogMutation) RegionNameCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldRegionName]
+	return ok
+}
+
+// ResetRegionName resets all changes to the "region_name" field.
+func (m *RequestLogMutation) ResetRegionName() {
+	m.region_name = nil
+	delete(m.clearedFields, requestlog.FieldRegionName)
+}
+
 // SetCity sets the "city" field.
 func (m *RequestLogMutation) SetCity(s string) {
 	m.city = &s
@@ -47670,6 +48430,223 @@ func (m *RequestLogMutation) CityCleared() bool {
 func (m *RequestLogMutation) ResetCity() {
 	m.city = nil
 	delete(m.clearedFields, requestlog.FieldCity)
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (m *RequestLogMutation) SetPostalCode(s string) {
+	m.postal_code = &s
+}
+
+// PostalCode returns the value of the "postal_code" field in the mutation.
+func (m *RequestLogMutation) PostalCode() (r string, exists bool) {
+	v := m.postal_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPostalCode returns the old "postal_code" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldPostalCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPostalCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPostalCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPostalCode: %w", err)
+	}
+	return oldValue.PostalCode, nil
+}
+
+// ClearPostalCode clears the value of the "postal_code" field.
+func (m *RequestLogMutation) ClearPostalCode() {
+	m.postal_code = nil
+	m.clearedFields[requestlog.FieldPostalCode] = struct{}{}
+}
+
+// PostalCodeCleared returns if the "postal_code" field was cleared in this mutation.
+func (m *RequestLogMutation) PostalCodeCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldPostalCode]
+	return ok
+}
+
+// ResetPostalCode resets all changes to the "postal_code" field.
+func (m *RequestLogMutation) ResetPostalCode() {
+	m.postal_code = nil
+	delete(m.clearedFields, requestlog.FieldPostalCode)
+}
+
+// SetPlaceName sets the "place_name" field.
+func (m *RequestLogMutation) SetPlaceName(s string) {
+	m.place_name = &s
+}
+
+// PlaceName returns the value of the "place_name" field in the mutation.
+func (m *RequestLogMutation) PlaceName() (r string, exists bool) {
+	v := m.place_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlaceName returns the old "place_name" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldPlaceName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlaceName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlaceName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlaceName: %w", err)
+	}
+	return oldValue.PlaceName, nil
+}
+
+// ClearPlaceName clears the value of the "place_name" field.
+func (m *RequestLogMutation) ClearPlaceName() {
+	m.place_name = nil
+	m.clearedFields[requestlog.FieldPlaceName] = struct{}{}
+}
+
+// PlaceNameCleared returns if the "place_name" field was cleared in this mutation.
+func (m *RequestLogMutation) PlaceNameCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldPlaceName]
+	return ok
+}
+
+// ResetPlaceName resets all changes to the "place_name" field.
+func (m *RequestLogMutation) ResetPlaceName() {
+	m.place_name = nil
+	delete(m.clearedFields, requestlog.FieldPlaceName)
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (m *RequestLogMutation) SetPlaceFeatureCode(s string) {
+	m.place_feature_code = &s
+}
+
+// PlaceFeatureCode returns the value of the "place_feature_code" field in the mutation.
+func (m *RequestLogMutation) PlaceFeatureCode() (r string, exists bool) {
+	v := m.place_feature_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlaceFeatureCode returns the old "place_feature_code" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldPlaceFeatureCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlaceFeatureCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlaceFeatureCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlaceFeatureCode: %w", err)
+	}
+	return oldValue.PlaceFeatureCode, nil
+}
+
+// ClearPlaceFeatureCode clears the value of the "place_feature_code" field.
+func (m *RequestLogMutation) ClearPlaceFeatureCode() {
+	m.place_feature_code = nil
+	m.clearedFields[requestlog.FieldPlaceFeatureCode] = struct{}{}
+}
+
+// PlaceFeatureCodeCleared returns if the "place_feature_code" field was cleared in this mutation.
+func (m *RequestLogMutation) PlaceFeatureCodeCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldPlaceFeatureCode]
+	return ok
+}
+
+// ResetPlaceFeatureCode resets all changes to the "place_feature_code" field.
+func (m *RequestLogMutation) ResetPlaceFeatureCode() {
+	m.place_feature_code = nil
+	delete(m.clearedFields, requestlog.FieldPlaceFeatureCode)
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (m *RequestLogMutation) SetPlaceDistanceKm(f float64) {
+	m.place_distance_km = &f
+	m.addplace_distance_km = nil
+}
+
+// PlaceDistanceKm returns the value of the "place_distance_km" field in the mutation.
+func (m *RequestLogMutation) PlaceDistanceKm() (r float64, exists bool) {
+	v := m.place_distance_km
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlaceDistanceKm returns the old "place_distance_km" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldPlaceDistanceKm(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlaceDistanceKm is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlaceDistanceKm requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlaceDistanceKm: %w", err)
+	}
+	return oldValue.PlaceDistanceKm, nil
+}
+
+// AddPlaceDistanceKm adds f to the "place_distance_km" field.
+func (m *RequestLogMutation) AddPlaceDistanceKm(f float64) {
+	if m.addplace_distance_km != nil {
+		*m.addplace_distance_km += f
+	} else {
+		m.addplace_distance_km = &f
+	}
+}
+
+// AddedPlaceDistanceKm returns the value that was added to the "place_distance_km" field in this mutation.
+func (m *RequestLogMutation) AddedPlaceDistanceKm() (r float64, exists bool) {
+	v := m.addplace_distance_km
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPlaceDistanceKm clears the value of the "place_distance_km" field.
+func (m *RequestLogMutation) ClearPlaceDistanceKm() {
+	m.place_distance_km = nil
+	m.addplace_distance_km = nil
+	m.clearedFields[requestlog.FieldPlaceDistanceKm] = struct{}{}
+}
+
+// PlaceDistanceKmCleared returns if the "place_distance_km" field was cleared in this mutation.
+func (m *RequestLogMutation) PlaceDistanceKmCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldPlaceDistanceKm]
+	return ok
+}
+
+// ResetPlaceDistanceKm resets all changes to the "place_distance_km" field.
+func (m *RequestLogMutation) ResetPlaceDistanceKm() {
+	m.place_distance_km = nil
+	m.addplace_distance_km = nil
+	delete(m.clearedFields, requestlog.FieldPlaceDistanceKm)
 }
 
 // SetLatitude sets the "latitude" field.
@@ -47810,6 +48787,125 @@ func (m *RequestLogMutation) ResetLongitude() {
 	m.longitude = nil
 	m.addlongitude = nil
 	delete(m.clearedFields, requestlog.FieldLongitude)
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (m *RequestLogMutation) SetTimeZone(s string) {
+	m.time_zone = &s
+}
+
+// TimeZone returns the value of the "time_zone" field in the mutation.
+func (m *RequestLogMutation) TimeZone() (r string, exists bool) {
+	v := m.time_zone
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimeZone returns the old "time_zone" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldTimeZone(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimeZone is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimeZone requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimeZone: %w", err)
+	}
+	return oldValue.TimeZone, nil
+}
+
+// ClearTimeZone clears the value of the "time_zone" field.
+func (m *RequestLogMutation) ClearTimeZone() {
+	m.time_zone = nil
+	m.clearedFields[requestlog.FieldTimeZone] = struct{}{}
+}
+
+// TimeZoneCleared returns if the "time_zone" field was cleared in this mutation.
+func (m *RequestLogMutation) TimeZoneCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldTimeZone]
+	return ok
+}
+
+// ResetTimeZone resets all changes to the "time_zone" field.
+func (m *RequestLogMutation) ResetTimeZone() {
+	m.time_zone = nil
+	delete(m.clearedFields, requestlog.FieldTimeZone)
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (m *RequestLogMutation) SetAccuracyRadius(i int) {
+	m.accuracy_radius = &i
+	m.addaccuracy_radius = nil
+}
+
+// AccuracyRadius returns the value of the "accuracy_radius" field in the mutation.
+func (m *RequestLogMutation) AccuracyRadius() (r int, exists bool) {
+	v := m.accuracy_radius
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccuracyRadius returns the old "accuracy_radius" field's value of the RequestLog entity.
+// If the RequestLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestLogMutation) OldAccuracyRadius(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccuracyRadius is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccuracyRadius requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccuracyRadius: %w", err)
+	}
+	return oldValue.AccuracyRadius, nil
+}
+
+// AddAccuracyRadius adds i to the "accuracy_radius" field.
+func (m *RequestLogMutation) AddAccuracyRadius(i int) {
+	if m.addaccuracy_radius != nil {
+		*m.addaccuracy_radius += i
+	} else {
+		m.addaccuracy_radius = &i
+	}
+}
+
+// AddedAccuracyRadius returns the value that was added to the "accuracy_radius" field in this mutation.
+func (m *RequestLogMutation) AddedAccuracyRadius() (r int, exists bool) {
+	v := m.addaccuracy_radius
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAccuracyRadius clears the value of the "accuracy_radius" field.
+func (m *RequestLogMutation) ClearAccuracyRadius() {
+	m.accuracy_radius = nil
+	m.addaccuracy_radius = nil
+	m.clearedFields[requestlog.FieldAccuracyRadius] = struct{}{}
+}
+
+// AccuracyRadiusCleared returns if the "accuracy_radius" field was cleared in this mutation.
+func (m *RequestLogMutation) AccuracyRadiusCleared() bool {
+	_, ok := m.clearedFields[requestlog.FieldAccuracyRadius]
+	return ok
+}
+
+// ResetAccuracyRadius resets all changes to the "accuracy_radius" field.
+func (m *RequestLogMutation) ResetAccuracyRadius() {
+	m.accuracy_radius = nil
+	m.addaccuracy_radius = nil
+	delete(m.clearedFields, requestlog.FieldAccuracyRadius)
 }
 
 // SetIsBot sets the "is_bot" field.
@@ -47980,7 +49076,7 @@ func (m *RequestLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RequestLogMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 23)
 	if m.method != nil {
 		fields = append(fields, requestlog.FieldMethod)
 	}
@@ -48008,14 +49104,38 @@ func (m *RequestLogMutation) Fields() []string {
 	if m.country_code != nil {
 		fields = append(fields, requestlog.FieldCountryCode)
 	}
+	if m.region_code != nil {
+		fields = append(fields, requestlog.FieldRegionCode)
+	}
+	if m.region_name != nil {
+		fields = append(fields, requestlog.FieldRegionName)
+	}
 	if m.city != nil {
 		fields = append(fields, requestlog.FieldCity)
+	}
+	if m.postal_code != nil {
+		fields = append(fields, requestlog.FieldPostalCode)
+	}
+	if m.place_name != nil {
+		fields = append(fields, requestlog.FieldPlaceName)
+	}
+	if m.place_feature_code != nil {
+		fields = append(fields, requestlog.FieldPlaceFeatureCode)
+	}
+	if m.place_distance_km != nil {
+		fields = append(fields, requestlog.FieldPlaceDistanceKm)
 	}
 	if m.latitude != nil {
 		fields = append(fields, requestlog.FieldLatitude)
 	}
 	if m.longitude != nil {
 		fields = append(fields, requestlog.FieldLongitude)
+	}
+	if m.time_zone != nil {
+		fields = append(fields, requestlog.FieldTimeZone)
+	}
+	if m.accuracy_radius != nil {
+		fields = append(fields, requestlog.FieldAccuracyRadius)
 	}
 	if m.is_bot != nil {
 		fields = append(fields, requestlog.FieldIsBot)
@@ -48052,12 +49172,28 @@ func (m *RequestLogMutation) Field(name string) (ent.Value, bool) {
 		return m.Lang()
 	case requestlog.FieldCountryCode:
 		return m.CountryCode()
+	case requestlog.FieldRegionCode:
+		return m.RegionCode()
+	case requestlog.FieldRegionName:
+		return m.RegionName()
 	case requestlog.FieldCity:
 		return m.City()
+	case requestlog.FieldPostalCode:
+		return m.PostalCode()
+	case requestlog.FieldPlaceName:
+		return m.PlaceName()
+	case requestlog.FieldPlaceFeatureCode:
+		return m.PlaceFeatureCode()
+	case requestlog.FieldPlaceDistanceKm:
+		return m.PlaceDistanceKm()
 	case requestlog.FieldLatitude:
 		return m.Latitude()
 	case requestlog.FieldLongitude:
 		return m.Longitude()
+	case requestlog.FieldTimeZone:
+		return m.TimeZone()
+	case requestlog.FieldAccuracyRadius:
+		return m.AccuracyRadius()
 	case requestlog.FieldIsBot:
 		return m.IsBot()
 	case requestlog.FieldBotName:
@@ -48091,12 +49227,28 @@ func (m *RequestLogMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldLang(ctx)
 	case requestlog.FieldCountryCode:
 		return m.OldCountryCode(ctx)
+	case requestlog.FieldRegionCode:
+		return m.OldRegionCode(ctx)
+	case requestlog.FieldRegionName:
+		return m.OldRegionName(ctx)
 	case requestlog.FieldCity:
 		return m.OldCity(ctx)
+	case requestlog.FieldPostalCode:
+		return m.OldPostalCode(ctx)
+	case requestlog.FieldPlaceName:
+		return m.OldPlaceName(ctx)
+	case requestlog.FieldPlaceFeatureCode:
+		return m.OldPlaceFeatureCode(ctx)
+	case requestlog.FieldPlaceDistanceKm:
+		return m.OldPlaceDistanceKm(ctx)
 	case requestlog.FieldLatitude:
 		return m.OldLatitude(ctx)
 	case requestlog.FieldLongitude:
 		return m.OldLongitude(ctx)
+	case requestlog.FieldTimeZone:
+		return m.OldTimeZone(ctx)
+	case requestlog.FieldAccuracyRadius:
+		return m.OldAccuracyRadius(ctx)
 	case requestlog.FieldIsBot:
 		return m.OldIsBot(ctx)
 	case requestlog.FieldBotName:
@@ -48175,12 +49327,54 @@ func (m *RequestLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCountryCode(v)
 		return nil
+	case requestlog.FieldRegionCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRegionCode(v)
+		return nil
+	case requestlog.FieldRegionName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRegionName(v)
+		return nil
 	case requestlog.FieldCity:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCity(v)
+		return nil
+	case requestlog.FieldPostalCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPostalCode(v)
+		return nil
+	case requestlog.FieldPlaceName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlaceName(v)
+		return nil
+	case requestlog.FieldPlaceFeatureCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlaceFeatureCode(v)
+		return nil
+	case requestlog.FieldPlaceDistanceKm:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlaceDistanceKm(v)
 		return nil
 	case requestlog.FieldLatitude:
 		v, ok := value.(float64)
@@ -48195,6 +49389,20 @@ func (m *RequestLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLongitude(v)
+		return nil
+	case requestlog.FieldTimeZone:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimeZone(v)
+		return nil
+	case requestlog.FieldAccuracyRadius:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccuracyRadius(v)
 		return nil
 	case requestlog.FieldIsBot:
 		v, ok := value.(bool)
@@ -48231,11 +49439,17 @@ func (m *RequestLogMutation) AddedFields() []string {
 	if m.addduration_ms != nil {
 		fields = append(fields, requestlog.FieldDurationMs)
 	}
+	if m.addplace_distance_km != nil {
+		fields = append(fields, requestlog.FieldPlaceDistanceKm)
+	}
 	if m.addlatitude != nil {
 		fields = append(fields, requestlog.FieldLatitude)
 	}
 	if m.addlongitude != nil {
 		fields = append(fields, requestlog.FieldLongitude)
+	}
+	if m.addaccuracy_radius != nil {
+		fields = append(fields, requestlog.FieldAccuracyRadius)
 	}
 	return fields
 }
@@ -48249,10 +49463,14 @@ func (m *RequestLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedStatus()
 	case requestlog.FieldDurationMs:
 		return m.AddedDurationMs()
+	case requestlog.FieldPlaceDistanceKm:
+		return m.AddedPlaceDistanceKm()
 	case requestlog.FieldLatitude:
 		return m.AddedLatitude()
 	case requestlog.FieldLongitude:
 		return m.AddedLongitude()
+	case requestlog.FieldAccuracyRadius:
+		return m.AddedAccuracyRadius()
 	}
 	return nil, false
 }
@@ -48276,6 +49494,13 @@ func (m *RequestLogMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddDurationMs(v)
 		return nil
+	case requestlog.FieldPlaceDistanceKm:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPlaceDistanceKm(v)
+		return nil
 	case requestlog.FieldLatitude:
 		v, ok := value.(float64)
 		if !ok {
@@ -48289,6 +49514,13 @@ func (m *RequestLogMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddLongitude(v)
+		return nil
+	case requestlog.FieldAccuracyRadius:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAccuracyRadius(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RequestLog numeric field %s", name)
@@ -48325,14 +49557,38 @@ func (m *RequestLogMutation) ClearedFields() []string {
 	if m.FieldCleared(requestlog.FieldCountryCode) {
 		fields = append(fields, requestlog.FieldCountryCode)
 	}
+	if m.FieldCleared(requestlog.FieldRegionCode) {
+		fields = append(fields, requestlog.FieldRegionCode)
+	}
+	if m.FieldCleared(requestlog.FieldRegionName) {
+		fields = append(fields, requestlog.FieldRegionName)
+	}
 	if m.FieldCleared(requestlog.FieldCity) {
 		fields = append(fields, requestlog.FieldCity)
+	}
+	if m.FieldCleared(requestlog.FieldPostalCode) {
+		fields = append(fields, requestlog.FieldPostalCode)
+	}
+	if m.FieldCleared(requestlog.FieldPlaceName) {
+		fields = append(fields, requestlog.FieldPlaceName)
+	}
+	if m.FieldCleared(requestlog.FieldPlaceFeatureCode) {
+		fields = append(fields, requestlog.FieldPlaceFeatureCode)
+	}
+	if m.FieldCleared(requestlog.FieldPlaceDistanceKm) {
+		fields = append(fields, requestlog.FieldPlaceDistanceKm)
 	}
 	if m.FieldCleared(requestlog.FieldLatitude) {
 		fields = append(fields, requestlog.FieldLatitude)
 	}
 	if m.FieldCleared(requestlog.FieldLongitude) {
 		fields = append(fields, requestlog.FieldLongitude)
+	}
+	if m.FieldCleared(requestlog.FieldTimeZone) {
+		fields = append(fields, requestlog.FieldTimeZone)
+	}
+	if m.FieldCleared(requestlog.FieldAccuracyRadius) {
+		fields = append(fields, requestlog.FieldAccuracyRadius)
 	}
 	if m.FieldCleared(requestlog.FieldBotName) {
 		fields = append(fields, requestlog.FieldBotName)
@@ -48381,14 +49637,38 @@ func (m *RequestLogMutation) ClearField(name string) error {
 	case requestlog.FieldCountryCode:
 		m.ClearCountryCode()
 		return nil
+	case requestlog.FieldRegionCode:
+		m.ClearRegionCode()
+		return nil
+	case requestlog.FieldRegionName:
+		m.ClearRegionName()
+		return nil
 	case requestlog.FieldCity:
 		m.ClearCity()
+		return nil
+	case requestlog.FieldPostalCode:
+		m.ClearPostalCode()
+		return nil
+	case requestlog.FieldPlaceName:
+		m.ClearPlaceName()
+		return nil
+	case requestlog.FieldPlaceFeatureCode:
+		m.ClearPlaceFeatureCode()
+		return nil
+	case requestlog.FieldPlaceDistanceKm:
+		m.ClearPlaceDistanceKm()
 		return nil
 	case requestlog.FieldLatitude:
 		m.ClearLatitude()
 		return nil
 	case requestlog.FieldLongitude:
 		m.ClearLongitude()
+		return nil
+	case requestlog.FieldTimeZone:
+		m.ClearTimeZone()
+		return nil
+	case requestlog.FieldAccuracyRadius:
+		m.ClearAccuracyRadius()
 		return nil
 	case requestlog.FieldBotName:
 		m.ClearBotName()
@@ -48431,14 +49711,38 @@ func (m *RequestLogMutation) ResetField(name string) error {
 	case requestlog.FieldCountryCode:
 		m.ResetCountryCode()
 		return nil
+	case requestlog.FieldRegionCode:
+		m.ResetRegionCode()
+		return nil
+	case requestlog.FieldRegionName:
+		m.ResetRegionName()
+		return nil
 	case requestlog.FieldCity:
 		m.ResetCity()
+		return nil
+	case requestlog.FieldPostalCode:
+		m.ResetPostalCode()
+		return nil
+	case requestlog.FieldPlaceName:
+		m.ResetPlaceName()
+		return nil
+	case requestlog.FieldPlaceFeatureCode:
+		m.ResetPlaceFeatureCode()
+		return nil
+	case requestlog.FieldPlaceDistanceKm:
+		m.ResetPlaceDistanceKm()
 		return nil
 	case requestlog.FieldLatitude:
 		m.ResetLatitude()
 		return nil
 	case requestlog.FieldLongitude:
 		m.ResetLongitude()
+		return nil
+	case requestlog.FieldTimeZone:
+		m.ResetTimeZone()
+		return nil
+	case requestlog.FieldAccuracyRadius:
+		m.ResetAccuracyRadius()
 		return nil
 	case requestlog.FieldIsBot:
 		m.ResetIsBot()

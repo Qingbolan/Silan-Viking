@@ -59,15 +59,42 @@ func (RequestLog) Fields() []ent.Field {
 			Optional().
 			MaxLen(2).
 			Comment("ISO 3166-1 alpha-2 country supplied by the trusted edge proxy."),
+		field.String("region_code").
+			Optional().
+			MaxLen(16).
+			Comment("Most specific subdivision code available from the local IP geolocation database."),
+		field.String("region_name").
+			Optional().
+			MaxLen(128).
+			Comment("Most specific subdivision name available from the local IP geolocation database."),
 		field.String("city").
 			Optional().
 			MaxLen(128),
+		field.String("postal_code").
+			Optional().
+			MaxLen(32),
+		field.String("place_name").
+			Optional().
+			MaxLen(128).
+			Comment("Nearest offline GeoNames place for the IP-derived coordinates."),
+		field.String("place_feature_code").
+			Optional().
+			MaxLen(16),
+		field.Float("place_distance_km").
+			Optional().
+			Comment("Distance from IP-derived coordinates to the nearest offline place."),
 		field.Float("latitude").
 			Optional().
-			Comment("Coarse IP-derived latitude rounded to one decimal place."),
+			Comment("IP-derived latitude from the local geolocation database."),
 		field.Float("longitude").
 			Optional().
-			Comment("Coarse IP-derived longitude rounded to one decimal place."),
+			Comment("IP-derived longitude from the local geolocation database."),
+		field.String("time_zone").
+			Optional().
+			MaxLen(64),
+		field.Int("accuracy_radius").
+			Optional().
+			Comment("Estimated IP geolocation accuracy radius in kilometers."),
 		field.Bool("is_bot").
 			Default(false).
 			Comment("Whether the User-Agent is a known search-engine / social crawler."),

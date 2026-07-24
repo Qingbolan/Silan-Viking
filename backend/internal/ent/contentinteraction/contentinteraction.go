@@ -42,12 +42,28 @@ const (
 	FieldCrawlerName = "crawler_name"
 	// FieldCountryCode holds the string denoting the country_code field in the database.
 	FieldCountryCode = "country_code"
+	// FieldRegionCode holds the string denoting the region_code field in the database.
+	FieldRegionCode = "region_code"
+	// FieldRegionName holds the string denoting the region_name field in the database.
+	FieldRegionName = "region_name"
 	// FieldCity holds the string denoting the city field in the database.
 	FieldCity = "city"
+	// FieldPostalCode holds the string denoting the postal_code field in the database.
+	FieldPostalCode = "postal_code"
+	// FieldPlaceName holds the string denoting the place_name field in the database.
+	FieldPlaceName = "place_name"
+	// FieldPlaceFeatureCode holds the string denoting the place_feature_code field in the database.
+	FieldPlaceFeatureCode = "place_feature_code"
+	// FieldPlaceDistanceKm holds the string denoting the place_distance_km field in the database.
+	FieldPlaceDistanceKm = "place_distance_km"
 	// FieldLatitude holds the string denoting the latitude field in the database.
 	FieldLatitude = "latitude"
 	// FieldLongitude holds the string denoting the longitude field in the database.
 	FieldLongitude = "longitude"
+	// FieldTimeZone holds the string denoting the time_zone field in the database.
+	FieldTimeZone = "time_zone"
+	// FieldAccuracyRadius holds the string denoting the accuracy_radius field in the database.
+	FieldAccuracyRadius = "accuracy_radius"
 	// FieldSessionDuration holds the string denoting the session_duration field in the database.
 	FieldSessionDuration = "session_duration"
 	// FieldScrollProgress holds the string denoting the scroll_progress field in the database.
@@ -75,9 +91,17 @@ var Columns = []string{
 	FieldLandingURL,
 	FieldCrawlerName,
 	FieldCountryCode,
+	FieldRegionCode,
+	FieldRegionName,
 	FieldCity,
+	FieldPostalCode,
+	FieldPlaceName,
+	FieldPlaceFeatureCode,
+	FieldPlaceDistanceKm,
 	FieldLatitude,
 	FieldLongitude,
+	FieldTimeZone,
+	FieldAccuracyRadius,
 	FieldSessionDuration,
 	FieldScrollProgress,
 	FieldCreatedAt,
@@ -100,8 +124,20 @@ var (
 	LandingURLValidator func(string) error
 	// CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
 	CountryCodeValidator func(string) error
+	// RegionCodeValidator is a validator for the "region_code" field. It is called by the builders before save.
+	RegionCodeValidator func(string) error
+	// RegionNameValidator is a validator for the "region_name" field. It is called by the builders before save.
+	RegionNameValidator func(string) error
 	// CityValidator is a validator for the "city" field. It is called by the builders before save.
 	CityValidator func(string) error
+	// PostalCodeValidator is a validator for the "postal_code" field. It is called by the builders before save.
+	PostalCodeValidator func(string) error
+	// PlaceNameValidator is a validator for the "place_name" field. It is called by the builders before save.
+	PlaceNameValidator func(string) error
+	// PlaceFeatureCodeValidator is a validator for the "place_feature_code" field. It is called by the builders before save.
+	PlaceFeatureCodeValidator func(string) error
+	// TimeZoneValidator is a validator for the "time_zone" field. It is called by the builders before save.
+	TimeZoneValidator func(string) error
 	// DefaultSessionDuration holds the default value on creation for the "session_duration" field.
 	DefaultSessionDuration int
 	// DefaultScrollProgress holds the default value on creation for the "scroll_progress" field.
@@ -296,9 +332,39 @@ func ByCountryCode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCountryCode, opts...).ToFunc()
 }
 
+// ByRegionCode orders the results by the region_code field.
+func ByRegionCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRegionCode, opts...).ToFunc()
+}
+
+// ByRegionName orders the results by the region_name field.
+func ByRegionName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRegionName, opts...).ToFunc()
+}
+
 // ByCity orders the results by the city field.
 func ByCity(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCity, opts...).ToFunc()
+}
+
+// ByPostalCode orders the results by the postal_code field.
+func ByPostalCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPostalCode, opts...).ToFunc()
+}
+
+// ByPlaceName orders the results by the place_name field.
+func ByPlaceName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlaceName, opts...).ToFunc()
+}
+
+// ByPlaceFeatureCode orders the results by the place_feature_code field.
+func ByPlaceFeatureCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlaceFeatureCode, opts...).ToFunc()
+}
+
+// ByPlaceDistanceKm orders the results by the place_distance_km field.
+func ByPlaceDistanceKm(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlaceDistanceKm, opts...).ToFunc()
 }
 
 // ByLatitude orders the results by the latitude field.
@@ -309,6 +375,16 @@ func ByLatitude(opts ...sql.OrderTermOption) OrderOption {
 // ByLongitude orders the results by the longitude field.
 func ByLongitude(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLongitude, opts...).ToFunc()
+}
+
+// ByTimeZone orders the results by the time_zone field.
+func ByTimeZone(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTimeZone, opts...).ToFunc()
+}
+
+// ByAccuracyRadius orders the results by the accuracy_radius field.
+func ByAccuracyRadius(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAccuracyRadius, opts...).ToFunc()
 }
 
 // BySessionDuration orders the results by the session_duration field.

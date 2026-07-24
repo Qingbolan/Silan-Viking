@@ -855,12 +855,20 @@ type StatsSnapshotResponse struct {
 }
 
 type CountryRow struct {
-	CountryCode string   `json:"country_code"`
-	City        string   `json:"city"`
-	Latitude    float64  `json:"latitude"`
-	Longitude   float64  `json:"longitude"`
-	IPAddresses []string `json:"ip_addresses"`
-	Count       int      `json:"count"`
+	CountryCode    string   `json:"country_code"`
+	RegionCode     string   `json:"region_code"`
+	RegionName     string   `json:"region_name"`
+	City           string   `json:"city"`
+	PostalCode     string   `json:"postal_code"`
+	PlaceName      string   `json:"place_name"`
+	PlaceFeature   string   `json:"place_feature_code"`
+	PlaceDistance  float64  `json:"place_distance_km"`
+	Latitude       float64  `json:"latitude"`
+	Longitude      float64  `json:"longitude"`
+	TimeZone       string   `json:"time_zone"`
+	AccuracyRadius int      `json:"accuracy_radius"`
+	IPAddresses    []string `json:"ip_addresses"`
+	Count          int      `json:"count"`
 }
 
 type StatsSnapshotItem struct {
@@ -950,18 +958,26 @@ type VerifyEmailResponse struct {
 }
 
 type VisitorRow struct {
-	Fingerprint  string  `json:"fingerprint"`
-	IPMasked     string  `json:"ip_masked"`
-	VisitorKind  string  `json:"visitor_kind"`
-	ReferrerKind string  `json:"referrer_kind"`
-	Referrer     string  `json:"referrer"`
-	LandingURL   string  `json:"landing_url"`
-	CrawlerName  string  `json:"crawler_name"`
-	CountryCode  string  `json:"country_code"`
-	City         string  `json:"city"`
-	Latitude     float64 `json:"latitude"`
-	Longitude    float64 `json:"longitude"`
-	LastSeenAt   string  `json:"last_seen_at"`
+	Fingerprint    string  `json:"fingerprint"`
+	IPMasked       string  `json:"ip_masked"`
+	VisitorKind    string  `json:"visitor_kind"`
+	ReferrerKind   string  `json:"referrer_kind"`
+	Referrer       string  `json:"referrer"`
+	LandingURL     string  `json:"landing_url"`
+	CrawlerName    string  `json:"crawler_name"`
+	CountryCode    string  `json:"country_code"`
+	RegionCode     string  `json:"region_code"`
+	RegionName     string  `json:"region_name"`
+	City           string  `json:"city"`
+	PostalCode     string  `json:"postal_code"`
+	PlaceName      string  `json:"place_name"`
+	PlaceFeature   string  `json:"place_feature_code"`
+	PlaceDistance  float64 `json:"place_distance_km"`
+	Latitude       float64 `json:"latitude"`
+	Longitude      float64 `json:"longitude"`
+	TimeZone       string  `json:"time_zone"`
+	AccuracyRadius int     `json:"accuracy_radius"`
+	LastSeenAt     string  `json:"last_seen_at"`
 }
 
 type VisitorsResponse struct {

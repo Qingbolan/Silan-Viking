@@ -99,9 +99,39 @@ func CountryCode(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldCountryCode, v))
 }
 
+// RegionCode applies equality check predicate on the "region_code" field. It's identical to RegionCodeEQ.
+func RegionCode(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldRegionCode, v))
+}
+
+// RegionName applies equality check predicate on the "region_name" field. It's identical to RegionNameEQ.
+func RegionName(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldRegionName, v))
+}
+
 // City applies equality check predicate on the "city" field. It's identical to CityEQ.
 func City(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldCity, v))
+}
+
+// PostalCode applies equality check predicate on the "postal_code" field. It's identical to PostalCodeEQ.
+func PostalCode(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPostalCode, v))
+}
+
+// PlaceName applies equality check predicate on the "place_name" field. It's identical to PlaceNameEQ.
+func PlaceName(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPlaceName, v))
+}
+
+// PlaceFeatureCode applies equality check predicate on the "place_feature_code" field. It's identical to PlaceFeatureCodeEQ.
+func PlaceFeatureCode(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPlaceFeatureCode, v))
+}
+
+// PlaceDistanceKm applies equality check predicate on the "place_distance_km" field. It's identical to PlaceDistanceKmEQ.
+func PlaceDistanceKm(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPlaceDistanceKm, v))
 }
 
 // Latitude applies equality check predicate on the "latitude" field. It's identical to LatitudeEQ.
@@ -112,6 +142,16 @@ func Latitude(v float64) predicate.RequestLog {
 // Longitude applies equality check predicate on the "longitude" field. It's identical to LongitudeEQ.
 func Longitude(v float64) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldLongitude, v))
+}
+
+// TimeZone applies equality check predicate on the "time_zone" field. It's identical to TimeZoneEQ.
+func TimeZone(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldTimeZone, v))
+}
+
+// AccuracyRadius applies equality check predicate on the "accuracy_radius" field. It's identical to AccuracyRadiusEQ.
+func AccuracyRadius(v int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldAccuracyRadius, v))
 }
 
 // IsBot applies equality check predicate on the "is_bot" field. It's identical to IsBotEQ.
@@ -754,6 +794,156 @@ func CountryCodeContainsFold(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldContainsFold(FieldCountryCode, v))
 }
 
+// RegionCodeEQ applies the EQ predicate on the "region_code" field.
+func RegionCodeEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldRegionCode, v))
+}
+
+// RegionCodeNEQ applies the NEQ predicate on the "region_code" field.
+func RegionCodeNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldRegionCode, v))
+}
+
+// RegionCodeIn applies the In predicate on the "region_code" field.
+func RegionCodeIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldRegionCode, vs...))
+}
+
+// RegionCodeNotIn applies the NotIn predicate on the "region_code" field.
+func RegionCodeNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldRegionCode, vs...))
+}
+
+// RegionCodeGT applies the GT predicate on the "region_code" field.
+func RegionCodeGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldRegionCode, v))
+}
+
+// RegionCodeGTE applies the GTE predicate on the "region_code" field.
+func RegionCodeGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldRegionCode, v))
+}
+
+// RegionCodeLT applies the LT predicate on the "region_code" field.
+func RegionCodeLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldRegionCode, v))
+}
+
+// RegionCodeLTE applies the LTE predicate on the "region_code" field.
+func RegionCodeLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldRegionCode, v))
+}
+
+// RegionCodeContains applies the Contains predicate on the "region_code" field.
+func RegionCodeContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldRegionCode, v))
+}
+
+// RegionCodeHasPrefix applies the HasPrefix predicate on the "region_code" field.
+func RegionCodeHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldRegionCode, v))
+}
+
+// RegionCodeHasSuffix applies the HasSuffix predicate on the "region_code" field.
+func RegionCodeHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldRegionCode, v))
+}
+
+// RegionCodeIsNil applies the IsNil predicate on the "region_code" field.
+func RegionCodeIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldRegionCode))
+}
+
+// RegionCodeNotNil applies the NotNil predicate on the "region_code" field.
+func RegionCodeNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldRegionCode))
+}
+
+// RegionCodeEqualFold applies the EqualFold predicate on the "region_code" field.
+func RegionCodeEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldRegionCode, v))
+}
+
+// RegionCodeContainsFold applies the ContainsFold predicate on the "region_code" field.
+func RegionCodeContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldRegionCode, v))
+}
+
+// RegionNameEQ applies the EQ predicate on the "region_name" field.
+func RegionNameEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldRegionName, v))
+}
+
+// RegionNameNEQ applies the NEQ predicate on the "region_name" field.
+func RegionNameNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldRegionName, v))
+}
+
+// RegionNameIn applies the In predicate on the "region_name" field.
+func RegionNameIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldRegionName, vs...))
+}
+
+// RegionNameNotIn applies the NotIn predicate on the "region_name" field.
+func RegionNameNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldRegionName, vs...))
+}
+
+// RegionNameGT applies the GT predicate on the "region_name" field.
+func RegionNameGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldRegionName, v))
+}
+
+// RegionNameGTE applies the GTE predicate on the "region_name" field.
+func RegionNameGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldRegionName, v))
+}
+
+// RegionNameLT applies the LT predicate on the "region_name" field.
+func RegionNameLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldRegionName, v))
+}
+
+// RegionNameLTE applies the LTE predicate on the "region_name" field.
+func RegionNameLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldRegionName, v))
+}
+
+// RegionNameContains applies the Contains predicate on the "region_name" field.
+func RegionNameContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldRegionName, v))
+}
+
+// RegionNameHasPrefix applies the HasPrefix predicate on the "region_name" field.
+func RegionNameHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldRegionName, v))
+}
+
+// RegionNameHasSuffix applies the HasSuffix predicate on the "region_name" field.
+func RegionNameHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldRegionName, v))
+}
+
+// RegionNameIsNil applies the IsNil predicate on the "region_name" field.
+func RegionNameIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldRegionName))
+}
+
+// RegionNameNotNil applies the NotNil predicate on the "region_name" field.
+func RegionNameNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldRegionName))
+}
+
+// RegionNameEqualFold applies the EqualFold predicate on the "region_name" field.
+func RegionNameEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldRegionName, v))
+}
+
+// RegionNameContainsFold applies the ContainsFold predicate on the "region_name" field.
+func RegionNameContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldRegionName, v))
+}
+
 // CityEQ applies the EQ predicate on the "city" field.
 func CityEQ(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldEQ(FieldCity, v))
@@ -827,6 +1017,281 @@ func CityEqualFold(v string) predicate.RequestLog {
 // CityContainsFold applies the ContainsFold predicate on the "city" field.
 func CityContainsFold(v string) predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldContainsFold(FieldCity, v))
+}
+
+// PostalCodeEQ applies the EQ predicate on the "postal_code" field.
+func PostalCodeEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPostalCode, v))
+}
+
+// PostalCodeNEQ applies the NEQ predicate on the "postal_code" field.
+func PostalCodeNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldPostalCode, v))
+}
+
+// PostalCodeIn applies the In predicate on the "postal_code" field.
+func PostalCodeIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldPostalCode, vs...))
+}
+
+// PostalCodeNotIn applies the NotIn predicate on the "postal_code" field.
+func PostalCodeNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldPostalCode, vs...))
+}
+
+// PostalCodeGT applies the GT predicate on the "postal_code" field.
+func PostalCodeGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldPostalCode, v))
+}
+
+// PostalCodeGTE applies the GTE predicate on the "postal_code" field.
+func PostalCodeGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldPostalCode, v))
+}
+
+// PostalCodeLT applies the LT predicate on the "postal_code" field.
+func PostalCodeLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldPostalCode, v))
+}
+
+// PostalCodeLTE applies the LTE predicate on the "postal_code" field.
+func PostalCodeLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldPostalCode, v))
+}
+
+// PostalCodeContains applies the Contains predicate on the "postal_code" field.
+func PostalCodeContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldPostalCode, v))
+}
+
+// PostalCodeHasPrefix applies the HasPrefix predicate on the "postal_code" field.
+func PostalCodeHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldPostalCode, v))
+}
+
+// PostalCodeHasSuffix applies the HasSuffix predicate on the "postal_code" field.
+func PostalCodeHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldPostalCode, v))
+}
+
+// PostalCodeIsNil applies the IsNil predicate on the "postal_code" field.
+func PostalCodeIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldPostalCode))
+}
+
+// PostalCodeNotNil applies the NotNil predicate on the "postal_code" field.
+func PostalCodeNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldPostalCode))
+}
+
+// PostalCodeEqualFold applies the EqualFold predicate on the "postal_code" field.
+func PostalCodeEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldPostalCode, v))
+}
+
+// PostalCodeContainsFold applies the ContainsFold predicate on the "postal_code" field.
+func PostalCodeContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldPostalCode, v))
+}
+
+// PlaceNameEQ applies the EQ predicate on the "place_name" field.
+func PlaceNameEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPlaceName, v))
+}
+
+// PlaceNameNEQ applies the NEQ predicate on the "place_name" field.
+func PlaceNameNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldPlaceName, v))
+}
+
+// PlaceNameIn applies the In predicate on the "place_name" field.
+func PlaceNameIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldPlaceName, vs...))
+}
+
+// PlaceNameNotIn applies the NotIn predicate on the "place_name" field.
+func PlaceNameNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldPlaceName, vs...))
+}
+
+// PlaceNameGT applies the GT predicate on the "place_name" field.
+func PlaceNameGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldPlaceName, v))
+}
+
+// PlaceNameGTE applies the GTE predicate on the "place_name" field.
+func PlaceNameGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldPlaceName, v))
+}
+
+// PlaceNameLT applies the LT predicate on the "place_name" field.
+func PlaceNameLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldPlaceName, v))
+}
+
+// PlaceNameLTE applies the LTE predicate on the "place_name" field.
+func PlaceNameLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldPlaceName, v))
+}
+
+// PlaceNameContains applies the Contains predicate on the "place_name" field.
+func PlaceNameContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldPlaceName, v))
+}
+
+// PlaceNameHasPrefix applies the HasPrefix predicate on the "place_name" field.
+func PlaceNameHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldPlaceName, v))
+}
+
+// PlaceNameHasSuffix applies the HasSuffix predicate on the "place_name" field.
+func PlaceNameHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldPlaceName, v))
+}
+
+// PlaceNameIsNil applies the IsNil predicate on the "place_name" field.
+func PlaceNameIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldPlaceName))
+}
+
+// PlaceNameNotNil applies the NotNil predicate on the "place_name" field.
+func PlaceNameNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldPlaceName))
+}
+
+// PlaceNameEqualFold applies the EqualFold predicate on the "place_name" field.
+func PlaceNameEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldPlaceName, v))
+}
+
+// PlaceNameContainsFold applies the ContainsFold predicate on the "place_name" field.
+func PlaceNameContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldPlaceName, v))
+}
+
+// PlaceFeatureCodeEQ applies the EQ predicate on the "place_feature_code" field.
+func PlaceFeatureCodeEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeNEQ applies the NEQ predicate on the "place_feature_code" field.
+func PlaceFeatureCodeNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeIn applies the In predicate on the "place_feature_code" field.
+func PlaceFeatureCodeIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldPlaceFeatureCode, vs...))
+}
+
+// PlaceFeatureCodeNotIn applies the NotIn predicate on the "place_feature_code" field.
+func PlaceFeatureCodeNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldPlaceFeatureCode, vs...))
+}
+
+// PlaceFeatureCodeGT applies the GT predicate on the "place_feature_code" field.
+func PlaceFeatureCodeGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeGTE applies the GTE predicate on the "place_feature_code" field.
+func PlaceFeatureCodeGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeLT applies the LT predicate on the "place_feature_code" field.
+func PlaceFeatureCodeLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeLTE applies the LTE predicate on the "place_feature_code" field.
+func PlaceFeatureCodeLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeContains applies the Contains predicate on the "place_feature_code" field.
+func PlaceFeatureCodeContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeHasPrefix applies the HasPrefix predicate on the "place_feature_code" field.
+func PlaceFeatureCodeHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeHasSuffix applies the HasSuffix predicate on the "place_feature_code" field.
+func PlaceFeatureCodeHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeIsNil applies the IsNil predicate on the "place_feature_code" field.
+func PlaceFeatureCodeIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldPlaceFeatureCode))
+}
+
+// PlaceFeatureCodeNotNil applies the NotNil predicate on the "place_feature_code" field.
+func PlaceFeatureCodeNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldPlaceFeatureCode))
+}
+
+// PlaceFeatureCodeEqualFold applies the EqualFold predicate on the "place_feature_code" field.
+func PlaceFeatureCodeEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeContainsFold applies the ContainsFold predicate on the "place_feature_code" field.
+func PlaceFeatureCodeContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldPlaceFeatureCode, v))
+}
+
+// PlaceDistanceKmEQ applies the EQ predicate on the "place_distance_km" field.
+func PlaceDistanceKmEQ(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmNEQ applies the NEQ predicate on the "place_distance_km" field.
+func PlaceDistanceKmNEQ(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmIn applies the In predicate on the "place_distance_km" field.
+func PlaceDistanceKmIn(vs ...float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldPlaceDistanceKm, vs...))
+}
+
+// PlaceDistanceKmNotIn applies the NotIn predicate on the "place_distance_km" field.
+func PlaceDistanceKmNotIn(vs ...float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldPlaceDistanceKm, vs...))
+}
+
+// PlaceDistanceKmGT applies the GT predicate on the "place_distance_km" field.
+func PlaceDistanceKmGT(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmGTE applies the GTE predicate on the "place_distance_km" field.
+func PlaceDistanceKmGTE(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmLT applies the LT predicate on the "place_distance_km" field.
+func PlaceDistanceKmLT(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmLTE applies the LTE predicate on the "place_distance_km" field.
+func PlaceDistanceKmLTE(v float64) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmIsNil applies the IsNil predicate on the "place_distance_km" field.
+func PlaceDistanceKmIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldPlaceDistanceKm))
+}
+
+// PlaceDistanceKmNotNil applies the NotNil predicate on the "place_distance_km" field.
+func PlaceDistanceKmNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldPlaceDistanceKm))
 }
 
 // LatitudeEQ applies the EQ predicate on the "latitude" field.
@@ -927,6 +1392,131 @@ func LongitudeIsNil() predicate.RequestLog {
 // LongitudeNotNil applies the NotNil predicate on the "longitude" field.
 func LongitudeNotNil() predicate.RequestLog {
 	return predicate.RequestLog(sql.FieldNotNull(FieldLongitude))
+}
+
+// TimeZoneEQ applies the EQ predicate on the "time_zone" field.
+func TimeZoneEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldTimeZone, v))
+}
+
+// TimeZoneNEQ applies the NEQ predicate on the "time_zone" field.
+func TimeZoneNEQ(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldTimeZone, v))
+}
+
+// TimeZoneIn applies the In predicate on the "time_zone" field.
+func TimeZoneIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldTimeZone, vs...))
+}
+
+// TimeZoneNotIn applies the NotIn predicate on the "time_zone" field.
+func TimeZoneNotIn(vs ...string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldTimeZone, vs...))
+}
+
+// TimeZoneGT applies the GT predicate on the "time_zone" field.
+func TimeZoneGT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldTimeZone, v))
+}
+
+// TimeZoneGTE applies the GTE predicate on the "time_zone" field.
+func TimeZoneGTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldTimeZone, v))
+}
+
+// TimeZoneLT applies the LT predicate on the "time_zone" field.
+func TimeZoneLT(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldTimeZone, v))
+}
+
+// TimeZoneLTE applies the LTE predicate on the "time_zone" field.
+func TimeZoneLTE(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldTimeZone, v))
+}
+
+// TimeZoneContains applies the Contains predicate on the "time_zone" field.
+func TimeZoneContains(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContains(FieldTimeZone, v))
+}
+
+// TimeZoneHasPrefix applies the HasPrefix predicate on the "time_zone" field.
+func TimeZoneHasPrefix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasPrefix(FieldTimeZone, v))
+}
+
+// TimeZoneHasSuffix applies the HasSuffix predicate on the "time_zone" field.
+func TimeZoneHasSuffix(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldHasSuffix(FieldTimeZone, v))
+}
+
+// TimeZoneIsNil applies the IsNil predicate on the "time_zone" field.
+func TimeZoneIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldTimeZone))
+}
+
+// TimeZoneNotNil applies the NotNil predicate on the "time_zone" field.
+func TimeZoneNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldTimeZone))
+}
+
+// TimeZoneEqualFold applies the EqualFold predicate on the "time_zone" field.
+func TimeZoneEqualFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEqualFold(FieldTimeZone, v))
+}
+
+// TimeZoneContainsFold applies the ContainsFold predicate on the "time_zone" field.
+func TimeZoneContainsFold(v string) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldContainsFold(FieldTimeZone, v))
+}
+
+// AccuracyRadiusEQ applies the EQ predicate on the "accuracy_radius" field.
+func AccuracyRadiusEQ(v int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldEQ(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusNEQ applies the NEQ predicate on the "accuracy_radius" field.
+func AccuracyRadiusNEQ(v int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNEQ(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusIn applies the In predicate on the "accuracy_radius" field.
+func AccuracyRadiusIn(vs ...int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIn(FieldAccuracyRadius, vs...))
+}
+
+// AccuracyRadiusNotIn applies the NotIn predicate on the "accuracy_radius" field.
+func AccuracyRadiusNotIn(vs ...int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotIn(FieldAccuracyRadius, vs...))
+}
+
+// AccuracyRadiusGT applies the GT predicate on the "accuracy_radius" field.
+func AccuracyRadiusGT(v int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGT(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusGTE applies the GTE predicate on the "accuracy_radius" field.
+func AccuracyRadiusGTE(v int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldGTE(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusLT applies the LT predicate on the "accuracy_radius" field.
+func AccuracyRadiusLT(v int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLT(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusLTE applies the LTE predicate on the "accuracy_radius" field.
+func AccuracyRadiusLTE(v int) predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldLTE(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusIsNil applies the IsNil predicate on the "accuracy_radius" field.
+func AccuracyRadiusIsNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldIsNull(FieldAccuracyRadius))
+}
+
+// AccuracyRadiusNotNil applies the NotNil predicate on the "accuracy_radius" field.
+func AccuracyRadiusNotNil() predicate.RequestLog {
+	return predicate.RequestLog(sql.FieldNotNull(FieldAccuracyRadius))
 }
 
 // IsBotEQ applies the EQ predicate on the "is_bot" field.

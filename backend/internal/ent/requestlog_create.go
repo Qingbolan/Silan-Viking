@@ -146,6 +146,34 @@ func (rlc *RequestLogCreate) SetNillableCountryCode(s *string) *RequestLogCreate
 	return rlc
 }
 
+// SetRegionCode sets the "region_code" field.
+func (rlc *RequestLogCreate) SetRegionCode(s string) *RequestLogCreate {
+	rlc.mutation.SetRegionCode(s)
+	return rlc
+}
+
+// SetNillableRegionCode sets the "region_code" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableRegionCode(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetRegionCode(*s)
+	}
+	return rlc
+}
+
+// SetRegionName sets the "region_name" field.
+func (rlc *RequestLogCreate) SetRegionName(s string) *RequestLogCreate {
+	rlc.mutation.SetRegionName(s)
+	return rlc
+}
+
+// SetNillableRegionName sets the "region_name" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableRegionName(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetRegionName(*s)
+	}
+	return rlc
+}
+
 // SetCity sets the "city" field.
 func (rlc *RequestLogCreate) SetCity(s string) *RequestLogCreate {
 	rlc.mutation.SetCity(s)
@@ -156,6 +184,62 @@ func (rlc *RequestLogCreate) SetCity(s string) *RequestLogCreate {
 func (rlc *RequestLogCreate) SetNillableCity(s *string) *RequestLogCreate {
 	if s != nil {
 		rlc.SetCity(*s)
+	}
+	return rlc
+}
+
+// SetPostalCode sets the "postal_code" field.
+func (rlc *RequestLogCreate) SetPostalCode(s string) *RequestLogCreate {
+	rlc.mutation.SetPostalCode(s)
+	return rlc
+}
+
+// SetNillablePostalCode sets the "postal_code" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillablePostalCode(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetPostalCode(*s)
+	}
+	return rlc
+}
+
+// SetPlaceName sets the "place_name" field.
+func (rlc *RequestLogCreate) SetPlaceName(s string) *RequestLogCreate {
+	rlc.mutation.SetPlaceName(s)
+	return rlc
+}
+
+// SetNillablePlaceName sets the "place_name" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillablePlaceName(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetPlaceName(*s)
+	}
+	return rlc
+}
+
+// SetPlaceFeatureCode sets the "place_feature_code" field.
+func (rlc *RequestLogCreate) SetPlaceFeatureCode(s string) *RequestLogCreate {
+	rlc.mutation.SetPlaceFeatureCode(s)
+	return rlc
+}
+
+// SetNillablePlaceFeatureCode sets the "place_feature_code" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillablePlaceFeatureCode(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetPlaceFeatureCode(*s)
+	}
+	return rlc
+}
+
+// SetPlaceDistanceKm sets the "place_distance_km" field.
+func (rlc *RequestLogCreate) SetPlaceDistanceKm(f float64) *RequestLogCreate {
+	rlc.mutation.SetPlaceDistanceKm(f)
+	return rlc
+}
+
+// SetNillablePlaceDistanceKm sets the "place_distance_km" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillablePlaceDistanceKm(f *float64) *RequestLogCreate {
+	if f != nil {
+		rlc.SetPlaceDistanceKm(*f)
 	}
 	return rlc
 }
@@ -184,6 +268,34 @@ func (rlc *RequestLogCreate) SetLongitude(f float64) *RequestLogCreate {
 func (rlc *RequestLogCreate) SetNillableLongitude(f *float64) *RequestLogCreate {
 	if f != nil {
 		rlc.SetLongitude(*f)
+	}
+	return rlc
+}
+
+// SetTimeZone sets the "time_zone" field.
+func (rlc *RequestLogCreate) SetTimeZone(s string) *RequestLogCreate {
+	rlc.mutation.SetTimeZone(s)
+	return rlc
+}
+
+// SetNillableTimeZone sets the "time_zone" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableTimeZone(s *string) *RequestLogCreate {
+	if s != nil {
+		rlc.SetTimeZone(*s)
+	}
+	return rlc
+}
+
+// SetAccuracyRadius sets the "accuracy_radius" field.
+func (rlc *RequestLogCreate) SetAccuracyRadius(i int) *RequestLogCreate {
+	rlc.mutation.SetAccuracyRadius(i)
+	return rlc
+}
+
+// SetNillableAccuracyRadius sets the "accuracy_radius" field if the given value is not nil.
+func (rlc *RequestLogCreate) SetNillableAccuracyRadius(i *int) *RequestLogCreate {
+	if i != nil {
+		rlc.SetAccuracyRadius(*i)
 	}
 	return rlc
 }
@@ -318,9 +430,39 @@ func (rlc *RequestLogCreate) check() error {
 			return &ValidationError{Name: "country_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.country_code": %w`, err)}
 		}
 	}
+	if v, ok := rlc.mutation.RegionCode(); ok {
+		if err := requestlog.RegionCodeValidator(v); err != nil {
+			return &ValidationError{Name: "region_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.region_code": %w`, err)}
+		}
+	}
+	if v, ok := rlc.mutation.RegionName(); ok {
+		if err := requestlog.RegionNameValidator(v); err != nil {
+			return &ValidationError{Name: "region_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.region_name": %w`, err)}
+		}
+	}
 	if v, ok := rlc.mutation.City(); ok {
 		if err := requestlog.CityValidator(v); err != nil {
 			return &ValidationError{Name: "city", err: fmt.Errorf(`ent: validator failed for field "RequestLog.city": %w`, err)}
+		}
+	}
+	if v, ok := rlc.mutation.PostalCode(); ok {
+		if err := requestlog.PostalCodeValidator(v); err != nil {
+			return &ValidationError{Name: "postal_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.postal_code": %w`, err)}
+		}
+	}
+	if v, ok := rlc.mutation.PlaceName(); ok {
+		if err := requestlog.PlaceNameValidator(v); err != nil {
+			return &ValidationError{Name: "place_name", err: fmt.Errorf(`ent: validator failed for field "RequestLog.place_name": %w`, err)}
+		}
+	}
+	if v, ok := rlc.mutation.PlaceFeatureCode(); ok {
+		if err := requestlog.PlaceFeatureCodeValidator(v); err != nil {
+			return &ValidationError{Name: "place_feature_code", err: fmt.Errorf(`ent: validator failed for field "RequestLog.place_feature_code": %w`, err)}
+		}
+	}
+	if v, ok := rlc.mutation.TimeZone(); ok {
+		if err := requestlog.TimeZoneValidator(v); err != nil {
+			return &ValidationError{Name: "time_zone", err: fmt.Errorf(`ent: validator failed for field "RequestLog.time_zone": %w`, err)}
 		}
 	}
 	if _, ok := rlc.mutation.IsBot(); !ok {
@@ -399,9 +541,33 @@ func (rlc *RequestLogCreate) createSpec() (*RequestLog, *sqlgraph.CreateSpec) {
 		_spec.SetField(requestlog.FieldCountryCode, field.TypeString, value)
 		_node.CountryCode = value
 	}
+	if value, ok := rlc.mutation.RegionCode(); ok {
+		_spec.SetField(requestlog.FieldRegionCode, field.TypeString, value)
+		_node.RegionCode = value
+	}
+	if value, ok := rlc.mutation.RegionName(); ok {
+		_spec.SetField(requestlog.FieldRegionName, field.TypeString, value)
+		_node.RegionName = value
+	}
 	if value, ok := rlc.mutation.City(); ok {
 		_spec.SetField(requestlog.FieldCity, field.TypeString, value)
 		_node.City = value
+	}
+	if value, ok := rlc.mutation.PostalCode(); ok {
+		_spec.SetField(requestlog.FieldPostalCode, field.TypeString, value)
+		_node.PostalCode = value
+	}
+	if value, ok := rlc.mutation.PlaceName(); ok {
+		_spec.SetField(requestlog.FieldPlaceName, field.TypeString, value)
+		_node.PlaceName = value
+	}
+	if value, ok := rlc.mutation.PlaceFeatureCode(); ok {
+		_spec.SetField(requestlog.FieldPlaceFeatureCode, field.TypeString, value)
+		_node.PlaceFeatureCode = value
+	}
+	if value, ok := rlc.mutation.PlaceDistanceKm(); ok {
+		_spec.SetField(requestlog.FieldPlaceDistanceKm, field.TypeFloat64, value)
+		_node.PlaceDistanceKm = value
 	}
 	if value, ok := rlc.mutation.Latitude(); ok {
 		_spec.SetField(requestlog.FieldLatitude, field.TypeFloat64, value)
@@ -410,6 +576,14 @@ func (rlc *RequestLogCreate) createSpec() (*RequestLog, *sqlgraph.CreateSpec) {
 	if value, ok := rlc.mutation.Longitude(); ok {
 		_spec.SetField(requestlog.FieldLongitude, field.TypeFloat64, value)
 		_node.Longitude = value
+	}
+	if value, ok := rlc.mutation.TimeZone(); ok {
+		_spec.SetField(requestlog.FieldTimeZone, field.TypeString, value)
+		_node.TimeZone = value
+	}
+	if value, ok := rlc.mutation.AccuracyRadius(); ok {
+		_spec.SetField(requestlog.FieldAccuracyRadius, field.TypeInt, value)
+		_node.AccuracyRadius = value
 	}
 	if value, ok := rlc.mutation.IsBot(); ok {
 		_spec.SetField(requestlog.FieldIsBot, field.TypeBool, value)

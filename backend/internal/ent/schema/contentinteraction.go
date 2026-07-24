@@ -77,12 +77,34 @@ func (ContentInteraction) Fields() []ent.Field {
 		field.String("country_code").
 			Optional().
 			MaxLen(2),
+		field.String("region_code").
+			Optional().
+			MaxLen(16),
+		field.String("region_name").
+			Optional().
+			MaxLen(128),
 		field.String("city").
 			Optional().
 			MaxLen(120),
+		field.String("postal_code").
+			Optional().
+			MaxLen(32),
+		field.String("place_name").
+			Optional().
+			MaxLen(128),
+		field.String("place_feature_code").
+			Optional().
+			MaxLen(16),
+		field.Float("place_distance_km").
+			Optional(),
 		field.Float("latitude").
 			Optional(),
 		field.Float("longitude").
+			Optional(),
+		field.String("time_zone").
+			Optional().
+			MaxLen(64),
+		field.Int("accuracy_radius").
 			Optional(),
 		field.Int("session_duration").
 			Default(0),

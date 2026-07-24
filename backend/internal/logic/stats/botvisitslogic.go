@@ -32,7 +32,7 @@ const defaultBotVisitsLimit = 100
 
 // BotVisits returns the crawler access log: a per-crawler request-count
 // summary plus the most-recent individual visits, drawn from request_logs
-// rows the analytics middleware flagged as bots.
+// rows produced by API middleware and the static-site crawler mirror.
 func (l *BotVisitsLogic) BotVisits(req *types.BotVisitsRequest) (resp *types.BotVisitsResponse, err error) {
 	limit := req.Limit
 	if limit <= 0 {

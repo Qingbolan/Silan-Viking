@@ -558,20 +558,44 @@ func init() {
 	contentinteractionDescCountryCode := contentinteractionFields[14].Descriptor()
 	// contentinteraction.CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
 	contentinteraction.CountryCodeValidator = contentinteractionDescCountryCode.Validators[0].(func(string) error)
+	// contentinteractionDescRegionCode is the schema descriptor for region_code field.
+	contentinteractionDescRegionCode := contentinteractionFields[15].Descriptor()
+	// contentinteraction.RegionCodeValidator is a validator for the "region_code" field. It is called by the builders before save.
+	contentinteraction.RegionCodeValidator = contentinteractionDescRegionCode.Validators[0].(func(string) error)
+	// contentinteractionDescRegionName is the schema descriptor for region_name field.
+	contentinteractionDescRegionName := contentinteractionFields[16].Descriptor()
+	// contentinteraction.RegionNameValidator is a validator for the "region_name" field. It is called by the builders before save.
+	contentinteraction.RegionNameValidator = contentinteractionDescRegionName.Validators[0].(func(string) error)
 	// contentinteractionDescCity is the schema descriptor for city field.
-	contentinteractionDescCity := contentinteractionFields[15].Descriptor()
+	contentinteractionDescCity := contentinteractionFields[17].Descriptor()
 	// contentinteraction.CityValidator is a validator for the "city" field. It is called by the builders before save.
 	contentinteraction.CityValidator = contentinteractionDescCity.Validators[0].(func(string) error)
+	// contentinteractionDescPostalCode is the schema descriptor for postal_code field.
+	contentinteractionDescPostalCode := contentinteractionFields[18].Descriptor()
+	// contentinteraction.PostalCodeValidator is a validator for the "postal_code" field. It is called by the builders before save.
+	contentinteraction.PostalCodeValidator = contentinteractionDescPostalCode.Validators[0].(func(string) error)
+	// contentinteractionDescPlaceName is the schema descriptor for place_name field.
+	contentinteractionDescPlaceName := contentinteractionFields[19].Descriptor()
+	// contentinteraction.PlaceNameValidator is a validator for the "place_name" field. It is called by the builders before save.
+	contentinteraction.PlaceNameValidator = contentinteractionDescPlaceName.Validators[0].(func(string) error)
+	// contentinteractionDescPlaceFeatureCode is the schema descriptor for place_feature_code field.
+	contentinteractionDescPlaceFeatureCode := contentinteractionFields[20].Descriptor()
+	// contentinteraction.PlaceFeatureCodeValidator is a validator for the "place_feature_code" field. It is called by the builders before save.
+	contentinteraction.PlaceFeatureCodeValidator = contentinteractionDescPlaceFeatureCode.Validators[0].(func(string) error)
+	// contentinteractionDescTimeZone is the schema descriptor for time_zone field.
+	contentinteractionDescTimeZone := contentinteractionFields[24].Descriptor()
+	// contentinteraction.TimeZoneValidator is a validator for the "time_zone" field. It is called by the builders before save.
+	contentinteraction.TimeZoneValidator = contentinteractionDescTimeZone.Validators[0].(func(string) error)
 	// contentinteractionDescSessionDuration is the schema descriptor for session_duration field.
-	contentinteractionDescSessionDuration := contentinteractionFields[18].Descriptor()
+	contentinteractionDescSessionDuration := contentinteractionFields[26].Descriptor()
 	// contentinteraction.DefaultSessionDuration holds the default value on creation for the session_duration field.
 	contentinteraction.DefaultSessionDuration = contentinteractionDescSessionDuration.Default.(int)
 	// contentinteractionDescScrollProgress is the schema descriptor for scroll_progress field.
-	contentinteractionDescScrollProgress := contentinteractionFields[19].Descriptor()
+	contentinteractionDescScrollProgress := contentinteractionFields[27].Descriptor()
 	// contentinteraction.DefaultScrollProgress holds the default value on creation for the scroll_progress field.
 	contentinteraction.DefaultScrollProgress = contentinteractionDescScrollProgress.Default.(float64)
 	// contentinteractionDescCreatedAt is the schema descriptor for created_at field.
-	contentinteractionDescCreatedAt := contentinteractionFields[20].Descriptor()
+	contentinteractionDescCreatedAt := contentinteractionFields[28].Descriptor()
 	// contentinteraction.DefaultCreatedAt holds the default value on creation for the created_at field.
 	contentinteraction.DefaultCreatedAt = contentinteractionDescCreatedAt.Default.(func() time.Time)
 	// contentinteractionDescID is the schema descriptor for id field.
@@ -1782,20 +1806,44 @@ func init() {
 	requestlogDescCountryCode := requestlogFields[9].Descriptor()
 	// requestlog.CountryCodeValidator is a validator for the "country_code" field. It is called by the builders before save.
 	requestlog.CountryCodeValidator = requestlogDescCountryCode.Validators[0].(func(string) error)
+	// requestlogDescRegionCode is the schema descriptor for region_code field.
+	requestlogDescRegionCode := requestlogFields[10].Descriptor()
+	// requestlog.RegionCodeValidator is a validator for the "region_code" field. It is called by the builders before save.
+	requestlog.RegionCodeValidator = requestlogDescRegionCode.Validators[0].(func(string) error)
+	// requestlogDescRegionName is the schema descriptor for region_name field.
+	requestlogDescRegionName := requestlogFields[11].Descriptor()
+	// requestlog.RegionNameValidator is a validator for the "region_name" field. It is called by the builders before save.
+	requestlog.RegionNameValidator = requestlogDescRegionName.Validators[0].(func(string) error)
 	// requestlogDescCity is the schema descriptor for city field.
-	requestlogDescCity := requestlogFields[10].Descriptor()
+	requestlogDescCity := requestlogFields[12].Descriptor()
 	// requestlog.CityValidator is a validator for the "city" field. It is called by the builders before save.
 	requestlog.CityValidator = requestlogDescCity.Validators[0].(func(string) error)
+	// requestlogDescPostalCode is the schema descriptor for postal_code field.
+	requestlogDescPostalCode := requestlogFields[13].Descriptor()
+	// requestlog.PostalCodeValidator is a validator for the "postal_code" field. It is called by the builders before save.
+	requestlog.PostalCodeValidator = requestlogDescPostalCode.Validators[0].(func(string) error)
+	// requestlogDescPlaceName is the schema descriptor for place_name field.
+	requestlogDescPlaceName := requestlogFields[14].Descriptor()
+	// requestlog.PlaceNameValidator is a validator for the "place_name" field. It is called by the builders before save.
+	requestlog.PlaceNameValidator = requestlogDescPlaceName.Validators[0].(func(string) error)
+	// requestlogDescPlaceFeatureCode is the schema descriptor for place_feature_code field.
+	requestlogDescPlaceFeatureCode := requestlogFields[15].Descriptor()
+	// requestlog.PlaceFeatureCodeValidator is a validator for the "place_feature_code" field. It is called by the builders before save.
+	requestlog.PlaceFeatureCodeValidator = requestlogDescPlaceFeatureCode.Validators[0].(func(string) error)
+	// requestlogDescTimeZone is the schema descriptor for time_zone field.
+	requestlogDescTimeZone := requestlogFields[19].Descriptor()
+	// requestlog.TimeZoneValidator is a validator for the "time_zone" field. It is called by the builders before save.
+	requestlog.TimeZoneValidator = requestlogDescTimeZone.Validators[0].(func(string) error)
 	// requestlogDescIsBot is the schema descriptor for is_bot field.
-	requestlogDescIsBot := requestlogFields[13].Descriptor()
+	requestlogDescIsBot := requestlogFields[21].Descriptor()
 	// requestlog.DefaultIsBot holds the default value on creation for the is_bot field.
 	requestlog.DefaultIsBot = requestlogDescIsBot.Default.(bool)
 	// requestlogDescBotName is the schema descriptor for bot_name field.
-	requestlogDescBotName := requestlogFields[14].Descriptor()
+	requestlogDescBotName := requestlogFields[22].Descriptor()
 	// requestlog.BotNameValidator is a validator for the "bot_name" field. It is called by the builders before save.
 	requestlog.BotNameValidator = requestlogDescBotName.Validators[0].(func(string) error)
 	// requestlogDescCreatedAt is the schema descriptor for created_at field.
-	requestlogDescCreatedAt := requestlogFields[15].Descriptor()
+	requestlogDescCreatedAt := requestlogFields[23].Descriptor()
 	// requestlog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	requestlog.DefaultCreatedAt = requestlogDescCreatedAt.Default.(func() time.Time)
 	researchprojectFields := schema.ResearchProject{}.Fields()

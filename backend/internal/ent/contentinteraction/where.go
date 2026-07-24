@@ -114,9 +114,39 @@ func CountryCode(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldCountryCode, v))
 }
 
+// RegionCode applies equality check predicate on the "region_code" field. It's identical to RegionCodeEQ.
+func RegionCode(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldRegionCode, v))
+}
+
+// RegionName applies equality check predicate on the "region_name" field. It's identical to RegionNameEQ.
+func RegionName(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldRegionName, v))
+}
+
 // City applies equality check predicate on the "city" field. It's identical to CityEQ.
 func City(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldCity, v))
+}
+
+// PostalCode applies equality check predicate on the "postal_code" field. It's identical to PostalCodeEQ.
+func PostalCode(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPostalCode, v))
+}
+
+// PlaceName applies equality check predicate on the "place_name" field. It's identical to PlaceNameEQ.
+func PlaceName(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPlaceName, v))
+}
+
+// PlaceFeatureCode applies equality check predicate on the "place_feature_code" field. It's identical to PlaceFeatureCodeEQ.
+func PlaceFeatureCode(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPlaceFeatureCode, v))
+}
+
+// PlaceDistanceKm applies equality check predicate on the "place_distance_km" field. It's identical to PlaceDistanceKmEQ.
+func PlaceDistanceKm(v float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPlaceDistanceKm, v))
 }
 
 // Latitude applies equality check predicate on the "latitude" field. It's identical to LatitudeEQ.
@@ -127,6 +157,16 @@ func Latitude(v float64) predicate.ContentInteraction {
 // Longitude applies equality check predicate on the "longitude" field. It's identical to LongitudeEQ.
 func Longitude(v float64) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldLongitude, v))
+}
+
+// TimeZone applies equality check predicate on the "time_zone" field. It's identical to TimeZoneEQ.
+func TimeZone(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldTimeZone, v))
+}
+
+// AccuracyRadius applies equality check predicate on the "accuracy_radius" field. It's identical to AccuracyRadiusEQ.
+func AccuracyRadius(v int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldAccuracyRadius, v))
 }
 
 // SessionDuration applies equality check predicate on the "session_duration" field. It's identical to SessionDurationEQ.
@@ -964,6 +1004,156 @@ func CountryCodeContainsFold(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldContainsFold(FieldCountryCode, v))
 }
 
+// RegionCodeEQ applies the EQ predicate on the "region_code" field.
+func RegionCodeEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldRegionCode, v))
+}
+
+// RegionCodeNEQ applies the NEQ predicate on the "region_code" field.
+func RegionCodeNEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldRegionCode, v))
+}
+
+// RegionCodeIn applies the In predicate on the "region_code" field.
+func RegionCodeIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldRegionCode, vs...))
+}
+
+// RegionCodeNotIn applies the NotIn predicate on the "region_code" field.
+func RegionCodeNotIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldRegionCode, vs...))
+}
+
+// RegionCodeGT applies the GT predicate on the "region_code" field.
+func RegionCodeGT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldRegionCode, v))
+}
+
+// RegionCodeGTE applies the GTE predicate on the "region_code" field.
+func RegionCodeGTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldRegionCode, v))
+}
+
+// RegionCodeLT applies the LT predicate on the "region_code" field.
+func RegionCodeLT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldRegionCode, v))
+}
+
+// RegionCodeLTE applies the LTE predicate on the "region_code" field.
+func RegionCodeLTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldRegionCode, v))
+}
+
+// RegionCodeContains applies the Contains predicate on the "region_code" field.
+func RegionCodeContains(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContains(FieldRegionCode, v))
+}
+
+// RegionCodeHasPrefix applies the HasPrefix predicate on the "region_code" field.
+func RegionCodeHasPrefix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasPrefix(FieldRegionCode, v))
+}
+
+// RegionCodeHasSuffix applies the HasSuffix predicate on the "region_code" field.
+func RegionCodeHasSuffix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasSuffix(FieldRegionCode, v))
+}
+
+// RegionCodeIsNil applies the IsNil predicate on the "region_code" field.
+func RegionCodeIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldRegionCode))
+}
+
+// RegionCodeNotNil applies the NotNil predicate on the "region_code" field.
+func RegionCodeNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldRegionCode))
+}
+
+// RegionCodeEqualFold applies the EqualFold predicate on the "region_code" field.
+func RegionCodeEqualFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldRegionCode, v))
+}
+
+// RegionCodeContainsFold applies the ContainsFold predicate on the "region_code" field.
+func RegionCodeContainsFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldRegionCode, v))
+}
+
+// RegionNameEQ applies the EQ predicate on the "region_name" field.
+func RegionNameEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldRegionName, v))
+}
+
+// RegionNameNEQ applies the NEQ predicate on the "region_name" field.
+func RegionNameNEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldRegionName, v))
+}
+
+// RegionNameIn applies the In predicate on the "region_name" field.
+func RegionNameIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldRegionName, vs...))
+}
+
+// RegionNameNotIn applies the NotIn predicate on the "region_name" field.
+func RegionNameNotIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldRegionName, vs...))
+}
+
+// RegionNameGT applies the GT predicate on the "region_name" field.
+func RegionNameGT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldRegionName, v))
+}
+
+// RegionNameGTE applies the GTE predicate on the "region_name" field.
+func RegionNameGTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldRegionName, v))
+}
+
+// RegionNameLT applies the LT predicate on the "region_name" field.
+func RegionNameLT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldRegionName, v))
+}
+
+// RegionNameLTE applies the LTE predicate on the "region_name" field.
+func RegionNameLTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldRegionName, v))
+}
+
+// RegionNameContains applies the Contains predicate on the "region_name" field.
+func RegionNameContains(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContains(FieldRegionName, v))
+}
+
+// RegionNameHasPrefix applies the HasPrefix predicate on the "region_name" field.
+func RegionNameHasPrefix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasPrefix(FieldRegionName, v))
+}
+
+// RegionNameHasSuffix applies the HasSuffix predicate on the "region_name" field.
+func RegionNameHasSuffix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasSuffix(FieldRegionName, v))
+}
+
+// RegionNameIsNil applies the IsNil predicate on the "region_name" field.
+func RegionNameIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldRegionName))
+}
+
+// RegionNameNotNil applies the NotNil predicate on the "region_name" field.
+func RegionNameNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldRegionName))
+}
+
+// RegionNameEqualFold applies the EqualFold predicate on the "region_name" field.
+func RegionNameEqualFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldRegionName, v))
+}
+
+// RegionNameContainsFold applies the ContainsFold predicate on the "region_name" field.
+func RegionNameContainsFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldRegionName, v))
+}
+
 // CityEQ applies the EQ predicate on the "city" field.
 func CityEQ(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldEQ(FieldCity, v))
@@ -1037,6 +1227,281 @@ func CityEqualFold(v string) predicate.ContentInteraction {
 // CityContainsFold applies the ContainsFold predicate on the "city" field.
 func CityContainsFold(v string) predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldContainsFold(FieldCity, v))
+}
+
+// PostalCodeEQ applies the EQ predicate on the "postal_code" field.
+func PostalCodeEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPostalCode, v))
+}
+
+// PostalCodeNEQ applies the NEQ predicate on the "postal_code" field.
+func PostalCodeNEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldPostalCode, v))
+}
+
+// PostalCodeIn applies the In predicate on the "postal_code" field.
+func PostalCodeIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldPostalCode, vs...))
+}
+
+// PostalCodeNotIn applies the NotIn predicate on the "postal_code" field.
+func PostalCodeNotIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldPostalCode, vs...))
+}
+
+// PostalCodeGT applies the GT predicate on the "postal_code" field.
+func PostalCodeGT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldPostalCode, v))
+}
+
+// PostalCodeGTE applies the GTE predicate on the "postal_code" field.
+func PostalCodeGTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldPostalCode, v))
+}
+
+// PostalCodeLT applies the LT predicate on the "postal_code" field.
+func PostalCodeLT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldPostalCode, v))
+}
+
+// PostalCodeLTE applies the LTE predicate on the "postal_code" field.
+func PostalCodeLTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldPostalCode, v))
+}
+
+// PostalCodeContains applies the Contains predicate on the "postal_code" field.
+func PostalCodeContains(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContains(FieldPostalCode, v))
+}
+
+// PostalCodeHasPrefix applies the HasPrefix predicate on the "postal_code" field.
+func PostalCodeHasPrefix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasPrefix(FieldPostalCode, v))
+}
+
+// PostalCodeHasSuffix applies the HasSuffix predicate on the "postal_code" field.
+func PostalCodeHasSuffix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasSuffix(FieldPostalCode, v))
+}
+
+// PostalCodeIsNil applies the IsNil predicate on the "postal_code" field.
+func PostalCodeIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldPostalCode))
+}
+
+// PostalCodeNotNil applies the NotNil predicate on the "postal_code" field.
+func PostalCodeNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldPostalCode))
+}
+
+// PostalCodeEqualFold applies the EqualFold predicate on the "postal_code" field.
+func PostalCodeEqualFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldPostalCode, v))
+}
+
+// PostalCodeContainsFold applies the ContainsFold predicate on the "postal_code" field.
+func PostalCodeContainsFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldPostalCode, v))
+}
+
+// PlaceNameEQ applies the EQ predicate on the "place_name" field.
+func PlaceNameEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPlaceName, v))
+}
+
+// PlaceNameNEQ applies the NEQ predicate on the "place_name" field.
+func PlaceNameNEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldPlaceName, v))
+}
+
+// PlaceNameIn applies the In predicate on the "place_name" field.
+func PlaceNameIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldPlaceName, vs...))
+}
+
+// PlaceNameNotIn applies the NotIn predicate on the "place_name" field.
+func PlaceNameNotIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldPlaceName, vs...))
+}
+
+// PlaceNameGT applies the GT predicate on the "place_name" field.
+func PlaceNameGT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldPlaceName, v))
+}
+
+// PlaceNameGTE applies the GTE predicate on the "place_name" field.
+func PlaceNameGTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldPlaceName, v))
+}
+
+// PlaceNameLT applies the LT predicate on the "place_name" field.
+func PlaceNameLT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldPlaceName, v))
+}
+
+// PlaceNameLTE applies the LTE predicate on the "place_name" field.
+func PlaceNameLTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldPlaceName, v))
+}
+
+// PlaceNameContains applies the Contains predicate on the "place_name" field.
+func PlaceNameContains(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContains(FieldPlaceName, v))
+}
+
+// PlaceNameHasPrefix applies the HasPrefix predicate on the "place_name" field.
+func PlaceNameHasPrefix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasPrefix(FieldPlaceName, v))
+}
+
+// PlaceNameHasSuffix applies the HasSuffix predicate on the "place_name" field.
+func PlaceNameHasSuffix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasSuffix(FieldPlaceName, v))
+}
+
+// PlaceNameIsNil applies the IsNil predicate on the "place_name" field.
+func PlaceNameIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldPlaceName))
+}
+
+// PlaceNameNotNil applies the NotNil predicate on the "place_name" field.
+func PlaceNameNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldPlaceName))
+}
+
+// PlaceNameEqualFold applies the EqualFold predicate on the "place_name" field.
+func PlaceNameEqualFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldPlaceName, v))
+}
+
+// PlaceNameContainsFold applies the ContainsFold predicate on the "place_name" field.
+func PlaceNameContainsFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldPlaceName, v))
+}
+
+// PlaceFeatureCodeEQ applies the EQ predicate on the "place_feature_code" field.
+func PlaceFeatureCodeEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeNEQ applies the NEQ predicate on the "place_feature_code" field.
+func PlaceFeatureCodeNEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeIn applies the In predicate on the "place_feature_code" field.
+func PlaceFeatureCodeIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldPlaceFeatureCode, vs...))
+}
+
+// PlaceFeatureCodeNotIn applies the NotIn predicate on the "place_feature_code" field.
+func PlaceFeatureCodeNotIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldPlaceFeatureCode, vs...))
+}
+
+// PlaceFeatureCodeGT applies the GT predicate on the "place_feature_code" field.
+func PlaceFeatureCodeGT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeGTE applies the GTE predicate on the "place_feature_code" field.
+func PlaceFeatureCodeGTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeLT applies the LT predicate on the "place_feature_code" field.
+func PlaceFeatureCodeLT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeLTE applies the LTE predicate on the "place_feature_code" field.
+func PlaceFeatureCodeLTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeContains applies the Contains predicate on the "place_feature_code" field.
+func PlaceFeatureCodeContains(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContains(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeHasPrefix applies the HasPrefix predicate on the "place_feature_code" field.
+func PlaceFeatureCodeHasPrefix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasPrefix(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeHasSuffix applies the HasSuffix predicate on the "place_feature_code" field.
+func PlaceFeatureCodeHasSuffix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasSuffix(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeIsNil applies the IsNil predicate on the "place_feature_code" field.
+func PlaceFeatureCodeIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldPlaceFeatureCode))
+}
+
+// PlaceFeatureCodeNotNil applies the NotNil predicate on the "place_feature_code" field.
+func PlaceFeatureCodeNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldPlaceFeatureCode))
+}
+
+// PlaceFeatureCodeEqualFold applies the EqualFold predicate on the "place_feature_code" field.
+func PlaceFeatureCodeEqualFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldPlaceFeatureCode, v))
+}
+
+// PlaceFeatureCodeContainsFold applies the ContainsFold predicate on the "place_feature_code" field.
+func PlaceFeatureCodeContainsFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldPlaceFeatureCode, v))
+}
+
+// PlaceDistanceKmEQ applies the EQ predicate on the "place_distance_km" field.
+func PlaceDistanceKmEQ(v float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmNEQ applies the NEQ predicate on the "place_distance_km" field.
+func PlaceDistanceKmNEQ(v float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmIn applies the In predicate on the "place_distance_km" field.
+func PlaceDistanceKmIn(vs ...float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldPlaceDistanceKm, vs...))
+}
+
+// PlaceDistanceKmNotIn applies the NotIn predicate on the "place_distance_km" field.
+func PlaceDistanceKmNotIn(vs ...float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldPlaceDistanceKm, vs...))
+}
+
+// PlaceDistanceKmGT applies the GT predicate on the "place_distance_km" field.
+func PlaceDistanceKmGT(v float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmGTE applies the GTE predicate on the "place_distance_km" field.
+func PlaceDistanceKmGTE(v float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmLT applies the LT predicate on the "place_distance_km" field.
+func PlaceDistanceKmLT(v float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmLTE applies the LTE predicate on the "place_distance_km" field.
+func PlaceDistanceKmLTE(v float64) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldPlaceDistanceKm, v))
+}
+
+// PlaceDistanceKmIsNil applies the IsNil predicate on the "place_distance_km" field.
+func PlaceDistanceKmIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldPlaceDistanceKm))
+}
+
+// PlaceDistanceKmNotNil applies the NotNil predicate on the "place_distance_km" field.
+func PlaceDistanceKmNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldPlaceDistanceKm))
 }
 
 // LatitudeEQ applies the EQ predicate on the "latitude" field.
@@ -1137,6 +1602,131 @@ func LongitudeIsNil() predicate.ContentInteraction {
 // LongitudeNotNil applies the NotNil predicate on the "longitude" field.
 func LongitudeNotNil() predicate.ContentInteraction {
 	return predicate.ContentInteraction(sql.FieldNotNull(FieldLongitude))
+}
+
+// TimeZoneEQ applies the EQ predicate on the "time_zone" field.
+func TimeZoneEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldTimeZone, v))
+}
+
+// TimeZoneNEQ applies the NEQ predicate on the "time_zone" field.
+func TimeZoneNEQ(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldTimeZone, v))
+}
+
+// TimeZoneIn applies the In predicate on the "time_zone" field.
+func TimeZoneIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldTimeZone, vs...))
+}
+
+// TimeZoneNotIn applies the NotIn predicate on the "time_zone" field.
+func TimeZoneNotIn(vs ...string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldTimeZone, vs...))
+}
+
+// TimeZoneGT applies the GT predicate on the "time_zone" field.
+func TimeZoneGT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldTimeZone, v))
+}
+
+// TimeZoneGTE applies the GTE predicate on the "time_zone" field.
+func TimeZoneGTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldTimeZone, v))
+}
+
+// TimeZoneLT applies the LT predicate on the "time_zone" field.
+func TimeZoneLT(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldTimeZone, v))
+}
+
+// TimeZoneLTE applies the LTE predicate on the "time_zone" field.
+func TimeZoneLTE(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldTimeZone, v))
+}
+
+// TimeZoneContains applies the Contains predicate on the "time_zone" field.
+func TimeZoneContains(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContains(FieldTimeZone, v))
+}
+
+// TimeZoneHasPrefix applies the HasPrefix predicate on the "time_zone" field.
+func TimeZoneHasPrefix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasPrefix(FieldTimeZone, v))
+}
+
+// TimeZoneHasSuffix applies the HasSuffix predicate on the "time_zone" field.
+func TimeZoneHasSuffix(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldHasSuffix(FieldTimeZone, v))
+}
+
+// TimeZoneIsNil applies the IsNil predicate on the "time_zone" field.
+func TimeZoneIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldTimeZone))
+}
+
+// TimeZoneNotNil applies the NotNil predicate on the "time_zone" field.
+func TimeZoneNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldTimeZone))
+}
+
+// TimeZoneEqualFold applies the EqualFold predicate on the "time_zone" field.
+func TimeZoneEqualFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEqualFold(FieldTimeZone, v))
+}
+
+// TimeZoneContainsFold applies the ContainsFold predicate on the "time_zone" field.
+func TimeZoneContainsFold(v string) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldContainsFold(FieldTimeZone, v))
+}
+
+// AccuracyRadiusEQ applies the EQ predicate on the "accuracy_radius" field.
+func AccuracyRadiusEQ(v int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldEQ(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusNEQ applies the NEQ predicate on the "accuracy_radius" field.
+func AccuracyRadiusNEQ(v int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNEQ(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusIn applies the In predicate on the "accuracy_radius" field.
+func AccuracyRadiusIn(vs ...int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIn(FieldAccuracyRadius, vs...))
+}
+
+// AccuracyRadiusNotIn applies the NotIn predicate on the "accuracy_radius" field.
+func AccuracyRadiusNotIn(vs ...int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotIn(FieldAccuracyRadius, vs...))
+}
+
+// AccuracyRadiusGT applies the GT predicate on the "accuracy_radius" field.
+func AccuracyRadiusGT(v int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGT(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusGTE applies the GTE predicate on the "accuracy_radius" field.
+func AccuracyRadiusGTE(v int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldGTE(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusLT applies the LT predicate on the "accuracy_radius" field.
+func AccuracyRadiusLT(v int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLT(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusLTE applies the LTE predicate on the "accuracy_radius" field.
+func AccuracyRadiusLTE(v int) predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldLTE(FieldAccuracyRadius, v))
+}
+
+// AccuracyRadiusIsNil applies the IsNil predicate on the "accuracy_radius" field.
+func AccuracyRadiusIsNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldIsNull(FieldAccuracyRadius))
+}
+
+// AccuracyRadiusNotNil applies the NotNil predicate on the "accuracy_radius" field.
+func AccuracyRadiusNotNil() predicate.ContentInteraction {
+	return predicate.ContentInteraction(sql.FieldNotNull(FieldAccuracyRadius))
 }
 
 // SessionDurationEQ applies the EQ predicate on the "session_duration" field.

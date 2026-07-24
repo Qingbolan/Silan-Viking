@@ -28,18 +28,30 @@ Traffic:
     - chatgpt-user
     - oai-searchbot
     - claudebot
-    - anthropic-ai
+    - claude-user
+    - claude-searchbot
     - perplexitybot
-    - google-extended
+    - perplexity-user
+    - deepseekbot
+    - doubaobot
+    - doubao-user
+    - bytespider
+    - kimibot
+    - kimi-user
+    - kimi-searchbot
+    - chatglm-spider
   search_user_agents:
     - googlebot
+    - google-inspectiontool
+    - storebot-google
     - bingbot
+    - slurp
     - duckduckbot
     - baiduspider
     - yandexbot
-    - bot
-    - crawler
-    - spider
+    - sogou
+    - applebot
+    - petalbot
   bot_user_agents:
     - { token: googlebot, name: Googlebot }
     - { token: google-inspectiontool, name: Googlebot }
@@ -50,7 +62,7 @@ Traffic:
     - { token: baiduspider, name: Baiduspider }
     - { token: yandexbot, name: YandexBot }
     - { token: sogou, name: Sogou Spider }
-    - { token: bytespider, name: Bytespider }
+    - { token: bytespider, name: ByteDance Bytespider }
     - { token: applebot, name: Applebot }
     - { token: facebookexternalhit, name: Facebook }
     - { token: facebot, name: Facebook }
@@ -67,9 +79,20 @@ Traffic:
     - { token: petalbot, name: PetalBot }
     - { token: gptbot, name: GPTBot }
     - { token: oai-searchbot, name: OAI-SearchBot }
+    - { token: oai-adsbot, name: OAI-AdsBot }
     - { token: chatgpt-user, name: ChatGPT-User }
     - { token: claudebot, name: ClaudeBot }
+    - { token: claude-user, name: Claude-User }
+    - { token: claude-searchbot, name: Claude-SearchBot }
     - { token: perplexitybot, name: PerplexityBot }
+    - { token: perplexity-user, name: Perplexity-User }
+    - { token: deepseekbot, name: DeepSeekBot }
+    - { token: doubaobot, name: DoubaoBot }
+    - { token: doubao-user, name: Doubao-User }
+    - { token: kimibot, name: KimiBot }
+    - { token: kimi-user, name: Kimi-User }
+    - { token: kimi-searchbot, name: Kimi-SearchBot }
+    - { token: chatglm-spider, name: ChatGLM-Spider }
     - { token: ccbot, name: CCBot }
   generic_bot_tokens:
     - bot
@@ -86,6 +109,14 @@ Traffic:
     - gemini
     - claude
     - copilot
+    - chat.deepseek.com
+    - deepseek.com
+    - doubao.com
+    - kimi.com
+    - kimi.moonshot.cn
+    - chatglm.cn
+    - chat.z.ai
+    - zhipuai.cn
   search_referrers:
     - google.
     - bing.
