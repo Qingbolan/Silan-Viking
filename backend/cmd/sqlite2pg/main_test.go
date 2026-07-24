@@ -20,8 +20,9 @@ func TestQuotePGIdentifier(t *testing.T) {
 	}
 }
 
-func TestRuntimeOwnedTablesAreNeverImported(t *testing.T) {
+func TestRuntimeOwnedTableClassification(t *testing.T) {
 	wantRuntime := []string{
+		"annotation",
 		"comments",
 		"comment_likes",
 		"contact_messages",
@@ -33,6 +34,12 @@ func TestRuntimeOwnedTablesAreNeverImported(t *testing.T) {
 	for _, table := range wantRuntime {
 		if !isRuntimeOwnedTable(table) {
 			t.Errorf("%s must be preserved during content import", table)
+		}
+		if shouldImportTable(table, false) {
+			t.Errorf("%s must not be replaced during regular content import", table)
+		}
+		if !shouldImportTable(table, true) {
+			t.Errorf("%s must be seeded during initial cutover", table)
 		}
 	}
 
@@ -46,6 +53,9 @@ func TestRuntimeOwnedTablesAreNeverImported(t *testing.T) {
 	for _, table := range wantProjected {
 		if isRuntimeOwnedTable(table) {
 			t.Errorf("%s is projection-owned and must remain importable", table)
+		}
+		if !shouldImportTable(table, false) || !shouldImportTable(table, true) {
+			t.Errorf("%s must be imported in every lifecycle mode", table)
 		}
 	}
 }

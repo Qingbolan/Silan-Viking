@@ -16,6 +16,7 @@
 // Usage:
 //
 //	sqlite2pg --sqlite /path/to/portfolio.db --pg "postgres://user:pw@host:port/db?sslmode=disable"
+//	sqlite2pg --sqlite /path/to/portfolio.db --env-file /etc/silan-backend/db.env --initial-cutover
 package main
 
 import (
@@ -41,6 +42,11 @@ func main() {
 	pgDSN := flag.String("pg", "", "postgres connection string (overrides --env-file)")
 	envFile := flag.String("env-file", "", "read DB_SOURCE / DB_ADMIN_SOURCE from this systemd-style env file when --pg is not set")
 	dryRun := flag.Bool("dry-run", false, "list tables and row counts; do not write")
+	initialCutover := flag.Bool(
+		"initial-cutover",
+		false,
+		"copy runtime-owned tables during the one-time SQLite to PostgreSQL cutover",
+	)
 	flag.Parse()
 
 	if *sqlitePath == "" {
@@ -145,7 +151,7 @@ func main() {
 			skipped = append(skipped, t)
 			continue
 		}
-		if isRuntimeOwnedTable(t) {
+		if !shouldImportTable(t, *initialCutover) {
 			preservedRuntime = append(preservedRuntime, t)
 			continue
 		}
@@ -390,7 +396,7 @@ func ensureProjectionMetadataSchema(ctx context.Context, dsn string) error {
 // snapshot. Everything not listed here is projection-owned and may be
 // replaced from the content tree.
 var runtimeOwnedTables = map[string]struct{}{
-	"annotations":         {},
+	"annotation":          {},
 	"comment_likes":       {},
 	"comments":            {},
 	"contact_messages":    {},
@@ -409,6 +415,13 @@ var runtimeOwnedTables = map[string]struct{}{
 func isRuntimeOwnedTable(table string) bool {
 	_, ok := runtimeOwnedTables[table]
 	return ok
+}
+
+// shouldImportTable makes the lifecycle boundary explicit:
+// regular content deployments replace projection tables only, while the
+// one-time cutover must also seed runtime facts that still live in SQLite.
+func shouldImportTable(table string, initialCutover bool) bool {
+	return initialCutover || !isRuntimeOwnedTable(table)
 }
 
 func postgresRoleFromDSN(dsn string) (string, error) {
