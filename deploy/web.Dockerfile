@@ -8,7 +8,7 @@
 #   docker build -f deploy/web.Dockerfile -t silan-web .
 
 # ---- build stage ----
-FROM node:20-bookworm AS build
+FROM node:22-bookworm AS build
 WORKDIR /src
 
 COPY frontend/package.json frontend/package-lock.json* ./

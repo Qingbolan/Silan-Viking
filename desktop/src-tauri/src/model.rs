@@ -156,9 +156,17 @@ pub(crate) struct DailyContentTraffic {
 #[derive(Debug, Serialize)]
 pub(crate) struct VisitorLocation {
     pub(crate) country_code: String,
+    pub(crate) region_code: String,
+    pub(crate) region_name: String,
     pub(crate) city: String,
+    pub(crate) postal_code: String,
+    pub(crate) place_name: String,
+    pub(crate) place_feature_code: String,
+    pub(crate) place_distance_km: String,
     pub(crate) latitude: String,
     pub(crate) longitude: String,
+    pub(crate) time_zone: String,
+    pub(crate) accuracy_radius: i64,
     pub(crate) ip_addresses: Vec<String>,
     pub(crate) visits: i64,
 }
@@ -188,9 +196,17 @@ pub(crate) struct TrafficSource {
 #[derive(Debug, Serialize)]
 pub(crate) struct TrafficCountry {
     pub(crate) country_code: String,
+    pub(crate) region_code: String,
+    pub(crate) region_name: String,
     pub(crate) city: String,
+    pub(crate) postal_code: String,
+    pub(crate) place_name: String,
+    pub(crate) place_feature_code: String,
+    pub(crate) place_distance_km: String,
     pub(crate) latitude: String,
     pub(crate) longitude: String,
+    pub(crate) time_zone: String,
+    pub(crate) accuracy_radius: i64,
     pub(crate) ip_addresses: Vec<String>,
     pub(crate) visits: i64,
 }

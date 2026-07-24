@@ -131,6 +131,58 @@ const isTechnicalTrafficSubject = (subject: string) => (
   || /(?:^|\/)assets\/.+\.(?:js|css|map)(?:$|[?#])/i.test(subject)
 );
 
+type LocationDisplayInput = {
+  country_code: string;
+  region_code?: string;
+  region_name?: string;
+  city?: string;
+  postal_code?: string;
+  place_name?: string;
+  place_feature_code?: string;
+  place_distance_km?: string;
+  latitude?: string;
+  longitude?: string;
+  time_zone?: string;
+  accuracy_radius?: number;
+};
+
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+
+const pushUniqueLocationPart = (parts: string[], value?: string) => {
+  const clean = value?.trim();
+  if (!clean) return;
+  if (!parts.some((part) => part.toLowerCase() === clean.toLowerCase())) {
+    parts.push(clean);
+  }
+};
+
+const formatLocationLabel = (location: LocationDisplayInput) => {
+  const parts: string[] = [];
+  pushUniqueLocationPart(parts, location.country_code ? regionNames.of(location.country_code) || location.country_code : '');
+  pushUniqueLocationPart(parts, location.region_name || location.region_code);
+  pushUniqueLocationPart(parts, location.city);
+  pushUniqueLocationPart(parts, location.place_name);
+  pushUniqueLocationPart(parts, location.postal_code);
+  return parts.join(' · ') || 'Location unavailable';
+};
+
+const formatLocationDetail = (location: LocationDisplayInput) => {
+  const details: string[] = [];
+  if (location.latitude || location.longitude) {
+    details.push([location.latitude, location.longitude].filter(Boolean).join(', '));
+  }
+  if (location.accuracy_radius && location.accuracy_radius > 0) {
+    details.push(`±${location.accuracy_radius} km`);
+  }
+  if (location.place_name && location.place_distance_km) {
+    details.push(`nearest ${location.place_distance_km} km`);
+  }
+  if (location.time_zone) {
+    details.push(location.time_zone);
+  }
+  return details.join(' · ');
+};
+
 const groupEvidenceByAgent = (evidence: TrafficEvidence[]) => {
   const grouped: Record<string, {
     visits: number;
@@ -173,7 +225,9 @@ const groupEvidenceByAgent = (evidence: TrafficEvidence[]) => {
 
 const evidenceSubjectLabel = (kind: TrafficEvidence['subject_kind']) => {
   switch (kind) {
+    case 'ai_query': return 'AI query';
     case 'attributed_topic': return 'Attributed topic';
+    case 'keyword': return 'Keyword';
     case 'search_query': return 'Search query';
     case 'landing_page': return 'Landing page';
     case 'page': return 'Page fetched';
@@ -2455,15 +2509,15 @@ export default function App() {
                         <div className="traffic-ranking traffic-countries">
                           <span>Countries</span>
                           {(dashboard?.top_countries || []).slice(0, 3).map((country) => (
-                            <div key={`${country.country_code}-${country.city}-${country.latitude}-${country.longitude}`}>
+                            <div key={`${country.country_code}-${country.region_code}-${country.city}-${country.postal_code}-${country.place_name}-${country.latitude}-${country.longitude}`}>
                               <span
                                 title={[
-                                  `${new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}${country.city ? ` · ${country.city}` : ''}`,
+                                  formatLocationLabel(country),
+                                  formatLocationDetail(country),
                                   country.ip_addresses.length ? `IP: ${country.ip_addresses.join(', ')}` : '',
                                 ].filter(Boolean).join('\n')}
                               >
-                                {new Intl.DisplayNames(['en'], { type: 'region' }).of(country.country_code) || country.country_code}
-                                {country.city && ` · ${country.city}`}
+                                {formatLocationLabel(country)}
                               </span>
                               <strong>{country.visits}</strong>
                             </div>
@@ -2663,13 +2717,13 @@ export default function App() {
                         {expanded && (
                           <span className="visitor-breakdown">
                             {item.visitors.length > 0 ? item.visitors.map((visitor, visitorIndex) => (
-                              <span className="visitor-location" key={`${visitor.country_code}-${visitor.city}-${visitorIndex}`}>
+                              <span className="visitor-location" key={`${visitor.country_code}-${visitor.region_code}-${visitor.city}-${visitor.postal_code}-${visitor.place_name}-${visitorIndex}`}>
                                 <span className="visitor-location-heading">
-                                  <strong>{[visitor.country_code, visitor.city].filter(Boolean).join(' · ') || 'Location unavailable'}</strong>
+                                  <strong>{formatLocationLabel(visitor)}</strong>
                                   <small>{visitor.visits} {visitor.visits === 1 ? 'visit' : 'visits'}</small>
                                 </span>
-                                {(visitor.latitude || visitor.longitude) && (
-                                  <small className="visitor-coordinates">{visitor.latitude}, {visitor.longitude}</small>
+                                {formatLocationDetail(visitor) && (
+                                  <small className="visitor-coordinates">{formatLocationDetail(visitor)}</small>
                                 )}
                                 <span className="visitor-ip-list">
                                   {visitor.ip_addresses.length > 0
@@ -2705,16 +2759,23 @@ export default function App() {
                                     <span className="traffic-agent-notes">
                                       {technicalVisits > 0 && <small>{technicalVisits} asset requests hidden</small>}
                                       {hiddenSubjectCount > 0 && <small>+{hiddenSubjectCount} more pages</small>}
-                                      {subjects.every((subject) => subject.kind !== 'attributed_topic' && subject.kind !== 'search_query') && (
-                                        <small className="traffic-query-note">Provider did not expose a query</small>
+                                      {subjects.every((subject) => !['ai_query', 'attributed_topic', 'keyword', 'search_query'].includes(subject.kind ?? '')) && (
+                                        <small className="traffic-query-note">
+                                          {/\b(crawl|indexing)\b/i.test(event)
+                                            ? 'Crawler requests do not contain user queries'
+                                            : 'Provider did not expose a query in the request'}
+                                        </small>
                                       )}
                                     </span>
                                   </span>
                                 ))
                               : item.evidence.map((evidence) => (
-                                  <span key={`${evidence.agent}-${evidence.subject}`}>
+                                  <span key={`${evidence.agent}-${evidence.event}-${evidence.subject_kind}-${evidence.subject}`}>
                                     <strong>{evidence.subject || evidence.event}</strong>
-                                    <small>{evidence.agent} · {evidence.visits}</small>
+                                    <small>{evidenceSubjectLabel(evidence.subject_kind)} · {evidence.agent} · {evidence.visits}</small>
+                                    {!['keyword', 'search_query'].includes(evidence.subject_kind ?? '') && /\bindexing\b/i.test(evidence.event) && (
+                                      <small className="traffic-query-note">Indexing crawls do not contain search queries</small>
+                                    )}
                                   </span>
                                 ))}
                           </span>

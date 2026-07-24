@@ -63,9 +63,17 @@ pub struct DailyContentTraffic {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct VisitorLocation {
     pub country_code: String,
+    pub region_code: String,
+    pub region_name: String,
     pub city: String,
+    pub postal_code: String,
+    pub place_name: String,
+    pub place_feature_code: String,
+    pub place_distance_km: String,
     pub latitude: String,
     pub longitude: String,
+    pub time_zone: String,
+    pub accuracy_radius: i64,
     pub ip_addresses: Vec<String>,
     pub visits: i64,
 }
@@ -95,9 +103,17 @@ pub struct TrafficSource {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TrafficCountry {
     pub country_code: String,
+    pub region_code: String,
+    pub region_name: String,
     pub city: String,
+    pub postal_code: String,
+    pub place_name: String,
+    pub place_feature_code: String,
+    pub place_distance_km: String,
     pub latitude: String,
     pub longitude: String,
+    pub time_zone: String,
+    pub accuracy_radius: i64,
     pub ip_addresses: Vec<String>,
     pub visits: i64,
 }
@@ -348,22 +364,33 @@ fn cached_traffic(
     let mut top_countries = Vec::new();
     if table_exists(connection, "stats_cache_location_v2")? {
         let mut statement = connection.prepare(
-            "SELECT country_code, city, latitude, longitude, ip_addresses, count
+            "SELECT country_code, region_code, region_name, city, postal_code, place_name,
+                    place_feature_code, place_distance_km, latitude, longitude, time_zone,
+                    accuracy_radius, ip_addresses, count
              FROM stats_cache_location_v2
              ORDER BY count DESC, country_code ASC LIMIT 4",
         )?;
         top_countries = statement
             .query_map([], |row| {
-                let latitude: f64 = row.get(2)?;
-                let longitude: f64 = row.get(3)?;
-                let ip_addresses: String = row.get(4)?;
+                let place_distance: f64 = row.get(7)?;
+                let latitude: f64 = row.get(8)?;
+                let longitude: f64 = row.get(9)?;
+                let ip_addresses: String = row.get(12)?;
                 Ok(TrafficCountry {
                     country_code: row.get(0)?,
-                    city: row.get(1)?,
-                    latitude: format!("{latitude:.1}"),
-                    longitude: format!("{longitude:.1}"),
+                    region_code: row.get(1)?,
+                    region_name: row.get(2)?,
+                    city: row.get(3)?,
+                    postal_code: row.get(4)?,
+                    place_name: row.get(5)?,
+                    place_feature_code: row.get(6)?,
+                    place_distance_km: format_distance(place_distance),
+                    latitude: format_coordinate(latitude),
+                    longitude: format_coordinate(longitude),
+                    time_zone: row.get(10)?,
+                    accuracy_radius: row.get(11)?,
                     ip_addresses: serde_json::from_str(&ip_addresses).unwrap_or_default(),
-                    visits: row.get(5)?,
+                    visits: row.get(13)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -399,13 +426,17 @@ fn daily_acquisition(
     let sql = format!(
         "SELECT date(last_seen_at, '+8 hours'), entity_type, entity_id, visitor_kind,
                 referrer_kind, referrer, landing_url, crawler_name, ip_masked,
-                country_code, city, latitude, longitude, COUNT(*)
+                country_code, region_code, region_name, city, postal_code, place_name,
+                place_feature_code, place_distance_km, latitude, longitude, time_zone,
+                accuracy_radius, COUNT(*)
          FROM stats_cache_visitor
          WHERE {filter}
            AND date(last_seen_at, '+8 hours') >= date('now', '+8 hours', '-1 year')
          GROUP BY date(last_seen_at, '+8 hours'), entity_type, entity_id, visitor_kind,
                   referrer_kind, referrer, landing_url, crawler_name, ip_masked,
-                  country_code, city, latitude, longitude
+                  country_code, region_code, region_name, city, postal_code, place_name,
+                  place_feature_code, place_distance_km, latitude, longitude, time_zone,
+                  accuracy_radius
          ORDER BY date(last_seen_at, '+8 hours'), COUNT(*) DESC"
     );
     let mut statement = connection.prepare(&sql)?;
@@ -422,9 +453,17 @@ fn daily_acquisition(
             row.get::<_, String>(8)?,
             row.get::<_, String>(9)?,
             row.get::<_, String>(10)?,
-            row.get::<_, f64>(11)?,
-            row.get::<_, f64>(12)?,
-            row.get::<_, i64>(13)?,
+            row.get::<_, String>(11)?,
+            row.get::<_, String>(12)?,
+            row.get::<_, String>(13)?,
+            row.get::<_, String>(14)?,
+            row.get::<_, String>(15)?,
+            row.get::<_, f64>(16)?,
+            row.get::<_, f64>(17)?,
+            row.get::<_, f64>(18)?,
+            row.get::<_, String>(19)?,
+            row.get::<_, i64>(20)?,
+            row.get::<_, i64>(21)?,
         ))
     })?;
     let mut days = Vec::<DailyTraffic>::new();
@@ -440,9 +479,17 @@ fn daily_acquisition(
             crawler_name,
             ip_masked,
             country_code,
+            region_code,
+            region_name,
             city,
+            postal_code,
+            place_name,
+            place_feature_code,
+            place_distance,
             latitude,
             longitude,
+            time_zone,
+            accuracy_radius,
             visits,
         ) = row?;
         if days.last().is_none_or(|day| day.date != date) {
@@ -475,9 +522,17 @@ fn daily_acquisition(
         });
         let visitor = (kind == AcquisitionKind::Human).then(|| VisitorLocation {
             country_code,
+            region_code,
+            region_name,
             city,
+            postal_code,
+            place_name,
+            place_feature_code,
+            place_distance_km: format_distance(place_distance),
             latitude: format_coordinate(latitude),
             longitude: format_coordinate(longitude),
+            time_zone,
+            accuracy_radius,
             ip_addresses: (!ip_masked.is_empty())
                 .then_some(ip_masked)
                 .into_iter()
@@ -517,6 +572,14 @@ fn format_coordinate(value: f64) -> String {
     if value == 0.0 {
         String::new()
     } else {
+        format!("{value:.4}")
+    }
+}
+
+fn format_distance(value: f64) -> String {
+    if value <= 0.0 {
+        String::new()
+    } else {
         format!("{value:.1}")
     }
 }
@@ -524,9 +587,17 @@ fn format_coordinate(value: f64) -> String {
 fn merge_visitor_location(locations: &mut Vec<VisitorLocation>, visitor: VisitorLocation) {
     if let Some(existing) = locations.iter_mut().find(|location| {
         location.country_code == visitor.country_code
+            && location.region_code == visitor.region_code
+            && location.region_name == visitor.region_name
             && location.city == visitor.city
+            && location.postal_code == visitor.postal_code
+            && location.place_name == visitor.place_name
+            && location.place_feature_code == visitor.place_feature_code
+            && location.place_distance_km == visitor.place_distance_km
             && location.latitude == visitor.latitude
             && location.longitude == visitor.longitude
+            && location.time_zone == visitor.time_zone
+            && location.accuracy_radius == visitor.accuracy_radius
     }) {
         existing.visits += visitor.visits;
         for ip in visitor.ip_addresses {
@@ -561,6 +632,20 @@ fn acquisition_evidence(
     crawler_name: &str,
     visits: i64,
 ) -> TrafficEvidence {
+    const SEARCH_QUERY_KEYS: &[&str] = &[
+        "q",
+        "query",
+        "p",
+        "wd",
+        "text",
+        "search",
+        "search_query",
+        "search_term",
+        "searchterm",
+    ];
+    const KEYWORD_KEYS: &[&str] = &["utm_term", "keyword", "keywords"];
+    const AI_QUERY_KEYS: &[&str] = &["geo_query", "ai_query", "prompt", "question"];
+
     let parsed = url::Url::parse(referrer).ok();
     let landing = parse_landing_url(landing_url);
     let source = (!crawler_name.is_empty() && visitor_kind.ends_with("_crawler"))
@@ -582,60 +667,63 @@ fn acquisition_evidence(
             }
         });
     let agent = display_agent_name(&source);
-    let keyword = parsed.as_ref().and_then(|url| {
-        ["q", "query", "search", "text", "wd"]
-            .into_iter()
-            .find_map(|key| {
-                url.query_pairs()
-                    .find(|(name, _)| name == key)
-                    .map(|(_, value)| value.into_owned())
-            })
-    });
+    let search_query = first_query_value(parsed.as_ref(), landing.as_ref(), SEARCH_QUERY_KEYS);
+    let keyword = first_query_value(parsed.as_ref(), landing.as_ref(), KEYWORD_KEYS);
+    // Answer engines use both AI-specific keys (`prompt`, `question`) and the
+    // same provider-specific search keys as SEO (`wd`, `search`, `p`, ...).
+    // Reuse the normalized search term so GEO and SEO cannot drift apart.
+    let ai_query = first_query_value(parsed.as_ref(), landing.as_ref(), AI_QUERY_KEYS)
+        .or_else(|| search_query.clone());
     let attribution_topic = landing_query_value(
         landing.as_ref(),
-        &["geo_query", "prompt_topic", "utm_campaign", "utm_content"],
+        &["prompt_topic", "utm_campaign", "utm_content"],
     );
     let page = landing.as_ref().map(page_topic);
-    let (event, subject_kind, subject) = match kind {
+    let event = match kind {
         AcquisitionKind::Geo if visitor_kind == "ai_crawler" => {
-            let event = match crawler_name.to_ascii_lowercase().as_str() {
-                "chatgpt-user" => "User-requested fetch",
-                "oai-searchbot" => "Search indexing",
-                "gptbot" => "Model training crawl",
+            match crawler_name.to_ascii_lowercase().as_str() {
+                "chatgpt-user" | "claude-user" | "perplexity-user" | "doubao-user"
+                | "kimi-user" => "User-requested fetch",
+                "oai-searchbot" | "claude-searchbot" | "perplexitybot" | "kimi-searchbot" => {
+                    "AI search indexing"
+                }
+                "gptbot" | "claudebot" | "kimibot" => "Model training crawl",
                 _ => "AI crawl",
-            };
-            (
-                event.to_owned(),
-                attribution_topic
-                    .as_ref()
-                    .map(|_| "attributed_topic".to_owned())
-                    .or_else(|| page.as_ref().map(|_| "page".to_owned())),
-                attribution_topic.or(page),
-            )
-        }
-        AcquisitionKind::Geo => (
-            "Referral click".to_owned(),
-            attribution_topic
-                .as_ref()
-                .map(|_| "attributed_topic".to_owned())
-                .or_else(|| page.as_ref().map(|_| "landing_page".to_owned())),
-            attribution_topic.or(page),
-        ),
-        AcquisitionKind::Seo => (
-            if visitor_kind == "search_crawler" {
-                "Search indexing"
-            } else {
-                "Search referral"
             }
-            .to_owned(),
-            keyword
-                .as_ref()
-                .map(|_| "search_query".to_owned())
-                .or_else(|| page.as_ref().map(|_| "landing_page".to_owned())),
-            keyword.or(page),
-        ),
-        AcquisitionKind::Human => ("Visit".to_owned(), None, None),
+            .to_owned()
+        }
+        AcquisitionKind::Geo => "Referral click".to_owned(),
+        AcquisitionKind::Seo => if visitor_kind == "search_crawler" {
+            "Search indexing"
+        } else {
+            "Search referral"
+        }
+        .to_owned(),
+        AcquisitionKind::Human => "Visit".to_owned(),
     };
+    let selected_subject = match kind {
+        AcquisitionKind::Geo => ai_query
+            .map(|value| ("ai_query", value))
+            .or_else(|| keyword.map(|value| ("keyword", value)))
+            .or_else(|| attribution_topic.map(|value| ("attributed_topic", value)))
+            .or_else(|| {
+                page.map(|value| {
+                    if visitor_kind == "ai_crawler" {
+                        ("page", value)
+                    } else {
+                        ("landing_page", value)
+                    }
+                })
+            }),
+        AcquisitionKind::Seo => search_query
+            .map(|value| ("search_query", value))
+            .or_else(|| keyword.map(|value| ("keyword", value)))
+            .or_else(|| page.map(|value| ("landing_page", value))),
+        AcquisitionKind::Human => None,
+    };
+    let (subject_kind, subject) = selected_subject
+        .map(|(subject_kind, subject)| (subject_kind.to_owned(), subject))
+        .unzip();
     TrafficEvidence {
         agent,
         event,
@@ -694,21 +782,58 @@ fn display_agent_name(source: &str) -> String {
         "chatgpt.com" | "chatgpt" => "ChatGPT Referral".to_owned(),
         "oai-searchbot" => "OAI SearchBot".to_owned(),
         "gptbot" => "GPTBot".to_owned(),
-        "claudebot" | "claude.ai" | "claude" => "Claude".to_owned(),
+        "claudebot" => "ClaudeBot".to_owned(),
+        "claude-user" => "Claude User".to_owned(),
+        "claude-searchbot" => "Claude SearchBot".to_owned(),
+        "claude.ai" | "claude" => "Claude Referral".to_owned(),
         "perplexitybot" | "perplexity.ai" | "perplexity" => "Perplexity".to_owned(),
+        "perplexity-user" => "Perplexity User".to_owned(),
+        "deepseekbot" => "DeepSeek".to_owned(),
+        "chat.deepseek.com" | "deepseek.com" => "DeepSeek Referral".to_owned(),
+        "doubaobot" => "Doubao".to_owned(),
+        "doubao-user" => "Doubao User".to_owned(),
+        "bytedance bytespider" | "bytespider" => "ByteDance Bytespider".to_owned(),
+        "doubao.com" => "Doubao Referral".to_owned(),
+        "kimibot" => "KimiBot".to_owned(),
+        "kimi-user" => "Kimi User".to_owned(),
+        "kimi-searchbot" => "Kimi SearchBot".to_owned(),
+        "kimi.com" | "kimi.moonshot.cn" => "Kimi Referral".to_owned(),
+        "chatglm-spider" => "ChatGLM Spider".to_owned(),
+        "chatglm.cn" | "chat.z.ai" | "zhipuai.cn" => "ChatGLM Referral".to_owned(),
         "google-extended" | "gemini.google.com" | "gemini" => "Gemini".to_owned(),
         _ => source.to_owned(),
     }
 }
 
 fn landing_query_value(url: Option<&url::Url>, keys: &[&str]) -> Option<String> {
+    url_query_value(url, keys)
+}
+
+fn first_query_value(
+    referrer: Option<&url::Url>,
+    landing: Option<&url::Url>,
+    keys: &[&str],
+) -> Option<String> {
+    url_query_value(referrer, keys).or_else(|| landing_query_value(landing, keys))
+}
+
+fn url_query_value(url: Option<&url::Url>, keys: &[&str]) -> Option<String> {
     let url = url?;
-    keys.iter().find_map(|key| {
-        url.query_pairs()
-            .find(|(name, _)| name == *key)
-            .map(|(_, value)| value.into_owned())
-            .filter(|value| !value.trim().is_empty())
+    url.query_pairs().find_map(|(name, value)| {
+        keys.iter()
+            .any(|key| name.eq_ignore_ascii_case(key))
+            .then(|| normalize_evidence_subject(&value))
+            .flatten()
     })
+}
+
+fn normalize_evidence_subject(value: &str) -> Option<String> {
+    const MAX_SUBJECT_CHARS: usize = 240;
+    let normalized = value.split_whitespace().collect::<Vec<_>>().join(" ");
+    if normalized.is_empty() {
+        return None;
+    }
+    Some(normalized.chars().take(MAX_SUBJECT_CHARS).collect())
 }
 
 fn cached_stats(connection: &Connection) -> Result<StatsSummary, rusqlite::Error> {
@@ -903,7 +1028,7 @@ mod tests {
                 INSERT INTO stats_cache_source VALUES
                   ('blog', 'i_one', 'ai_chat', 4, '2026-07-17T00:00:00Z');
                 INSERT INTO stats_cache_location_v2 VALUES
-                  ('SG', 'Singapore', 1.3, 103.9, '[\"203.0.113.8\"]', 7, '2026-07-17T00:00:00Z');
+                  ('SG', '', '', 'Singapore', '', 'Holland Village', 'PPLX', 1.4, 1.3239, 103.79, 'Asia/Singapore', 5, '[\"203.0.113.8\"]', 7, '2026-07-17T00:00:00Z');
                 CREATE TABLE comments (is_approved INTEGER NOT NULL);
                 INSERT INTO comments VALUES (0), (1);
                 ",
@@ -922,9 +1047,17 @@ mod tests {
             snapshot.traffic.top_countries,
             vec![TrafficCountry {
                 country_code: "SG".to_owned(),
+                region_code: String::new(),
+                region_name: String::new(),
                 city: "Singapore".to_owned(),
-                latitude: "1.3".to_owned(),
-                longitude: "103.9".to_owned(),
+                postal_code: String::new(),
+                place_name: "Holland Village".to_owned(),
+                place_feature_code: "PPLX".to_owned(),
+                place_distance_km: "1.4".to_owned(),
+                latitude: "1.3239".to_owned(),
+                longitude: "103.7900".to_owned(),
+                time_zone: "Asia/Singapore".to_owned(),
+                accuracy_radius: 5,
                 ip_addresses: vec!["203.0.113.8".to_owned()],
                 visits: 7,
             }]
@@ -949,6 +1082,33 @@ mod tests {
         assert_eq!(search.subject.as_deref(), Some("personal context system"));
         assert_eq!(search.visits, 3);
 
+        let yahoo_search = acquisition_evidence(
+            AcquisitionKind::Seo,
+            "human",
+            "search",
+            "https://search.yahoo.com/search?p=typed+state+machines",
+            "",
+            "",
+            1,
+        );
+        assert_eq!(yahoo_search.subject_kind.as_deref(), Some("search_query"));
+        assert_eq!(
+            yahoo_search.subject.as_deref(),
+            Some("typed state machines")
+        );
+
+        let tracked_keyword = acquisition_evidence(
+            AcquisitionKind::Seo,
+            "human",
+            "search",
+            "https://www.google.com/",
+            "/blog/runtime?UTM_TERM=agent+runtime",
+            "",
+            1,
+        );
+        assert_eq!(tracked_keyword.subject_kind.as_deref(), Some("keyword"));
+        assert_eq!(tracked_keyword.subject.as_deref(), Some("agent runtime"));
+
         let geo = acquisition_evidence(
             AcquisitionKind::Geo,
             "human",
@@ -961,6 +1121,21 @@ mod tests {
         assert_eq!(geo.agent, "ChatGPT Referral");
         assert_eq!(geo.event, "Referral click");
         assert_eq!(geo.subject, None);
+
+        let geo_query = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "human",
+            "ai_chat",
+            "https://claude.ai/",
+            "/?AI_QUERY=how+does+agent+memory+work",
+            "",
+            1,
+        );
+        assert_eq!(geo_query.subject_kind.as_deref(), Some("ai_query"));
+        assert_eq!(
+            geo_query.subject.as_deref(),
+            Some("how does agent memory work")
+        );
 
         let crawler = acquisition_evidence(
             AcquisitionKind::Geo,
@@ -1017,5 +1192,59 @@ mod tests {
         assert_eq!(chatgpt_page.event, "User-requested fetch");
         assert_eq!(chatgpt_page.subject_kind.as_deref(), Some("page"));
         assert_eq!(chatgpt_page.subject.as_deref(), Some("Moments"));
+
+        let claude_user = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "ai_crawler",
+            "direct",
+            "",
+            "/blog/agent-memory",
+            "Claude-User",
+            1,
+        );
+        assert_eq!(claude_user.agent, "Claude User");
+        assert_eq!(claude_user.event, "User-requested fetch");
+
+        let kimi_search = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "ai_crawler",
+            "direct",
+            "",
+            "/blog/agent-memory?search=agent+memory+runtime",
+            "Kimi-SearchBot",
+            1,
+        );
+        assert_eq!(kimi_search.agent, "Kimi SearchBot");
+        assert_eq!(kimi_search.event, "AI search indexing");
+        assert_eq!(kimi_search.subject_kind.as_deref(), Some("ai_query"));
+        assert_eq!(kimi_search.subject.as_deref(), Some("agent memory runtime"));
+
+        let doubao_referral = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "human",
+            "ai_chat",
+            "https://www.doubao.com/chat/",
+            "/blog/agent-memory",
+            "",
+            1,
+        );
+        assert_eq!(doubao_referral.agent, "Doubao Referral");
+
+        let chatglm_crawler = acquisition_evidence(
+            AcquisitionKind::Geo,
+            "ai_crawler",
+            "direct",
+            "",
+            "/blog/agent-memory?wd=typed+agent+state",
+            "ChatGLM-Spider",
+            1,
+        );
+        assert_eq!(chatglm_crawler.agent, "ChatGLM Spider");
+        assert_eq!(chatglm_crawler.event, "AI crawl");
+        assert_eq!(chatglm_crawler.subject_kind.as_deref(), Some("ai_query"));
+        assert_eq!(
+            chatglm_crawler.subject.as_deref(),
+            Some("typed agent state")
+        );
     }
 }

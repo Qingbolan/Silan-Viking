@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/start-dev-server.mjs",
     "build": "tsc && vite build",
     "generate:icon": "python3 scripts/generate_icon.py && tauri icon src-tauri/icons/app-icon.png",
     "tauri": "tauri",

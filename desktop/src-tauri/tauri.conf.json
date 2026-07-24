@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "identifier": "tech.silan.desktop",
   "build": {
-    "beforeDevCommand": "npm run dev -- --host 127.0.0.1 --port 5184",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://127.0.0.1:5184",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"

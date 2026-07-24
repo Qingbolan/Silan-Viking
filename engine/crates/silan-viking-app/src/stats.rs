@@ -81,11 +81,27 @@ pub struct VisitorRow {
     #[serde(default)]
     pub country_code: String,
     #[serde(default)]
+    pub region_code: String,
+    #[serde(default)]
+    pub region_name: String,
+    #[serde(default)]
     pub city: String,
+    #[serde(default)]
+    pub postal_code: String,
+    #[serde(default)]
+    pub place_name: String,
+    #[serde(default)]
+    pub place_feature_code: String,
+    #[serde(default)]
+    pub place_distance_km: f64,
     #[serde(default)]
     pub latitude: f64,
     #[serde(default)]
     pub longitude: f64,
+    #[serde(default)]
+    pub time_zone: String,
+    #[serde(default)]
+    pub accuracy_radius: i64,
     /// RFC-3339 timestamp of the last visit.
     pub last_seen_at: String,
 }
@@ -139,11 +155,27 @@ struct SnapshotResponse {
 struct CountryItem {
     country_code: String,
     #[serde(default)]
+    region_code: String,
+    #[serde(default)]
+    region_name: String,
+    #[serde(default)]
     city: String,
+    #[serde(default)]
+    postal_code: String,
+    #[serde(default)]
+    place_name: String,
+    #[serde(default)]
+    place_feature_code: String,
+    #[serde(default)]
+    place_distance_km: f64,
     #[serde(default)]
     latitude: f64,
     #[serde(default)]
     longitude: f64,
+    #[serde(default)]
+    time_zone: String,
+    #[serde(default)]
+    accuracy_radius: i64,
     #[serde(default)]
     ip_addresses: Vec<String>,
     count: i64,
@@ -189,9 +221,17 @@ CREATE TABLE IF NOT EXISTS stats_cache_visitor (
     landing_url   TEXT NOT NULL DEFAULT '',
     crawler_name  TEXT NOT NULL DEFAULT '',
     country_code  TEXT NOT NULL DEFAULT '',
+    region_code   TEXT NOT NULL DEFAULT '',
+    region_name   TEXT NOT NULL DEFAULT '',
     city          TEXT NOT NULL DEFAULT '',
+    postal_code   TEXT NOT NULL DEFAULT '',
+    place_name    TEXT NOT NULL DEFAULT '',
+    place_feature_code TEXT NOT NULL DEFAULT '',
+    place_distance_km REAL NOT NULL DEFAULT 0,
     latitude      REAL NOT NULL DEFAULT 0,
     longitude     REAL NOT NULL DEFAULT 0,
+    time_zone     TEXT NOT NULL DEFAULT '',
+    accuracy_radius INTEGER NOT NULL DEFAULT 0,
     last_seen_at  TEXT NOT NULL,
     synced_at     TEXT NOT NULL
 );
@@ -211,13 +251,21 @@ CREATE TABLE IF NOT EXISTS stats_cache_source (
 );
 CREATE TABLE IF NOT EXISTS stats_cache_location_v2 (
     country_code TEXT NOT NULL,
+    region_code  TEXT NOT NULL,
+    region_name  TEXT NOT NULL,
     city         TEXT NOT NULL,
+    postal_code  TEXT NOT NULL,
+    place_name   TEXT NOT NULL,
+    place_feature_code TEXT NOT NULL,
+    place_distance_km REAL NOT NULL,
     latitude     REAL NOT NULL,
     longitude    REAL NOT NULL,
+    time_zone    TEXT NOT NULL,
+    accuracy_radius INTEGER NOT NULL,
     ip_addresses TEXT NOT NULL,
     count        INTEGER NOT NULL,
     synced_at    TEXT NOT NULL,
-    PRIMARY KEY (country_code, city, latitude, longitude)
+    PRIMARY KEY (country_code, region_code, region_name, city, postal_code, place_name, place_feature_code, place_distance_km, latitude, longitude, time_zone, accuracy_radius)
 );
 ";
 
@@ -230,11 +278,31 @@ pub fn ensure_cache_schema(db: &Path) -> Result<(), StatsError> {
         ("crawler_name", "TEXT NOT NULL DEFAULT ''"),
         ("landing_url", "TEXT NOT NULL DEFAULT ''"),
         ("country_code", "TEXT NOT NULL DEFAULT ''"),
+        ("region_code", "TEXT NOT NULL DEFAULT ''"),
+        ("region_name", "TEXT NOT NULL DEFAULT ''"),
         ("city", "TEXT NOT NULL DEFAULT ''"),
+        ("postal_code", "TEXT NOT NULL DEFAULT ''"),
+        ("place_name", "TEXT NOT NULL DEFAULT ''"),
+        ("place_feature_code", "TEXT NOT NULL DEFAULT ''"),
+        ("place_distance_km", "REAL NOT NULL DEFAULT 0"),
         ("latitude", "REAL NOT NULL DEFAULT 0"),
         ("longitude", "REAL NOT NULL DEFAULT 0"),
+        ("time_zone", "TEXT NOT NULL DEFAULT ''"),
+        ("accuracy_radius", "INTEGER NOT NULL DEFAULT 0"),
     ] {
         ensure_cache_column(&conn, "stats_cache_visitor", column, declaration)?;
+    }
+    for (column, declaration) in [
+        ("region_code", "TEXT NOT NULL DEFAULT ''"),
+        ("region_name", "TEXT NOT NULL DEFAULT ''"),
+        ("postal_code", "TEXT NOT NULL DEFAULT ''"),
+        ("place_name", "TEXT NOT NULL DEFAULT ''"),
+        ("place_feature_code", "TEXT NOT NULL DEFAULT ''"),
+        ("place_distance_km", "REAL NOT NULL DEFAULT 0"),
+        ("time_zone", "TEXT NOT NULL DEFAULT ''"),
+        ("accuracy_radius", "INTEGER NOT NULL DEFAULT 0"),
+    ] {
+        ensure_cache_column(&conn, "stats_cache_location_v2", column, declaration)?;
     }
     Ok(())
 }
@@ -405,9 +473,11 @@ impl StatsSync {
             tx.execute(
                 "INSERT INTO stats_cache_visitor
                  (entity_type, entity_id, fingerprint, ip_masked, visitor_kind,
-                  referrer_kind, referrer, landing_url, crawler_name, country_code, city,
-                  latitude, longitude, last_seen_at, synced_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+                  referrer_kind, referrer, landing_url, crawler_name, country_code,
+                  region_code, region_name, city, postal_code, place_name, place_feature_code,
+                  place_distance_km, latitude, longitude, time_zone, accuracy_radius,
+                  last_seen_at, synced_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)",
                 rusqlite::params![
                     entity_type,
                     entity_id,
@@ -419,9 +489,17 @@ impl StatsSync {
                     v.landing_url,
                     v.crawler_name,
                     v.country_code,
+                    v.region_code,
+                    v.region_name,
                     v.city,
+                    v.postal_code,
+                    v.place_name,
+                    v.place_feature_code,
+                    v.place_distance_km,
                     v.latitude,
                     v.longitude,
+                    v.time_zone,
+                    v.accuracy_radius,
                     v.last_seen_at,
                     stamp
                 ],
@@ -482,9 +560,11 @@ impl StatsSync {
                 tx.execute(
                     "INSERT INTO stats_cache_visitor
                      (entity_type, entity_id, fingerprint, ip_masked, visitor_kind,
-                      referrer_kind, referrer, landing_url, crawler_name, country_code, city,
-                      latitude, longitude, last_seen_at, synced_at)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
+                      referrer_kind, referrer, landing_url, crawler_name, country_code,
+                      region_code, region_name, city, postal_code, place_name, place_feature_code,
+                      place_distance_km, latitude, longitude, time_zone, accuracy_radius,
+                      last_seen_at, synced_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)",
                     rusqlite::params![
                         stats.entity_type,
                         stats.entity_id,
@@ -496,9 +576,17 @@ impl StatsSync {
                         visitor.landing_url,
                         visitor.crawler_name,
                         visitor.country_code,
+                        visitor.region_code,
+                        visitor.region_name,
                         visitor.city,
+                        visitor.postal_code,
+                        visitor.place_name,
+                        visitor.place_feature_code,
+                        visitor.place_distance_km,
                         visitor.latitude,
                         visitor.longitude,
+                        visitor.time_zone,
+                        visitor.accuracy_radius,
                         visitor.last_seen_at,
                         stamp
                     ],
@@ -536,13 +624,23 @@ impl StatsSync {
         for country in &snapshot.countries {
             tx.execute(
                 "INSERT INTO stats_cache_location_v2
-                 (country_code, city, latitude, longitude, ip_addresses, count, synced_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                 (country_code, region_code, region_name, city, postal_code, latitude,
+                  longitude, time_zone, accuracy_radius, place_name, place_feature_code,
+                  place_distance_km, ip_addresses, count, synced_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)",
                 rusqlite::params![
                     country.country_code,
+                    country.region_code,
+                    country.region_name,
                     country.city,
+                    country.postal_code,
                     country.latitude,
                     country.longitude,
+                    country.time_zone,
+                    country.accuracy_radius,
+                    country.place_name,
+                    country.place_feature_code,
+                    country.place_distance_km,
                     serde_json::to_string(&country.ip_addresses)
                         .map_err(|error| StatsError::Decode(error.to_string()))?,
                     country.count,
@@ -707,8 +805,9 @@ impl StatsCache {
         let mut stmt = conn
             .prepare(
                 "SELECT fingerprint, ip_masked, visitor_kind, referrer_kind, referrer,
-                        landing_url, crawler_name, country_code, city, latitude, longitude,
-                        last_seen_at
+                        landing_url, crawler_name, country_code, region_code, region_name,
+                        city, postal_code, place_name, place_feature_code, place_distance_km,
+                        latitude, longitude, time_zone, accuracy_radius, last_seen_at
                  FROM stats_cache_visitor WHERE entity_type = ?1 AND entity_id = ?2
                  ORDER BY last_seen_at",
             )
@@ -724,10 +823,18 @@ impl StatsCache {
                     landing_url: row.get(5)?,
                     crawler_name: row.get(6)?,
                     country_code: row.get(7)?,
-                    city: row.get(8)?,
-                    latitude: row.get(9)?,
-                    longitude: row.get(10)?,
-                    last_seen_at: row.get(11)?,
+                    region_code: row.get(8)?,
+                    region_name: row.get(9)?,
+                    city: row.get(10)?,
+                    postal_code: row.get(11)?,
+                    place_name: row.get(12)?,
+                    place_feature_code: row.get(13)?,
+                    place_distance_km: row.get(14)?,
+                    latitude: row.get(15)?,
+                    longitude: row.get(16)?,
+                    time_zone: row.get(17)?,
+                    accuracy_radius: row.get(18)?,
+                    last_seen_at: row.get(19)?,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -835,7 +942,7 @@ mod tests {
             assert!(request.starts_with("GET /api/v1/stats/snapshot "));
             assert!(request.contains("\r\nAuthorization: Bearer stats-contract-token\r\n"));
             observed.fetch_add(1, Ordering::SeqCst);
-            let body = r#"{"generated_at":"2026-07-17T00:00:00Z","items":[{"stats":{"entity_type":"blog","entity_id":"i_one","views":8,"likes":2,"comments":1},"visitors":[],"crawlers":[{"visitor_kind":"ai_crawler","count":3}],"sources":[{"source":"ai_chat","count":2}]}],"countries":[{"country_code":"SG","city":"Singapore","latitude":1.3,"longitude":103.9,"ip_addresses":["203.0.113.8"],"count":7}]}"#;
+            let body = r#"{"generated_at":"2026-07-17T00:00:00Z","items":[{"stats":{"entity_type":"blog","entity_id":"i_one","views":8,"likes":2,"comments":1},"visitors":[],"crawlers":[{"visitor_kind":"ai_crawler","count":3}],"sources":[{"source":"ai_chat","count":2}]}],"countries":[{"country_code":"SG","region_code":"","region_name":"","city":"Singapore","postal_code":"","place_name":"Holland Village","place_feature_code":"PPLX","place_distance_km":1.4,"latitude":1.3239,"longitude":103.79,"time_zone":"Asia/Singapore","accuracy_radius":5,"ip_addresses":["203.0.113.8"],"count":7}]}"#;
             write!(
                 stream,
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
@@ -863,23 +970,68 @@ mod tests {
             8
         );
         let connection = Connection::open(directory.path().join("portfolio.db")).expect("db");
-        let country: (String, String, f64, f64, String, i64) = connection
+        #[derive(Debug, PartialEq)]
+        struct CountryCacheRow {
+            country_code: String,
+            region_code: String,
+            region_name: String,
+            city: String,
+            postal_code: String,
+            latitude: f64,
+            longitude: f64,
+            time_zone: String,
+            place_name: String,
+            place_feature_code: String,
+            place_distance_km: f64,
+            accuracy_radius: i64,
+            ip_addresses: String,
+            count: i64,
+        }
+        let country: CountryCacheRow = connection
             .query_row(
-                "SELECT country_code, city, latitude, longitude, ip_addresses, count FROM stats_cache_location_v2",
+                "SELECT country_code, region_code, region_name, city, postal_code,
+                        latitude, longitude, time_zone, place_name, place_feature_code,
+                        place_distance_km, accuracy_radius, ip_addresses, count
+                 FROM stats_cache_location_v2",
                 [],
-                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)),
+                |row| {
+                    Ok(CountryCacheRow {
+                        country_code: row.get(0)?,
+                        region_code: row.get(1)?,
+                        region_name: row.get(2)?,
+                        city: row.get(3)?,
+                        postal_code: row.get(4)?,
+                        latitude: row.get(5)?,
+                        longitude: row.get(6)?,
+                        time_zone: row.get(7)?,
+                        place_name: row.get(8)?,
+                        place_feature_code: row.get(9)?,
+                        place_distance_km: row.get(10)?,
+                        accuracy_radius: row.get(11)?,
+                        ip_addresses: row.get(12)?,
+                        count: row.get(13)?,
+                    })
+                },
             )
             .expect("country cache");
         assert_eq!(
             country,
-            (
-                "SG".to_owned(),
-                "Singapore".to_owned(),
-                1.3,
-                103.9,
-                "[\"203.0.113.8\"]".to_owned(),
-                7
-            )
+            CountryCacheRow {
+                country_code: "SG".to_owned(),
+                region_code: String::new(),
+                region_name: String::new(),
+                city: "Singapore".to_owned(),
+                postal_code: String::new(),
+                latitude: 1.3239,
+                longitude: 103.79,
+                time_zone: "Asia/Singapore".to_owned(),
+                place_name: "Holland Village".to_owned(),
+                place_feature_code: "PPLX".to_owned(),
+                place_distance_km: 1.4,
+                accuracy_radius: 5,
+                ip_addresses: "[\"203.0.113.8\"]".to_owned(),
+                count: 7,
+            }
         );
     }
 

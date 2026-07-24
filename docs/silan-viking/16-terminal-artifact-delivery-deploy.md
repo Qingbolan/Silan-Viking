@@ -88,7 +88,7 @@ collapses to one thing: **have Docker.**
 The backend uses `mattn/go-sqlite3` (CGO). `backend.Dockerfile`
 keeps the `golang:1.24-bookworm` build stage (gcc + libc6-dev
 pre-installed), building from the `backend/` source extracted in the
-staging directory. Symmetric to the frontend's `node:20` build
+staging directory. Symmetric to the frontend's `node:22` build
 stage — both follow "engine-embedded source tar → Docker multi-stage
 isolated build"; the architecture is consistent. We do not
 pre-compile cross-arch binaries: Go/Node container builds are fast

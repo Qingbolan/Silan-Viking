@@ -182,9 +182,17 @@ impl DesktopWorkspace {
                 .into_iter()
                 .map(|country| TrafficCountry {
                     country_code: country.country_code,
+                    region_code: country.region_code,
+                    region_name: country.region_name,
                     city: country.city,
+                    postal_code: country.postal_code,
+                    place_name: country.place_name,
+                    place_feature_code: country.place_feature_code,
+                    place_distance_km: country.place_distance_km,
                     latitude: country.latitude,
                     longitude: country.longitude,
+                    time_zone: country.time_zone,
+                    accuracy_radius: country.accuracy_radius,
                     ip_addresses: country.ip_addresses,
                     visits: country.visits,
                 })
@@ -1166,9 +1174,17 @@ fn map_daily_traffic(days: Vec<silan_viking_app::DailyTraffic>) -> Vec<DailyTraf
                         .into_iter()
                         .map(|visitor| VisitorLocation {
                             country_code: visitor.country_code,
+                            region_code: visitor.region_code,
+                            region_name: visitor.region_name,
                             city: visitor.city,
+                            postal_code: visitor.postal_code,
+                            place_name: visitor.place_name,
+                            place_feature_code: visitor.place_feature_code,
+                            place_distance_km: visitor.place_distance_km,
                             latitude: visitor.latitude,
                             longitude: visitor.longitude,
+                            time_zone: visitor.time_zone,
+                            accuracy_radius: visitor.accuracy_radius,
                             ip_addresses: visitor.ip_addresses,
                             visits: visitor.visits,
                         })

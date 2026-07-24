@@ -94,9 +94,17 @@ export type DailyTraffic = {
 
 export type VisitorLocation = {
   country_code: string;
+  region_code: string;
+  region_name: string;
   city: string;
+  postal_code: string;
+  place_name: string;
+  place_feature_code: string;
+  place_distance_km: string;
   latitude: string;
   longitude: string;
+  time_zone: string;
+  accuracy_radius: number;
   ip_addresses: string[];
   visits: number;
 };
@@ -104,7 +112,7 @@ export type VisitorLocation = {
 export type TrafficEvidence = {
   agent: string;
   event: string;
-  subject_kind: 'attributed_topic' | 'page' | 'landing_page' | 'search_query' | null;
+  subject_kind: 'ai_query' | 'attributed_topic' | 'keyword' | 'page' | 'landing_page' | 'search_query' | null;
   subject: string | null;
   visits: number;
 };
@@ -142,9 +150,17 @@ export type DashboardData = {
   }>;
   top_countries: Array<{
     country_code: string;
+    region_code: string;
+    region_name: string;
     city: string;
+    postal_code: string;
+    place_name: string;
+    place_feature_code: string;
+    place_distance_km: string;
     latitude: string;
     longitude: string;
+    time_zone: string;
+    accuracy_radius: number;
     ip_addresses: string[];
     visits: number;
   }>;

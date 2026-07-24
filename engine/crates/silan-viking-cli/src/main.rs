@@ -8,14 +8,15 @@ mod skill;
 
 use rusqlite::{params, Connection, OptionalExtension};
 use silan_viking_app::{
-    optimize_media_asset, optimize_media_tree, ContentKind, CredentialProfile, Identified,
+    optimize_media_tree, stage_deploy_media_asset, ContentKind, CredentialProfile, Identified,
     ProposalId, ScannedAsset, Workspace, MEDIA_OPTIMIZER_VERSION,
 };
 use std::env;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::time::{Duration, Instant};
 
 /// The canonical `content/SCHEMA.md`, embedded so `silan init` writes a
 /// schema the engine can actually parse (it needs the fenced ```yaml``` block).
@@ -2631,7 +2632,7 @@ fn site_build(
 ) -> Result<(), String> {
     if !target.is_default() {
         let project_root = content_root.parent().unwrap_or(content_root);
-        let dist = build_frontend_target(project_root, &target, None)?;
+        let dist = build_frontend_target(project_root, &target, None, true)?;
         println!(
             "built frontend target={} out={}",
             target.label(),
@@ -2657,6 +2658,7 @@ fn build_frontend_target(
     project_root: &Path,
     target: &FrontendBuildTarget,
     credential_profile: Option<&CredentialProfile>,
+    optimize_media: bool,
 ) -> Result<PathBuf, String> {
     let frontend = project_root.join("frontend");
     if !frontend.is_dir() {
@@ -2706,15 +2708,17 @@ fn build_frontend_target(
     if target.is_default() {
         assert_seo_prerender(&dist)?;
     }
-    let optimization = optimize_media_tree(&dist)
-        .map_err(|error| format!("[frontend] optimize dist media: {error}"))?;
-    if optimization.files_seen > 0 {
-        println!(
-            "[frontend] optimized {}/{} media file(s), saved {} bytes",
-            optimization.files_optimized,
-            optimization.files_seen,
-            optimization.saved_bytes(),
-        );
+    if optimize_media {
+        let optimization = optimize_media_tree(&dist)
+            .map_err(|error| format!("[frontend] optimize dist media: {error}"))?;
+        if optimization.files_seen > 0 {
+            println!(
+                "[frontend] optimized {}/{} media file(s), saved {} bytes",
+                optimization.files_optimized,
+                optimization.files_seen,
+                optimization.saved_bytes(),
+            );
+        }
     }
     Ok(dist)
 }
@@ -2723,8 +2727,15 @@ fn assert_seo_prerender(dist: &Path) -> Result<(), String> {
     let index = dist.join("index.html");
     let html = fs::read_to_string(&index)
         .map_err(|error| format!("[frontend] cannot read {}: {error}", index.display()))?;
+    let has_rendered_root =
+        html.contains("<div id=\"root\"><div") || html.contains("data-silan-prerender-shell=");
+    if !has_rendered_root {
+        return Err(format!(
+            "[frontend] SEO prerender check failed: {} has neither a prerendered root nor an explicit prerender shell",
+            index.display()
+        ));
+    }
     for needle in [
-        "<div id=\"root\"><div",
         "I am an NUS PhD student",
         "Silan Hu",
         "GEM-Bench",
@@ -3059,6 +3070,687 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
     })
 }
 
+const SSH_CONNECT_TIMEOUT_SECS: &str = "10";
+const SSH_SERVER_ALIVE_INTERVAL_SECS: &str = "10";
+const SSH_SERVER_ALIVE_COUNT_MAX: &str = "3";
+const ARTIFACT_TRANSFER_TIMEOUT_SECS: u64 = 300;
+const ARTIFACT_TRANSFER_ATTEMPTS: usize = 3;
+
+fn ssh_target(cfg: &DeployConfig) -> String {
+    format!("{}@{}", cfg.user, cfg.host)
+}
+
+fn append_ssh_options(cmd: &mut Command, cfg: &DeployConfig, port_flag: &str) {
+    if !cfg.ssh_key_path.as_os_str().is_empty() {
+        cmd.arg("-i").arg(&cfg.ssh_key_path);
+    }
+    if cfg.ssh_port != 22 {
+        cmd.arg(port_flag).arg(cfg.ssh_port.to_string());
+    }
+    cmd.args([
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+        "-o",
+        "ConnectTimeout=10",
+        "-o",
+        "ServerAliveInterval=10",
+        "-o",
+        "ServerAliveCountMax=3",
+    ]);
+}
+
+fn shell_quote(value: &str) -> String {
+    if value.is_empty() {
+        return "''".to_owned();
+    }
+    format!("'{}'", value.replace('\'', "'\"'\"'"))
+}
+
+fn run_status_with_timeout(
+    cmd: &mut Command,
+    timeout: Duration,
+    label: &str,
+) -> Result<std::process::ExitStatus, String> {
+    let child = cmd.spawn().map_err(|error| format!("{label}: {error}"))?;
+    wait_child_with_timeout(child, timeout, label)
+}
+
+fn remote_file_md5(cfg: &DeployConfig, remote_path: &str) -> Result<Option<String>, String> {
+    let path = shell_quote(remote_path);
+    let raw = ssh_exec(
+        cfg,
+        &format!("if [ -f {path} ]; then md5sum {path} | awk '{{print $1}}'; fi"),
+    )?;
+    let hash = raw.trim();
+    if hash.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(hash.to_owned()))
+    }
+}
+
+struct RemoteArtifactTransport<'a> {
+    cfg: &'a DeployConfig,
+    timeout: Duration,
+    attempts: usize,
+}
+
+impl<'a> RemoteArtifactTransport<'a> {
+    fn new(cfg: &'a DeployConfig) -> Self {
+        Self {
+            cfg,
+            timeout: Duration::from_secs(ARTIFACT_TRANSFER_TIMEOUT_SECS),
+            attempts: ARTIFACT_TRANSFER_ATTEMPTS,
+        }
+    }
+
+    fn upload_file_atomic(&self, local: &Path, remote: &str, label: &str) -> Result<(), String> {
+        if !local.is_file() {
+            return Err(format!(
+                "[transfer] {label}: {} is not a regular file",
+                local.display()
+            ));
+        }
+        let expected_hash = md5_file(local)?;
+        if remote_file_md5(self.cfg, remote)?.as_deref() == Some(expected_hash.as_str()) {
+            println!("[transfer] {label}: remote already has md5 {expected_hash}; skip upload");
+            return Ok(());
+        }
+
+        let mut last_error = None;
+        for attempt in 1..=self.attempts {
+            let remote_tmp = self.remote_tmp_path(remote);
+            println!(
+                "[transfer] {label}: upload attempt {attempt}/{} → {remote}",
+                self.attempts
+            );
+            let result = self
+                .upload_with_rsync(local, &remote_tmp, remote, &expected_hash, label)
+                .or_else(|rsync_error| {
+                    eprintln!("[transfer] {label}: rsync failed ({rsync_error}); falling back to ssh stream");
+                    self.upload_with_ssh_stream(local, &remote_tmp, remote, &expected_hash, label)
+                });
+            match result {
+                Ok(()) => {
+                    if remote_file_md5(self.cfg, remote)?.as_deref() == Some(expected_hash.as_str())
+                    {
+                        println!("[transfer] {label}: verified md5 {expected_hash}");
+                        return Ok(());
+                    }
+                    last_error = Some(format!(
+                        "[transfer] {label}: remote md5 changed after atomic move"
+                    ));
+                }
+                Err(error) => {
+                    let _ = ssh_exec(self.cfg, &format!("rm -f {}", shell_quote(&remote_tmp)));
+                    last_error = Some(error);
+                }
+            }
+        }
+        Err(last_error.unwrap_or_else(|| format!("[transfer] {label}: upload failed")))
+    }
+
+    fn download_file_verified(
+        &self,
+        remote: &str,
+        local: &Path,
+        label: &str,
+    ) -> Result<(), String> {
+        let expected_hash = remote_file_md5(self.cfg, remote)?
+            .ok_or_else(|| format!("[transfer] {label}: remote file missing: {remote}"))?;
+        let tmp = local.with_extension(format!(
+            "download-{}-{}.tmp",
+            std::process::id(),
+            time::OffsetDateTime::now_utc().unix_timestamp_nanos()
+        ));
+        let mut last_error = None;
+        for attempt in 1..=self.attempts {
+            println!(
+                "[transfer] {label}: download attempt {attempt}/{} ← {remote}",
+                self.attempts
+            );
+            let result = self
+                .download_with_rsync(remote, &tmp, &expected_hash, label)
+                .or_else(|rsync_error| {
+                    eprintln!("[transfer] {label}: rsync download unavailable/failed ({rsync_error}); falling back to ssh stream");
+                    self.download_with_ssh_stream(remote, &tmp, &expected_hash, label)
+                });
+            match result {
+                Ok(()) => {
+                    fs::rename(&tmp, local).map_err(|error| {
+                        format!(
+                            "[transfer] {label}: move {} → {}: {error}",
+                            tmp.display(),
+                            local.display()
+                        )
+                    })?;
+                    println!("[transfer] {label}: verified md5 {expected_hash}");
+                    return Ok(());
+                }
+                Err(error) => {
+                    let _ = fs::remove_file(&tmp);
+                    last_error = Some(error);
+                }
+            }
+        }
+        Err(last_error.unwrap_or_else(|| format!("[transfer] {label}: download failed")))
+    }
+
+    fn sync_frontend_dist(&self, dist: &Path, remote_dir: &str) -> Result<(), String> {
+        if !dist.is_dir() {
+            return Err(format!(
+                "[frontend] dist directory not found: {}",
+                dist.display()
+            ));
+        }
+        ssh_exec(
+            self.cfg,
+            &format!(
+                "mkdir -p {} {}",
+                shell_quote(remote_dir),
+                shell_quote(&format!("{remote_dir}/assets"))
+            ),
+        )?;
+        self.rsync_frontend_root(dist, remote_dir)?;
+        let assets = dist.join("assets");
+        if assets.is_dir() {
+            self.rsync_frontend_assets(&assets, remote_dir)?;
+        }
+        ssh_exec(
+            self.cfg,
+            &format!(
+                "cd {} && find . -maxdepth 4 -name '._*' -delete && \
+                 find assets -maxdepth 1 -type f -name '*.map' -delete",
+                shell_quote(remote_dir)
+            ),
+        )?;
+        Ok(())
+    }
+
+    fn sync_backend_source(&self, backend: &Path, remote_build_dir: &str) -> Result<(), String> {
+        if !backend.is_dir() {
+            return Err(format!(
+                "[backend] source directory not found: {}",
+                backend.display()
+            ));
+        }
+        ssh_exec(
+            self.cfg,
+            &format!("mkdir -p {}", shell_quote(remote_build_dir)),
+        )?;
+        let mut cmd = Command::new("rsync");
+        cmd.args([
+            "-az",
+            "--delete",
+            "--exclude=.git/",
+            "--exclude=*.log",
+            "--exclude=silan-backend",
+            "--exclude=silan-backend-mac",
+            "--exclude=._*",
+            "--exclude=.DS_Store",
+        ]);
+        cmd.arg("-e").arg(self.rsync_ssh_command());
+        cmd.arg(format!("{}/", backend.display()));
+        cmd.arg(format!(
+            "{}:{}/",
+            ssh_target(self.cfg),
+            remote_build_dir.trim_end_matches('/')
+        ));
+        let status = run_status_with_timeout(&mut cmd, self.timeout, "[backend] rsync source")?;
+        if !status.success() {
+            return Err(format!(
+                "[backend] rsync source exited with status {status}"
+            ));
+        }
+        Ok(())
+    }
+
+    fn rsync_frontend_root(&self, dist: &Path, remote_dir: &str) -> Result<(), String> {
+        let mut cmd = Command::new("rsync");
+        cmd.args([
+            "-az",
+            "--delete",
+            "--exclude=/api/",
+            "--exclude=/.well-known/",
+            "--exclude=/.user.ini",
+            "--exclude=/assets/",
+        ]);
+        cmd.arg("-e").arg(self.rsync_ssh_command());
+        cmd.arg(format!("{}/", dist.display()));
+        cmd.arg(format!(
+            "{}:{}/",
+            ssh_target(self.cfg),
+            remote_dir.trim_end_matches('/')
+        ));
+        let status = run_status_with_timeout(&mut cmd, self.timeout, "[frontend] rsync root")?;
+        if !status.success() {
+            return Err(format!("[frontend] rsync root exited with status {status}"));
+        }
+        Ok(())
+    }
+
+    fn rsync_frontend_assets(&self, assets: &Path, remote_dir: &str) -> Result<(), String> {
+        let mut cmd = Command::new("rsync");
+        cmd.args(["-az"]);
+        cmd.arg("-e").arg(self.rsync_ssh_command());
+        cmd.arg(format!("{}/", assets.display()));
+        cmd.arg(format!(
+            "{}:{}/assets/",
+            ssh_target(self.cfg),
+            remote_dir.trim_end_matches('/')
+        ));
+        let status = run_status_with_timeout(&mut cmd, self.timeout, "[frontend] rsync assets")?;
+        if !status.success() {
+            return Err(format!(
+                "[frontend] rsync assets exited with status {status}"
+            ));
+        }
+        Ok(())
+    }
+
+    fn sync_media_tree(
+        &self,
+        media_root: &Path,
+        remote_media: &str,
+        generation_hash: &str,
+    ) -> Result<(), String> {
+        if !media_root.is_dir() {
+            return Err(format!(
+                "[content] media staging directory not found: {}",
+                media_root.display()
+            ));
+        }
+        let generation = format!(
+            "{}-{}",
+            std::process::id(),
+            time::OffsetDateTime::now_utc().unix_timestamp_nanos()
+        );
+        let remote_media_next = format!("{remote_media}.next-{generation}");
+        let remote_media_previous = format!("{remote_media}.previous-{generation}");
+        let remote_media_hash = format!("{remote_media}.generation-md5");
+        let prepare = format!(
+            "set -e; \
+             rm -rf {next} {previous}; \
+             mkdir -p {next}; \
+             if [ -d {live} ]; then cp -a {live}/. {next}/; fi",
+            next = shell_quote(&remote_media_next),
+            previous = shell_quote(&remote_media_previous),
+            live = shell_quote(remote_media),
+        );
+        ssh_exec(self.cfg, &prepare)?;
+
+        let publish = (|| -> Result<(), String> {
+            let mut cmd = Command::new("rsync");
+            cmd.args(["-az", "--delete"]);
+            cmd.arg("-e").arg(self.rsync_ssh_command());
+            cmd.arg(format!("{}/", media_root.display()));
+            cmd.arg(format!(
+                "{}:{}/",
+                ssh_target(self.cfg),
+                remote_media_next.trim_end_matches('/')
+            ));
+            let status = run_status_with_timeout(&mut cmd, self.timeout, "[content] rsync media")?;
+            if !status.success() {
+                return Err(format!("[content] rsync media exited with status {status}"));
+            }
+            ssh_exec(
+                self.cfg,
+                &format!(
+                    "set -e; \
+                     if [ -d {live} ]; then mv {live} {previous}; fi; \
+                     if mv {next} {live}; then \
+                       printf '%s\\n' {hash} > {hash_file}.next; \
+                       mv {hash_file}.next {hash_file}; \
+                       rm -rf {previous}; \
+                     else \
+                       rm -rf {next}; \
+                       if [ -d {previous} ]; then mv {previous} {live}; fi; \
+                       exit 1; \
+                     fi",
+                    next = shell_quote(&remote_media_next),
+                    previous = shell_quote(&remote_media_previous),
+                    live = shell_quote(remote_media),
+                    hash = shell_quote(generation_hash),
+                    hash_file = shell_quote(&remote_media_hash),
+                ),
+            )?;
+            Ok(())
+        })();
+        if publish.is_err() {
+            let _ = ssh_exec(
+                self.cfg,
+                &format!(
+                    "rm -rf {next}; \
+                     if [ ! -d {live} ] && [ -d {previous} ]; then mv {previous} {live}; fi",
+                    next = shell_quote(&remote_media_next),
+                    previous = shell_quote(&remote_media_previous),
+                    live = shell_quote(remote_media),
+                ),
+            );
+        }
+        publish
+    }
+
+    fn upload_with_rsync(
+        &self,
+        local: &Path,
+        remote_tmp: &str,
+        remote: &str,
+        expected_hash: &str,
+        label: &str,
+    ) -> Result<(), String> {
+        let remote_parent = format!("$(dirname {})", shell_quote(remote_tmp));
+        ssh_exec(
+            self.cfg,
+            &format!(
+                "mkdir -p {remote_parent} && \
+                 if [ -f {remote} ]; then cp -f {remote} {tmp}; else rm -f {tmp}; fi",
+                remote = shell_quote(remote),
+                tmp = shell_quote(remote_tmp),
+            ),
+        )?;
+
+        let mut cmd = Command::new("rsync");
+        cmd.args(["-az", "--partial", "--inplace"]);
+        cmd.arg("-e").arg(self.rsync_ssh_command());
+        cmd.arg(local);
+        cmd.arg(format!("{}:{}", ssh_target(self.cfg), remote_tmp));
+        let status = run_status_with_timeout(
+            &mut cmd,
+            self.timeout,
+            &format!("[transfer] {label}: rsync"),
+        )?;
+        if !status.success() {
+            return Err(format!(
+                "[transfer] {label}: rsync exited with status {status}"
+            ));
+        }
+        self.verify_and_promote(remote_tmp, remote, expected_hash, label)
+    }
+
+    fn download_with_rsync(
+        &self,
+        remote: &str,
+        local_tmp: &Path,
+        expected_hash: &str,
+        label: &str,
+    ) -> Result<(), String> {
+        if let Some(parent) = local_tmp.parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                format!("[transfer] {label}: create {}: {error}", parent.display())
+            })?;
+        }
+        let mut cmd = Command::new("rsync");
+        cmd.args(["-az", "--partial"]);
+        cmd.arg("-e").arg(self.rsync_ssh_command());
+        cmd.arg(format!("{}:{}", ssh_target(self.cfg), remote));
+        cmd.arg(local_tmp);
+        let status = run_status_with_timeout(
+            &mut cmd,
+            self.timeout,
+            &format!("[transfer] {label}: rsync download"),
+        )?;
+        if !status.success() {
+            return Err(format!(
+                "[transfer] {label}: rsync download exited with status {status}"
+            ));
+        }
+        let actual_hash = md5_file(local_tmp)?;
+        if actual_hash != expected_hash {
+            return Err(format!(
+                "[transfer] {label}: md5 mismatch after rsync download — expected {expected_hash}, got {actual_hash}"
+            ));
+        }
+        Ok(())
+    }
+
+    fn upload_with_ssh_stream(
+        &self,
+        local: &Path,
+        remote_tmp: &str,
+        remote: &str,
+        expected_hash: &str,
+        label: &str,
+    ) -> Result<(), String> {
+        let command = self.receive_and_promote_command(remote_tmp, remote, expected_hash);
+        let mut cmd = Command::new("ssh");
+        append_ssh_options(&mut cmd, self.cfg, "-p");
+        cmd.arg(ssh_target(self.cfg)).arg(command);
+        cmd.stdin(Stdio::piped());
+        cmd.stdout(Stdio::inherit());
+        cmd.stderr(Stdio::inherit());
+        let mut child = cmd
+            .spawn()
+            .map_err(|error| format!("[transfer] {label}: ssh stream: {error}"))?;
+        let mut stdin = child
+            .stdin
+            .take()
+            .ok_or_else(|| format!("[transfer] {label}: open ssh stdin"))?;
+        let local = local.to_path_buf();
+        let label_for_thread = label.to_owned();
+        let (copy_tx, copy_rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let result = (|| -> Result<(), String> {
+                let mut input = fs::File::open(&local).map_err(|error| {
+                    format!(
+                        "[transfer] {label_for_thread}: open {}: {error}",
+                        local.display()
+                    )
+                })?;
+                io::copy(&mut input, &mut stdin).map_err(|error| {
+                    format!(
+                        "[transfer] {label_for_thread}: stream {}: {error}",
+                        local.display()
+                    )
+                })?;
+                Ok(())
+            })();
+            let _ = copy_tx.send(result);
+        });
+        let status_result = wait_child_with_timeout(
+            child,
+            self.timeout,
+            &format!("[transfer] {label}: ssh stream"),
+        )?;
+        let copy_result = copy_rx
+            .recv_timeout(Duration::from_secs(5))
+            .map_err(|_| format!("[transfer] {label}: ssh stream copy did not finish"))?;
+        copy_result?;
+        let status = status_result;
+        if !status.success() {
+            return Err(format!(
+                "[transfer] {label}: ssh stream exited with status {status}"
+            ));
+        }
+        Ok(())
+    }
+
+    fn download_with_ssh_stream(
+        &self,
+        remote: &str,
+        local_tmp: &Path,
+        expected_hash: &str,
+        label: &str,
+    ) -> Result<(), String> {
+        if let Some(parent) = local_tmp.parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                format!("[transfer] {label}: create {}: {error}", parent.display())
+            })?;
+        }
+        let mut cmd = Command::new("ssh");
+        append_ssh_options(&mut cmd, self.cfg, "-p");
+        cmd.arg(ssh_target(self.cfg))
+            .arg(format!("cat {}", shell_quote(remote)));
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::inherit());
+        let mut child = cmd
+            .spawn()
+            .map_err(|error| format!("[transfer] {label}: ssh download: {error}"))?;
+        let mut stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| format!("[transfer] {label}: open ssh stdout"))?;
+        let local_tmp = local_tmp.to_path_buf();
+        let local_tmp_for_thread = local_tmp.clone();
+        let label_for_thread = label.to_owned();
+        let (copy_tx, copy_rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let result = (|| -> Result<(), String> {
+                let mut output = fs::File::create(&local_tmp_for_thread).map_err(|error| {
+                    format!(
+                        "[transfer] {label_for_thread}: create {}: {error}",
+                        local_tmp_for_thread.display()
+                    )
+                })?;
+                io::copy(&mut stdout, &mut output).map_err(|error| {
+                    format!(
+                        "[transfer] {label_for_thread}: write {}: {error}",
+                        local_tmp_for_thread.display()
+                    )
+                })?;
+                Ok(())
+            })();
+            let _ = copy_tx.send(result);
+        });
+        let status_result = wait_child_with_timeout(
+            child,
+            self.timeout,
+            &format!("[transfer] {label}: ssh download"),
+        )?;
+        let copy_result = copy_rx
+            .recv_timeout(Duration::from_secs(5))
+            .map_err(|_| format!("[transfer] {label}: ssh download copy did not finish"))?;
+        copy_result?;
+        let status = status_result;
+        if !status.success() {
+            return Err(format!(
+                "[transfer] {label}: ssh download exited with status {status}"
+            ));
+        }
+        let actual_hash = md5_file(&local_tmp)?;
+        if actual_hash != expected_hash {
+            return Err(format!(
+                "[transfer] {label}: md5 mismatch after download — expected {expected_hash}, got {actual_hash}"
+            ));
+        }
+        Ok(())
+    }
+
+    fn verify_and_promote(
+        &self,
+        remote_tmp: &str,
+        remote: &str,
+        expected_hash: &str,
+        label: &str,
+    ) -> Result<(), String> {
+        let command = self.verify_and_promote_command(remote_tmp, remote, expected_hash);
+        ssh_exec(self.cfg, &command)
+            .map(|_| ())
+            .map_err(|error| format!("[transfer] {label}: {error}"))
+    }
+
+    fn receive_and_promote_command(
+        &self,
+        remote_tmp: &str,
+        remote: &str,
+        expected_hash: &str,
+    ) -> String {
+        format!(
+            "set -e; dest={dest}; tmp={tmp}; mkdir -p \"$(dirname \"$tmp\")\"; \
+             rm -f \"$tmp\"; cat > \"$tmp\"; {verify}",
+            dest = shell_quote(remote),
+            tmp = shell_quote(remote_tmp),
+            verify = self.verify_and_promote_shell(expected_hash),
+        )
+    }
+
+    fn verify_and_promote_command(
+        &self,
+        remote_tmp: &str,
+        remote: &str,
+        expected_hash: &str,
+    ) -> String {
+        format!(
+            "set -e; dest={dest}; tmp={tmp}; {verify}",
+            dest = shell_quote(remote),
+            tmp = shell_quote(remote_tmp),
+            verify = self.verify_and_promote_shell(expected_hash),
+        )
+    }
+
+    fn verify_and_promote_shell(&self, expected_hash: &str) -> String {
+        format!(
+            "actual=$(md5sum \"$tmp\" | awk '{{print $1}}'); \
+             if [ \"$actual\" != {expected} ]; then \
+               echo \"artifact md5 mismatch: expected {expected_raw}, got $actual\" >&2; \
+               rm -f \"$tmp\"; exit 23; \
+             fi; \
+             mv -f \"$tmp\" \"$dest\"",
+            expected = shell_quote(expected_hash),
+            expected_raw = expected_hash,
+        )
+    }
+
+    fn remote_tmp_path(&self, remote: &str) -> String {
+        format!(
+            "{remote}.upload-{}-{}.tmp",
+            std::process::id(),
+            time::OffsetDateTime::now_utc().unix_timestamp_nanos()
+        )
+    }
+
+    fn rsync_ssh_command(&self) -> String {
+        let mut parts = vec![
+            "ssh".to_owned(),
+            "-o".to_owned(),
+            format!("BatchMode=yes"),
+            "-o".to_owned(),
+            format!("StrictHostKeyChecking=accept-new"),
+            "-o".to_owned(),
+            format!("ConnectTimeout={SSH_CONNECT_TIMEOUT_SECS}"),
+            "-o".to_owned(),
+            format!("ServerAliveInterval={SSH_SERVER_ALIVE_INTERVAL_SECS}"),
+            "-o".to_owned(),
+            format!("ServerAliveCountMax={SSH_SERVER_ALIVE_COUNT_MAX}"),
+        ];
+        if !self.cfg.ssh_key_path.as_os_str().is_empty() {
+            parts.push("-i".to_owned());
+            parts.push(shell_quote(&self.cfg.ssh_key_path.to_string_lossy()));
+        }
+        if self.cfg.ssh_port != 22 {
+            parts.push("-p".to_owned());
+            parts.push(self.cfg.ssh_port.to_string());
+        }
+        parts.join(" ")
+    }
+}
+
+fn wait_child_with_timeout(
+    mut child: std::process::Child,
+    timeout: Duration,
+    label: &str,
+) -> Result<std::process::ExitStatus, String> {
+    let started = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return Ok(status),
+            Ok(None) if started.elapsed() > timeout => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(format!("{label} timed out after {}s", timeout.as_secs()));
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(200)),
+            Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(format!("{label}: {error}"));
+            }
+        }
+    }
+}
+
 /// Run one ssh command against `cfg.host` and return its stdout. Inherits
 /// stderr to the parent so the user sees real-time progress (helpful for
 /// long-running remote `go build`). Empty `cfg.ssh_key_path` falls back to
@@ -3066,21 +3758,8 @@ fn deploy_config(content_root: &Path) -> Result<DeployConfig, String> {
 /// from a config without an explicit key.
 fn ssh_exec(cfg: &DeployConfig, command: &str) -> Result<String, String> {
     let mut cmd = Command::new("ssh");
-    if !cfg.ssh_key_path.as_os_str().is_empty() {
-        cmd.arg("-i").arg(&cfg.ssh_key_path);
-    }
-    if cfg.ssh_port != 22 {
-        cmd.arg("-p").arg(cfg.ssh_port.to_string());
-    }
-    // BatchMode=yes refuses interactive prompts — fail fast in CI rather
-    // than hang waiting for a passphrase.
-    cmd.args([
-        "-o",
-        "BatchMode=yes",
-        "-o",
-        "StrictHostKeyChecking=accept-new",
-    ]);
-    cmd.arg(format!("{}@{}", cfg.user, cfg.host));
+    append_ssh_options(&mut cmd, cfg, "-p");
+    cmd.arg(ssh_target(cfg));
     cmd.arg(command);
     cmd.stderr(std::process::Stdio::inherit());
     let out = cmd
@@ -3095,83 +3774,27 @@ fn ssh_exec(cfg: &DeployConfig, command: &str) -> Result<String, String> {
     Ok(String::from_utf8_lossy(&out.stdout).into_owned())
 }
 
-/// `scp <src> <user>@<host>:<dst>`. `src` may be a file or directory
-/// (recursive `-r` is always used; scp is silent for single files).
+/// Upload one deploy artifact with checksum verification and atomic promotion.
+/// Kept under the old name so the deploy orchestration call sites stay stable
+/// while the transport implementation is centralized.
 fn scp_to(cfg: &DeployConfig, src: &Path, dst: &str) -> Result<(), String> {
-    let mut cmd = Command::new("scp");
-    cmd.arg("-r");
-    if !cfg.ssh_key_path.as_os_str().is_empty() {
-        cmd.arg("-i").arg(&cfg.ssh_key_path);
-    }
-    if cfg.ssh_port != 22 {
-        cmd.arg("-P").arg(cfg.ssh_port.to_string());
-    }
-    cmd.args([
-        "-o",
-        "BatchMode=yes",
-        "-o",
-        "StrictHostKeyChecking=accept-new",
-    ]);
-    cmd.arg(src);
-    cmd.arg(format!("{}@{}:{dst}", cfg.user, cfg.host));
-    let status = cmd.status().map_err(|e| {
-        format!(
-            "scp {} -> {}@{}:{dst}: {e}",
-            src.display(),
-            cfg.user,
-            cfg.host
-        )
-    })?;
-    if !status.success() {
-        return Err(format!(
-            "scp {} -> {}@{}:{dst} exited with status {}",
-            src.display(),
-            cfg.user,
-            cfg.host,
-            status,
-        ));
-    }
-    Ok(())
+    let label = src
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("artifact");
+    RemoteArtifactTransport::new(cfg).upload_file_atomic(src, dst, label)
 }
 
-/// `scp <user>@<host>:<src> <dst>`. This is the read-side counterpart of
-/// [`scp_to`], used by deploy promotion to bring the server's live SQLite DB
-/// to the operator machine before replacing derived tables. Pulling the live
-/// file first is what preserves comments, likes, views and contact messages.
+/// Download one deploy artifact with checksum verification. This is used by
+/// deploy promotion to bring the server's live SQLite DB to the operator
+/// machine before replacing derived tables. Pulling the live file first is
+/// what preserves comments, likes, views and contact messages.
 fn scp_from(cfg: &DeployConfig, src: &str, dst: &Path) -> Result<(), String> {
-    let mut cmd = Command::new("scp");
-    if !cfg.ssh_key_path.as_os_str().is_empty() {
-        cmd.arg("-i").arg(&cfg.ssh_key_path);
-    }
-    if cfg.ssh_port != 22 {
-        cmd.arg("-P").arg(cfg.ssh_port.to_string());
-    }
-    cmd.args([
-        "-o",
-        "BatchMode=yes",
-        "-o",
-        "StrictHostKeyChecking=accept-new",
-    ]);
-    cmd.arg(format!("{}@{}:{src}", cfg.user, cfg.host));
-    cmd.arg(dst);
-    let status = cmd.status().map_err(|e| {
-        format!(
-            "scp {}@{}:{src} -> {}: {e}",
-            cfg.user,
-            cfg.host,
-            dst.display()
-        )
-    })?;
-    if !status.success() {
-        return Err(format!(
-            "scp {}@{}:{src} -> {} exited with status {}",
-            cfg.user,
-            cfg.host,
-            dst.display(),
-            status,
-        ));
-    }
-    Ok(())
+    let label = dst
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("artifact");
+    RemoteArtifactTransport::new(cfg).download_file_verified(src, dst, label)
 }
 
 /// Probe `https://<host>/api/v1/health` over HTTPS. Returns Err when the
@@ -3184,21 +3807,42 @@ fn deploy_health_check(cfg: &DeployConfig) -> Result<(), String> {
         .clone()
         .unwrap_or_else(|| format!("https://{}", cfg.host));
     let url = format!("{base}/api/v1/health");
+    match curl_health_check(&url, None) {
+        Ok(()) => Ok(()),
+        Err(first_error) => {
+            let Some(vhost) = inferred_nginx_vhost(cfg, &base) else {
+                return Err(first_error);
+            };
+            println!("        health: retry with Host: {vhost}");
+            curl_health_check(&url, Some(&vhost)).map_err(|retry_error| {
+                format!("{first_error}; Host: {vhost} retry failed: {retry_error}")
+            })
+        }
+    }
+}
+
+fn curl_health_check(url: &str, host_header: Option<&str>) -> Result<(), String> {
+    let mut args = vec![
+        "-sSLk".to_owned(),
+        "--max-time".to_owned(),
+        "10".to_owned(),
+        "-o".to_owned(),
+        "-".to_owned(),
+        "-w".to_owned(),
+        "\n%{http_code}".to_owned(),
+    ];
+    if let Some(host) = host_header {
+        args.push("-H".to_owned());
+        args.push(format!("Host: {host}"));
+    }
+    args.push(url.to_owned());
+
     // `-k` accepts self-signed / hostname-mismatched certs — required when
     // `host` is a bare IP (no SAN for the IP) but nginx forces 80→443.
     // The health endpoint returns the same `{"status":"ok"}` either way;
     // we only need a successful round-trip through the reverse proxy.
     let out = Command::new("curl")
-        .args([
-            "-sSLk",
-            "--max-time",
-            "10",
-            "-o",
-            "-",
-            "-w",
-            "\n%{http_code}",
-            &url,
-        ])
+        .args(args)
         .output()
         .map_err(|e| format!("curl {url}: {e}"))?;
     let stdout = String::from_utf8_lossy(&out.stdout);
@@ -3211,6 +3855,45 @@ fn deploy_health_check(cfg: &DeployConfig) -> Result<(), String> {
     } else {
         Err(format!("health check failed: HTTP {code} · {body}"))
     }
+}
+
+fn inferred_nginx_vhost(cfg: &DeployConfig, health_base: &str) -> Option<String> {
+    let host = url_host(health_base)?;
+    if !is_ipv4_literal(host) {
+        return None;
+    }
+    Path::new(&cfg.remote_dir)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| name.contains('.') && !is_ipv4_literal(name))
+        .map(str::to_owned)
+}
+
+fn url_host(url: &str) -> Option<&str> {
+    let rest = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .unwrap_or(url);
+    let host_port = rest.split('/').next().unwrap_or(rest);
+    host_port.split(':').next().filter(|host| !host.is_empty())
+}
+
+fn is_ipv4_literal(host: &str) -> bool {
+    let mut parts = host.split('.');
+    let Some(first) = parts.next() else {
+        return false;
+    };
+    if first.parse::<u8>().is_err() {
+        return false;
+    }
+    let mut count = 1;
+    for part in parts {
+        if part.parse::<u8>().is_err() {
+            return false;
+        }
+        count += 1;
+    }
+    count == 4
 }
 
 /// Unpack one embedded gzip tarball into `staging`. The tarball's paths
@@ -3318,6 +4001,48 @@ fn run_local_deploy(
     Ok(())
 }
 
+fn local_preview_stats_token() -> Result<String, String> {
+    if let Ok(token) = env::var(DEPLOYED_STATS_TOKEN_ENV) {
+        return validate_stats_token(DEPLOYED_STATS_TOKEN_ENV, &token);
+    }
+    if let Ok(token) = env::var(PRIVATE_API_TOKEN_ENV) {
+        return validate_stats_token(PRIVATE_API_TOKEN_ENV, &token);
+    }
+
+    let nonce = time::OffsetDateTime::now_utc().unix_timestamp_nanos();
+    validate_stats_token(
+        DEPLOYED_STATS_TOKEN_ENV,
+        &format!("silanpreview{:x}{:x}", std::process::id(), nonce),
+    )
+}
+
+fn write_local_preview_env(staging: &Path, token: &str) -> Result<(), String> {
+    let env_path = staging.join("deploy/.env");
+    fs::write(&env_path, format!("{DEPLOYED_STATS_TOKEN_ENV}={token}\n"))
+        .map_err(|error| format!("write local preview .env: {error}"))?;
+    println!(
+        "        wrote local preview runtime env -> {}",
+        env_path.display()
+    );
+    Ok(())
+}
+
+fn ensure_docker_available() -> Result<(), String> {
+    let status = Command::new("docker")
+        .arg("info")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map_err(|error| format!("docker info: {error}"))?;
+    if !status.success() {
+        return Err(
+            "Docker daemon is not reachable. Start Docker Desktop or your Docker service, then retry `silan site preview --confirm`."
+                .to_owned(),
+        );
+    }
+    Ok(())
+}
+
 /// `silan site preview` — bring a real local instance up (frontend, backend,
 /// proxy) using Docker, so the owner can open `http://localhost:8080` and
 /// see the site. Unlike `site deploy`, this does not require a `[deploy]`
@@ -3349,9 +4074,16 @@ fn site_preview(
         println!("  5 promote  replace derived tables; runtime tables preserved");
         println!("  6 up       docker compose up -d  ->  http://localhost:8080");
         println!();
-        println!("  Requires: Docker. Stop with `docker compose -f \\$staging/{compose} down`.");
+        println!("  Requires: Docker daemon. The preview command writes a local-only");
+        println!(
+            "  STATS_SYNC_TOKEN into _deploy/staging/deploy/.env when one is not already set."
+        );
+        println!("  Stop with `docker compose -f _deploy/staging/{compose} down`.");
         return Ok(());
     }
+
+    let preview_token = local_preview_stats_token()?;
+    ensure_docker_available()?;
 
     // 1 — sync: rebuild the derived db snapshot from content/.
     println!("[1/6] sync");
@@ -3363,6 +4095,7 @@ fn site_preview(
     // 2 — build: stage embedded artefacts + SEO into the project's staging area.
     println!("[2/6] build");
     let staging = stage_deploy_artifacts(project_root)?;
+    write_local_preview_env(&staging, &preview_token)?;
     let projector = silan_viking_site::SiteProjector::new("http://localhost:8080");
     let seo_dir = staging.join("deploy/seo");
     projector
@@ -3444,11 +4177,11 @@ fn run_nginx_deploy(
         println!("  scope   --what={}", what.label());
         let mut step = 1;
         if what.does_frontend() {
-            println!("  {step} frontend npm run build → scp dist/",);
+            println!("  {step} frontend npm run build → incremental rsync dist/");
             step += 1;
         }
         if what.does_backend() {
-            println!("  {step} backend  tar source → scp → build API + sqlite2pg (remote)");
+            println!("  {step} backend  incremental rsync source → build API + sqlite2pg (remote)");
             step += 1;
         }
         if what.does_backend() {
@@ -3461,7 +4194,7 @@ fn run_nginx_deploy(
             println!(
                 "  {step} content  silan-viking index sync → detect runtime DB → cp .prev → \
                  pull projection artifact → promote derived tables locally → \
-                 scp promoted DB → chown → md5-verify → \
+                 verified artifact upload → chown → md5-verify → \
                  (PostgreSQL: transactional sqlite2pg while API stays online; \
                  SQLite: stop/swap/start) → mirror media/",
             );
@@ -3499,7 +4232,7 @@ fn run_nginx_deploy(
         did_work = true;
     }
     if what.does_backend() {
-        deploy_nginx_private_api_credential(cfg)?;
+        deploy_nginx_private_api_credential(content_root, cfg)?;
     }
     if what.does_content() {
         backend_stopped = deploy_nginx_content(content_root, db_path, cfg)?;
@@ -3571,6 +4304,8 @@ location = /api/v1/analytics/crawler-hit {{
 }}
 
 location = /index.html {{
+    mirror /_silan_crawler_hit;
+    mirror_request_body off;
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
     add_header Pragma "no-cache" always;
     add_header Expires "0" always;
@@ -3578,6 +4313,8 @@ location = /index.html {{
 }}
 
 location = /about.txt {{
+    mirror /_silan_crawler_hit;
+    mirror_request_body off;
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
     add_header Pragma "no-cache" always;
     add_header Expires "0" always;
@@ -3585,6 +4322,8 @@ location = /about.txt {{
 }}
 
 location = /llms.txt {{
+    mirror /_silan_crawler_hit;
+    mirror_request_body off;
     add_header Cache-Control "no-cache, no-store, must-revalidate" always;
     add_header Pragma "no-cache" always;
     add_header Expires "0" always;
@@ -3594,8 +4333,11 @@ location = /llms.txt {{
 location = /_silan_crawler_hit {{
     internal;
     proxy_pass http://127.0.0.1:{port}/api/v1/analytics/crawler-hit;
+    proxy_method GET;
     proxy_pass_request_body off;
     proxy_set_header Content-Length "";
+    proxy_set_header X-Silan-Request-ID $request_id;
+    proxy_set_header X-Silan-Original-Method $request_method;
     proxy_set_header X-Silan-Original-URI $request_uri;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -3604,6 +4346,8 @@ location = /_silan_crawler_hit {{
 }}
 
 location ^~ /assets/ {{
+    mirror /_silan_crawler_hit;
+    mirror_request_body off;
     add_header Cache-Control "public, max-age=31536000, immutable" always;
     try_files $uri @silan_asset_404;
 }}
@@ -3643,36 +4387,39 @@ location / {{
 }
 
 const PRIVATE_API_TOKEN_ENV: &str = "SILAN_STATS_SYNC_TOKEN";
+const DEPLOYED_STATS_TOKEN_ENV: &str = "STATS_SYNC_TOKEN";
 const REMOTE_PRIVATE_ENV_PATH: &str = "/etc/silan-backend/db.env";
 
-fn private_api_deploy_token() -> Result<String, String> {
-    let token = env::var(PRIVATE_API_TOKEN_ENV)
-        .map_err(|_| format!("{PRIVATE_API_TOKEN_ENV} is required for backend/content deploy"))?;
-    validate_private_api_deploy_token(&token)
+fn private_api_deploy_token(content_root: &Path) -> Result<String, String> {
+    let token = silan_viking_app::workspace_stats_sync_token(content_root).ok_or_else(|| {
+        format!("{PRIVATE_API_TOKEN_ENV} is required in the process environment or project .env")
+    })?;
+    validate_stats_token(PRIVATE_API_TOKEN_ENV, &token)
 }
 
-fn validate_private_api_deploy_token(token: &str) -> Result<String, String> {
+fn validate_stats_token(env_name: &str, token: &str) -> Result<String, String> {
     let token = token.trim();
     if token.len() < 32 {
-        return Err(format!(
-            "{PRIVATE_API_TOKEN_ENV} must contain at least 32 characters"
-        ));
+        return Err(format!("{env_name} must contain at least 32 characters"));
     }
     if !token
         .bytes()
         .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
     {
         return Err(format!(
-            "{PRIVATE_API_TOKEN_ENV} may contain only ASCII letters, digits, `-`, and `_`"
+            "{env_name} may contain only ASCII letters, digits, `-`, and `_`"
         ));
     }
     Ok(token.to_owned())
 }
 
-fn deploy_nginx_private_api_credential(cfg: &DeployConfig) -> Result<(), String> {
+fn deploy_nginx_private_api_credential(
+    content_root: &Path,
+    cfg: &DeployConfig,
+) -> Result<(), String> {
     use std::os::unix::fs::PermissionsExt;
 
-    let token = private_api_deploy_token()?;
+    let token = private_api_deploy_token(content_root)?;
     let github = credentials::github_credentials(&cfg.credential_profile)?;
     let google = credentials::google_client_id(&cfg.credential_profile)?;
     let public_url = cfg
@@ -3907,14 +4654,9 @@ fn deploy_nginx_content(
     };
     let remote_media = format!("{}/api/media", cfg.remote_dir);
     println!(
-        "[content] pack and mirror {} media file(s) → {remote_media}",
+        "[content] mirror {} media file(s) → {remote_media}",
         assets.len(),
     );
-    let local_archive =
-        std::env::temp_dir().join(format!("silan-viking-media-{generation}.tar.gz"));
-    let remote_archive = format!("/tmp/silan-viking-media-{generation}.tar.gz");
-    let remote_media_next = format!("{remote_media}.next-{generation}");
-    let remote_media_previous = format!("{remote_media}.previous-{generation}");
     let remote_media_hash = format!("{remote_media}.generation-md5");
     let publish_media = (|| -> Result<(), String> {
         let generation_hash = media_generation_hash(&assets);
@@ -3927,60 +4669,16 @@ fn deploy_nginx_content(
             ),
         )?;
         if remote_generation.trim() == generation_hash {
-            println!("[content] media generation unchanged; skip pack and upload");
+            println!("[content] media generation unchanged; skip mirror");
             return Ok(());
         }
-        let status = Command::new("tar")
-            .env("COPYFILE_DISABLE", "1")
-            .args(["-czf"])
-            .arg(&local_archive)
-            .args(["-C"])
-            .arg(absolutise(&media_root)?)
-            .arg(".")
-            .status()
-            .map_err(|error| format!("[content] start media archive: {error}"))?;
-        if !status.success() {
-            return Err("[content] media archive creation failed".to_owned());
-        }
-        scp_to(cfg, &local_archive, &remote_archive)?;
-        ssh_exec(
-            cfg,
-            &format!(
-                "set -e; \
-                 rm -rf {next} {previous}; mkdir -p {next}; \
-                 tar -xzf {archive} -C {next}; \
-                 if [ -d {live} ]; then mv {live} {previous}; fi; \
-                 if mv {next} {live}; then \
-                   printf '%s\\n' {hash} > {hash_file}.next; \
-                   mv {hash_file}.next {hash_file}; \
-                   rm -rf {previous}; rm -f {archive}; \
-                 else \
-                   rm -rf {next}; \
-                   if [ -d {previous} ]; then mv {previous} {live}; fi; \
-                   rm -f {archive}; exit 1; \
-                 fi",
-                next = remote_media_next,
-                previous = remote_media_previous,
-                archive = remote_archive,
-                live = remote_media,
-                hash = generation_hash,
-                hash_file = remote_media_hash,
-            ),
+        RemoteArtifactTransport::new(cfg).sync_media_tree(
+            &absolutise(&media_root)?,
+            &remote_media,
+            &generation_hash,
         )?;
         Ok(())
     })();
-    let _ = fs::remove_file(&local_archive);
-    if publish_media.is_err() {
-        let _ = ssh_exec(
-            cfg,
-            &format!(
-                "rm -rf {remote_media_next}; rm -f {remote_archive}; \
-                 if [ ! -d {remote_media} ] && [ -d {remote_media_previous} ]; then \
-                   mv {remote_media_previous} {remote_media}; \
-                 fi"
-            ),
-        );
-    }
     let _ = fs::remove_dir_all(&staging);
     publish_media?;
     Ok(backend_stopped)
@@ -4155,51 +4853,25 @@ fn md5_file(path: &Path) -> Result<String, String> {
     Ok(format!("{:x}", ctx.compute()))
 }
 
-/// Phase 2 — frontend. Build the default frontend target locally; ship
-/// `dist/`. macOS-produced `._*` AppleDouble files are stripped on the remote
-/// side (otherwise nginx serves them as text/plain and search engines index
-/// them).
+/// Phase 2 — frontend. Build the default frontend target locally and
+/// incrementally sync `dist/`. Root HTML/routes are deleted to match the new
+/// build; hashed assets are only appended/overwritten so cached old HTML keeps
+/// resolving its chunks during a rolling browser refresh.
 fn deploy_nginx_frontend(project_root: &Path, cfg: &DeployConfig) -> Result<(), String> {
     let dist = build_frontend_target(
         project_root,
         &FrontendBuildTarget::default(),
         Some(&cfg.credential_profile),
+        false,
     )?;
-    let tarball = std::env::temp_dir().join("silan-viking-frontend-dist.tar.gz");
-    println!("[frontend] tar dist → {}", tarball.display());
-    let status = Command::new("tar")
-        .arg("-czf")
-        .arg(&tarball)
-        .arg("-C")
-        .arg(&dist)
-        .arg(".")
-        .status()
-        .map_err(|e| format!("[frontend] tar: {e}"))?;
-    if !status.success() {
-        return Err(format!("[frontend] tar exited with {status}"));
-    }
-    let remote_tar = "/tmp/silan-viking-frontend-dist.tar.gz";
-    println!("[frontend] scp → {}", remote_tar);
-    scp_to(cfg, &tarball, remote_tar)?;
-    // Replace the static tree instead of overlaying it, but keep hashed assets.
-    // HTML stays uncached while /assets/* may be cached by browsers/CDNs across
-    // a deploy; removing old chunks makes stale HTML fail module imports.
-    println!("[frontend] untar at {}", cfg.remote_dir);
-    ssh_exec(
-        cfg,
-        &format!(
-            "cd {dir} && mkdir -p assets && find . -mindepth 1 -maxdepth 1 ! -name api ! -name .well-known ! -name .user.ini ! -name assets -exec rm -rf {{}} + && tar -xzf {tar} && find . -maxdepth 4 -name '._*' -delete",
-            dir = cfg.remote_dir,
-            tar = remote_tar,
-        ),
-    )?;
-    let _ = std::fs::remove_file(&tarball);
+    println!("[frontend] rsync dist → {}", cfg.remote_dir);
+    RemoteArtifactTransport::new(cfg).sync_frontend_dist(&dist, &cfg.remote_dir)?;
     Ok(())
 }
 
-/// Phase 3 — backend. Tar the Go source (excluding artefacts), build on the
-/// server (CGO_ENABLED=1 — the SQLite driver needs cgo + libsqlite on the
-/// target's libc), drop the binary at `<remote_dir>/api/silan-backend`. A
+/// Phase 3 — backend. Incrementally sync the Go source, build on the server
+/// (CGO_ENABLED=1 — the SQLite driver needs cgo + libsqlite on the target's
+/// libc), and drop the binary at `<remote_dir>/api/silan-backend`. A
 /// `backend-api.yaml` is written if one isn't already there; the caller
 /// restarts systemd to pick it up.
 fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), String> {
@@ -4210,49 +4882,28 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
             backend.display(),
         ));
     }
-    let tarball = std::env::temp_dir().join("silan-viking-backend-src.tar.gz");
-    println!("[backend] tar source → {}", tarball.display());
-    let status = Command::new("tar")
-        .args([
-            "--no-xattrs",
-            "--exclude=.git",
-            "--exclude=*.log",
-            "--exclude=silan-backend",
-            "--exclude=silan-backend-mac",
-            "-czf",
-        ])
-        .arg(&tarball)
-        .arg("-C")
-        .arg(&backend)
-        .arg(".")
-        .status()
-        .map_err(|e| format!("[backend] tar: {e}"))?;
-    if !status.success() {
-        return Err(format!("[backend] tar exited with {status}"));
-    }
-    let remote_tar = "/tmp/silan-viking-backend-src.tar.gz";
-    println!("[backend] scp → {}", remote_tar);
-    scp_to(cfg, &tarball, remote_tar)?;
+    let remote_build_dir = "/tmp/silan-backend-build";
+    println!("[backend] rsync source → {remote_build_dir}");
+    RemoteArtifactTransport::new(cfg).sync_backend_source(&backend, remote_build_dir)?;
 
     let api_dir = format!("{}/api", cfg.remote_dir);
     let etc_dir = format!("{api_dir}/etc");
     let bin_path = format!("{api_dir}/silan-backend");
     let importer = REMOTE_SQLITE2PG_BIN;
-    // Untar + go build. We rebuild every time — Go's incremental cache
-    // makes this fast after the first run, and a fresh build catches any
-    // drift between local source and what is deployed.
+    // Go's build cache makes this fast after the first run, and a fresh build
+    // catches any drift between local source and what is deployed.
     println!("[backend] remote build (API + runtime-safe sqlite2pg importer)");
     ssh_exec(
         cfg,
         &format!(
             "set -e && \
              mkdir -p {api_dir} {etc_dir} && \
-             rm -rf /tmp/silan-backend-build && mkdir -p /tmp/silan-backend-build && \
-             cd /tmp/silan-backend-build && tar -xzf {remote_tar} && \
+             cd {remote_build_dir} && \
              CGO_ENABLED=1 go build -o {bin_path} backend.go && \
              CGO_ENABLED=1 go build -o {importer} ./cmd/sqlite2pg"
         ),
     )?;
+    deploy_nginx_geoip_database(cfg)?;
 
     // Write etc/backend-api.yaml if missing. Don't clobber a hand-edited
     // file — the operator may have customised auth or database path.
@@ -4260,7 +4911,10 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
         cfg,
         &format!("test -f {etc_dir}/backend-api.yaml && echo yes || echo no"),
     )?;
-    let traffic_yaml = default_backend_traffic_yaml();
+    // Traffic classification is owned by the backend configuration. Deploy
+    // the canonical block instead of maintaining a second, inevitably stale
+    // crawler list in this CLI.
+    let traffic_yaml = canonical_backend_traffic_yaml(&backend)?;
     if probe.trim() == "no" {
         println!("[backend] write {etc_dir}/backend-api.yaml (defaults)");
         let yaml = format!(
@@ -4287,104 +4941,94 @@ fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), S
             &format!("echo {b64} | base64 -d > {etc_dir}/backend-api.yaml"),
         )?;
     } else {
-        let has_traffic = ssh_exec(
+        println!("[backend] sync canonical Traffic rules → {etc_dir}/backend-api.yaml");
+        let b64 = base64_encode(format!("\n{traffic_yaml}").as_bytes());
+        ssh_exec(
             cfg,
-            &format!("grep -q '^Traffic:' {etc_dir}/backend-api.yaml && echo yes || echo no"),
+            &format!(
+                "set -e; \
+                 config={etc_dir}/backend-api.yaml; \
+                 tmp=$(mktemp {etc_dir}/backend-api.yaml.XXXXXX); \
+                 awk '/^Traffic:/{{exit}} {{print}}' \"$config\" > \"$tmp\"; \
+                 echo {b64} | base64 -d >> \"$tmp\"; \
+                 chown --reference=\"$config\" \"$tmp\"; \
+                 chmod --reference=\"$config\" \"$tmp\"; \
+                 mv -f \"$tmp\" \"$config\""
+            ),
         )?;
-        if has_traffic.trim() == "no" {
-            println!("[backend] append missing Traffic defaults to {etc_dir}/backend-api.yaml");
-            let b64 = base64_encode(format!("\n{traffic_yaml}").as_bytes());
-            ssh_exec(
-                cfg,
-                &format!("echo {b64} | base64 -d >> {etc_dir}/backend-api.yaml"),
-            )?;
-        }
     }
-    let _ = std::fs::remove_file(&tarball);
     Ok(())
 }
 
-fn default_backend_traffic_yaml() -> &'static str {
-    "Traffic:\n\
-     \x20\x20ai_user_agents:\n\
-     \x20\x20\x20\x20- gptbot\n\
-     \x20\x20\x20\x20- chatgpt-user\n\
-     \x20\x20\x20\x20- oai-searchbot\n\
-     \x20\x20\x20\x20- claudebot\n\
-     \x20\x20\x20\x20- anthropic-ai\n\
-     \x20\x20\x20\x20- perplexitybot\n\
-     \x20\x20\x20\x20- google-extended\n\
-     \x20\x20search_user_agents:\n\
-     \x20\x20\x20\x20- googlebot\n\
-     \x20\x20\x20\x20- bingbot\n\
-     \x20\x20\x20\x20- duckduckbot\n\
-     \x20\x20\x20\x20- baiduspider\n\
-     \x20\x20\x20\x20- yandexbot\n\
-     \x20\x20\x20\x20- bot\n\
-     \x20\x20\x20\x20- crawler\n\
-     \x20\x20\x20\x20- spider\n\
-     \x20\x20bot_user_agents:\n\
-     \x20\x20\x20\x20- { token: googlebot, name: Googlebot }\n\
-     \x20\x20\x20\x20- { token: google-inspectiontool, name: Googlebot }\n\
-     \x20\x20\x20\x20- { token: storebot-google, name: Googlebot }\n\
-     \x20\x20\x20\x20- { token: bingbot, name: Bingbot }\n\
-     \x20\x20\x20\x20- { token: slurp, name: Yahoo Slurp }\n\
-     \x20\x20\x20\x20- { token: duckduckbot, name: DuckDuckBot }\n\
-     \x20\x20\x20\x20- { token: baiduspider, name: Baiduspider }\n\
-     \x20\x20\x20\x20- { token: yandexbot, name: YandexBot }\n\
-     \x20\x20\x20\x20- { token: sogou, name: Sogou Spider }\n\
-     \x20\x20\x20\x20- { token: bytespider, name: Bytespider }\n\
-     \x20\x20\x20\x20- { token: applebot, name: Applebot }\n\
-     \x20\x20\x20\x20- { token: facebookexternalhit, name: Facebook }\n\
-     \x20\x20\x20\x20- { token: facebot, name: Facebook }\n\
-     \x20\x20\x20\x20- { token: twitterbot, name: Twitterbot }\n\
-     \x20\x20\x20\x20- { token: linkedinbot, name: LinkedInBot }\n\
-     \x20\x20\x20\x20- { token: slackbot, name: Slackbot }\n\
-     \x20\x20\x20\x20- { token: telegrambot, name: TelegramBot }\n\
-     \x20\x20\x20\x20- { token: whatsapp, name: WhatsApp }\n\
-     \x20\x20\x20\x20- { token: discordbot, name: Discordbot }\n\
-     \x20\x20\x20\x20- { token: pinterest, name: Pinterest }\n\
-     \x20\x20\x20\x20- { token: mj12bot, name: MJ12bot }\n\
-     \x20\x20\x20\x20- { token: ahrefsbot, name: AhrefsBot }\n\
-     \x20\x20\x20\x20- { token: semrushbot, name: SemrushBot }\n\
-     \x20\x20\x20\x20- { token: petalbot, name: PetalBot }\n\
-     \x20\x20\x20\x20- { token: gptbot, name: GPTBot }\n\
-     \x20\x20\x20\x20- { token: oai-searchbot, name: OAI-SearchBot }\n\
-     \x20\x20\x20\x20- { token: chatgpt-user, name: ChatGPT-User }\n\
-     \x20\x20\x20\x20- { token: claudebot, name: ClaudeBot }\n\
-     \x20\x20\x20\x20- { token: perplexitybot, name: PerplexityBot }\n\
-     \x20\x20\x20\x20- { token: ccbot, name: CCBot }\n\
-     \x20\x20generic_bot_tokens:\n\
-     \x20\x20\x20\x20- bot\n\
-     \x20\x20\x20\x20- crawler\n\
-     \x20\x20\x20\x20- spider\n\
-     \x20\x20other_bot_name: Other Bot\n\
-     \x20\x20internal_referrers:\n\
-     \x20\x20\x20\x20- silan.tech\n\
-     \x20\x20\x20\x20- localhost\n\
-     \x20\x20\x20\x20- 127.0.0.1\n\
-     \x20\x20ai_referrers:\n\
-     \x20\x20\x20\x20- chatgpt\n\
-     \x20\x20\x20\x20- perplexity\n\
-     \x20\x20\x20\x20- gemini\n\
-     \x20\x20\x20\x20- claude\n\
-     \x20\x20\x20\x20- copilot\n\
-     \x20\x20search_referrers:\n\
-     \x20\x20\x20\x20- google.\n\
-     \x20\x20\x20\x20- bing.\n\
-     \x20\x20\x20\x20- duckduckgo.\n\
-     \x20\x20\x20\x20- baidu.\n\
-     \x20\x20\x20\x20- yahoo.\n\
-     \x20\x20\x20\x20- yandex.\n\
-     \x20\x20social_referrers:\n\
-     \x20\x20\x20\x20- x.com\n\
-     \x20\x20\x20\x20- twitter.\n\
-     \x20\x20\x20\x20- linkedin.\n\
-     \x20\x20\x20\x20- facebook.\n\
-     \x20\x20\x20\x20- instagram.\n\
-     \x20\x20\x20\x20- reddit.\n\
-     \x20\x20\x20\x20- weibo.\n\
-     \x20\x20\x20\x20- zhihu.\n"
+fn deploy_nginx_geoip_database(cfg: &DeployConfig) -> Result<(), String> {
+    println!("[backend] ensure local GeoIP database");
+    ssh_exec(
+        cfg,
+        "set -e; \
+         target=/var/lib/GeoIP/country.mmdb; \
+         if [ -s \"$target\" ]; then exit 0; fi; \
+         command -v curl >/dev/null || { echo 'curl is required to install GeoIP database' >&2; exit 1; }; \
+         command -v gzip >/dev/null || { echo 'gzip is required to install GeoIP database' >&2; exit 1; }; \
+         mkdir -p /var/lib/GeoIP; \
+         tmp=/tmp/silan-geolite2-city-$$.mmdb.gz; \
+         out=/var/lib/GeoIP/country.mmdb.tmp; \
+         rm -f \"$tmp\" \"$out\"; \
+         curl -fL --max-time 120 -o \"$tmp\" https://cdn.jsdelivr.net/npm/geolite2-city/GeoLite2-City.mmdb.gz; \
+         gzip -dc \"$tmp\" > \"$out\"; \
+         chmod 0644 \"$out\"; \
+         mv \"$out\" \"$target\"; \
+         rm -f \"$tmp\"",
+    )?;
+    ssh_exec(
+        cfg,
+        "set -e; \
+         target=/var/lib/GeoIP/geonames-cities500.txt; \
+         if [ -s \"$target\" ]; then exit 0; fi; \
+         command -v curl >/dev/null || { echo 'curl is required to install GeoNames database' >&2; exit 1; }; \
+         mkdir -p /var/lib/GeoIP; \
+         tmp=/tmp/silan-geonames-cities500-$$.zip; \
+         out=/var/lib/GeoIP/geonames-cities500.txt.tmp; \
+         rm -f \"$tmp\" \"$out\"; \
+         curl -fL --max-time 120 -o \"$tmp\" https://download.geonames.org/export/dump/cities500.zip; \
+         if command -v python3 >/dev/null; then \
+           python3 -c \"import sys, zipfile; open(sys.argv[2], 'wb').write(zipfile.ZipFile(sys.argv[1]).read('cities500.txt'))\" \"$tmp\" \"$out\"; \
+         elif command -v unzip >/dev/null; then \
+           unzip -p \"$tmp\" cities500.txt > \"$out\"; \
+         else \
+           echo 'python3 or unzip is required to install GeoNames database' >&2; exit 1; \
+         fi; \
+         chmod 0644 \"$out\"; \
+         mv \"$out\" \"$target\"; \
+         rm -f \"$tmp\"",
+    )?;
+    Ok(())
+}
+
+fn canonical_backend_traffic_yaml(backend: &Path) -> Result<String, String> {
+    let path = backend.join("etc/backend-api.yaml");
+    let yaml = fs::read_to_string(&path).map_err(|error| {
+        format!(
+            "[backend] read canonical traffic config {}: {error}",
+            path.display()
+        )
+    })?;
+    let start = yaml
+        .lines()
+        .position(|line| line == "Traffic:")
+        .ok_or_else(|| {
+            format!(
+                "[backend] canonical config {} has no Traffic section",
+                path.display()
+            )
+        })?;
+    let traffic = yaml.lines().skip(start).collect::<Vec<_>>().join("\n");
+    if traffic.trim() == "Traffic:" {
+        return Err(format!(
+            "[backend] canonical config {} has an empty Traffic section",
+            path.display()
+        ));
+    }
+    Ok(format!("{traffic}\n"))
 }
 
 /// Minimal base64 encoder — used only for shipping a multi-line YAML
@@ -4898,25 +5542,17 @@ fn stage_media(staging: &Path, assets: &[ScannedAsset]) -> Result<Option<PathBuf
     // A clean tree each deploy: the staged set IS the desired server state
     // (mirror semantics), so a stale file from a previous run must not linger.
     let _ = fs::remove_dir_all(&media_root);
-    let mut optimized_files = 0usize;
     let mut bytes_before = 0u64;
     let mut bytes_after = 0u64;
     for asset in assets {
         let dest = media_root.join(&asset.rel_path);
-        let report = optimize_media_asset(&asset.abs_path, &dest)
+        let report = stage_deploy_media_asset(&asset.abs_path, &dest)
             .map_err(|e| format!("staging media file {}: {e}", asset.rel_path))?;
         bytes_before += report.original_bytes;
         bytes_after += report.output_bytes;
-        if matches!(
-            report.status,
-            silan_viking_app::MediaOptimizationStatus::Optimized
-        ) {
-            optimized_files += 1;
-        }
     }
     println!(
-        "[content] optimized {}/{} media file(s), saved {} bytes",
-        optimized_files,
+        "[content] staged {} media file(s), saved {} bytes",
         assets.len(),
         bytes_before.saturating_sub(bytes_after),
     );
@@ -5922,7 +6558,10 @@ fn resume_add_part(content_root: &Path, role: &str) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{media_generation_hash, stamp_content_commit, validate_private_api_deploy_token};
+    use super::{
+        media_generation_hash, stamp_content_commit, validate_stats_token,
+        DEPLOYED_STATS_TOKEN_ENV, PRIVATE_API_TOKEN_ENV,
+    };
     use silan_viking_app::ScannedAsset;
     use silan_viking_base::ContentHash;
     use std::fs;
@@ -5930,13 +6569,25 @@ mod tests {
 
     #[test]
     fn private_api_deploy_token_requires_strength_and_env_safe_characters() {
-        assert!(validate_private_api_deploy_token("short").is_err());
-        assert!(validate_private_api_deploy_token("0123456789abcdef0123456789abcde!").is_err());
+        assert!(validate_stats_token(PRIVATE_API_TOKEN_ENV, "short").is_err());
+        assert!(
+            validate_stats_token(PRIVATE_API_TOKEN_ENV, "0123456789abcdef0123456789abcde!")
+                .is_err()
+        );
         assert_eq!(
-            validate_private_api_deploy_token(" 0123456789abcdef0123456789abcdef_token ")
-                .expect("valid"),
+            validate_stats_token(
+                PRIVATE_API_TOKEN_ENV,
+                " 0123456789abcdef0123456789abcdef_token "
+            )
+            .expect("valid"),
             "0123456789abcdef0123456789abcdef_token"
         );
+    }
+
+    #[test]
+    fn deployed_stats_token_reports_the_runtime_env_name() {
+        let err = validate_stats_token(DEPLOYED_STATS_TOKEN_ENV, "short").expect_err("short token");
+        assert!(err.contains("STATS_SYNC_TOKEN"), "{err}");
     }
 
     #[test]

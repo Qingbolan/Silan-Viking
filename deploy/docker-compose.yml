@@ -23,6 +23,9 @@ services:
       # Required private machine credential. Keep the value in the .env beside
       # the deployed compose file; never place it here or in a web bundle.
       STATS_SYNC_TOKEN: ${STATS_SYNC_TOKEN:?set STATS_SYNC_TOKEN in the deployment .env}
+      # The source YAML keeps a development media root; the Docker runtime
+      # serves media from the persistent backend volume populated by deploy.
+      MEDIA_ROOT: /data/media
     volumes:
       # The derived DB (`/data/portfolio.db`) and the binary resource files
       # (`/data/media/`) both live here. The deploy pipeline's promote step
