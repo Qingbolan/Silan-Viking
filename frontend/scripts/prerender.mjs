@@ -106,6 +106,8 @@ const apiUrl = (path) => new URL(path, `${trimTrailingSlash(config.apiOrigin)}/`
 
 const STATIC_ROUTES = ['/', '/blog/', '/projects/', '/moments/', '/contact/', '/search/'];
 const PRERENDER_ROUTE_ROOTS = ['blog', 'projects', 'moments', 'contact', 'search', 'episodes'];
+const PRERENDER_ROUTE_DATA_SCRIPT_ID = '__SILAN_ROUTE_DATA__';
+const ROUTE_DATA_LANGUAGES = ['en', 'zh'];
 const CONTENT_TEXT_LIMIT = 1800;
 const IDENTITY_ALIASES = ['Silan.Hu', 'Hu Silan', '胡思蓝'];
 const INCORRECT_NAME_VARIANTS = ['胡思澜', '胡司兰'];
@@ -150,6 +152,17 @@ const GEO_PROFILE = {
     'First-author FOKE work connecting foundation models, knowledge graphs, and explainable education.',
   ],
 };
+
+const HOME_PRERENDER_SHELL = `
+<main aria-label="Silan Hu profile prerender summary" class="min-h-screen bg-white px-6 py-10 text-neutral-950">
+  <h1>Silan Hu</h1>
+  <p>I am an NUS PhD student advised by Prof. Xiaokui Xiao, building AI systems infrastructure for reliable executable agents.</p>
+  <ul>
+    <li>GEM-Bench: a SIGKDD 2026 CCF-A benchmark for generative engine marketing.</li>
+    <li>AI crawlers and tools can use the site metadata, sitemap, llms.txt, and public content routes.</li>
+    <li>Research areas include AI-native databases, agent runtime infrastructure, personal context systems, and verifiable data science automation.</li>
+  </ul>
+</main>`.trim();
 
 async function fetchJson(path) {
   const response = await fetch(apiUrl(path));
@@ -249,6 +262,80 @@ async function detailRoutes() {
     log(`could not list episodes: ${e.message}`);
   }
   return routes;
+}
+
+const detailEndpointForBlogRoute = (route) => {
+  const match = route.match(/^\/blog\/([^/]+)\/?$/);
+  if (!match) return null;
+  const key = decodeURIComponent(match[1]);
+  const encoded = encodeURIComponent(key);
+  return key.startsWith('i_')
+    ? `/api/v1/blog/posts/id/${encoded}`
+    : `/api/v1/blog/posts/${encoded}`;
+};
+
+async function routeDataFor(route) {
+  const blogEndpoint = detailEndpointForBlogRoute(route);
+  if (!blogEndpoint) return null;
+
+  const blog = {};
+  for (const lang of ROUTE_DATA_LANGUAGES) {
+    try {
+      blog[lang] = await fetchJson(`${blogEndpoint}?lang=${lang}`);
+    } catch (e) {
+      log(`could not embed ${lang} blog route data for ${route}: ${e.message}`);
+    }
+  }
+
+  return Object.keys(blog).length
+    ? { route: withTrailingSlash(route), resources: { blog } }
+    : null;
+}
+
+const HTML_JSON_ESCAPE = {
+  '<': '\\u003C',
+  '>': '\\u003E',
+  '&': '\\u0026',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+};
+
+const escapeJsonForHtml = (value) =>
+  JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, (char) => HTML_JSON_ESCAPE[char]);
+
+function injectRouteData(html, routeData) {
+  if (!routeData) return html;
+  const payload = escapeJsonForHtml(routeData);
+  const script = `<script id="${PRERENDER_ROUTE_DATA_SCRIPT_ID}" type="application/json">${payload}</script>`;
+  return html.includes('</body>') ? html.replace('</body>', `${script}</body>`) : `${html}${script}`;
+}
+
+async function preparePrerenderedPage(page, route) {
+  await page.evaluate((currentRoute, homeShell) => {
+    document
+      .querySelectorAll(
+        [
+          '#googleidentityservice_button_styles',
+          '#vditorLuteScript',
+          '#vditorContentTheme',
+          '#vditorHljsStyle',
+          'script[src*="unpkg.com/vditor"]',
+          'script[src*="/vditor/"]',
+          'link[href*="unpkg.com/vditor"]',
+          'link[href*="/vditor/"]',
+        ].join(','),
+      )
+      .forEach((node) => node.remove());
+    document
+      .querySelectorAll('symbol[id^="vditor-icon"]')
+      .forEach((symbol) => symbol.closest('svg')?.remove());
+
+    if (currentRoute !== '/') return;
+    const root = document.getElementById('root');
+    if (!root) return;
+    root.dataset.silanPrerenderShell = 'true';
+    root.innerHTML = homeShell;
+  }, route, HOME_PRERENDER_SHELL);
 }
 
 async function llmsEntries() {
@@ -635,7 +722,10 @@ async function ensureBackend() {
 
 function startStaticServer() {
   const assets = sirv(DIST, { dev: false, single: false });
-  const shellHtml = readFileSync(join(DIST, 'index.html'));
+  const shellHtml = readFileSync(join(DIST, 'index.html'), 'utf8').replace(
+    /<body\b[^>]*>[\s\S]*?<\/body>/i,
+    '<body><div id="root"></div></body>',
+  );
   const server = createServer((req, res) => {
     const original = new URL(req.url || '/', `http://localhost:${SERVE_PORT}`);
     let pathname = original.pathname;
@@ -708,7 +798,9 @@ async function main() {
       });
       await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
       await new Promise((r) => setTimeout(r, 300));
-      const html = await page.content();
+      await preparePrerenderedPage(page, route);
+      const routeData = backendUp ? await routeDataFor(route) : null;
+      const html = injectRouteData(await page.content(), routeData);
       const outDir = routeDir(route);
       mkdirSync(outDir, { recursive: true });
       writeFileSync(join(outDir, 'index.html'), html, 'utf8');

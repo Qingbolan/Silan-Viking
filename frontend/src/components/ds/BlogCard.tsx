@@ -222,7 +222,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
       {coverImage ? (
         <img
           src={coverImage}
-          alt=""
+          alt={`${title} cover`}
           loading="lazy"
           className={cn(
             'size-full object-cover transition-transform duration-ds-slow ease-ds-out-expo group-hover:scale-[1.04]',

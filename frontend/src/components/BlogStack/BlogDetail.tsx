@@ -100,19 +100,20 @@ const BlogDetail: React.FC = () => {
   const seoTitle = language === 'zh' && blog.titleZh ? blog.titleZh : blog.title;
   const seoDescription =
     (language === 'zh' && blog.summaryZh ? blog.summaryZh : blog.summary) || '';
+  const seoImage = blog.coverImage || blog.vlogCover || blog.videoThumbnail;
   const seo = (
     <Seo
       title={seoTitle}
       description={seoDescription}
-      path={`/blog/${blog.slug || blog.id}`}
-      image={blog.vlogCover}
+      path={`/blog/${blog.slug || blog.id}/`}
+      image={seoImage}
       type="article"
       lang={language as 'en' | 'zh'}
       jsonLd={blogPostingJsonLd({
         title: seoTitle,
         description: seoDescription,
-        path: `/blog/${blog.slug || blog.id}`,
-        image: blog.vlogCover,
+        path: `/blog/${blog.slug || blog.id}/`,
+        image: seoImage,
         datePublished: blog.publishDate,
         author: blog.author,
       })}

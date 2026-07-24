@@ -145,6 +145,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
   const title = language === 'zh' && post.titleZh ? post.titleZh : post.title;
   const summary = language === 'zh' && post.summaryZh ? post.summaryZh : post.summary;
+  const coverImage = post.coverImage || post.vlogCover || post.videoThumbnail;
   const articleContent = useMemo(() => {
     return stripLeadingMetadataDuplicates(post.content || [], title, summary);
   }, [post.content, summary, title]);
@@ -197,6 +198,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         showLeftRail={false}
         contentClassName="max-w-[82rem] lg:px-12"
         outlineHeadingSelector="header h1, h2, h3"
+        outlineDefaultCollapsed
         likes={likes}
         commentsCount={commentsCount}
       >
@@ -228,6 +230,18 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                 </span>
               ))}
             </div>
+            {coverImage && (
+              <figure className="mt-10 max-w-[74rem] overflow-hidden rounded-ds-lg border border-ds-border bg-ds-surface-2 shadow-ds-2">
+                <div className="aspect-[16/9] w-full overflow-hidden">
+                  <img
+                    src={coverImage}
+                    alt={`${title} cover`}
+                    loading="eager"
+                    className="size-full object-cover"
+                  />
+                </div>
+              </figure>
+            )}
           </header>
 
           <nav data-ds aria-label={language === 'zh' ? '文章章节' : 'Article sections'} className="mt-2 flex flex-wrap items-end gap-2 border-b border-ds-border">

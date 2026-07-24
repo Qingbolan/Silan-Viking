@@ -13,7 +13,7 @@
 // overlays. That keeps the reader chrome scoped to the article/idea body, so
 // it cannot cover the global footer when the page scrolls past the content.
 // Below `lg` the rails collapse to compact native navigation.
-import React, { useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { cn } from '../../../lib/utils';
 import BookNav, { type BookNavChapter } from './BookNav';
 import DOMOutline from './DOMOutline';
@@ -53,6 +53,7 @@ export interface KnowledgeBaseShellProps {
   // Right rail Outline behaviour
   outlineContainerSelector?: string;
   outlineHeadingSelector?: string;
+  outlineDefaultCollapsed?: boolean;
 
   // FAB
   likes?: number;
@@ -72,11 +73,13 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
   contentClassName,
   outlineContainerSelector,
   outlineHeadingSelector,
+  outlineDefaultCollapsed = false,
   likes,
   commentsCount,
   commentsAnchor = '#kb-comments',
 }) => {
   const centreRef = useRef<HTMLDivElement>(null);
+  const [outlineCollapsed, setOutlineCollapsed] = useState(outlineDefaultCollapsed);
   // Tab semantics: caller drives currentChapterId. Fall back to first chapter
   // so something is highlighted even before a click.
   const activeChapter = currentChapterId ?? chapters[0]?.id ?? '';
@@ -131,7 +134,9 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
           'lg:grid lg:min-h-[calc(100dvh-3.5rem)] lg:items-stretch',
           showLeftRail
             ? [
-                'lg:grid-cols-[16.5rem_minmax(0,1fr)_15rem]',
+                outlineCollapsed
+                  ? 'lg:grid-cols-[16.5rem_minmax(0,1fr)_3.5rem]'
+                  : 'lg:grid-cols-[16.5rem_minmax(0,1fr)_15rem]',
                 // MainLayout supplies page padding. Reading shells with a
                 // chapter rail are full reading surfaces, so their rails must
                 // align to that surface edge instead of inheriting inner text
@@ -139,7 +144,9 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
                 'lg:relative lg:left-1/2 lg:w-[calc(100%+4rem)] lg:-translate-x-1/2',
                 'xl:w-[calc(100%+4rem)]',
               ]
-            : 'lg:grid-cols-[minmax(0,1fr)_15rem]',
+            : outlineCollapsed
+              ? 'lg:grid-cols-[minmax(0,1fr)_3.5rem]'
+              : 'lg:grid-cols-[minmax(0,1fr)_15rem]',
         )}
       >
         {/* Left rail — book nav. Hidden below lg. Width matches Yuque
@@ -192,7 +199,8 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
         <aside
           className={cn(
             'relative z-30 hidden lg:block',
-            'min-h-full px-5',
+            'min-h-full transition-[padding] duration-ds-base',
+            outlineCollapsed ? 'px-2' : 'px-5',
           )}
         >
           <div className="sticky top-0 max-h-[calc(100dvh-4rem)] overflow-y-auto pt-6">
@@ -200,6 +208,8 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
               containerSelector={outlineContainerSelector}
               headingSelector={outlineHeadingSelector}
               activeKey={activeChapter}
+              collapsed={outlineCollapsed}
+              onCollapsedChange={setOutlineCollapsed}
             />
           </div>
         </aside>

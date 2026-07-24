@@ -70,7 +70,7 @@ const searchBlog = async (
       kind: 'blog',
       title: String(post.title || ''),
       description: String(post.summary || ''),
-      path: `/blog/${post.slug || post.id}`,
+      path: `/blog/${post.slug || post.id}/`,
       tags: Array.isArray(post.tags) ? post.tags : [],
       date: post.publish_date || undefined,
       context: post.category || undefined,

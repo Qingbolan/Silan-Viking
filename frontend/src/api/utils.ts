@@ -12,6 +12,13 @@ export class ApiError extends Error {
   }
 }
 
+export class ApiTimeoutError extends ApiError {
+  constructor(timeoutMs: number) {
+    super(`API request timed out after ${timeoutMs}ms`, 408);
+    this.name = 'ApiTimeoutError';
+  }
+}
+
 const runtimeOrigin = (): string =>
   typeof window !== 'undefined' && window.location?.origin
     ? window.location.origin
@@ -40,87 +47,106 @@ const buildUrl = (endpoint: string, params?: Record<string, any>): string => {
   return url.toString();
 };
 
-// GET request helper using native fetch to avoid CORS preflight
-export const get = <T = any>(
-  endpoint: string,
-  params?: Record<string, any>,
-  options?: { signal?: AbortSignal },
+interface RequestOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+
+const request = <T = any>(
+  urlStr: string,
+  init: RequestInit,
+  options?: RequestOptions,
 ): Promise<T> => {
-  const urlStr = buildUrl(endpoint, params);
+  const timeoutMs = Math.max(1, options?.timeoutMs ?? API_CONFIG.TIMEOUT);
+  const controller = new AbortController();
+  let didTimeout = false;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const abortFromCaller = () => {
+    controller.abort(options?.signal?.reason);
+  };
+
+  if (options?.signal?.aborted) {
+    abortFromCaller();
+  } else if (options?.signal) {
+    options.signal.addEventListener('abort', abortFromCaller, { once: true });
+  }
+
+  timeoutId = setTimeout(() => {
+    didTimeout = true;
+    controller.abort();
+  }, timeoutMs);
 
   return fetch(urlStr, {
-    method: 'GET',
-    signal: options?.signal,
+    ...init,
+    signal: controller.signal,
   }).then(async (response) => {
     if (!response.ok) {
       const errorText = await response.text();
       throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
     }
 
-    return response.json();
+    const text = await response.text();
+    return (text ? JSON.parse(text) : null) as T;
+  }).catch((error) => {
+    if (didTimeout) throw new ApiTimeoutError(timeoutMs);
+    throw error;
+  }).finally(() => {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    options?.signal?.removeEventListener('abort', abortFromCaller);
   });
 };
 
+// GET request helper using native fetch to avoid CORS preflight
+export const get = <T = any>(
+  endpoint: string,
+  params?: Record<string, any>,
+  options?: RequestOptions,
+): Promise<T> => {
+  const urlStr = buildUrl(endpoint, params);
+
+  return request<T>(urlStr, {
+    method: 'GET',
+  }, options);
+};
+
 // POST request helper using native fetch to avoid CORS preflight
-export const post = <T = any>(endpoint: string, data?: any): Promise<T> => {
+export const post = <T = any>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> => {
   const urlStr = buildUrl(endpoint);
 
-  return fetch(urlStr, {
+  return request<T>(urlStr, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: data ? JSON.stringify(data) : undefined,
-  }).then(async (response) => {
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
-    }
-
-    return response.json();
-  });
+  }, options);
 };
 
 // DELETE request helper using native fetch to avoid CORS preflight
-export const del = <T = any>(endpoint: string, data?: any): Promise<T> => {
+export const del = <T = any>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> => {
   const urlStr = buildUrl(endpoint);
 
-  return fetch(urlStr, {
+  return request<T>(urlStr, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
     },
     body: data ? JSON.stringify(data) : undefined,
-  }).then(async (response) => {
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
-    }
-
-    // DELETE might return empty response
-    const text = await response.text();
-    return text ? JSON.parse(text) : null;
-  });
+  }, options);
 };
 
 // PUT request helper using native fetch to avoid CORS preflight
-export const put = <T = any>(endpoint: string, data?: any): Promise<T> => {
+export const put = <T = any>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> => {
   const urlStr = buildUrl(endpoint);
 
-  return fetch(urlStr, {
+  return request<T>(urlStr, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     body: data ? JSON.stringify(data) : undefined,
-  }).then(async (response) => {
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new ApiError(`API request failed: ${response.status}`, response.status, errorText);
-    }
-
-    return response.json();
-  });
+  }, options);
 };
 
 // Language formatting helper

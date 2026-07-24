@@ -28,9 +28,9 @@ interface Route {
 
 const ROUTES = (zh: boolean): Route[] => [
   { path: '/',         label: zh ? '主页' : 'Home',     icon: <Home size={16} /> },
-  { path: '/projects', label: zh ? '项目' : 'Projects', icon: <Briefcase size={16} /> },
   { path: '/moments',  label: zh ? '瞬间' : 'Moments',  icon: <Aperture size={16} /> },
   { path: '/blog',     label: zh ? '博客' : 'Blog',     icon: <BookOpen size={16} /> },
+  { path: '/projects', label: zh ? '项目' : 'Projects', icon: <Briefcase size={16} /> },
   { path: '/contact',  label: zh ? '联系' : 'Contact',  icon: <Mail size={16} /> },
 ];
 
@@ -57,6 +57,8 @@ const useChromeTokens = () => {
     () => ({
       capsuleBg: isDarkMode ? 'oklch(0.21 0.012 264)' : 'oklch(1 0 0)',
       hoverBg: isDarkMode ? 'oklch(0.27 0.014 264)' : 'oklch(0.95 0 0)',
+      activeBg: isDarkMode ? 'oklch(1 0 0)' : 'oklch(0 0 0)',
+      activeFg: isDarkMode ? 'oklch(0 0 0)' : 'oklch(1 0 0)',
       accent: colors.dsPrimary,
       accentSoft: colors.dsPrimarySoft,
     }),
@@ -94,7 +96,7 @@ const NavGroup: React.FC<{ routes: Route[]; activePath: string; ariaLabel: strin
 }) => {
   const navigate = useNavigate();
   const { colors } = useTheme();
-  const { capsuleBg, hoverBg, accent, accentSoft } = useChromeTokens();
+  const { capsuleBg, hoverBg, activeBg, activeFg } = useChromeTokens();
 
   if (routes.length === 0) return null;
 
@@ -116,16 +118,16 @@ const NavGroup: React.FC<{ routes: Route[]; activePath: string; ariaLabel: strin
             onClick={() => navigate(r.path)}
             className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-colors"
             style={{
-              color: active ? accent : colors.textSecondary,
-              backgroundColor: active ? accentSoft : 'transparent',
+              color: active ? activeFg : colors.textSecondary,
+              backgroundColor: active ? activeBg : 'transparent',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = active ? accentSoft : hoverBg;
-              e.currentTarget.style.color = active ? accent : colors.textPrimary;
+              e.currentTarget.style.backgroundColor = active ? activeBg : hoverBg;
+              e.currentTarget.style.color = active ? activeFg : colors.textPrimary;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = active ? accentSoft : 'transparent';
-              e.currentTarget.style.color = active ? accent : colors.textSecondary;
+              e.currentTarget.style.backgroundColor = active ? activeBg : 'transparent';
+              e.currentTarget.style.color = active ? activeFg : colors.textSecondary;
             }}
           >
             {r.icon}

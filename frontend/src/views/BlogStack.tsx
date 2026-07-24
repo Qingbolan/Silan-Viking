@@ -90,7 +90,7 @@ function toBlogCardData(post: BlogData, language: string): BlogCardData {
 
   const coverImage = series
     ? post.seriesImage
-    : (post.vlogCover || post.videoThumbnail);
+    : (post.coverImage || post.vlogCover || post.videoThumbnail);
 
   // Series cards may carry a latest-episode pointer (stashed by
   // seriesToBlogData); BlogCard renders it as a dedicated meta row.
@@ -249,7 +249,7 @@ const BlogStack: React.FC = () => {
       navigate(`/episodes/${post.slug}`);
       return;
     }
-    navigate(`/blog/${post.slug || post.id}`);
+    navigate(`/blog/${post.slug || post.id}/`);
   }, [navigate]);
 
   if (loading) {

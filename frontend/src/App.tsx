@@ -83,6 +83,7 @@ const LocalizedRoutes: React.FC = () => {
         <Route path="/ideas/:id" element={<LegacyIdeaRoute />} />
         <Route path="/blog" element={<BlogStack />} />
         <Route path="/blog/:id" element={<BlogDetail />} />
+        <Route path="/blog/:id/" element={<BlogDetail />} />
         <Route path="/episodes/:slug" element={<EpisodeDetail />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/auth/popup-closed" element={<OAuthPopupClose />} />

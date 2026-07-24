@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: env.VITE_BUILD_SOURCEMAP !== 'false',
+      sourcemap: env.VITE_BUILD_SOURCEMAP === 'true',
     },
   };
 })

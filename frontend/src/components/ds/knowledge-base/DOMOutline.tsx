@@ -17,6 +17,8 @@ interface DOMOutlineProps {
   // the page title and lives outside the body.
   headingSelector?: string;
   className?: string;
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
   /**
    * Opaque value the caller bumps whenever the active page changes (e.g.
    * the chapter id). DOMOutline re-runs its scan + re-attaches its
@@ -44,6 +46,8 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
   containerSelector = '#kb-active-part',
   headingSelector = 'h2, h3',
   className,
+  collapsed = false,
+  onCollapsedChange,
   activeKey,
 }) => {
   const [headings, setHeadings] = useState<HeadingEntry[]>([]);
@@ -121,8 +125,59 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
 
   if (headings.length < 2) return null;
 
+  const activeHeading = headings.find((heading) => heading.id === activeId) ?? headings[0];
+  const outlineLabel = 'Article outline';
+
+  if (collapsed) {
+    return (
+      <nav aria-label={outlineLabel} className={cn('flex w-full justify-center', className)}>
+        <button
+          type="button"
+          aria-label="Expand article outline"
+          title="Expand outline"
+          onClick={() => onCollapsedChange?.(false)}
+          className={cn(
+            'group flex max-h-[calc(100dvh-6rem)] w-8 flex-col items-center gap-[6px] overflow-hidden rounded-full py-3',
+            'bg-ds-surface-1/80 transition-colors hover:bg-ds-surface-2',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/30',
+          )}
+        >
+          {headings.map((h) => {
+            const active = h.id === activeHeading.id;
+            const width = h.level <= 1 ? 22 : h.level === 2 ? 18 : 13;
+            return (
+              <span
+                key={h.id}
+                aria-hidden
+                className={cn(
+                  'block h-[3px] rounded-full transition-colors',
+                  active ? 'bg-ds-primary' : 'bg-ds-fg-subtle/45 group-hover:bg-ds-fg-muted/70',
+                )}
+                style={{ width }}
+              />
+            );
+          })}
+        </button>
+      </nav>
+    );
+  }
+
   return (
     <nav aria-label="Outline" className={cn('w-full', className)}>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-fg-subtle">
+          Outline
+        </span>
+        <button
+          type="button"
+          aria-label="Collapse article outline"
+          title="Collapse outline"
+          onClick={() => onCollapsedChange?.(true)}
+          className="rounded-ds-sm px-2 py-1 font-mono text-[10.5px] font-semibold text-ds-fg-subtle transition-colors hover:bg-ds-surface-2 hover:text-ds-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/30"
+        >
+          Min
+        </button>
+      </div>
       <ol className="space-y-1">
         {headings.map((h) => {
           const active = h.id === activeId;

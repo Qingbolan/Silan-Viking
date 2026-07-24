@@ -41,6 +41,8 @@ export interface BlogData {
   views: number;
   summary: string;
   summaryZh?: string;
+  featuredImageUrl?: string;
+  coverImage?: string;
   type?: 'article' | 'vlog' | 'tutorial' | 'podcast' | 'episode' | 'series';
   // Vlog specific fields
   videoUrl?: string;

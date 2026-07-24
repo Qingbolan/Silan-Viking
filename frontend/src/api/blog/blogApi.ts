@@ -1,5 +1,5 @@
 import type { BlogData, BlogLiker } from '../../components/BlogStack/types/blog';
-import { get, post, formatLanguage, del, apiUrl } from '../utils';
+import { get, post, formatLanguage, del, apiUrl, mediaUrl } from '../utils';
 import { type PaginationRequest } from '../config';
 import { processRawContent } from '../../utils/markdownParser';
 import { getClientFingerprint } from '../../utils/fingerprint';
@@ -24,23 +24,40 @@ export interface UpdateBlogLikesResponse {
 
 // API functions
 
-const mapBlogData = (post: any, content?: BlogData['content']): BlogData => ({
-  ...post,
-  tags: post.tags || [],
-  ...(content ? { content } : {}),
-  seriesId: post.series_id,
-  seriesSlug: post.series_slug,
-  seriesTitle: post.series_title,
-  seriesTitleZh: post.series_title_zh,
-  seriesDescription: post.series_description,
-  seriesDescriptionZh: post.series_description_zh,
-  episodeNumber: post.episode_number,
-  totalEpisodes: post.total_episodes,
-  seriesImage: post.series_image,
-  publishDate: post.publish_date,
-  readTime: post.read_time,
-  isLikedByUser: Boolean(post.is_liked_by_user ?? post.isLikedByUser),
-}) as BlogData;
+export const normalizeBlogData = (post: any, content?: BlogData['content']): BlogData => {
+  const featuredImageUrl = post.featured_image_url ?? post.featuredImageUrl;
+  const videoThumbnail = post.video_thumbnail ?? post.videoThumbnail;
+  const vlogCover = post.vlog_cover ?? post.vlogCover;
+  const coverImage = featuredImageUrl || vlogCover || videoThumbnail;
+
+  return {
+    ...post,
+    tags: post.tags || [],
+    ...(content ? { content } : {}),
+    featuredImageUrl: featuredImageUrl ? mediaUrl(featuredImageUrl) : undefined,
+    coverImage: coverImage ? mediaUrl(coverImage) : undefined,
+    vlogCover: vlogCover ? mediaUrl(vlogCover) : undefined,
+    videoThumbnail: videoThumbnail ? mediaUrl(videoThumbnail) : undefined,
+    seriesId: post.series_id,
+    seriesSlug: post.series_slug,
+    seriesTitle: post.series_title,
+    seriesTitleZh: post.series_title_zh,
+    seriesDescription: post.series_description,
+    seriesDescriptionZh: post.series_description_zh,
+    episodeNumber: post.episode_number,
+    totalEpisodes: post.total_episodes,
+    seriesImage: post.series_image ? mediaUrl(post.series_image) : undefined,
+    publishDate: post.publish_date,
+    readTime: post.read_time,
+    isLikedByUser: Boolean(post.is_liked_by_user ?? post.isLikedByUser),
+  } as BlogData;
+};
+
+export const normalizeBlogResponse = (post: any): BlogData | null => {
+  if (!post) return null;
+  const processedContent = post.content ? processRawContent(post.content) : [];
+  return normalizeBlogData(post, processedContent);
+};
 
 /**
  * Get blog posts list with pagination and filtering
@@ -55,7 +72,7 @@ export const fetchBlogPosts = async (
   });
   
   // Ensure consistent data structure and map fields
-  const posts = (response.posts || []).map((post: any) => mapBlogData(post));
+  const posts = (response.posts || []).map((post: any) => normalizeBlogData(post));
   
   return posts;
 };
@@ -73,8 +90,7 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
     fingerprint: getClientFingerprint(),
   });
   if (!response) return null;
-  const processedContent = response.content ? processRawContent(response.content) : [];
-  return mapBlogData(response, processedContent);
+  return normalizeBlogResponse(response);
 };
 
 /**
