@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 import { dsRoot } from '../ds/dsAttr';
-import { MOMENTS_CONTENT_FRAME_CLASS } from './layout';
+import { EDITORIAL_CONTENT_FRAME_CLASS } from '../../layout/contentFrame';
 
 interface MomentsProfileHeroProps {
   eyebrow: string;
@@ -51,7 +51,7 @@ const MomentsProfileHero: React.FC<MomentsProfileHeroProps> = ({
       />
 
       <div className="absolute inset-x-0 bottom-0 text-white">
-        <div className={cn(MOMENTS_CONTENT_FRAME_CLASS, 'pb-7 sm:pb-9 2xl:pb-14')}>
+        <div className={cn(EDITORIAL_CONTENT_FRAME_CLASS, 'pb-7 sm:pb-9 2xl:pb-14')}>
           <div className="mb-2 text-ds-xs font-semibold uppercase tracking-[0.16em] text-orange-200">
             {eyebrow}
           </div>
@@ -66,7 +66,7 @@ const MomentsProfileHero: React.FC<MomentsProfileHeroProps> = ({
     </div>
 
     <div className="absolute -bottom-16 inset-x-0 2xl:-bottom-20">
-      <div className={cn(MOMENTS_CONTENT_FRAME_CLASS, 'flex justify-end')}>
+      <div className={cn(EDITORIAL_CONTENT_FRAME_CLASS, 'flex justify-end')}>
         <div className="flex max-w-full items-start gap-3 sm:gap-4 2xl:gap-5">
           <div className="min-w-0 pt-5 text-right">
             <strong className="block truncate text-xl font-semibold tracking-[-0.025em] text-white drop-shadow-[0_1px_12px_rgba(0,0,0,0.55)] sm:text-2xl 2xl:text-3xl">

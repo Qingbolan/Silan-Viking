@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useLanguage } from '../../components/LanguageContext';
 import { ProfileHero, type ContactItem, type HeroAction, type HeroIllustration, type SocialItem } from '../../components/ds';
 import { resolveSocialLink } from '../../utils/socialPlatform';
+import { EDITORIAL_CONTENT_FRAME_CLASS } from '../../layout/contentFrame';
 
 interface ContactInfo {
   type: string;
@@ -87,6 +88,7 @@ const ProjectSection: React.FC<ProjectSectionProps> = ({
       avatarSrc={avatarSrc}
       bottomIllustrations={bottomIllustrations}
       chrome={false}
+      className={EDITORIAL_CONTENT_FRAME_CLASS}
     />
   );
 };

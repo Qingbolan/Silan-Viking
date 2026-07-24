@@ -19,7 +19,7 @@ import type { Moment, PersonalInfo } from '../types/api';
 import MomentActions from '../components/Resume/MomentActions';
 import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
 import MomentsProfileHero from '../components/Moments/MomentsProfileHero';
-import { MOMENTS_CONTENT_FRAME_CLASS } from '../components/Moments/layout';
+import { EDITORIAL_CONTENT_FRAME_CLASS } from '../layout/contentFrame';
 import { usePageFilter, type PageFilterOption } from '../layout/PageTitleContext';
 import {
   Button,
@@ -333,7 +333,7 @@ const Moments: React.FC = () => {
           <div
             {...dsRoot}
             aria-label={language === 'en' ? 'Loading moments' : '正在加载动态'}
-            className={cn(MOMENTS_CONTENT_FRAME_CLASS, 'divide-y divide-ds-border border-t border-ds-border')}
+            className={cn(EDITORIAL_CONTENT_FRAME_CLASS, 'divide-y divide-ds-border border-t border-ds-border')}
           >
             {[0, 1, 2].map((item) => (
               <div key={item} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3 py-7 sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-6">
@@ -353,7 +353,7 @@ const Moments: React.FC = () => {
         )}
 
         {loadState === 'ready' && filtered.length === 0 && (
-          <div className={MOMENTS_CONTENT_FRAME_CLASS}>
+          <div className={EDITORIAL_CONTENT_FRAME_CLASS}>
             <EmptyState
               icon={<CalendarDays />}
               title={copy.emptyTitle}
@@ -368,7 +368,7 @@ const Moments: React.FC = () => {
         )}
 
         {loadState === 'ready' && filtered.length > 0 && (
-          <div className={cn(MOMENTS_CONTENT_FRAME_CLASS, 'space-y-14')}>
+          <div className={cn(EDITORIAL_CONTENT_FRAME_CLASS, 'space-y-14')}>
             {yearGroups.map((group) => (
               <section {...dsRoot} key={group.year} aria-labelledby={`year-${group.year}`}>
                 <header className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-end gap-3 border-b border-ds-border pb-5 sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-6 sm:pb-6">

@@ -30,6 +30,7 @@ import {
   type RecentItem,
 } from '../components/Resume';
 import { usePageSections } from '../layout/PageTitleContext';
+import { EDITORIAL_CONTENT_FRAME_CLASS } from '../layout/contentFrame';
 
 
 
@@ -318,7 +319,12 @@ const ResumeWebsite: React.FC = () => {
       </div>
 
       {/* Content Sections */}
-      <div className="mx-auto w-full max-w-6xl min-w-0 px-3 pb-12 xs:pb-16 sm:px-4 sm:pb-20 space-y-6 xs:space-y-8 sm:space-y-12">
+      <div
+        className={[
+          EDITORIAL_CONTENT_FRAME_CLASS,
+          'min-w-0 space-y-6 pb-12 xs:space-y-8 xs:pb-16 sm:space-y-12 sm:pb-20',
+        ].join(' ')}
+      >
         {/* About Me Section — the résumé summary prose, leads the content. */}
         {resumeData.sections?.about && resumeData.sections.about.content && (
           <div id="about-section" className="scroll-mt-24 sm:scroll-mt-28 lg:scroll-mt-32">

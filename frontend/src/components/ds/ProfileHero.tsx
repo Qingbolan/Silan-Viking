@@ -105,7 +105,10 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   return (
     <section
       {...dsRoot}
-      className={cn('relative isolate w-full max-w-full overflow-hidden px-4 py-8 xs:px-6 sm:mx-auto sm:max-w-5xl sm:px-10 sm:py-14', className)}
+      className={cn(
+        'relative isolate mx-auto w-full max-w-5xl overflow-hidden px-4 py-8 xs:px-6 sm:px-10 sm:py-14',
+        className,
+      )}
     >
       <div aria-hidden className="pointer-events-none absolute right-0 top-0 size-64 rounded-full bg-ds-primary/10 blur-3xl sm:-translate-y-1/3 sm:translate-x-1/3 sm:size-80" />
       <div aria-hidden className="pointer-events-none absolute left-6 top-0 h-20 w-px bg-ds-primary/50 sm:left-10" />
