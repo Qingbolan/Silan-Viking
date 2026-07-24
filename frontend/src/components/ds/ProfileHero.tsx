@@ -106,7 +106,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
     <section
       {...dsRoot}
       className={cn(
-        'relative isolate mx-auto w-full max-w-5xl overflow-hidden px-4 py-8 xs:px-6 sm:px-10 sm:py-14',
+        'relative isolate mx-auto w-full max-w-5xl overflow-hidden px-4 py-8 sm:px-10 sm:py-14',
         className,
       )}
     >

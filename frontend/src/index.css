@@ -1378,6 +1378,10 @@ code[class*="language-"] .token.italic { font-style: italic; }
   line-height: 1.74;
 }
 
+.vditor-markdown .vditor-reset--anchor {
+  padding-left: 0;
+}
+
 .vditor-markdown .vditor-reset h1,
 .vditor-markdown .vditor-reset h2,
 .vditor-markdown .vditor-reset h3,
