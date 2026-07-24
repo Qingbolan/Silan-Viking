@@ -342,6 +342,11 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
           publishedAt={post.publishDate}
           viewCount={post.views}
           shareTitle={post.title}
+          attribution={{
+            author: typeof post.author === 'string' ? post.author : undefined,
+            canonicalPath: `/blog/${post.slug || post.id}/`,
+            kind: 'series',
+          }}
           comments={engagement.comments}
           commentsState={engagement.commentsState}
           commentsError={engagement.commentsError}

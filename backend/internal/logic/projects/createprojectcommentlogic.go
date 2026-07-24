@@ -7,12 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"silan-backend/internal/ent"
+	"silan-backend/internal/commentruntime"
 	entcomment "silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
-	"entgo.io/ent/dialect/sql"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -53,37 +52,17 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		parentID = req.ParentId
 	}
 
-	// Resolve author
-	authorName := req.AuthorName
-	authorEmail := req.AuthorEmail
-	avatarURL := ""
-	authProvider := ""
-	if req.AuthenticatedUserID != "" && strings.TrimSpace(req.AuthenticatedUserID) != "" {
-		user, err := l.svcCtx.DB.UserIdentity.Get(l.ctx, req.AuthenticatedUserID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid user identity")
-		}
-		authorName = user.DisplayName
-		authorEmail = user.Email
-		avatarURL = user.AvatarURL
-		authProvider = user.Provider
-	} else {
-		if authorName == "" {
-			return nil, fmt.Errorf("author_name is required for anonymous comments")
-		}
-		if authorEmail == "" || !strings.Contains(authorEmail, "@") || len(authorEmail) < 5 {
-			return nil, fmt.Errorf("author_email is required and must be valid")
-		}
-		// Try to get avatar from stored identities using entgo
-		userIdentity, err := l.svcCtx.DB.UserIdentity.Query().
-			Where(func(s *sql.Selector) {
-				s.Where(sql.EQ("email", authorEmail))
-			}).
-			Order(ent.Desc("updated_at")).
-			First(l.ctx)
-		if err == nil && userIdentity.AvatarURL != "" {
-			avatarURL = userIdentity.AvatarURL
-		}
+	author, err := commentruntime.ResolveAuthor(
+		l.ctx,
+		l.svcCtx.DB,
+		req.AuthenticatedUserID,
+		req.AuthorName,
+		req.Fingerprint,
+		req.CountryCode,
+		req.RegionCode,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	// Prepare user agent tagging with fingerprint
@@ -100,12 +79,14 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		SetEntityType(entcomment.EntityTypeProject).
 		SetEntityID(req.ID).
 		SetType(entcomment.Type(req.Type)).
-		SetAuthorName(authorName).
-		SetAuthorEmail(authorEmail).
+		SetAuthorName(author.Name).
 		SetContent(req.Content).
 		SetIsApproved(true). // Auto-approve for now
 		SetLikesCount(0)
 
+	if author.Email != "" {
+		commentBuilder = commentBuilder.SetAuthorEmail(author.Email)
+	}
 	if parentID != "" {
 		commentBuilder = commentBuilder.SetParentID(parentID)
 	}
@@ -118,8 +99,8 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 	if userAgent != "" {
 		commentBuilder = commentBuilder.SetUserAgent(userAgent)
 	}
-	if req.AuthenticatedUserID != "" {
-		commentBuilder = commentBuilder.SetUserIdentityID(req.AuthenticatedUserID)
+	if author.UserIdentityID != "" {
+		commentBuilder = commentBuilder.SetUserIdentityID(author.UserIdentityID)
 	}
 
 	countryCode := strings.ToUpper(req.CountryCode)
@@ -137,8 +118,8 @@ func (l *CreateProjectCommentLogic) CreateProjectComment(req *types.CreateProjec
 		ProjectID:       comment.EntityID,
 		ParentID:        comment.ParentID,
 		AuthorName:      comment.AuthorName,
-		AuthorAvatarURL: avatarURL,
-		AuthProvider:    authProvider,
+		AuthorAvatarURL: author.AvatarURL,
+		AuthProvider:    author.AuthProvider,
 		CountryCode:     countryCode,
 		Content:         comment.Content,
 		Type:            string(comment.Type),

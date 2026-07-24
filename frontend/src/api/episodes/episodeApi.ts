@@ -63,6 +63,7 @@ export const updateEpisodeViews = async (
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({
         fingerprint: getClientFingerprint(),
         user_agent_full: navigator.userAgent,
@@ -98,7 +99,6 @@ export const listEpisodeComments = async (
 export const createEpisodeComment = async (
   episodeId: string,
   authorName: string,
-  authorEmail: string,
   content: string,
   fingerprint: string,
   language: 'en' | 'zh' = 'en',
@@ -106,7 +106,6 @@ export const createEpisodeComment = async (
 ): Promise<BlogCommentData> => {
   return post<BlogCommentData>(`/api/v1/episodes/${episodeId}/comments`, {
     author_name: authorName,
-    author_email: authorEmail,
     content,
     fingerprint,
     lang: formatLanguage(language),

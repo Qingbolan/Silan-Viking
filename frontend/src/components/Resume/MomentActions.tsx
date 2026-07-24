@@ -14,8 +14,6 @@ import { getClientFingerprint } from '../../utils/fingerprint';
 import { EntityDiscussion, type RemoteDiscussionComment } from '../ds/EntityDiscussion';
 import type { CommentDraft } from '../ds/article-footer/types';
 import { useLanguage } from '../LanguageContext';
-import { LoginPromptModal } from '../ds';
-import { useRequireIdentity } from '../../lib/useRequireIdentity';
 import { markdownToPlainExcerpt } from '../../lib/markdown';
 import MomentActionMenu from './MomentActionMenu';
 import MomentLikerAvatar from './MomentLikerAvatar';
@@ -63,8 +61,6 @@ const MomentActions: React.FC<MomentActionsProps> = ({
   const [compactPreview, setCompactPreview] = useState<RemoteDiscussionComment | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
   const [likePending, setLikePending] = useState(false);
-  const { loginPromptOpen, requireIdentity: requireIdentityGate, resolveLogin, closeLoginPrompt } =
-    useRequireIdentity<'like' | 'comment'>();
   const likers = engagement.likers ?? [];
   const mutatedRef = useRef(false);
   const formattedTimestamp = (() => {
@@ -105,14 +101,6 @@ const MomentActions: React.FC<MomentActionsProps> = ({
     }
   };
 
-  const performAction = (action: 'like' | 'comment') => {
-    if (action === 'like') void toggleLike();
-    else setComposerOpen((value) => !value);
-  };
-
-  const requireIdentity = (action: 'like' | 'comment') => requireIdentityGate(action, performAction);
-  const handleLoginResolved = () => resolveLogin(performAction);
-
   const loadComments = useCallback((
     fingerprint: string,
   ): Promise<RemoteDiscussionComment[]> => listMomentComments(momentKey, fingerprint), [momentKey]);
@@ -126,7 +114,6 @@ const MomentActions: React.FC<MomentActionsProps> = ({
       draft.content,
       fingerprint,
       draft.authorName,
-      draft.authorEmail,
       draft.parentId,
     );
     mutatedRef.current = true;
@@ -179,7 +166,7 @@ const MomentActions: React.FC<MomentActionsProps> = ({
               type="button"
               aria-label={likeLabel}
               disabled={likePending}
-              onClick={(event) => { event.preventDefault(); requireIdentity('like'); }}
+              onClick={(event) => { event.preventDefault(); void toggleLike(); }}
               className={`inline-flex items-center gap-1.5 text-ds-xs font-medium tabular-nums transition-colors disabled:cursor-wait disabled:opacity-50 ${
                 engagement.is_liked_by_user ? 'text-red-500' : 'text-ds-fg-subtle hover:text-ds-fg'
               }`}
@@ -266,11 +253,6 @@ const MomentActions: React.FC<MomentActionsProps> = ({
           </div>
         )}
 
-        <LoginPromptModal
-          open={loginPromptOpen}
-          onClose={closeLoginPrompt}
-          onResolved={handleLoginResolved}
-        />
       </div>
     );
   }
@@ -311,10 +293,10 @@ const MomentActions: React.FC<MomentActionsProps> = ({
           liked={engagement.is_liked_by_user}
           likePending={likePending}
           composerOpen={composerOpen}
-          onLike={() => requireIdentity('like')}
+          onLike={() => void toggleLike()}
           onComment={() => {
             if (composerOpen) setComposerOpen(false);
-            else requireIdentity('comment');
+            else setComposerOpen(true);
           }}
         />
       </div>
@@ -349,11 +331,6 @@ const MomentActions: React.FC<MomentActionsProps> = ({
         </div>
       )}
 
-      <LoginPromptModal
-        open={loginPromptOpen}
-        onClose={closeLoginPrompt}
-        onResolved={handleLoginResolved}
-      />
     </div>
   );
 };

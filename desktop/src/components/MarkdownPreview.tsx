@@ -1,9 +1,8 @@
-import React from 'react';
-import Vditor from 'vditor';
+import MarkdownEditor from './MarkdownEditor';
 
 /**
- * Render Markdown through Vditor's own preview pipeline — the same
- * renderer the editor uses, so preview and editing always agree.
+ * Read-only Milkdown surface. Preview and editing share one Markdown schema,
+ * so GFM structures cannot drift between the resume canvas and the editor.
  */
 export function MarkdownPreview({
   content,
@@ -12,21 +11,14 @@ export function MarkdownPreview({
   content: string;
   className?: string;
 }) {
-  const previewRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    const element = previewRef.current;
-    if (!element) return;
-    element.innerHTML = '';
-    void Vditor.preview(element, content, {
-      mode: 'light',
-      hljs: { lineNumber: true },
-      markdown: { toc: true },
-    });
-    return () => {
-      element.innerHTML = '';
-    };
-  }, [content]);
-
-  return <div ref={previewRef} className={className} />;
+  return (
+    <MarkdownEditor
+      value={content}
+      className={className}
+      ariaLabel="Rendered Markdown"
+      readOnly
+      autoFocus={false}
+      showStatus={false}
+    />
+  );
 }

@@ -265,7 +265,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	ensureGeoLocationColumns(rawDB, c.Database.Driver, "request_logs")
 	ensureGeoLocationColumns(rawDB, c.Database.Driver, "content_interaction")
 	createContentRelationTable(rawDB, c.Database.Driver)
-	dropContentForeignKeys(rawDB, c.Database.Driver)
+	migrateRuntimeTableConstraints(rawDB, c.Database.Driver)
 	purgeIdeaRows(rawDB, c.Database.Driver)
 	trafficClassifier := traffic.NewClassifier(c.Traffic)
 	countryResolver, countryErr := traffic.OpenCountryResolver("/var/lib/GeoIP/country.mmdb")
@@ -521,9 +521,10 @@ func purgeIdeaRows(db *sql.DB, driver string) {
 	}
 }
 
-// dropContentForeignKeys rebuilds the runtime analytics tables that an older
-// ent schema gave a database-level foreign key onto an engine-derived content
-// table (`project_views`/`project_likes` → `projects`).
+// migrateRuntimeTableConstraints rebuilds runtime tables whose persisted
+// constraints no longer match the runtime model. It removes historical
+// foreign keys into engine-derived content tables and makes a comment's email
+// optional now that anonymous authors are fingerprint-backed guests.
 //
 // Such a FK is a modelling error: `deploy`'s promote replaces the derived
 // `projects` table wholesale — with fresh ids — on every content sync, so any
@@ -536,23 +537,35 @@ func purgeIdeaRows(db *sql.DB, driver string) {
 // Only SQLite is handled — it is the deploy driver, and the rebuild idiom is
 // SQLite-specific. The migration is idempotent: a table already FK-free (the
 // `sqlite_master` SQL no longer mentions `REFERENCES \`projects\“) is skipped.
-// contentFKRebuild describes how to rebuild one runtime table free of its
-// content foreign key.
-type contentFKRebuild struct {
-	// createSQL is the FK-free CREATE TABLE, matching the current ent schema.
+// runtimeTableRebuild describes the canonical shape used when a persisted
+// runtime table still carries obsolete constraints.
+type runtimeTableRebuild struct {
+	// createSQL is the canonical CREATE TABLE matching the current ent schema.
 	createSQL string
 	// columns is the explicit shared column list copied from the old table.
-	// It must list only columns the *new* table has — so a dropped
-	// edge-backed FK column (e.g. `blog_post_comments`) is left behind.
+	// It lists only columns the new table has, so obsolete edge-backed
+	// columns (for example `blog_post_comments`) are left behind.
 	columns string
 }
 
-func dropContentForeignKeys(db *sql.DB, driver string) {
+func migrateRuntimeTableConstraints(db *sql.DB, driver string) {
+	switch driver {
+	case "mysql":
+		if _, err := db.Exec("ALTER TABLE comments MODIFY author_email VARCHAR(255) NULL"); err != nil {
+			log.Printf("warning: failed making comments.author_email optional: %v", err)
+		}
+		return
+	case "postgres", "postgresql":
+		if _, err := db.Exec("ALTER TABLE comments ALTER COLUMN author_email DROP NOT NULL"); err != nil {
+			log.Printf("warning: failed making comments.author_email optional: %v", err)
+		}
+		return
+	}
 	if driver != "sqlite3" {
 		return
 	}
 
-	rebuilds := map[string]contentFKRebuild{
+	rebuilds := map[string]runtimeTableRebuild{
 		"project_views": {
 			createSQL: `CREATE TABLE project_views (
 				id text NOT NULL PRIMARY KEY,
@@ -597,7 +610,7 @@ func dropContentForeignKeys(db *sql.DB, driver string) {
 				entity_type text NOT NULL,
 				entity_id text NOT NULL,
 				author_name text NOT NULL,
-				author_email text NOT NULL,
+				author_email text NULL,
 				author_website text NULL,
 				content text NOT NULL,
 				type text NOT NULL DEFAULT ('general'),
@@ -605,6 +618,7 @@ func dropContentForeignKeys(db *sql.DB, driver string) {
 				attachment_id text NULL,
 				is_approved bool NOT NULL DEFAULT (false),
 				ip_address text NULL,
+				country_code text NULL,
 				user_agent text NULL,
 				likes_count integer NOT NULL DEFAULT (0),
 				created_at datetime NOT NULL,
@@ -618,7 +632,7 @@ func dropContentForeignKeys(db *sql.DB, driver string) {
 			)`,
 			columns: "id, entity_type, entity_id, author_name, author_email, " +
 				"author_website, content, type, reference_id, attachment_id, " +
-				"is_approved, ip_address, user_agent, likes_count, created_at, " +
+				"is_approved, ip_address, country_code, user_agent, likes_count, created_at, " +
 				"updated_at, parent_id, user_identity_id",
 		},
 	}
@@ -640,8 +654,14 @@ func dropContentForeignKeys(db *sql.DB, driver string) {
 				break
 			}
 		}
-		if !hasContentFK {
-			continue // already FK-free — nothing to do
+		normalizedSchema := strings.ToLower(existing)
+		for _, quote := range []string{"`", `"`, "[", "]"} {
+			normalizedSchema = strings.ReplaceAll(normalizedSchema, quote, "")
+		}
+		hasRequiredCommentEmail := table == "comments" &&
+			strings.Contains(normalizedSchema, "author_email text not null")
+		if !hasContentFK && !hasRequiredCommentEmail {
+			continue // constraints already match the runtime model
 		}
 		// Rebuild without the content FK. `foreign_keys` is OFF for the swap
 		// so the rename does not trip other tables' checks; the copy uses an
@@ -664,7 +684,7 @@ func dropContentForeignKeys(db *sql.DB, driver string) {
 			}
 		}
 		if !failed {
-			log.Printf("migrated %s: dropped its content foreign key", table)
+			log.Printf("migrated %s runtime constraints", table)
 		}
 	}
 }

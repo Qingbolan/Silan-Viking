@@ -33,6 +33,20 @@ Do not run `npm run desktop` directly unless `SILAN_DESKTOP_CONTENT` and
 `SILAN_VIKING_BIN` so desktop delivery actions call the same reviewed engine
 binary that opened the app.
 
+## OpenAI connection
+
+Open the standalone **Settings** page from the gear button at the bottom of
+the desktop sidebar. The AI connection section can verify and save a Platform
+API key, test the stored credential, replace it, or remove it. The secret is
+stored only in macOS Keychain; it is never written to the workspace, Tauri
+state, logs, or frontend storage.
+
+Translation uses the Responses API with strict structured output. The default
+model is `gpt-5-nano` with minimal reasoning to keep routine translation costs
+low; set `SILAN_OPENAI_TRANSLATION_MODEL` before launching the desktop process
+only when the workspace needs an explicit model override.
+Voice capture uses `gpt-4o-mini-transcribe`.
+
 ## macOS app bundle
 
 The product name, window title, bundle name, executable name, and Dock name are

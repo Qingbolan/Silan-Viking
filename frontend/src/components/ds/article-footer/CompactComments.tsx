@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { AlertCircle, Heart, LoaderCircle, MessageCircle, MessageSquareText, Send, Trash2 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useLanguage } from '../../LanguageContext';
 import { useAuth } from '../../InteractiveContact';
-import { useRequireIdentity } from '../../../lib/useRequireIdentity';
-import { LoginPromptModal } from '../LoginPromptModal';
-import { fetchVisitorCountryCode } from '../../../api/geo';
-import { readCommenter } from '../../../lib/commenterIdentity';
+import { useCommenterIdentity } from '../../../lib/useCommenterIdentity';
 import { dsRoot } from '../dsAttr';
+import { GuestIdentityEditor } from '../GuestIdentityEditor';
 import Avatar from './Avatar';
 import AuthProviderBadge from './AuthProviderBadge';
 import Markdown from '../../ui/Markdown';
@@ -49,31 +47,73 @@ const Composer: React.FC<{
   postAria: string;
   submitting: boolean;
   surface?: 'default' | 'sidebar';
-  onSubmit: (content: string) => void | Promise<void>;
-}> = ({ placeholder, postAria, submitting, surface = 'default', onSubmit }) => {
+  onSubmit: (content: string, authorName: string) => void | Promise<void>;
+  onIdentityMerged: () => void | Promise<void>;
+  onIdentityMergeError: () => void;
+}> = ({
+  placeholder,
+  postAria,
+  submitting,
+  surface = 'default',
+  onSubmit,
+  onIdentityMerged,
+  onIdentityMergeError,
+}) => {
   const { language } = useLanguage();
-  const { user, isAuthenticated } = useAuth();
-  const [identity] = useState(readCommenter);
+  const { user, isAuthenticated, githubAvailable, loginWithGitHub, mergeGuestIdentity } = useAuth();
+  const { commenter, setAuthorName } = useCommenterIdentity();
   const [content, setContent] = useState('');
-  const [visitorCountryCode, setVisitorCountryCode] = useState<string>();
+  const [identityMergePending, setIdentityMergePending] = useState(false);
+  const [signInPending, setSignInPending] = useState(false);
+  const [identityApplied, setIdentityApplied] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) return;
-    let active = true;
-    void fetchVisitorCountryCode().then((code) => { if (active) setVisitorCountryCode(code); });
-    return () => { active = false; };
-  }, [isAuthenticated]);
-
-  const composerName = isAuthenticated ? user?.username || '' : identity.authorName;
+  const composerName = isAuthenticated ? user?.username || '' : commenter.authorName;
   const composerAvatar = isAuthenticated ? user?.avatar : undefined;
-  const composerCountryCode = isAuthenticated ? undefined : visitorCountryCode;
+  const composerCountryCode = isAuthenticated || commenter.countryCode === 'XX'
+    ? undefined
+    : commenter.countryCode;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const comment = content.trim();
     if (!comment) return;
-    await onSubmit(comment);
+    await onSubmit(comment, composerName);
     setContent('');
+  };
+
+  const handleUseSignedInIdentity = async () => {
+    if (!isAuthenticated || !user || identityMergePending) return;
+    setIdentityMergePending(true);
+    try {
+      const result = await mergeGuestIdentity();
+      setAuthorName(result.user.username);
+      setIdentityApplied(true);
+      await onIdentityMerged();
+    } catch {
+      onIdentityMergeError();
+    } finally {
+      setIdentityMergePending(false);
+    }
+  };
+
+  const handleSignInAndUseIdentity = async () => {
+    if (!githubAvailable || signInPending) return;
+    setSignInPending(true);
+    try {
+      const signedIn = await loginWithGitHub();
+      if (!signedIn) {
+        onIdentityMergeError();
+        return;
+      }
+      const result = await mergeGuestIdentity();
+      setAuthorName(result.user.username);
+      setIdentityApplied(true);
+      await onIdentityMerged();
+    } catch {
+      onIdentityMergeError();
+    } finally {
+      setSignInPending(false);
+    }
   };
 
   const composerAvatarNode = (
@@ -86,49 +126,62 @@ const Composer: React.FC<{
   );
 
   return (
-    <form
-      onSubmit={(event) => { void handleSubmit(event); }}
-      className={cn('flex items-center', surface === 'sidebar' ? 'gap-0' : 'gap-2.5')}
-    >
-      {surface !== 'sidebar' && composerAvatarNode}
-      <div
-        className={cn(
-          'flex min-w-0 flex-1 items-center gap-2 rounded-full',
-          surface === 'sidebar'
-            ? 'min-h-12 border border-ds-border bg-ds-surface-1 px-2 shadow-ds-1'
-            : 'bg-ds-surface-3 pl-4 pr-1.5',
-        )}
+    <div className="space-y-1.5">
+      <GuestIdentityEditor
+        name={commenter.authorName}
+        onChange={setAuthorName}
+        signedInName={isAuthenticated && !identityApplied ? user?.username : undefined}
+        signedInAvatar={isAuthenticated && !identityApplied ? user?.avatar : undefined}
+        onUseSignedIn={isAuthenticated && !identityApplied ? handleUseSignedInIdentity : undefined}
+        useSignedInPending={identityMergePending}
+        onSignIn={!isAuthenticated && githubAvailable ? handleSignInAndUseIdentity : undefined}
+        signInPending={signInPending}
+        className={surface !== 'sidebar' ? 'pl-[42px]' : undefined}
+      />
+      <form
+        onSubmit={(event) => { void handleSubmit(event); }}
+        className={cn('flex items-center', surface === 'sidebar' ? 'gap-0' : 'gap-2.5')}
       >
-        {surface === 'sidebar' && composerAvatarNode}
-        <input
-          {...dsRoot}
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          maxLength={4000}
-          placeholder={placeholder}
+        {surface !== 'sidebar' && composerAvatarNode}
+        <div
           className={cn(
-            'min-h-10 flex-1 bg-transparent text-ds-sm text-ds-fg outline-none placeholder:text-ds-fg-subtle',
-            surface === 'sidebar' && 'min-w-0 text-[15px]',
-          )}
-        />
-        <button
-          type="submit"
-          disabled={submitting || !content.trim()}
-          aria-label={postAria}
-          className={cn(
-            'inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/45',
-            submitting || !content.trim()
-              ? 'text-ds-fg-subtle'
-              : surface === 'sidebar'
-              ? 'bg-ds-primary text-ds-primary-fg shadow-ds-1 hover:bg-ds-primary-hover'
-              : 'text-ds-primary hover:bg-ds-primary/10',
+            'flex min-w-0 flex-1 items-center gap-2 rounded-full',
+            surface === 'sidebar'
+              ? 'min-h-12 border border-ds-border bg-ds-surface-1 px-2 shadow-ds-1'
+              : 'bg-ds-surface-3 pl-4 pr-1.5',
           )}
         >
-          {submitting ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
-        </button>
-      </div>
-    </form>
+          {surface === 'sidebar' && composerAvatarNode}
+          <input
+            {...dsRoot}
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            maxLength={4000}
+            placeholder={placeholder}
+            className={cn(
+              'min-h-10 flex-1 bg-transparent text-ds-sm text-ds-fg outline-none placeholder:text-ds-fg-subtle',
+              surface === 'sidebar' && 'min-w-0 text-[15px]',
+            )}
+          />
+          <button
+            type="submit"
+            disabled={submitting || !content.trim()}
+            aria-label={postAria}
+            className={cn(
+              'inline-flex size-8 shrink-0 items-center justify-center rounded-full transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/45',
+              submitting || !content.trim()
+                ? 'text-ds-fg-subtle'
+                : surface === 'sidebar'
+                ? 'bg-ds-primary text-ds-primary-fg shadow-ds-1 hover:bg-ds-primary-hover'
+                : 'text-ds-primary hover:bg-ds-primary/10',
+            )}
+          >
+            {submitting ? <LoaderCircle className="size-4 animate-spin" /> : <Send className="size-4" />}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 
@@ -281,26 +334,21 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [formError, setFormError] = useState<string>();
   const [replyTarget, setReplyTarget] = useState<ArticleComment | null>(null);
-  const { loginPromptOpen, requireIdentity, resolveLogin, closeLoginPrompt } =
-    useRequireIdentity<() => void>();
 
   const visibleThreads = visibleCount === undefined || expanded ? comments : comments.slice(0, visibleCount);
   const hiddenCount = comments.length - visibleThreads.length;
   const totalCount = comments.reduce((sum, root) => sum + countThread(root), 0);
   const showComposer = composerVisible || Boolean(replyTarget);
 
-  const submitDraft = async (content: string, parentId?: string) => {
-    const identity = readCommenter();
+  const submitDraft = async (content: string, authorName: string, parentId?: string) => {
     setFormError(undefined);
     try {
-      await onSubmit({ authorName: identity.authorName, authorEmail: identity.authorEmail, content, parentId });
+      await onSubmit({ authorName, content, parentId });
       setReplyTarget(null);
     } catch {
       setFormError(language === 'zh' ? '评论未能发布，请重试。' : 'The comment was not published. Please retry.');
     }
   };
-
-  const gated = (run: () => void) => requireIdentity(run, (action) => action());
 
   const renderCommentRow = (
     comment: ArticleComment,
@@ -312,11 +360,11 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
         compact={options.compact}
         surface={surface}
         language={language as 'en' | 'zh'}
-      onLike={(commentId) => gated(() => { void onCommentLike(commentId); })}
+      onLike={(commentId) => { void onCommentLike(commentId); }}
       isLikePending={isCommentLikePending}
       onDelete={onCommentDelete ? (target) => { void onCommentDelete(target.id); } : undefined}
       isDeletePending={isCommentDeletePending}
-      onReply={(target) => gated(() => setReplyTarget(target))}
+      onReply={setReplyTarget}
     />
   );
 
@@ -355,7 +403,13 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
         postAria={labels?.postAria || (language === 'zh' ? '发布评论' : 'Post comment')}
         submitting={submitting}
         surface={surface}
-        onSubmit={(content) => gated(() => { void submitDraft(content, replyTarget?.id); })}
+        onSubmit={(content, authorName) => { void submitDraft(content, authorName, replyTarget?.id); }}
+        onIdentityMerged={() => onRetry()}
+        onIdentityMergeError={() => setFormError(
+          language === 'zh'
+            ? '登录身份归并失败，请稍后重试。'
+            : 'The signed-in identity could not be applied. Please retry.',
+        )}
       />
     </div>
   );
@@ -447,11 +501,6 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
             {composer}
           </div>
         )}
-        <LoginPromptModal
-          open={loginPromptOpen}
-          onClose={closeLoginPrompt}
-          onResolved={() => resolveLogin((action) => action())}
-        />
       </div>
     );
   }
@@ -460,11 +509,6 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
     <div className="space-y-4">
       {showComposer && composer}
       {list}
-      <LoginPromptModal
-        open={loginPromptOpen}
-        onClose={closeLoginPrompt}
-        onResolved={() => resolveLogin((action) => action())}
-      />
     </div>
   );
 };

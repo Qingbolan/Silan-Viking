@@ -37,7 +37,9 @@ function parseArgs(argv) {
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--origin') {
+    if (arg === '--') {
+      continue;
+    } else if (arg === '--origin') {
       origin = argv[++i];
     } else if (arg.startsWith('--origin=')) {
       origin = arg.slice('--origin='.length);

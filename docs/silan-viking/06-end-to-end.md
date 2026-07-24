@@ -259,7 +259,7 @@ Method / approach.
 slug: sample-project
 title: "Sample Project"
 kind: project
-status: active                 # project lifecycle: active | completed | paused | cancelled
+status: active                 # project lifecycle: active | completed | paused | cancelled | archived
 start_date: 2026-05-16
 technologies: [Markdown, Rust]
 github_url: ""

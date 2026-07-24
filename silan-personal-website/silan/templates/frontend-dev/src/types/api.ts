@@ -308,7 +308,7 @@ export interface Project {
   tags: string[];
   year: number;
   isFeatured: boolean;
-  status?: 'active' | 'completed' | 'paused' | 'cancelled';
+  status?: 'active' | 'completed' | 'paused' | 'cancelled' | 'archived';
   startDate?: string;
   endDate?: string;
   githubUrl?: string;
@@ -355,7 +355,7 @@ export interface ProjectDetail {
 
   // Project status
   status?: {
-    lifecycle?: 'active' | 'completed' | 'paused' | 'cancelled';
+    lifecycle?: 'active' | 'completed' | 'paused' | 'cancelled' | 'archived';
     buildStatus?: 'passing' | 'failing';
     coverage?: number;
     vulnerabilities?: number;

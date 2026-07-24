@@ -65,6 +65,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: auth.SessionHandler(serverCtx),
 				},
 				{
+					// Merge this browser's guest comments and likes into the signed-in identity
+					Method:  http.MethodPost,
+					Path:    "/merge-guest",
+					Handler: auth.MergeGuestIdentityHandler(serverCtx),
+				},
+				{
 					Method:  http.MethodGet,
 					Path:    "/providers",
 					Handler: auth.ProvidersHandler(serverCtx),

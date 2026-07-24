@@ -425,6 +425,16 @@ func AuthorEmailHasSuffix(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldHasSuffix(FieldAuthorEmail, v))
 }
 
+// AuthorEmailIsNil applies the IsNil predicate on the "author_email" field.
+func AuthorEmailIsNil() predicate.Comment {
+	return predicate.Comment(sql.FieldIsNull(FieldAuthorEmail))
+}
+
+// AuthorEmailNotNil applies the NotNil predicate on the "author_email" field.
+func AuthorEmailNotNil() predicate.Comment {
+	return predicate.Comment(sql.FieldNotNull(FieldAuthorEmail))
+}
+
 // AuthorEmailEqualFold applies the EqualFold predicate on the "author_email" field.
 func AuthorEmailEqualFold(v string) predicate.Comment {
 	return predicate.Comment(sql.FieldEqualFold(FieldAuthorEmail, v))

@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import enTranslation from './locales/en.json';
 import zhTranslation from './locales/zh.json';
+import { languageFromPathname } from '../lib/localeRouting';
 
 const resources = {
   en: {
@@ -14,13 +15,7 @@ const resources = {
 
 const getInitialLanguage = (): 'en' | 'zh' => {
   if (typeof window !== 'undefined') {
-    const savedLanguage = window.localStorage.getItem('language');
-    if (savedLanguage === 'en' || savedLanguage === 'zh') {
-      return savedLanguage;
-    }
-  }
-  if (typeof navigator !== 'undefined' && navigator.language.startsWith('zh')) {
-    return 'zh';
+    return languageFromPathname(window.location.pathname);
   }
   return 'en';
 };

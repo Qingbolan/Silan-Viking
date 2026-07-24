@@ -1,7 +1,9 @@
 import React from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { AlertCircle, Check, LoaderCircle, Mic, Sparkles, Square } from 'lucide-react';
+import { EditorAssistDock, type EditorAssistReference } from './EditorAssistDock';
 import { LanguageCloseControls } from './LanguageCloseControls';
+import MarkdownEditor, { type MarkdownEditorHandle } from './MarkdownEditor';
 import type { CapturePhase, CaptureTarget, IdeaCategory } from '../types';
 
 type CaptureCategoryOption = { value: IdeaCategory; label: string; Icon: typeof Sparkles };
@@ -17,13 +19,17 @@ type CaptureSheetProps = {
   categories: CaptureCategoryOption[];
   note: string;
   onNoteChange: (note: string) => void;
+  attachments: File[];
+  references: EditorAssistReference[];
   error: string | null;
-  inputRef: React.RefObject<HTMLTextAreaElement>;
+  inputRef: React.Ref<MarkdownEditorHandle>;
+  onAttachFiles: (files: File[]) => void;
+  onInsertMarkdown: (markdown: string) => void;
   onRequestClose: () => void;
   onDiscard: () => void;
   onKeepWriting: () => void;
   onSubmit: () => void;
-  onKeyDown: (event: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onTransitionEnd: (event: React.TransitionEvent<HTMLElement>) => void;
   origin: { x: number; y: number };
 };
@@ -41,8 +47,12 @@ export function CaptureSheet({
   categories,
   note,
   onNoteChange,
+  attachments,
+  references,
   error,
   inputRef,
+  onAttachFiles,
+  onInsertMarkdown,
   onRequestClose,
   onDiscard,
   onKeepWriting,
@@ -266,16 +276,18 @@ export function CaptureSheet({
         )}
 
         <div className="capture-sheet">
-          <textarea
+          <MarkdownEditor
             ref={inputRef}
             value={note}
-            onChange={(event) => onNoteChange(event.target.value)}
-            onKeyDown={onKeyDown}
             disabled={phase === 'submitting'}
+            toolbarVisible
+            showStatus={false}
+            ariaLabel={target === 'moment' ? '事件内容' : '文章草稿'}
             placeholder={target === 'moment'
-              ? '记录刚发生的进展、事件或状态变化...'
-              : '先把文章草稿写下来...'}
-            aria-label={target === 'moment' ? '事件内容' : '文章草稿'}
+              ? '记录刚发生的进展、事件或状态变化... 输入 / 插入事件模板，[[ 连接已有内容'
+              : '先把文章草稿写下来... 输入 / 插入结构块，[[ 连接已有内容'}
+            onChange={onNoteChange}
+            onKeyDown={onKeyDown}
           />
         </div>
 
@@ -286,6 +298,15 @@ export function CaptureSheet({
           </div>
         )}
       </div>
+
+      <EditorAssistDock
+        disabled={phase === 'submitting'}
+        importing={phase === 'submitting'}
+        attachmentCount={attachments.length}
+        references={references}
+        onAttachFiles={onAttachFiles}
+        onInsertMarkdown={onInsertMarkdown}
+      />
 
       <div className="capture-action-dock" aria-label="Capture actions">
         <button
@@ -314,7 +335,7 @@ export function CaptureSheet({
         <button
           type="button"
           className="capture-confirm"
-          disabled={!note.trim() || phase === 'submitting' || voicePhase !== 'idle'}
+          disabled={(!note.trim() && attachments.length === 0) || phase === 'submitting' || voicePhase !== 'idle'}
           onClick={onSubmit}
           title={target === 'moment' ? '记录事件' : '保存文章草稿'}
         >

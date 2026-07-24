@@ -31,6 +31,8 @@ pub mod google_oauth_credentials;
 pub mod media_library;
 pub mod media_optimizer;
 pub mod openai_credentials;
+pub mod openai_image_generation;
+pub mod openai_transcription;
 pub mod parser;
 pub mod proposal;
 pub mod query;
@@ -54,8 +56,8 @@ pub use delivery_control::{
     ScopeReleaseStatus,
 };
 pub use editor::{
-    ContentEditor, EditorError, ResumeProfileSource, SeriesMetadataSource, SourceDocument,
-    TranslationLocator,
+    ContentEditor, EditorError, ResumeProfileSource, ResumeProfileUpdate, SeriesMetadataSource,
+    SourceDocument, TranslationLocator,
 };
 pub use geo_advisor::{
     GeoAction, GeoAdvisor, GeoAdvisorError, GeoEvidence, GeoEvidenceSource, GeoInsightReport,
@@ -79,6 +81,13 @@ pub use openai_credentials::{
     OpenAiApiKey, OpenAiCredentialError, OpenAiCredentialVerifier, OpenAiVerification,
     OPENAI_KEYCHAIN_ACCOUNT, OPENAI_KEYCHAIN_SERVICE,
 };
+pub use openai_image_generation::{
+    GeneratedImageAsset, ImageGenerationRequest, ImageOutputFormat, ImageQuality, ImageSize,
+    OpenAiImageGenerationError, OpenAiImageGenerator, DEFAULT_OPENAI_IMAGE_MODEL,
+};
+pub use openai_transcription::{
+    AudioTranscriptionRequest, OpenAiAudioTranscriber, OpenAiTranscriptionError,
+};
 pub use proposal::store::ProposalKind;
 pub use proposal::{
     canonicalize, AcceptOutcome, AcceptReport, GitRepo, ProposalError, ProposalId, ProposalLock,
@@ -91,8 +100,9 @@ pub use stats::{
     StatsSync, StatsSyncResult, VisitorRow,
 };
 pub use translation_ai::{
-    GeneratedMarkdownTranslation, MarkdownTranslationRequest, OpenAiMarkdownTranslator,
-    OpenAiTranslationError,
+    GeneratedMarkdownTranslation, MarkdownTranslationRequest, MarkdownTranslationSyncRequest,
+    OpenAiMarkdownTranslator, OpenAiTranslationError, SyncedMarkdownTranslation,
+    DEFAULT_OPENAI_TRANSLATION_MODEL,
 };
 pub use website_insights::{
     AiReferralSummary, AttentionItem, AttentionKind, AttentionSeverity, CommentSummary,

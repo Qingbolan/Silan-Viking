@@ -440,7 +440,7 @@ export const CardsSection: React.FC = () => {
       <Stage inset className="!block">
         <ProfileHero
           name="Silan Hu"
-          role="AI Researcher & Full Stack Developer"
+          role="AI Systems Researcher"
           tagline="Building agent infrastructure and behaviour-versioned knowledge systems."
           contacts={[
             { type: 'email', value: 'silan.hu@u.nus.edu' },

@@ -65,6 +65,7 @@ type BlogData struct {
 	Slug                string        `json:"slug,omitempty"`
 	Author              string        `json:"author"`
 	PublishDate         string        `json:"publish_date"`
+	UpdatedAt           string        `json:"updated_at,omitempty"`
 	ReadTime            string        `json:"read_time"`
 	Category            string        `json:"category"`
 	Tags                []string      `json:"tags"`
@@ -224,13 +225,13 @@ type CrawlerRow struct {
 type CreateBlogCommentRequest struct {
 	ID                  string `path:"id"`
 	ParentId            string `json:"parent_id,optional"`
-	AuthorName          string `json:"author_name"`
-	AuthorEmail         string `json:"author_email"`
+	AuthorName          string `json:"author_name,optional"`
 	Content             string `json:"content"`
 	Fingerprint         string `json:"fingerprint"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	ClientIP            string `json:"client_ip,optional"`
 	CountryCode         string `json:"-" form:"-"`
+	RegionCode          string `json:"-" form:"-"`
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	Language            string `form:"lang,default=en"`
 }
@@ -239,7 +240,6 @@ type CreateMomentCommentRequest struct {
 	ID                  string `path:"id"`
 	ParentId            string `json:"parent_id,optional"`
 	AuthorName          string `json:"author_name,optional"`
-	AuthorEmail         string `json:"author_email,optional"`
 	AuthorWebsite       string `json:"author_website,optional"`
 	Content             string `json:"content"`
 	Type                string `json:"type"`
@@ -248,6 +248,7 @@ type CreateMomentCommentRequest struct {
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	ClientIP            string `json:"client_ip,optional"`
 	CountryCode         string `json:"-" form:"-"`
+	RegionCode          string `json:"-" form:"-"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	Language            string `form:"lang,default=en"`
 }
@@ -256,7 +257,6 @@ type CreateProjectCommentRequest struct {
 	ID                  string `path:"id"`
 	ParentId            string `json:"parent_id,optional"`
 	AuthorName          string `json:"author_name,optional"`
-	AuthorEmail         string `json:"author_email,optional"`
 	AuthorWebsite       string `json:"author_website,optional"`
 	Content             string `json:"content"`
 	Type                string `json:"type"`
@@ -265,6 +265,7 @@ type CreateProjectCommentRequest struct {
 	UserAgentFull       string `json:"user_agent_full,optional"`
 	ClientIP            string `json:"client_ip,optional"`
 	CountryCode         string `json:"-" form:"-"`
+	RegionCode          string `json:"-" form:"-"`
 	AuthenticatedUserID string `json:"-" form:"-"`
 	Language            string `form:"lang,default=en"`
 }
@@ -313,6 +314,7 @@ type EpisodeData struct {
 	Status          string        `json:"status"`
 	Visibility      string        `json:"visibility"`
 	PublishDate     string        `json:"publish_date,omitempty"`
+	UpdatedAt       string        `json:"updated_at,omitempty"`
 	DurationMinutes int           `json:"duration_minutes,omitempty"`
 	Content         []BlogContent `json:"content,omitempty"`
 	Likes           int64         `json:"likes"`
@@ -382,6 +384,22 @@ type GoogleVerifyResponse struct {
 	Verified  bool   `json:"verified"`
 }
 
+type MergeGuestIdentityRequest struct {
+	Fingerprint string `json:"fingerprint"`
+}
+
+type MergeGuestIdentityResponse struct {
+	ID             string `json:"id"`
+	Email          string `json:"email"`
+	Name           string `json:"name,optional"`
+	AvatarURL      string `json:"avatar_url,optional"`
+	Provider       string `json:"provider"`
+	Verified       bool   `json:"verified"`
+	MergedComments int    `json:"merged_comments"`
+	MergedLikes    int    `json:"merged_likes"`
+	DedupedLikes   int    `json:"deduped_likes"`
+}
+
 type AuthProvidersResponse struct {
 	Google bool `json:"google"`
 	GitHub bool `json:"github"`
@@ -414,6 +432,8 @@ type HealthResponse struct {
 
 type VisitorGeoResponse struct {
 	CountryCode string `json:"country_code,optional"`
+	RegionCode  string `json:"region_code,optional"`
+	RegionName  string `json:"region_name,optional"`
 }
 
 type ContentStatusResponse struct {

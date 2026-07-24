@@ -335,12 +335,6 @@ pub(crate) struct DashboardItem {
 }
 
 #[derive(Debug, Serialize)]
-pub(crate) struct EntityCount {
-    pub(crate) entity_type: String,
-    pub(crate) count: i64,
-}
-
-#[derive(Debug, Serialize)]
 pub(crate) struct ResumeEntry {
     pub(crate) entry_id: String,
     pub(crate) sort_order: i64,
@@ -414,6 +408,20 @@ pub(crate) struct MomentsCover {
 pub(crate) struct MomentsSettings {
     pub(crate) profile: MomentsProfile,
     pub(crate) cover: MomentsCover,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct WorkspaceIdentity {
+    pub(crate) display_name: String,
+    pub(crate) avatar_reference: String,
+    pub(crate) avatar_url: Option<String>,
+    pub(crate) avatar_label: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct WorkspacePreferences {
+    pub(crate) default_language: String,
+    pub(crate) identity: WorkspaceIdentity,
 }
 
 #[derive(Debug, Serialize)]

@@ -22,7 +22,9 @@ func CreateEpisodeCommentHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		req.ClientIP = utils.GetClientIP(r)
 		req.UserAgentFull = utils.GetUserAgent(r)
-		req.CountryCode = utils.GetCountryCode(r, svcCtx.CountryResolver)
+		location := utils.GetGeoLocation(r, svcCtx.CountryResolver)
+		req.CountryCode = location.CountryCode
+		req.RegionCode = location.RegionCode
 		req.AuthenticatedUserID = authn.SessionIdentityID(r.Context(), r, svcCtx.DB, svcCtx.Config.Auth.GoogleClientID)
 
 		l := episodes.NewCreateEpisodeCommentLogic(r.Context(), svcCtx)

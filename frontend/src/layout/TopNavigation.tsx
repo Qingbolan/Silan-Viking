@@ -377,9 +377,10 @@ const TopNavigation: React.FC = () => {
   const { pathname } = useLocation();
   const normalizedPathname = pathname.replace(/\/+$/, '') || '/';
   const navigate = useNavigate();
-  const { language, setLanguage } = useLanguage();
+  const { language, languageHref, selectLanguage } = useLanguage();
   const { colors, isDarkMode, toggleTheme } = useTheme();
   const zh = language === 'zh';
+  const targetLanguage = zh ? 'en' : 'zh';
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
@@ -481,7 +482,8 @@ const TopNavigation: React.FC = () => {
   // Trailing tool icon.
   const Tool: React.FC<{
     label: string;
-    onClick: () => void;
+    onClick?: () => void;
+    href?: string;
     children: React.ReactNode;
     className?: string;
     buttonRef?: React.Ref<HTMLButtonElement>;
@@ -489,26 +491,54 @@ const TopNavigation: React.FC = () => {
   }> = ({
     label,
     onClick,
+    href,
     children,
     className,
     buttonRef,
     onPointerDown,
-  }) => (
-    <button
-      ref={buttonRef}
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      onPointerDown={onPointerDown}
-      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-colors sm:h-7 sm:w-7 ${className ?? ''}`}
-      style={{ color: colors.textSecondary }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hoverBg)}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-    >
-      {children}
-    </button>
-  );
+  }) => {
+    const classes = `flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-colors sm:h-7 sm:w-7 ${className ?? ''}`;
+    const onMouseEnter = (event: React.MouseEvent<HTMLElement>) => {
+      event.currentTarget.style.backgroundColor = hoverBg;
+    };
+    const onMouseLeave = (event: React.MouseEvent<HTMLElement>) => {
+      event.currentTarget.style.backgroundColor = 'transparent';
+    };
+
+    if (href) {
+      return (
+        <a
+          aria-label={label}
+          title={label}
+          href={href}
+          className={classes}
+          style={{ color: colors.textSecondary }}
+          onClick={onClick}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          {children}
+        </a>
+      );
+    }
+
+    return (
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={onClick}
+        onPointerDown={onPointerDown}
+        className={classes}
+        style={{ color: colors.textSecondary }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        {children}
+      </button>
+    );
+  };
 
   return (
     <>
@@ -607,7 +637,8 @@ const TopNavigation: React.FC = () => {
             <Tool
               className="hidden sm:flex"
               label={zh ? '切换语言' : 'Toggle language'}
-              onClick={() => setLanguage(zh ? 'en' : 'zh')}
+              href={languageHref(targetLanguage)}
+              onClick={() => selectLanguage(targetLanguage)}
             >
               <Globe size={15} />
             </Tool>

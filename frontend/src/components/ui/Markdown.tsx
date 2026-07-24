@@ -1,12 +1,14 @@
 // Markdown — the single source of truth for article typography.
 //
-// Vditor owns Markdown parsing/rendering across the application. Callers pass
-// Markdown text; this component handles embedded document-title cleanup,
-// outline shifting, link behavior, and design-token styling in one place.
+// Public reading surfaces use a static React renderer, not an editor runtime.
+// Callers pass Markdown text; this component owns embedded-title cleanup,
+// GFM parsing, outline IDs, media resolution, links, and article typography.
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Vditor from 'vditor';
-import 'vditor/dist/index.css';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import rehypeSlug from 'rehype-slug';
+import remarkGfm from 'remark-gfm';
+import { isVideoResource, mediaUrl, routeFromSilanResource } from '../../api/utils';
 import { iconSrcForHref } from '../../utils/linkIcon';
 import { highlightCodeElement } from '../../utils/syntaxHighlight';
 
@@ -49,12 +51,8 @@ const shiftLocalOutline = (markdown: string): string => {
 // paragraph above it.
 const BLOCK_LINE = /^(\s{4,}|\t|\s*(#{1,6}\s|[-*+]\s|\d+[.)]\s|>|\||`{3,}|~{3,}|<|\$\$|[-*_]\s*[-*_]\s*[-*_][-*_\s]*$|=+\s*$|:::))/;
 
-// Lute (Vditor's renderer) turns soft line breaks into hard <br> breaks by
-// default and exposes no switch for it, while our sources are hard-wrapped
-// at ~80 columns — every source newline became a rendered line break with a
-// ragged right edge. Re-join wrapped paragraph lines; explicit hard breaks
-// (trailing double-space or backslash), fenced code, and block syntax are
-// left untouched.
+// Sources are commonly hard-wrapped at ~80 columns. Re-join paragraph lines
+// while preserving explicit hard breaks, fenced code, and block syntax.
 const unwrapSoftBreaks = (markdown: string): string => {
   const out: string[] = [];
   let fence: string | null = null;
@@ -87,31 +85,26 @@ const prepareMarkdown = (markdown: string, documentTitle?: string, sectionTitle?
     ),
   );
 
-const shouldEnhanceAnchor = (anchor: HTMLAnchorElement): boolean => {
-  const href = anchor.getAttribute('href') || '';
+const shouldEnhanceAnchor = (href: string, children: React.ReactNode): boolean => {
   if (!href || href.startsWith('#')) return false;
-  if (anchor.dataset.richLink === 'true') return false;
-  if (anchor.classList.contains('vditor-anchor')) return false;
-  return Boolean(anchor.textContent?.trim());
+  return React.Children.toArray(children).some((child) => (
+    typeof child === 'string' || typeof child === 'number'
+  ));
 };
 
-const enhanceAnchor = (anchor: HTMLAnchorElement) => {
-  const href = anchor.getAttribute('href') || '';
-  anchor.dataset.richLink = 'true';
-  anchor.setAttribute('data-ds', 'rich-link');
-  anchor.classList.add('markdown-rich-link');
-
-  const icon = document.createElement('img');
-  icon.src = iconSrcForHref(href);
-  icon.alt = '';
-  icon.loading = 'lazy';
-  icon.decoding = 'async';
-  icon.className = 'markdown-rich-link__icon';
-  icon.addEventListener('error', () => {
-    icon.src = '/avatar-icon-32.png';
-  }, { once: true });
-
-  anchor.prepend(icon);
+const preserveTrustedContentUrl = (url: string): string => {
+  const normalized = url.trim();
+  if (
+    !normalized
+    || normalized.startsWith('#')
+    || normalized.startsWith('/')
+    || normalized.startsWith('./')
+    || normalized.startsWith('../')
+    || /^(?:https?:|mailto:|tel:|silan:)/i.test(normalized)
+  ) {
+    return normalized;
+  }
+  return '';
 };
 
 const Markdown: React.FC<MarkdownProps> = ({
@@ -132,68 +125,60 @@ const Markdown: React.FC<MarkdownProps> = ({
   React.useEffect(() => {
     const element = previewRef.current;
     if (!element) return;
-    element.innerHTML = '';
+    element.querySelectorAll<HTMLElement>('pre code').forEach(highlightCodeElement);
+  }, [content]);
 
-    let cancelled = false;
-    const highlightTimers: number[] = [];
-    const applySyntaxHighlight = () => {
-      if (cancelled) return;
-      element.querySelectorAll<HTMLElement>('pre code').forEach(highlightCodeElement);
-    };
-    const observer = new MutationObserver(() => {
-      window.requestAnimationFrame(applySyntaxHighlight);
-    });
-    observer.observe(element, { childList: true, subtree: true, characterData: true });
-    Vditor.preview(element, content, {
-      mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-      anchor: inline ? 0 : 1,
-      lang: 'en_US',
-      markdown: {
-        autoSpace: true,
-        fixTermTypo: true,
-        footnotes: true,
-        linkBase: '',
-        mark: true,
-        toc: true,
-      },
-      hljs: {
-        enable: true,
-        lineNumber: false,
-        style: document.documentElement.classList.contains('dark') ? 'github-dark' : 'github',
-      },
-      math: {
-        engine: 'KaTeX',
-        inlineDigit: true,
-      },
-      after() {
-        if (cancelled) return;
-        applySyntaxHighlight();
-        window.requestAnimationFrame(applySyntaxHighlight);
-        highlightTimers.push(window.setTimeout(applySyntaxHighlight, 80));
-        element.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((anchor) => {
-          const href = anchor.getAttribute('href') || '';
-          if (/^https?:\/\//i.test(href)) {
-            anchor.target = '_blank';
-            anchor.rel = 'noopener noreferrer';
-          }
-          if (richLinks && shouldEnhanceAnchor(anchor)) {
-            enhanceAnchor(anchor);
-          }
-        });
-      },
-    }).catch((error) => {
-      if (!cancelled) {
-        console.error('[Markdown] Vditor preview failed', error);
-        element.textContent = content;
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      observer.disconnect();
-      highlightTimers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [content, inline, richLinks]);
+  const components = React.useMemo<Components>(() => ({
+    a: ({ children: linkChildren, href = '', node: _node, ...props }) => {
+      const external = /^https?:\/\//i.test(href);
+      const enhanced = richLinks && shouldEnhanceAnchor(href, linkChildren);
+      return (
+        <a
+          {...props}
+          href={href}
+          className={enhanced ? 'markdown-rich-link' : props.className}
+          data-ds={enhanced ? 'rich-link' : undefined}
+          data-rich-link={enhanced ? 'true' : undefined}
+          target={external ? '_blank' : undefined}
+          rel={external ? 'noopener noreferrer' : undefined}
+        >
+          {enhanced && (
+            <img
+              src={iconSrcForHref(href)}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="markdown-rich-link__icon"
+              onError={(event) => {
+                event.currentTarget.src = '/avatar-icon-32.png';
+              }}
+            />
+          )}
+          {linkChildren}
+        </a>
+      );
+    },
+    img: ({ src = '', alt = '', node: _node, ...props }) => (
+      isVideoResource(src) ? (
+        <video
+          controls
+          preload="metadata"
+          className={props.className}
+          aria-label={alt || 'Embedded video'}
+        >
+          <source src={mediaUrl(src)} />
+        </video>
+      ) : (
+        <img
+          {...props}
+          src={mediaUrl(src)}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+        />
+      )
+    ),
+  }), [richLinks]);
 
   const onClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     const target = event.target as Element | null;
@@ -201,7 +186,18 @@ const Markdown: React.FC<MarkdownProps> = ({
     if (!anchor) return;
 
     const rawHref = anchor.getAttribute('href');
-    if (!rawHref || rawHref.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
+    if (!rawHref || rawHref.startsWith('#')) {
+      return;
+    }
+
+    const silanRoute = routeFromSilanResource(rawHref);
+    if (silanRoute) {
+      event.preventDefault();
+      navigate(silanRoute);
+      return;
+    }
+
+    if (/^[a-z][a-z0-9+.-]*:/i.test(rawHref)) {
       return;
     }
 
@@ -213,16 +209,25 @@ const Markdown: React.FC<MarkdownProps> = ({
     <div
       data-ds
       className={[
-        'vditor-markdown font-article',
+        'markdown-content font-article',
         inline
           ? 'text-[15px] leading-[1.8] text-theme-secondary'
           : 'text-[18px] leading-[1.74] text-theme-text-primary',
-        inline ? 'vditor-markdown--inline' : '',
+        inline ? 'markdown-content--inline' : '',
         className || '',
       ].filter(Boolean).join(' ')}
       onClick={onClick}
     >
-      <div ref={previewRef} className="vditor-reset" />
+      <div ref={previewRef} className="markdown-body">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={inline ? [] : [rehypeSlug]}
+          components={components}
+          urlTransform={preserveTrustedContentUrl}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
     </div>
   );
 };

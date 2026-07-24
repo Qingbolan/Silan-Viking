@@ -40,10 +40,10 @@ import type { ContentPart } from '../../types';
 import {
   Badge,
   Button,
+  ContentAttribution,
   Divider,
   BrandLoading,
   ErrorState,
-  LoginPromptModal,
   NetworkError,
   KnowledgeBaseShell,
   type BookNavChapter,
@@ -51,7 +51,6 @@ import {
 import Markdown from '../ui/Markdown';
 import CompactComments from '../ds/article-footer/CompactComments';
 import LikerAvatar from '../ds/article-footer/Avatar';
-import { useRequireIdentity } from '../../lib/useRequireIdentity';
 
 const PROJECT_HEADER_ID = 'project-header';
 const PROJECT_FEEDBACK_ID = 'tab-issues';
@@ -354,9 +353,6 @@ const ProjectDetail: React.FC = () => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<string>(PROJECT_HEADER_ID);
-  const { loginPromptOpen, requireIdentity, resolveLogin, closeLoginPrompt } =
-    useRequireIdentity<() => void>();
-
   const loadProject = useCallback(
     () => id ? fetchProjectDetailById(id, language as 'en' | 'zh') : Promise.resolve(null),
     [id, language],
@@ -532,6 +528,8 @@ const ProjectDetail: React.FC = () => {
           path: `/projects/${id}`,
           image: project.image || undefined,
           type: 'SoftwareSourceCode',
+          lang: language as 'en' | 'zh',
+          dateModified: project.status?.lastUpdated,
         })}
       />
       <KnowledgeBaseShell
@@ -608,7 +606,7 @@ const ProjectDetail: React.FC = () => {
                 <Divider orientation="vertical" className="h-3.5" />
                 <button
                   type="button"
-                  onClick={() => requireIdentity(engagement.toggleLike, (action) => void action())}
+                  onClick={() => void engagement.toggleLike()}
                   disabled={engagement.likePending}
                   className={cn(
                     'inline-flex items-center gap-1.5 rounded-ds-sm px-1 py-0.5 transition-colors hover:text-ds-error',
@@ -723,14 +721,15 @@ const ProjectDetail: React.FC = () => {
                 isCommentDeletePending={engagement.isCommentDeletePending}
               />
             )}
+
+            <ContentAttribution
+              canonicalPath={`/projects/${id}`}
+              kind="project"
+              className="mt-12"
+            />
           </div>
         </article>
       </KnowledgeBaseShell>
-      <LoginPromptModal
-        open={loginPromptOpen}
-        onClose={closeLoginPrompt}
-        onResolved={() => resolveLogin((action) => void action())}
-      />
     </motion.div>
   );
 };

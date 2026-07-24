@@ -10,7 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BookOpen, Calendar, Clock } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
-import { Seo } from '../Seo';
+import { Seo, blogPostingJsonLd } from '../Seo';
 import { fetchEpisode, fetchEpisodeSeries, updateEpisodeViews } from '../../api/episodes/episodeApi';
 import type { EpisodeData, EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from '../BlogStack/components/BlogContentRenderer';
@@ -29,6 +29,7 @@ import { scrollToAnchor } from '../../lib/scrollToAnchor';
 import { shouldCreditViewDisplay } from '../../utils/viewDisplayCredit';
 import {
   ArticleFooter,
+  ContentAttribution,
   KnowledgeBaseShell,
   type BookNavChapter,
   BrandLoading,
@@ -237,6 +238,16 @@ const EpisodeDetail: React.FC = () => {
         path={`/episodes/${episode.slug}`}
         type="article"
         lang={language as 'en' | 'zh'}
+        jsonLd={blogPostingJsonLd({
+          title: episode.title,
+          description: episode.description || seriesTitle,
+          path: `/episodes/${episode.slug}/`,
+          datePublished: episode.publish_date,
+          dateModified: episode.updated_at || episode.publish_date,
+          lang: language as 'en' | 'zh',
+          seriesTitle,
+          seriesPosition: episode.episode_number,
+        })}
       />
       <KnowledgeBaseShell
         overview={{
@@ -346,6 +357,13 @@ const EpisodeDetail: React.FC = () => {
             />
           </SeriesDocumentFrame>
         )}
+        {isOverview && (
+          <ContentAttribution
+            canonicalPath={`/episodes/${episode.slug}/`}
+            kind="series"
+            className="mt-12"
+          />
+        )}
         {!isOverview && (
           <ArticleFooter
             likes={engagement.likes}
@@ -356,6 +374,10 @@ const EpisodeDetail: React.FC = () => {
             publishedAt={episode.publish_date}
             viewCount={displayViews}
             shareTitle={episode.title}
+            attribution={{
+              canonicalPath: `/episodes/${episode.slug}/`,
+              kind: 'series',
+            }}
             comments={engagement.comments}
             commentsState={engagement.commentsState}
             commentsError={engagement.commentsError}

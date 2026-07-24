@@ -38,6 +38,24 @@ const contentResourcePath = (path: string): string | null => {
   return null;
 };
 
+export const routeFromSilanResource = (path: string): string | null => {
+  const resourcePath = contentResourcePath(path);
+  if (!resourcePath) return null;
+  const segments = resourcePath.split('/').filter(Boolean);
+  if (segments.includes('assets')) return null;
+  const [kind, first, second] = segments;
+  if (kind === 'blog' && first) return `/blog/${first}`;
+  if (kind === 'projects' && first) return `/projects/${first}`;
+  if (kind === 'episode' && second) return `/episodes/${second}`;
+  if (kind === 'moment') return '/moments';
+  if (kind === 'resume') return '/';
+  if (kind === 'ideas' && first) return `/ideas/${first}`;
+  return null;
+};
+
+export const isVideoResource = (path: string): boolean =>
+  /\.(?:mp4|webm|mov|m4v)(?:[?#].*)?$/i.test(path);
+
 /**
  * Resolve either an API media path or a canonical content-resource reference.
  *
@@ -100,6 +118,7 @@ const request = <T = any>(
 
   return fetch(urlStr, {
     ...init,
+    credentials: 'include',
     signal: controller.signal,
   }).then(async (response) => {
     if (!response.ok) {

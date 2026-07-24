@@ -1,18 +1,6 @@
-import React from 'react';
-import Vditor from 'vditor';
 import { FileText, LoaderCircle, Save, Type } from 'lucide-react';
 import { LanguageCloseControls } from './LanguageCloseControls';
-
-const destroyEditor = (editor: Vditor | null) => {
-  if (!editor) return;
-  const internal = (editor as unknown as { vditor?: { element?: HTMLElement } }).vditor;
-  if (internal?.element) editor.destroy();
-};
-
-const isEditorReady = (editor: Vditor | null) => {
-  const internal = (editor as unknown as { vditor?: { toolbar?: unknown } } | null)?.vditor;
-  return Boolean(internal?.toolbar);
-};
+import MarkdownEditor from './MarkdownEditor';
 
 export function ResumeBioEditor({
   value,
@@ -39,56 +27,6 @@ export function ResumeBioEditor({
   onCancel: () => void;
   onToggleToolbar: () => void;
 }) {
-  const hostRef = React.useRef<HTMLDivElement>(null);
-  const editorRef = React.useRef<Vditor | null>(null);
-  const onChangeRef = React.useRef(onChange);
-
-  React.useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-
-  React.useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return undefined;
-
-    host.innerHTML = '';
-    const editor = new Vditor(host, {
-      value,
-      mode: 'wysiwyg',
-      height: '100%',
-      minHeight: 480,
-      cache: { enable: false },
-      lang: 'en_US',
-      toolbar: [
-        'headings', 'bold', 'italic', 'strike', '|',
-        'list', 'ordered-list', 'check', 'outdent', 'indent', '|',
-        'quote', 'line', 'code', 'inline-code', 'link', '|',
-        'undo', 'redo',
-      ],
-      input(nextValue) {
-        onChangeRef.current(nextValue);
-      },
-      after() {
-        if (editorRef.current !== editor) return;
-        if (disabled) editor.disabled();
-        editor.focus();
-      },
-    });
-    editorRef.current = editor;
-
-    return () => {
-      if (editorRef.current === editor) editorRef.current = null;
-      destroyEditor(editor);
-    };
-  }, []);
-
-  React.useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor || !isEditorReady(editor)) return;
-    if (disabled) editor.disabled();
-    else editor.enable();
-  }, [disabled]);
-
   return (
     <section className="content-editor-overlay" role="dialog" aria-modal="true" aria-labelledby="resume-bio-editor-title">
       <div className="content-editor-shell">
@@ -163,7 +101,14 @@ export function ResumeBioEditor({
               </div>
             </header>
             <div className="editor-frame content-editor-frame" data-entity="resume" data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
-              <div ref={hostRef} className="editor-host" />
+              <MarkdownEditor
+                key={language}
+                value={value}
+                ariaLabel={`Resume bio editor (${language})`}
+                disabled={disabled}
+                toolbarVisible={toolbarVisible}
+                onChange={onChange}
+              />
             </div>
           </section>
         </div>

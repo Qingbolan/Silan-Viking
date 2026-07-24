@@ -254,6 +254,7 @@
 @keyframes ds-fade-in  { from { opacity: 0 } to { opacity: 1 } }
 @keyframes ds-fade-up  { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
 @keyframes ds-pop-in   { 0% { opacity: 0; transform: scale(.96) } 60% { opacity: 1; transform: scale(1.01) } 100% { transform: scale(1) } }
+@keyframes ds-masonry-enter { from { opacity: 0 } to { opacity: 1 } }
 @keyframes ds-shimmer  { from { background-position: -150% 0 } to { background-position: 250% 0 } }
 @keyframes ds-spin     { to { transform: rotate(360deg) } }
 /* Flowing gradient — background pans left/right on a loop. Pairs with a
@@ -267,6 +268,17 @@
 .ds-animate-fade-in { animation: ds-fade-in var(--ds-duration-normal) var(--ds-ease-standard) both; }
 .ds-animate-fade-up { animation: ds-fade-up var(--ds-duration-slow) var(--ds-ease-out-expo) both; }
 .ds-animate-pop-in  { animation: ds-pop-in var(--ds-duration-slow) var(--ds-ease-out-back) both; }
+
+/* Measured masonry geometry. Dynamic values arrive through CSS custom
+   properties so selectors stay stable while the layout engine re-packs. The
+   independent translate property leaves card-level hover transforms isolated. */
+.ds-masonry-cell {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: var(--ds-masonry-width);
+  translate: var(--ds-masonry-x) var(--ds-masonry-y);
+  animation: ds-masonry-enter var(--ds-duration-slow) var(--ds-ease-out-expo) var(--ds-masonry-delay) both;
+}
 
 /* Flowing brand-gradient text — fixed NUS hues, identical in light/dark.
    The repeating gradient + wide background-size gives the pan room. */
@@ -284,6 +296,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ds-animate-fade-in, .ds-animate-fade-up, .ds-animate-pop-in { animation: none; }
+  .ds-masonry-cell { animation: none; }
   .ds-text-gradient-flow { animation: none; }
 }
 

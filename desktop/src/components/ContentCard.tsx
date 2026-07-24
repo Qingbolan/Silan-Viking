@@ -3,6 +3,7 @@ import { contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from
 import { contentStateSummary } from '../lib/contentLifecycle';
 import { formatShortDate } from '../lib/format';
 import { toWebviewMediaUrl } from '../lib/media';
+import { ProjectPreviewSurface } from './ds/ProjectPreviewSurface';
 import type { ReactNode } from 'react';
 import type { ContentGroup } from '../types';
 
@@ -20,13 +21,13 @@ type ContentCardProps = {
 };
 
 /**
- * Flat, text-first library card. A cover image renders only when the
- * content actually declares one — no placeholder art for covers that
- * don't exist. Meta shows only fields that carry information: an empty
- * date or a lone default "body" part stays silent.
+ * Flat, text-first library card. Project covers follow the public frontend's
+ * image → website preview → branded placeholder contract. Other content only
+ * renders media it explicitly declares.
  */
 export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) {
   const isSeries = group.cardKind === 'series';
+  const isProject = group.kind === 'project';
   const kindLabel = isSeries ? 'Series' : kindLabels[group.kind] || group.kind;
   const excerpt = translationPreview(selectPrimaryDocument(group), group.language);
   const updatedAt = contentGroupUpdatedAt(group);
@@ -36,6 +37,9 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
     ? [group.status, group.visibility].filter(Boolean).join(' · ')
     : contentStateSummary(group.kind, group.status, group.visibility);
   const coverUrl = toWebviewMediaUrl(group.coverUrl);
+  const projectWebsiteUrl = group.coverSourceType === 'website'
+    ? group.demoUrl || group.coverWebsiteUrl
+    : undefined;
 
   const meta: string[] = [kindLabel];
   if (isSeries && group.episodeCount != null) meta.push(`${group.episodeCount} episodes`);
@@ -47,19 +51,17 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
       className={`content-card ${isSeries ? 'content-card--span2' : ''}`}
     >
       <button type="button" className="content-card-open" onClick={() => onOpen(group)}>
-        {coverUrl && (
+        {isProject ? (
           <span className="content-card-cover" data-mode={group.coverSourceType || 'image'}>
-            {group.coverSourceType === 'website' ? (
-              <iframe
-                src={coverUrl}
-                title={`${group.title} cover preview`}
-                loading="lazy"
-                scrolling="no"
-                sandbox="allow-scripts allow-same-origin"
-              />
-            ) : (
-              <img src={coverUrl} alt="" loading="lazy" />
-            )}
+            <ProjectPreviewSurface
+              title={group.title}
+              imageUrl={group.coverUrl}
+              websiteUrl={projectWebsiteUrl}
+            />
+          </span>
+        ) : coverUrl && (
+          <span className="content-card-cover">
+            <img src={coverUrl} alt="" loading="lazy" />
           </span>
         )}
         <span className="content-card-body">

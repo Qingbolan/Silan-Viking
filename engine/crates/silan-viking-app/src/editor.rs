@@ -103,6 +103,20 @@ pub struct ResumeProfileSource {
     pub relative_path: String,
 }
 
+/// One language-specific Resume profile update in a batch save.
+///
+/// A profile field such as the owner avatar is semantically shared even
+/// though the source contract repeats it in each localized summary file.
+/// Batch updates keep those representations coherent and project them only
+/// after every source revision has been validated.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResumeProfileUpdate {
+    pub language: String,
+    pub frontmatter: String,
+    pub body: String,
+    pub expected_revision: String,
+}
+
 /// Editable source for one episode series' `series.toml`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SeriesMetadataSource {
@@ -478,14 +492,7 @@ impl ContentEditor {
     /// `summary/<lang>.md` (name, title, contact, social links).
     pub fn read_resume_profile(&self, language: &str) -> Result<ResumeProfileSource, EditorError> {
         let path = self.resume_summary_path(language)?;
-        let source = read_source(&path)?;
-        let doc = frontmatter::split(&source);
-        Ok(ResumeProfileSource {
-            frontmatter: doc.frontmatter,
-            body: doc.body,
-            revision: ContentHash::of(source.as_bytes()).to_string(),
-            relative_path: self.relative_path(&path),
-        })
+        self.resume_profile_source(&path)
     }
 
     /// Save the resume profile header and refresh the SQLite projection as
@@ -500,58 +507,159 @@ impl ContentEditor {
         expected_revision: &str,
         db_path: impl AsRef<Path>,
     ) -> Result<ResumeProfileSource, EditorError> {
-        let path = self.resume_summary_path(language)?;
-        let relative_path = self.relative_path(&path);
+        let mut saved = self.save_resume_profiles_and_sync(
+            &[ResumeProfileUpdate {
+                language: language.to_owned(),
+                frontmatter: frontmatter_text.to_owned(),
+                body: body.to_owned(),
+                expected_revision: expected_revision.to_owned(),
+            }],
+            db_path,
+        )?;
+        Ok(saved.remove(0))
+    }
+
+    /// Save multiple localized Resume profile headers as one source-first
+    /// operation. All revisions are checked before the first write, the
+    /// projection runs once, and every touched source is restored if either a
+    /// later write or the projection fails.
+    pub fn save_resume_profiles_and_sync(
+        &self,
+        updates: &[ResumeProfileUpdate],
+        db_path: impl AsRef<Path>,
+    ) -> Result<Vec<ResumeProfileSource>, EditorError> {
+        if updates.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut seen_languages = std::collections::BTreeSet::new();
+        for update in updates {
+            if !seen_languages.insert(update.language.as_str()) {
+                return Err(EditorError::InvalidLocator {
+                    detail: format!(
+                        "duplicate Resume profile language `{}` in one save",
+                        update.language
+                    ),
+                });
+            }
+        }
+
+        struct PreparedProfile {
+            path: PathBuf,
+            relative_path: String,
+            original: String,
+            updated: String,
+        }
+
         let _save_guard = source_lock::acquire().map_err(|detail| EditorError::Io {
-            path: relative_path.clone(),
+            path: "resources/resume/parts/summary".to_owned(),
             detail,
         })?;
-        let original = read_source(&path)?;
-        let actual_revision = ContentHash::of(original.as_bytes());
-        if actual_revision.as_str() != expected_revision {
-            return Err(EditorError::RevisionConflict {
-                path: relative_path,
+
+        let mut prepared = Vec::with_capacity(updates.len());
+        for update in updates {
+            let path = self.resume_summary_path(&update.language)?;
+            let relative_path = self.relative_path(&path);
+            let original = read_source(&path)?;
+            let actual_revision = ContentHash::of(original.as_bytes());
+            if actual_revision.as_str() != update.expected_revision {
+                return Err(EditorError::RevisionConflict {
+                    path: relative_path,
+                });
+            }
+            let updated = format!(
+                "---\n{}\n---\n{}",
+                update.frontmatter.trim_end_matches('\n'),
+                update.body,
+            );
+            prepared.push(PreparedProfile {
+                path,
+                relative_path,
+                original,
+                updated,
             });
         }
 
-        let updated = format!(
-            "---\n{}\n---\n{body}",
-            frontmatter_text.trim_end_matches('\n'),
-        );
-        if updated == original {
-            return self.read_resume_profile(language);
+        let changed = prepared
+            .iter()
+            .enumerate()
+            .filter_map(|(index, profile)| (profile.updated != profile.original).then_some(index))
+            .collect::<Vec<_>>();
+        if changed.is_empty() {
+            return prepared
+                .iter()
+                .map(|profile| self.resume_profile_source(&profile.path))
+                .collect();
         }
 
-        atomic_replace(&path, updated.as_bytes())?;
+        let mut written = Vec::with_capacity(changed.len());
+        for index in &changed {
+            let profile = &prepared[*index];
+            if let Err(error) = atomic_replace(&profile.path, profile.updated.as_bytes()) {
+                for written_index in written.into_iter().rev() {
+                    let written_profile: &PreparedProfile = &prepared[written_index];
+                    if let Err(rollback) =
+                        atomic_replace(&written_profile.path, written_profile.original.as_bytes())
+                    {
+                        return Err(EditorError::Rollback {
+                            path: written_profile.relative_path.clone(),
+                            projection: error.to_string(),
+                            rollback: rollback.to_string(),
+                        });
+                    }
+                }
+                return Err(error);
+            }
+            written.push(*index);
+        }
+
         if let Err(error) = self.workspace.sync(db_path.as_ref()) {
             let projection = error.to_string();
-            let current = read_source(&path).map_err(|error| EditorError::Rollback {
-                path: relative_path.clone(),
-                projection: projection.clone(),
-                rollback: format!("cannot verify the source before rollback: {error}"),
-            })?;
-            if ContentHash::of(current.as_bytes()) != ContentHash::of(updated.as_bytes()) {
-                return Err(EditorError::Rollback {
-                    path: relative_path,
-                    projection,
-                    rollback: "source changed after save; refusing to overwrite the external edit"
-                        .to_owned(),
-                });
+            for index in &changed {
+                let profile = &prepared[*index];
+                let current =
+                    read_source(&profile.path).map_err(|error| EditorError::Rollback {
+                        path: profile.relative_path.clone(),
+                        projection: projection.clone(),
+                        rollback: format!("cannot verify the source before rollback: {error}"),
+                    })?;
+                if ContentHash::of(current.as_bytes())
+                    != ContentHash::of(profile.updated.as_bytes())
+                {
+                    return Err(EditorError::Rollback {
+                        path: profile.relative_path.clone(),
+                        projection,
+                        rollback:
+                            "source changed after save; refusing to overwrite the external edit"
+                                .to_owned(),
+                    });
+                }
             }
-            if let Err(rollback) = atomic_replace(&path, original.as_bytes()) {
-                return Err(EditorError::Rollback {
-                    path: relative_path,
-                    projection,
-                    rollback: rollback.to_string(),
-                });
+
+            for index in changed.iter().rev() {
+                let profile = &prepared[*index];
+                if let Err(rollback) = atomic_replace(&profile.path, profile.original.as_bytes()) {
+                    return Err(EditorError::Rollback {
+                        path: profile.relative_path.clone(),
+                        projection,
+                        rollback: rollback.to_string(),
+                    });
+                }
             }
             return Err(EditorError::Projection {
-                path: relative_path,
+                path: prepared
+                    .iter()
+                    .map(|profile| profile.relative_path.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", "),
                 detail: projection,
             });
         }
 
-        self.read_resume_profile(language)
+        prepared
+            .iter()
+            .map(|profile| self.resume_profile_source(&profile.path))
+            .collect()
     }
 
     /// Read an episode series' directory-level metadata (`series.toml`).
@@ -721,6 +829,17 @@ impl ContentEditor {
             revision: ContentHash::of(source.as_bytes()).to_string(),
             relative_path: self.relative_path(path),
         }
+    }
+
+    fn resume_profile_source(&self, path: &Path) -> Result<ResumeProfileSource, EditorError> {
+        let source = read_source(path)?;
+        let doc = frontmatter::split(&source);
+        Ok(ResumeProfileSource {
+            frontmatter: doc.frontmatter,
+            body: doc.body,
+            revision: ContentHash::of(source.as_bytes()).to_string(),
+            relative_path: self.relative_path(path),
+        })
     }
 
     fn series_metadata_source(

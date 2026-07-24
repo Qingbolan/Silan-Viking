@@ -3735,13 +3735,14 @@ dependencies = [
  "tauri-build",
  "tempfile",
  "toml 0.8.2",
- "ureq",
+ "toml_edit 0.20.2",
 ]
 
 [[package]]
 name = "silan-viking-app"
 version = "1.0.0"
 dependencies = [
+ "base64 0.22.1",
  "dotenvy",
  "flate2",
  "rusqlite",

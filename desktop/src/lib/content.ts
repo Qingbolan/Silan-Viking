@@ -26,6 +26,36 @@ export const selectPrimaryDocument = (group: ContentGroup) => (
   || group.documents[0]
 );
 
+export const groupDocumentsByResource = (documents: EditorDocument[]) => {
+  const groups = new Map<string, ContentGroup>();
+  documents.forEach((document) => {
+    const id = `${document.entity_type}:${document.entity_id}`;
+    if (!groups.has(id)) {
+      groups.set(id, {
+        id,
+        kind: document.entity_type,
+        title: document.title,
+        slug: document.slug,
+        description: document.description || null,
+        status: document.status,
+        visibility: document.visibility,
+        date: document.date || null,
+        pinned: Boolean(document.pinned),
+        coverUrl: document.cover_url || undefined,
+        coverSourceType: document.cover_source_type || 'image',
+        coverWebsiteUrl: document.cover_website_url || undefined,
+        githubUrl: document.github_url || undefined,
+        demoUrl: document.demo_url || undefined,
+        engagement: document.engagement,
+        documents: [],
+        cardKind: document.entity_type === 'blog' ? 'article' : undefined,
+      });
+    }
+    groups.get(id)?.documents.push(document);
+  });
+  return Array.from(groups.values());
+};
+
 export const selectTranslation = (
   document?: EditorDocument | null,
   language?: string | null,
@@ -168,5 +198,10 @@ export const toProjectCardData = (group: ContentGroup): ProjectCardData => {
     description: translationPreview(selectPrimaryDocument(group), group.language),
     tags: contentGroupTags(group, 5),
     year: updatedAt ? new Date(updatedAt).getFullYear() : undefined,
+    githubUrl: group.githubUrl,
+    demoUrl: group.demoUrl || group.coverWebsiteUrl,
+    coverImage: group.coverUrl,
+    coverSourceType: group.coverSourceType,
+    livePreview: group.coverSourceType === 'website',
   };
 };

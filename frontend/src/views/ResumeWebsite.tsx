@@ -278,19 +278,14 @@ const ResumeWebsite: React.FC = () => {
       transition={reduceMotion ? undefined : { duration: 0.5 }}
     >
       <Seo
-        description={
-          resumeData.sections?.about?.content
-            ? resumeData.sections.about.content.replace(/\s+/g, ' ').slice(0, 200)
-            : `${resumeData.name} — ${resumeData.title}`
-        }
         path="/"
         type="profile"
         lang={language as 'en' | 'zh'}
         jsonLd={{
           ...personJsonLd({
             name: resumeData.name,
-            jobTitle: resumeData.title,
             sameAs: resumeData.socialLinks?.map((l) => l.url).filter(Boolean) || [],
+            lang: language as 'en' | 'zh',
           }),
         }}
       />

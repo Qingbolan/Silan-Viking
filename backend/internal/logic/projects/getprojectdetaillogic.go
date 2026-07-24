@@ -65,8 +65,7 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 
 	// Fetch project with all related data including details
 	proj, err := l.svcCtx.DB.Project.Query().
-		Where(project.ID(projectUUID)).
-		Where(project.VisibilityEQ(project.VisibilityPublic)).
+		Where(project.ID(projectUUID), publicProject()).
 		WithTechnologies().
 		WithDetails().
 		WithImages().

@@ -13,11 +13,15 @@ export type { ButtonProps } from './Button';
 
 export { default as ArticleFooter } from './ArticleFooter';
 export type { ArticleFooterProps } from './ArticleFooter';
+export { default as ContentAttribution } from './ContentAttribution';
+export type { ContentAttributionProps } from './ContentAttribution';
 export type {
   ArticleComment,
   CommentDraft,
   CommentLoadState,
 } from './article-footer/types';
+export { GuestIdentityEditor } from './GuestIdentityEditor';
+export type { GuestIdentityEditorProps } from './GuestIdentityEditor';
 
 export { default as KnowledgeBaseShell } from './knowledge-base/KnowledgeBaseShell';
 export type { KnowledgeBaseShellProps } from './knowledge-base/KnowledgeBaseShell';
@@ -137,9 +141,6 @@ export type { ErrorStateProps } from './ErrorState';
 
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
-
-export { LoginPromptModal } from './LoginPromptModal';
-export type { LoginPromptModalProps } from './LoginPromptModal';
 
 export { Tooltip } from './Tooltip';
 export type { TooltipProps } from './Tooltip';

@@ -355,21 +355,7 @@ func init() {
 	// commentDescAuthorEmail is the schema descriptor for author_email field.
 	commentDescAuthorEmail := commentFields[5].Descriptor()
 	// comment.AuthorEmailValidator is a validator for the "author_email" field. It is called by the builders before save.
-	comment.AuthorEmailValidator = func() func(string) error {
-		validators := commentDescAuthorEmail.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(author_email string) error {
-			for _, fn := range fns {
-				if err := fn(author_email); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
+	comment.AuthorEmailValidator = commentDescAuthorEmail.Validators[0].(func(string) error)
 	// commentDescAuthorWebsite is the schema descriptor for author_website field.
 	commentDescAuthorWebsite := commentFields[6].Descriptor()
 	// comment.AuthorWebsiteValidator is a validator for the "author_website" field. It is called by the builders before save.

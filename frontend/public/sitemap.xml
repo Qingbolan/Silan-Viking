@@ -1,39 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://silan.tech/</loc>
-    <lastmod>2026-05-17</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/" />
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://silan.tech/blog</loc>
-    <lastmod>2026-05-17</lastmod>
+    <loc>https://silan.tech/zh/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://silan.tech/blog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/blog/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/blog/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/blog/" />
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://silan.tech/projects</loc>
-    <lastmod>2026-05-17</lastmod>
+    <loc>https://silan.tech/zh/blog/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/blog/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/blog/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/blog/" />
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://silan.tech/plans</loc>
-    <lastmod>2026-05-17</lastmod>
+    <loc>https://silan.tech/projects/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/projects/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/projects/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/projects/" />
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://silan.tech/zh/projects/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/projects/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/projects/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/projects/" />
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://silan.tech/moments/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/moments/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/moments/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/moments/" />
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://silan.tech/zh/moments/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/moments/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/moments/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/moments/" />
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://silan.tech/contact/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/contact/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/contact/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/contact/" />
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://silan.tech/moments</loc>
-    <lastmod>2026-05-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://silan.tech/contact</loc>
-    <lastmod>2026-05-17</lastmod>
+    <loc>https://silan.tech/zh/contact/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://silan.tech/contact/" />
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://silan.tech/zh/contact/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silan.tech/contact/" />
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
   </url>
 </urlset>

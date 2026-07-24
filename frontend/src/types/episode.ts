@@ -11,6 +11,7 @@ export interface EpisodeData {
   status: string;
   visibility: string;
   publish_date?: string;
+  updated_at?: string;
   duration_minutes?: number;
   content?: BlogContent[];
   likes?: number;

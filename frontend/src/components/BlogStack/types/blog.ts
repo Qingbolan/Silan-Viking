@@ -31,6 +31,7 @@ export interface BlogData {
   slug?: string;
   author: string;
   publishDate: string;
+  updatedAt?: string;
   readTime: string;
   category: string;
   tags: string[];

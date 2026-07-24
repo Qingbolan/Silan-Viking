@@ -109,13 +109,20 @@ const BlogDetail: React.FC = () => {
       image={seoImage}
       type="article"
       lang={language as 'en' | 'zh'}
+      author={blog.author}
       jsonLd={blogPostingJsonLd({
         title: seoTitle,
         description: seoDescription,
         path: `/blog/${blog.slug || blog.id}/`,
         image: seoImage,
         datePublished: blog.publishDate,
+        dateModified: blog.updatedAt || blog.publishDate,
         author: blog.author,
+        lang: language as 'en' | 'zh',
+        seriesTitle: blog.seriesId
+          ? (language === 'zh' && blog.seriesTitleZh ? blog.seriesTitleZh : blog.seriesTitle)
+          : undefined,
+        seriesPosition: blog.episodeNumber,
       })}
     />
   );

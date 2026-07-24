@@ -48,6 +48,7 @@ export const normalizeBlogData = (post: any, content?: BlogData['content']): Blo
     totalEpisodes: post.total_episodes,
     seriesImage: post.series_image ? mediaUrl(post.series_image) : undefined,
     publishDate: post.publish_date,
+    updatedAt: post.updated_at ?? post.updatedAt,
     readTime: post.read_time,
     isLikedByUser: Boolean(post.is_liked_by_user ?? post.isLikedByUser),
   } as BlogData;
@@ -105,6 +106,7 @@ export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'):
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({
         fingerprint: getClientFingerprint(),
         user_agent_full: navigator.userAgent,
@@ -177,7 +179,6 @@ export const listBlogComments = async (
 export const createBlogComment = async (
   postId: string,
   authorName: string,
-  authorEmail: string,
   content: string,
   fingerprint: string,
   language: 'en' | 'zh' = 'en',
@@ -185,7 +186,6 @@ export const createBlogComment = async (
 ): Promise<BlogCommentData> => {
   const res = await post<BlogCommentData>(`/api/v1/blog/posts/${postId}/comments`, {
     author_name: authorName,
-    author_email: authorEmail,
     content,
     fingerprint,
     lang: formatLanguage(language),

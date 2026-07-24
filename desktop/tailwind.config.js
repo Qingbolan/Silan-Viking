@@ -351,14 +351,9 @@ export default {
     },
   },
   corePlugins: {
-    // Vditor (the Markdown editor) renders its own DOM at runtime, styled by
-    // vditor/dist/index.css, and relies on plain browser default styling
-    // (float layout, button/heading defaults) for its toolbar and content.
-    // Preflight's element resets clobber that — Vditor's toolbar buttons
-    // lose their `float: left` layout and stack vertically instead of in a
-    // row. The app ships its own hand-written base styles in styles.css, so
-    // Preflight isn't needed; disabling it removes the conflict at the root
-    // instead of trying to un-reset one subtree back to Vditor's CSS.
+    // The desktop shell owns its base element styles in styles.css. Keeping
+    // Preflight disabled prevents framework resets from competing with the
+    // workbench controls and Milkdown's headless ProseMirror surface.
     preflight: false,
   },
   plugins: [],

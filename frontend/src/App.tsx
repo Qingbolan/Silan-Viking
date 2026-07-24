@@ -9,6 +9,7 @@ import { PageTitleProvider } from './layout/PageTitleContext';
 import { ErrorBoundary, NotFoundError, Spinner, ToastProvider } from './components/ds';
 import { AuthProvider } from './components/InteractiveContact';
 import { Seo } from './components/Seo';
+import { initialLocaleRedirectHref, languageFromPathname, localeBasename } from './lib/localeRouting';
 
 // Every public route owns a separate production chunk. The previous eager
 // imports made a first-time visitor download the blog editor, project
@@ -101,7 +102,17 @@ const LocalizedRoutes: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const redirectHref = initialLocaleRedirectHref();
+  if (redirectHref) {
+    const currentHref = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (redirectHref !== currentHref) {
+      window.location.replace(redirectHref);
+      return null;
+    }
+  }
+
+  const routeLanguage = languageFromPathname(window.location.pathname);
+  const basename = localeBasename(routeLanguage);
 
   return (
     <HelmetProvider>

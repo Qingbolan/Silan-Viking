@@ -11,6 +11,7 @@ import {
   type ProjectMetricsResponse,
 } from '../../../api/projects/projectApi';
 import { getClientFingerprint } from '../../../utils/fingerprint';
+import { isPrerenderRuntime } from '../../../utils/runtimeContext';
 import type {
   ArticleComment,
   CommentDraft,
@@ -97,9 +98,10 @@ export const useProjectEngagement = ({
   const [interactionError, setInteractionError] = useState<string>();
 
   const fingerprint = useMemo(() => getClientFingerprint(), []);
+  const interactionEnabled = enabled && !isPrerenderRuntime();
 
   const loadMetrics = useCallback(async () => {
-    if (!enabled || !projectId) {
+    if (!interactionEnabled || !projectId) {
       setMetrics(initialMetrics);
       setMetricsState('ready');
       return;
@@ -112,10 +114,10 @@ export const useProjectEngagement = ({
     } catch {
       setMetricsState('error');
     }
-  }, [enabled, fingerprint, language, projectId]);
+  }, [fingerprint, interactionEnabled, language, projectId]);
 
   const loadComments = useCallback(async () => {
-    if (!enabled || !projectId) {
+    if (!interactionEnabled || !projectId) {
       setComments([]);
       setCommentsState('ready');
       setCommentsError(undefined);
@@ -137,7 +139,7 @@ export const useProjectEngagement = ({
       );
       setCommentsState('error');
     }
-  }, [enabled, fingerprint, language, projectId]);
+  }, [fingerprint, interactionEnabled, language, projectId]);
 
   useEffect(() => {
     void loadMetrics();
@@ -145,7 +147,7 @@ export const useProjectEngagement = ({
   }, [loadComments, loadMetrics]);
 
   const toggleLike = useCallback(async () => {
-    if (!enabled || !projectId || likePending) return;
+    if (!interactionEnabled || !projectId || likePending) return;
     const previous = metrics;
     const nextLiked = !previous.is_liked_by_user;
 
@@ -172,17 +174,16 @@ export const useProjectEngagement = ({
     } finally {
       setLikePending(false);
     }
-  }, [enabled, fingerprint, language, likePending, metrics, projectId]);
+  }, [fingerprint, interactionEnabled, language, likePending, metrics, projectId]);
 
   const submitComment = useCallback(async (draft: CommentDraft) => {
-    if (!enabled || !projectId || commentSubmitting) return;
+    if (!interactionEnabled || !projectId || commentSubmitting) return;
     setCommentSubmitting(true);
     setInteractionError(undefined);
     try {
       const created = await createProjectComment(projectId, draft.content, fingerprint, {
         type: 'general',
         authorName: draft.authorName,
-        authorEmail: draft.authorEmail,
         parentId: draft.parentId,
         language,
       });
@@ -199,9 +200,10 @@ export const useProjectEngagement = ({
     } finally {
       setCommentSubmitting(false);
     }
-  }, [commentSubmitting, enabled, fingerprint, language, projectId]);
+  }, [commentSubmitting, fingerprint, interactionEnabled, language, projectId]);
 
   const toggleCommentLike = useCallback(async (commentId: string) => {
+    if (!interactionEnabled) return;
     if (pendingCommentLikes.has(commentId)) return;
     setPendingCommentLikes((current) => new Set(current).add(commentId));
     setInteractionError(undefined);
@@ -225,9 +227,10 @@ export const useProjectEngagement = ({
         return next;
       });
     }
-  }, [fingerprint, language, pendingCommentLikes]);
+  }, [fingerprint, interactionEnabled, language, pendingCommentLikes]);
 
   const deleteComment = useCallback(async (commentId: string) => {
+    if (!interactionEnabled) return;
     if (pendingCommentDeletes.has(commentId)) return;
     setPendingCommentDeletes((current) => new Set(current).add(commentId));
     setInteractionError(undefined);
@@ -246,7 +249,7 @@ export const useProjectEngagement = ({
         return next;
       });
     }
-  }, [fingerprint, language, pendingCommentDeletes]);
+  }, [fingerprint, interactionEnabled, language, pendingCommentDeletes]);
 
   const commentsCount = useMemo(() => countComments(comments), [comments]);
   const isCommentLikePending = useCallback(

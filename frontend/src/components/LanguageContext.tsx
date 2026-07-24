@@ -1,11 +1,12 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import i18n from '../i18n/index';
 import type { Language } from '../types/api';
+import { languageFromPathname, localizedBrowserHref, rememberPreferredLanguage } from '../lib/localeRouting';
 
 interface LanguageContextType {
   language: Language;
-  setLanguage: (language: Language) => void;
-  changeLanguage: (lang: Language) => void;
+  languageHref: (language: Language) => string;
+  selectLanguage: (language: Language) => void;
   t: (key: string) => string;
 }
 
@@ -16,24 +17,18 @@ interface LanguageProviderProps {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>(() => {
-    const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'zh')) {
-      return savedLanguage as Language;
-    }
-    // Set default language based on browser language
-    return navigator.language.startsWith('zh') ? 'zh' : 'en';
-  });
+  const [language] = useState<Language>(() => languageFromPathname(window.location.pathname));
 
-  const applyLanguage = useCallback((lang: Language) => {
-    setLanguage(lang);
-    localStorage.setItem('language', lang);
-    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
-    void i18n.changeLanguage(lang);
+  const languageHref = useCallback(
+    (lang: Language) => localizedBrowserHref(lang),
+    [],
+  );
+  const selectLanguage = useCallback((lang: Language) => {
+    rememberPreferredLanguage(lang);
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+    document.documentElement.lang = language === 'zh' ? 'zh-Hans' : 'en';
     if (i18n.language !== language) {
       void i18n.changeLanguage(language);
     }
@@ -45,10 +40,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
 
   const contextValue: LanguageContextType = useMemo(() => ({
     language,
-    setLanguage: applyLanguage,
-    changeLanguage: applyLanguage,
+    languageHref,
+    selectLanguage,
     t,
-  }), [language, applyLanguage, t]);
+  }), [language, languageHref, selectLanguage, t]);
 
   return (
     <LanguageContext.Provider value={contextValue}>

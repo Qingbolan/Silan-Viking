@@ -35,7 +35,7 @@ func NewGetProjectsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPr
 
 func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *types.ProjectListResponse, err error) {
 	query := l.svcCtx.DB.Project.Query().
-		Where(project.VisibilityEQ(project.VisibilityPublic)).
+		Where(publicProject()).
 		WithTechnologies().
 		WithTranslations()
 

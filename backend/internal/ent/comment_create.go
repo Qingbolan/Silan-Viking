@@ -59,6 +59,14 @@ func (cc *CommentCreate) SetAuthorEmail(s string) *CommentCreate {
 	return cc
 }
 
+// SetNillableAuthorEmail sets the "author_email" field if the given value is not nil.
+func (cc *CommentCreate) SetNillableAuthorEmail(s *string) *CommentCreate {
+	if s != nil {
+		cc.SetAuthorEmail(*s)
+	}
+	return cc
+}
+
 // SetAuthorWebsite sets the "author_website" field.
 func (cc *CommentCreate) SetAuthorWebsite(s string) *CommentCreate {
 	cc.mutation.SetAuthorWebsite(s)
@@ -353,9 +361,6 @@ func (cc *CommentCreate) check() error {
 		if err := comment.AuthorNameValidator(v); err != nil {
 			return &ValidationError{Name: "author_name", err: fmt.Errorf(`ent: validator failed for field "Comment.author_name": %w`, err)}
 		}
-	}
-	if _, ok := cc.mutation.AuthorEmail(); !ok {
-		return &ValidationError{Name: "author_email", err: errors.New(`ent: missing required field "Comment.author_email"`)}
 	}
 	if v, ok := cc.mutation.AuthorEmail(); ok {
 		if err := comment.AuthorEmailValidator(v); err != nil {

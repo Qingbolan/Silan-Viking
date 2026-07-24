@@ -21,7 +21,7 @@
 |---|---|---|---|
 | `idea.status` enum | `10` §10.4 | `draft / hypothesis / experimenting / validating / published / concluded` (6 values) | `02` `silan idea status`, `08` §8.2 |
 | `blog.status` enum | `10` §10.4 | `draft / published / archived` (3 values) | `02`, `11` |
-| `project.status` enum | `10` §10.4 | `active / completed / paused / cancelled` (lowercase 4 values) | `02`, `11` |
+| `project.status` enum | `10` §10.4 | `active / completed / paused / cancelled / archived` (lowercase 5 values) | `02`, `11` |
 | `blog.content_type` | `10` §10.4 | `article / podcast / vlog / tutorial` (4 values; episode is its own type) | `01`, `11` |
 | `visibility` (every type) | `10` §10.3 | `private / unlisted / public`; only `public` is projected to the website | `02`, `08` §8.2 |
 | The 6 content types — closed set | `10` §10.4 | `idea / blog / project / episode / resume / update` | global; `01` §1.9 compile-time closed set |

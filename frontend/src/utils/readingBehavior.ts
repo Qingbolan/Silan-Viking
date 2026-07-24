@@ -156,6 +156,7 @@ class ReadingBehaviorTracker {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           fingerprint: session.fingerprint,
           reading_time: session.readingTime,

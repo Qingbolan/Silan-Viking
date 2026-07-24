@@ -12,7 +12,7 @@ use std::path::Path;
 use tempfile::Builder;
 use thiserror::Error;
 
-const LANGUAGE: &str = "en";
+const DEFAULT_LANGUAGE: &str = "en";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IdeaCategory {
@@ -154,10 +154,12 @@ impl ContentCreator {
         db_path: impl AsRef<Path>,
     ) -> Result<CapturedContent, CaptureError> {
         let note = required_text(note, "the captured thought is empty")?;
+        let language = DEFAULT_LANGUAGE;
         self.create_and_sync(
             CaptureKind::Idea(category),
+            language,
             &derive_title(note),
-            note,
+            &embed_title_in_body(note),
             db_path.as_ref(),
         )
     }
@@ -166,13 +168,16 @@ impl ContentCreator {
         &self,
         draft: &str,
         category: IdeaCategory,
+        language: &str,
         db_path: impl AsRef<Path>,
     ) -> Result<CapturedContent, CaptureError> {
         let draft = required_text(draft, "the article draft is empty")?;
+        let language = normalize_language(language);
         self.create_and_sync(
             CaptureKind::Blog(category),
+            language,
             &derive_title(draft),
-            draft,
+            &embed_title_in_body(draft),
             db_path.as_ref(),
         )
     }
@@ -184,19 +189,28 @@ impl ContentCreator {
     ) -> Result<CapturedContent, CaptureError> {
         let title = required_text(title, "the project title is empty")?;
         let body = format!("# {title}\n\nDraft body - replace this.");
-        self.create_and_sync(CaptureKind::Project, title, &body, db_path.as_ref())
+        self.create_and_sync(
+            CaptureKind::Project,
+            DEFAULT_LANGUAGE,
+            title,
+            &body,
+            db_path.as_ref(),
+        )
     }
 
     pub fn capture_moment_and_sync(
         &self,
         event: &str,
+        language: &str,
         db_path: impl AsRef<Path>,
     ) -> Result<CapturedContent, CaptureError> {
         let event = required_text(event, "the moment event is empty")?;
+        let language = normalize_language(language);
         self.create_and_sync(
             CaptureKind::Moment,
+            language,
             &derive_title(event),
-            event,
+            &embed_title_in_body(event),
             db_path.as_ref(),
         )
     }
@@ -204,6 +218,7 @@ impl ContentCreator {
     fn create_and_sync(
         &self,
         kind: CaptureKind,
+        language: &str,
         title: &str,
         body: &str,
         db_path: &Path,
@@ -231,7 +246,7 @@ impl ContentCreator {
             });
         }
 
-        let files = build_files(kind, &item_id, &part_id, &slug, title, body)?;
+        let files = build_files(kind, language, &item_id, &part_id, &slug, title, body)?;
         let staging = Builder::new()
             .prefix(kind.staging_prefix())
             .tempdir_in(&collection_root)
@@ -279,6 +294,14 @@ fn required_text<'a>(value: &'a str, detail: &str) -> Result<&'a str, CaptureErr
     }
 }
 
+fn normalize_language(language: &str) -> &str {
+    match language.trim().to_ascii_lowercase().as_str() {
+        "zh" | "zh-cn" | "zh-hans" | "cn" => "zh",
+        "en" | "en-us" | "en-gb" => "en",
+        _ => DEFAULT_LANGUAGE,
+    }
+}
+
 fn derive_title(note: &str) -> String {
     let first_line = note
         .lines()
@@ -295,6 +318,35 @@ fn derive_title(note: &str) -> String {
         "Untitled".to_owned()
     } else {
         title
+    }
+}
+
+fn embed_title_in_body(note: &str) -> String {
+    let note = note.trim();
+    let Some(first_line) = note.lines().find(|line| !line.trim().is_empty()) else {
+        return note.to_owned();
+    };
+    let clean_first_line = first_line.trim();
+    if clean_first_line.starts_with("# ") {
+        return note.to_owned();
+    }
+    let title = derive_title(note);
+    if clean_first_line.chars().count() <= 80 {
+        let mut replaced = false;
+        let lines = note
+            .lines()
+            .map(|line| {
+                if !replaced && !line.trim().is_empty() {
+                    replaced = true;
+                    format!("# {}", line.trim_start_matches('#').trim())
+                } else {
+                    line.to_owned()
+                }
+            })
+            .collect::<Vec<_>>();
+        lines.join("\n")
+    } else {
+        format!("# {title}\n\n{note}")
     }
 }
 
@@ -341,6 +393,7 @@ fn slugify(value: &str) -> String {
 
 fn build_files(
     kind: CaptureKind,
+    language: &str,
     item_id: &ItemId,
     part_id: &PartId,
     slug: &str,
@@ -375,7 +428,7 @@ fn build_files(
     Ok(SourceFiles {
         item: format!("item_id = \"{item_id}\"\n"),
         part: format!(
-            "part_id        = \"{part_id}\"\ntype           = \"{}\"\nshape          = \"prose\"\ncanonical_lang = \"{LANGUAGE}\"\n",
+            "part_id        = \"{part_id}\"\ntype           = \"{}\"\nshape          = \"prose\"\ncanonical_lang = \"{language}\"\n",
             kind.role()
         ),
         markdown: format!("---\n{frontmatter}---\n\n{}\n", body.trim()),
@@ -394,7 +447,21 @@ fn write_source_files(root: &Path, role: &str, files: &SourceFiles) -> Result<()
     fs::create_dir_all(&part_root).map_err(|error| io_error(&part_root, error))?;
     write_file(&root.join("item.toml"), &files.item)?;
     write_file(&part_root.join("meta.toml"), &files.part)?;
-    write_file(&part_root.join(format!("{LANGUAGE}.md")), &files.markdown)
+    let language = source_language(files)?;
+    write_file(&part_root.join(format!("{language}.md")), &files.markdown)
+}
+
+fn source_language(files: &SourceFiles) -> Result<&str, CaptureError> {
+    files
+        .part
+        .lines()
+        .find_map(|line| {
+            let value = line.strip_prefix("canonical_lang = ")?;
+            Some(value.trim().trim_matches('"'))
+        })
+        .ok_or_else(|| CaptureError::InvalidInput {
+            detail: "missing canonical language".to_owned(),
+        })
 }
 
 fn write_file(path: &Path, content: &str) -> Result<(), CaptureError> {
@@ -403,12 +470,15 @@ fn write_file(path: &Path, content: &str) -> Result<(), CaptureError> {
 
 fn matches_source_files(root: &Path, role: &str, expected: &SourceFiles) -> bool {
     let part_root = root.join("parts").join(role);
+    let Ok(language) = source_language(expected) else {
+        return false;
+    };
     fs::read_to_string(root.join("item.toml")).ok().as_deref() == Some(expected.item.as_str())
         && fs::read_to_string(part_root.join("meta.toml"))
             .ok()
             .as_deref()
             == Some(expected.part.as_str())
-        && fs::read_to_string(part_root.join(format!("{LANGUAGE}.md")))
+        && fs::read_to_string(part_root.join(format!("{language}.md")))
             .ok()
             .as_deref()
             == Some(expected.markdown.as_str())
@@ -456,6 +526,7 @@ mod tests {
         let part_id = PartId::generate();
         let files = build_files(
             CaptureKind::Moment,
+            "en",
             &item_id,
             &part_id,
             "shipping-moment",
@@ -469,5 +540,17 @@ mod tests {
         assert!(files.markdown.contains("moment_type: progress"));
         assert!(files.markdown.contains("status: ongoing"));
         assert!(files.markdown.contains("date: "));
+    }
+
+    #[test]
+    fn captured_body_promotes_the_first_line_to_h1() {
+        assert_eq!(
+            embed_title_in_body("Shipping moment\n\nDetails"),
+            "# Shipping moment\n\nDetails"
+        );
+        assert_eq!(
+            embed_title_in_body("# Existing title\n\nDetails"),
+            "# Existing title\n\nDetails"
+        );
     }
 }

@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -34,5 +35,18 @@ func TestPublicRequestCannotDeclareAuthenticatedIdentity(t *testing.T) {
 	}
 	if request.AuthenticatedUserID != "" {
 		t.Fatalf("untrusted identity was accepted: %q", request.AuthenticatedUserID)
+	}
+}
+
+func TestCommentRequestsDoNotCollectEmail(t *testing.T) {
+	requests := []any{
+		CreateBlogCommentRequest{},
+		CreateMomentCommentRequest{},
+		CreateProjectCommentRequest{},
+	}
+	for _, request := range requests {
+		if _, exists := reflect.TypeOf(request).FieldByName("AuthorEmail"); exists {
+			t.Fatalf("%T still collects an author email", request)
+		}
 	}
 }

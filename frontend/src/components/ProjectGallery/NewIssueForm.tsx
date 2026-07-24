@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Bug, FileText, HelpCircle, Lightbulb, LogOut } from 'lucide-react';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { Bug, FileText, HelpCircle, Lightbulb } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '../InteractiveContact';
 import { getClientFingerprint } from '../../utils/fingerprint';
 import { createProjectIssue, type ProjectIssueRecord } from '../../api/projects/projectApi';
+import { useCommenterIdentity } from '../../lib/useCommenterIdentity';
 import {
   Alert,
-  Avatar,
   Button,
   Checkbox,
   Field,
+  GuestIdentityEditor,
   Input,
   RadioGroup,
   Select,
@@ -45,20 +45,16 @@ const EMPTY_FORM: FormState = {
 const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }) => {
   const { language } = useLanguage();
   const locale = language as 'en' | 'zh';
-  const { user, isAuthenticated, loginWithGoogle, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const { commenter, setAuthorName } = useCommenterIdentity();
   const toast = useToast();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [signingIn, setSigningIn] = useState(false);
 
   const copy = language === 'en'
     ? {
-        signInTitle: 'Sign in to submit feedback',
-        signInBody: 'Google sign-in attributes the thread to you and lets only you remove it later.',
-        signInError: 'Google sign-in could not be completed',
-        signedInAs: 'Submitting as',
-        signOut: 'Sign out',
+        submittingAs: 'Submitting as',
         type: 'Feedback type',
         types: {
           bug: ['Bug report', 'Describe behavior that does not work as expected.'],
@@ -80,11 +76,7 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
         descriptionRequired: 'Use at least 10 characters',
       }
     : {
-        signInTitle: '登录后提交反馈',
-        signInBody: 'Google 登录用于标注反馈作者，并确保之后只有您可以删除该讨论。',
-        signInError: 'Google 登录失败',
-        signedInAs: '提交身份',
-        signOut: '退出',
+        submittingAs: '提交身份',
         type: '反馈类型',
         types: {
           bug: ['错误报告', '描述与预期不符的行为。'],
@@ -117,22 +109,6 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
   });
   const topicLabels = ['ui', 'api', 'performance', 'security', 'accessibility'];
 
-  const signIn = async (credentialResponse: CredentialResponse) => {
-    const credential = credentialResponse.credential;
-    if (!credential) {
-      toast.error(copy.signInError);
-      return;
-    }
-    setSigningIn(true);
-    try {
-      await loginWithGoogle(credential);
-    } catch {
-      toast.error(copy.signInError);
-    } finally {
-      setSigningIn(false);
-    }
-  };
-
   const validate = () => {
     const next: Record<string, string> = {};
     if (form.title.trim().length < 5) next.title = copy.titleRequired;
@@ -143,7 +119,7 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!user || !validate()) return;
+    if (!validate()) return;
     setSubmitting(true);
     try {
       const issue = await createProjectIssue({
@@ -154,8 +130,7 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
         priority: form.priority,
         labels: form.labels,
         fingerprint: getClientFingerprint(),
-        authorName: user.username,
-        authorEmail: user.email,
+        authorName: isAuthenticated && user ? user.username : commenter.authorName,
         language: locale,
       });
       toast.success(copy.submitted);
@@ -169,27 +144,13 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
     }
   };
 
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="mx-auto max-w-md py-4 text-center">
-        <Avatar name={language === 'en' ? 'Guest' : '访客'} size="lg" className="mx-auto" />
-        <h3 className="mt-4 text-ds-lg font-semibold text-ds-fg">{copy.signInTitle}</h3>
-        <p className="mt-1 text-ds-sm leading-6 text-ds-fg-muted">{copy.signInBody}</p>
-        <div className="mt-5 flex justify-center" aria-busy={signingIn}>
-          <GoogleLogin onSuccess={(response) => void signIn(response)} onError={() => toast.error(copy.signInError)} text="signin_with" shape="rectangular" size="large" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <form onSubmit={submit} className="space-y-6">
-      <Alert tone="success" title={`${copy.signedInAs} ${user.username}`}>
-        <div className="flex items-center justify-between gap-4">
-          <span className="truncate">{user.email}</span>
-          <Button variant="ghost" size="sm" leadingIcon={<LogOut />} onClick={logout}>{copy.signOut}</Button>
-        </div>
-      </Alert>
+      {isAuthenticated && user ? (
+        <Alert tone="success" title={`${copy.submittingAs} ${user.username}`} />
+      ) : (
+        <GuestIdentityEditor name={commenter.authorName} onChange={setAuthorName} />
+      )}
 
       <Field label={copy.type} required>
         <RadioGroup value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as IssueType }))} options={typeOptions} className="grid gap-3 sm:grid-cols-2" />
@@ -217,7 +178,7 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
       </Field>
 
       <div className="flex justify-end border-t border-ds-border pt-4">
-        <Button type="submit" loading={submitting} disabled={signingIn}>{copy.submit}</Button>
+        <Button type="submit" loading={submitting}>{copy.submit}</Button>
       </div>
     </form>
   );

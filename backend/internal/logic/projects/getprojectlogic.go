@@ -29,7 +29,7 @@ func NewGetProjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetPro
 
 func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.ProjectExtended, err error) {
 	proj, err := l.svcCtx.DB.Project.Query().
-		Where(project.Slug(req.Slug)).
+		Where(project.Slug(req.Slug), publicProject()).
 		WithTechnologies().
 		WithDetails().
 		WithImages().

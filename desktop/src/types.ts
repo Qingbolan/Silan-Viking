@@ -1,5 +1,12 @@
 export type ContentKind = 'blog' | 'project' | 'idea' | 'resume' | 'episode' | 'moment';
 
+export type OpenAiCredentialStatus = {
+  state: 'missing' | 'ready' | 'invalid';
+  model: string;
+  detail: string | null;
+  request_id: string | null;
+};
+
 export type EditorDocument = {
   id: string;
   part_id: string;
@@ -267,11 +274,6 @@ export type DashboardItem = {
   updated_at: string;
 };
 
-export type EntityCount = {
-  entity_type: ContentKind;
-  count: number;
-};
-
 export type EntityFilter = 'all' | ContentKind;
 export type IdeaCategory = 'inspiration' | 'thought' | 'decision' | 'state' | 'event';
 export type CaptureTarget = 'blog' | 'moment';
@@ -394,5 +396,15 @@ export type MomentsSettings = {
     background_image_url?: string | null;
     background_position: string;
     cover_height_px: number;
+  };
+};
+
+export type WorkspacePreferences = {
+  default_language: 'en' | 'zh';
+  identity: {
+    display_name: string;
+    avatar_reference: string;
+    avatar_url?: string | null;
+    avatar_label: string;
   };
 };

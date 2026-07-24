@@ -1,14 +1,15 @@
 import { get } from './utils';
 
-interface VisitorGeoResponse {
+export interface VisitorGeo {
   country_code?: string;
+  region_code?: string;
+  region_name?: string;
 }
 
-export const fetchVisitorCountryCode = async (): Promise<string | undefined> => {
+export const fetchVisitorGeo = async (): Promise<VisitorGeo> => {
   try {
-    const response = await get<VisitorGeoResponse>('/api/v1/geo');
-    return response?.country_code || undefined;
+    return await get<VisitorGeo>('/api/v1/geo') ?? {};
   } catch {
-    return undefined;
+    return {};
   }
 };

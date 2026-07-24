@@ -14,6 +14,7 @@ import { dsRoot } from './dsAttr';
 import { Card } from './Card';
 import { Badge } from './Badge';
 import { IconButton } from './IconButton';
+import { ProjectLivePreview, ProjectPlaceholder } from './ProjectPreviewSurface';
 
 /**
  * How tall the cover is, relative to the card width.
@@ -49,6 +50,7 @@ export interface ProjectCardData {
    * image/video is set. Falls back to the placeholder if embedding fails.
    */
   livePreview?: boolean;
+  coverSourceType?: 'image' | 'website';
 
   /** Optional status pill (e.g. "Active", "Archived"). */
   status?: { label: string; tone?: 'success' | 'neutral' | 'warning' };
@@ -74,97 +76,6 @@ const COVER_HEIGHT: Record<Exclude<CoverSize, 'feature'>, string> = {
   compact: 'h-[8.5rem]',
   standard: 'h-[11rem]',
   tall: 'h-[14.5rem]',
-};
-
-/* --- Branded placeholder ------------------------------------------------- */
-
-/** First letter of the title — e.g. "AI-Native Database..." -> "A". */
-function titleInitial(title: string): string {
-  const trimmed = title.trim();
-  return trimmed ? trimmed[0].toUpperCase() : '?';
-}
-
-const ProjectPlaceholder: React.FC<{ title: string }> = ({ title }) => (
-  <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
-    {/* NUS-tinted diffusion wash — gentle, orange into blue. */}
-    <div
-      className="absolute inset-0"
-      style={{
-        background:
-          'radial-gradient(110% 110% at 16% 10%, color-mix(in oklch, var(--ds-color-primary) 16%, transparent), transparent 60%), ' +
-          'radial-gradient(110% 110% at 86% 94%, color-mix(in oklch, var(--ds-color-accent) 13%, transparent), transparent 58%), ' +
-          'var(--ds-color-surface-2)',
-      }}
-    />
-    {/* The title initial is the placeholder's centred focal element. */}
-    <span className="relative select-none font-display text-5xl font-semibold text-ds-fg-subtle/60">
-      {titleInitial(title)}
-    </span>
-  </div>
-);
-
-/* --- Live demo preview --------------------------------------------------- */
-//
-// A non-interactive, scaled-down iframe of the demo site. The iframe is
-// rendered at a desktop width (PREVIEW_W) then CSS-scaled to fill the cover,
-// so the whole layout is visible rather than a cropped corner.
-// If the site refuses embedding (X-Frame-Options) or fails to load within
-// the timeout, `onFail` fires and the card falls back to the placeholder.
-
-const PREVIEW_W = 1280; // virtual desktop width the iframe renders at
-
-const LivePreview: React.FC<{ url: string; onFail: () => void }> = ({ url, onFail }) => {
-  const wrapRef = React.useRef<HTMLDivElement>(null);
-  const [scale, setScale] = React.useState(0.3);
-  const [loaded, setLoaded] = React.useState(false);
-
-  // Scale = cover width / virtual width, so the page fits edge-to-edge.
-  React.useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const measure = () => setScale(el.clientWidth / PREVIEW_W);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  // A cross-origin site that blocks framing never fires `load`; if nothing
-  // has loaded within the window, treat it as a failure and fall back.
-  React.useEffect(() => {
-    const id = setTimeout(() => {
-      if (!loaded) onFail();
-    }, 6000);
-    return () => clearTimeout(id);
-  }, [loaded, onFail]);
-
-  const virtualH = wrapRef.current
-    ? wrapRef.current.clientHeight / scale
-    : 800;
-
-  return (
-    <div ref={wrapRef} className="relative h-full w-full overflow-hidden bg-ds-surface-2">
-      <iframe
-        src={url}
-        title="Live demo preview"
-        loading="lazy"
-        // The preview is decorative — never interactive inside the card.
-        tabIndex={-1}
-        scrolling="no"
-        sandbox="allow-scripts allow-same-origin"
-        onLoad={() => setLoaded(true)}
-        onError={onFail}
-        className="pointer-events-none origin-top-left border-0"
-        style={{
-          width: PREVIEW_W,
-          height: virtualH,
-          transform: `scale(${scale})`,
-        }}
-      />
-      {/* Slight wash so card text/badges stay legible over busy demos. */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/10" />
-    </div>
-  );
 };
 
 /* --- Cover video --------------------------------------------------------- */
@@ -199,17 +110,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   const {
     id, title, description, tags = [],
     coverImage, coverVideo, coverPoster, livePreview,
-    year, author, githubUrl, demoUrl, status,
+    year, author, githubUrl, demoUrl, coverSourceType, status,
   } = project;
 
   const shownTags = tags.slice(0, maxTags);
   const overflow = tags.length - shownTags.length;
 
   // Cover priority: image → video → live demo iframe → branded placeholder.
-  // `previewFailed` drops to the placeholder if the demo refuses embedding.
-  const [previewFailed, setPreviewFailed] = React.useState(false);
   const showLivePreview =
-    !coverImage && !coverVideo && livePreview && !!demoUrl && !previewFailed;
+    !coverImage
+    && !coverVideo
+    && (livePreview || coverSourceType === 'website')
+    && !!demoUrl;
 
   // `feature` is a wide, horizontal card (cover left, body right); the other
   // sizes are the standard vertical card (cover on top).
@@ -244,7 +156,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       ) : coverVideo ? (
         <CoverVideo src={coverVideo} poster={coverPoster} />
       ) : showLivePreview ? (
-        <LivePreview url={demoUrl!} onFail={() => setPreviewFailed(true)} />
+        <ProjectLivePreview url={demoUrl!} fallbackTitle={title} />
       ) : (
         <ProjectPlaceholder title={title} />
       )}

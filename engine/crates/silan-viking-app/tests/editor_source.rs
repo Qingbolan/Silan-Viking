@@ -1,5 +1,7 @@
 use rusqlite::Connection;
-use silan_viking_app::{ContentEditor, ContentKind, EditorError, TranslationLocator, Workspace};
+use silan_viking_app::{
+    ContentEditor, ContentKind, EditorError, ResumeProfileUpdate, TranslationLocator, Workspace,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -336,6 +338,127 @@ details     = [\"Edited through ContentEditor\"]
         )
         .expect("read projected entry");
     assert!(localized.contains("PhD Computer Science"));
+}
+
+#[test]
+fn save_resume_profiles_updates_all_languages_after_validating_every_revision() {
+    let temporary = tempfile::tempdir().expect("temporary workspace");
+    let content_root = temporary.path().join("content");
+    let db_path = temporary.path().join("portfolio.db");
+    copy_tree(&fixture_root(), &content_root);
+
+    Workspace::open(&content_root)
+        .expect("open copied fixture")
+        .sync(&db_path)
+        .expect("seed projection");
+
+    let editor = ContentEditor::open(&content_root).expect("open source editor");
+    let english = editor
+        .read_resume_profile("en")
+        .expect("read English profile");
+    let chinese = editor
+        .read_resume_profile("zh")
+        .expect("read Chinese profile");
+    let updates = vec![
+        ResumeProfileUpdate {
+            language: "en".to_owned(),
+            frontmatter: format!(
+                "{}\navatar_url: silan://resources/resume/assets/avatar.png",
+                english.frontmatter.trim_end()
+            ),
+            body: english.body.clone(),
+            expected_revision: english.revision.clone(),
+        },
+        ResumeProfileUpdate {
+            language: "zh".to_owned(),
+            frontmatter: format!(
+                "{}\navatar_url: silan://resources/resume/assets/avatar.png",
+                chinese.frontmatter.trim_end()
+            ),
+            body: chinese.body.clone(),
+            expected_revision: chinese.revision.clone(),
+        },
+    ];
+
+    let mut stale_updates = updates.clone();
+    stale_updates[1].expected_revision = "stale".to_owned();
+    let conflict = editor.save_resume_profiles_and_sync(&stale_updates, &db_path);
+    assert!(matches!(
+        conflict,
+        Err(EditorError::RevisionConflict { .. })
+    ));
+    assert_eq!(
+        editor
+            .read_resume_profile("en")
+            .expect("English source remains unchanged")
+            .revision,
+        english.revision
+    );
+
+    let saved = editor
+        .save_resume_profiles_and_sync(&updates, &db_path)
+        .expect("save localized profiles");
+    assert_eq!(saved.len(), 2);
+    assert!(saved
+        .iter()
+        .all(|profile| profile.frontmatter.contains("avatar_url: silan://")));
+    assert_ne!(saved[0].revision, english.revision);
+    assert_ne!(saved[1].revision, chinese.revision);
+}
+
+#[test]
+fn resume_profile_batch_restores_every_language_when_projection_fails() {
+    let temporary = tempfile::tempdir().expect("temporary workspace");
+    let content_root = temporary.path().join("content");
+    copy_tree(&fixture_root(), &content_root);
+
+    let editor = ContentEditor::open(&content_root).expect("open source editor");
+    let english = editor
+        .read_resume_profile("en")
+        .expect("read English profile");
+    let chinese = editor
+        .read_resume_profile("zh")
+        .expect("read Chinese profile");
+    let updates = [
+        ResumeProfileUpdate {
+            language: "en".to_owned(),
+            frontmatter: format!(
+                "{}\navatar_url: replacement.png",
+                english.frontmatter.trim_end()
+            ),
+            body: english.body.clone(),
+            expected_revision: english.revision.clone(),
+        },
+        ResumeProfileUpdate {
+            language: "zh".to_owned(),
+            frontmatter: format!(
+                "{}\navatar_url: replacement.png",
+                chinese.frontmatter.trim_end()
+            ),
+            body: chinese.body.clone(),
+            expected_revision: chinese.revision.clone(),
+        },
+    ];
+    let invalid_database_path = temporary.path().join("database-directory");
+    fs::create_dir(&invalid_database_path).expect("create invalid database path");
+
+    let result = editor.save_resume_profiles_and_sync(&updates, &invalid_database_path);
+
+    assert!(matches!(result, Err(EditorError::Projection { .. })));
+    assert_eq!(
+        editor
+            .read_resume_profile("en")
+            .expect("read restored English profile")
+            .revision,
+        english.revision
+    );
+    assert_eq!(
+        editor
+            .read_resume_profile("zh")
+            .expect("read restored Chinese profile")
+            .revision,
+        chinese.revision
+    );
 }
 
 #[test]

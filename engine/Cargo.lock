@@ -1835,6 +1835,7 @@ dependencies = [
 name = "silan-viking-app"
 version = "1.0.0"
 dependencies = [
+ "base64",
  "dotenvy",
  "flate2",
  "rusqlite",

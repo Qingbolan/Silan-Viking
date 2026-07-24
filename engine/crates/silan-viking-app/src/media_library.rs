@@ -8,7 +8,9 @@ use thiserror::Error;
 
 const URI_PREFIX: &str = "silan://resources/";
 const MEDIA_ROUTE_PREFIX: &str = "/api/v1/media?f=";
-const EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico"];
+const EXTENSIONS: &[&str] = &[
+    "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico", "mp4", "webm", "mov", "m4v",
+];
 
 #[derive(Debug, Error)]
 pub enum MediaLibraryError {
@@ -89,6 +91,34 @@ impl MediaLibrary {
         if !same_file {
             fs::copy(&source, &target).map_err(|error| io_error(&target, error))?;
         }
+        self.asset_ref(&target)
+    }
+
+    pub fn import_asset_bytes(
+        &self,
+        document_id: &str,
+        file_name: &str,
+        bytes: &[u8],
+    ) -> Result<MediaAssetRef, MediaLibraryError> {
+        let extension = Path::new(file_name)
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(str::to_ascii_lowercase)
+            .ok_or_else(|| MediaLibraryError::UnsupportedExtension(String::new()))?;
+        if !EXTENSIONS.contains(&extension.as_str()) {
+            return Err(MediaLibraryError::UnsupportedExtension(extension));
+        }
+        let item_dir = self.find_item_dir(document_id)?;
+        let assets = item_dir.join("assets");
+        fs::create_dir_all(&assets).map_err(|error| io_error(&assets, error))?;
+        let stem = sanitize_stem(
+            Path::new(file_name)
+                .file_stem()
+                .and_then(|value| value.to_str())
+                .unwrap_or("asset"),
+        );
+        let target = allocate_new_target(&assets, &stem, &extension)?;
+        fs::write(&target, bytes).map_err(|error| io_error(&target, error))?;
         self.asset_ref(&target)
     }
 
@@ -309,6 +339,29 @@ fn allocate_target(
         detail: "could not allocate a unique asset name".to_owned(),
     })
 }
+
+fn allocate_new_target(
+    dir: &Path,
+    stem: &str,
+    extension: &str,
+) -> Result<PathBuf, MediaLibraryError> {
+    for index in 0..1000 {
+        let name = if index == 0 {
+            format!("{stem}.{extension}")
+        } else {
+            format!("{stem}-{index}.{extension}")
+        };
+        let target = dir.join(name);
+        if !target.exists() {
+            return Ok(target);
+        }
+    }
+    Err(MediaLibraryError::Io {
+        path: dir.display().to_string(),
+        detail: "could not allocate a unique asset name".to_owned(),
+    })
+}
+
 fn alt_text(file_name: &str) -> String {
     file_name
         .rsplit_once('.')

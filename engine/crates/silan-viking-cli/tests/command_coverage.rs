@@ -87,6 +87,11 @@ fn project_group_every_verb() {
         "progress must auto-create the progress Part"
     );
     ok(&c, &["project", "archive", "a-proj"]);
+    let archived =
+        std::fs::read_to_string(c.join("resources/projects/a-proj/parts/overview/en.md"))
+            .expect("read archived project");
+    assert!(archived.contains("status: archived"));
+    assert!(archived.contains("visibility: private"));
     ok(&c, &["project", "rm", "a-proj"]);
     let _ = std::fs::remove_dir_all(c.parent().expect("root"));
 }

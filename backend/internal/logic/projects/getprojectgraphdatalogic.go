@@ -29,7 +29,7 @@ func NewGetProjectGraphDataLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 func (l *GetProjectGraphDataLogic) GetProjectGraphData(req *types.GraphRequest) (resp *types.GraphData, err error) {
 	query := l.svcCtx.DB.Project.Query().
-		Where(project.VisibilityEQ(project.VisibilityPublic))
+		Where(publicProject())
 	if req.Category != "" && req.Category != "all" {
 		query = query.Where(project.ProjectTypeEQ(req.Category))
 	}

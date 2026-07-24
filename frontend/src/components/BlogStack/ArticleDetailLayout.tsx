@@ -322,6 +322,11 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
           publishedAt={post.publishDate}
           viewCount={post.views}
           shareTitle={title}
+          attribution={{
+            author: authorName,
+            canonicalPath: `/blog/${post.slug || post.id}/`,
+            kind: 'article',
+          }}
           comments={engagement.comments}
           commentsState={engagement.commentsState}
           commentsError={engagement.commentsError}

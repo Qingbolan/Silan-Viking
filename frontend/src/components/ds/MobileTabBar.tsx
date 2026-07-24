@@ -82,10 +82,11 @@ const TabSlot: React.FC<{
 export const MobileTabBar: React.FC = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { language, setLanguage } = useLanguage();
+  const { language, languageHref, selectLanguage } = useLanguage();
   const { isDarkMode, toggleTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const zh = language === 'zh';
+  const targetLanguage = zh ? 'en' : 'zh';
   const [moreOpen, setMoreOpen] = useState(false);
 
   const primaryRoutes = PRIMARY_ROUTES(zh);
@@ -148,15 +149,15 @@ export const MobileTabBar: React.FC = () => {
               })}
 
               <div className="my-1 border-t border-ds-border" role="separator" />
-              <button
-                type="button"
+              <a
+                href={languageHref(targetLanguage)}
+                onClick={() => selectLanguage(targetLanguage)}
                 role="menuitem"
-                onClick={() => setLanguage(zh ? 'en' : 'zh')}
                 className="flex w-full items-center gap-2.5 rounded-ds-lg px-3 py-2 text-left text-ds-fg transition-colors duration-ds-fast active:bg-ds-surface-2/60"
               >
                 <Globe size={18} className="text-ds-fg-subtle" />
                 <span className="text-sm font-medium">{zh ? 'English' : '中文'}</span>
-              </button>
+              </a>
               <button
                 type="button"
                 role="menuitem"

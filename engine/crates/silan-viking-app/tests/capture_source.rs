@@ -51,6 +51,7 @@ fn capture_creates_markdown_source_then_projects_it() {
     let captured = creator
         .capture_moment_and_sync(
             "记录真正的本地 Markdown Moment。\n\n后续可以继续发展。",
+            "zh",
             &db_path,
         )
         .expect("capture moment");
@@ -59,7 +60,7 @@ fn capture_creates_markdown_source_then_projects_it() {
     assert!(item_root.join("item.toml").is_file());
     assert!(item_root.join("parts/body/meta.toml").is_file());
     let markdown =
-        fs::read_to_string(item_root.join("parts/body/en.md")).expect("read captured Markdown");
+        fs::read_to_string(item_root.join("parts/body/zh.md")).expect("read captured Markdown");
     assert!(markdown.contains("kind: moment"));
     assert!(markdown.contains("status: ongoing"));
     assert!(markdown.contains("记录真正的本地 Markdown Moment。"));
@@ -71,7 +72,7 @@ fn capture_creates_markdown_source_then_projects_it() {
             SELECT m.slug, t.body
             FROM moments AS m
             INNER JOIN item_part AS p ON p.entity_id = m.id AND p.role = 'body'
-            INNER JOIN item_part_translation AS t ON t.item_part_id = p.id AND t.language_code = 'en'
+            INNER JOIN item_part_translation AS t ON t.item_part_id = p.id AND t.language_code = 'zh'
             WHERE p.part_id = ?1
             ",
             [&captured.part_id],
@@ -94,6 +95,7 @@ fn failed_projection_removes_the_new_moment_directory() {
 
     let result = creator.capture_moment_and_sync(
         "This source must not remain after sync fails.",
+        "en",
         invalid_db_path,
     );
 
@@ -113,6 +115,7 @@ fn capture_blog_creates_a_real_article_draft() {
         .capture_blog_and_sync(
             "A fast article draft\n\nThe complete thought stays in Markdown.",
             IdeaCategory::Thought,
+            "en",
             &db_path,
         )
         .expect("capture blog");

@@ -1,6 +1,13 @@
 import React from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { AlertCircle, Check, LoaderCircle, X } from 'lucide-react';
+import {
+  AlertCircle,
+  FileCode2,
+  GitBranch,
+  GitCommitHorizontal,
+  LoaderCircle,
+  X,
+} from 'lucide-react';
 import type { WorkspaceFileChange } from '../types';
 
 type GitChangesPanelProps = {
@@ -10,20 +17,49 @@ type GitChangesPanelProps = {
 
 const STATUS_ORDER = ['Modified', 'Added', 'Deleted', 'Renamed', 'Copied', 'Untracked'];
 
+const splitWorkspacePath = (path: string) => {
+  const separator = path.lastIndexOf('/');
+  return separator === -1
+    ? { directory: 'content/', fileName: path }
+    : {
+        directory: path.slice(0, separator + 1),
+        fileName: path.slice(separator + 1),
+      };
+};
+
 function DiffView({ diff }: { diff: string }) {
   if (!diff.trim()) {
-    return <p className="git-diff-empty">No changes to show.</p>;
+    return (
+      <div className="git-diff-empty">
+        <FileCode2 size={20} />
+        <strong>No textual changes</strong>
+        <p>This file has no previewable diff.</p>
+      </div>
+    );
   }
   return (
-    <pre className="git-diff-view">
+    <pre className="git-diff-view" aria-label="Git diff">
       {diff.split('\n').map((line, index) => {
-        let tone: 'add' | 'remove' | 'hunk' | undefined;
+        let tone: 'add' | 'remove' | 'hunk' | 'meta' | undefined;
         if (line.startsWith('+++') || line.startsWith('---')) tone = undefined;
         else if (line.startsWith('+')) tone = 'add';
         else if (line.startsWith('-')) tone = 'remove';
         else if (line.startsWith('@@')) tone = 'hunk';
+        else if (
+          line.startsWith('diff --git')
+          || line.startsWith('index ')
+          || line.startsWith('new file ')
+          || line.startsWith('deleted file ')
+          || line.startsWith('similarity index ')
+          || line.startsWith('rename ')
+        ) tone = 'meta';
         return (
-          <span key={index} className="git-diff-line" data-tone={tone}>
+          <span
+            key={index}
+            className="git-diff-line"
+            data-tone={tone}
+            data-empty={line.length === 0 ? 'true' : undefined}
+          >
             {line}
             {'\n'}
           </span>
@@ -68,6 +104,7 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
   }, [loadChanges]);
 
   const selected = changes.find((change) => change.path === selectedPath) || null;
+  const selectedPathParts = selected ? splitWorkspacePath(selected.path) : null;
 
   React.useEffect(() => {
     if (!selected) {
@@ -145,11 +182,18 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
 
   return (
     <section className="resume-editor-workspace git-panel-workspace" role="dialog" aria-modal="true" aria-labelledby="git-panel-title">
-      <header className="resume-editor-topbar">
-        <div className="resume-editor-title">
-          <span>Content repository</span>
-          <strong id="git-panel-title">Uncommitted changes</strong>
-          <em>{changes.length} file{changes.length === 1 ? '' : 's'} changed</em>
+      <header className="resume-editor-topbar git-panel-topbar">
+        <div className="git-panel-heading">
+          <div className="git-panel-heading-icon"><GitBranch size={17} /></div>
+          <div className="resume-editor-title">
+            <span>Content repository</span>
+            <strong id="git-panel-title">Uncommitted changes</strong>
+            <em>
+              {changes.length} file{changes.length === 1 ? '' : 's'} changed
+              <i aria-hidden="true" />
+              {stagedPaths.length} staged
+            </em>
+          </div>
         </div>
         <button type="button" className="git-panel-close" onClick={onClose} aria-label="Close changes panel" title="Close">
           <X size={15} />
@@ -158,6 +202,10 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
 
       <div className="resume-editor-body git-panel-body">
         <aside className="git-panel-file-list" aria-label="Changed files">
+          <div className="git-panel-file-list-heading">
+            <span>Changed files</span>
+            <strong>{changes.length}</strong>
+          </div>
           <label className="git-panel-select-all">
             <input
               type="checkbox"
@@ -165,7 +213,9 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
               disabled={loading || changes.length === 0 || togglingPath !== null}
               onChange={() => void toggleAll()}
             />
-            <span>{stagedPaths.length} of {changes.length} staged</span>
+            <span>
+              <strong>{stagedPaths.length}</strong> of {changes.length} staged
+            </span>
           </label>
 
           {loading && (
@@ -187,25 +237,32 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
           )}
 
           <ul className="git-panel-files">
-            {sortedChanges.map((change) => (
-              <li key={change.path} data-selected={change.path === selectedPath}>
-                <input
-                  type="checkbox"
-                  checked={change.staged}
-                  disabled={togglingPath !== null}
-                  onChange={() => void toggleStaged(change)}
-                  aria-label={`Stage ${change.path}`}
-                />
-                <button
-                  type="button"
-                  className="git-panel-file-button"
-                  onClick={() => setSelectedPath(change.path)}
-                >
-                  <span className="git-panel-file-status" data-status={change.status}>{change.status[0]}</span>
-                  <span className="git-panel-file-path">{change.path}</span>
-                </button>
-              </li>
-            ))}
+            {sortedChanges.map((change) => {
+              const { directory, fileName } = splitWorkspacePath(change.path);
+              return (
+                <li key={change.path} data-selected={change.path === selectedPath}>
+                  <input
+                    type="checkbox"
+                    checked={change.staged}
+                    disabled={togglingPath !== null}
+                    onChange={() => void toggleStaged(change)}
+                    aria-label={`Stage ${change.path}`}
+                  />
+                  <button
+                    type="button"
+                    className="git-panel-file-button"
+                    onClick={() => setSelectedPath(change.path)}
+                    title={change.path}
+                  >
+                    <span className="git-panel-file-status" data-status={change.status}>{change.status[0]}</span>
+                    <span className="git-panel-file-copy">
+                      <strong>{fileName}</strong>
+                      <small>{directory}</small>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </aside>
 
@@ -213,9 +270,17 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
           {selected ? (
             <>
               <div className="git-panel-diff-header">
-                <code>{selected.path}</code>
-                <span className="git-panel-file-status" data-status={selected.status}>{selected.status}</span>
-                <span className="git-panel-diff-scope">{selected.staged ? 'Staged' : 'Working tree'}</span>
+                <div className="git-panel-diff-identity">
+                  <span>File preview</span>
+                  <strong>{selectedPathParts?.fileName}</strong>
+                  <code>{selectedPathParts?.directory}</code>
+                </div>
+                <div className="git-panel-diff-state">
+                  <span className="git-panel-file-status" data-status={selected.status}>{selected.status}</span>
+                  <span className="git-panel-diff-scope" data-staged={selected.staged ? 'true' : undefined}>
+                    {selected.staged ? 'Staged' : 'Working tree'}
+                  </span>
+                </div>
               </div>
               {diffLoading && (
                 <div className="git-panel-loading">
@@ -232,29 +297,40 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
               {!diffLoading && !diffError && <DiffView diff={diff} />}
             </>
           ) : (
-            <p className="git-panel-empty">Select a file to preview its diff.</p>
+            <div className="git-panel-empty">
+              <FileCode2 size={20} />
+              <strong>Select a changed file</strong>
+              <p>Its staged or working-tree diff will appear here.</p>
+            </div>
           )}
         </main>
       </div>
 
       <footer className="git-panel-commit">
-        <textarea
-          value={message}
-          onChange={(event) => setMessage(event.target.value)}
-          placeholder={stagedPaths.length > 0
-            ? `Commit message for ${stagedPaths.length} staged file${stagedPaths.length === 1 ? '' : 's'}...`
-            : 'Stage at least one file to commit...'}
-          disabled={committing}
-          rows={2}
-        />
+        <label className="git-panel-commit-field">
+          <span>
+            Commit message
+            <small>{stagedPaths.length} staged file{stagedPaths.length === 1 ? '' : 's'}</small>
+          </span>
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            placeholder={stagedPaths.length > 0
+              ? 'Describe this content change...'
+              : 'Stage at least one file to commit...'}
+            disabled={committing}
+            rows={2}
+          />
+        </label>
         <button
           type="button"
           className="git-panel-commit-button"
           disabled={committing || stagedPaths.length === 0 || !message.trim()}
           onClick={() => void commit()}
         >
-          {committing ? <LoaderCircle size={14} className="spin" /> : <Check size={14} />}
-          {committing ? 'Committing' : `Commit ${stagedPaths.length}`}
+          {committing ? <LoaderCircle size={14} className="spin" /> : <GitCommitHorizontal size={15} />}
+          {committing ? 'Committing' : 'Commit changes'}
+          {!committing && <span>{stagedPaths.length}</span>}
         </button>
         {commitError && (
           <div className="git-panel-error" role="alert">

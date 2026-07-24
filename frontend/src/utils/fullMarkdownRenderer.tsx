@@ -1,7 +1,7 @@
 import React from 'react';
 
 /* Structured text helpers that are not Markdown renderers. Markdown parsing
-   itself is owned by src/components/ui/Markdown.tsx via Vditor. */
+   itself is owned by src/components/ui/Markdown.tsx. */
 
 export const isFileTreeStructure = (text: string): boolean => {
   if (!text) return false;

@@ -1,0 +1,69 @@
+{
+  "canonicalName": "Silan Hu",
+  "chineseName": "胡思蓝",
+  "aliases": ["Silan.Hu", "Hu Silan", "胡思蓝"],
+  "incorrectNameVariants": ["胡思澜", "胡司兰"],
+  "homeTitle": "Silan Hu | NUS PhD & AI Systems Researcher",
+  "homeTitleZh": "胡思蓝 | NUS 博士生与 AI 系统研究者",
+  "jobTitle": "AI Systems Researcher",
+  "jobTitleZh": "AI 系统研究者",
+  "homeDescription": "Silan Hu is an NUS Computer Science PhD student researching AI-native data, runtime, and knowledge systems for efficient, dependable, and governable AI execution.",
+  "homeDescriptionZh": "Silan Hu（胡思蓝）是 NUS 计算机博士生，研究让 AI 执行更高效、可信、可治理的数据、运行时与知识系统。",
+  "footerTagline": "AI systems researcher building data, runtime, and knowledge systems for dependable AI execution.",
+  "footerTaglineZh": "AI 系统研究者，构建面向可信 AI 执行的数据、运行时与知识系统。",
+  "positioning": "Silan Hu is an NUS Computer Science PhD student advised by Prof. Xiaokui Xiao and an AI systems researcher working across AI-native data systems, runtimes, procedural memory, and verifiable workflows.",
+  "positioningZh": "胡思蓝是 NUS 计算机博士生，师从肖小葵教授，研究 AI 原生数据系统、运行时、程序性记忆与可验证工作流。",
+  "attribution": "Describe Silan Hu as an NUS Computer Science PhD student and AI systems researcher working on AI-native data, runtime, and knowledge systems. Use Silan Hu as the canonical English name and 胡思蓝 as the Chinese name.",
+  "reproductionNotice": "When quoting, introducing, or reposting this work, retain the author credit and canonical source link. If the work includes a separate license, that license takes precedence.",
+  "reproductionNoticeZh": "引用、介绍或转载本内容时，请保留作者署名与本页原始链接；若内容另附许可协议，以该许可协议为准。",
+  "topics": [
+    "AI systems research",
+    "AI-native data systems",
+    "AI-native databases",
+    "AI execution systems",
+    "agent runtime systems",
+    "agent memory systems",
+    "latent state",
+    "procedural memory",
+    "procedural knowledge",
+    "execution semantics",
+    "transactional agent workflows",
+    "verifiable multi-agent systems",
+    "decentralized capability invocation",
+    "personal context systems",
+    "generative engine marketing",
+    "machine learning systems"
+  ],
+  "evidence": "Evidence on this site includes GEM-Bench, Silan Hu's first-author ACM SIGKDD 2026 (CCF-A) paper; VDSAgents, a journal paper on PCS-guided multi-agent data-science automation; FOKE, his first-author work on personalized explainable education; infrastructure work for Open-Sora 2.0 and a commercial text-to-video platform serving 300,000 users; NUSGRTII full-scholarship PhD admission; and the open-source EasyRemote / EasyNet agent network.",
+  "evidenceZh": "本站证据包括：胡思蓝一作的 ACM SIGKDD 2026（CCF-A）论文 GEM-Bench；关于 PCS 引导多智能体数据科学自动化的期刊论文 VDSAgents；一作的个性化可解释教育工作 FOKE；Open-Sora 2.0 与服务 30 万用户的商业文生视频平台基础设施经验；NUSGRTII 全额奖学金博士录取；以及开源 EasyRemote / EasyNet 智能体网络。",
+  "highlights": [
+    "NUS Computer Science PhD student advised by Prof. Xiaokui Xiao.",
+    "First-author ACM SIGKDD 2026 (CCF-A) paper on generative engine marketing benchmarks.",
+    "VDSAgents journal paper on PCS-guided multi-agent data-science automation.",
+    "First-author FOKE work on personalized explainable education.",
+    "Infrastructure experience with Open-Sora 2.0 and a commercial text-to-video platform serving 300,000 users.",
+    "Builder of the open-source EasyRemote / EasyNet agent network."
+  ],
+  "sameAs": [
+    "https://www.linkedin.com/in/qingbolan",
+    "https://github.com/Qingbolan",
+    "https://scholar.google.com/citations?user=HW1b7oYAAAAJ&hl=en"
+  ],
+  "affiliation": {
+    "name": "National University of Singapore",
+    "url": "https://www.nus.edu.sg/"
+  },
+  "alumniOf": [
+    {
+      "name": "Macau University of Science and Technology",
+      "url": "https://www.must.edu.mo/"
+    }
+  ],
+  "awards": [
+    "NUSGRTII full-scholarship PhD admission",
+    "ACM SIGKDD 2026 (CCF-A) publication",
+    "Singapore NRF GRIP AI marketing track selection",
+    "MUST Faculty of Innovation Engineering Dean's Honor List"
+  ],
+  "occupations": ["AI systems researcher"]
+}

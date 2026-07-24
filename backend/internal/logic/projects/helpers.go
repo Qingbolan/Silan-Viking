@@ -6,8 +6,20 @@ import (
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/ent/predicate"
+	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
 )
+
+// publicProject is the single public-surface boundary for projects. Visibility
+// controls publication, while archived remains a terminal storage state even
+// if a hand-edited source accidentally retains public visibility.
+func publicProject() predicate.Project {
+	return project.And(
+		project.VisibilityEQ(project.VisibilityPublic),
+		project.StatusNEQ(project.StatusArchived),
+	)
+}
 
 func formatContentTime(value time.Time, layout string) string {
 	if value.IsZero() || value.Year() <= 1 {

@@ -13,8 +13,11 @@ import (
 // a flag before any write action (like/comment) has produced a stored one.
 func VisitorGeoHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		location := utils.GetGeoLocation(r, svcCtx.CountryResolver)
 		httpx.OkJsonCtx(r.Context(), w, types.VisitorGeoResponse{
-			CountryCode: utils.GetCountryCode(r, svcCtx.CountryResolver),
+			CountryCode: location.CountryCode,
+			RegionCode:  location.RegionCode,
+			RegionName:  location.RegionName,
 		})
 	}
 }

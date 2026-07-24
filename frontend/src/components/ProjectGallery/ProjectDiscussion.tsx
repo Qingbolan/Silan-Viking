@@ -37,7 +37,6 @@ const ProjectDiscussion: React.FC<ProjectDiscussionProps> = ({ projectId }) => {
   ) => createProjectComment(projectId, draft.content, fingerprint, {
     type: 'general',
     authorName: draft.authorName,
-    authorEmail: draft.authorEmail,
     parentId: draft.parentId,
     language,
   }), [projectId]);

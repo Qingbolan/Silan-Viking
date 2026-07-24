@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User } from '../../types/contact';
 import { apiUrl } from '../../api/utils';
+import { getClientFingerprint } from '../../utils/fingerprint';
 
 /** Shared with OAuthPopupClose.tsx — the popup writes 'success', the opener
  *  polls for it. See loginWithGitHub for why this exists instead of relying
@@ -17,7 +18,15 @@ interface AuthContextType {
    *  confirmed — the current tab never navigates away. Resolves `false`
    *  if the popup is closed before completing. */
   loginWithGitHub: () => Promise<boolean>;
+  mergeGuestIdentity: () => Promise<MergeGuestIdentityResult>;
   logout: () => void;
+}
+
+export interface MergeGuestIdentityResult {
+  user: User;
+  mergedComments: number;
+  mergedLikes: number;
+  dedupedLikes: number;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -181,6 +190,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const timeoutId = window.setTimeout(() => finish(false), 5 * 60 * 1000);
   }), [refreshSession]);
 
+  const mergeGuestIdentity = useCallback(async (): Promise<MergeGuestIdentityResult> => {
+    const response = await fetch(apiUrl('/api/v1/auth/merge-guest'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fingerprint: getClientFingerprint() }),
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      throw new Error('Guest identity merge failed');
+    }
+    const payload = await response.json();
+    const mergedUser = mapUser(payload);
+    setUser(mergedUser);
+    return {
+      user: mergedUser,
+      mergedComments: Number(payload.merged_comments ?? 0),
+      mergedLikes: Number(payload.merged_likes ?? 0),
+      dedupedLikes: Number(payload.deduped_likes ?? 0),
+    };
+  }, [mapUser]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -190,6 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         githubAvailable,
         loginWithGoogle,
         loginWithGitHub,
+        mergeGuestIdentity,
         logout,
       }}
     >

@@ -83,7 +83,6 @@ type (
 		ID             string `path:"id"`
 		ParentId       string `json:"parent_id,optional"`
 		AuthorName     string `json:"author_name,optional"`
-		AuthorEmail    string `json:"author_email,optional"`
 		AuthorWebsite  string `json:"author_website,optional"`
 		Content        string `json:"content"`
 		Type           string `json:"type"`
@@ -335,6 +334,7 @@ type (
 		Slug                string        `json:"slug,omitempty"`
 		Author              string        `json:"author"`
 		PublishDate         string        `json:"publish_date"`
+		UpdatedAt           string        `json:"updated_at,omitempty"`
 		ReadTime            string        `json:"read_time"`
 		Category            string        `json:"category"`
 		Tags                []string      `json:"tags"`
@@ -385,6 +385,7 @@ type (
 		Status          string        `json:"status"`
 		Visibility      string        `json:"visibility"`
 		PublishDate     string        `json:"publish_date,omitempty"`
+		UpdatedAt        string        `json:"updated_at,omitempty"`
 		DurationMinutes int           `json:"duration_minutes,omitempty"`
 		Content         []BlogContent `json:"content,omitempty"`
 		Likes           int64         `json:"likes"`
@@ -456,8 +457,7 @@ type (
 	CreateBlogCommentRequest {
 		ID             string `path:"id"`
 		ParentId       string `json:"parent_id,optional"`
-		AuthorName     string `json:"author_name"`
-		AuthorEmail    string `json:"author_email"`
+		AuthorName     string `json:"author_name,optional"`
 		Content        string `json:"content"`
 		Fingerprint    string `json:"fingerprint"`
 		ClientIP       string `json:"client_ip,optional"`
@@ -592,7 +592,6 @@ type (
 		ID             string `path:"id"`
 		ParentId       string `json:"parent_id,optional"`
 		AuthorName     string `json:"author_name,optional"`
-		AuthorEmail    string `json:"author_email,optional"`
 		AuthorWebsite  string `json:"author_website,optional"`
 		Content        string `json:"content"`
 		Type           string `json:"type"`
@@ -679,6 +678,20 @@ type (
 		AvatarURL string `json:"avatar_url,optional"`
 		Provider  string `json:"provider"`
 		Verified  bool   `json:"verified"`
+	}
+	MergeGuestIdentityRequest {
+		Fingerprint string `json:"fingerprint"`
+	}
+	MergeGuestIdentityResponse {
+		ID             string `json:"id"`
+		Email          string `json:"email"`
+		Name           string `json:"name,optional"`
+		AvatarURL      string `json:"avatar_url,optional"`
+		Provider       string `json:"provider"`
+		Verified       bool   `json:"verified"`
+		MergedComments int    `json:"merged_comments"`
+		MergedLikes    int    `json:"merged_likes"`
+		DedupedLikes   int    `json:"deduped_likes"`
 	}
 	AuthProvidersResponse {
 		Google bool `json:"google"`
@@ -927,6 +940,10 @@ service backend-api {
 	@doc "Resolve the current HttpOnly Google session"
 	@handler Session
 	get /session returns (GoogleVerifyResponse)
+
+	@doc "Merge this browser's guest comments and likes into the signed-in identity"
+	@handler MergeGuestIdentity
+	post /merge-guest (MergeGuestIdentityRequest) returns (MergeGuestIdentityResponse)
 
 	@doc "List configured public sign-in providers"
 	@handler Providers

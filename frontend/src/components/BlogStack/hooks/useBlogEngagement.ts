@@ -13,6 +13,7 @@ import {
   updateEpisodeLikes,
 } from '../../../api/episodes/episodeApi';
 import { getClientFingerprint } from '../../../utils/fingerprint';
+import { isPrerenderRuntime } from '../../../utils/runtimeContext';
 import type {
   ArticleComment,
   CommentDraft,
@@ -101,6 +102,7 @@ export const useBlogEngagement = ({
     () => new Set(),
   );
   const [interactionError, setInteractionError] = useState<string>();
+  const interactionEnabled = enabled && !isPrerenderRuntime();
 
   useEffect(() => {
     setLikes(Math.max(0, initialLikes));
@@ -110,7 +112,7 @@ export const useBlogEngagement = ({
   }, [postId, initialLiked, initialLikes, initialLikers]);
 
   const loadComments = useCallback(async () => {
-    if (!enabled || !postId) {
+    if (!interactionEnabled || !postId) {
       setComments([]);
       setCommentsState('ready');
       setCommentsError(undefined);
@@ -131,7 +133,7 @@ export const useBlogEngagement = ({
       );
       setCommentsState('error');
     }
-  }, [enabled, kind, language, postId]);
+  }, [interactionEnabled, kind, language, postId]);
 
   useEffect(() => {
     void loadComments();
@@ -139,7 +141,7 @@ export const useBlogEngagement = ({
 
   const toggleLike = useCallback(async () => {
     if (likePending) return;
-    if (!enabled || !postId) return;
+    if (!interactionEnabled || !postId) return;
     const previousLiked = liked;
     const previousLikes = likes;
     const nextLiked = !previousLiked;
@@ -164,12 +166,12 @@ export const useBlogEngagement = ({
     } finally {
       setLikePending(false);
     }
-  }, [enabled, kind, language, liked, likePending, likes, postId]);
+  }, [interactionEnabled, kind, language, liked, likePending, likes, postId]);
 
   const submitComment = useCallback(
     async (draft: CommentDraft) => {
       if (commentSubmitting) return;
-      if (!enabled || !postId) return;
+      if (!interactionEnabled || !postId) return;
       setCommentSubmitting(true);
       setInteractionError(undefined);
       try {
@@ -178,7 +180,6 @@ export const useBlogEngagement = ({
           ? await createEpisodeComment(
               postId,
               draft.authorName,
-              draft.authorEmail,
               draft.content,
               fingerprint,
               language,
@@ -187,7 +188,6 @@ export const useBlogEngagement = ({
           : await createBlogComment(
               postId,
               draft.authorName,
-              draft.authorEmail,
               draft.content,
               fingerprint,
               language,
@@ -207,11 +207,12 @@ export const useBlogEngagement = ({
         setCommentSubmitting(false);
       }
     },
-    [commentSubmitting, enabled, kind, language, postId],
+    [commentSubmitting, interactionEnabled, kind, language, postId],
   );
 
   const toggleCommentLike = useCallback(
     async (commentId: string) => {
+      if (!interactionEnabled) return;
       if (pendingCommentLikes.has(commentId)) return;
       setPendingCommentLikes((current) => new Set(current).add(commentId));
       setInteractionError(undefined);
@@ -240,7 +241,7 @@ export const useBlogEngagement = ({
         });
       }
     },
-    [language, pendingCommentLikes],
+    [interactionEnabled, language, pendingCommentLikes],
   );
 
   const commentsCount = useMemo(() => countComments(comments), [comments]);
@@ -249,6 +250,7 @@ export const useBlogEngagement = ({
     [pendingCommentLikes],
   );
   const deleteComment = useCallback(async (commentId: string) => {
+    if (!interactionEnabled) return;
     if (pendingCommentDeletes.has(commentId)) return;
     setPendingCommentDeletes((current) => new Set(current).add(commentId));
     setInteractionError(undefined);
@@ -267,7 +269,7 @@ export const useBlogEngagement = ({
         return next;
       });
     }
-  }, [language, pendingCommentDeletes]);
+  }, [interactionEnabled, language, pendingCommentDeletes]);
   const isCommentDeletePending = useCallback(
     (commentId: string) => pendingCommentDeletes.has(commentId),
     [pendingCommentDeletes],

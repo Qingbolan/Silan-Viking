@@ -3,7 +3,6 @@ package projects
 import (
 	"context"
 
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -28,7 +27,7 @@ func NewGetProjectCategoriesLogic(ctx context.Context, svcCtx *svc.ServiceContex
 func (l *GetProjectCategoriesLogic) GetProjectCategories(req *types.ResumeRequest) (resp []string, err error) {
 	// Get distinct project types from projects
 	projects, err := l.svcCtx.DB.Project.Query().
-		Where(project.VisibilityEQ(project.VisibilityPublic)).
+		Where(publicProject()).
 		All(l.ctx)
 	if err != nil {
 		return nil, err

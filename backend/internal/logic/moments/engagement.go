@@ -179,15 +179,17 @@ func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *t
 	if strings.TrimSpace(req.Content) == "" {
 		return nil, fmt.Errorf("content is required")
 	}
-	authorName, authorEmail, avatar, provider := strings.TrimSpace(req.AuthorName), strings.TrimSpace(req.AuthorEmail), "", ""
-	if req.AuthenticatedUserID != "" {
-		user, err := svcCtx.DB.UserIdentity.Get(ctx, req.AuthenticatedUserID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid user identity")
-		}
-		authorName, authorEmail, avatar, provider = user.DisplayName, user.Email, user.AvatarURL, user.Provider
-	} else if authorName == "" || !strings.Contains(authorEmail, "@") {
-		return nil, fmt.Errorf("author_name and a valid author_email are required")
+	author, err := commentruntime.ResolveAuthor(
+		ctx,
+		svcCtx.DB,
+		req.AuthenticatedUserID,
+		req.AuthorName,
+		req.Fingerprint,
+		req.CountryCode,
+		req.RegionCode,
+	)
+	if err != nil {
+		return nil, err
 	}
 	if req.ParentId != "" {
 		parent, err := svcCtx.DB.Comment.Get(ctx, req.ParentId)
@@ -197,13 +199,16 @@ func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *t
 	}
 	builder := svcCtx.DB.Comment.Create().
 		SetEntityType(comment.EntityTypeMoment).SetEntityID(id).SetType(comment.TypeGeneral).
-		SetAuthorName(authorName).SetAuthorEmail(authorEmail).SetContent(strings.TrimSpace(req.Content)).
+		SetAuthorName(author.Name).SetContent(strings.TrimSpace(req.Content)).
 		SetIsApproved(true).SetLikesCount(0).SetUserAgent("fp:" + strings.TrimSpace(req.Fingerprint))
+	if author.Email != "" {
+		builder.SetAuthorEmail(author.Email)
+	}
 	if req.ParentId != "" {
 		builder.SetParentID(req.ParentId)
 	}
-	if req.AuthenticatedUserID != "" {
-		builder.SetUserIdentityID(req.AuthenticatedUserID)
+	if author.UserIdentityID != "" {
+		builder.SetUserIdentityID(author.UserIdentityID)
 	}
 	if req.ClientIP != "" {
 		builder.SetIPAddress(req.ClientIP)
@@ -223,7 +228,7 @@ func CreateUpdateComment(ctx context.Context, svcCtx *svc.ServiceContext, req *t
 	if req.AuthenticatedUserID == "" && strings.TrimSpace(req.Fingerprint) != "" {
 		visitor = visitorNumber(req.Fingerprint)
 	}
-	return &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: authorName, AuthorAvatarURL: avatar, AuthProvider: provider, CountryCode: countryCode, VisitorNumber: visitor, Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: true, Replies: []types.UpdateCommentData{}}, nil
+	return &types.UpdateCommentData{ID: row.ID, UpdateID: id, ParentID: row.ParentID, AuthorName: author.Name, AuthorAvatarURL: author.AvatarURL, AuthProvider: author.AuthProvider, CountryCode: countryCode, VisitorNumber: visitor, Content: row.Content, CreatedAt: row.CreatedAt.Format(time.RFC3339), CanDelete: true, Replies: []types.UpdateCommentData{}}, nil
 }
 
 func ListUpdateComments(ctx context.Context, svcCtx *svc.ServiceContext, key, fingerprint, identity string) (*types.UpdateCommentListResponse, error) {
@@ -242,8 +247,10 @@ func ListUpdateComments(ctx context.Context, svcCtx *svc.ServiceContext, key, fi
 	order := make([]string, 0, len(rows))
 	for _, row := range rows {
 		avatar, provider := "", ""
-		if user, lookupErr := svcCtx.DB.UserIdentity.Query().Where(useridentity.EmailEQ(row.AuthorEmail)).Order(ent.Desc(useridentity.FieldUpdatedAt)).First(ctx); lookupErr == nil {
-			avatar, provider = user.AvatarURL, user.Provider
+		if row.AuthorEmail != "" {
+			if user, lookupErr := svcCtx.DB.UserIdentity.Query().Where(useridentity.EmailEQ(row.AuthorEmail)).Order(ent.Desc(useridentity.FieldUpdatedAt)).First(ctx); lookupErr == nil {
+				avatar, provider = user.AvatarURL, user.Provider
+			}
 		}
 		visitor := ""
 		if row.UserIdentityID == "" {

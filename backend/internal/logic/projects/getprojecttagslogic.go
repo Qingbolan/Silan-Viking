@@ -4,7 +4,6 @@ import (
 	"context"
 	"sort"
 
-	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -28,7 +27,7 @@ func NewGetProjectTagsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ge
 
 func (l *GetProjectTagsLogic) GetProjectTags(req *types.ResumeRequest) (resp []string, err error) {
 	projects, err := l.svcCtx.DB.Project.Query().
-		Where(project.VisibilityEQ(project.VisibilityPublic)).
+		Where(publicProject()).
 		WithTechnologies().
 		All(l.ctx)
 	if err != nil {

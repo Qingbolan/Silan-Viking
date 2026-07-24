@@ -17,6 +17,7 @@ import {
   type ProjectCardData,
 } from '../components/ds';
 import type { Project } from '../types/api';
+import { DEFAULT_CONTENT_AUTHOR } from '../lib/contentAttribution';
 
 const SINGLE_PROJECT_BREAKPOINTS = [
   { minWidth: 640, columns: 2 },
@@ -96,6 +97,7 @@ const ProjectGallery: React.FC = () => {
     description: project.description,
     tags: project.tags,
     year: project.year,
+    author: DEFAULT_CONTENT_AUTHOR,
     githubUrl: project.githubUrl,
     documentationUrl: project.documentationUrl,
     demoUrl: project.demoUrl || project.coverWebsiteUrl,

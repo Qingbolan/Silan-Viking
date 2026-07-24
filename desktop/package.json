@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "node scripts/start-dev-server.mjs",
     "build": "tsc && vite build",
+    "test:resource-visibility": "node --experimental-strip-types --test src/lib/resourceVisibility.test.mjs",
     "generate:icon": "python3 scripts/generate_icon.py && tauri icon src-tauri/icons/app-icon.png",
     "tauri": "tauri",
     "desktop": "tauri dev",
     "build:desktop": "tauri build"
   },
   "dependencies": {
+    "@milkdown/kit": "^7.21.3",
     "@tauri-apps/api": "^2.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -20,8 +22,7 @@
     "lucide-react": "^0.441.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^3.6.0",
-    "vditor": "^3.11.2"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",

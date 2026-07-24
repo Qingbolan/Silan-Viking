@@ -15,6 +15,7 @@ import { useLanguage } from '../components/LanguageContext';
 import { useTheme } from '../components/ThemeContext';
 import { publicAssetUrl } from '../utils/publicAsset';
 import { Avatar } from '../components/ds/Avatar';
+import siteProfile from '../../site-profile.json';
 
 type InternalLink = { label: string; to: string };
 
@@ -51,10 +52,11 @@ const ExternalLink: React.FC<{ href: string; label: string; icon?: React.ReactNo
  * as a personal sign-off rather than another content panel.
  */
 const Footer: React.FC = () => {
-  const { language, setLanguage } = useLanguage();
+  const { language, languageHref, selectLanguage } = useLanguage();
   const { isDarkMode, toggleTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const zh = language === 'zh';
+  const targetLanguage = zh ? 'en' : 'zh';
 
   const explore: InternalLink[] = [
     { label: zh ? '主页' : 'Home', to: '/' },
@@ -88,7 +90,7 @@ const Footer: React.FC = () => {
             <span className="text-base font-semibold tracking-[-0.035em]">Silan Hu</span>
           </Link>
           <p className="mt-5 text-sm leading-6 text-white/55">
-            {zh ? 'AI 系统研究者，构建可执行智能体的知识与运行时基础设施。' : 'AI systems researcher building knowledge and runtime infrastructure for executable agents.'}
+            {zh ? siteProfile.footerTaglineZh : siteProfile.footerTagline}
           </p>
           <div className="mt-6 flex items-center gap-1">
             <ExternalLink href="https://github.com/Qingbolan" label="GitHub" icon={<Github className="size-4" aria-hidden />} />
@@ -126,14 +128,14 @@ const Footer: React.FC = () => {
               {isDarkMode ? <Sun className="size-3.5" aria-hidden /> : <Moon className="size-3.5" aria-hidden />}
               {zh ? (isDarkMode ? '浅色' : '深色') : (isDarkMode ? 'Light' : 'Dark')}
             </button>
-            <button
-              type="button"
-              onClick={() => setLanguage(zh ? 'en' : 'zh')}
+            <a
+              href={languageHref(targetLanguage)}
+              onClick={() => selectLanguage(targetLanguage)}
               className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/20 px-3 text-xs font-medium text-white/70 transition-colors hover:border-white/45 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
               <Globe2 className="size-3.5" aria-hidden />
               {zh ? 'English' : '中文'}
-            </button>
+            </a>
           </div>
         </section>
       </div>

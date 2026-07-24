@@ -33,7 +33,7 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 	projectID := req.ID
 
 	exists, err := l.svcCtx.DB.Project.Query().
-		Where(project.ID(projectID), project.VisibilityEQ(project.VisibilityPublic)).
+		Where(project.ID(projectID), publicProject()).
 		Exist(l.ctx)
 	if err != nil {
 		return nil, err

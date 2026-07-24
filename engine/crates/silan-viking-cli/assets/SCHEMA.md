@@ -97,7 +97,7 @@ types:
       - { name: slug,               type: slug,                                       required: true,  default: null,            source: "py,ent", column: "projects.slug" }
       - { name: title,              type: string,                                     required: true,  default: null,            source: "py,ent", column: "projects.title" }
       - { name: kind,               type: "enum(project)",                            required: true,  default: project,         source: new,      column: null }
-      - { name: status,             type: "enum(active,completed,paused,cancelled)",  required: true,  default: active,          source: "py,ent", column: "projects.status" }
+      - { name: status,             type: "enum(active,completed,paused,cancelled,archived)", required: true, default: active, source: "py,ent", column: "projects.status" }
       - { name: visibility,         type: "enum(private,unlisted,public)",            required: true,  default: private,         source: new,      column: "projects.visibility" }
       - { name: description,        type: text,                                       required: false, default: null,            source: "py,ent", column: "projects.description" }
       - { name: project_type,       type: string,                                     required: false, default: "Web Application", source: "py,ent", column: "projects.project_type" }

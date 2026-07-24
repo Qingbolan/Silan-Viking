@@ -44,7 +44,7 @@ once, kill the war**.
 | `idea.status` | draft/hypothesis/experimenting/validating/published/concluded | same as left (6 values) | legacy hypothesis/exploring/building/shipped/archived (rejected) | **Take Python ∩ ent's 6 values** (see §10.4.1) |
 | `blog.content_type` | article/podcast/vlog/episode/tutorial (5) | article/vlog/episode (3) | — | **4 values: article/podcast/vlog/tutorial** — keep podcast; drop episode (episode is its own type) |
 | `blog.status` | draft/published/private | draft/published/archived | — | **Split status and visibility**; `status` ∈ draft/published/archived; `private` goes to visibility (see §10.3) |
-| `project.status` | ACTIVE/COMPLETED/PAUSED/CANCELLED (uppercase) | active/completed/paused/cancelled | — | **Take the lowercase 4 values** (the disk contract is uniformly lowercase) |
+| `project.status` | ACTIVE/COMPLETED/PAUSED/CANCELLED (uppercase) | active/completed/paused/cancelled/archived | — | **Take the lowercase 5 values** (the disk contract is uniformly lowercase; archive is a first-class lifecycle state) |
 
 > **Ruling principles**: ① enum values use "Python parser ∩ Go ent"
 > as the baseline; the differences are settled one by one by the
@@ -269,7 +269,7 @@ content_type: enum(article, podcast, vlog, tutorial)
 | `slug` | slug | ✔ | — | [py][ent] | projects.slug (unique) |
 | `title` | string | ✔ | — | [py][ent] | projects.title + translation |
 | `kind` | enum(project) | ✔ | project | [new] | — |
-| `status` | enum(active,completed,paused,cancelled) | ✔ | active | [py][ent] | projects.status |
+| `status` | enum(active,completed,paused,cancelled,archived) | ✔ | active | [py][ent] | projects.status |
 | `visibility` | enum(private,unlisted,public) | ✔ | private | [new] | projects.is_public derived |
 | `description` | text | | — | [py][ent] | projects.description + translation |
 | `project_type` | string | | Web Application | [py][ent] | projects.project_type |

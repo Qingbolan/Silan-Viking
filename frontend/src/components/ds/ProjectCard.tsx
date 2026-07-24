@@ -150,7 +150,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
   // Cover priority: image → video → live demo preview → branded placeholder.
   const showLivePreview =
-    !coverImage && !coverVideo && livePreview && !!demoUrl;
+    !coverImage
+    && !coverVideo
+    && (livePreview || coverSourceType === 'website')
+    && !!demoUrl;
 
   const primaryCapability: ProjectCapability | undefined = demoUrl
     ? {

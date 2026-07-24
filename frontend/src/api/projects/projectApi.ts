@@ -3,7 +3,7 @@ import type {
   Language,
   ProjectDetail,
 } from '../../types/api';
-import { get, post, del, formatLanguage } from '../utils';
+import { get, post, del, formatLanguage, mediaUrl } from '../utils';
 import { type PaginationRequest, type ListResponse } from '../config';
 import { mapContentParts } from '../contentParts';
 import { isPrerenderRuntime } from '../../utils/runtimeContext';
@@ -34,7 +34,8 @@ const normalizeContentTimestamp = (value: unknown): string | undefined => {
 };
 
 const normalizeProject = (raw: any): Project => {
-  const thumbnailUrl = raw.thumbnailUrl || raw.thumbnail_url || undefined;
+  const rawThumbnailUrl = raw.thumbnailUrl || raw.thumbnail_url || undefined;
+  const thumbnailUrl = rawThumbnailUrl ? mediaUrl(rawThumbnailUrl) : undefined;
   const coverSourceType = normalizeProjectCoverSourceType(raw.coverSourceType || raw.cover_source_type);
   const coverWebsiteUrl = raw.coverWebsiteUrl || raw.cover_website_url || undefined;
   return {
@@ -254,7 +255,6 @@ export const createProjectComment = async (
   options?: {
     type?: string;
     authorName?: string;
-    authorEmail?: string;
     parentId?: string;
     language?: 'en' | 'zh';
   }
@@ -265,17 +265,7 @@ export const createProjectComment = async (
     fingerprint,
   };
   if (options?.authorName && options.authorName.trim()) body.author_name = options.authorName.trim();
-  if (options?.authorEmail && options.authorEmail.trim()) body.author_email = options.authorEmail.trim();
   if (options?.parentId && options.parentId.trim()) body.parent_id = options.parentId.trim();
-
-  if (body.author_name || body.author_email) {
-    if (!body.author_name || typeof body.author_name !== 'string' || !body.author_name.trim()) {
-      throw new Error('author_name is required');
-    }
-    if (!body.author_email || typeof body.author_email !== 'string' || body.author_email.trim().length < 5 || !body.author_email.includes('@')) {
-      throw new Error('author_email is required and must be valid');
-    }
-  }
 
   // Add language as query parameter
   const url = `/api/v1/projects/${projectId}/comments?lang=${formatLanguage(options?.language || 'en')}`;
@@ -335,7 +325,6 @@ export interface CreateProjectIssuePayload {
   labels?: string[];
   fingerprint: string;
   authorName?: string;
-  authorEmail?: string;
   language?: 'en' | 'zh';
 }
 
@@ -427,7 +416,6 @@ export const createProjectIssue = async (
     {
       type: 'issue',
       authorName: payload.authorName,
-      authorEmail: payload.authorEmail,
       language: payload.language ?? 'en'
     }
   );

@@ -43,8 +43,8 @@ func (Comment) Fields() []ent.Field {
 			MaxLen(100).
 			NotEmpty(),
 		field.String("author_email").
-			MaxLen(255).
-			NotEmpty(),
+			Optional().
+			MaxLen(255),
 		field.String("author_website").
 			Optional().
 			MaxLen(500),

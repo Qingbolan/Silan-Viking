@@ -4,8 +4,9 @@ import LikePanel from './article-footer/LikePanel';
 import ArticleMeta, { type ShareTarget } from './article-footer/ArticleMeta';
 import CompactComments from './article-footer/CompactComments';
 import LikerAvatar from './article-footer/Avatar';
-import { LoginPromptModal } from './LoginPromptModal';
-import { useRequireIdentity } from '../../lib/useRequireIdentity';
+import ContentAttribution, {
+  type ContentAttributionProps,
+} from './ContentAttribution';
 import type {
   ArticleComment,
   CommentDraft,
@@ -31,6 +32,7 @@ export interface ArticleFooterProps {
   ipRegion?: string;
   shareTitle?: string;
   shareUrl?: string;
+  attribution: Omit<ContentAttributionProps, 'className'>;
   comments: ArticleComment[];
   commentsState: CommentLoadState;
   commentsError?: string;
@@ -88,6 +90,7 @@ const ArticleFooter: React.FC<ArticleFooterProps> = ({
   ipRegion,
   shareTitle,
   shareUrl,
+  attribution,
   comments,
   commentsState,
   commentsError,
@@ -102,9 +105,6 @@ const ArticleFooter: React.FC<ArticleFooterProps> = ({
   isCommentDeletePending,
   onShare,
 }) => {
-  const { loginPromptOpen, requireIdentity, resolveLogin, closeLoginPrompt } =
-    useRequireIdentity<() => void>();
-
   return (
     <div className="mt-12">
       <div id="kb-likes">
@@ -112,7 +112,7 @@ const ArticleFooter: React.FC<ArticleFooterProps> = ({
           likes={likes}
           liked={liked}
           pending={likePending}
-          onLike={() => requireIdentity(onLike, (action) => action())}
+          onLike={onLike}
         />
         <LikerStrip likers={likers} likes={likes} />
       </div>
@@ -125,6 +125,7 @@ const ArticleFooter: React.FC<ArticleFooterProps> = ({
         shareUrl={shareUrl}
         onShare={onShare}
       />
+      <ContentAttribution {...attribution} className="mb-10 mt-4" />
       {interactionError && (
         <p className="mt-3 text-right text-ds-xs text-red-600" role="status">
           {interactionError}
@@ -144,11 +145,6 @@ const ArticleFooter: React.FC<ArticleFooterProps> = ({
           isCommentDeletePending={isCommentDeletePending}
         />
       </div>
-      <LoginPromptModal
-        open={loginPromptOpen}
-        onClose={closeLoginPrompt}
-        onResolved={() => resolveLogin((action) => action())}
-      />
     </div>
   );
 };

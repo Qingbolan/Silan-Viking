@@ -1,17 +1,16 @@
 //! Thin Tauri command adapter.
 
-use crate::application::DesktopWorkspace;
+use crate::application::{DesktopWorkspace, GenerateImageAssetInput};
 use crate::model::{
     ContentMetadataInput, DashboardData, DeliverySyncStatus, DeployRunStatus,
     DeployVerificationResult, DeploymentPlan, DocumentStateInput, EditorDocument, EngagementStats,
-    EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource, GeoInsightReport,
+    EngagementStatsInput, EpisodeSeriesInput, EpisodeSeriesSource, GeoInsightReport,
     ImportedMediaAsset, MomentsSettings, ResumeEntryInput, ResumePartSource, ResumeProfile,
     ResumeProfileSource, ResumeSection, StatsSyncReport, VersionStatus, WorkspaceFileChange,
+    WorkspacePreferences,
 };
-use silan_viking_app::{OPENAI_KEYCHAIN_ACCOUNT, OPENAI_KEYCHAIN_SERVICE};
-
-const MAX_DICTATION_DURATION_MS: u64 = 60_000;
-const MAX_DICTATION_BYTES: usize = 16 * 1024 * 1024;
+use crate::openai_credentials::{DesktopOpenAiCredentials, OpenAiCredentialStatus};
+use silan_viking_app::{AudioTranscriptionRequest, OpenAiAudioTranscriber};
 
 #[tauri::command]
 pub(crate) fn list_documents() -> Result<Vec<EditorDocument>, String> {
@@ -19,13 +18,41 @@ pub(crate) fn list_documents() -> Result<Vec<EditorDocument>, String> {
 }
 
 #[tauri::command]
-pub(crate) fn get_entity_counts() -> Result<Vec<EntityCount>, String> {
-    DesktopWorkspace::from_environment()?.entity_counts()
+pub(crate) fn get_dashboard() -> Result<DashboardData, String> {
+    DesktopWorkspace::from_environment()?.dashboard()
 }
 
 #[tauri::command]
-pub(crate) fn get_dashboard() -> Result<DashboardData, String> {
-    DesktopWorkspace::from_environment()?.dashboard()
+pub(crate) async fn get_openai_credentials() -> Result<OpenAiCredentialStatus, String> {
+    run_background("OpenAI credential status", DesktopOpenAiCredentials::status).await
+}
+
+#[tauri::command]
+pub(crate) async fn save_openai_credentials(
+    api_key: String,
+) -> Result<OpenAiCredentialStatus, String> {
+    run_background("OpenAI credential verification", move || {
+        DesktopOpenAiCredentials::verify_and_store(api_key)
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn test_openai_credentials() -> Result<OpenAiCredentialStatus, String> {
+    run_background(
+        "OpenAI credential verification",
+        DesktopOpenAiCredentials::verify_stored,
+    )
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn remove_openai_credentials() -> Result<OpenAiCredentialStatus, String> {
+    run_background(
+        "OpenAI credential removal",
+        DesktopOpenAiCredentials::remove,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -60,6 +87,31 @@ pub(crate) async fn verify_remote_content() -> Result<DeployVerificationResult, 
 #[tauri::command]
 pub(crate) fn get_moments_settings() -> Result<MomentsSettings, String> {
     DesktopWorkspace::from_environment()?.moments_settings()
+}
+
+#[tauri::command]
+pub(crate) fn get_workspace_preferences() -> Result<WorkspacePreferences, String> {
+    DesktopWorkspace::from_environment()?.workspace_preferences()
+}
+
+#[tauri::command]
+pub(crate) fn save_workspace_default_language(
+    language: String,
+) -> Result<WorkspacePreferences, String> {
+    DesktopWorkspace::from_environment()?.save_workspace_default_language(&language)
+}
+
+#[tauri::command]
+pub(crate) fn save_workspace_avatar(
+    file_name: String,
+    bytes: Vec<u8>,
+) -> Result<WorkspacePreferences, String> {
+    DesktopWorkspace::from_environment()?.save_workspace_avatar(&file_name, &bytes)
+}
+
+#[tauri::command]
+pub(crate) fn remove_workspace_avatar() -> Result<WorkspacePreferences, String> {
+    DesktopWorkspace::from_environment()?.remove_workspace_avatar()
 }
 
 #[tauri::command]
@@ -120,11 +172,51 @@ pub(crate) async fn generate_missing_translation(
     source_language: Option<String>,
 ) -> Result<EditorDocument, String> {
     run_background("AI translation generation", move || {
-        let api_key = openai_api_key()?;
+        let api_key = DesktopOpenAiCredentials::load_key()?;
         DesktopWorkspace::from_environment()?.generate_missing_translation(
             &id,
             &target_language,
             source_language.as_deref(),
+            &api_key,
+        )
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn sync_counterpart_translation(
+    id: String,
+    target_language: String,
+) -> Result<EditorDocument, String> {
+    run_background("AI translation sync", move || {
+        let api_key = DesktopOpenAiCredentials::load_key()?;
+        DesktopWorkspace::from_environment()?.sync_counterpart_translation(
+            &id,
+            &target_language,
+            &api_key,
+        )
+    })
+    .await
+}
+
+#[tauri::command]
+pub(crate) async fn generate_image_asset(
+    id: String,
+    prompt: String,
+    size: Option<String>,
+    quality: Option<String>,
+    output_format: Option<String>,
+) -> Result<ImportedMediaAsset, String> {
+    run_background("AI image generation", move || {
+        let api_key = DesktopOpenAiCredentials::load_key()?;
+        DesktopWorkspace::from_environment()?.generate_image_asset(
+            &id,
+            GenerateImageAssetInput {
+                prompt,
+                size: size.unwrap_or_else(|| "1024x1024".to_owned()),
+                quality: quality.unwrap_or_else(|| "auto".to_owned()),
+                output_format: output_format.unwrap_or_else(|| "png".to_owned()),
+            },
             &api_key,
         )
     })
@@ -167,6 +259,15 @@ pub(crate) fn import_media_asset(
 }
 
 #[tauri::command]
+pub(crate) fn import_media_asset_bytes(
+    id: String,
+    file_name: String,
+    bytes: Vec<u8>,
+) -> Result<ImportedMediaAsset, String> {
+    DesktopWorkspace::from_environment()?.import_media_asset_bytes(&id, &file_name, &bytes)
+}
+
+#[tauri::command]
 pub(crate) fn import_resume_media_asset(
     file_name: String,
     bytes: Vec<u8>,
@@ -193,13 +294,20 @@ pub(crate) fn get_geo_insights(id: String) -> Result<GeoInsightReport, String> {
 }
 
 #[tauri::command]
-pub(crate) fn capture_blog(draft: String, category: String) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.capture_blog(&draft, &category)
+pub(crate) fn capture_blog(
+    draft: String,
+    category: String,
+    language: Option<String>,
+) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.capture_blog(&draft, &category, language.as_deref())
 }
 
 #[tauri::command]
-pub(crate) fn capture_moment(event: String) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.capture_moment(&event)
+pub(crate) fn capture_moment(
+    event: String,
+    language: Option<String>,
+) -> Result<EditorDocument, String> {
+    DesktopWorkspace::from_environment()?.capture_moment(&event, language.as_deref())
 }
 
 #[tauri::command]
@@ -225,78 +333,19 @@ pub(crate) async fn transcribe_audio(
     duration_ms: u64,
 ) -> Result<String, String> {
     run_background("audio transcription", move || {
-        let api_key = openai_api_key()?;
-        if audio.is_empty() {
-            return Err("Recorded audio is empty".to_owned());
-        }
-        if duration_ms == 0 || duration_ms > MAX_DICTATION_DURATION_MS {
-            return Err("Voice input must be between 1 and 60 seconds".to_owned());
-        }
-        if audio.len() > MAX_DICTATION_BYTES {
-            return Err("Recorded audio exceeds the 16 MB safety limit".to_owned());
-        }
-        let mime_type = match mime_type.as_str() {
-            value if value.starts_with("audio/webm") => "audio/webm",
-            value if value.starts_with("audio/mp4") => "audio/mp4",
-            _ => return Err("Unsupported recorded audio format".to_owned()),
-        };
-        let filename = if mime_type == "audio/mp4" {
-            "dictation.mp4"
-        } else {
-            "dictation.webm"
-        };
-        let boundary = format!("silan-viking-{}", std::process::id());
-        let mut body = Vec::with_capacity(audio.len() + 512);
-        body.extend_from_slice(
-            format!(
-                "--{boundary}\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\ngpt-4o-mini-transcribe\r\n\
-                 --{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\n\
-                 Content-Type: {mime_type}\r\n\r\n"
+        let api_key = DesktopOpenAiCredentials::load_key()?;
+        OpenAiAudioTranscriber::default()
+            .transcribe(
+                &api_key,
+                AudioTranscriptionRequest {
+                    audio,
+                    mime_type,
+                    duration_ms,
+                },
             )
-            .as_bytes(),
-        );
-        body.extend_from_slice(&audio);
-        body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
-        let response = ureq::post("https://api.openai.com/v1/audio/transcriptions")
-            .set("Authorization", &format!("Bearer {api_key}"))
-            .set(
-                "Content-Type",
-                &format!("multipart/form-data; boundary={boundary}"),
-            )
-            .send_bytes(&body)
-            .map_err(|error| format!("OpenAI transcription failed: {error}"))?;
-        let value: serde_json::Value = response
-            .into_json()
-            .map_err(|error| format!("Invalid transcription response: {error}"))?;
-        value
-            .get("text")
-            .and_then(|text| text.as_str())
-            .map(str::trim)
-            .filter(|text| !text.is_empty())
-            .map(str::to_owned)
-            .ok_or_else(|| "OpenAI returned an empty transcription".to_owned())
+            .map_err(|error| error.to_string())
     })
     .await
-}
-
-#[cfg(target_os = "macos")]
-fn openai_api_key() -> Result<String, String> {
-    let entry = keyring::Entry::new(OPENAI_KEYCHAIN_SERVICE, OPENAI_KEYCHAIN_ACCOUNT)
-        .map_err(|error| format!("Could not access macOS Keychain: {error}"))?;
-    match entry.get_password() {
-        Ok(secret) => Ok(secret),
-        Err(keyring::Error::NoEntry) => Err(
-            "OpenAI features need an API key; run `silan-viking credentials openai set`".to_owned(),
-        ),
-        Err(error) => Err(format!(
-            "Could not read OpenAI API key from Keychain: {error}"
-        )),
-    }
-}
-
-#[cfg(not(target_os = "macos"))]
-fn openai_api_key() -> Result<String, String> {
-    Err("Voice input credential storage currently requires macOS Keychain".to_owned())
 }
 
 async fn run_background<T, F>(operation: &str, task: F) -> Result<T, String>

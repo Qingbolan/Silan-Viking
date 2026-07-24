@@ -46,7 +46,7 @@ func (Project) Fields() []ent.Field {
 			NotEmpty().
 			Default("Web Application"),
 		field.Enum("status").
-			Values("active", "completed", "paused", "cancelled").
+			Values("active", "completed", "paused", "cancelled", "archived").
 			Default("active"),
 		field.String("start_date").Optional(),
 		field.String("end_date").Optional(),

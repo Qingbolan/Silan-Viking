@@ -183,6 +183,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                   {date}
                 </span>
               )}
+              {author && (
+                <span className="inline-flex items-center gap-1.5">
+                  <User className="size-3" />
+                  {author}
+                </span>
+              )}
             </div>
 
             <h3 className="line-clamp-2 text-ds-lg font-semibold leading-snug tracking-[-0.015em] text-ds-fg">

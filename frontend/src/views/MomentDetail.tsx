@@ -169,7 +169,14 @@ const MomentDetail: React.FC = () => {
             path={detailPath}
             type="article"
             lang={lang}
-            jsonLd={creativeWorkJsonLd({ title: moment.title, description, path: detailPath })}
+            jsonLd={creativeWorkJsonLd({
+              title: moment.title,
+              description,
+              path: detailPath,
+              lang,
+              datePublished: moment.created_at || moment.date,
+              dateModified: moment.updated_at || moment.created_at || moment.date,
+            })}
           />
         )}
 
@@ -268,7 +275,7 @@ const MomentDetailBody: React.FC<{
 
           <Markdown
             documentTitle={moment.title}
-            className="mt-5 text-ds-base leading-8 text-ds-fg-muted sm:text-[1.05rem] [&_.vditor-reset]:!pl-0"
+            className="mt-5 text-ds-base leading-8 text-ds-fg-muted sm:text-[1.05rem] [&_.markdown-body]:!pl-0"
           >
             {bodyText}
           </Markdown>

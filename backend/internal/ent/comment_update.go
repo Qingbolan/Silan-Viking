@@ -105,6 +105,12 @@ func (cu *CommentUpdate) SetNillableAuthorEmail(s *string) *CommentUpdate {
 	return cu
 }
 
+// ClearAuthorEmail clears the value of the "author_email" field.
+func (cu *CommentUpdate) ClearAuthorEmail() *CommentUpdate {
+	cu.mutation.ClearAuthorEmail()
+	return cu
+}
+
 // SetAuthorWebsite sets the "author_website" field.
 func (cu *CommentUpdate) SetAuthorWebsite(s string) *CommentUpdate {
 	cu.mutation.SetAuthorWebsite(s)
@@ -503,6 +509,9 @@ func (cu *CommentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := cu.mutation.AuthorEmail(); ok {
 		_spec.SetField(comment.FieldAuthorEmail, field.TypeString, value)
 	}
+	if cu.mutation.AuthorEmailCleared() {
+		_spec.ClearField(comment.FieldAuthorEmail, field.TypeString)
+	}
 	if value, ok := cu.mutation.AuthorWebsite(); ok {
 		_spec.SetField(comment.FieldAuthorWebsite, field.TypeString, value)
 	}
@@ -759,6 +768,12 @@ func (cuo *CommentUpdateOne) SetNillableAuthorEmail(s *string) *CommentUpdateOne
 	if s != nil {
 		cuo.SetAuthorEmail(*s)
 	}
+	return cuo
+}
+
+// ClearAuthorEmail clears the value of the "author_email" field.
+func (cuo *CommentUpdateOne) ClearAuthorEmail() *CommentUpdateOne {
+	cuo.mutation.ClearAuthorEmail()
 	return cuo
 }
 
@@ -1189,6 +1204,9 @@ func (cuo *CommentUpdateOne) sqlSave(ctx context.Context) (_node *Comment, err e
 	}
 	if value, ok := cuo.mutation.AuthorEmail(); ok {
 		_spec.SetField(comment.FieldAuthorEmail, field.TypeString, value)
+	}
+	if cuo.mutation.AuthorEmailCleared() {
+		_spec.ClearField(comment.FieldAuthorEmail, field.TypeString)
 	}
 	if value, ok := cuo.mutation.AuthorWebsite(); ok {
 		_spec.SetField(comment.FieldAuthorWebsite, field.TypeString, value)

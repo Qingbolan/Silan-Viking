@@ -43,3 +43,14 @@ func TestGetCountryCodeRejectsNonCountryEdgeValues(t *testing.T) {
 		}
 	}
 }
+
+func TestGetGeoLocationUsesValidatedEdgeRegion(t *testing.T) {
+	request := httptest.NewRequest("GET", "/", nil)
+	request.Header.Set("X-Vercel-IP-Country", "cn")
+	request.Header.Set("X-Vercel-IP-Country-Region", "bj")
+
+	location := GetGeoLocation(request, nil)
+	if location.CountryCode != "CN" || location.RegionCode != "BJ" {
+		t.Fatalf("GetGeoLocation() = %#v, want CN/BJ", location)
+	}
+}

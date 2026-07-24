@@ -12,6 +12,46 @@ import {
   GraduationCap,
 } from 'lucide-react';
 
+const PyPiIcon: React.FC = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3.5 19.5 7.8v8.4L12 20.5l-7.5-4.3V7.8L12 3.5Z" />
+    <path d="M4.9 8.1 12 12.2l7.1-4.1" />
+    <path d="M12 12.2v8" />
+    <text
+      x="12"
+      y="15.7"
+      fill="currentColor"
+      stroke="none"
+      textAnchor="middle"
+      fontFamily="ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+      fontSize="4.5"
+      fontWeight="700"
+      letterSpacing="-0.2"
+    >
+      Py
+    </text>
+  </svg>
+);
+
+const NpmIcon: React.FC = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="2.75" y="7.25" width="18.5" height="9.5" rx="1.5" />
+    <text
+      x="12"
+      y="14.4"
+      fill="currentColor"
+      stroke="none"
+      textAnchor="middle"
+      fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"
+      fontSize="5.7"
+      fontWeight="800"
+      letterSpacing="-0.6"
+    >
+      npm
+    </text>
+  </svg>
+);
+
 /**
  * Resolving a social link to its platform — by URL first, name second.
  *
@@ -32,6 +72,8 @@ export type SocialPlatform =
   | 'facebook'
   | 'telegram'
   | 'scholar'
+  | 'pypi'
+  | 'npm'
   | 'email'
   | 'website';
 
@@ -50,6 +92,8 @@ const PLATFORMS: {
   { id: 'facebook', label: 'Facebook', hosts: ['facebook.com', 'fb.com'], icon: <Facebook /> },
   { id: 'telegram', label: 'Telegram', hosts: ['t.me', 'telegram.me'], icon: <Send /> },
   { id: 'scholar', label: 'Google Scholar', hosts: ['scholar.google.com', 'scholar.google.'], icon: <GraduationCap /> },
+  { id: 'pypi', label: 'PyPI', hosts: ['pypi.org', 'pythonhosted.org'], icon: <PyPiIcon /> },
+  { id: 'npm', label: 'npm', hosts: ['npmjs.com'], icon: <NpmIcon /> },
 ];
 
 /**

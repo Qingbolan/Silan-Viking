@@ -4,28 +4,39 @@ use crate::model::{
     CommitActivityDay, ContentMetadataInput, DailyContentTraffic, DailyTraffic, DashboardData,
     DashboardItem, DeliverySyncStatus, DeployRunStatus, DeployVerificationResult, DeployedStats,
     DeploymentPlan, DeploymentScopeStatus, DocumentStateInput, EditorDocument, EditorTranslation,
-    EngagementStats, EngagementStatsInput, EntityCount, EpisodeSeriesInput, EpisodeSeriesSource,
-    GeoAction, GeoEvidence, GeoInsightReport, GeoMetric, ImportedMediaAsset, MomentsCover,
-    MomentsProfile, MomentsSettings, RemoteContentVersion, ResumeEntryInput, ResumePartSource,
-    ResumeProfile, ResumeProfileSource, ResumeSection, ResumeSocialLink, StatsSyncReport,
-    TopContentItem, TrafficCountry, TrafficEvidence, TrafficSource, VersionChange, VersionCommit,
-    VersionStatus, VisitorLocation, WorkspaceFileChange,
+    EngagementStats, EngagementStatsInput, EpisodeSeriesInput, EpisodeSeriesSource, GeoAction,
+    GeoEvidence, GeoInsightReport, GeoMetric, ImportedMediaAsset, MomentsCover, MomentsProfile,
+    MomentsSettings, RemoteContentVersion, ResumeEntryInput, ResumePartSource, ResumeProfile,
+    ResumeProfileSource, ResumeSection, ResumeSocialLink, StatsSyncReport, TopContentItem,
+    TrafficCountry, TrafficEvidence, TrafficSource, VersionChange, VersionCommit, VersionStatus,
+    VisitorLocation, WorkspaceFileChange, WorkspaceIdentity, WorkspacePreferences,
 };
 use serde::Deserialize;
 use silan_viking_app::{
     api_base_url, ContentCreator, ContentEditor, ContentKind, CreateTranslationInput,
     DeliveryControl, EditableDocument, EditablePart, EditableSection, GeoAdvisor, IdeaCategory,
-    MarkdownTranslationRequest, MediaLibrary, OpenAiApiKey, OpenAiMarkdownTranslator, ReleaseScope,
-    SaveLifecycleInput, SaveMetadataInput, SaveTranslationInput, StatsCache, StatsError,
-    WebsiteInsights, WorkspaceContent,
+    ImageGenerationRequest, ImageOutputFormat, ImageQuality, ImageSize, MarkdownTranslationRequest,
+    MarkdownTranslationSyncRequest, MediaLibrary, OpenAiApiKey, OpenAiImageGenerator,
+    OpenAiMarkdownTranslator, ReleaseScope, ResumeProfileUpdate, SaveLifecycleInput,
+    SaveMetadataInput, SaveTranslationInput, StatsCache, StatsError, WebsiteInsights,
+    WorkspaceContent,
 };
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_MOMENTS_BACKGROUND_POSITION: &str = "center 42%";
 const DEFAULT_MOMENTS_COVER_HEIGHT_PX: u16 = 420;
+
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct GenerateImageAssetInput {
+    pub(crate) prompt: String,
+    pub(crate) size: String,
+    pub(crate) quality: String,
+    pub(crate) output_format: String,
+}
 
 #[derive(Debug, Clone)]
 struct MomentsUiConfig {
@@ -65,6 +76,7 @@ struct DatabaseConfig {
 
 #[derive(Debug, Default, Deserialize)]
 struct DesktopConfig {
+    default_language: Option<String>,
     moments: Option<MomentsConfig>,
 }
 
@@ -223,6 +235,50 @@ impl DesktopWorkspace {
                 cover_height_px: config.cover_height_px,
             },
         })
+    }
+
+    pub(crate) fn workspace_preferences(&self) -> Result<WorkspacePreferences, String> {
+        let default_language = self.read_default_language()?;
+        let profile = self.resume_profile(&default_language)?.profile;
+        let display_name = non_empty_or(&profile.full_name, "Profile");
+        Ok(WorkspacePreferences {
+            default_language,
+            identity: WorkspaceIdentity {
+                avatar_label: avatar_label(&display_name),
+                avatar_url: self.resolve_media_reference(&profile.avatar_url),
+                avatar_reference: profile.avatar_url,
+                display_name,
+            },
+        })
+    }
+
+    pub(crate) fn save_workspace_default_language(
+        &self,
+        language: &str,
+    ) -> Result<WorkspacePreferences, String> {
+        let language = validate_default_language(language)?;
+        write_default_language(&project_config_path(&self.content_root), &language)?;
+        self.workspace_preferences()
+    }
+
+    pub(crate) fn save_workspace_avatar(
+        &self,
+        file_name: &str,
+        bytes: &[u8],
+    ) -> Result<WorkspacePreferences, String> {
+        let imported = self.import_resume_media_asset(file_name, bytes)?;
+        if let Err(error) = self.save_workspace_avatar_reference(&imported.uri) {
+            if let Some(local_path) = imported.local_path {
+                let _ = fs::remove_file(local_path);
+            }
+            return Err(error);
+        }
+        self.workspace_preferences()
+    }
+
+    pub(crate) fn remove_workspace_avatar(&self) -> Result<WorkspacePreferences, String> {
+        self.save_workspace_avatar_reference("")?;
+        self.workspace_preferences()
     }
 
     /// Pull one coherent full-site snapshot from the deployed server.
@@ -404,19 +460,6 @@ impl DesktopWorkspace {
             .map_err(|error| error.to_string())?
             .into_iter()
             .flat_map(|document| map_editable_document(document, &stats))
-            .collect())
-    }
-
-    pub(crate) fn entity_counts(&self) -> Result<Vec<EntityCount>, String> {
-        Ok(self
-            .workspace_content
-            .entity_counts()
-            .map_err(|error| error.to_string())?
-            .into_iter()
-            .map(|count| EntityCount {
-                entity_type: count.content_type,
-                count: count.count as i64,
-            })
             .collect())
     }
 
@@ -624,7 +667,7 @@ impl DesktopWorkspace {
         part_id: &str,
         target_language: &str,
         source_language: Option<&str>,
-        api_key: &str,
+        api_key: &OpenAiApiKey,
     ) -> Result<EditorDocument, String> {
         let target_language = target_language.trim();
         if target_language.is_empty() {
@@ -661,13 +704,10 @@ impl DesktopWorkspace {
             ));
         }
 
-        let api_key = OpenAiApiKey::parse(api_key.to_owned()).map_err(|error| error.to_string())?;
-        let model =
-            env::var("SILAN_OPENAI_TRANSLATION_MODEL").unwrap_or_else(|_| "gpt-5".to_owned());
-        let translator = OpenAiMarkdownTranslator::new("https://api.openai.com", model);
+        let translator = OpenAiMarkdownTranslator::from_environment();
         let generated = translator
             .translate(
-                &api_key,
+                api_key,
                 &MarkdownTranslationRequest {
                     source_language: source.language.clone(),
                     target_language: target_language.to_owned(),
@@ -696,6 +736,68 @@ impl DesktopWorkspace {
             .ok_or_else(|| format!("generated translation for `{part_id}` was not returned"))
     }
 
+    pub(crate) fn sync_counterpart_translation(
+        &self,
+        source_translation_id: &str,
+        target_language: &str,
+        api_key: &OpenAiApiKey,
+    ) -> Result<EditorDocument, String> {
+        let target_language = target_language.trim();
+        if target_language.is_empty() {
+            return Err("Target language is required.".to_owned());
+        }
+        let (document, part, source) = self
+            .workspace_content
+            .translation(source_translation_id)
+            .map_err(|error| error.to_string())?;
+        let target = part
+            .translations
+            .iter()
+            .find(|translation| translation.language == target_language)
+            .ok_or_else(|| format!("`{target_language}` does not exist for this Part."))?;
+        if source.language == target.language {
+            return Err("Source and target languages must be different.".to_owned());
+        }
+        if source.content.trim().is_empty() || target.content.trim().is_empty() {
+            return Err("Both source and target Markdown must exist before syncing.".to_owned());
+        }
+
+        let translator = OpenAiMarkdownTranslator::from_environment();
+        let synced = translator
+            .sync_existing(
+                api_key,
+                &MarkdownTranslationSyncRequest {
+                    source_language: source.language.clone(),
+                    target_language: target.language.clone(),
+                    title: document.title.clone(),
+                    source_body: source.content.clone(),
+                    existing_target_body: target.content.clone(),
+                },
+            )
+            .map_err(|error| error.to_string())?;
+
+        let saved = self
+            .workspace_content
+            .save_translation(
+                &SaveTranslationInput {
+                    translation_id: target.id.clone(),
+                    content: synced.body,
+                    expected_revision: target.source_revision.0.clone(),
+                },
+                &self.db_path,
+            )
+            .map_err(|error| error.to_string())?;
+        let engagement = ContentEngagementSnapshot::read(&self.db_path);
+        map_editable_document(saved, &engagement)
+            .into_iter()
+            .find(|part| {
+                part.translations
+                    .iter()
+                    .any(|value| value.id == source_translation_id || value.id == target.id)
+            })
+            .ok_or_else(|| format!("synced translation `{}` was not returned", target.id))
+    }
+
     pub(crate) fn import_media_asset(
         &self,
         translation_id: &str,
@@ -708,6 +810,74 @@ impl DesktopWorkspace {
         let asset = self
             .media_library
             .import_asset(&document.id, source_path)
+            .map_err(|error| error.to_string())?;
+        let local_path = self
+            .media_library
+            .resolve_local_reference(&asset.uri)
+            .ok()
+            .map(|path| path.to_string_lossy().to_string());
+        Ok(ImportedMediaAsset {
+            markdown: asset.markdown,
+            uri: asset.uri,
+            relative_path: asset.relative_path,
+            file_name: asset.file_name,
+            byte_count: asset.byte_count,
+            local_path,
+        })
+    }
+
+    pub(crate) fn import_media_asset_bytes(
+        &self,
+        translation_id: &str,
+        file_name: &str,
+        bytes: &[u8],
+    ) -> Result<ImportedMediaAsset, String> {
+        let (document, _, _) = self
+            .workspace_content
+            .translation(translation_id)
+            .map_err(|error| error.to_string())?;
+        let asset = self
+            .media_library
+            .import_asset_bytes(&document.id, file_name, bytes)
+            .map_err(|error| error.to_string())?;
+        let local_path = self
+            .media_library
+            .resolve_local_reference(&asset.uri)
+            .ok()
+            .map(|path| path.to_string_lossy().to_string());
+        Ok(ImportedMediaAsset {
+            markdown: asset.markdown,
+            uri: asset.uri,
+            relative_path: asset.relative_path,
+            file_name: asset.file_name,
+            byte_count: asset.byte_count,
+            local_path,
+        })
+    }
+
+    pub(crate) fn generate_image_asset(
+        &self,
+        translation_id: &str,
+        input: GenerateImageAssetInput,
+        api_key: &OpenAiApiKey,
+    ) -> Result<ImportedMediaAsset, String> {
+        let (document, _, _) = self
+            .workspace_content
+            .translation(translation_id)
+            .map_err(|error| error.to_string())?;
+        let request = ImageGenerationRequest {
+            prompt: input.prompt,
+            size: ImageSize::parse(&input.size).map_err(|error| error.to_string())?,
+            quality: ImageQuality::parse(&input.quality).map_err(|error| error.to_string())?,
+            output_format: ImageOutputFormat::parse(&input.output_format)
+                .map_err(|error| error.to_string())?,
+        };
+        let generated = OpenAiImageGenerator::default()
+            .generate(api_key, &request)
+            .map_err(|error| error.to_string())?;
+        let asset = self
+            .media_library
+            .import_asset_bytes(&document.id, &generated.file_name, &generated.bytes)
             .map_err(|error| error.to_string())?;
         let local_path = self
             .media_library
@@ -924,19 +1094,24 @@ impl DesktopWorkspace {
         &self,
         draft: &str,
         category: &str,
+        language: Option<&str>,
     ) -> Result<EditorDocument, String> {
         let category = IdeaCategory::parse(category).map_err(|error| error.to_string())?;
         let captured = self
             .creator
-            .capture_blog_and_sync(draft, category, &self.db_path)
+            .capture_blog_and_sync(draft, category, language.unwrap_or("en"), &self.db_path)
             .map_err(|error| error.to_string())?;
         self.document_for_part(&captured.part_id)
     }
 
-    pub(crate) fn capture_moment(&self, event: &str) -> Result<EditorDocument, String> {
+    pub(crate) fn capture_moment(
+        &self,
+        event: &str,
+        language: Option<&str>,
+    ) -> Result<EditorDocument, String> {
         let captured = self
             .creator
-            .capture_moment_and_sync(event, &self.db_path)
+            .capture_moment_and_sync(event, language.unwrap_or("en"), &self.db_path)
             .map_err(|error| error.to_string())?;
         self.document_for_part(&captured.part_id)
     }
@@ -1083,6 +1258,45 @@ impl DesktopWorkspace {
         }
         Ok(config)
     }
+
+    fn read_default_language(&self) -> Result<String, String> {
+        let config_path = project_config_path(&self.content_root);
+        if !config_path.is_file() {
+            return Ok("en".to_owned());
+        }
+        let project_root = self.content_root.parent().unwrap_or(&self.content_root);
+        let project = read_project_config(project_root)?;
+        let language = project
+            .desktop
+            .and_then(|desktop| desktop.default_language)
+            .unwrap_or_else(|| "en".to_owned());
+        validate_default_language(&language)
+    }
+
+    fn save_workspace_avatar_reference(&self, avatar_reference: &str) -> Result<(), String> {
+        const PROFILE_LANGUAGES: &[&str] = &["en", "zh"];
+        let updates = PROFILE_LANGUAGES
+            .iter()
+            .map(|language| {
+                let source = self
+                    .content
+                    .read_resume_profile(language)
+                    .map_err(|error| error.to_string())?;
+                let mut profile = parse_resume_profile(&source.frontmatter)?;
+                profile.avatar_url = avatar_reference.to_owned();
+                Ok(ResumeProfileUpdate {
+                    language: (*language).to_owned(),
+                    frontmatter: serialize_resume_profile(&source.frontmatter, &profile)?,
+                    body: source.body,
+                    expected_revision: source.revision,
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        self.content
+            .save_resume_profiles_and_sync(&updates, &self.db_path)
+            .map_err(|error| error.to_string())?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1200,6 +1414,69 @@ fn project_config_path(content_root: &Path) -> PathBuf {
         .parent()
         .map(|project_root| project_root.join("silan-viking.toml"))
         .unwrap_or_else(|| content_root.join("silan-viking.toml"))
+}
+
+fn validate_default_language(language: &str) -> Result<String, String> {
+    match language.trim().to_ascii_lowercase().as_str() {
+        "en" => Ok("en".to_owned()),
+        "zh" => Ok("zh".to_owned()),
+        value => Err(format!(
+            "`desktop.default_language` must be `en` or `zh`, got `{value}`"
+        )),
+    }
+}
+
+fn write_default_language(config_path: &Path, language: &str) -> Result<(), String> {
+    let source = fs::read_to_string(config_path)
+        .map_err(|error| format!("cannot read `{}`: {error}", config_path.display()))?;
+    let mut document = source
+        .parse::<toml_edit::Document>()
+        .map_err(|error| format!("cannot parse `{}`: {error}", config_path.display()))?;
+    document["desktop"]["default_language"] = toml_edit::value(language);
+
+    let parent = config_path.parent().ok_or_else(|| {
+        format!(
+            "cannot resolve project config directory for `{}`",
+            config_path.display()
+        )
+    })?;
+    let mut temporary = tempfile::NamedTempFile::new_in(parent)
+        .map_err(|error| format!("cannot stage `{}`: {error}", config_path.display()))?;
+    temporary
+        .write_all(document.to_string().as_bytes())
+        .map_err(|error| format!("cannot stage `{}`: {error}", config_path.display()))?;
+    temporary
+        .as_file()
+        .sync_all()
+        .map_err(|error| format!("cannot sync `{}`: {error}", config_path.display()))?;
+    if let Ok(metadata) = fs::metadata(config_path) {
+        temporary
+            .as_file()
+            .set_permissions(metadata.permissions())
+            .map_err(|error| {
+                format!(
+                    "cannot preserve permissions for `{}`: {error}",
+                    config_path.display()
+                )
+            })?;
+    }
+    temporary.persist(config_path).map_err(|error| {
+        format!(
+            "cannot replace `{}`: {}",
+            config_path.display(),
+            error.error
+        )
+    })?;
+    #[cfg(unix)]
+    fs::File::open(parent)
+        .and_then(|directory| directory.sync_all())
+        .map_err(|error| {
+            format!(
+                "cannot sync project config directory `{}`: {error}",
+                parent.display()
+            )
+        })?;
+    Ok(())
 }
 
 fn read_project_config(project_root: &Path) -> Result<ProjectConfig, String> {
@@ -1618,7 +1895,7 @@ fn put_yaml_social_links(map: &mut serde_yaml::Mapping, links: &[ResumeSocialLin
 fn validate_document_state(kind: &str, state: &DocumentStateInput) -> Result<(), String> {
     let allowed_status = match kind {
         "blog" | "episode" => &["draft", "published", "archived"][..],
-        "project" => &["active", "completed", "paused", "cancelled"][..],
+        "project" => &["active", "completed", "paused", "cancelled", "archived"][..],
         "moment" => &["active", "ongoing", "completed"][..],
         other => return Err(format!("state controls are not supported for `{other}`")),
     };
@@ -1637,6 +1914,19 @@ fn validate_document_state(kind: &str, state: &DocumentStateInput) -> Result<(),
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn project_archive_is_a_valid_private_lifecycle_state() {
+        assert!(validate_document_state(
+            "project",
+            &DocumentStateInput {
+                status: "archived".to_owned(),
+                visibility: "private".to_owned(),
+                pinned: None,
+            },
+        )
+        .is_ok());
+    }
 
     #[test]
     fn key_value_writer_preserves_stable_entry_identity() {
@@ -1659,5 +1949,50 @@ mod tests {
         assert!(source.contains("entry_id = \"skill-languages\""));
         assert!(source.contains("category = \"编程语言\""));
         assert!(!source.contains("\"kv:编程语言\""));
+    }
+
+    #[test]
+    fn default_language_writer_preserves_project_config_structure_and_comments() {
+        let temporary = tempfile::tempdir().expect("temporary project");
+        let config_path = temporary.path().join("silan-viking.toml");
+        fs::write(
+            &config_path,
+            "\
+# Project identity remains human-maintained.
+[project]
+name = \"fixture\"
+content_dir = \"content\"
+
+[desktop.moments]
+profile_alignment = \"right\"
+
+[deploy]
+mode = \"docker\"
+",
+        )
+        .expect("seed config");
+
+        write_default_language(&config_path, "zh").expect("write default language");
+        write_default_language(&config_path, "en").expect("replace default language");
+
+        let source = fs::read_to_string(&config_path).expect("read updated config");
+        let parsed = source.parse::<toml::Value>().expect("parse updated config");
+        assert_eq!(
+            parsed
+                .get("desktop")
+                .and_then(|desktop| desktop.get("default_language"))
+                .and_then(toml::Value::as_str),
+            Some("en")
+        );
+        assert_eq!(
+            parsed
+                .get("desktop")
+                .and_then(|desktop| desktop.get("moments"))
+                .and_then(|moments| moments.get("profile_alignment"))
+                .and_then(toml::Value::as_str),
+            Some("right")
+        );
+        assert!(source.contains("# Project identity remains human-maintained."));
+        assert_eq!(source.matches("default_language").count(), 1);
     }
 }

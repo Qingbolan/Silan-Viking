@@ -85,6 +85,7 @@ func blogDetailData(
 		Slug:             post.Slug,
 		Author:           author,
 		PublishDate:      post.PublishedAt,
+		UpdatedAt:        post.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		ReadTime:         readTime,
 		Category:         post.CategoryID,
 		Tags:             tags,

@@ -42,7 +42,7 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 		WithProject(func(q *ent.ProjectQuery) {
 			q.WithTranslations()
 		}).
-		Where(projectdetail.HasProjectWith(project.VisibilityEQ(project.VisibilityPublic)))
+		Where(projectdetail.HasProjectWith(publicProject()))
 
 	// Apply filters through project relationship if provided
 	if search := strings.TrimSpace(req.Query); search != "" {

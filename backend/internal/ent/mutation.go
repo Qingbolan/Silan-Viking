@@ -7610,9 +7610,22 @@ func (m *CommentMutation) OldAuthorEmail(ctx context.Context) (v string, err err
 	return oldValue.AuthorEmail, nil
 }
 
+// ClearAuthorEmail clears the value of the "author_email" field.
+func (m *CommentMutation) ClearAuthorEmail() {
+	m.author_email = nil
+	m.clearedFields[comment.FieldAuthorEmail] = struct{}{}
+}
+
+// AuthorEmailCleared returns if the "author_email" field was cleared in this mutation.
+func (m *CommentMutation) AuthorEmailCleared() bool {
+	_, ok := m.clearedFields[comment.FieldAuthorEmail]
+	return ok
+}
+
 // ResetAuthorEmail resets all changes to the "author_email" field.
 func (m *CommentMutation) ResetAuthorEmail() {
 	m.author_email = nil
+	delete(m.clearedFields, comment.FieldAuthorEmail)
 }
 
 // SetAuthorWebsite sets the "author_website" field.
@@ -8689,6 +8702,9 @@ func (m *CommentMutation) ClearedFields() []string {
 	if m.FieldCleared(comment.FieldParentID) {
 		fields = append(fields, comment.FieldParentID)
 	}
+	if m.FieldCleared(comment.FieldAuthorEmail) {
+		fields = append(fields, comment.FieldAuthorEmail)
+	}
 	if m.FieldCleared(comment.FieldAuthorWebsite) {
 		fields = append(fields, comment.FieldAuthorWebsite)
 	}
@@ -8732,6 +8748,9 @@ func (m *CommentMutation) ClearField(name string) error {
 	switch name {
 	case comment.FieldParentID:
 		m.ClearParentID()
+		return nil
+	case comment.FieldAuthorEmail:
+		m.ClearAuthorEmail()
 		return nil
 	case comment.FieldAuthorWebsite:
 		m.ClearAuthorWebsite()

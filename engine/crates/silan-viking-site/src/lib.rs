@@ -172,7 +172,7 @@ impl SiteProjector {
 
     fn about_text(&self, routes: &[CrawlerRoute]) -> String {
         let mut lines = vec![
-            "Silan Hu — AI Systems Researcher & Full Stack Developer".to_owned(),
+            "Silan Hu — AI Systems Researcher".to_owned(),
             String::new(),
             format!("Canonical site: {}", self.base_url),
             format!("Machine-readable context: {}/llms.txt", self.base_url),
@@ -188,7 +188,8 @@ impl SiteProjector {
         let mut lines = vec![
             "# Silan Hu".to_owned(),
             String::new(),
-            "Personal website for Silan Hu: AI systems research, full-stack engineering, and executable agent infrastructure.".to_owned(),
+            "Personal website for Silan Hu: AI-native data, runtime, and knowledge systems."
+                .to_owned(),
             String::new(),
             format!("Canonical site: {}", self.base_url),
             format!("Sitemap: {}/sitemap.xml", self.base_url),

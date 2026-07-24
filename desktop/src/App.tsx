@@ -6,7 +6,6 @@ import {
   AlertCircle,
   Aperture,
   Archive,
-  BarChart3,
   Bot,
   BookOpen,
   Brain,
@@ -32,12 +31,10 @@ import {
   PauseCircle,
   PlayCircle,
   Radio,
-  RefreshCw,
   RotateCcw,
   Save,
   Scale,
   Search,
-  Settings,
   Send,
   Sparkles,
   ThumbsUp,
@@ -46,13 +43,15 @@ import {
   UserRound,
   X,
 } from 'lucide-react';
-import Vditor from 'vditor';
-import 'vditor/dist/index.css';
 import { CaptureSheet } from './components/CaptureSheet';
 import { CommitWall, TrafficWall } from './components/CommitWall';
 import { ContentCard } from './components/ContentCard';
+import { EditorAssistDock, type EditorAssistReference } from './components/EditorAssistDock';
 import { LanguageCloseControls, type LanguageCloseTab } from './components/LanguageCloseControls';
+import MarkdownEditor, { type MarkdownEditorHandle } from './components/MarkdownEditor';
 import { NewProjectDialog } from './components/NewProjectDialog';
+import { WorkspaceSettingsPage } from './components/WorkspaceSettingsPage';
+import { WorkspaceSidebar } from './components/WorkspaceSidebar';
 import { ResumePage, ResumeMediaField } from './components/ResumePage';
 import { RefreshConfirmDialog } from './components/RefreshConfirmDialog';
 import { SeriesDetail } from './components/SeriesDetail';
@@ -62,6 +61,7 @@ import {
   arrangeBlogGroupsForGrid,
   badgeClass,
   docPath,
+  groupDocumentsByResource,
   localizeContentGroup,
   localizeEpisodeSeries,
   selectPrimaryDocument,
@@ -77,6 +77,11 @@ import {
 import { inferCoverSourceType, type CoverSourceType } from './lib/coverSource';
 import { formatSyncedAgo } from './lib/format';
 import { cssBackgroundImage, toWebviewMediaUrl } from './lib/media';
+import {
+  countResourcesByShelf,
+  filterResourceDocuments,
+  isArchivedResource,
+} from './lib/resourceVisibility';
 import type {
   CapturePhase,
   CaptureTarget,
@@ -89,7 +94,6 @@ import type {
   DeployRunStatus,
   DeployVerificationResult,
   EditorDocument,
-  EntityCount,
   EntityFilter,
   EpisodeGroup,
   EpisodeSeriesInput,
@@ -103,6 +107,7 @@ import type {
   TrafficEvidence,
   VersionStatus,
   VersionScope,
+  WorkspacePreferences,
 } from './types';
 
 const masonryContentKinds = new Set<ContentKind>(['blog', 'project']);
@@ -244,6 +249,27 @@ const ideaCategories: Array<{ value: IdeaCategory; label: string; Icon: typeof S
 ];
 
 const stateManagedKinds = new Set<ContentKind>(['blog', 'project', 'episode', 'moment']);
+const archivableKinds = new Set<ContentKind>(['blog', 'project', 'episode']);
+const pairedMarkdownLanguage = (language: string) => (
+  language.trim().toLowerCase().startsWith('zh') ? 'en' : 'zh'
+);
+
+const inferMarkdownLanguage = (markdown: string, fallback: string) => {
+  const cjkCount = (markdown.match(/[\u3400-\u9fff]/g) || []).length;
+  const latinWordCount = (markdown.match(/[A-Za-z][A-Za-z'-]*/g) || []).length;
+  if (cjkCount >= 6 || cjkCount > latinWordCount * 2) return 'zh';
+  if (latinWordCount > 0) return 'en';
+  return fallback.trim().toLowerCase().startsWith('zh') ? 'zh' : 'en';
+};
+
+const attachmentOnlyCaptureNote = (target: CaptureTarget, fallbackLanguage: string) => {
+  const isZh = fallbackLanguage.trim().toLowerCase().startsWith('zh');
+  if (target === 'moment') return isZh ? '图文记录' : 'Media moment';
+  return isZh ? '图文草稿' : 'Media draft';
+};
+
+const fileBytes = async (file: File) => Array.from(new Uint8Array(await file.arrayBuffer()));
+
 type ContentRailPanel = 'parts' | 'settings' | 'reactions';
 type ContentRailMode = 'files' | 'interaction';
 type DashboardRankingMetric = 'views' | 'likes' | 'comments' | 'crawlers' | 'ai_crawlers' | 'search_bots' | 'ai_chat';
@@ -296,12 +322,6 @@ const metadataCoverLabel = (kind: ContentKind) => {
   }
 };
 
-const destroyVditor = (editor: Vditor | null) => {
-  if (!editor) return;
-  const internal = (editor as unknown as { vditor?: { element?: HTMLElement } }).vditor;
-  if (internal?.element) editor.destroy();
-};
-
 const lifecycleIconFor = (action: LifecycleAction | SeriesLifecycleAction) => {
   switch (action.id) {
     case 'publish':
@@ -337,7 +357,6 @@ const lifecycleIconFor = (action: LifecycleAction | SeriesLifecycleAction) => {
 
 export default function App() {
   const [documents, setDocuments] = React.useState<EditorDocument[]>([]);
-  const [entityCounts, setEntityCounts] = React.useState<Map<EntityFilter, number>>(() => new Map());
   const [dashboard, setDashboard] = React.useState<DashboardData | null>(null);
   const [deploymentPlan, setDeploymentPlan] = React.useState<DeploymentPlan | null>(null);
   const [deliverySyncStatus, setDeliverySyncStatus] = React.useState<DeliverySyncStatus | null>(null);
@@ -354,7 +373,8 @@ export default function App() {
   const [confirmingDeploy, setConfirmingDeploy] = React.useState(false);
   const [deployVerification, setDeployVerification] = React.useState<DeployVerificationResult | null>(null);
   const [momentsSettings, setMomentsSettings] = React.useState<MomentsSettings | null>(null);
-  const [screen, setScreen] = React.useState<'dashboard' | 'content'>('dashboard');
+  const [workspacePreferences, setWorkspacePreferences] = React.useState<WorkspacePreferences | null>(null);
+  const [screen, setScreen] = React.useState<'dashboard' | 'content' | 'settings'>('dashboard');
   const [selectedId, setSelectedId] = React.useState('');
   const [languageByDocument, setLanguageByDocument] = React.useState<Record<string, string>>({});
   const [query, setQuery] = React.useState('');
@@ -365,11 +385,13 @@ export default function App() {
   const [saveFailed, setSaveFailed] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [generatingTranslation, setGeneratingTranslation] = React.useState('');
+  const [syncingTranslation, setSyncingTranslation] = React.useState('');
   const [confirmingRefresh, setConfirmingRefresh] = React.useState(false);
   const [capturePhase, setCapturePhase] = React.useState<CapturePhase>('closed');
   const [captureOrigin, setCaptureOrigin] = React.useState({ x: 0, y: 0 });
   const [captureTarget, setCaptureTarget] = React.useState<CaptureTarget>('moment');
   const [captureNote, setCaptureNote] = React.useState('');
+  const [captureAttachments, setCaptureAttachments] = React.useState<File[]>([]);
   const [captureCategory, setCaptureCategory] = React.useState<IdeaCategory>('inspiration');
   const [captureError, setCaptureError] = React.useState<string | null>(null);
   const [chromeLanguage, setChromeLanguage] = React.useState('en');
@@ -421,6 +443,7 @@ export default function App() {
   const [versionPanelOpen, setVersionPanelOpen] = React.useState(false);
   const [mediaDragActive, setMediaDragActive] = React.useState(false);
   const [mediaImporting, setMediaImporting] = React.useState(false);
+  const [mediaOperation, setMediaOperation] = React.useState<'import' | 'generate'>('import');
   const [mediaDropError, setMediaDropError] = React.useState<string | null>(null);
   const [lastImportedAsset, setLastImportedAsset] = React.useState<ImportedMediaAsset | null>(null);
   const [geoPanelOpen, setGeoPanelOpen] = React.useState(false);
@@ -443,78 +466,46 @@ export default function App() {
   const [seriesCoverBusy, setSeriesCoverBusy] = React.useState(false);
   const [seriesCoverError, setSeriesCoverError] = React.useState<string | undefined>(undefined);
   const [seriesCoverLocalPreview, setSeriesCoverLocalPreview] = React.useState('');
-  const hostRef = React.useRef<HTMLDivElement | null>(null);
-  const editorRef = React.useRef<Vditor | null>(null);
-  const captureInputRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const editorRef = React.useRef<MarkdownEditorHandle | null>(null);
+  const captureInputRef = React.useRef<MarkdownEditorHandle | null>(null);
   const newProjectInputRef = React.useRef<HTMLInputElement | null>(null);
+  const settingsReturnScreenRef = React.useRef<'dashboard' | 'content'>('dashboard');
 
-  const entityCountsFromDocuments = (nextDocuments: EditorDocument[]) => {
-    const itemIds = new Map<ContentKind, Set<string>>();
-    nextDocuments.forEach((document) => {
-      if (!itemIds.has(document.entity_type)) itemIds.set(document.entity_type, new Set());
-      itemIds.get(document.entity_type)?.add(document.entity_id);
-    });
-    const counts = new Map<EntityFilter, number>();
-    itemIds.forEach((ids, kind) => counts.set(kind, ids.size));
-    counts.set('blog', (counts.get('blog') || 0) + (counts.get('episode') || 0));
-    counts.set('all', Array.from(itemIds.values()).reduce((total, ids) => total + ids.size, 0));
-    return counts;
-  };
-
-  const entityCountsFromRows = (rows: EntityCount[]) => {
-    const counts = new Map<EntityFilter, number>();
-    rows.forEach((row) => counts.set(row.entity_type, row.count));
-    counts.set('blog', (counts.get('blog') || 0) + (counts.get('episode') || 0));
-    counts.set('all', rows.reduce((total, row) => total + row.count, 0));
-    return counts;
-  };
-
-  const filtered = React.useMemo(() => documents.filter((document) => {
-    const text = [
-      document.title,
-      document.entity_type,
-      document.slug,
-      document.role,
-      document.series_title,
-      document.series_slug,
-      ...document.translations.map((translation) => translation.language),
-    ].filter(Boolean).join(' ').toLowerCase();
-    const belongsToShelf = entityFilter === 'all'
-      || document.entity_type === entityFilter
-      || (entityFilter === 'blog' && document.entity_type === 'episode');
-    return belongsToShelf
-      && text.includes(query.trim().toLowerCase());
-  }), [documents, entityFilter, query]);
-
-  const contentGroups = React.useMemo(() => {
-    const groups = new Map<string, ContentGroup>();
-    filtered.filter((document) => document.entity_type !== 'episode').forEach((document) => {
-      const id = `${document.entity_type}:${document.entity_id}`;
-      if (!groups.has(id)) {
-        groups.set(id, {
-          id,
-          kind: document.entity_type,
-          title: document.title,
-          slug: document.slug,
-          description: document.description || null,
-          status: document.status,
-          visibility: document.visibility,
-          date: document.date || null,
-          pinned: Boolean(document.pinned),
-          coverUrl: document.cover_url || undefined,
-          coverSourceType: document.cover_source_type || 'image',
-          coverWebsiteUrl: document.cover_website_url || undefined,
-          githubUrl: document.github_url || undefined,
-          demoUrl: document.demo_url || undefined,
-          engagement: document.engagement,
-          documents: [],
-          cardKind: document.entity_type === 'blog' ? 'article' : undefined,
-        });
-      }
-      groups.get(id)?.documents.push(document);
-    });
-    return Array.from(groups.values());
-  }, [filtered]);
+  const activeDocuments = React.useMemo(
+    () => filterResourceDocuments(documents, { view: 'active' }),
+    [documents],
+  );
+  const archivedDocuments = React.useMemo(
+    () => filterResourceDocuments(documents, { view: 'archived' }),
+    [documents],
+  );
+  const entityCounts = React.useMemo(
+    () => countResourcesByShelf(activeDocuments),
+    [activeDocuments],
+  );
+  const filtered = React.useMemo(
+    () => filterResourceDocuments(activeDocuments, {
+      entityFilter,
+      query,
+      view: 'active',
+    }),
+    [activeDocuments, entityFilter, query],
+  );
+  const contentGroups = React.useMemo(
+    () => groupDocumentsByResource(
+      filtered.filter((document) => document.entity_type !== 'episode'),
+    ),
+    [filtered],
+  );
+  const archivedResources = React.useMemo(
+    () => groupDocumentsByResource(archivedDocuments)
+      .filter((group) => archivableKinds.has(group.kind))
+      .sort((left, right) => (
+        (right.documents[0]?.updated_at || '').localeCompare(left.documents[0]?.updated_at || '')
+        || left.title.localeCompare(right.title)
+      )),
+    [archivedDocuments],
+  );
 
   const episodeSeries = React.useMemo(() => {
     const seriesMap = new Map<string, {
@@ -618,7 +609,7 @@ export default function App() {
       visibility: string;
       updatedAt: string;
     }>();
-    documents.forEach((document) => {
+    activeDocuments.forEach((document) => {
       if (!isContentKind(document.entity_type)) return;
       const key = `${document.entity_type}:${document.title}`;
       if (!metadata.has(key) || document.updated_at > (metadata.get(key)?.updatedAt || '')) {
@@ -633,7 +624,26 @@ export default function App() {
       }
     });
     return metadata;
-  }, [documents]);
+  }, [activeDocuments]);
+  const editorAssistReferences = React.useMemo<EditorAssistReference[]>(() => {
+    const references = new Map<string, EditorAssistReference>();
+    activeDocuments.forEach((document) => {
+      if (!['blog', 'project', 'moment'].includes(document.entity_type)) return;
+      const key = `${document.entity_type}:${document.entity_id}`;
+      const current = references.get(key);
+      if (current && current.title && current.slug) return;
+      references.set(key, {
+        id: key,
+        kind: document.entity_type,
+        title: document.title || document.slug,
+        slug: document.slug,
+        description: document.description,
+      });
+    });
+    return Array.from(references.values()).sort((left, right) => (
+      left.kind.localeCompare(right.kind) || left.title.localeCompare(right.title)
+    ));
+  }, [activeDocuments]);
   const dashboardEngagementRanking = React.useMemo(() => {
     const groups = new Map<string, {
       kind: ContentKind;
@@ -645,7 +655,7 @@ export default function App() {
       likes: number;
       comments: number;
     }>();
-    documents.forEach((document) => {
+    activeDocuments.forEach((document) => {
       if (!editableMasonryContentKinds.has(document.entity_type)) return;
       const key = `${document.entity_type}:${document.entity_id}`;
       if (!groups.has(key)) {
@@ -662,7 +672,7 @@ export default function App() {
       }
     });
     return Array.from(groups.values());
-  }, [documents]);
+  }, [activeDocuments]);
 
   const selectedSeries = React.useMemo(() => (
     displayEpisodeSeries.find((series) => `series:${series.id}` === selectedSeriesId) || null
@@ -671,7 +681,7 @@ export default function App() {
     episodeSeries.find((series) => series.slug === seriesEditingSlug) || null
   ), [episodeSeries, seriesEditingSlug]);
 
-  const selected = documents.find((document) => document.id === selectedId)
+  const selected = filtered.find((document) => document.id === selectedId)
     || filtered[0]
     || null;
   const proseShelfActive = screen === 'content'
@@ -705,7 +715,10 @@ export default function App() {
       return {
         language,
         dirty: translation ? dirtyIds.has(translation.id) : false,
-        disabled: Boolean(generatingTranslation && generatingTranslation !== `${selected.id}:${language}`),
+        disabled: Boolean(
+          syncingTranslation
+          || (generatingTranslation && generatingTranslation !== `${selected.id}:${language}`),
+        ),
       };
     })
     : [
@@ -783,6 +796,24 @@ export default function App() {
   const saveDockSubline = !saving && !saveFailed && otherDirtyCount > 0
     ? `${otherDirtyCount} other unsaved translation${otherDirtyCount > 1 ? 's' : ''}`
     : selectedTranslation?.source_path || 'No source selected';
+  const counterpartLanguage = selectedTranslation
+    ? pairedMarkdownLanguage(selectedTranslation.language)
+    : 'zh';
+  const counterpartTranslation = selected?.translations.find(
+    (translation) => translation.language === counterpartLanguage,
+  ) || null;
+  const counterpartDirty = counterpartTranslation ? dirtyIds.has(counterpartTranslation.id) : false;
+  const aiTranslationBusy = Boolean(syncingTranslation || generatingTranslation);
+  const aiTranslationLabel = syncingTranslation
+    ? 'Syncing'
+    : counterpartTranslation
+      ? `Sync ${counterpartLanguage}`
+      : `Create ${counterpartLanguage}`;
+  const aiTranslationTitle = selectedTranslation
+    ? counterpartTranslation
+      ? `Update ${counterpartLanguage} from ${selectedTranslation.language} without rewriting unchanged text`
+      : `Create ${counterpartLanguage} from ${selectedTranslation.language}`
+    : 'Open a Markdown translation first';
   const renderLanguageCloseControls = ({
     fixed = false,
     disabled = false,
@@ -857,8 +888,11 @@ export default function App() {
   const canDeployCommittedContent = localDeliveryCount > 0
     && workspaceChangeCount === 0
     && dirtyIds.size === 0;
+  const visibleRecentItems = (dashboard?.recent_items || []).filter(
+    (item) => !isArchivedResource(item),
+  );
   const selectedCommitItems = selectedCommitDay
-    ? (dashboard?.recent_items || []).filter((item) => {
+    ? visibleRecentItems.filter((item) => {
         const scope = item.entity_type === 'episode' ? 'blog' : item.entity_type;
         return selectedCommitDay.scopes.includes(scope as VersionScope);
       })
@@ -1038,11 +1072,12 @@ export default function App() {
     try {
       const nextDocuments = await invoke<EditorDocument[]>('list_documents');
       setDocuments(nextDocuments);
-      setEntityCounts(entityCountsFromDocuments(nextDocuments));
       setSelectedId((current) => (
-        current && nextDocuments.some((document) => document.id === current)
+        current && nextDocuments.some((document) => (
+          document.id === current && !isArchivedResource(document)
+        ))
           ? current
-          : nextDocuments[0]?.id || ''
+          : nextDocuments.find((document) => !isArchivedResource(document))?.id || ''
       ));
       setLanguageByDocument((current) => {
         const next: Record<string, string> = {};
@@ -1059,14 +1094,6 @@ export default function App() {
       setError(String(reason));
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  const loadEntityCounts = React.useCallback(async () => {
-    try {
-      setEntityCounts(entityCountsFromRows(await invoke<EntityCount[]>('get_entity_counts')));
-    } catch (reason) {
-      setError(String(reason));
     }
   }, []);
 
@@ -1123,13 +1150,32 @@ export default function App() {
     }
   }, []);
 
-  React.useEffect(() => {
-    void loadEntityCounts();
-  }, [loadEntityCounts]);
+  const loadWorkspacePreferences = React.useCallback(async () => {
+    try {
+      const preferences = await invoke<WorkspacePreferences>('get_workspace_preferences');
+      setWorkspacePreferences(preferences);
+      setChromeLanguage(preferences.default_language);
+      setResumeLanguage(preferences.default_language);
+    } catch (reason) {
+      setError(String(reason));
+    }
+  }, []);
+
+  const applyWorkspacePreferences = React.useCallback((preferences: WorkspacePreferences) => {
+    if (workspacePreferences?.default_language !== preferences.default_language) {
+      setChromeLanguage(preferences.default_language);
+      setResumeLanguage(preferences.default_language);
+    }
+    setWorkspacePreferences(preferences);
+  }, [workspacePreferences?.default_language]);
 
   React.useEffect(() => {
-    if (screen === 'content') void loadDocuments();
-  }, [screen, loadDocuments]);
+    void loadDocuments();
+  }, [loadDocuments]);
+
+  React.useEffect(() => {
+    void loadWorkspacePreferences();
+  }, [loadWorkspacePreferences]);
 
   React.useEffect(() => {
     if (screen === 'dashboard') void loadDashboard();
@@ -1167,80 +1213,6 @@ export default function App() {
     if (screen === 'content' && entityFilter === 'moment') void loadMomentsSettings();
   }, [screen, entityFilter, loadMomentsSettings]);
 
-  React.useEffect(() => {
-    if (screen !== 'content' || !hostRef.current || !selected || !selectedTranslation) return;
-    // `hostRef` is attached to two different DOM nodes depending on
-    // `contentEditorOpen` (the plain editor-frame vs. the content-editor
-    // overlay). Neither node identity nor `screen`/`selected.id`
-    // necessarily change when the overlay opens on an already-selected
-    // document, so `contentEditorOpen` must be a dependency too — otherwise
-    // the effect skips and Vditor never mounts into the freshly rendered
-    // overlay host, leaving a blank canvas.
-
-    const host = hostRef.current;
-    destroyVditor(editorRef.current);
-    editorRef.current = null;
-    host.innerHTML = '';
-
-    const editor = new Vditor(host, {
-      value: selectedTranslation.content,
-      mode: 'wysiwyg',
-      height: '100%',
-      minHeight: 480,
-      cache: { enable: false },
-      lang: 'en_US',
-      toolbar: [
-        'headings', 'bold', 'italic', 'strike', '|',
-        'list', 'ordered-list', 'check', 'outdent', 'indent', '|',
-        'quote', 'line', 'code', 'inline-code', 'link', 'table', '|',
-        'undo', 'redo',
-      ],
-      input(value) {
-        setDocuments((current) => current.map((document) => (
-          document.id === selected.id
-            ? {
-                ...document,
-                translations: document.translations.map((translation) => (
-                  translation.id === selectedTranslation.id ? { ...translation, content: value } : translation
-                )),
-              }
-            : document
-        )));
-        setDirtyIds((current) => new Set(current).add(selectedTranslation.id));
-      },
-    });
-
-    // Typora behavior: clicking the empty canvas below (or beside) the last
-    // block drops the caret at the end of the document so writing just
-    // continues — no dead whitespace.
-    const focusEndOnCanvasClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const isCanvas = target === host
-        || target.classList.contains('vditor')
-        || target.classList.contains('vditor-content')
-        || target.classList.contains('vditor-wysiwyg');
-      if (!isCanvas) return;
-      const editable = host.querySelector<HTMLElement>('.vditor-wysiwyg .vditor-reset');
-      if (!editable) return;
-      event.preventDefault();
-      const range = document.createRange();
-      range.selectNodeContents(editable);
-      range.collapse(false);
-      const selection = window.getSelection();
-      selection?.removeAllRanges();
-      selection?.addRange(range);
-      editable.focus();
-    };
-    host.addEventListener('mousedown', focusEndOnCanvasClick);
-
-    editorRef.current = editor;
-    return () => {
-      host.removeEventListener('mousedown', focusEndOnCanvasClick);
-      if (editorRef.current === editor) editorRef.current = null;
-      destroyVditor(editor);
-    };
-  }, [screen, selected?.id, selectedTranslation?.id, contentEditorOpen]);
-
   const openShelf = (filter: EntityFilter) => {
     setEntityFilter(filter);
     setScreen('content');
@@ -1252,6 +1224,32 @@ export default function App() {
     setContentEditorOpen(false);
     setSelectedSeriesId('');
     setScreen('dashboard');
+  };
+
+  const closeWorkspaceSettings = React.useCallback(() => {
+    setScreen(settingsReturnScreenRef.current);
+  }, []);
+
+  React.useEffect(() => {
+    if (screen !== 'settings') return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closeWorkspaceSettings();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [closeWorkspaceSettings, screen]);
+
+  const openWorkspaceSettings = () => {
+    settingsReturnScreenRef.current = screen === 'content' ? 'content' : 'dashboard';
+    setContentEditorOpen(false);
+    setSelectedSeriesId('');
+    setSidebarOpen(false);
+    setError(null);
+    setScreen('settings');
   };
 
   const openContentGroup = (group: ContentGroup) => {
@@ -1420,7 +1418,7 @@ export default function App() {
 
   const requestCaptureClose = () => {
     if (capturePhase === 'submitting') return;
-    if (captureNote.trim()) {
+    if (captureNote.trim() || captureAttachments.length > 0) {
       setCapturePhase('confirming-close');
       return;
     }
@@ -1429,28 +1427,51 @@ export default function App() {
 
   const discardCapture = () => {
     setCaptureNote('');
+    setCaptureAttachments([]);
     setCaptureError(null);
     setCapturePhase('closing');
   };
 
   const submitCapture = async () => {
     const note = captureNote.trim();
-    if (!note || capturePhase === 'submitting') return;
+    const hasAttachments = captureAttachments.length > 0;
+    if ((!note && !hasAttachments) || capturePhase === 'submitting') return;
+    const captureBody = note || attachmentOnlyCaptureNote(captureTarget, chromeLanguage);
     setCapturePhase('submitting');
     setCaptureError(null);
     try {
+      const language = inferMarkdownLanguage(captureBody, chromeLanguage);
       const created = captureTarget === 'moment'
-        ? await invoke<EditorDocument>('capture_moment', { event: note })
-        : await invoke<EditorDocument>('capture_blog', { draft: note, category: captureCategory });
+        ? await invoke<EditorDocument>('capture_moment', { event: captureBody, language })
+        : await invoke<EditorDocument>('capture_blog', { draft: captureBody, category: captureCategory, language });
+      let savedCreated = created;
+      if (captureAttachments.length > 0) {
+        const createdTranslation = created.translations.find((translation) => translation.language === language)
+          || created.translations[0];
+        if (createdTranslation) {
+          try {
+            const imported = await importFileAssets(createdTranslation.id, captureAttachments);
+            const attachmentMarkdown = imported.map((asset) => asset.markdown).join('\n\n');
+            savedCreated = await invoke<EditorDocument>('save_document', {
+              id: createdTranslation.id,
+              content: `${createdTranslation.content.trim()}\n\n${attachmentMarkdown}`,
+              expectedRevision: createdTranslation.revision,
+            });
+            setLastImportedAsset(imported[imported.length - 1] || null);
+          } catch (reason) {
+            setMediaDropError(String(reason));
+          }
+        }
+      }
       setDocuments((current) => [
-        ...current.filter((document) => document.id !== created.id),
-        created,
+        ...current.filter((document) => document.id !== savedCreated.id),
+        savedCreated,
       ]);
       setLanguageByDocument((current) => ({
         ...current,
-        [created.id]: created.canonical_language || created.translations[0]?.language || 'en',
+        [savedCreated.id]: language,
       }));
-      setSelectedId(created.id);
+      setSelectedId(savedCreated.id);
       setEntityFilter(captureTarget);
       setScreen('content');
       setSelectedSeriesId('');
@@ -1459,7 +1480,7 @@ export default function App() {
       // completed and published without hunting for the card.
       setContentEditorOpen(true);
       setCaptureNote('');
-      await loadEntityCounts();
+      setCaptureAttachments([]);
       setCapturePhase('closing');
     } catch (reason) {
       setCaptureError(String(reason));
@@ -1467,7 +1488,7 @@ export default function App() {
     }
   };
 
-  const handleCaptureKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleCaptureKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
       requestCaptureClose();
@@ -1478,6 +1499,21 @@ export default function App() {
       void submitCapture();
     }
   };
+
+  const attachFilesToCapture = React.useCallback((files: File[]) => {
+    if (files.length === 0) return;
+    setCaptureAttachments((current) => [...current, ...files]);
+  }, []);
+
+  const insertCaptureMarkdown = React.useCallback((markdown: string) => {
+    const block = `\n\n${markdown.trim()}\n`;
+    const inserted = captureInputRef.current?.insertMarkdown(block);
+    if (inserted != null) {
+      setCaptureNote(inserted);
+      return;
+    }
+    setCaptureNote((current) => `${current}${block}`);
+  }, []);
 
   const openNewProject = () => {
     setNewProjectTitle('');
@@ -1509,7 +1545,6 @@ export default function App() {
       setEntityFilter('project');
       setScreen('content');
       setSelectedSeriesId('');
-      await loadEntityCounts();
       setCreatingProject(false);
     } catch (reason) {
       setNewProjectError(String(reason));
@@ -1531,7 +1566,7 @@ export default function App() {
   };
 
   const saveSelected = async () => {
-    if (!selected || !selectedTranslation) return;
+    if (!selected || !selectedTranslation) return null;
     setSaving(true);
     setError(null);
     try {
@@ -1559,9 +1594,11 @@ export default function App() {
         return next;
       });
       setSaveFailed(false);
+      return saved;
     } catch (reason) {
       setError(String(reason));
       setSaveFailed(true);
+      return null;
     } finally {
       setSaving(false);
     }
@@ -1613,6 +1650,72 @@ export default function App() {
     }
   }
 
+  async function syncCounterpartTranslation() {
+    if (!selected || !selectedTranslation || aiTranslationBusy || saving) return;
+    const targetLanguage = pairedMarkdownLanguage(selectedTranslation.language);
+    const target = selected.translations.find((translation) => translation.language === targetLanguage);
+    if (!target) {
+      await generateMissingTranslation(targetLanguage);
+      return;
+    }
+    if (dirtyIds.has(target.id)) {
+      setError(`Save ${targetLanguage} before syncing it from ${selectedTranslation.language}.`);
+      return;
+    }
+
+    const syncKey = `${selectedTranslation.id}:${targetLanguage}`;
+    let sourceTranslationId = selectedTranslation.id;
+    setSyncingTranslation(syncKey);
+    setError(null);
+    try {
+      if (dirtyIds.has(selectedTranslation.id)) {
+        const saved = await saveSelected();
+        if (!saved) return;
+        sourceTranslationId = saved.translations.find(
+          (translation) => translation.language === selectedTranslation.language,
+        )?.id || sourceTranslationId;
+      }
+      const synced = await invoke<EditorDocument>('sync_counterpart_translation', {
+        id: sourceTranslationId,
+        targetLanguage,
+      });
+      setDocuments((current) => current.map((document) => (
+        document.id !== synced.id
+          ? document
+          : {
+              ...synced,
+              translations: synced.translations.map((translation) => {
+                const currentTranslation = document.translations.find((item) => item.id === translation.id);
+                if (
+                  currentTranslation
+                  && currentTranslation.id !== target.id
+                  && currentTranslation.id !== selectedTranslation.id
+                  && dirtyIds.has(currentTranslation.id)
+                ) {
+                  return currentTranslation;
+                }
+                return translation;
+              }),
+            }
+      )));
+      setDirtyIds((current) => {
+        const next = new Set(current);
+        next.delete(selectedTranslation.id);
+        next.delete(target.id);
+        return next;
+      });
+      setLanguageByDocument((current) => ({
+        ...current,
+        [synced.id]: targetLanguage,
+      }));
+      setSaveFailed(false);
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setSyncingTranslation('');
+    }
+  }
+
   // Fresh-closure handle for the ⌘S keydown listener: the listener attaches
   // once per overlay open, but `saveSelected` closes over the live document
   // content — without this ref it would save a stale snapshot.
@@ -1639,14 +1742,93 @@ export default function App() {
   const insertMarkdownAtCursor = React.useCallback((markdown: string) => {
     if (!selectedTranslation) return;
     const block = `\n\n${markdown.trim()}\n`;
-    const editor = editorRef.current;
-    if (editor) {
-      editor.insertValue(block, true);
-      patchSelectedTranslationContent(editor.getValue());
+    const inserted = editorRef.current?.insertMarkdown(block);
+    if (inserted != null) {
+      patchSelectedTranslationContent(inserted);
       return;
     }
     patchSelectedTranslationContent(`${selectedTranslation.content}${block}`);
   }, [patchSelectedTranslationContent, selectedTranslation]);
+
+  const importFileAssets = React.useCallback(async (translationId: string, files: File[]) => {
+    const imported: ImportedMediaAsset[] = [];
+    for (const file of files) {
+      imported.push(await invoke<ImportedMediaAsset>('import_media_asset_bytes', {
+        id: translationId,
+        fileName: file.name,
+        bytes: await fileBytes(file),
+      }));
+    }
+    return imported;
+  }, []);
+
+  const attachFilesToSelected = React.useCallback(async (files: File[]) => {
+    if (!selectedTranslation) {
+      setMediaDropError('Open a Markdown translation before adding attachments.');
+      return;
+    }
+    if (!isTauri()) {
+      setMediaDropError('Attachment import is available in the desktop app.');
+      return;
+    }
+    if (files.length === 0) return;
+
+    setMediaOperation('import');
+    setMediaImporting(true);
+    setMediaDropError(null);
+    try {
+      const imported = await importFileAssets(selectedTranslation.id, files);
+      insertMarkdownAtCursor(imported.map((asset) => asset.markdown).join('\n\n'));
+      setLastImportedAsset(imported[imported.length - 1] || null);
+      if (deploymentPlan) void loadDeploymentPlan();
+    } catch (reason) {
+      setMediaDropError(String(reason));
+    } finally {
+      setMediaImporting(false);
+    }
+  }, [deploymentPlan, importFileAssets, insertMarkdownAtCursor, loadDeploymentPlan, selectedTranslation]);
+
+  const generateImageForSelected = React.useCallback(async (request: {
+    prompt: string;
+    size: string;
+    quality: string;
+    outputFormat: string;
+  }) => {
+    if (!selectedTranslation) {
+      setMediaDropError('Open a Markdown translation before generating an image.');
+      return;
+    }
+    if (!isTauri()) {
+      setMediaDropError('AI image generation is available in the desktop app.');
+      return;
+    }
+    const prompt = request.prompt.trim();
+    if (!prompt) {
+      setMediaDropError('Image prompt is empty.');
+      return;
+    }
+
+    setMediaOperation('generate');
+    setMediaImporting(true);
+    setMediaDropError(null);
+    try {
+      const asset = await invoke<ImportedMediaAsset>('generate_image_asset', {
+        id: selectedTranslation.id,
+        prompt,
+        size: request.size,
+        quality: request.quality,
+        outputFormat: request.outputFormat,
+      });
+      insertMarkdownAtCursor(asset.markdown);
+      setLastImportedAsset(asset);
+      if (deploymentPlan) void loadDeploymentPlan();
+    } catch (reason) {
+      setMediaDropError(String(reason));
+    } finally {
+      setMediaImporting(false);
+      setMediaOperation('import');
+    }
+  }, [deploymentPlan, insertMarkdownAtCursor, loadDeploymentPlan, selectedTranslation]);
 
   const importDroppedMedia = React.useCallback(async (paths: string[]) => {
     if (!selectedTranslation) {
@@ -1787,11 +1969,31 @@ export default function App() {
         expectedRevision: translation.revision,
       });
       mergeSavedDocument(saved);
+      if (
+        state.status === 'archived'
+        && contentEditorOpen
+        && selected?.entity_type === group.kind
+        && selected.entity_id === group.documents[0]?.entity_id
+      ) {
+        setContentEditorOpen(false);
+        setSelectedId('');
+      }
     } catch (reason) {
       setError(String(reason));
     } finally {
       setStateSavingId('');
     }
+  };
+
+  const restoreArchivedResource = async (group: ContentGroup) => {
+    const restoreAction = contentLifecycleFor(group.kind, 'archived', 'private')
+      .actions
+      .find((action) => action.id === 'restore');
+    if (!restoreAction) {
+      setError(`${group.title} does not support restoration.`);
+      return;
+    }
+    await saveGroupState(group, restoreAction.nextState);
   };
 
   const saveSeriesState = async (series: EpisodeSeries, state: DocumentStateInput) => {
@@ -1821,6 +2023,11 @@ export default function App() {
           expectedRevision: target.translation.revision,
         });
         mergeSavedDocument(saved);
+      }
+      if (state.status === 'archived') {
+        setSelectedSeriesId('');
+        setContentEditorOpen(false);
+        setSelectedId('');
       }
     } catch (reason) {
       setError(String(reason));
@@ -2251,83 +2458,44 @@ export default function App() {
   }, [versionScope, documents, dirtyIds.size]);
 
   return (
-    <div className={`shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
-      <button
-        type="button"
-        className="sidebar-toggle"
-        onClick={() => setSidebarOpen((open) => !open)}
-        aria-label={sidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-        aria-expanded={sidebarOpen}
-      >
-        <Menu size={17} />
-      </button>
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="brand">
-          <div>
-            <div className="brand-title">Silan-Viking</div>
-            <div className="brand-subtitle">Personal Context System</div>
-          </div>
-        </div>
-
-        <nav className="entity-nav" aria-label="Workspace navigation">
-          <button
-            type="button"
-            className={`entity-button ${screen === 'dashboard' ? 'active' : ''}`}
-            onClick={returnToDashboard}
-          >
-            <BarChart3 size={16} />
-            <span>Dashboard</span>
-            <strong>{attentionCount}</strong>
-          </button>
-          <div className="nav-rule" />
-          {navigationEntityFilters.map((filter) => {
-            const { label, Icon } = entityMeta[filter];
-            return (
-              <button
-                type="button"
-                key={filter}
-                className={`entity-button ${screen === 'content' && entityFilter === filter ? 'active' : ''}`}
-                onClick={() => openShelf(filter)}
-              >
-                <Icon size={16} />
-                <span>{label}</span>
-                <strong>{entityCounts.get(filter) || 0}</strong>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-footer">
-          <label className="search">
-            <Search size={15} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
-          </label>
-          <div className="source-note">
-            <FileText size={14} />
-            <span><strong>content/</strong> is the source</span>
-            <button
-              type="button"
-              onClick={() => void refreshWorkspace()}
-              disabled={refreshingWorkspace}
-              title="Refresh workspace"
-              aria-label="Refresh workspace"
-            >
-              {refreshingWorkspace ? <LoaderCircle size={14} /> : <RefreshCw size={14} />}
-            </button>
-          </div>
-        </div>
-      </aside>
+    <div className={`shell ${sidebarOpen && screen !== 'settings' ? 'sidebar-open' : ''} ${screen === 'settings' ? 'settings-open' : ''}`}>
+      {screen !== 'settings' && (
+        <WorkspaceSidebar
+          open={sidebarOpen}
+          dashboardActive={screen === 'dashboard'}
+          activeItem={screen === 'content' ? entityFilter : null}
+          attentionCount={attentionCount}
+          avatarLabel={workspacePreferences?.identity.avatar_label || 'S'}
+          avatarUrl={workspacePreferences?.identity.avatar_url
+            ? toWebviewMediaUrl(workspacePreferences.identity.avatar_url)
+            : ''}
+          displayName={workspacePreferences?.identity.display_name || 'Silan-Viking'}
+          items={navigationEntityFilters.map((filter) => ({
+            id: filter,
+            label: entityMeta[filter].label,
+            count: entityCounts.get(filter) || 0,
+          }))}
+          query={query}
+          onDashboardOpen={returnToDashboard}
+          onItemOpen={openShelf}
+          onQueryChange={setQuery}
+          onSettingsOpen={openWorkspaceSettings}
+          onToggle={() => setSidebarOpen((open) => !open)}
+        />
+      )}
 
       <main
-        className={`main ${updatesShellActive ? 'main-moments' : ''}`}
+        className={`main ${updatesShellActive ? 'main-moments' : ''} ${screen === 'settings' ? 'main-settings' : ''}`}
         data-has-moments-background={updatesShellActive && momentsCoverImage ? 'true' : undefined}
         style={mainStyle}
       >
         {!updatesShellActive && (
           <header className="topbar">
             <div className="title-block">
-              <div className="eyebrow">{screen === 'dashboard' ? 'Workspace' : currentShelf.eyebrow}</div>
-              <h1>{screen === 'dashboard' ? 'Overview' : currentShelf.label}</h1>
+              <div className="eyebrow">
+                {screen === 'dashboard' ? 'Workspace' : screen === 'settings' ? 'Preferences' : currentShelf.eyebrow}
+              </div>
+              <h1>{screen === 'dashboard' ? 'Overview' : screen === 'settings' ? 'Settings' : currentShelf.label}</h1>
               <div className="meta">
                 {screen === 'dashboard' ? (
                   <>
@@ -2336,6 +2504,11 @@ export default function App() {
                     <span>{attentionCount} delivery moments</span>
                     <span>{workspaceChangeCount} uncommitted workspace changes</span>
                     <span>{dirtyIds.size} unsaved Markdown files</span>
+                  </>
+                ) : screen === 'settings' ? (
+                  <>
+                    <span>Manage profile, language, integrations, and archived content</span>
+                    <span>Workspace identity stays source-backed · credentials stay local</span>
                   </>
                 ) : (
                   <>
@@ -2346,12 +2519,22 @@ export default function App() {
                 )}
               </div>
             </div>
-            {screen === 'content' && !contentEditorOpen && renderLanguageCloseControls({
-              fixed: true,
-              closeLabel: 'Back to Overview',
-              closeTitle: 'Back to Overview',
-              onClose: returnToDashboard,
-            })}
+            {screen === 'settings' ? (
+              <button
+                type="button"
+                className="workspace-settings-close"
+                onClick={closeWorkspaceSettings}
+                title="Close settings"
+                aria-label="Close settings"
+              >
+                <X size={18} />
+              </button>
+            ) : screen === 'content' && !contentEditorOpen ? renderLanguageCloseControls({
+                fixed: true,
+                closeLabel: 'Back to Overview',
+                closeTitle: 'Back to Overview',
+                onClose: returnToDashboard,
+              }) : null}
           </header>
         )}
         {updatesShellActive && renderLanguageCloseControls({
@@ -2368,7 +2551,15 @@ export default function App() {
           </div>
         )}
 
-        {screen === 'dashboard' ? (
+        {screen === 'settings' ? (
+          <WorkspaceSettingsPage
+            archivedResources={archivedResources}
+            restoringResourceId={stateSavingId}
+            preferences={workspacePreferences}
+            onPreferencesChange={applyWorkspacePreferences}
+            onRestoreResource={restoreArchivedResource}
+          />
+        ) : screen === 'dashboard' ? (
           <section className="dashboard-area">
             <div className="dashboard-grid">
               <section className="activity-summary ds-acrylic" data-ds="">
@@ -2810,7 +3001,7 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="recent-list">
-                    {(selectedCommitDay ? selectedCommitItems : dashboard?.recent_items || []).map((item) => (
+                    {(selectedCommitDay ? selectedCommitItems : visibleRecentItems).map((item) => (
                       <button
                         type="button"
                         key={`${item.entity_type}-${item.slug}`}
@@ -2986,7 +3177,7 @@ export default function App() {
                               type="button"
                               key={language}
                               className={translation?.id === selectedTranslation?.id ? 'active' : ''}
-                              disabled={saving || Boolean(generatingTranslation && !generating)}
+                              disabled={saving || Boolean(syncingTranslation) || Boolean(generatingTranslation && !generating)}
                               title={translation ? `Open ${language}` : `Generate ${language} with OpenAI`}
                               onClick={() => {
                                 if (translation) {
@@ -3006,7 +3197,19 @@ export default function App() {
                           );
                         })}
                       </div>
-                      <div ref={hostRef} className="editor-host" />
+                      {selectedTranslation ? (
+                        <MarkdownEditor
+                          key={`${selectedTranslation.id}:shelf`}
+                          ref={editorRef}
+                          value={selectedTranslation.content}
+                          ariaLabel={`${selected.title} ${selected.role} Markdown editor`}
+                          disabled={saving}
+                          toolbarVisible={toolbarVisible}
+                          onChange={patchSelectedTranslationContent}
+                        />
+                      ) : (
+                        <div className="empty large">Choose or generate a language representation.</div>
+                      )}
                     </div>
                   </>
                 ) : null}
@@ -3016,7 +3219,7 @@ export default function App() {
           </section>
         )}
 
-        {screen === 'dashboard' ? (
+        {screen === 'settings' ? null : screen === 'dashboard' ? (
           <div className="quick-dock" aria-label="Writing shortcuts">
             <button
               type="button"
@@ -3448,6 +3651,17 @@ export default function App() {
                     </button>
                     <button
                       type="button"
+                      className={`content-close content-ai-sync ${aiTranslationBusy ? 'active' : ''}`}
+                      onClick={() => void syncCounterpartTranslation()}
+                      title={counterpartDirty ? `Save ${counterpartLanguage} before syncing` : aiTranslationTitle}
+                      aria-label={counterpartDirty ? `Save ${counterpartLanguage} before syncing` : aiTranslationTitle}
+                      disabled={!selectedTranslation || saving || aiTranslationBusy || counterpartDirty}
+                    >
+                      {aiTranslationBusy ? <LoaderCircle size={15} /> : <Sparkles size={15} />}
+                      <span>{aiTranslationLabel}</span>
+                    </button>
+                    <button
+                      type="button"
                       className={`content-close content-toolbar-toggle ${toolbarVisible ? 'active' : ''}`}
                       aria-pressed={toolbarVisible}
                       onClick={toggleToolbar}
@@ -3603,8 +3817,29 @@ export default function App() {
                     </header>
 
                     <div className="editor-frame content-editor-frame" data-entity={selected.entity_type} data-toolbar={toolbarVisible ? 'visible' : 'hidden'}>
-                      <div ref={hostRef} className="editor-host" />
+                      {selectedTranslation ? (
+                        <MarkdownEditor
+                          key={`${selectedTranslation.id}:overlay`}
+                          ref={editorRef}
+                          value={selectedTranslation.content}
+                          ariaLabel={`${selected.title} ${selected.role} Markdown editor`}
+                          disabled={saving}
+                          toolbarVisible={toolbarVisible}
+                          onChange={patchSelectedTranslationContent}
+                        />
+                      ) : (
+                        <div className="empty large">Choose or generate a language representation.</div>
+                      )}
                     </div>
+                    <EditorAssistDock
+                      disabled={!selectedTranslation || saving}
+                      importing={mediaImporting}
+                      generatingImage={mediaImporting && mediaOperation === 'generate'}
+                      references={editorAssistReferences}
+                      onAttachFiles={(files) => void attachFilesToSelected(files)}
+                      onInsertMarkdown={insertMarkdownAtCursor}
+                      onGenerateImage={(request) => void generateImageForSelected(request)}
+                    />
                     {mediaDragActive && (
                       <div className="media-drop-overlay" role="status">
                         <div>
@@ -3618,7 +3853,9 @@ export default function App() {
                       <div className="media-import-toast" data-state={mediaDropError ? 'error' : mediaImporting ? 'loading' : 'done'}>
                         {mediaDropError ? <AlertCircle size={14} /> : mediaImporting ? <LoaderCircle size={14} /> : <FileImage size={14} />}
                         <span>
-                          {mediaDropError || (mediaImporting ? 'Importing media asset...' : `${lastImportedAsset?.file_name} inserted as silan:// asset`)}
+                          {mediaDropError || (mediaImporting
+                            ? mediaOperation === 'generate' ? 'Generating image with OpenAI...' : 'Importing media asset...'
+                            : `${lastImportedAsset?.file_name} inserted as silan:// asset`)}
                         </span>
                       </div>
                     )}
@@ -3979,8 +4216,12 @@ export default function App() {
         categories={ideaCategories}
         note={captureNote}
         onNoteChange={setCaptureNote}
+        attachments={captureAttachments}
+        references={editorAssistReferences}
         error={captureError}
         inputRef={captureInputRef}
+        onAttachFiles={attachFilesToCapture}
+        onInsertMarkdown={insertCaptureMarkdown}
         onRequestClose={requestCaptureClose}
         onDiscard={discardCapture}
         onKeepWriting={() => setCapturePhase('editing')}

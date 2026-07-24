@@ -2,12 +2,11 @@ package blog
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
 
-	"silan-backend/internal/ent"
+	"silan-backend/internal/commentruntime"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
@@ -59,34 +58,17 @@ func (l *CreateBlogCommentLogic) CreateComment(req *types.CreateBlogCommentReque
 		parentID = req.ParentId
 	}
 
-	// Handle authentication
-	var userIdentity *ent.UserIdentity
-	var authorName, authorEmail, avatarURL, authProvider string
-
-	if req.AuthenticatedUserID != "" && strings.TrimSpace(req.AuthenticatedUserID) != "" {
-		userIdentity, err = l.svcCtx.DB.UserIdentity.Get(l.ctx, req.AuthenticatedUserID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid user identity")
-		}
-		authorName = userIdentity.DisplayName
-		authorEmail = userIdentity.Email
-		avatarURL = userIdentity.AvatarURL
-		authProvider = userIdentity.Provider
-	} else {
-		// Anonymous user - require name and email
-		if req.AuthorName == "" {
-			return nil, fmt.Errorf("author_name is required for anonymous comments")
-		}
-		if req.AuthorEmail == "" {
-			return nil, fmt.Errorf("author_email is required for anonymous comments")
-		}
-		if !strings.Contains(req.AuthorEmail, "@") || len(req.AuthorEmail) < 5 {
-			return nil, fmt.Errorf("author_email format is invalid")
-		}
-		authorName = req.AuthorName
-		authorEmail = req.AuthorEmail
-		// Try to get avatar from existing user identities
-		avatarURL = l.lookupAvatarByEmail(req.AuthorEmail)
+	author, err := commentruntime.ResolveAuthor(
+		l.ctx,
+		l.svcCtx.DB,
+		req.AuthenticatedUserID,
+		req.AuthorName,
+		req.Fingerprint,
+		req.CountryCode,
+		req.RegionCode,
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	// Prepare user agent string with fingerprint and browser info
@@ -99,11 +81,14 @@ func (l *CreateBlogCommentLogic) CreateComment(req *types.CreateBlogCommentReque
 	createBuilder := l.svcCtx.DB.Comment.Create().
 		SetEntityType(entityType).
 		SetEntityID(postID).
-		SetAuthorName(authorName).
-		SetAuthorEmail(authorEmail).
+		SetAuthorName(author.Name).
 		SetContent(req.Content).
 		SetIsApproved(true).
 		SetUserAgent(userAgent)
+
+	if author.Email != "" {
+		createBuilder = createBuilder.SetAuthorEmail(author.Email)
+	}
 
 	// Set IP address if provided
 	if req.ClientIP != "" {
@@ -114,8 +99,8 @@ func (l *CreateBlogCommentLogic) CreateComment(req *types.CreateBlogCommentReque
 		createBuilder = createBuilder.SetParentID(parentID)
 	}
 
-	if userIdentity != nil {
-		createBuilder = createBuilder.SetUserIdentityID(userIdentity.ID)
+	if author.UserIdentityID != "" {
+		createBuilder = createBuilder.SetUserIdentityID(author.UserIdentityID)
 	}
 
 	countryCode := strings.ToUpper(req.CountryCode)
@@ -134,44 +119,24 @@ func (l *CreateBlogCommentLogic) CreateComment(req *types.CreateBlogCommentReque
 		commentType = "reply"
 	}
 	userType := "anonymous"
-	if userIdentity != nil {
+	if author.UserIdentityID != "" {
 		userType = "authenticated"
 	}
 
 	l.Infof("Created %s comment %s by %s user (author: %s, ip: %s, fingerprint: %s)",
-		commentType, c.ID, userType, authorName, req.ClientIP, req.Fingerprint)
+		commentType, c.ID, userType, author.Name, req.ClientIP, req.Fingerprint)
 
 	return &types.BlogCommentData{
 		ID:              c.ID,
 		BlogPostID:      c.EntityID,
 		ParentID:        parentID,
 		AuthorName:      c.AuthorName,
-		AuthorAvatarURL: avatarURL,
-		AuthProvider:    authProvider,
+		AuthorAvatarURL: author.AvatarURL,
+		AuthProvider:    author.AuthProvider,
 		CountryCode:     countryCode,
 		Content:         c.Content,
 		CreatedAt:       c.CreatedAt.Format(time.RFC3339),
 		CanDelete:       true,
 		Replies:         []types.BlogCommentData{},
 	}, nil
-}
-
-func (l *CreateBlogCommentLogic) lookupAvatarByEmail(email string) string {
-	var avatar sql.NullString
-	drv := l.svcCtx.Config.Database.Driver
-	if drv == "postgres" || drv == "postgresql" {
-		_ = l.svcCtx.RawDB.QueryRowContext(l.ctx,
-			"SELECT avatar_url FROM user_identities WHERE email = $1 ORDER BY updated_at DESC LIMIT 1",
-			email,
-		).Scan(&avatar)
-	} else {
-		_ = l.svcCtx.RawDB.QueryRowContext(l.ctx,
-			"SELECT avatar_url FROM user_identities WHERE email = ? ORDER BY updated_at DESC LIMIT 1",
-			email,
-		).Scan(&avatar)
-	}
-	if avatar.Valid {
-		return avatar.String
-	}
-	return ""
 }

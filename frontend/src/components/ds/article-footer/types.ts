@@ -9,7 +9,7 @@ export interface ArticleComment {
   ipRegion?: string;
   /** OAuth provider the author is signed in with ("google" | "github"),
    *  when the comment came from an authenticated identity rather than a
-   *  guest name/email. */
+   *  fingerprint-backed guest identity. */
   authProvider?: string;
   content: string;
   createdAt: string;
@@ -21,7 +21,6 @@ export interface ArticleComment {
 
 export interface CommentDraft {
   authorName: string;
-  authorEmail: string;
   content: string;
   parentId?: string;
 }

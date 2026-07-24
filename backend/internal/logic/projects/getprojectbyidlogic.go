@@ -32,8 +32,7 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 
 	// Get the project by id
 	proj, err := l.svcCtx.DB.Project.Query().
-		Where(project.ID(projectID)).
-		Where(project.VisibilityEQ(project.VisibilityPublic)).
+		Where(project.ID(projectID), publicProject()).
 		WithTechnologies().
 		WithTranslations().
 		First(l.ctx)

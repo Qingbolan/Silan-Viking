@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarDays, MessageSquare, Send, ThumbsUp, Trash2 } from 'lucide-react';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '../InteractiveContact';
 import { getClientFingerprint } from '../../utils/fingerprint';
+import { useCommenterIdentity } from '../../lib/useCommenterIdentity';
 import {
   createProjectComment,
   deleteProjectComment,
@@ -22,6 +22,7 @@ import {
   Button,
   EmptyState,
   Field,
+  GuestIdentityEditor,
   Modal,
   Skeleton,
   Textarea,
@@ -38,7 +39,8 @@ type LoadState = 'loading' | 'ready' | 'error' | 'not-found';
 const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({ projectId, issueId }) => {
   const { language } = useLanguage();
   const locale = language as 'en' | 'zh';
-  const { user, isAuthenticated, loginWithGoogle } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const { commenter, setAuthorName } = useCommenterIdentity();
   const toast = useToast();
   const fingerprint = getClientFingerprint();
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -64,8 +66,6 @@ const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({ project
         noRepliesBody: 'Start the discussion with a concrete observation or answer.',
         reply: 'Reply',
         replyPlaceholder: 'Add a useful reply…',
-        signIn: 'Sign in to reply',
-        signInError: 'Google sign-in could not be completed',
         sent: 'Reply posted',
         sendError: 'Reply could not be posted',
         likeError: 'Reaction could not be saved',
@@ -89,8 +89,6 @@ const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({ project
         noRepliesBody: '可以用具体观察或答案开始讨论。',
         reply: '回复',
         replyPlaceholder: '添加有帮助的回复…',
-        signIn: '登录后回复',
-        signInError: 'Google 登录失败',
         sent: '回复已发布',
         sendError: '回复发布失败',
         likeError: '点赞状态保存失败',
@@ -127,27 +125,14 @@ const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({ project
     void loadThread();
   }, [loadThread]);
 
-  const signIn = async (credentialResponse: CredentialResponse) => {
-    if (!credentialResponse.credential) {
-      toast.error(copy.signInError);
-      return;
-    }
-    try {
-      await loginWithGoogle(credentialResponse.credential);
-    } catch {
-      toast.error(copy.signInError);
-    }
-  };
-
   const submitReply = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!user || !draft.trim()) return;
+    if (!draft.trim()) return;
     setSubmitting(true);
     try {
       await createProjectComment(projectId, draft.trim(), fingerprint, {
         type: 'issue',
-        authorName: user.username,
-        authorEmail: user.email,
+        authorName: isAuthenticated && user ? user.username : commenter.authorName,
         parentId: issueId,
         language: locale,
       });
@@ -265,19 +250,18 @@ const ProjectIssueDiscussion: React.FC<ProjectIssueDiscussionProps> = ({ project
       </section>
 
       <section className="border-t border-ds-border pt-5">
-        {isAuthenticated && user ? (
-          <form onSubmit={submitReply} className="space-y-3">
-            <Field label={`${copy.reply} · ${user.username}`} htmlFor="feedback-reply">
-              <Textarea id="feedback-reply" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={copy.replyPlaceholder} rows={4} maxLength={2000} />
-            </Field>
-            <div className="flex justify-end"><Button type="submit" leadingIcon={<Send />} loading={submitting} disabled={!draft.trim()}>{copy.reply}</Button></div>
-          </form>
-        ) : (
-          <div className="flex flex-col items-center justify-between gap-3 rounded-ds-md bg-ds-surface-2 p-4 sm:flex-row">
-            <span className="text-ds-sm text-ds-fg-muted">{copy.signIn}</span>
-            <GoogleLogin onSuccess={(response) => void signIn(response)} onError={() => toast.error(copy.signInError)} text="signin_with" shape="rectangular" size="medium" />
-          </div>
-        )}
+        <form onSubmit={submitReply} className="space-y-3">
+          {!isAuthenticated && (
+            <GuestIdentityEditor name={commenter.authorName} onChange={setAuthorName} />
+          )}
+          <Field
+            label={`${copy.reply} · ${isAuthenticated && user ? user.username : commenter.authorName}`}
+            htmlFor="feedback-reply"
+          >
+            <Textarea id="feedback-reply" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={copy.replyPlaceholder} rows={4} maxLength={2000} />
+          </Field>
+          <div className="flex justify-end"><Button type="submit" leadingIcon={<Send />} loading={submitting} disabled={!draft.trim()}>{copy.reply}</Button></div>
+        </form>
       </section>
 
       <Modal open={Boolean(deleteTarget)} onClose={() => !deleting && setDeleteTarget(null)} title={copy.confirmDelete} description={copy.confirmDeleteBody} size="sm" closeLabel={copy.cancel} footer={<><Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>{copy.cancel}</Button><Button variant="danger" loading={deleting} onClick={() => void deleteReply()}>{copy.delete}</Button></>} />

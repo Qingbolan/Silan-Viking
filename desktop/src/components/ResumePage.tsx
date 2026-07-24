@@ -209,7 +209,7 @@ function EntryView({ role, entry }: { role: string; entry: ResumeEntry }) {
   );
 
   // Description and detail bullets carry inline Markdown (bold, links) —
-  // render them through Vditor's own preview pipeline as one block.
+  // render them through the shared Milkdown schema as one block.
   const bodyMarkdown = [
     description,
     details.map((detail) => `- ${detail}`).join('\n'),

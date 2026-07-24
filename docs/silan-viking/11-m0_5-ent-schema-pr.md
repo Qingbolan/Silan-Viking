@@ -547,7 +547,7 @@ once on the **server**.
 - ➕ Add the `visibility` enum column (as above). The `is_public` column: kept but derived from `visibility` (`visibility=public` ⇒ `is_public=true`), or M0.5 drops `is_public` outright in favour of `visibility` — **ruling: drop `is_public`, uniformly use `visibility`** (avoid two fields expressing the same intent; the spirit of `10` §10.3).
 
 **`projects`**:
-- `status` enum: current ent is already lowercase `active/completed/paused/cancelled`, consistent with `10` §10.4.3; no change.
+- `status` enum: lowercase `active/completed/paused/cancelled/archived`, consistent with `10` §10.4.3.
 - ➕ Add the `visibility` column; drop `is_public` (same as ideas).
 
 > **Unified action**: all three main content tables

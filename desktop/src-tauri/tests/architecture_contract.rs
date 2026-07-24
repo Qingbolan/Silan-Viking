@@ -54,13 +54,16 @@ fn tauri_command_surface_matches_the_desktop_features() {
     let desktop_root = crate_root.parent().expect("desktop root");
     let main = fs::read_to_string(crate_root.join("src/main.rs")).expect("main.rs");
     let commands = fs::read_to_string(crate_root.join("src/commands.rs")).expect("commands.rs");
-    let app = fs::read_to_string(desktop_root.join("src/App.tsx")).expect("App.tsx");
-    let resume =
-        fs::read_to_string(desktop_root.join("src/components/ResumePage.tsx")).expect("resume");
-    let capture = fs::read_to_string(desktop_root.join("src/components/CaptureSheet.tsx"))
-        .expect("capture sheet");
-    let git_changes = fs::read_to_string(desktop_root.join("src/components/GitChangesPanel.tsx"))
-        .expect("git changes panel");
+    let mut frontend_paths = Vec::new();
+    collect_frontend_sources(&desktop_root.join("src"), &mut frontend_paths);
+    let frontend = frontend_paths
+        .into_iter()
+        .map(|path| {
+            fs::read_to_string(&path)
+                .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
     let registered = main
         .split("commands::")
@@ -76,7 +79,7 @@ fn tauri_command_surface_matches_the_desktop_features() {
         })
         .filter_map(identifier_prefix)
         .collect::<BTreeSet<_>>();
-    let invoked = invoked_commands(&format!("{app}\n{resume}\n{capture}\n{git_changes}"));
+    let invoked = invoked_commands(&frontend);
 
     assert_eq!(
         registered, declared,
@@ -86,6 +89,22 @@ fn tauri_command_surface_matches_the_desktop_features() {
         registered, invoked,
         "every public Desktop command must have one concrete UI consumer"
     );
+}
+
+fn collect_frontend_sources(directory: &Path, output: &mut Vec<std::path::PathBuf>) {
+    for entry in fs::read_dir(directory)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", directory.display()))
+    {
+        let path = entry.expect("directory entry").path();
+        if path.is_dir() {
+            collect_frontend_sources(&path, output);
+        } else if path
+            .extension()
+            .is_some_and(|extension| extension == "ts" || extension == "tsx")
+        {
+            output.push(path);
+        }
+    }
 }
 
 fn identifier_prefix(value: &str) -> Option<String> {

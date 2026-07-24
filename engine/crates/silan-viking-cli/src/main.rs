@@ -388,11 +388,11 @@ fn run(args: Vec<String>) -> Result<(), String> {
             // Publish writes BOTH status=published AND visibility=public so the
             // post actually reaches the website — `status` alone leaves it
             // private and unprojected (USAGE §3 table).
-            type_set_publish(&opts.content_root, "blog", slug, "published", "public")
+            type_set_lifecycle_state(&opts.content_root, "blog", slug, "published", "public")
         }
         ["blog", "unpublish", slug] => {
             // Reverse: status back to draft AND visibility back to private.
-            type_set_publish(&opts.content_root, "blog", slug, "draft", "private")
+            type_set_lifecycle_state(&opts.content_root, "blog", slug, "draft", "private")
         }
         ["project", "progress", slug] => project_progress(&opts.content_root, slug),
         ["project", "feature", slug] => {
@@ -5838,12 +5838,10 @@ fn type_edit(
     Ok(())
 }
 
-/// `archive` takes an Item off the site (`02` §一). Its mechanism depends on
-/// the type: blog/episode have an `archived` value in their `status` enum, so
-/// archive sets that. project/moment have no `archived` status, so
-/// archive sets `visibility` to `unlisted` instead (`10` rule 6: only
-/// `visibility=public` is projected). moment's `status` is explicitly left
-/// unchanged (`02` §一: "归档:status 不变").
+/// `archive` takes an Item off the site (`02` §一). Types with an `archived`
+/// lifecycle value move to that state and become private in one write.
+/// Types without it (currently moment) retain their status and become
+/// unlisted instead (`10` rule 6: only `visibility=public` is projected).
 fn type_archive(content_root: &Path, kind: &str, slug: &str) -> Result<(), String> {
     let content_kind = parse_kind(kind).ok_or_else(|| format!("unknown type `{kind}`"))?;
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
@@ -5854,7 +5852,7 @@ fn type_archive(content_root: &Path, kind: &str, slug: &str) -> Result<(), Strin
         .and_then(|f| f.enum_values())
         .is_some_and(|vals| vals.contains(&"archived"));
     if status_has_archived {
-        type_set_field(content_root, kind, slug, "status", "archived")
+        type_set_lifecycle_state(content_root, kind, slug, "archived", "private")
     } else {
         type_set_field(content_root, kind, slug, "visibility", "unlisted")
     }
@@ -6102,15 +6100,10 @@ fn type_set_field(
     Ok(())
 }
 
-/// Type-specific `publish` / `unpublish` for flat-type Items (blog, moment,
-/// project). `status` is the lifecycle field; `visibility` is the
-/// website-projection field — `01` §1.7 / `10` §10.3 keep them separate, but
-/// the user-visible `publish` verb (USAGE §3 table; `02` §一) sets BOTH in
-/// one go: published = `status=published` + `visibility=public`. Without
-/// flipping visibility the post is "published" in lifecycle but never
-/// projected — the bug a 2026-05-21 e2e pass surfaced and the contract this
-/// helper restores.
-fn type_set_publish(
+/// Change lifecycle and projection state together. Publish, unpublish, and
+/// archive all cross both boundaries; writing one field without the other
+/// can leave an Item visible in a terminal lifecycle state.
+fn type_set_lifecycle_state(
     content_root: &Path,
     kind: &str,
     slug: &str,
@@ -6373,9 +6366,9 @@ fn episode_set_status(
     Ok(())
 }
 
-/// Episode counterpart of `type_set_publish` — flip status AND visibility in
+/// Episode counterpart of `type_set_lifecycle_state` — flip status AND visibility in
 /// the same call so `silan episode publish` actually projects to the site,
-/// not just changes the lifecycle. See `type_set_publish` for the rationale.
+/// not just changes the lifecycle. See `type_set_lifecycle_state` for the rationale.
 fn episode_set_publish(
     content_root: &Path,
     series: &str,

@@ -134,6 +134,7 @@ func episodeToData(ep *ent.Episode, language string) types.EpisodeData {
 		Status:          string(ep.Status),
 		Visibility:      string(ep.Visibility),
 		PublishDate:     publishDate,
+		UpdatedAt:       ep.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		DurationMinutes: duration,
 		Content:         content,
 	}

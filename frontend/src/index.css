@@ -1368,26 +1368,24 @@ code[class*="language-"] .token.italic { font-style: italic; }
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 600; }
 
-/* Vditor-rendered Markdown. Parsing/rendering lives in
-   src/components/ui/Markdown.tsx; this block only maps generated HTML onto
-   the site's design tokens. */
-.vditor-markdown .vditor-reset {
+/* Static GFM reading surface. Parsing/rendering lives in
+   src/components/ui/Markdown.tsx; this block maps semantic HTML onto the
+   site tokens without shipping an editor runtime to public pages. */
+.markdown-content .markdown-body {
   color: color-mix(in srgb, var(--color-textPrimary, #171717) 84%, transparent);
   font-family: var(--font-body);
   font-size: 18px;
   line-height: 1.74;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
 }
 
-.vditor-markdown .vditor-reset--anchor {
-  padding-left: 0;
-}
-
-.vditor-markdown .vditor-reset h1,
-.vditor-markdown .vditor-reset h2,
-.vditor-markdown .vditor-reset h3,
-.vditor-markdown .vditor-reset h4,
-.vditor-markdown .vditor-reset h5,
-.vditor-markdown .vditor-reset h6 {
+.markdown-content .markdown-body h1,
+.markdown-content .markdown-body h2,
+.markdown-content .markdown-body h3,
+.markdown-content .markdown-body h4,
+.markdown-content .markdown-body h5,
+.markdown-content .markdown-body h6 {
   color: var(--color-textPrimary, #171717);
   font-family: var(--font-display);
   font-weight: 680;
@@ -1396,12 +1394,12 @@ code[class*="language-"] .token.italic { font-style: italic; }
   scroll-margin-top: 6rem;
 }
 
-.vditor-markdown .vditor-reset h1 { margin: 3.25rem 0 1.05rem; font-size: 2.25rem; font-weight: 760; line-height: 1.16; }
-.vditor-markdown .vditor-reset h2 { margin: 3.25rem 0 1.05rem; font-size: 2rem; font-weight: 760; line-height: 1.16; }
-.vditor-markdown .vditor-reset h3 { margin: 2.4rem 0 0.85rem; font-size: 1.55rem; font-weight: 680; }
-.vditor-markdown .vditor-reset h4 { margin: 1.9rem 0 0.7rem; font-size: 1.28rem; }
-.vditor-markdown .vditor-reset h5,
-.vditor-markdown .vditor-reset h6 {
+.markdown-content .markdown-body h1 { margin: 3.25rem 0 1.05rem; font-size: 2.25rem; font-weight: 760; line-height: 1.16; }
+.markdown-content .markdown-body h2 { margin: 3.25rem 0 1.05rem; font-size: 2rem; font-weight: 760; line-height: 1.16; }
+.markdown-content .markdown-body h3 { margin: 2.4rem 0 0.85rem; font-size: 1.55rem; font-weight: 680; }
+.markdown-content .markdown-body h4 { margin: 1.9rem 0 0.7rem; font-size: 1.28rem; }
+.markdown-content .markdown-body h5,
+.markdown-content .markdown-body h6 {
   margin: 1.25rem 0 0.5rem;
   color: var(--color-textTertiary, #737373);
   font-size: 0.8125rem;
@@ -1409,26 +1407,26 @@ code[class*="language-"] .token.italic { font-style: italic; }
   text-transform: uppercase;
 }
 
-.vditor-markdown .vditor-reset p,
-.vditor-markdown .vditor-reset ul,
-.vditor-markdown .vditor-reset ol,
-.vditor-markdown .vditor-reset blockquote,
-.vditor-markdown .vditor-reset pre,
-.vditor-markdown .vditor-reset table {
+.markdown-content .markdown-body p,
+.markdown-content .markdown-body ul,
+.markdown-content .markdown-body ol,
+.markdown-content .markdown-body blockquote,
+.markdown-content .markdown-body pre,
+.markdown-content .markdown-body table {
   margin-top: 1rem;
   margin-bottom: 1rem;
 }
 
-.vditor-markdown .vditor-reset p { color: color-mix(in srgb, var(--color-textPrimary, #171717) 84%, transparent); }
-.vditor-markdown .vditor-reset strong { color: var(--color-textPrimary, #171717); font-weight: 650; }
-.vditor-markdown .vditor-reset a {
+.markdown-content .markdown-body p { color: color-mix(in srgb, var(--color-textPrimary, #171717) 84%, transparent); }
+.markdown-content .markdown-body strong { color: var(--color-textPrimary, #171717); font-weight: 650; }
+.markdown-content .markdown-body a {
   color: var(--color-accent, #f97316);
   overflow-wrap: anywhere;
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--color-accent, #f97316) 40%, transparent);
   text-underline-offset: 0.18em;
 }
-.vditor-markdown .vditor-reset a.markdown-rich-link,
+.markdown-content .markdown-body a.markdown-rich-link,
 .rich-link {
   align-items: center;
   background: color-mix(in srgb, var(--color-textPrimary, #171717) 6%, var(--color-background, #ffffff));
@@ -1447,7 +1445,7 @@ code[class*="language-"] .token.italic { font-style: italic; }
   transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, transform 180ms ease;
   vertical-align: -0.12em;
 }
-.vditor-markdown .vditor-reset a.markdown-rich-link:hover,
+.markdown-content .markdown-body a.markdown-rich-link:hover,
 .rich-link:hover {
   background: color-mix(in srgb, var(--color-textPrimary, #171717) 10%, var(--color-background, #ffffff));
   border-color: color-mix(in srgb, var(--color-accent, #f97316) 36%, var(--color-cardBorder, #d4d4d4));
@@ -1455,16 +1453,16 @@ code[class*="language-"] .token.italic { font-style: italic; }
   color: var(--color-textPrimary, #171717);
   transform: translateY(-1px);
 }
-.vditor-markdown .vditor-reset a.markdown-rich-link:focus-visible,
+.markdown-content .markdown-body a.markdown-rich-link:focus-visible,
 .rich-link:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--color-accent, #f97316) 48%, transparent);
   outline-offset: 2px;
 }
-.vditor-markdown .vditor-reset a.markdown-rich-link:active,
+.markdown-content .markdown-body a.markdown-rich-link:active,
 .rich-link:active {
   transform: translateY(0);
 }
-.vditor-markdown .vditor-reset .markdown-rich-link__icon,
+.markdown-content .markdown-body .markdown-rich-link__icon,
 .rich-link__icon {
   background: var(--color-background, #ffffff);
   border-radius: 999px;
@@ -1475,16 +1473,25 @@ code[class*="language-"] .token.italic { font-style: italic; }
   object-fit: cover;
   width: 1.12em;
 }
-.vditor-markdown .vditor-reset ul,
-.vditor-markdown .vditor-reset ol { padding-left: 1.4rem; }
-.vditor-markdown .vditor-reset li { margin: 0.25rem 0; }
-.vditor-markdown .vditor-reset blockquote {
+.markdown-content .markdown-body ul,
+.markdown-content .markdown-body ol { padding-left: 1.4rem; }
+.markdown-content .markdown-body ul { list-style: disc; }
+.markdown-content .markdown-body ol { list-style: decimal; }
+.markdown-content .markdown-body li { margin: 0.25rem 0; }
+.markdown-content .markdown-body li.task-list-item {
+  list-style: none;
+}
+.markdown-content .markdown-body li.task-list-item > input {
+  margin: 0 0.48rem 0 -1.3rem;
+  accent-color: var(--color-accent, #f97316);
+}
+.markdown-content .markdown-body blockquote {
   border-left: 2px solid color-mix(in srgb, var(--color-accent, #f97316) 45%, transparent);
   color: var(--color-textSecondary, #525252);
   font-style: italic;
   padding: 0.25rem 0 0.25rem 1rem;
 }
-.vditor-markdown .vditor-reset code {
+.markdown-content .markdown-body code {
   background: color-mix(in srgb, var(--color-textPrimary, #171717) 7%, var(--color-background, #ffffff));
   border: 1px solid color-mix(in srgb, var(--color-textPrimary, #171717) 10%, transparent);
   border-radius: 0.3rem;
@@ -1494,7 +1501,7 @@ code[class*="language-"] .token.italic { font-style: italic; }
   font-weight: 500;
   padding: 0.1rem 0.34rem;
 }
-.vditor-markdown .vditor-reset pre {
+.markdown-content .markdown-body pre {
   background:
     linear-gradient(
       180deg,
@@ -1513,7 +1520,7 @@ code[class*="language-"] .token.italic { font-style: italic; }
   padding: 1rem 1.125rem;
   scrollbar-width: thin;
 }
-.vditor-markdown .vditor-reset pre code {
+.markdown-content .markdown-body pre code {
   background: transparent;
   border: 0;
   color: inherit;
@@ -1524,7 +1531,7 @@ code[class*="language-"] .token.italic { font-style: italic; }
   min-width: max-content;
   padding: 0;
 }
-.dark .vditor-markdown .vditor-reset pre {
+.dark .markdown-content .markdown-body pre {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 38%),
     #121316;
@@ -1534,42 +1541,54 @@ code[class*="language-"] .token.italic { font-style: italic; }
     inset 0 -1px 0 rgba(0, 0, 0, 0.28);
   color: rgba(255, 255, 255, 0.88);
 }
-.dark .vditor-markdown .vditor-reset code {
+.dark .markdown-content .markdown-body code {
   background: rgba(255, 255, 255, 0.075);
   border-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.9);
 }
-.dark .vditor-markdown .vditor-reset pre code {
+.dark .markdown-content .markdown-body pre code {
   background: transparent;
   border: 0;
   color: inherit;
 }
-.vditor-markdown .vditor-reset table { border-collapse: collapse; display: table; width: 100%; }
-.vditor-markdown .vditor-reset th,
-.vditor-markdown .vditor-reset td {
+.markdown-content .markdown-body table { border-collapse: collapse; display: table; width: 100%; }
+.markdown-content .markdown-body th,
+.markdown-content .markdown-body td {
   border: 1px solid var(--color-cardBorder, #e5e7eb) !important;
   padding: 0.5rem 0.75rem;
   vertical-align: top;
 }
-.vditor-markdown .vditor-reset th {
+.markdown-content .markdown-body th {
   background: var(--color-surface, #f5f5f5);
   color: var(--color-textPrimary, #171717);
   font-weight: 650;
 }
-.vditor-markdown .vditor-reset img { border-radius: 0.5rem; margin: 1.25rem 0; }
-.vditor-markdown--inline .vditor-reset,
-.vditor-markdown--inline .vditor-reset p {
+.markdown-content .markdown-body img,
+.markdown-content .markdown-body video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.25rem 0;
+}
+
+.markdown-content .markdown-body video {
+  width: 100%;
+  background: #000;
+}
+.markdown-content--inline .markdown-body,
+.markdown-content--inline .markdown-body p {
   color: inherit;
   display: inline;
   font-size: inherit;
   line-height: inherit;
   margin: 0;
 }
-.vditor-markdown--inline .vditor-reset ul,
-.vditor-markdown--inline .vditor-reset ol { display: inline; margin: 0; padding-left: 1rem; }
+.markdown-content--inline .markdown-body ul,
+.markdown-content--inline .markdown-body ol { display: inline; margin: 0; padding-left: 1rem; }
 
 .comment-markdown,
-.comment-markdown .vditor-reset {
+.comment-markdown .markdown-body {
   color: inherit;
   display: inline;
   font-family: var(--font-body);
@@ -1578,32 +1597,28 @@ code[class*="language-"] .token.italic { font-style: italic; }
   padding-left: 0 !important;
 }
 
-.comment-markdown .vditor-reset--anchor {
-  padding-left: 0 !important;
-}
-
-.comment-markdown .vditor-reset p,
-.comment-markdown .vditor-reset ul,
-.comment-markdown .vditor-reset ol,
-.comment-markdown .vditor-reset blockquote,
-.comment-markdown .vditor-reset pre,
-.comment-markdown .vditor-reset table {
+.comment-markdown .markdown-body p,
+.comment-markdown .markdown-body ul,
+.comment-markdown .markdown-body ol,
+.comment-markdown .markdown-body blockquote,
+.comment-markdown .markdown-body pre,
+.comment-markdown .markdown-body table {
   margin: 0;
   padding-left: 0 !important;
 }
 
-.comment-markdown .vditor-reset p {
+.comment-markdown .markdown-body p {
   color: inherit;
   display: inline;
 }
 
-.comment-markdown .vditor-reset a {
+.comment-markdown .markdown-body a {
   color: var(--ds-color-primary, var(--color-accent, #f97316));
   font-weight: 520;
   text-decoration-thickness: 1px;
 }
 
-.comment-markdown .vditor-reset code {
+.comment-markdown .markdown-body code {
   border-radius: 0.25rem;
   font-size: 0.86em;
   padding: 0.06rem 0.24rem;
@@ -1632,22 +1647,21 @@ code[class*="language-"] .token.italic { font-style: italic; }
 }
 
 /* Homepage moments are summaries, not article bodies. Constrain both the
-   Vditor host and its generated child so WebKit, Chromium, and Firefox all
-   render at most two lines even though the HTML arrives asynchronously. */
+   component root and semantic body to two lines across browser engines. */
 .moment-home-summary,
-.moment-home-summary .vditor-reset {
+.moment-home-summary .markdown-body {
   max-height: 3rem;
   overflow: hidden;
 }
 
-.moment-home-summary .vditor-reset {
+.moment-home-summary .markdown-body {
   display: -webkit-box;
   line-height: 1.5rem;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
-.moment-home-summary .vditor-reset > * {
+.moment-home-summary .markdown-body > * {
   display: inline;
   margin: 0;
 }

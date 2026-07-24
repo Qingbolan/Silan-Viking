@@ -71,7 +71,7 @@ export const TextContent: React.FC<TextContentProps> = ({
     // Process markdown formatting first
     let processedText = processMarkdownText(text);
     
-    // Treat any React element (including Vditor output) as block content
+    // Treat any React element (including rendered Markdown) as block content
     const hasBlockElements = React.isValidElement(processedText);
 
     if (relevantAnnotations.length === 0) {

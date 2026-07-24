@@ -137,7 +137,15 @@ const projectLifecycle = (status: string, visibility: string): LifecycleView => 
   const actions: LifecycleAction[] = [];
   const keepVisibility = visibility || 'private';
 
-  if (status === 'paused') {
+  if (status === 'archived') {
+    actions.push({
+      id: 'restore',
+      label: 'Restore project',
+      description: 'Return this project to active work without making it public.',
+      tone: 'secondary',
+      nextState: { status: 'active', visibility: 'private' },
+    });
+  } else if (status === 'paused') {
     actions.push(
       {
         id: 'activate',
@@ -196,7 +204,17 @@ const projectLifecycle = (status: string, visibility: string): LifecycleView => 
     );
   }
 
-  if (status !== 'cancelled') {
+  if (status !== 'archived') {
+    actions.push({
+      id: 'archive',
+      label: 'Archive',
+      description: 'Remove this project from project surfaces while keeping its files and history.',
+      tone: 'secondary',
+      nextState: { status: 'archived', visibility: 'private' },
+    });
+  }
+
+  if (status !== 'cancelled' && status !== 'archived') {
     actions.push(visibility === 'public'
       ? {
           id: 'hide',

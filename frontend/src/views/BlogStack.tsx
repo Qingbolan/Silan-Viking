@@ -9,6 +9,7 @@ import { fetchBlogPosts } from '../api/blog/blogApi';
 import { fetchEpisodeSeriesList } from '../api/episodes/episodeApi';
 import { mediaUrl } from '../api/utils';
 import type { EpisodeSeriesData } from '../types/episode';
+import { DEFAULT_CONTENT_AUTHOR } from '../lib/contentAttribution';
 import {
   BlogHeader,
   BrandLoading,
@@ -47,7 +48,7 @@ function seriesToBlogData(series: EpisodeSeriesData): BlogData | null {
     summary: description,
     summaryZh: '',
     content: [],
-    author: '',
+    author: DEFAULT_CONTENT_AUTHOR,
     publishDate: '',
     readTime: '',
     category: '',
@@ -114,7 +115,7 @@ function toBlogCardData(post: BlogData, language: string): BlogCardData {
     date: post.publishDate
       ? new Date(post.publishDate).toLocaleDateString()
       : undefined,
-    author: post.author,
+    author: post.author || DEFAULT_CONTENT_AUTHOR,
     readTime: post.videoDuration || post.readTime,
     kind: series ? 'series' : 'article',
     episodeCount: series ? post.totalEpisodes : undefined,
