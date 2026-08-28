@@ -638,6 +638,14 @@ func validateSourceSnapshot(snapshotPath string, manifest *Manifest) error {
 		if err != nil {
 			return fmt.Errorf("read authored-source snapshot: %w", err)
 		}
+		if header.Typeflag == tar.TypeXGlobalHeader {
+			// `git archive <commit>` stamps the commit id in a pax global
+			// header, which Go's tar reader surfaces as a synthetic entry
+			// named "pax_global_header". That is archive metadata, not an
+			// authored path — the Rust packager tolerates it the same way
+			// (content_recovery.rs `is_archive_metadata`).
+			continue
+		}
 		name := path.Clean(header.Name)
 		if name == "." || path.IsAbs(name) || name == ".." || strings.HasPrefix(name, "../") {
 			return fmt.Errorf("authored-source snapshot contains unsafe path %q", header.Name)

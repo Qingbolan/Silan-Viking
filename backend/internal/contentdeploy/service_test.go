@@ -253,6 +253,45 @@ func TestValidateSourceSnapshotRejectsPrivateNamespace(t *testing.T) {
 	}
 }
 
+func TestValidateSourceSnapshotAcceptsGitArchiveGlobalHeader(t *testing.T) {
+	root := t.TempDir()
+	var output bytes.Buffer
+	archive := tar.NewWriter(&output)
+	if err := archive.WriteHeader(&tar.Header{
+		Typeflag:   tar.TypeXGlobalHeader,
+		Name:       "pax_global_header",
+		PAXRecords: map[string]string{"comment": strings.Repeat("0", 40)},
+		Format:     tar.FormatPAX,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for name, body := range map[string]string{
+		"SCHEMA.md":         "schema\n",
+		"resources/keep.md": "public\n",
+	} {
+		data := []byte(body)
+		if err := archive.WriteHeader(&tar.Header{Name: name, Mode: 0o600, Size: int64(len(data))}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := archive.Write(data); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := archive.Close(); err != nil {
+		t.Fatal(err)
+	}
+	source := output.Bytes()
+	path := filepath.Join(root, "source.tar")
+	if err := os.WriteFile(path, source, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(source)
+	manifest := &Manifest{SourceSHA: hex.EncodeToString(sum[:])}
+	if err := validateSourceSnapshot(path, manifest); err != nil {
+		t.Fatalf("git-archive pax metadata must validate: %v", err)
+	}
+}
+
 func sourceTar(t *testing.T, files map[string]string) []byte {
 	t.Helper()
 	var output bytes.Buffer
