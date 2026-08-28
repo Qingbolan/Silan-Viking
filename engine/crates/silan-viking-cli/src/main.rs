@@ -7,6 +7,7 @@ mod desktop;
 mod image_attribution;
 mod language_check;
 mod onboarding;
+mod private_backup;
 mod recovery;
 mod scaffold;
 mod skill;
@@ -5164,6 +5165,22 @@ fn run_content_release(content_root: &Path, db_path: &Path, confirm: bool) -> Re
         println!("  render    existing frontend code baseline → static release → verify");
         println!("  next      {}", plan.next_action);
         return Ok(());
+    }
+    // The release gate refuses a revision whose only copy is local. A
+    // missing or stale upstream is self-repaired here when possible, so a
+    // recovered or migrated workspace releases without manual Git surgery.
+    match private_backup::ensure_private_backup(content_root) {
+        Ok(private_backup::BackupRepair::Synchronized { .. }) => {}
+        Ok(private_backup::BackupRepair::Pushed { upstream }) => {
+            println!("backup: pushed local commits to `{upstream}`");
+        }
+        Ok(private_backup::BackupRepair::Provisioned { url }) => {
+            println!("backup: provisioned private remote `{url}` and pushed the current branch");
+        }
+        // No remote and no [deploy] to provision one from — fall through so
+        // the gate reports the canonical manual instruction.
+        Ok(private_backup::BackupRepair::Unavailable { .. }) => {}
+        Err(error) => return Err(format!("private backup self-repair: {error}")),
     }
     let status = control
         .deploy_content()

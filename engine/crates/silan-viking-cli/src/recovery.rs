@@ -104,7 +104,26 @@ pub(crate) fn run(expected_content_root: &Path, flags: &[&str]) -> Result<(), St
     println!("  source sha   {}", result.source_sha256);
     println!("  local commit {}", result.local_commit);
     println!("  private      agent/ initialized empty (never stored on the public site)");
-    println!("  next         configure a private Git remote and push this recovery commit");
+    // A recovered repository has no upstream yet — self-repair the private
+    // backup right away when the workspace carries the credentials for it,
+    // so the recovery commit is durable before any further authoring.
+    match crate::private_backup::ensure_private_backup(&result.destination) {
+        Ok(crate::private_backup::BackupRepair::Provisioned { url }) => {
+            println!("  backup       provisioned private remote `{url}` and pushed this recovery commit");
+        }
+        Ok(crate::private_backup::BackupRepair::Pushed { upstream })
+        | Ok(crate::private_backup::BackupRepair::Synchronized { upstream }) => {
+            println!("  backup       synchronized with `{upstream}`");
+        }
+        Ok(crate::private_backup::BackupRepair::Unavailable { reason }) => {
+            println!("  next         configure a private Git remote and push this recovery commit");
+            println!("               (self-provisioning unavailable: {reason})");
+        }
+        Err(error) => {
+            println!("  warning      private backup self-repair failed: {error}");
+            println!("  next         configure a private Git remote and push this recovery commit");
+        }
+    }
     Ok(())
 }
 
