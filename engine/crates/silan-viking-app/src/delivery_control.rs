@@ -945,7 +945,10 @@ impl DeliveryControl {
 
     /// Public release archives deliberately exclude `agent/`; deployment is
     /// therefore legal only after the complete content commit is verifiably
-    /// present at the branch's private upstream.
+    /// present at the branch's private upstream. An upstream that is merely
+    /// behind is repaired in place with a plain fast-forward push before the
+    /// verdict — every release surface (CLI and desktop) shares this gate,
+    /// so none of them fails on work the owner simply hasn't pushed yet.
     fn ensure_remote_backup(&self) -> Result<(), DeliveryControlError> {
         let repo = self.repo()?;
         let pending = run_raw(&repo, ["status", "--porcelain", "--untracked-files=all"])?;
@@ -976,13 +979,36 @@ impl DeliveryControl {
                 upstream,
                 local_head,
                 remote_head,
-            } => Err(DeliveryControlError::UndurableRepository(format!(
-                "local HEAD {} is not backed up at `{upstream}` (remote {}); push or reconcile the branch first",
-                short_oid(&local_head),
-                short_oid(&remote_head),
-            ))),
+            } => {
+                // Never a force: git refuses a diverged push, and only the
+                // gate's own re-query — not the push's exit status — decides
+                // that the backup became durable.
+                let repaired = push_branch_to_backup(&repo).is_ok()
+                    && matches!(
+                        repo.remote_backup_state(),
+                        Ok(RemoteBackupState::Synchronized { .. })
+                    );
+                if repaired {
+                    return Ok(());
+                }
+                Err(DeliveryControlError::UndurableRepository(format!(
+                    "local HEAD {} is not backed up at `{upstream}` (remote {}); push or reconcile the branch first",
+                    short_oid(&local_head),
+                    short_oid(&remote_head),
+                )))
+            }
         }
     }
+}
+
+/// Push the checked-out branch to its configured upstream remote. Divergence
+/// or an unreachable remote is not repairable here: git refuses, and the
+/// durability gate reports the manual path.
+fn push_branch_to_backup(repo: &GitRepo) -> Result<(), DeliveryControlError> {
+    let branch = run(repo, ["rev-parse", "--abbrev-ref", "HEAD"])?;
+    let tracking = format!("branch.{branch}.remote");
+    let remote = run(repo, ["config", "--get", tracking.as_str()])?;
+    run(repo, ["push", remote.as_str(), branch.as_str()]).map(|_| ())
 }
 
 fn short_oid(value: &str) -> &str {
@@ -1366,6 +1392,41 @@ mod tests {
             DeliveryControlError::UndurableRepository(_)
         ));
         assert!(!db.exists(), "projection must wait for durable source");
+    }
+
+    #[test]
+    fn deployment_pushes_a_backup_that_is_merely_behind() {
+        let (directory, content, db) = fixture("http://127.0.0.1:1");
+        let remote = directory.path().join("remote.git");
+        let branch = configure_remote(&content, &remote);
+        std::fs::write(content.join("resources/new.md"), "committed locally\n")
+            .expect("write new content");
+        commit(&content, "test: local-only work");
+
+        let control = DeliveryControl::open(&content, &db, directory.path())
+            .expect("open")
+            .with_bearer_token("delivery-contract-token");
+        let error = control
+            .deploy_content()
+            .expect_err("no live API is reachable in this fixture");
+
+        // The durability gate must repair the merely-behind backup with a
+        // fast-forward push and let the release proceed to the network phase.
+        assert!(
+            !matches!(error, DeliveryControlError::UndurableRepository(_)),
+            "{error}"
+        );
+        let pushed = Command::new("git")
+            .args(["rev-parse", &branch])
+            .current_dir(&remote)
+            .output()
+            .expect("read backup head");
+        assert!(pushed.status.success());
+        assert_eq!(
+            String::from_utf8(pushed.stdout).expect("head utf8").trim(),
+            head(&content),
+            "backup must hold the local head"
+        );
     }
 
     #[test]
