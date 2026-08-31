@@ -10,7 +10,6 @@ import {
   Moon,
   Sun,
 } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../components/LanguageContext';
 import { useTheme } from '../components/ThemeContext';
 import { publicAssetUrl } from '../utils/publicAsset';
@@ -55,7 +54,6 @@ const ExternalLink: React.FC<{ href: string; label: string; icon?: React.ReactNo
 const Footer: React.FC = () => {
   const { language, languageHref, selectLanguage } = useLanguage();
   const { isDarkMode, toggleTheme } = useTheme();
-  const reduceMotion = useReducedMotion();
   const zh = language === 'zh';
   const targetLanguage = zh ? 'en' : 'zh';
 
@@ -147,19 +145,12 @@ const Footer: React.FC = () => {
         </div>
       </div>
 
-      <motion.div
+      <div
         aria-hidden
         className="relative mx-auto mt-8 w-full max-w-7xl select-none overflow-hidden px-5 pb-28 text-left text-white/[0.18] sm:mt-12 sm:px-10 sm:pb-10 lg:px-12"
-        initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-        whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.15 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       >
-        <motion.span
+        <span
           className="-ml-[0.06em] block origin-left whitespace-nowrap font-signature text-[clamp(4.8rem,12.5vw,15.5rem)] font-normal leading-[0.82]"
-          animate={reduceMotion ? undefined : { y: [0, -4, 0], rotate: [0, -0.35, 0], scaleX: [1.035, 1.055, 1.035], opacity: [0.82, 1, 0.82] }}
-          transition={reduceMotion ? undefined : { duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          whileHover={reduceMotion ? undefined : { y: -8, scaleX: 1.085, scaleY: 1.012, opacity: 1, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } }}
         >
           <span className="font-medium tracking-[-0.06em]">Silan</span>
           <span className="-ml-[0.08em] inline-block text-[#f58220]/65">.</span>
@@ -169,8 +160,8 @@ const Footer: React.FC = () => {
           >
             Tech
           </span>
-        </motion.span>
-      </motion.div>
+        </span>
+      </div>
     </footer>
   );
 };

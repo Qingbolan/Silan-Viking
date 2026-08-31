@@ -45,15 +45,15 @@ const MomentsProfileHero: React.FC<MomentsProfileHeroProps> = ({
       />
     </div>
 
-    <div className="absolute -bottom-12 inset-x-0 sm:-bottom-14 2xl:-bottom-16">
+    <div className="absolute -bottom-6 inset-x-0 sm:-bottom-8 2xl:-bottom-10">
       <div className={cn(EDITORIAL_CONTENT_FRAME_CLASS, 'flex justify-end')}>
-        <div className="flex max-w-full items-start gap-3 sm:gap-4 2xl:gap-5">
-          <div className="min-w-0 pt-3.5 text-right sm:pt-4">
+        <div className="flex w-full max-w-full items-center justify-end gap-3 sm:gap-4 2xl:gap-5">
+          <div className="relative min-w-0 flex-1 text-right">
             <strong className="block truncate text-lg font-semibold tracking-[-0.02em] text-white drop-shadow-[0_1px_12px_rgba(0,0,0,0.55)] sm:text-xl 2xl:text-2xl">
               {name}
             </strong>
             {role && (
-              <span className="mt-0.5 block line-clamp-2 max-w-56 text-[11px] leading-4 text-ds-fg-muted sm:max-w-64 sm:text-xs sm:leading-5 2xl:max-w-72 2xl:text-sm">
+              <span className="absolute right-0 top-full mt-0.5 block w-max max-w-[calc(100vw-8rem)] text-[11px] leading-4 text-ds-fg-muted sm:max-w-64 sm:text-xs sm:leading-5 2xl:max-w-72 2xl:text-sm">
                 {role}
               </span>
             )}
