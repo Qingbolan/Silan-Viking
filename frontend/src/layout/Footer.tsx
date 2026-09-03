@@ -8,6 +8,8 @@ import {
   Linkedin,
   Mail,
   Moon,
+  Network,
+  Rss,
   Sun,
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
@@ -41,6 +43,22 @@ const ExternalLink: React.FC<{ href: string; label: string; icon?: React.ReactNo
     {icon}
     <span className="border-b border-transparent pb-px transition-colors duration-200 group-hover:border-white/55">{label}</span>
     <ArrowUpRight className="size-3 opacity-0 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-80" aria-hidden />
+  </a>
+);
+
+type ResourceLinkProps = {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+};
+
+const ResourceLink: React.FC<ResourceLinkProps> = ({ href, icon, label }) => (
+  <a
+    href={publicAssetUrl(href)}
+    className="inline-flex min-h-10 items-center gap-2 text-sm text-white/45 transition-colors duration-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+  >
+    {icon}
+    <span>{label}</span>
   </a>
 );
 
@@ -140,8 +158,22 @@ const Footer: React.FC = () => {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-5 sm:px-10 lg:px-12">
-        <div className="border-t border-white/10 pt-5 text-xs text-white/40">
-          © {new Date().getFullYear()} Silan Hu. {zh ? '保留所有权利。' : 'All rights reserved.'}
+        <div className="flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-white/40">
+            © {new Date().getFullYear()} Silan Hu. {zh ? '保留所有权利。' : 'All rights reserved.'}
+          </p>
+          <nav aria-label={zh ? '站点资源' : 'Site resources'} className="flex items-center gap-6">
+            <ResourceLink
+              href="/sitemap.xml"
+              icon={<Network className="size-4" aria-hidden />}
+              label="Sitemap"
+            />
+            <ResourceLink
+              href="/rss.xml"
+              icon={<Rss className="size-4" aria-hidden />}
+              label="RSS"
+            />
+          </nav>
         </div>
       </div>
 

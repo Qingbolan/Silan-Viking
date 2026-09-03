@@ -21,6 +21,7 @@ import {
 import sirv from 'sirv';
 import puppeteer from 'puppeteer';
 import siteProfile from '../site-profile.json' with { type: 'json' };
+import { escapeXml, serializeRssFeed, validateSeoArtifacts } from './seo-xml.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FRONTEND = resolve(__dirname, '..');
@@ -931,13 +932,6 @@ const priorityFor = (route) => {
   return '0.6';
 };
 
-const escapeXml = (value) =>
-  value
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
-
 function writeSitemap(routes) {
   const routeSet = new Set(routes.map(withTrailingSlash));
   const latestDetailDate = (route) => {
@@ -990,6 +984,50 @@ function writeSitemap(routes) {
     urls +
     '\n</urlset>\n';
   writeFileSync(join(DIST, 'sitemap.xml'), xml, 'utf8');
+  return routes
+    .filter((route) => logicalRoute(route) !== '/search/')
+    .map((route) => canonicalUrl(withTrailingSlash(route)));
+}
+
+function writeRssFeed() {
+  const items = publicListData.blogList.en
+    .map((post) => {
+      const segment = post.slug || post.id;
+      if (!segment) return null;
+      const publishedAt = firstValidContentTimestamp(
+        post.publish_date,
+        post.publishDate,
+        post.updated_at,
+        post.updatedAt,
+        post.created_at,
+        post.createdAt,
+      );
+      return {
+        title: localizedText(post.title, 'en') || segment,
+        description: shortSummary(post.summary, post.description),
+        link: canonicalUrl(`/blog/${segment}/`),
+        publishedAt,
+        tags: Array.isArray(post.tags) ? post.tags : [],
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => {
+      if (!left.publishedAt) return 1;
+      if (!right.publishedAt) return -1;
+      return new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime();
+    });
+
+  const xml = serializeRssFeed({
+    title: 'Silan Hu — Writing',
+    description: 'Writing on AI systems, data, runtimes, and dependable execution.',
+    feedUrl: canonicalUrl('/rss.xml'),
+    channelUrl: canonicalUrl('/blog/'),
+    language: 'en',
+    items,
+  });
+
+  writeFileSync(join(DIST, 'rss.xml'), xml, 'utf8');
+  return items.map((item) => item.link);
 }
 
 function rewriteManifest() {
@@ -1342,13 +1380,25 @@ async function main() {
     );
   }
 
-  writeSitemap(routes);
+  const expectedSitemapUrls = writeSitemap(routes);
+  const expectedRssUrls = writeRssFeed();
+  const seoVerification = validateSeoArtifacts({
+    sitemapXml: readFileSync(join(DIST, 'sitemap.xml'), 'utf8'),
+    rssXml: readFileSync(join(DIST, 'rss.xml'), 'utf8'),
+    expectedSitemapUrls,
+    expectedRssUrls,
+    expectedFeedUrl: canonicalUrl('/rss.xml'),
+  });
+  log(
+    `verified sitemap.xml (${seoVerification.sitemapUrlCount} URLs) and ` +
+    `rss.xml (${seoVerification.rssItemCount} items)`,
+  );
   await writeLlmsText();
   rewriteHtmlMetadata(routes);
   rewriteManifest();
   writeRobots();
   rewriteBuiltAssetPaths();
-  log('wrote sitemap.xml, robots.txt, llms.txt, about.txt, site-index.jsonld and manifest.json');
+  log('wrote sitemap.xml, rss.xml, robots.txt, llms.txt, about.txt, site-index.jsonld and manifest.json');
 
   await closeBrowser(browser);
   await new Promise((resolve) => server.close(resolve));

@@ -34,7 +34,7 @@ content/ Git revision
 | Authored research | `content/` Git repository | Public resources must be clean and committed before release. |
 | Local projection | Rust application layer | SQLite is disposable and stamped with the full content commit. |
 | Production promotion | Go content-deploy service | Clients cannot write production tables or media over SSH. |
-| Static public output | Frontend publisher | Sitemap, robots, localized HTML, JSON-LD and `llms.txt` have one production owner. |
+| Static public output | Frontend publisher | Sitemap, RSS, robots, localized HTML, JSON-LD and `llms.txt` have one production owner. |
 | Runtime facts | PostgreSQL/runtime API | Comments, visits and authentication are not transported in content bundles. |
 | Public-source recovery | Versioned production release | A checksum-bound `SCHEMA.md` + `resources/` archive can rebuild a lost public authoring tree. |
 | Private authoring context | Private content Git remote | `agent/` and the original Git history never enter a production release. |
@@ -54,7 +54,9 @@ publication has a separate filesystem lock. A successful response means:
 2. Required media exists and the desired media generation is live.
 3. PostgreSQL reports the expected content hash and commit.
 4. The frontend rendered from the current immutable code baseline.
-5. The static publisher emitted and promoted a verified release identifier.
+5. Sitemap and RSS are well-formed and cover the content routes used to build them.
+6. The static publisher emitted and promoted a verified release identifier, then
+   fetched the public Sitemap, RSS and release manifest with matching content provenance.
 
 No normal content release stops the API, downloads the live database, uploads a
 replacement database, or mirrors media through SSH.
@@ -67,7 +69,7 @@ Frontend publication has four explicit operations:
 |---|---|
 | `prepare` | Install the pinned Node dependencies and Chromium runtime. |
 | `compile` | Run TypeScript/Vite once and install an immutable code baseline. |
-| `publish` | Restore that baseline, prerender current content, verify, and atomically promote. |
+| `publish` | Restore that baseline, prerender current content, verify Sitemap/RSS coverage, atomically promote, then verify the public release. |
 | `build` | Compile and publish for a frontend-only code release. |
 
 A content release invokes only `publish`. Therefore editing a paper, project,

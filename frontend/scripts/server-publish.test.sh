@@ -133,6 +133,10 @@ test_root_publish_hands_off_before_locking
 test_publish_rejects_unprepared_dependencies
 grep -q 'npm run prerender' "$publisher" \
   || fail "content publication does not invoke the prerender-only command"
+grep -q 'npm run verify:seo' "$publisher" \
+  || fail "static publication does not validate generated SEO artifacts"
+grep -q 'verify_public_static_release' "$publisher" \
+  || fail "static publication does not verify the promoted public release"
 if grep -q 'npm run build:seo' "$publisher"; then
   fail "content publication still performs the legacy full SEO build"
 fi

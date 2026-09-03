@@ -1,7 +1,11 @@
 #!/usr/bin/env node
+import { Buffer } from 'node:buffer';
 import { createSign } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { URL, URLSearchParams } from 'node:url';
+
+const fetch = globalThis.fetch;
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const WEBMASTERS_SCOPE = 'https://www.googleapis.com/auth/webmasters';

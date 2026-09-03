@@ -120,6 +120,48 @@ submit_search_engines() {
   echo "[search-submit] warning: submission failed; release remains published" >&2
 }
 
+verify_public_static_release() {
+  local verify_root cache_key attempt artifact
+  verify_root="$(mktemp -d)"
+  cache_key="silan-release-check=$release_id"
+
+  for attempt in 1 2 3; do
+    rm -f "$verify_root/sitemap.xml" "$verify_root/rss.xml" "$verify_root/release-manifest.json"
+    for artifact in sitemap.xml rss.xml release-manifest.json; do
+      if ! curl -fsSL --max-time 20 \
+        -H 'Cache-Control: no-cache' \
+        "${SILAN_PUBLIC_ORIGIN%/}/$artifact?$cache_key" \
+        -o "$verify_root/$artifact"; then
+        break
+      fi
+    done
+    if [[ -s "$verify_root/sitemap.xml" \
+      && -s "$verify_root/rss.xml" \
+      && -s "$verify_root/release-manifest.json" ]] \
+      && (
+        cd "$source_root"
+        node scripts/verify-static-release.mjs \
+          --root "$verify_root" \
+          --public-origin "$SILAN_PUBLIC_ORIGIN" \
+          --release-id "$release_id" \
+          --content-commit "$SILAN_CONTENT_COMMIT" \
+          --content-hash "$SILAN_CONTENT_HASH" \
+          --schema-version "$SILAN_SCHEMA_VERSION"
+      ); then
+      rm -rf "$verify_root"
+      echo "[frontend:server] public sitemap, RSS and release provenance verified"
+      return 0
+    fi
+    if [[ "$attempt" -lt 3 ]]; then
+      sleep 1
+    fi
+  done
+
+  rm -rf "$verify_root"
+  echo "[frontend:server] public static release verification failed" >&2
+  return 1
+}
+
 assert_managed_dist() {
   local expected_dist actual_dist
   if [[ ! -d "$build_root/dist" || ! -L "$dist" ]]; then
@@ -307,7 +349,10 @@ export SILAN_SCHEMA_VERSION="${SILAN_SCHEMA_VERSION:-1}"
 
 test -s "$dist/index.html"
 test -s "$dist/zh/blog/index.html"
-test -s "$dist/sitemap.xml"
+(
+  cd "$source_root"
+  npm run verify:seo
+)
 grep -q "Silan Hu" "$dist/index.html"
 grep -q "GEM-Bench" "$dist/index.html"
 grep -q "AI 回答里加了广告" "$dist/zh/blog/index.html"
@@ -328,14 +373,31 @@ mkdir -p "$next_release"
 rsync -a --delete "$dist/" "$next_release/"
 mv "$next_release" "$release"
 
+current_release=""
 if [[ -L "$current_link" ]]; then
   current_release="$(readlink -f "$current_link")"
-  ln -s "$current_release" "$next_previous"
-  mv -Tf "$next_previous" "$previous_link"
 fi
 
 ln -s "$release" "$next_current"
 mv -Tf "$next_current" "$current_link"
+
+if ! verify_public_static_release; then
+  rm -f "$next_current"
+  if [[ -n "$current_release" ]]; then
+    ln -s "$current_release" "$next_current"
+    mv -Tf "$next_current" "$current_link"
+  else
+    rm -f "$current_link"
+  fi
+  rm -rf "$release"
+  echo "[frontend:server] restored the previous static release" >&2
+  exit 1
+fi
+
+if [[ -n "$current_release" ]]; then
+  ln -s "$current_release" "$next_previous"
+  mv -Tf "$next_previous" "$previous_link"
+fi
 
 mapfile -t stale_releases < <(find "$releases_root" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
   | sort -rn \
