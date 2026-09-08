@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Maximize2 } from 'lucide-react';
 import { BlogContent } from '../../types/blog';
 import { useLanguage } from '../../../LanguageContext';
-import { Badge, Modal, Skeleton } from '../../../ds';
+import { Modal, Skeleton } from '../../../ds';
 import { MediaUnavailable } from './MediaUnavailable';
 import { mediaUrl } from '../../../../api/utils';
 
@@ -48,7 +48,7 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
 
   return <>
     <figure className={`my-16 break-inside-avoid ${isWideScreen ? 'col-span-2' : ''}`}>
-      <div className="overflow-hidden rounded-2xl bg-ds-surface-1 ring-1 ring-ds-border-subtle">
+      <div className="overflow-hidden rounded-2xl bg-ds-surface-1">
         <div className="relative overflow-hidden bg-ds-surface-2">
           {unpublished || imageError ? (
             <MediaUnavailable kind="image" unpublished={unpublished} onRetry={retry} />
@@ -58,7 +58,7 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
               <button
                 type="button"
                 onClick={() => setPreviewOpen(true)}
-                className="group relative block w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ds-focus"
+                className="group relative block w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ds-fg-muted"
                 aria-label={language === 'zh' ? `查看原图：${alt}` : `Open full-size image: ${alt}`}
               >
                 <img
@@ -83,13 +83,11 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
         </div>
 
         {item.caption && (
-          <figcaption className="space-y-2 bg-ds-surface-1 p-5 text-center sm:p-6">
-              <Badge tone="primary" size="sm">
-                {language === 'zh' ? '图' : 'Figure'} {index + 1}
-              </Badge>
-              <p className="mx-auto max-w-2xl text-pretty font-serif text-ds-sm leading-6 text-ds-fg-muted">
-                {item.caption}
-              </p>
+          <figcaption className="flex items-baseline gap-2 bg-ds-surface-2 px-4 py-2 text-ds-xs leading-5 text-ds-fg-muted">
+            <span className="shrink-0 font-medium">
+              {language === 'zh' ? '图' : 'Figure'} {index + 1}
+            </span>
+            <span className="min-w-0 text-pretty">{item.caption}</span>
           </figcaption>
         )}
       </div>

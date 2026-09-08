@@ -17,6 +17,8 @@ import {
   NetworkError,
   type BookNavChapter,
 } from '../ds';
+import { ContentHero } from '../ds/ContentHero';
+import { scrollToAnchor } from '../../lib/scrollToAnchor';
 import { SERIES_HEADER_ID } from '../BlogStack/components/SeriesDocumentFrame';
 
 const SERIES_OVERVIEW_ID = '__series_overview__';
@@ -88,7 +90,7 @@ const EpisodeSeriesOverview: React.FC = () => {
   const wordCount = wordCountOf(series.description);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div id="episode-series-document" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Seo
         title={series.title}
         description={series.description}
@@ -107,10 +109,23 @@ const EpisodeSeriesOverview: React.FC = () => {
         })}
       />
       <KnowledgeBaseShell
+        outlineContainerSelector="#episode-series-document"
+        header={<ContentHero
+          id={SERIES_HEADER_ID}
+          title={series.title}
+          coverImage={series.cover_url}
+          language={language}
+          parent={{ label: zh ? '博客' : 'Blog', to: '/blog/' }}
+          metadata={<>
+            <span>{zh ? '系列' : 'Series'}</span>
+            <span>{series.episodes.length} {zh ? '集' : 'episodes'}</span>
+            {series.status && <span>{series.status}</span>}
+          </>}
+        />}
         overview={{
           label: series.title,
           icon: BookOpen,
-          onClick: () => undefined,
+          onClick: () => scrollToAnchor(SERIES_HEADER_ID),
           isActive: true,
         }}
         chapters={chapters}
@@ -118,29 +133,6 @@ const EpisodeSeriesOverview: React.FC = () => {
         wordCount={wordCount}
         outlineHeadingSelector="header h1, h2, h3"
       >
-        <header id={SERIES_HEADER_ID} data-ds className="pb-8 pt-6">
-          <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-ds-xs leading-5 text-ds-fg-subtle">
-            <span>{zh ? '系列' : 'Series'}</span>
-            <span>
-              {series.episodes.length} {zh ? '集' : 'episodes'}
-            </span>
-            {series.status && <span>{series.status}</span>}
-          </div>
-          <h1 className="max-w-[70rem] break-words text-balance font-display text-ds-3xl font-medium leading-[1.08] tracking-normal text-ds-fg sm:text-ds-4xl lg:text-7xl">
-            {series.title}
-          </h1>
-        </header>
-
-        {series.cover_url && (
-          <figure className="mt-2 overflow-hidden rounded-ds-lg bg-ds-surface-2">
-            <img
-              src={series.cover_url}
-              alt=""
-              className="max-h-[32rem] w-full object-cover"
-              loading="eager"
-            />
-          </figure>
-        )}
 
         {series.description && (
           <section className="mt-8 border-l border-ds-border pl-5">

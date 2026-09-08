@@ -412,7 +412,15 @@ export class ErrorBoundary extends React.Component<BoundaryProps, BoundaryState>
     console.error('[ErrorBoundary]', error, info.componentStack);
   }
 
-  reset = () => this.setState({ error: null });
+  reset = () => {
+    // React.lazy caches rejected imports. Retrying that instance cannot load
+    // a chunk removed by deployment; refresh the entry document instead.
+    if (this.state.error && /Failed to fetch dynamically imported module|Importing a module script failed|Failed to load module script|Loading chunk .+ failed/i.test(this.state.error.message)) {
+      window.location.reload();
+      return;
+    }
+    this.setState({ error: null });
+  };
 
   render() {
     const { error } = this.state;

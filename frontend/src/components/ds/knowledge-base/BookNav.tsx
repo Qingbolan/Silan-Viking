@@ -51,7 +51,7 @@ const BookNav: React.FC<BookNavProps> = ({
             type="button"
             onClick={overview.onClick}
             className={cn(
-              'flex w-full items-center gap-2 rounded-ds-md px-2 py-1 text-left text-ds-sm leading-[1.35]',
+              'flex w-full items-start gap-2 rounded-ds-md px-2 py-2 text-left text-base leading-[1.5]',
               'transition-colors duration-ds-fast',
               overview.isActive
                 ? 'font-semibold text-ds-primary'
@@ -59,14 +59,14 @@ const BookNav: React.FC<BookNavProps> = ({
             )}
           >
             <OverviewIcon
-              size={15}
+              size={18}
               className={cn(
-                'shrink-0',
+                'mt-0.5 shrink-0',
                 overview.isActive ? 'text-ds-primary' : 'text-ds-fg-muted',
               )}
               strokeWidth={1.8}
             />
-            <span className="min-w-0 flex-1 truncate">{overview.label}</span>
+            <span className="min-w-0 flex-1 break-words">{overview.label}</span>
           </button>
         </div>
       )}
@@ -83,14 +83,14 @@ const BookNav: React.FC<BookNavProps> = ({
                   type="button"
                   onClick={c.onClick}
                   className={cn(
-                    'flex w-full items-center gap-1.5 rounded-ds-md px-2 py-1 text-left text-ds-xs leading-[1.35]',
+                    'flex w-full items-start gap-1.5 rounded-ds-md px-2 py-2 text-left text-base leading-[1.5]',
                     'transition-colors duration-ds-fast',
                     active
                       ? 'font-semibold text-ds-primary'
                       : 'text-ds-fg-muted hover:text-ds-primary',
                   )}
                 >
-                  <span className="min-w-0 flex-1 truncate">{c.label}</span>
+                  <span className="min-w-0 flex-1 break-words">{c.label}</span>
                 </button>
               </li>
             );

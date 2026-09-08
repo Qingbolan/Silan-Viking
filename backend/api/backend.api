@@ -736,7 +736,7 @@ type (
 @server (
 	group:      resume
 	prefix:     /api/v1/resume
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Get complete resume data"
@@ -752,7 +752,7 @@ service backend-api {
 @server (
 	group:      projects
 	prefix:     /api/v1/projects
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Get projects list with pagination and filtering"
@@ -826,7 +826,7 @@ service backend-api {
 @server (
 	group:      blog
 	prefix:     /api/v1/blog
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Get blog posts list with pagination and filtering"
@@ -883,7 +883,7 @@ service backend-api {
 @server (
 	group:      episodes
 	prefix:     /api/v1/episodes
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Search published episodes across title, series and authored body"
@@ -911,7 +911,7 @@ service backend-api {
 @server (
 	group:      moments
 	prefix:     /api/v1/moments
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Get moments list"
@@ -951,7 +951,7 @@ service backend-api {
 @server (
 	group:      auth
 	prefix:     /api/v1/auth
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Verify Google ID token and upsert identity"
@@ -1080,7 +1080,7 @@ type (
 @server (
 	group:      stats
 	prefix:     /api/v1/stats
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Aggregate view/like/comment counts of one item"
@@ -1123,7 +1123,7 @@ type (
 @server (
 	group:      people
 	prefix:     /api/v1/people
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Get a public actor profile and its public comment/like history"
@@ -1134,7 +1134,7 @@ service backend-api {
 @server (
 	group:      stats
 	prefix:     /api/v1/stats
-	middleware: Cors,PrivateAPI
+	middleware: PrivateAPI
 )
 service backend-api {
 	@doc "De-identified visitor list of one item"
@@ -1187,7 +1187,7 @@ service backend-api {
 @server (
 	group:      health
 	prefix:     /api/v1
-	middleware: Cors,PrivateAPI
+	middleware: PrivateAPI
 )
 service backend-api {
 	@doc "Deployed content provenance and media readiness"
@@ -1214,7 +1214,7 @@ type (
 @server (
 	group:      media
 	prefix:     /api/v1
-	middleware: Cors,Analytics
+	middleware: Analytics
 )
 service backend-api {
 	@doc "Stream a binary resource file from the media volume"

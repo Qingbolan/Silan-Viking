@@ -16,7 +16,8 @@ import {
 import { useLanguage } from '../LanguageContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
-import ArticleHero from './components/ArticleHero';
+import { ContentHero } from '../ds/ContentHero';
+import AuthorByline from './components/AuthorByline';
 import { ArticleResourceStrip } from './components/ArticleResourceStrip';
 import { useBlogEngagement } from './hooks/useBlogEngagement';
 import {
@@ -185,16 +186,21 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
 
   return (
     <motion.div data-ds id={ARTICLE_ID} className="scroll-mt-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <ArticleHero
+      <ContentHero
         id={ARTICLE_HEADER_ID}
         title={title}
-        author={authorName}
-        date={formattedDate}
-        readTime={post.readTime}
-        category={post.category}
-        tags={post.tags}
         coverImage={coverImage}
         language={language}
+        parent={{ label: language === 'zh' ? '博客' : 'Blog', to: '/blog/' }}
+        metadata={<>
+          <AuthorByline name={authorName} />
+          {formattedDate && <><span aria-hidden="true">|</span><span>{formattedDate}</span></>}
+          {post.readTime && <><span aria-hidden="true">·</span><span>{post.readTime}</span></>}
+        </>}
+        details={(post.category || Boolean(post.tags?.length)) && <>
+          {post.category && <span>{post.category}</span>}
+          {post.tags?.slice(0, 3).map((tag) => <span key={tag}>#{tag}</span>)}
+        </>}
       />
       <KnowledgeBaseShell
         overview={{
@@ -208,6 +214,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         currentChapterId={activeChapter}
         wordCount={wordCount}
         showLeftRail={false}
+        contentClassName="!pt-0 !pl-0 lg:pr-6"
         outlineHeadingSelector="header h1, h2, h3"
         likes={likes}
         commentsCount={commentsCount}
@@ -216,7 +223,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
             `#kb-active-part` is the contract DOMOutline scans for headings. */}
         <div data-ds className="prose-content markdown-body w-full">
 
-          <nav data-ds aria-label={language === 'zh' ? '文章章节' : 'Article sections'} className="mt-2 flex flex-wrap items-end gap-2 border-b border-ds-border">
+          <nav data-ds aria-label={language === 'zh' ? '文章章节' : 'Article sections'} className="mt-2 flex flex-wrap items-end gap-2 border-b border-ds-border bg-transparent">
             {sectionTabs.map((tab) => {
               const Icon = tab.icon;
               const active = tab.id === ARTICLE_BODY_ID
@@ -231,7 +238,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                   type="button"
                   onClick={() => scrollToAnchor(tab.id)}
                   className={cn(
-                    'inline-flex h-12 items-center gap-2 rounded-t-ds-md px-4 text-ds-base font-semibold transition',
+                    'inline-flex h-12 items-center gap-2 rounded-t-ds-md px-4 first:pl-0 text-ds-base font-semibold transition',
                     active
                       ? 'text-ds-primary'
                       : 'text-ds-fg-muted hover:text-ds-primary',
@@ -247,7 +254,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
           {summary && (
             <section
               id={ARTICLE_SUMMARY_ID}
-              className="scroll-mt-24 rounded-b-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8"
+              className="scroll-mt-24 rounded-b-ds-lg bg-ds-surface-2 px-6 py-4 sm:px-8"
             >
               <p className="max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg sm:leading-[1.55]">
                 {summary}
@@ -262,13 +269,8 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
             language={language}
           />
 
-          <section id={ARTICLE_BODY_ID} className="mt-12 max-w-[68rem] scroll-mt-24">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="font-mono text-ds-2xs font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
-                {language === 'zh' ? '正文' : 'Body'}
-              </span>
-              <span className="h-px flex-1 bg-ds-border" aria-hidden />
-            </div>
+          <section id={ARTICLE_BODY_ID} className="mt-6 max-w-[68rem] scroll-mt-24">
+
 
             <BlogContentRenderer
               content={articleContent}

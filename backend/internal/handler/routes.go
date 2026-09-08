@@ -32,7 +32,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
@@ -46,7 +46,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					Method:  http.MethodPost,
@@ -65,7 +65,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					// Verify Google ID token and upsert identity
@@ -119,7 +119,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					// Get blog categories
@@ -200,7 +200,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					// Search public episodes across title, series and authored body
@@ -275,7 +275,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.PrivateAPI},
+			[]rest.Middleware{serverCtx.PrivateAPI},
 			privateContentStatusRoutes(serverCtx)...,
 		),
 		rest.WithPrefix("/api/v1"),
@@ -283,7 +283,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					// Stream a binary resource file from the media volume
@@ -298,7 +298,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					// Get projects list with pagination and filtering
@@ -403,7 +403,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					// Get complete resume data
@@ -424,7 +424,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			publicStatsRoutes(serverCtx)...,
 		),
 		rest.WithPrefix("/api/v1/stats"),
@@ -432,7 +432,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.PrivateAPI},
+			[]rest.Middleware{serverCtx.PrivateAPI},
 			privateStatsRoutes(serverCtx)...,
 		),
 		rest.WithPrefix("/api/v1/stats"),
@@ -440,7 +440,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.Cors, serverCtx.Analytics},
+			[]rest.Middleware{serverCtx.Analytics},
 			[]rest.Route{
 				{
 					// Get moments list

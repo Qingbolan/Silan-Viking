@@ -23,7 +23,7 @@ import { scrollToAnchor } from '../../../lib/scrollToAnchor';
 
 const MOBILE_OVERVIEW_ID = '__mobile_overview__';
 const READER_MAX_WIDTH = '82rem';
-const LEFT_RAIL_WIDTH = '16.5rem';
+const LEFT_RAIL_WIDTH = '18rem';
 const OUTLINE_TRACK_MINIMUM = {
   collapsed: '3.5rem',
   expanded: '15rem',
@@ -54,6 +54,8 @@ export interface KnowledgeBaseShellProps {
 
   // Centre
   children: React.ReactNode;
+  /** Page identity spans the reader and outline, beside the full-height book rail. */
+  header?: React.ReactNode;
   contentClassName?: string;
 
   // Right rail Outline behaviour
@@ -76,6 +78,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
   wordCount,
   showLeftRail = true,
   children,
+  header,
   contentClassName,
   outlineContainerSelector,
   outlineHeadingSelector,
@@ -161,7 +164,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
               ]
             : undefined,
         )}
-        style={{ gridTemplateColumns }}
+        style={{ gridTemplateColumns, gridTemplateRows: header ? 'auto minmax(0, 1fr)' : undefined }}
       >
         {/* Left rail — book nav. Hidden below lg. Width matches Yuque
             (288px). Border is inline-styled because Tailwind's `border-r`
@@ -173,13 +176,14 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
             className={cn(
               'relative z-30 hidden self-stretch lg:block',
               'min-h-full',
+              header && 'lg:col-start-1 lg:row-start-1 lg:row-span-2',
             )}
             style={{
               backgroundColor: 'var(--color-backgroundSecondary, #f5f5f5)',
               borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)',
             }}
           >
-            <div className="sticky top-0 flex max-h-dvh flex-col px-3 py-4">
+            <div className="sticky top-0 flex h-[calc(100dvh-3.5rem)] flex-col px-4 py-5">
               <BookNav
                 overview={overview}
                 chapters={chapters}
@@ -197,6 +201,15 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
               )}
             </div>
           </aside>
+        )}
+
+        {header && (
+          <div
+            data-kb-header
+            className={cn('min-w-0 lg:row-start-1 lg:col-span-2', showLeftRail ? 'lg:col-start-2' : 'lg:col-start-1')}
+          >
+            {header}
+          </div>
         )}
 
         {/* Centre — flow content. */}

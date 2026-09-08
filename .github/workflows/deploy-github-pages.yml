@@ -36,6 +36,17 @@ jobs:
         working-directory: frontend
         run: cp dist/index.html dist/404.html
 
+      - name: Read previous published release
+        uses: actions/checkout@v4
+        with:
+          repository: Qingbolan/Qingbolan.github.io
+          ref: main
+          path: previous-release
+          persist-credentials: false
+
+      - name: Retain assets needed by already-open pages
+        run: node frontend/scripts/retain-release-assets.mjs frontend/dist previous-release
+
       - name: Deploy to Qingbolan.github.io
         uses: peaceiris/actions-gh-pages@v4
         with:

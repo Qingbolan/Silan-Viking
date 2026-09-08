@@ -1,4 +1,4 @@
-import { apiUrl, get, post, formatLanguage } from '../utils';
+import { apiUrl, get, post, formatLanguage, mediaUrl } from '../utils';
 import type { EpisodeData, EpisodeSeriesData, EpisodeSeriesListResponse } from '../../types/episode';
 import type {
   BlogCommentData,
@@ -17,6 +17,7 @@ const normalizeEpisode = (episode: EpisodeData): EpisodeData => ({
 
 const normalizeEpisodeSeries = (series: EpisodeSeriesData): EpisodeSeriesData => ({
   ...series,
+  cover_url: series.cover_url ? mediaUrl(series.cover_url) : undefined,
   episodes: (series.episodes || []).map(normalizeEpisode),
   created_at: normalizeContentTimestamp(series.created_at),
   updated_at: normalizeContentTimestamp(series.updated_at),

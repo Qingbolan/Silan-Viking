@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { AlignLeft, FileText, MessageCircle, ThumbsUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { ContentHero } from '../../ds/ContentHero';
 import { cn } from '../../../lib/utils';
 import { scrollToAnchor } from '../../../lib/scrollToAnchor';
 
@@ -73,36 +74,27 @@ export const SeriesDocumentFrame: React.FC<SeriesDocumentFrameProps> = ({
 
   return (
     <div data-ds id={id} className="prose-content markdown-body w-full scroll-mt-24">
-      <header id={SERIES_HEADER_ID} className="scroll-mt-24 pb-8 pt-6">
-        <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-ds-xs leading-5 text-ds-fg-subtle">
+      <ContentHero
+        id={SERIES_HEADER_ID}
+        title={title}
+        language={language}
+        parent={{ label: language === 'zh' ? '博客' : 'Blog', to: '/blog/' }}
+        metadata={<>
           <span>{eyebrow}</span>
           {meta.map((item) => {
             const Icon = item.icon;
-            return (
-              <span key={item.label} className="inline-flex items-center gap-1.5">
-                {item.content ?? (
-                  <>
-                    {Icon && <Icon className="size-3.5" aria-hidden />}
-                    {item.label}
-                  </>
-                )}
-              </span>
-            );
+            return <span key={item.label} className="inline-flex items-center gap-1.5">
+              {item.content ?? <>{Icon && <Icon className="size-3.5" aria-hidden />}{item.label}</>}
+            </span>;
           })}
-        </div>
-
-        <h1
-          className="max-w-[70rem] break-words text-balance font-display text-ds-3xl font-medium leading-[1.08] tracking-normal text-ds-fg sm:text-ds-4xl lg:text-7xl"
-        >
-          {title}
-        </h1>
-      </header>
+        </>}
+      />
 
       {sectionTabs.length > 1 && (
         <nav
           data-ds
           aria-label={language === 'zh' ? '系列文章章节' : 'Series article sections'}
-          className="mt-2 flex flex-wrap items-end gap-2 border-b border-ds-border"
+          className="mt-2 flex flex-wrap items-end gap-2 border-b border-ds-border bg-transparent"
         >
           {sectionTabs.map((tab) => {
             const Icon = tab.icon;
@@ -145,12 +137,7 @@ export const SeriesDocumentFrame: React.FC<SeriesDocumentFrameProps> = ({
       )}
 
       <section id={SERIES_BODY_ID} className="mt-12 max-w-[68rem] scroll-mt-24">
-        <div className="mb-6 flex items-center gap-3">
-          <span className="font-mono text-ds-2xs font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
-            {language === 'zh' ? '正文' : 'Body'}
-          </span>
-          <span className="h-px flex-1 bg-ds-border" aria-hidden />
-        </div>
+
 
         {children}
       </section>

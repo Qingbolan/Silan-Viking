@@ -55,6 +55,7 @@ import {
   type BookNavChapter,
 } from '../../components/ds';
 import Markdown from '../ui/Markdown';
+import { ContentHero } from '../ds/ContentHero';
 import CompactComments from '../ds/article-footer/CompactComments';
 import LikerAvatar from '../ds/article-footer/Avatar';
 
@@ -168,37 +169,6 @@ const PartPanel: React.FC<{
         <Markdown documentTitle={documentTitle} sectionTitle={label}>{body}</Markdown>
       )}
     </section>
-  );
-};
-
-const ProjectCoverBlock: React.FC<{
-  title: string;
-  image?: string;
-  websiteUrl?: string;
-  language: 'en' | 'zh';
-}> = ({ title, image, websiteUrl, language }) => {
-  const src = websiteUrl?.trim() || '';
-  const normalizedSrc = src && /^https?:\/\//i.test(src) ? src : src ? `https://${src}` : '';
-  const openLabel = language === 'zh' ? `打开 ${title}` : `Open ${title}`;
-
-  if (!image) return null;
-
-  const media = <img src={image} alt={title} className="size-full object-cover object-top" />;
-
-  return (
-    <div className="aspect-[16/9] overflow-hidden rounded-ds-md border border-ds-border bg-ds-surface-2 shadow-ds-1 sm:aspect-[16/7] sm:rounded-ds-lg">
-      {normalizedSrc ? (
-        <a
-          href={normalizedSrc}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={openLabel}
-          className="block size-full transition duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-accent"
-        >
-          {media}
-        </a>
-      ) : media}
-    </div>
   );
 };
 
@@ -507,17 +477,11 @@ const ProjectDetail: React.FC = () => {
   const downloadableAsset = project.versions?.releases
     ?.flatMap((release) => release.assets ?? [])
     .find((asset) => Boolean(asset.downloadUrl));
-  const projectCoverNode = (
-    <ProjectCoverBlock
-      title={title}
-      image={project.image}
-      websiteUrl={project.coverSourceType === 'website' ? project.coverWebsiteUrl || homepageUrl : undefined}
-      language={language as 'en' | 'zh'}
-    />
-  );
+  const coverWebsite = project.coverSourceType === 'website' ? (project.coverWebsiteUrl || homepageUrl).trim() : '';
+  const coverWebsiteUrl = coverWebsite && !/^https?:\/\//i.test(coverWebsite) ? `https://${coverWebsite}` : coverWebsite;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div id="project-detail-document" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Seo
         title={title}
         description={project.description || ''}
@@ -536,6 +500,22 @@ const ProjectDetail: React.FC = () => {
         })}
       />
       <KnowledgeBaseShell
+        header={<ContentHero
+          id={PROJECT_HEADER_ID}
+          title={title}
+          coverImage={project.image}
+          language={language}
+          parent={{ label: language === 'zh' ? '项目' : 'Projects', to: '/projects/' }}
+          metadata={<>
+            <Link to={canonicalInternalPath('/')} rel="author" className="transition-colors hover:text-ds-primary">
+              <CardAuthor name={DEFAULT_CONTENT_AUTHOR} avatarUrl={DEFAULT_CONTENT_AUTHOR_AVATAR_URL} />
+            </Link>
+            {project.status?.license && <span className="inline-flex items-center gap-1.5"><Shield size={15} aria-hidden />{project.status.license}</span>}
+            {project.status?.lastUpdated && <span className="inline-flex items-center gap-1.5"><Calendar size={15} aria-hidden />
+              {t('projects.updated')} {new Date(project.status.lastUpdated).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-SG')}
+            </span>}
+          </>}
+        />}
         overview={{
           label: title,
           icon: FolderGit2,
@@ -546,62 +526,18 @@ const ProjectDetail: React.FC = () => {
         currentChapterId={activeSection}
         wordCount={wordCount}
         showLeftRail={false}
-        contentClassName="px-4 !py-3 sm:px-6 sm:!py-8 lg:px-12"
+        contentClassName="!p-0"
         outlineContainerSelector="#project-detail-document"
         outlineHeadingSelector="header h1, h2, h3"
       >
-        <article data-ds id="project-detail-document" className="w-full">
-          <header id={PROJECT_HEADER_ID} className="scroll-mt-24 pb-4 pt-0 sm:pt-6">
-            <h1
-              className="max-w-[70rem] break-words text-balance font-display text-ds-3xl font-semibold leading-[1.08] tracking-normal text-ds-fg sm:text-ds-4xl sm:font-medium lg:text-7xl"
-            >
-              {title}
-            </h1>
-
-            {project.description && (
-              <p className="mt-4 max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg-muted sm:mt-6 sm:leading-[1.55]">
-                {project.description}
-              </p>
-            )}
-
-            {project.image && (
-              <div className="mt-5 sm:mt-6">
-                {projectCoverNode}
-              </div>
-            )}
-
-            <div className="mt-4 flex flex-col gap-3 border-y border-ds-border py-3 sm:flex-row sm:items-center sm:justify-between">
+        <article data-ds className="w-full">
+          {project.description && (
+            <p className="mb-6 max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg-muted">
+              {project.description}
+            </p>
+          )}
+            <div className="mt-4 flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="grid grid-cols-2 items-center gap-x-4 gap-y-3 text-ds-sm text-ds-fg-muted sm:flex sm:flex-wrap sm:gap-3">
-                <Link
-                  to={canonicalInternalPath('/')}
-                  rel="author"
-                  className="inline-flex whitespace-nowrap font-medium transition-colors hover:text-ds-fg"
-                >
-                  <CardAuthor
-                    name={DEFAULT_CONTENT_AUTHOR}
-                    avatarUrl={DEFAULT_CONTENT_AUTHOR_AVATAR_URL}
-                  />
-                </Link>
-                <Divider orientation="vertical" className="hidden h-3.5 sm:block" />
-                {project.status?.license && (
-                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                    <Shield size={15} className="text-ds-fg-subtle" />
-                    {project.status.license}
-                  </span>
-                )}
-                {project.status?.lastUpdated && (
-                  <>
-                    {project.status?.license && <Divider orientation="vertical" className="hidden h-3.5 sm:block" />}
-                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                      <Calendar size={15} className="text-ds-fg-subtle" />
-                      {t('projects.updated')}{' '}
-                      {new Date(project.status.lastUpdated).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-SG')}
-                    </span>
-                  </>
-                )}
-                {(project.status?.license || project.status?.lastUpdated) && (
-                  <Divider orientation="vertical" className="hidden h-3.5 sm:block" />
-                )}
                 <button
                   type="button"
                   onClick={() => void engagement.toggleLike()}
@@ -625,6 +561,13 @@ const ProjectDetail: React.FC = () => {
               </div>
 
               <div className="flex shrink-0 flex-wrap items-center gap-2">
+                {coverWebsiteUrl && coverWebsiteUrl !== project.demo && (
+                  <a href={coverWebsiteUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" leadingIcon={<ExternalLink />}>
+                      {language === 'zh' ? '访问项目网站' : 'Visit project website'}
+                    </Button>
+                  </a>
+                )}
                 {project.demo && (
                   <a href={project.demo} target="_blank" rel="noopener noreferrer">
                     <Button size="sm" leadingIcon={<ExternalLink />}>
@@ -649,12 +592,11 @@ const ProjectDetail: React.FC = () => {
               </div>
             </div>
 
-          </header>
 
           <nav
             data-ds
             aria-label={language === 'zh' ? '项目详情章节' : 'Project detail sections'}
-            className="project-detail-section-nav no-scrollbar sticky top-0 z-20 flex flex-nowrap items-center overflow-x-auto bg-ds-surface-1"
+            className="no-scrollbar sticky top-0 z-20 flex flex-nowrap items-center overflow-x-auto bg-ds-surface-2 dark:bg-ds-surface-1"
           >
             {sectionTabs.map((tab) => {
               const Icon = tab.icon;
@@ -668,7 +610,7 @@ const ProjectDetail: React.FC = () => {
                     setActivePanel(tab.id);
                   }}
                   className={cn(
-                    'inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-ds-md px-3 text-ds-sm font-semibold transition',
+                    'inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-ds-md px-3 first:pl-0 text-ds-sm font-semibold transition',
                     active ? 'text-ds-primary' : 'text-ds-fg-muted hover:text-ds-primary dark:text-white dark:hover:text-ds-primary',
                   )}
                 >

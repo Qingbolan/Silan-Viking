@@ -1,3 +1,4 @@
+import { ContentHero } from '../ds/ContentHero';
 // SeriesDetailLayout — a single episode rendered inside the Yuque-style
 // knowledge-base shell. The left rail shows the series' episode list
 // (clicking an episode navigates to its detail page); the centre shows
@@ -181,6 +182,20 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <KnowledgeBaseShell
+        header={isOverview ? <ContentHero
+          id={SERIES_HEADER_ID}
+          title={seriesTitle}
+          coverImage={seriesData?.cover_url || post.seriesImage}
+          language={language}
+          parent={{ label: language === 'zh' ? '博客' : 'Blog', to: '/blog/' }}
+          metadata={<>
+            <span>{language === 'zh' ? '系列' : 'Series'}</span>
+            {seriesData && <span>{seriesData.episodes.length} {language === 'zh' ? '集' : 'episodes'}</span>}
+            {typeof post.author === 'string' && post.author && <AuthorByline name={post.author} />}
+            {post.publishDate && <span>{post.publishDate}</span>}
+            {post.readTime && <span>{post.readTime}</span>}
+          </>}
+        /> : undefined}
         overview={{
           label: seriesTitle,
           icon: BookOpen,
@@ -198,42 +213,6 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
           // Series cover — title, episode count, abstract / description, and
           // a quick list of all episodes so the reader can pick one.
           <>
-            <header data-ds className="pb-8 pt-6">
-              <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-ds-xs leading-5 text-ds-fg-subtle">
-                {language === 'en' ? 'Series' : '系列'}
-                {seriesData?.episodes.length
-                  ? ` · ${seriesData.episodes.length} ${language === 'en' ? 'episodes' : '集'}`
-                  : ''}
-              </div>
-              <h1
-                className="max-w-[70rem] break-words text-balance font-display text-ds-3xl font-medium leading-[1.08] tracking-normal text-ds-fg sm:text-ds-4xl lg:text-7xl"
-              >
-                {seriesTitle}
-              </h1>
-            </header>
-
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-ds-sm text-ds-fg-muted">
-              {typeof post.author === 'string' && post.author && (
-                <AuthorByline
-                  name={post.author}
-                  className="gap-1.5 text-ds-fg-muted"
-                  avatarClassName="size-4"
-                />
-              )}
-              {post.publishDate && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Calendar className="size-3.5" />
-                  {post.publishDate}
-                </span>
-              )}
-              {post.readTime && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="size-3.5" />
-                  {post.readTime}
-                </span>
-              )}
-            </div>
-
             {post.seriesDescription && (
               <section className="mt-8 rounded-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8">
                 <p className="max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg sm:leading-[1.55]">

@@ -25,7 +25,6 @@ import (
 
 type ServiceContext struct {
 	Config          config.Config
-	Cors            rest.Middleware
 	Analytics       rest.Middleware
 	PrivateAPI      rest.Middleware
 	DB              *ent.Client
@@ -287,7 +286,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	return &ServiceContext{
 		Config:          c,
-		Cors:            middleware.NewCorsMiddleware().Handle,
 		Analytics:       middleware.NewAnalyticsMiddleware(client, trafficClassifier, countryResolver).Handle,
 		PrivateAPI:      middleware.NewMachineTokenMiddleware(c.Security.StatsSyncToken).Handle,
 		DB:              client,

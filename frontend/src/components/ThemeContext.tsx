@@ -293,14 +293,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-    
+
     // Apply theme class to document
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    
+
     // Apply CSS custom properties for dynamic theming.
     // Legacy fields → `--color-*`; design-system fields (ds*) → `--ds-color-*`
     // in kebab-case (e.g. dsSurface1 → --ds-color-surface-1), matching the
@@ -331,7 +331,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     root.style.setProperty('--transition-fast', '0.15s ease-out');
     root.style.setProperty('--transition-smooth', '0.3s ease-out');
     root.style.setProperty('--backdrop-blur', 'blur(10px)');
-    
+
   }, [isDarkMode, colors]);
 
   // Listen for system theme changes
@@ -342,7 +342,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         setIsDarkMode(e.matches);
       }
     };
-    
+
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
@@ -367,4 +367,4 @@ export const useTheme = (): ThemeContextType => {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-}; 
+};

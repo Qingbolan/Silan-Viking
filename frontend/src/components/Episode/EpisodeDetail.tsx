@@ -1,3 +1,4 @@
+import { ContentHero } from '../ds/ContentHero';
 // EpisodeDetail — entry point for /episodes/:slug. Fetches the episode by
 // slug, looks up its series, and renders the whole thing inside the
 // Yuque-style KnowledgeBaseShell. Reuses BlogContentRenderer for the body
@@ -251,6 +252,17 @@ const EpisodeDetail: React.FC = () => {
         })}
       />
       <KnowledgeBaseShell
+        header={isOverview ? <ContentHero
+          id={SERIES_HEADER_ID}
+          title={seriesTitle}
+          coverImage={seriesData?.cover_url}
+          language={language}
+          parent={{ label: language === 'zh' ? '博客' : 'Blog', to: '/blog/' }}
+          metadata={<>
+            <span>{language === 'zh' ? '系列' : 'Series'}</span>
+            {seriesData && <span>{seriesData.episodes.length} {language === 'zh' ? '集' : 'episodes'}</span>}
+          </>}
+        /> : undefined}
         overview={{
           label: seriesTitle,
           icon: BookOpen,
@@ -266,20 +278,6 @@ const EpisodeDetail: React.FC = () => {
       >
         {isOverview ? (
           <>
-            <header data-ds className="pb-8 pt-6">
-              <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-ds-xs leading-5 text-ds-fg-subtle">
-                {language === 'en' ? 'Series' : '系列'}
-                {seriesData?.episodes.length
-                  ? ` · ${seriesData.episodes.length} ${language === 'en' ? 'episodes' : '集'}`
-                  : ''}
-              </div>
-              <h1
-                className="max-w-[70rem] break-words text-balance font-display text-ds-3xl font-medium leading-[1.08] tracking-normal text-ds-fg sm:text-ds-4xl lg:text-7xl"
-              >
-                {seriesTitle}
-              </h1>
-            </header>
-
             {seriesData?.description && (
               <section className="mt-8 rounded-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8">
                 <p className="max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg sm:leading-[1.55]">

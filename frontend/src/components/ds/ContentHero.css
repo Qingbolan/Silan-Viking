@@ -1,0 +1,80 @@
+.content-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--ds-color-surface-2);
+  padding: clamp(2.75rem, 5vw, 5rem) clamp(1.25rem, 4vw, 4rem);
+  margin-bottom: 1.5rem;
+}
+
+.content-hero__image {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 65%;
+}
+
+/* Two feathered pools follow the title and supporting copy, not every line. */
+.content-hero__halo {
+  position: relative;
+  isolation: isolate;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  text-shadow: 0 1px 6px color-mix(in srgb, var(--ds-color-surface-2) 65%, transparent);
+}
+
+.content-hero__halo::before {
+  content: '';
+  position: absolute;
+  inset: -1.5rem -2rem;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 45%;
+  filter: blur(16px);
+  background: radial-gradient(
+    ellipse closest-side,
+    color-mix(in srgb, var(--ds-color-surface-2) 88%, transparent) 15%,
+    color-mix(in srgb, var(--ds-color-surface-2) 72%, transparent) 45%,
+    color-mix(in srgb, var(--ds-color-surface-2) 24%, transparent) 78%,
+    transparent 100%
+  );
+}
+
+.content-hero__info::before {
+  inset: -1.5rem -2.5rem;
+  filter: blur(20px);
+}
+
+.content-hero__content {
+  max-width: 72rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.content-hero__title {
+  margin-block: 0;
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  font-weight: 500;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.content-hero__link {
+  transition: color 160ms ease;
+}
+
+.content-hero__link:hover {
+  color: var(--ds-color-primary);
+}
+
+.content-hero__link:focus-visible {
+  outline: 2px solid var(--ds-color-primary);
+  outline-offset: 4px;
+  border-radius: 2px;
+}

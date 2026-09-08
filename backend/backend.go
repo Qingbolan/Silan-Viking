@@ -3,15 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 
 	"silan-backend/internal/config"
 	"silan-backend/internal/handler"
+	"silan-backend/internal/middleware"
 	"silan-backend/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest/router"
 )
 
 var (
@@ -92,60 +93,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	server := rest.MustNewServer(c.RestConf)
+	server := rest.MustNewServer(c.RestConf, rest.WithRouter(middleware.NewCorsRouter(router.NewRouter())))
 	defer server.Stop()
 
 	ctx := svc.NewServiceContext(c)
 	handler.RegisterHandlers(server, ctx)
-
-	// Add global OPTIONS handler for CORS
-	server.AddRoute(rest.Route{
-		Method: http.MethodOptions,
-		Path:   "/*",
-		Handler: func(w http.ResponseWriter, r *http.Request) {
-			// Set CORS headers manually
-			origin := r.Header.Get("Origin")
-			allowedOrigins := []string{
-				"http://localhost:3000",
-				"http://localhost:3001",
-				"http://localhost:5173",
-				"http://127.0.0.1:3000",
-				"http://127.0.0.1:3001",
-				"http://127.0.0.1:5173",
-				// Production domains
-				"https://silan.tech",
-				"https://www.silan.tech",
-				// NUS domain where the site may be embedded or proxied
-				"https://www.comp.nus.edu.sg",
-				"https://comp.nus.edu.sg",
-			}
-
-			// Check if the origin is allowed
-			isAllowed := false
-			for _, allowedOrigin := range allowedOrigins {
-				if origin == allowedOrigin {
-					isAllowed = true
-					break
-				}
-			}
-
-			// Ensure caches know the response may vary by Origin
-			w.Header().Add("Vary", "Origin")
-
-			if isAllowed {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-			} else if origin == "" {
-				w.Header().Set("Access-Control-Allow-Origin", "*")
-			}
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept, Origin, X-Requested-With")
-			w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Access-Control-Max-Age", "86400")
-
-			w.WriteHeader(http.StatusOK)
-		},
-	})
 
 	fmt.Printf("Starting Silan Backend Server...\n")
 	fmt.Printf("Server: %s:%d\n", c.Host, c.Port)

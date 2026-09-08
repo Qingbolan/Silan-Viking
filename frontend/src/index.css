@@ -1939,13 +1939,3 @@ code[class*="language-"] .token.italic { font-style: italic; }
 .compact-comments-scroll::-webkit-scrollbar-thumb:hover {
   background: color-mix(in srgb, var(--color-textPrimary, #171717) 46%, transparent);
 }
-
-.project-detail-section-nav {
-  border-top: 6px double #000 !important;
-  border-bottom: 6px double #000 !important;
-}
-
-.dark .project-detail-section-nav {
-  border-top-color: #fff !important;
-  border-bottom-color: #fff !important;
-}

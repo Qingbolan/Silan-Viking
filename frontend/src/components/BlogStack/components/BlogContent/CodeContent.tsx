@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BlogContent } from '../../types/blog';
 import { useLanguage } from '../../../LanguageContext';
 import { Copy, Check } from 'lucide-react';
-import { Badge, Button, useToast } from '../../../ds';
+import { Button, useToast } from '../../../ds';
 import { codeLanguageClass, highlightCodeToHtml, normalizeCodeLanguage } from '../../../../utils/syntaxHighlight';
 
 interface CodeContentProps {
@@ -49,13 +49,17 @@ export const CodeContent: React.FC<CodeContentProps> = ({ item, isWideScreen }) 
 
   return (
     <figure className={`my-16 ${isWideScreen ? 'col-span-2' : ''} break-inside-avoid`}>
-      <div className="overflow-hidden rounded-ds-xl border border-ds-border bg-ds-surface-1 shadow-ds-1">
-        <div className="flex items-center justify-between border-b border-ds-border bg-ds-surface-2 px-4 py-3 sm:px-5">
-          <Badge tone="neutral" appearance="outline" size="sm" className="font-mono uppercase tracking-[0.08em]">
-            {codeLanguage}
-          </Badge>
+      <div className="overflow-hidden rounded-ds-xl border border-ds-border bg-ds-surface-2 shadow-ds-1">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-ds-border bg-ds-surface-3 px-4 py-2 sm:px-5">
+          <div className="flex items-center gap-2" aria-hidden="true">
+            <span className="size-3 rounded-full bg-[#ff5f57]" />
+            <span className="size-3 rounded-full bg-[#febc2e]" />
+            <span className="size-3 rounded-full bg-[#28c840]" />
+          </div>
+          <span className="font-mono text-ds-xs text-ds-fg-muted">{codeLanguage}</span>
           <Button
             type="button"
+            className="justify-self-end"
             variant="ghost"
             size="sm"
             onClick={handleCopyCode}
@@ -66,7 +70,7 @@ export const CodeContent: React.FC<CodeContentProps> = ({ item, isWideScreen }) 
           </Button>
         </div>
 
-        <pre className={`syntax-surface--dark max-h-[42rem] overflow-auto bg-[oklch(0.16_0.008_264)] p-5 text-ds-sm leading-6 text-[oklch(0.9_0.01_264)] sm:p-6 sm:text-sm ${languageClass}`}>
+        <pre className={`max-h-[42rem] overflow-auto p-5 text-ds-sm leading-6 sm:p-6 sm:text-sm ${languageClass}`}>
           <code
             className={`font-mono ${languageClass}`}
             dangerouslySetInnerHTML={{ __html: highlightedCode }}

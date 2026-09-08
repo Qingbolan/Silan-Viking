@@ -42,7 +42,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // near-neutral; the NoiseBackground paints the NUS orange + blue glows
   // on top of it, one in each corner.
   const deskBg = isDarkMode ? 'oklch(0.125 0.006 264)' : 'oklch(0.935 0.004 264)';
-  const windowBg = isDarkMode ? 'oklch(0.165 0.010 264)' : 'oklch(1 0 0)';
+  const windowBg = colors.background;
   // Chrome capsules sit on the desk, lifted one more step + a faint shadow.
   const capsuleBg = isDarkMode ? 'oklch(0.21 0.012 264)' : 'oklch(1 0 0)';
   const hoverBg = isDarkMode ? 'oklch(0.27 0.014 264)' : 'oklch(0.95 0 0)';

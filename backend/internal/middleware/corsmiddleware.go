@@ -1,6 +1,9 @@
 package middleware
 
-import "net/http"
+import (
+	"github.com/zeromicro/go-zero/rest/httpx"
+	"net/http"
+)
 
 type CorsMiddleware struct {
 }
@@ -57,11 +60,26 @@ func (m *CorsMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// Handle preflight OPTIONS request
 		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 
 		// Continue to the next handler
 		next(w, r)
 	}
+}
+
+// CorsRouter applies the policy before method matching, including OPTIONS,
+// ungrouped endpoints such as geo, and router-generated error responses.
+type CorsRouter struct {
+	httpx.Router
+	handler http.HandlerFunc
+}
+
+func NewCorsRouter(router httpx.Router) *CorsRouter {
+	return &CorsRouter{Router: router, handler: NewCorsMiddleware().Handle(router.ServeHTTP)}
+}
+
+func (r *CorsRouter) ServeHTTP(w http.ResponseWriter, request *http.Request) {
+	r.handler(w, request)
 }
