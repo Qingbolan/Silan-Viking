@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ChevronDown,
   Cog,
+  Download,
   Eye,
   EyeOff,
   FileImage,
@@ -121,6 +122,8 @@ import {
   preferredMarkdownLanguages,
 } from './app/content/markdownLanguage';
 import {
+  automaticDeploymentPullKey,
+  clearResolvedSynchronizationError,
   deploymentReadinessFor,
   type DeploymentPlanState,
 } from './lib/deploymentReadiness';
@@ -334,6 +337,8 @@ export default function App() {
   const [expandedTrafficItem, setExpandedTrafficItem] = React.useState<string | null>(null);
   const [freshnessTick, setFreshnessTick] = React.useState(0);
   const [deployingContent, setDeployingContent] = React.useState(false);
+  const [pullingRemoteContent, setPullingRemoteContent] = React.useState(false);
+  const attemptedRemotePullsRef = React.useRef<Set<string>>(new Set());
   const [confirmingDeploy, setConfirmingDeploy] = React.useState(false);
   const [deployedStaticRelease, setDeployedStaticRelease] = React.useState<string | null>(null);
   const [deployVerification, setDeployVerification] = React.useState<DeployVerificationResult | null>(null);
@@ -1079,11 +1084,13 @@ export default function App() {
   const deploymentReadiness = deploymentReadinessFor({
     localCommitCount: deliverySyncStatus ? localDeliveryCount : null,
     remoteCommitCount: remoteDeliveryCount,
+    syncState: deliverySyncStatus?.state ?? null,
     workspaceChangeCount,
     unsavedDocumentCount: dirtyIds.size,
     planState: deploymentPlanLoad.state,
     planError: deploymentPlanLoad.error,
     deploying: deployingContent,
+    pulling: pullingRemoteContent,
   });
   const canDeployCommittedContent = deploymentReadiness.canDeploy;
   const visibleRecentItems = (dashboard?.recent_items || []).filter(
@@ -1234,7 +1241,9 @@ export default function App() {
   const loadDeliverySyncStatus = React.useCallback(async () => {
     setRefreshingDeliveryStatus(true);
     try {
-      setDeliverySyncStatus(await invoke<DeliverySyncStatus>('get_delivery_sync_status'));
+      const status = await invoke<DeliverySyncStatus>('get_delivery_sync_status');
+      setDeliverySyncStatus(status);
+      setError((current) => clearResolvedSynchronizationError(current, status));
     } catch (reason) {
       setError(String(reason));
     } finally {
@@ -1261,6 +1270,42 @@ export default function App() {
       setDeployingContent(false);
     }
   }, [canDeployCommittedContent, deployingContent, deploymentPlan, loadDeliverySyncStatus, loadDeploymentPlan]);
+
+  const pullRemoteContent = React.useCallback(async () => {
+    if (pullingRemoteContent || !deploymentReadiness.canPull) return;
+    setPullingRemoteContent(true);
+    setError(null);
+    try {
+      const status = await invoke<DeliverySyncStatus>('pull_remote_content');
+      setDeliverySyncStatus(status);
+      setError((current) => clearResolvedSynchronizationError(current, status));
+      await Promise.all([loadDocuments(), loadDashboard(), loadDeploymentPlan()]);
+    } catch (reason) {
+      setError(String(reason));
+    } finally {
+      setPullingRemoteContent(false);
+    }
+  }, [
+    deploymentReadiness.canPull,
+    loadDashboard,
+    loadDeploymentPlan,
+    loadDocuments,
+    pullingRemoteContent,
+  ]);
+
+  React.useEffect(() => {
+    if (screen !== 'dashboard' || pullingRemoteContent) return;
+    const attemptKey = automaticDeploymentPullKey(deliverySyncStatus, dirtyIds.size);
+    if (!attemptKey || attemptedRemotePullsRef.current.has(attemptKey)) return;
+    attemptedRemotePullsRef.current.add(attemptKey);
+    void pullRemoteContent();
+  }, [
+    deliverySyncStatus,
+    dirtyIds.size,
+    pullRemoteContent,
+    pullingRemoteContent,
+    screen,
+  ]);
 
   const loadMomentsSettings = React.useCallback(async () => {
     try {
@@ -1314,7 +1359,10 @@ export default function App() {
       loadingStatus = true;
       try {
         const status = await invoke<DeliverySyncStatus>('get_delivery_sync_status');
-        if (active) setDeliverySyncStatus(status);
+        if (active) {
+          setDeliverySyncStatus(status);
+          setError((current) => clearResolvedSynchronizationError(current, status));
+        }
       } catch (reason) {
         if (active) setError(String(reason));
       } finally {
@@ -3359,34 +3407,53 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                {localDeliveryCount > 0 && (
+                {(localDeliveryCount > 0 || remoteDeliveryCount > 0) && (
                   <div className="attention-actions">
-                    <button
-                      type="button"
-                      className="attention-deploy"
-                      disabled={!canDeployCommittedContent && deploymentReadiness.state !== 'check_failed'}
-                      onClick={() => {
-                        if (deploymentReadiness.state === 'check_failed') {
-                          void loadDeploymentPlan();
-                        } else if (canDeployCommittedContent) {
-                          setConfirmingDeploy(true);
-                        }
-                      }}
-                      title={deploymentReadiness.actionTitle}
-                    >
-                      {deploymentReadiness.state === 'deploying' || deploymentReadiness.state === 'checking'
-                        ? <LoaderCircle size={14} />
-                        : deploymentReadiness.state === 'check_failed'
-                          ? <RotateCcw size={14} />
-                          : <UploadCloud size={14} />}
-                      {deploymentReadiness.state === 'deploying'
-                        ? 'Deploying'
-                        : deploymentReadiness.state === 'checking'
-                          ? 'Checking deployment'
-                          : deploymentReadiness.state === 'check_failed'
-                            ? 'Retry deploy check'
-                            : `Deploy ${localDeliveryCount}`}
-                    </button>
+                    {(deploymentReadiness.state === 'remote_ahead'
+                      || deploymentReadiness.state === 'remote_unknown'
+                      || deploymentReadiness.state === 'pulling') ? (
+                        <button
+                          type="button"
+                          className="attention-pull"
+                          disabled={!deploymentReadiness.canPull}
+                          onClick={() => { void pullRemoteContent(); }}
+                          title={deploymentReadiness.actionTitle}
+                        >
+                          {deploymentReadiness.state === 'pulling'
+                            ? <LoaderCircle size={14} />
+                            : <Download size={14} />}
+                          {deploymentReadiness.state === 'pulling'
+                            ? 'Pulling'
+                            : `Pull ${remoteDeliveryCount}`}
+                        </button>
+                      ) : localDeliveryCount > 0 ? (
+                        <button
+                          type="button"
+                          className="attention-deploy"
+                          disabled={!canDeployCommittedContent && deploymentReadiness.state !== 'check_failed'}
+                          onClick={() => {
+                            if (deploymentReadiness.state === 'check_failed') {
+                              void loadDeploymentPlan();
+                            } else if (canDeployCommittedContent) {
+                              setConfirmingDeploy(true);
+                            }
+                          }}
+                          title={deploymentReadiness.actionTitle}
+                        >
+                          {deploymentReadiness.state === 'deploying' || deploymentReadiness.state === 'checking'
+                            ? <LoaderCircle size={14} />
+                            : deploymentReadiness.state === 'check_failed'
+                              ? <RotateCcw size={14} />
+                              : <UploadCloud size={14} />}
+                          {deploymentReadiness.state === 'deploying'
+                            ? 'Deploying'
+                            : deploymentReadiness.state === 'checking'
+                              ? 'Checking deployment'
+                              : deploymentReadiness.state === 'check_failed'
+                                ? 'Retry deploy check'
+                                : `Deploy ${localDeliveryCount}`}
+                        </button>
+                      ) : null}
                   </div>
                 )}
                 {deployVerification && (

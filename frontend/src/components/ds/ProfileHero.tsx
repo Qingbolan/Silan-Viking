@@ -114,14 +114,11 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
       <div aria-hidden className="pointer-events-none absolute left-6 top-0 h-20 w-px bg-ds-primary/50 sm:left-10" />
 
       {avatarSrc && (
-        <motion.div
-          {...fade(0)}
+        <div
           className={cn(
             'absolute right-6 top-8 z-10 size-28 rounded-full sm:right-10 sm:top-12 sm:size-36',
             chrome && 'shadow-[0_16px_36px_-24px_rgba(0,0,0,0.72)] ring-1 ring-black/15 dark:ring-white/25',
           )}
-          animate={{ opacity: 1, y: [0, -3, 0] }}
-          transition={{ opacity: { duration: 0.45 }, y: { duration: 5, repeat: Infinity, ease: 'easeInOut' } }}
         >
           <Avatar
             src={avatarSrc}
@@ -130,7 +127,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
             bordered={false}
             className="size-full rounded-full shadow-none"
           />
-        </motion.div>
+        </div>
       )}
 
       <div className="relative z-10 min-w-0 max-w-3xl pt-24 sm:pt-20">

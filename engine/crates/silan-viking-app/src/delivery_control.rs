@@ -2,7 +2,8 @@
 
 use crate::{
     api_base_url, hash_deploy_media_asset, stage_deploy_media_asset, workspace_stats_sync_token,
-    ContentSourceArchive, GitRepo, RemoteBackupState, Workspace, WorkspaceSync, WorkspaceSyncState,
+    ContentRecoveryClient, ContentRecoveryError, ContentSourceArchive, GitRepo, RemoteBackupState,
+    Workspace, WorkspaceSync, WorkspaceSyncState,
 };
 use flate2::{write::GzEncoder, Compression};
 use rusqlite::Connection;
@@ -43,6 +44,8 @@ pub enum DeliveryControlError {
     DirtyWorkspace(String),
     #[error("content release requires a verified private Git backup: {0}")]
     UndurableRepository(String),
+    #[error("workspace synchronization stopped safely: {0}")]
+    UnsafeSynchronization(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
@@ -150,6 +153,27 @@ pub struct DeploymentPlan {
     pub next_action: String,
     pub commit_activity: Vec<CommitActivityDay>,
     pub scopes: Vec<ScopeReleaseStatus>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DeliverySyncState {
+    Synchronized,
+    LocalAhead,
+    RemoteAhead,
+    Diverged,
+    RemoteUnknown,
+}
+
+impl DeliverySyncState {
+    fn id(&self) -> &'static str {
+        match self {
+            Self::Synchronized => "synchronized",
+            Self::LocalAhead => "local_ahead",
+            Self::RemoteAhead => "remote_ahead",
+            Self::Diverged => "diverged",
+            Self::RemoteUnknown => "remote_unknown",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -386,38 +410,174 @@ impl DeliveryControl {
 
     pub fn sync_status(&self) -> Result<DeliverySyncStatus, DeliveryControlError> {
         let repo = self.repo()?;
-        let local_head = run(&repo, ["rev-parse", "HEAD"])?;
         let remote_head = self.remote_content_version()?.content_commit;
-        let workspace_changes = run(&repo, ["status", "--porcelain"])?
+        validate_remote_commit(&remote_head)?;
+        self.sync_status_against(&repo, remote_head)
+            .map(|(status, _)| status)
+    }
+
+    /// Bring the workspace to the exact revision currently deployed.
+    ///
+    /// Fetching only populates remote-tracking objects. The checked-out branch
+    /// moves exclusively through a fast-forward, so local commits can never be
+    /// rewritten and Git remains the owner of deciding whether dirty worktree
+    /// paths overlap the incoming tree update. Non-overlapping edits survive
+    /// the operation unchanged; overlapping edits stop before HEAD moves.
+    pub fn pull_remote_changes(&self) -> Result<DeliverySyncStatus, DeliveryControlError> {
+        let repo = self.repo()?;
+        let remote_head = self.remote_content_version()?.content_commit;
+        validate_remote_commit(&remote_head)?;
+        let (initial_status, initial_state) =
+            self.sync_status_against(&repo, remote_head.clone())?;
+        if matches!(
+            initial_state,
+            DeliverySyncState::Synchronized | DeliverySyncState::LocalAhead
+        ) {
+            return Ok(initial_status);
+        }
+
+        let branch = run(&repo, ["branch", "--show-current"])?;
+        if branch.is_empty() {
+            return Err(DeliveryControlError::UnsafeSynchronization(
+                "detached HEAD cannot receive deployed changes".to_owned(),
+            ));
+        }
+        let remote = repo
+            .run(["config", "--get", &format!("branch.{branch}.remote")])
+            .ok()
+            .map(|output| output.stdout)
+            .filter(|remote| !remote.is_empty() && remote != ".");
+        let merge_ref = repo
+            .run(["config", "--get", &format!("branch.{branch}.merge")])
+            .ok()
+            .map(|output| output.stdout)
+            .filter(|merge_ref| !merge_ref.is_empty());
+        let (remote, merge_ref) = match (remote, merge_ref) {
+            (Some(remote), Some(merge_ref)) => (remote, merge_ref),
+            _ => return self.pull_deployed_source_snapshot(&repo, remote_head),
+        };
+
+        run(&repo, ["fetch", "--prune", &remote])?;
+        let upstream = format!("{remote}/{}", merge_ref.trim_start_matches("refs/heads/"));
+        repo.run(["cat-file", "-e", &format!("{remote_head}^{{commit}}")])
+            .map_err(|_| {
+                DeliveryControlError::UnsafeSynchronization(format!(
+                    "deployed revision `{}` is not available from `{upstream}`",
+                    short_oid(&remote_head),
+                ))
+            })?;
+        repo.run(["merge-base", "--is-ancestor", &remote_head, &upstream])
+            .map_err(|_| {
+                DeliveryControlError::UnsafeSynchronization(format!(
+                    "deployed revision `{}` is not contained in `{upstream}`",
+                    short_oid(&remote_head),
+                ))
+            })?;
+
+        let (observed, observed_state) = self.sync_status_against(&repo, remote_head.clone())?;
+        match observed_state {
+            DeliverySyncState::Synchronized => return Ok(observed),
+            DeliverySyncState::RemoteAhead => {}
+            DeliverySyncState::LocalAhead => {
+                return Err(DeliveryControlError::UnsafeSynchronization(format!(
+                    "local branch is {} commit(s) ahead of the deployed revision",
+                    observed.local_commits,
+                )))
+            }
+            DeliverySyncState::Diverged => {
+                return Err(DeliveryControlError::UnsafeSynchronization(format!(
+                    "local and deployed histories diverged ({} local, {} deployed)",
+                    observed.local_commits, observed.remote_commits,
+                )))
+            }
+            DeliverySyncState::RemoteUnknown => {
+                return Err(DeliveryControlError::UnsafeSynchronization(format!(
+                    "deployed revision `{}` could not be compared after fetch",
+                    short_oid(&remote_head),
+                )))
+            }
+        }
+
+        repo.run(["merge", "--ff-only", &remote_head])
+            .map_err(|error| {
+                DeliveryControlError::UnsafeSynchronization(format!(
+                    "incoming changes overlap local workspace edits: {error}"
+                ))
+            })?;
+        WorkspaceSync::open(&self.content_root, &self.db_path)
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?
+            .sync()
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+
+        self.sync_status_against(&repo, remote_head)
+            .map(|(status, _)| status)
+    }
+
+    fn pull_deployed_source_snapshot(
+        &self,
+        repo: &GitRepo,
+        remote_head: String,
+    ) -> Result<DeliverySyncStatus, DeliveryControlError> {
+        let mut client =
+            ContentRecoveryClient::open(&self.content_root).map_err(map_recovery_sync_error)?;
+        if let Some(token) = &self.bearer_token {
+            client = client.with_bearer_token(token);
+        }
+        client
+            .pull_into_repository(&self.content_root, &remote_head)
+            .map_err(map_recovery_sync_error)?;
+        WorkspaceSync::open(&self.content_root, &self.db_path)
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?
+            .sync()
+            .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
+        self.sync_status_against(repo, remote_head)
+            .map(|(status, _)| status)
+    }
+
+    fn sync_status_against(
+        &self,
+        repo: &GitRepo,
+        remote_head: String,
+    ) -> Result<(DeliverySyncStatus, DeliverySyncState), DeliveryControlError> {
+        let local_head = run(repo, ["rev-parse", "HEAD"])?;
+        let comparison_head =
+            local_recovery_anchor(repo, &remote_head).unwrap_or_else(|| remote_head.clone());
+        let workspace_changes = run(repo, ["status", "--porcelain"])?
             .lines()
             .filter(|line| !line.trim().is_empty())
             .count();
-        if local_head == remote_head {
-            return Ok(DeliverySyncStatus {
+        if local_head == comparison_head {
+            return Ok((
+                DeliverySyncStatus {
+                    local_head,
+                    remote_head,
+                    local_commits: 0,
+                    remote_commits: 0,
+                    workspace_changes,
+                    state: DeliverySyncState::Synchronized.id().to_owned(),
+                },
+                DeliverySyncState::Synchronized,
+            ));
+        }
+        let local_commits = revision_count(repo, &format!("{comparison_head}..{local_head}"));
+        let remote_commits = revision_count(repo, &format!("{local_head}..{comparison_head}"));
+        let state = match (local_commits, remote_commits) {
+            (Some(local), Some(0)) if local > 0 => DeliverySyncState::LocalAhead,
+            (Some(0), Some(remote)) if remote > 0 => DeliverySyncState::RemoteAhead,
+            (Some(local), Some(remote)) if local > 0 && remote > 0 => DeliverySyncState::Diverged,
+            _ => DeliverySyncState::RemoteUnknown,
+        };
+        Ok((
+            DeliverySyncStatus {
                 local_head,
                 remote_head,
-                local_commits: 0,
-                remote_commits: 0,
+                local_commits: local_commits.unwrap_or(0),
+                remote_commits: remote_commits.unwrap_or(1),
                 workspace_changes,
-                state: "synchronized".to_owned(),
-            });
-        }
-        let local_commits = revision_count(&repo, &format!("{remote_head}..{local_head}"));
-        let remote_commits = revision_count(&repo, &format!("{local_head}..{remote_head}"));
-        let state = match (local_commits, remote_commits) {
-            (Some(local), Some(0)) if local > 0 => "local_ahead",
-            (Some(0), Some(remote)) if remote > 0 => "remote_ahead",
-            (Some(local), Some(remote)) if local > 0 && remote > 0 => "diverged",
-            _ => "remote_unknown",
-        };
-        Ok(DeliverySyncStatus {
-            local_head,
-            remote_head,
-            local_commits: local_commits.unwrap_or(0),
-            remote_commits: remote_commits.unwrap_or(1),
-            workspace_changes,
-            state: state.to_owned(),
-        })
+                state: state.id().to_owned(),
+            },
+            state,
+        ))
     }
 
     /// Every changed path in the content repo, regardless of scope — the
@@ -1015,6 +1175,15 @@ fn short_oid(value: &str) -> &str {
     value.get(..12).unwrap_or(value)
 }
 
+fn validate_remote_commit(value: &str) -> Result<(), DeliveryControlError> {
+    if matches!(value.len(), 40 | 64) && value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Ok(());
+    }
+    Err(DeliveryControlError::Remote(
+        "deployed content status returned an invalid commit identifier".to_owned(),
+    ))
+}
+
 fn parse_porcelain_path(line: &str) -> Option<String> {
     let value = line.get(3..)?.trim();
     if value.is_empty() {
@@ -1046,6 +1215,16 @@ where
         .map_err(|error| DeliveryControlError::Repository(error.to_string()))
 }
 
+fn map_recovery_sync_error(error: ContentRecoveryError) -> DeliveryControlError {
+    match error {
+        ContentRecoveryError::Conflict(message) | ContentRecoveryError::Destination(message) => {
+            DeliveryControlError::UnsafeSynchronization(message)
+        }
+        ContentRecoveryError::MissingCredential => DeliveryControlError::MissingCredential,
+        other => DeliveryControlError::Remote(other.to_string()),
+    }
+}
+
 /// Like [`run`], but preserves a meaningful leading space instead of
 /// trimming it away — required for `git status --porcelain`, whose first
 /// column is blank exactly when nothing is staged for that file.
@@ -1066,6 +1245,26 @@ fn revision_count(repo: &GitRepo, revision: &str) -> Option<usize> {
         .trim()
         .parse()
         .ok()
+}
+
+/// A recovered workspace starts a new Git object graph, but its root commit
+/// records the production revision whose public source tree it materialized.
+/// Treat that commit as the local representative of the deployed OID so the
+/// dashboard does not misclassify every recovered checkout as remote-unknown.
+fn local_recovery_anchor(repo: &GitRepo, deployed_commit: &str) -> Option<String> {
+    let subject = format!("recovery: restore deployed content {deployed_commit}");
+    let output = repo
+        .run([
+            "log",
+            "-1",
+            "--format=%H",
+            "--fixed-strings",
+            "--grep",
+            &subject,
+            "HEAD",
+        ])
+        .ok()?;
+    (!output.stdout.is_empty()).then_some(output.stdout)
 }
 
 fn deploy_http_agent(content_root: &Path, api_base: &str) -> ureq::Agent {
@@ -1240,6 +1439,7 @@ mod tests {
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::process::Command;
+    use std::thread::JoinHandle;
 
     fn git(directory: &Path, args: &[&str]) {
         let status = Command::new("git")
@@ -1282,6 +1482,326 @@ mod tests {
         );
         let db = directory.path().join("portfolio.db");
         (directory, content, db)
+    }
+
+    fn serve_remote_version(listener: TcpListener, commit: String) -> JoinHandle<()> {
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept");
+            let mut request = [0_u8; 2048];
+            let read = stream.read(&mut request).expect("read");
+            let request = String::from_utf8_lossy(&request[..read]);
+            assert!(request.starts_with("GET /api/v1/content/status "));
+            let body = format!(
+                "{{\"health\":\"ok\",\"content_hash\":\"hash\",\"content_commit\":\"{commit}\",\"generated_at\":\"2026-08-27T00:00:00Z\",\"media_root_ok\":true}}"
+            );
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            )
+            .expect("respond");
+        })
+    }
+
+    fn serve_remote_version_and_source(
+        listener: TcpListener,
+        commit: String,
+        source: ContentSourceArchive,
+    ) -> JoinHandle<()> {
+        std::thread::spawn(move || {
+            for request_index in 0..2 {
+                let (mut stream, _) = listener.accept().expect("accept");
+                let mut request = [0_u8; 4096];
+                let read = stream.read(&mut request).expect("read");
+                let request = String::from_utf8_lossy(&request[..read]);
+                assert!(request.contains("\r\nAuthorization: Bearer delivery-contract-token\r\n"));
+                if request_index == 0 {
+                    assert!(request.starts_with("GET /api/v1/content/status "));
+                    let body = format!(
+                        "{{\"health\":\"ok\",\"content_hash\":\"hash\",\"content_commit\":\"{commit}\",\"generated_at\":\"2026-08-27T00:00:00Z\",\"media_root_ok\":true}}"
+                    );
+                    write!(
+                        stream,
+                        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                        body.len(),
+                        body
+                    )
+                    .expect("respond with status");
+                } else {
+                    assert!(request.starts_with("GET /api/v1/content/source "));
+                    write!(
+                        stream,
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nX-Silan-Content-Commit: {}\r\nX-Silan-Source-SHA256: {}\r\nConnection: close\r\n\r\n",
+                        source.bytes().len(),
+                        commit,
+                        source.sha256(),
+                    )
+                    .expect("respond with source headers");
+                    stream
+                        .write_all(source.bytes())
+                        .expect("respond with source body");
+                }
+            }
+        })
+    }
+
+    fn configure_remote(content: &Path, remote: &Path) -> String {
+        git(
+            content,
+            &["init", "--bare", remote.to_str().expect("remote path")],
+        );
+        git(
+            content,
+            &[
+                "remote",
+                "add",
+                "origin",
+                remote.to_str().expect("remote path"),
+            ],
+        );
+        let branch = Command::new("git")
+            .args(["branch", "--show-current"])
+            .current_dir(content)
+            .output()
+            .expect("read branch");
+        let branch = String::from_utf8(branch.stdout)
+            .expect("branch utf8")
+            .trim()
+            .to_owned();
+        git(content, &["push", "-u", "origin", &branch]);
+        branch
+    }
+
+    fn commit(directory: &Path, message: &str) {
+        git(directory, &["add", "."]);
+        git(
+            directory,
+            &[
+                "-c",
+                "user.name=Silan.Hu",
+                "-c",
+                "user.email=silan.hu@u.nus.edu",
+                "commit",
+                "-q",
+                "-m",
+                message,
+            ],
+        );
+    }
+
+    fn head(directory: &Path) -> String {
+        let output = Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(directory)
+            .output()
+            .expect("read HEAD");
+        assert!(output.status.success());
+        String::from_utf8(output.stdout)
+            .expect("head utf8")
+            .trim()
+            .to_owned()
+    }
+
+    #[test]
+    fn pull_remote_changes_fast_forwards_and_preserves_non_conflicting_edits() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let address = listener.local_addr().expect("address");
+        let (directory, content, db) = fixture(&format!("http://{address}"));
+        std::fs::create_dir_all(content.join("agent/notes")).expect("local notes");
+        std::fs::write(content.join("agent/notes/local.md"), "base\n").expect("local base");
+        commit(&content, "test: local draft base");
+        let remote = directory.path().join("remote.git");
+        configure_remote(&content, &remote);
+        let publisher = directory.path().join("publisher");
+        git(
+            directory.path(),
+            &[
+                "clone",
+                "-q",
+                remote.to_str().expect("remote path"),
+                publisher.to_str().expect("publisher path"),
+            ],
+        );
+        std::fs::create_dir_all(publisher.join("agent/notes")).expect("remote notes");
+        std::fs::write(publisher.join("agent/notes/remote.md"), "remote update\n")
+            .expect("remote update");
+        commit(&publisher, "test: remote update");
+        git(&publisher, &["push", "origin", "HEAD"]);
+        let remote_head = head(&publisher);
+
+        std::fs::write(content.join("agent/notes/local.md"), "local draft\n").expect("local draft");
+        let server = serve_remote_version(listener, remote_head.clone());
+        let status = DeliveryControl::open(&content, &db, directory.path())
+            .expect("open")
+            .with_bearer_token("delivery-contract-token")
+            .pull_remote_changes()
+            .expect("pull remote changes");
+        server.join().expect("server");
+
+        assert_eq!(status.state, "synchronized");
+        assert_eq!(status.local_head, remote_head);
+        assert_eq!(status.workspace_changes, 1);
+        assert_eq!(
+            std::fs::read_to_string(content.join("agent/notes/local.md")).expect("local draft"),
+            "local draft\n"
+        );
+        assert!(content.join("agent/notes/remote.md").is_file());
+        assert!(db.is_file(), "pull must rebuild the local projection");
+    }
+
+    #[test]
+    fn sync_status_maps_a_deployed_oid_to_its_local_recovery_anchor() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let address = listener.local_addr().expect("address");
+        let (directory, content, db) = fixture(&format!("http://{address}"));
+        let deployed_commit = "38145ba5b6d4916b3901997f14ddf77154397c6a";
+        git(
+            &content,
+            &[
+                "-c",
+                "user.name=Silan.Hu",
+                "-c",
+                "user.email=silan.hu@u.nus.edu",
+                "commit",
+                "--amend",
+                "-q",
+                "-m",
+                &format!("recovery: restore deployed content {deployed_commit}"),
+            ],
+        );
+        std::fs::create_dir_all(content.join("agent/notes")).expect("notes");
+        std::fs::write(content.join("agent/notes/local.md"), "local update\n")
+            .expect("local update");
+        commit(&content, "test: local change after recovery");
+
+        let server = serve_remote_version(listener, deployed_commit.to_owned());
+        let status = DeliveryControl::open(&content, &db, directory.path())
+            .expect("open")
+            .with_bearer_token("delivery-contract-token")
+            .sync_status()
+            .expect("recovered sync status");
+        server.join().expect("server");
+
+        assert_eq!(status.state, "local_ahead");
+        assert_eq!(status.local_commits, 1);
+        assert_eq!(status.remote_commits, 0);
+        assert_eq!(status.remote_head, deployed_commit);
+    }
+
+    #[test]
+    fn pull_remote_changes_uses_deployed_snapshot_without_an_upstream() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let address = listener.local_addr().expect("address");
+        let (directory, content, db) = fixture(&format!("http://{address}"));
+        let old_deployed_commit = "38145ba5b6d4916b3901997f14ddf77154397c6a";
+        git(
+            &content,
+            &[
+                "-c",
+                "user.name=Silan.Hu",
+                "-c",
+                "user.email=silan.hu@u.nus.edu",
+                "commit",
+                "--amend",
+                "-q",
+                "-m",
+                &format!("recovery: restore deployed content {old_deployed_commit}"),
+            ],
+        );
+        let publisher = directory.path().join("publisher");
+        git(
+            directory.path(),
+            &[
+                "clone",
+                "-q",
+                content.to_str().expect("content path"),
+                publisher.to_str().expect("publisher path"),
+            ],
+        );
+        std::fs::write(publisher.join(".gitignore"), "*.db\nnew-cache/\n")
+            .expect("deployed source update");
+        std::fs::create_dir_all(publisher.join("resources")).expect("resource directory");
+        std::fs::write(publisher.join("resources/.gitkeep"), []).expect("resource root");
+        commit(&publisher, "test: deployed snapshot update");
+        let remote_head = head(&publisher);
+        let source = ContentSourceArchive::from_repository(&publisher).expect("source archive");
+
+        std::fs::create_dir_all(content.join("agent/notes")).expect("local notes");
+        std::fs::write(content.join("agent/notes/local.md"), "committed\n").expect("local note");
+        commit(&content, "test: local private update");
+        std::fs::write(content.join("agent/notes/local.md"), "uncommitted\n").expect("local draft");
+
+        let server = serve_remote_version_and_source(listener, remote_head.clone(), source);
+        let status = DeliveryControl::open(&content, &db, directory.path())
+            .expect("open")
+            .with_bearer_token("delivery-contract-token")
+            .pull_remote_changes()
+            .expect("pull deployed snapshot");
+        server.join().expect("server");
+
+        assert_eq!(status.state, "local_ahead");
+        assert_eq!(status.remote_head, remote_head);
+        assert_eq!(status.remote_commits, 0);
+        assert_eq!(
+            std::fs::read_to_string(content.join(".gitignore")).expect("deployed gitignore"),
+            "*.db\nnew-cache/\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(content.join("agent/notes/local.md")).expect("local draft"),
+            "uncommitted\n"
+        );
+        assert!(
+            db.is_file(),
+            "snapshot pull must rebuild the local projection"
+        );
+    }
+
+    #[test]
+    fn pull_remote_changes_stops_before_overwriting_conflicting_edits() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
+        let address = listener.local_addr().expect("address");
+        let (directory, content, db) = fixture(&format!("http://{address}"));
+        std::fs::create_dir_all(content.join("agent/notes")).expect("notes");
+        std::fs::write(content.join("agent/notes/shared.md"), "base\n").expect("base");
+        commit(&content, "test: shared base");
+        let remote = directory.path().join("remote.git");
+        configure_remote(&content, &remote);
+        let local_head = head(&content);
+        let publisher = directory.path().join("publisher");
+        git(
+            directory.path(),
+            &[
+                "clone",
+                "-q",
+                remote.to_str().expect("remote path"),
+                publisher.to_str().expect("publisher path"),
+            ],
+        );
+        std::fs::write(publisher.join("agent/notes/shared.md"), "remote\n").expect("remote edit");
+        commit(&publisher, "test: conflicting remote update");
+        git(&publisher, &["push", "origin", "HEAD"]);
+        let remote_head = head(&publisher);
+        std::fs::write(content.join("agent/notes/shared.md"), "local\n").expect("local edit");
+
+        let server = serve_remote_version(listener, remote_head);
+        let error = DeliveryControl::open(&content, &db, directory.path())
+            .expect("open")
+            .with_bearer_token("delivery-contract-token")
+            .pull_remote_changes()
+            .expect_err("conflicting pull must stop");
+        server.join().expect("server");
+
+        assert!(matches!(
+            error,
+            DeliveryControlError::UnsafeSynchronization(_)
+        ));
+        assert_eq!(head(&content), local_head, "HEAD must remain unchanged");
+        assert_eq!(
+            std::fs::read_to_string(content.join("agent/notes/shared.md")).expect("local edit"),
+            "local\n",
+            "local edit must remain unchanged"
+        );
     }
 
     #[test]

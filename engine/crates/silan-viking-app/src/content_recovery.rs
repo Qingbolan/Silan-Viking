@@ -34,6 +34,8 @@ pub enum ContentRecoveryError {
     Archive(String),
     #[error("content recovery destination error: {0}")]
     Destination(String),
+    #[error("content recovery stopped safely because deployed and local changes conflict: {0}")]
+    Conflict(String),
     #[error("content recovery filesystem error: {0}")]
     Filesystem(String),
     #[error(
@@ -94,6 +96,11 @@ pub struct ContentRecoveryClient {
     bearer_token: Option<String>,
 }
 
+struct DeployedSourceSnapshot {
+    deployed_commit: String,
+    source: ContentSourceArchive,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RecoveryEndpointSource {
     WorkspaceConfiguration,
@@ -140,6 +147,40 @@ impl ContentRecoveryClient {
         destination: impl AsRef<Path>,
     ) -> Result<ContentRecoveryResult, ContentRecoveryError> {
         ensure_empty_destination(destination.as_ref())?;
+        let snapshot = self.download_source()?;
+        restore_source_archive(
+            &snapshot.source,
+            destination.as_ref(),
+            &snapshot.deployed_commit,
+        )
+    }
+
+    /// Merge the authenticated deployed public-source snapshot into an
+    /// existing recovered repository. The incoming commit is synthesized as
+    /// a child of the last recovery anchor, so Git can perform a real
+    /// three-way merge. A disposable clone proves committed changes merge
+    /// cleanly first; the owner's worktree is then updated only when its dirty
+    /// paths do not overlap the deployed update.
+    pub fn pull_into_repository(
+        &self,
+        destination: impl AsRef<Path>,
+        expected_deployed_commit: &str,
+    ) -> Result<ContentRecoveryResult, ContentRecoveryError> {
+        let snapshot = self.download_source()?;
+        if snapshot.deployed_commit != expected_deployed_commit {
+            return Err(ContentRecoveryError::Remote(format!(
+                "deployed revision changed from {expected_deployed_commit} to {} while synchronizing; refresh and retry",
+                snapshot.deployed_commit
+            )));
+        }
+        merge_source_archive(
+            &snapshot.source,
+            destination.as_ref(),
+            &snapshot.deployed_commit,
+        )
+    }
+
+    fn download_source(&self) -> Result<DeployedSourceSnapshot, ContentRecoveryError> {
         let token = self
             .bearer_token
             .as_ref()
@@ -180,7 +221,10 @@ impl ContentRecoveryClient {
                 "source archive checksum does not match server provenance".to_owned(),
             ));
         }
-        restore_source_archive(&source, destination.as_ref(), &deployed_commit)
+        Ok(DeployedSourceSnapshot {
+            deployed_commit,
+            source,
+        })
     }
 
     pub fn recover_default(&self) -> Result<ContentRecoveryResult, ContentRecoveryError> {
@@ -323,6 +367,188 @@ pub fn restore_source_archive(
         files_restored,
         source_sha256: source.sha256().to_owned(),
     })
+}
+
+/// Integrate a deployed public-source archive into an existing recovery
+/// lineage without replacing private source or unrelated local work.
+///
+/// A production archive cannot recreate its original Git object graph. The
+/// recovery commit recorded in the local history is therefore the explicit
+/// merge base. The synthesized incoming commit changes only the public paths
+/// carried by deployment; `agent/` remains owned exclusively by the local
+/// repository and its private upstream.
+pub fn merge_source_archive(
+    source: &ContentSourceArchive,
+    destination: &Path,
+    deployed_commit: &str,
+) -> Result<ContentRecoveryResult, ContentRecoveryError> {
+    if !is_hex(deployed_commit, 40) {
+        return Err(ContentRecoveryError::Archive(
+            "deployed commit must be a 40-character Git object id".to_owned(),
+        ));
+    }
+    let repo = GitRepo::open(destination)
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    let local_head = repo
+        .rev_parse("HEAD")
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    let recovery_base = latest_recovery_commit(&repo)?;
+    let temporary = tempfile::Builder::new()
+        .prefix(".silan-content-pull-")
+        .tempdir_in(destination.parent().ok_or_else(|| {
+            ContentRecoveryError::Destination(format!(
+                "{} has no parent directory",
+                destination.display()
+            ))
+        })?)
+        .map_err(|error| ContentRecoveryError::Filesystem(error.to_string()))?;
+    let integration_root = temporary.path().join("integration");
+    let integration = repo
+        .clone_to(&integration_root)
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    integration
+        .run(["checkout", "--quiet", "--detach", &recovery_base])
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+
+    remove_public_source(&integration_root)?;
+    extract_source_archive(source.bytes(), &integration_root)?;
+    let files_restored = public_file_count(&integration_root)?;
+    integration
+        .run(["add", "-A", "--", ".gitignore", "SCHEMA.md", "resources"])
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    integration
+        .run([
+            "-c",
+            &format!("user.name={AUTHOR_NAME}"),
+            "-c",
+            &format!("user.email={AUTHOR_EMAIL}"),
+            "commit",
+            "--quiet",
+            "--allow-empty",
+            "-m",
+            &format!("recovery: restore deployed content {deployed_commit}"),
+        ])
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    let incoming_commit = integration
+        .rev_parse("HEAD")
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    integration
+        .run(["branch", "production-snapshot", &incoming_commit])
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+
+    integration
+        .run(["checkout", "--quiet", "-B", "local-preflight", &local_head])
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    integration
+        .run([
+            "-c",
+            &format!("user.name={AUTHOR_NAME}"),
+            "-c",
+            &format!("user.email={AUTHOR_EMAIL}"),
+            "merge",
+            "--no-edit",
+            "production-snapshot",
+        ])
+        .map_err(|error| ContentRecoveryError::Conflict(error.to_string()))?;
+
+    repo.run([
+        "fetch",
+        "--quiet",
+        "--no-tags",
+        integration_root.to_str().ok_or_else(|| {
+            ContentRecoveryError::Filesystem(format!(
+                "non-UTF-8 temporary repository path {}",
+                integration_root.display()
+            ))
+        })?,
+        "refs/heads/production-snapshot",
+    ])
+    .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    let merge_result = repo.run([
+        "-c",
+        &format!("user.name={AUTHOR_NAME}"),
+        "-c",
+        &format!("user.email={AUTHOR_EMAIL}"),
+        "merge",
+        "--no-edit",
+        "FETCH_HEAD",
+    ]);
+    if let Err(error) = merge_result {
+        if repo.git_dir().join("MERGE_HEAD").is_file() {
+            repo.run(["merge", "--abort"]).map_err(|abort_error| {
+                ContentRecoveryError::Repository(format!(
+                    "merge failed ({error}) and automatic abort failed ({abort_error})"
+                ))
+            })?;
+        }
+        return Err(ContentRecoveryError::Conflict(error.to_string()));
+    }
+    let local_commit = repo
+        .rev_parse("HEAD")
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    Ok(ContentRecoveryResult {
+        deployed_commit: deployed_commit.to_owned(),
+        local_commit,
+        destination: destination.to_path_buf(),
+        files_restored,
+        source_sha256: source.sha256().to_owned(),
+    })
+}
+
+fn latest_recovery_commit(repo: &GitRepo) -> Result<String, ContentRecoveryError> {
+    let output = repo
+        .run([
+            "log",
+            "-1",
+            "--format=%H%x1f%s",
+            "--fixed-strings",
+            "--grep",
+            "recovery: restore deployed content ",
+            "HEAD",
+        ])
+        .map_err(|error| ContentRecoveryError::Repository(error.to_string()))?;
+    let (commit, subject) = output.stdout.split_once('\x1f').ok_or_else(|| {
+        ContentRecoveryError::Destination(
+            "this repository has no deployed recovery anchor; configure its private Git upstream"
+                .to_owned(),
+        )
+    })?;
+    if subject
+        .strip_prefix("recovery: restore deployed content ")
+        .is_none_or(|value| !is_hex(value, 40))
+    {
+        return Err(ContentRecoveryError::Destination(
+            "the latest deployed recovery anchor has invalid provenance".to_owned(),
+        ));
+    }
+    Ok(commit.to_owned())
+}
+
+fn remove_public_source(root: &Path) -> Result<(), ContentRecoveryError> {
+    for relative in SOURCE_PATHS {
+        let path = root.join(relative);
+        if path.is_dir() {
+            fs::remove_dir_all(&path)
+                .map_err(|error| ContentRecoveryError::Filesystem(error.to_string()))?;
+        } else if path.exists() {
+            fs::remove_file(&path)
+                .map_err(|error| ContentRecoveryError::Filesystem(error.to_string()))?;
+        }
+    }
+    Ok(())
+}
+
+fn public_file_count(root: &Path) -> Result<usize, ContentRecoveryError> {
+    let mut count = 0;
+    for relative in SOURCE_PATHS {
+        let path = root.join(relative);
+        if path.is_file() {
+            count += 1;
+        } else if path.is_dir() {
+            count += regular_file_count(&path)?;
+        }
+    }
+    Ok(count)
 }
 
 fn validate_source_archive(bytes: &[u8]) -> Result<(), ContentRecoveryError> {
@@ -620,6 +846,146 @@ mod tests {
                 .rev_parse("HEAD")
                 .expect("head"),
             result.local_commit
+        );
+    }
+
+    #[test]
+    fn deployed_snapshot_merges_public_changes_and_preserves_local_private_work() {
+        let (_old_root, old_source, old_deployed_commit) = source_fixture();
+        let parent = tempfile::tempdir().expect("destination parent");
+        let destination = parent.path().join("content");
+        restore_source_archive(&old_source, &destination, &old_deployed_commit)
+            .expect("recover old source");
+        fs::create_dir_all(destination.join("agent/notes")).expect("private notes");
+        fs::write(
+            destination.join("agent/notes/private.md"),
+            "committed private\n",
+        )
+        .expect("private source");
+        git(&destination, &["add", "-A"]);
+        git(
+            &destination,
+            &[
+                "-c",
+                "user.name=Silan.Hu",
+                "-c",
+                "user.email=silan.hu@u.nus.edu",
+                "commit",
+                "-q",
+                "-m",
+                "test: local private history",
+            ],
+        );
+        fs::write(
+            destination.join("agent/notes/private.md"),
+            "uncommitted private\n",
+        )
+        .expect("private draft");
+
+        let (new_root, _source, _commit) = source_fixture();
+        fs::write(
+            new_root.path().join("resources/blog/post/en.md"),
+            "deployed update\n",
+        )
+        .expect("deployed source");
+        git(new_root.path(), &["add", "-A"]);
+        git(
+            new_root.path(),
+            &[
+                "-c",
+                "user.name=Silan.Hu",
+                "-c",
+                "user.email=silan.hu@u.nus.edu",
+                "commit",
+                "-q",
+                "-m",
+                "test: deployed public update",
+            ],
+        );
+        let new_deployed_commit = GitRepo::open(new_root.path())
+            .expect("new repo")
+            .rev_parse("HEAD")
+            .expect("new head");
+        let new_source =
+            ContentSourceArchive::from_repository(new_root.path()).expect("new deployed source");
+
+        let result = merge_source_archive(&new_source, &destination, &new_deployed_commit)
+            .expect("merge deployed source");
+
+        assert_eq!(result.deployed_commit, new_deployed_commit);
+        assert_eq!(
+            fs::read_to_string(destination.join("resources/blog/post/en.md"))
+                .expect("deployed content"),
+            "deployed update\n"
+        );
+        assert_eq!(
+            fs::read_to_string(destination.join("agent/notes/private.md")).expect("private draft"),
+            "uncommitted private\n"
+        );
+        let status = GitRepo::open(&destination)
+            .expect("merged repo")
+            .run(["status", "--porcelain"])
+            .expect("status")
+            .stdout;
+        assert!(status.contains("agent/notes/private.md"));
+    }
+
+    #[test]
+    fn deployed_snapshot_conflict_leaves_head_and_dirty_source_unchanged() {
+        let (_old_root, old_source, old_deployed_commit) = source_fixture();
+        let parent = tempfile::tempdir().expect("destination parent");
+        let destination = parent.path().join("content");
+        restore_source_archive(&old_source, &destination, &old_deployed_commit)
+            .expect("recover old source");
+        let before = GitRepo::open(&destination)
+            .expect("local repo")
+            .rev_parse("HEAD")
+            .expect("local head");
+        fs::write(
+            destination.join("resources/blog/post/en.md"),
+            "local draft\n",
+        )
+        .expect("local draft");
+
+        let (new_root, _source, _commit) = source_fixture();
+        fs::write(
+            new_root.path().join("resources/blog/post/en.md"),
+            "deployed update\n",
+        )
+        .expect("deployed source");
+        git(new_root.path(), &["add", "-A"]);
+        git(
+            new_root.path(),
+            &[
+                "-c",
+                "user.name=Silan.Hu",
+                "-c",
+                "user.email=silan.hu@u.nus.edu",
+                "commit",
+                "-q",
+                "-m",
+                "test: conflicting deployed update",
+            ],
+        );
+        let new_repo = GitRepo::open(new_root.path()).expect("new repo");
+        let new_deployed_commit = new_repo.rev_parse("HEAD").expect("new head");
+        let new_source =
+            ContentSourceArchive::from_repository(new_root.path()).expect("new deployed source");
+
+        assert!(matches!(
+            merge_source_archive(&new_source, &destination, &new_deployed_commit),
+            Err(ContentRecoveryError::Conflict(_))
+        ));
+        let local_repo = GitRepo::open(&destination).expect("local repo after conflict");
+        assert_eq!(
+            local_repo.rev_parse("HEAD").expect("head after conflict"),
+            before
+        );
+        assert!(!local_repo.git_dir().join("MERGE_HEAD").exists());
+        assert_eq!(
+            fs::read_to_string(destination.join("resources/blog/post/en.md"))
+                .expect("local draft after conflict"),
+            "local draft\n"
         );
     }
 

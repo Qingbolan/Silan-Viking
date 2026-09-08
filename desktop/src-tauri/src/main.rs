@@ -65,6 +65,7 @@ fn main() {
             commands::link_moment_to_content,
             commands::list_documents,
             commands::preview_article_image_attribution,
+            commands::pull_remote_content,
             commands::release_scope,
             commands::remove_deepseek_credentials,
             commands::remove_openai_credentials,

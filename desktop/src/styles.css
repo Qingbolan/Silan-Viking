@@ -1998,6 +1998,13 @@ h1 {
   color: #fff;
 }
 
+.attention-actions button.attention-pull {
+  width: 100%;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
 .attention-actions button:disabled {
   opacity: 0.42;
 }

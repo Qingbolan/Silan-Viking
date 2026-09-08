@@ -174,7 +174,7 @@ export const NavAvatar: React.FC = () => {
       aria-label={label}
       title={label}
       onClick={() => navigate(canonicalInternalPath('/'))}
-      className="group flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform hover:scale-105"
+      className="group flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full"
     >
       <span
         className="flex h-full w-full items-center justify-center overflow-hidden rounded-full"

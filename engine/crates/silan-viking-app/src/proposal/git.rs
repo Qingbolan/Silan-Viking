@@ -102,6 +102,37 @@ impl GitRepo {
         Ok(Self { root })
     }
 
+    /// Clone this repository into an absent destination.
+    ///
+    /// Recovery integration uses an isolated clone to prove a three-way
+    /// merge before it touches the owner's checked-out worktree.
+    pub fn clone_to(&self, destination: impl AsRef<Path>) -> Result<Self, GitError> {
+        let destination = destination.as_ref();
+        let parent = destination.parent().ok_or_else(|| {
+            GitError::Spawn(format!(
+                "clone destination {} has no parent",
+                destination.display()
+            ))
+        })?;
+        run_git_command(
+            parent,
+            [
+                "clone",
+                "--quiet",
+                self.root.to_str().ok_or_else(|| {
+                    GitError::Spawn(format!("non-UTF-8 repository path {}", self.root.display()))
+                })?,
+                destination.to_str().ok_or_else(|| {
+                    GitError::Spawn(format!(
+                        "non-UTF-8 clone destination {}",
+                        destination.display()
+                    ))
+                })?,
+            ],
+        )?;
+        Self::open(destination)
+    }
+
     /// The working-tree root.
     pub fn root(&self) -> &Path {
         &self.root

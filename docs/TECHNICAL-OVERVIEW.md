@@ -161,3 +161,39 @@ Before entering the editor, the desktop application:
 Only paths and workspace identity are persisted in the desktop app's local
 configuration. Git credentials remain in the SSH agent or credential manager,
 and deployment key material remains in its original local file.
+
+## Pulling a Newer Deployed Revision
+
+The desktop delivery card treats a production revision ahead of local HEAD as
+an actionable synchronization state. Pulling follows one bounded state
+machine: read the authenticated production revision, use the configured Git
+upstream when it can supply that exact commit, and rebuild the local database
+projection after integration.
+
+A recovered workspace may intentionally have no Git upstream and a new object
+graph. In that state the same action downloads the authenticated production
+`source.tar`, verifies its declared revision and SHA-256, and synthesizes an
+incoming commit as a child of the latest local recovery anchor. A disposable
+clone proves the three-way merge first. Only a clean preflight is applied to
+the owner's checkout; a conflict leaves its HEAD and files unchanged. The
+production snapshot carries public authored source only, so `agent/` remains
+owned by the local repository and its private backup.
+
+Git remains the conflict authority for saved workspace edits. A dirty worktree
+is allowed when its paths do not overlap the incoming tree update; overlapping
+changes stop before HEAD moves and preserve the local files. Unsaved desktop
+editor buffers block the action because Git cannot include in-memory changes
+in its conflict check. No local history is rewritten by this workflow.
+
+A disaster-recovery checkout has a new Git object graph, so its recovery root
+records `recovery: restore deployed content <production-oid>`. Delivery status
+uses that commit as the local representative of the production OID when the
+original object is unavailable. Commits made after recovery are therefore
+reported as local-ahead instead of being misclassified as remote-ahead merely
+because the physical commit hashes belong to different histories.
+
+The desktop automatically attempts one safe pull for each newly observed
+remote revision when no editor buffer is unsaved. Polling never retries the
+same failed revision in a loop, and a later synchronized or local-ahead status
+clears the obsolete synchronization error without requiring an application
+restart. Production deployment remains an explicit owner-confirmed action.

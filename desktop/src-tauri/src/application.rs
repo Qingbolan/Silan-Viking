@@ -38,6 +38,19 @@ use std::path::{Path, PathBuf};
 const DEFAULT_MOMENTS_BACKGROUND_POSITION: &str = "center 42%";
 const DEFAULT_MOMENTS_COVER_HEIGHT_PX: u16 = 420;
 
+fn delivery_sync_status_for_desktop(
+    status: silan_viking_app::DeliverySyncStatus,
+) -> DeliverySyncStatus {
+    DeliverySyncStatus {
+        local_head: status.local_head,
+        remote_head: status.remote_head,
+        local_commits: status.local_commits,
+        remote_commits: status.remote_commits,
+        workspace_changes: status.workspace_changes,
+        state: status.state,
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct GenerateCoverAssetInput {
     pub(crate) language: String,
@@ -401,18 +414,17 @@ impl DesktopWorkspace {
     }
 
     pub(crate) fn delivery_sync_status(&self) -> Result<DeliverySyncStatus, String> {
-        let status = self
-            .delivery_control
+        self.delivery_control
             .sync_status()
-            .map_err(|error| error.to_string())?;
-        Ok(DeliverySyncStatus {
-            local_head: status.local_head,
-            remote_head: status.remote_head,
-            local_commits: status.local_commits,
-            remote_commits: status.remote_commits,
-            workspace_changes: status.workspace_changes,
-            state: status.state,
-        })
+            .map(delivery_sync_status_for_desktop)
+            .map_err(|error| error.to_string())
+    }
+
+    pub(crate) fn pull_remote_changes(&self) -> Result<DeliverySyncStatus, String> {
+        self.delivery_control
+            .pull_remote_changes()
+            .map(delivery_sync_status_for_desktop)
+            .map_err(|error| error.to_string())
     }
 
     pub(crate) fn workspace_changes(&self) -> Result<Vec<WorkspaceFileChange>, String> {

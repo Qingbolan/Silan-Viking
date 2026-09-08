@@ -201,6 +201,14 @@ pub(crate) async fn get_delivery_sync_status() -> Result<DeliverySyncStatus, Str
 }
 
 #[tauri::command]
+pub(crate) async fn pull_remote_content() -> Result<DeliverySyncStatus, String> {
+    run_background("pull remote content", || {
+        DesktopWorkspace::from_environment()?.pull_remote_changes()
+    })
+    .await
+}
+
+#[tauri::command]
 pub(crate) async fn deploy_content() -> Result<DeployRunStatus, String> {
     run_background("content deploy", || {
         DesktopWorkspace::from_environment()?.deploy_content()
