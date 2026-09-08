@@ -140,7 +140,6 @@ const ProjectGallery: React.FC = () => {
       <div className="mx-auto max-w-6xl px-4">
         <motion.div className="mb-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <BlogHeader
-            eyebrow={language === 'en' ? 'Work' : '作品'}
             title={t('projects.title')}
             description={t('projects.subtitle', { defaultValue: '' }) || undefined}
             search={searchQuery}

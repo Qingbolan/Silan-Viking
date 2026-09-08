@@ -19,7 +19,7 @@ import { Input } from './Input';
 import { Segmented, type SegmentedOption } from './DataDisplay';
 
 export interface BlogHeaderProps {
-  /** Small overline above the title. Defaults to "Writing". */
+  /** Optional small overline above the title. */
   eyebrow?: React.ReactNode;
   title: React.ReactNode;
   /** Standfirst paragraph under the title. */
@@ -96,7 +96,7 @@ const FilterLabel: React.FC<{ icon: React.ReactNode; children: React.ReactNode }
 );
 
 export const BlogHeader: React.FC<BlogHeaderProps> = ({
-  eyebrow = 'Writing',
+  eyebrow,
   title,
   description,
   afterHero,

@@ -303,7 +303,6 @@ const BlogStack: React.FC = () => {
           transition={{ duration: 0.6 }}
         >
           <BlogHeader
-            eyebrow={language === 'en' ? 'Writing' : '文字'}
             title={language === 'en' ? 'Blog' : '博客'}
             search={searchTerm}
             onSearchChange={setSearchTerm}
