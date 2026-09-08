@@ -126,31 +126,17 @@ pub(crate) fn bootstrap_status() -> DesktopBootstrapStatus {
         };
     }
 
-    match DesktopWorkspace::from_environment() {
-        Ok(_) => DesktopBootstrapStatus {
-            state: "ready".to_owned(),
-            project_root: None,
-            project_name: Some("Silan-Viking".to_owned()),
-            repository_url: None,
-            deployment_key_path: None,
-            configured_deployment_key: None,
-            deployment_key_required: false,
-            deploy_host: None,
-            deploy_user: None,
-            error: None,
-        },
-        Err(_) => DesktopBootstrapStatus {
-            state: "needs_workspace".to_owned(),
-            project_root: None,
-            project_name: None,
-            repository_url: None,
-            deployment_key_path: None,
-            configured_deployment_key: None,
-            deployment_key_required: false,
-            deploy_host: None,
-            deploy_user: None,
-            error: None,
-        },
+    DesktopBootstrapStatus {
+        state: "needs_workspace".to_owned(),
+        project_root: None,
+        project_name: None,
+        repository_url: None,
+        deployment_key_path: None,
+        configured_deployment_key: None,
+        deployment_key_required: false,
+        deploy_host: None,
+        deploy_user: None,
+        error: None,
     }
 }
 

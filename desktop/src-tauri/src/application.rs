@@ -1825,7 +1825,7 @@ fn read_project_config(project_root: &Path) -> Result<ProjectConfig, String> {
         .map_err(|error| format!("cannot parse `{}`: {error}", config_path.display()))
 }
 
-fn find_project_root_from_current_dir() -> Result<PathBuf, String> {
+pub(crate) fn find_project_root_from_current_dir() -> Result<PathBuf, String> {
     let mut cursor =
         env::current_dir().map_err(|error| format!("cannot read current directory: {error}"))?;
     loop {

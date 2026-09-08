@@ -64,10 +64,30 @@ pub(crate) fn initialize(config_dir: impl AsRef<Path>) -> Result<(), String> {
         )
     })?;
     let registry_path = config_dir.join(REGISTRY_FILE);
-    let (selection, initialization_error) = match read_selection(&registry_path) {
+    let (mut selection, mut initialization_error) = match read_selection(&registry_path) {
         Ok(selection) => (selection, None),
         Err(error) => (None, Some(error)),
     };
+    let launch_root = std::env::var_os("SILAN_DESKTOP_PROJECT")
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("SILAN_DESKTOP_CONTENT")
+                .and_then(|content| PathBuf::from(content).parent().map(Path::to_path_buf))
+        })
+        .or_else(|| {
+            (selection.is_none() && initialization_error.is_none())
+                .then(|| crate::application::find_project_root_from_current_dir().ok())
+                .flatten()
+        });
+    if let Some(project_root) = launch_root {
+        match register_local_workspace(&registry_path, &project_root, selection.as_ref()) {
+            Ok(registered) => {
+                selection = Some(registered);
+                initialization_error = None;
+            }
+            Err(error) => initialization_error = Some(error),
+        }
+    }
     apply_device_environment(selection.as_ref());
     RUNTIME
         .set(DesktopRuntime {
@@ -76,6 +96,34 @@ pub(crate) fn initialize(config_dir: impl AsRef<Path>) -> Result<(), String> {
             initialization_error: RwLock::new(initialization_error),
         })
         .map_err(|_| "desktop workspace runtime was initialized more than once".to_owned())
+}
+
+/// Activation is recorded only after the local project can be opened. Reopening
+/// the same canonical directory preserves its device-specific deployment key.
+fn register_local_workspace(
+    registry_path: &Path,
+    project_root: &Path,
+    previous: Option<&WorkspaceSelection>,
+) -> Result<WorkspaceSelection, String> {
+    let project_root = fs::canonicalize(project_root)
+        .map_err(|error| format!("cannot resolve launched workspace: {error}"))?;
+    crate::application::DesktopWorkspace::from_project_root(&project_root)?;
+    let summary = crate::application::read_desktop_project_summary(&project_root)?;
+    let mut selection = previous
+        .filter(|saved| fs::canonicalize(&saved.project_root).ok().as_ref() == Some(&project_root))
+        .cloned()
+        .unwrap_or_else(|| {
+            WorkspaceSelection::prepared(
+                project_root.clone(),
+                String::new(),
+                summary.project_name.clone(),
+            )
+        });
+    selection.project_root = project_root;
+    selection.project_name = summary.project_name;
+    selection.state = WorkspaceActivationState::Ready;
+    persist_selection(registry_path, &selection)?;
+    Ok(selection)
 }
 
 pub(crate) fn initialization_error() -> Option<String> {
@@ -180,6 +228,75 @@ fn persist_selection(path: &Path, selection: &WorkspaceSelection) -> Result<(), 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn local_project(root: &Path, name: &str) -> PathBuf {
+        let project = root.join(name);
+        let content = project.join("custom-content");
+        fs::create_dir_all(content.join("resources")).unwrap();
+        assert!(std::process::Command::new("git")
+            .args(["init", "--quiet"])
+            .arg(&content)
+            .status()
+            .unwrap()
+            .success());
+        fs::write(
+            content.join("SCHEMA.md"),
+            include_str!("../../../engine/tests/fixtures/content/SCHEMA.md"),
+        )
+        .unwrap();
+        fs::write(project.join("silan-viking.toml"), format!(
+            "[project]\nname = \"{name}\"\ncontent_dir = \"custom-content\"\n[database]\npath = \"index.sqlite\"\n"
+        )).unwrap();
+        project
+    }
+
+    #[test]
+    fn local_launch_is_restored_and_reopening_preserves_device_settings() {
+        let directory = tempfile::tempdir().unwrap();
+        let project = local_project(directory.path(), "launched-site");
+        let registry = directory.path().join(REGISTRY_FILE);
+        let mut first = register_local_workspace(&registry, &project, None).unwrap();
+        assert_eq!(first.state, WorkspaceActivationState::Ready);
+        assert_eq!(first.project_name, "launched-site");
+        first.deployment_key_path = Some(PathBuf::from("/keys/device.pem"));
+        persist_selection(&registry, &first).unwrap();
+        let restored = read_selection(&registry).unwrap().unwrap();
+        let reopened =
+            register_local_workspace(&registry, &project.join("."), Some(&restored)).unwrap();
+        assert_eq!(reopened.project_root, fs::canonicalize(project).unwrap());
+        assert_eq!(reopened.deployment_key_path, first.deployment_key_path);
+        assert_eq!(
+            read_selection(&registry).unwrap().unwrap().project_root,
+            reopened.project_root
+        );
+    }
+
+    #[test]
+    fn new_launch_replaces_old_selection_but_invalid_launch_leaves_registry_unchanged() {
+        let directory = tempfile::tempdir().unwrap();
+        let registry = directory.path().join(REGISTRY_FILE);
+        let first =
+            register_local_workspace(&registry, &local_project(directory.path(), "first"), None)
+                .unwrap();
+        let second = register_local_workspace(
+            &registry,
+            &local_project(directory.path(), "second"),
+            Some(&first),
+        )
+        .unwrap();
+        assert_eq!(
+            read_selection(&registry).unwrap().unwrap().project_name,
+            "second"
+        );
+        let before = fs::read(&registry).unwrap();
+        assert!(register_local_workspace(
+            &registry,
+            &directory.path().join("missing"),
+            Some(&second)
+        )
+        .is_err());
+        assert_eq!(fs::read(&registry).unwrap(), before);
+    }
 
     #[test]
     fn registry_round_trip_never_contains_key_material() {

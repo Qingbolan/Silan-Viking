@@ -101,6 +101,9 @@ bundle 使用 `packaging/release/dev-install-local.sh --desktop-only --user-apps
 CLI 和 Desktop 必须共同遵守最近项目配置中的 `[project].content_dir`；恢复后的
 content repository 可以使用 `silan.tech` 等设备本地目录名，不能重新硬编码为
 `content/`。
+通过 CLI 成功打开的本机项目必须自动写入 Desktop 的设备级工作空间记录；显式启动
+目录优先于上次选择，同一目录重复打开保留设备配置，无效目录不得覆盖已保存记录。
+之后从应用图标启动时恢复该工作空间，bootstrap 必须返回真实项目路径和名称。
 
 安装后至少验证：
 
