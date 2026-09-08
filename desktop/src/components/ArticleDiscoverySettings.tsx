@@ -336,7 +336,7 @@ export function ArticleDiscoverySettings({
                 {value.image_watermark_mode === 'off' ? 'Remove from' : 'Apply to'} {supportedAssets.length || 'all'} images
               </button>
             </div>
-            {dirty && <p className="article-attribution-note">Save settings before refreshing or applying image attribution.</p>}
+            {dirty && <p className="article-attribution-note">Settings are saving automatically. Image attribution will be available once saved.</p>}
             {appliedCount > 0 && <p className="article-attribution-success">{appliedCount} image{appliedCount === 1 ? '' : 's'} updated.</p>}
             {error && <p className="article-attribution-error" role="alert">{error}</p>}
           </div>

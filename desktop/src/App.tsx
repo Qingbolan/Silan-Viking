@@ -1,4 +1,7 @@
 import React from 'react';
+import { AutosaveQueue, mergePersistedTranslations } from './lib/autosaveQueue';
+import { EditorRecovery, isSourceConflict, preserveDraftRevision, waitForSave } from './lib/editorRecovery';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import {
@@ -35,7 +38,6 @@ import {
   PlayCircle,
   Radio,
   RotateCcw,
-  Save,
   Scale,
   Search,
   Send,
@@ -210,6 +212,7 @@ import type {
   DeployVerificationResult,
   DocumentLanguageAudit,
   EditorDocument,
+  EditorTranslation,
   EntityFilter,
   EpisodeGroup,
   EpisodeSeriesInput,
@@ -470,6 +473,22 @@ export default function App() {
   const [seriesCoverLocalPreview, setSeriesCoverLocalPreview] = React.useState('');
   const [pendingReviewAction, setPendingReviewAction] = React.useState<PendingReviewAction | null>(null);
   const editorRef = React.useRef<MarkdownEditorHandle | null>(null);
+  const autosaveQueue = React.useRef(new AutosaveQueue()).current;
+  const settingsWriteRef = React.useRef<Promise<boolean> | null>(null);
+  const recovery = React.useRef(new EditorRecovery(window.localStorage)).current;
+  const [sourceConflict, setSourceConflict] = React.useState<{
+    id: string; kind: 'markdown' | 'settings'; disk: EditorTranslation | null;
+  } | null>(null);
+  const conflictRef = React.useRef(false);
+  const [conflictReviewOpen, setConflictReviewOpen] = React.useState(true);
+  const [closeRecoveryOpen, setCloseRecoveryOpen] = React.useState(false);
+  const [recoveryCopies, setRecoveryCopies] = React.useState<ReturnType<EditorRecovery['list']>>([]);
+  const [recoveryCopiesOpen, setRecoveryCopiesOpen] = React.useState(false);
+  const closingRef = React.useRef(false);
+  const documentsRef = React.useRef(documents);
+  documentsRef.current = documents;
+  const dirtyIdsRef = React.useRef(dirtyIds);
+  dirtyIdsRef.current = dirtyIds;
   const savedTranslationContentRef = React.useRef(new Map<string, string>());
   const captureInputRef = React.useRef<MarkdownEditorHandle | null>(null);
   const newProjectInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -871,7 +890,8 @@ export default function App() {
     : momentShelfActive || proseShelfActive
       ? chromeLanguage
       : selectedTranslation?.language || chromeLanguage;
-  const selectTopControlLanguage = (language: string) => {
+  const selectTopControlLanguage = async (language: string) => {
+    if (!await flushEditorRef.current()) return;
     if (resumeShelfActive) {
       setResumeLanguage(language);
       return;
@@ -932,7 +952,7 @@ export default function App() {
     : saveFailed
       ? 'Save failed. Your changes are still open.'
       : dirty
-        ? `Unsaved changes in ${selectedLanguage} · ${selected?.role}`
+        ? `Autosave pending · ${selectedLanguage} · ${selected?.role}`
         : 'Source saved';
   const saveDockSubline = !saving && !saveFailed && otherDirtyCount > 0
     ? `${otherDirtyCount} other unsaved translation${otherDirtyCount > 1 ? 's' : ''}`
@@ -1171,7 +1191,8 @@ export default function App() {
     if (!contentEditorOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setContentEditorOpen(false);
+        event.preventDefault();
+        if (checkpointRef.current()) { setContentEditorOpen(false); void flushEditorRef.current(); }
         return;
       }
       // Typora muscle memory: ⌘S / Ctrl+S saves the open translation.
@@ -1189,12 +1210,27 @@ export default function App() {
     setError(null);
     try {
       const nextDocuments = await invoke<EditorDocument[]>('list_documents');
+      setRecoveryCopies(recovery.list());
       savedTranslationContentRef.current = new Map(
         nextDocuments.flatMap((document) => (
           document.translations.map((translation) => [translation.id, translation.content] as const)
         )),
       );
-      setDocuments(nextDocuments);
+      const mergedDocuments = nextDocuments.map((document) => ({
+        ...document,
+        translations: document.translations.map((disk) => {
+          const current = documentsRef.current.flatMap((item) => item.translations).find((item) => item.id === disk.id);
+          const recovered = !current ? recovery.read<EditorTranslation>('markdown', disk.id) : null;
+          if (recovered) dirtyIdsRef.current.add(disk.id);
+          return preserveDraftRevision(disk, recovered || current, dirtyIdsRef.current);
+        }),
+      }));
+      for (const draft of documentsRef.current) {
+        if (!mergedDocuments.some((item) => item.id === draft.id)
+          && draft.translations.some((item) => dirtyIdsRef.current.has(item.id))) mergedDocuments.push(draft);
+      }
+      documentsRef.current = mergedDocuments;
+      setDocuments(mergedDocuments);
       setSelectedId((current) => (
         current && nextDocuments.some((document) => (
           document.id === current && !isArchivedResource(document)
@@ -1212,7 +1248,7 @@ export default function App() {
         });
         return next;
       });
-      setDirtyIds(new Set());
+      setDirtyIds(new Set(dirtyIdsRef.current));
     } catch (reason) {
       setError(String(reason));
     } finally {
@@ -1732,69 +1768,90 @@ export default function App() {
     translationId: string,
     content: string,
   ) => {
-    setDocuments((current) => current.map((document) => (
+    const nextDocuments = documentsRef.current.map((document) => (
       document.id === documentId
         ? {
             ...document,
             translations: document.translations.map((translation) => (
-              translation.id === translationId ? { ...translation, content } : translation
+              translation.id === translationId ? { ...translation, content, title: editorRef.current?.getTitle() || translation.title } : translation
             )),
           }
         : document
-    )));
+    ));
+    documentsRef.current = nextDocuments;
+    setDocuments(nextDocuments);
   }, []);
 
-  const saveSelected = async () => {
-    if (!selected || !selectedTranslation) return null;
-    const content = editorRef.current?.getMarkdown() ?? selectedTranslation.content;
-    const title = editorRef.current?.getTitle() || selectedTranslation.title || selected.title;
-    if (content !== selectedTranslation.content) {
-      replaceTranslationContent(selected.id, selectedTranslation.id, content);
-      setDirtyIds((current) => new Set(current).add(selectedTranslation.id));
-    }
+  const flushMarkdown = () => autosaveQueue.run(async () => {
+    if (conflictRef.current) throw new Error('Resolve the source conflict before saving. Your draft is retained.');
+    let attemptedId = '';
+    let lastSaved: EditorDocument | null = null;
+    if (dirtyIdsRef.current.size) setError(null);
     setSaving(true);
-    setError(null);
     try {
-      const saved = await invoke<EditorDocument>('save_document', {
-        id: selectedTranslation.id,
-        title,
-        content,
-        expectedRevision: selectedTranslation.revision,
-      });
-      const savedTranslation = saved.translations.find(
-        (translation) => translation.id === selectedTranslation.id,
-      );
-      if (savedTranslation) {
-        savedTranslationContentRef.current.set(savedTranslation.id, savedTranslation.content);
-      }
-      setDocuments((current) => current.map((document) => {
-        if (document.id !== saved.id) return document;
-        return {
+      // Read live drafts on every iteration: edits made during I/O stay pending.
+      while (dirtyIdsRef.current.size) {
+        const id = [...dirtyIdsRef.current][0];
+        attemptedId = id;
+        const document = documentsRef.current.find((item) => item.translations.some((part) => part.id === id));
+        const translation = document?.translations.find((part) => part.id === id);
+        if (!document || !translation) throw new Error(`Cannot locate pending Markdown: ${id}`);
+        recovery.write('markdown', id, translation);
+        const saved = await invoke<EditorDocument>('save_document', {
+          id, title: translation.title || document.title,
+          content: translation.content, expectedRevision: translation.revision,
+        });
+        const savedTranslation = saved.translations.find((part) => part.id === id);
+        if (!savedTranslation) throw new Error(`Saved Markdown was not returned: ${id}`);
+        savedTranslationContentRef.current.set(id, savedTranslation.content);
+        if (settingsRevisionRef.current === translation.revision) settingsRevisionRef.current = savedTranslation.revision;
+        const live = documentsRef.current.find((item) => item.id === document.id)
+          ?.translations.find((part) => part.id === id);
+        const nextDirty = new Set(dirtyIdsRef.current);
+        if (live?.content === translation.content && live?.title === translation.title) {
+          nextDirty.delete(id);
+          recovery.remove('markdown', id);
+        }
+        const nextDocuments = documentsRef.current.map((item) => item.id !== saved.id ? item : {
           ...saved,
-          translations: document.translations.map((translation) => {
-            if (translation.id === selectedTranslation.id) {
-              return saved.translations.find((candidate) => candidate.id === translation.id) || translation;
-            }
-            if (dirtyIds.has(translation.id)) return translation;
-            return saved.translations.find((candidate) => candidate.id === translation.id) || translation;
-          }),
-        };
-      }));
-      setDirtyIds((current) => {
-        const next = new Set(current);
-        next.delete(selectedTranslation.id);
-        return next;
-      });
+          translations: mergePersistedTranslations(saved.translations, item.translations, nextDirty),
+        });
+        dirtyIdsRef.current = nextDirty;
+        documentsRef.current = nextDocuments;
+        setDocuments(nextDocuments);
+        setDirtyIds(nextDirty);
+        lastSaved = saved;
+      }
       setSaveFailed(false);
-      return saved;
+      return lastSaved;
     } catch (reason) {
       setError(String(reason));
       setSaveFailed(true);
-      return null;
+      if (isSourceConflict(reason)) {
+        conflictRef.current = true;
+        setSourceConflict({ id: attemptedId, kind: 'markdown', disk: null });
+        setConflictReviewOpen(true);
+        try {
+          const fresh = await invoke<EditorDocument[]>('list_documents');
+          const disk = fresh.flatMap((item) => item.translations).find((item) => item.id === attemptedId);
+          if (disk) setSourceConflict({ id: attemptedId, kind: 'markdown', disk });
+        } catch (readError) { setError(String(readError)); }
+      }
+      throw reason;
     } finally {
       setSaving(false);
     }
+  });
+
+  const saveSelected = async () => {
+    try { return await flushMarkdown(); } catch { return null; }
   };
+
+  React.useEffect(() => {
+    if (!dirtyIds.size || saving || metadataSavingId || conflictRef.current) return;
+    const timer = window.setTimeout(() => { void saveSelected(); }, saveFailed ? 5000 : 650);
+    return () => window.clearTimeout(timer);
+  }, [documents, dirtyIds, saving, saveFailed, metadataSavingId]);
 
   async function generateMissingTranslation(
     targetLanguage: string,
@@ -1992,7 +2049,14 @@ export default function App() {
       translationSync.reset();
     }
     replaceTranslationContent(selected.id, selectedTranslation.id, content);
-    setDirtyIds((current) => new Set(current).add(selectedTranslation.id));
+    const pending = new Set(dirtyIdsRef.current).add(selectedTranslation.id);
+    dirtyIdsRef.current = pending;
+    setDirtyIds(pending);
+    const draft = documentsRef.current.flatMap((item) => item.translations).find((item) => item.id === selectedTranslation.id);
+    if (draft) {
+      try { recovery.write('markdown', draft.id, draft); }
+      catch (reason) { setError(`Recovery copy could not be saved: ${String(reason)}`); }
+    }
   }, [
     replaceTranslationContent,
     selected?.id,
@@ -2194,10 +2258,16 @@ export default function App() {
   };
 
   const mergeSavedDocument = React.useCallback((saved: EditorDocument) => {
-    setDocuments((current) => current.map((document) => {
+    saved.translations.forEach((translation) => {
+      savedTranslationContentRef.current.set(translation.id, translation.content);
+    });
+    const nextDocuments = documentsRef.current.map((document) => {
       const sameEntity = document.entity_type === saved.entity_type
         && document.entity_id === saved.entity_id;
-      if (document.id === saved.id) return saved;
+      if (document.id === saved.id) return {
+        ...saved,
+        translations: mergePersistedTranslations(saved.translations, document.translations, dirtyIdsRef.current),
+      };
       if (!sameEntity) return document;
       return {
         ...document,
@@ -2216,7 +2286,9 @@ export default function App() {
         visibility: saved.visibility,
         pinned: saved.pinned,
       };
-    }));
+    });
+    documentsRef.current = nextDocuments;
+    setDocuments(nextDocuments);
   }, []);
 
   const saveGroupState = async (group: ContentGroup, state: DocumentStateInput) => {
@@ -2729,34 +2801,21 @@ export default function App() {
   const selectedCoverPreviewUrl = selectedMetadataCoverLabel
     ? metadataCoverLocalPreview || toWebviewMediaUrl(metadataDraft.cover_url)
     : '';
-  const metadataDirty = Boolean(selectedContentGroup && (
-    metadataDraft.title.trim() !== selectedContentGroup.title
-    || metadataDraft.description.trim() !== (selectedContentGroup.description || '')
-    || metadataDraft.cover_url.trim() !== (selectedContentGroup.coverUrl || '')
-    || metadataDraft.cover_source_type !== (selectedContentGroup.coverSourceType || 'image')
-    || metadataDraft.cover_website_url.trim() !== (selectedContentGroup.coverWebsiteUrl || '')
-    || metadataDraft.github_url.trim() !== (selectedContentGroup.githubUrl || '')
-    || metadataDraft.demo_url.trim() !== (selectedContentGroup.demoUrl || '')
-    || metadataDraft.moment_type !== (selectedContentGroup.momentType || 'progress')
-    || metadataDraft.priority !== (selectedContentGroup.priority || 'medium')
-    || JSON.stringify(parseMetadataTags(metadataDraft.tags))
-      !== JSON.stringify(selectedContentGroup.tags || [])
-    || JSON.stringify(metadataDraft.article_attribution)
-      !== JSON.stringify(selectedContentGroup.articleAttribution || defaultArticleAttribution())
-  ));
-  const publishingDirty = Boolean(selectedContentGroup && hasDocumentStateChanges(
-    selectedContentGroup.kind,
-    publishingDraft,
-    {
-      status: selectedContentGroup.status,
-      visibility: selectedContentGroup.visibility,
-      pinned: selectedContentGroup.pinned,
-    },
-  ));
+  const [settingsBaseline, setSettingsBaseline] = React.useState<{
+    id: string; metadata: typeof metadataDraft; publishing: typeof publishingDraft;
+  } | null>(null);
+  const metadataDirty = settingsBaseline?.id === selectedContentGroup?.id
+    && Boolean(settingsBaseline && JSON.stringify(metadataDraft) !== JSON.stringify(settingsBaseline.metadata));
+  const publishingDirty = settingsBaseline?.id === selectedContentGroup?.id
+    && Boolean(settingsBaseline && JSON.stringify(publishingDraft) !== JSON.stringify(settingsBaseline.publishing));
   const contentSettingsDirty = metadataDirty || publishingDirty;
+  type SettingsRecovery = {
+    metadata: typeof metadataDraft; publishing: typeof publishingDraft; revision: string;
+  };
+  const settingsRevisionRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!selectedContentGroup || metadataSavingId) return;
-    setMetadataDraft({
+    if (!selectedContentGroup) return;
+    const metadata: typeof metadataDraft = {
       title: selectedContentGroup.title,
       description: selectedContentGroup.description || '',
       cover_url: selectedContentGroup.coverUrl || '',
@@ -2768,33 +2827,31 @@ export default function App() {
       moment_type: selectedContentGroup.momentType || 'progress',
       priority: selectedContentGroup.priority || 'medium',
       tags: (selectedContentGroup.tags || []).join(', '),
-    });
-    setPublishingDraft({
+    };
+    const publishing: typeof publishingDraft = {
       status: selectedContentGroup.status,
       visibility: selectedContentGroup.visibility,
       pinned: Boolean(selectedContentGroup.pinned),
-    });
+    };
+    let recovered: SettingsRecovery | null = null;
+    try { recovered = recovery.read<SettingsRecovery>('settings', selectedContentGroup.id); }
+    catch (reason) { setError(`Cannot read settings recovery copy: ${String(reason)}`); }
+    settingsRevisionRef.current = recovered?.revision ?? null;
+    setMetadataDraft(recovered?.metadata || metadata);
+    setPublishingDraft(recovered?.publishing || publishing);
+    setSettingsBaseline({ id: selectedContentGroup.id, metadata, publishing });
     setMetadataError(null);
     setMetadataCoverError(undefined);
     setMetadataCoverLocalPreview('');
-  }, [
-    selectedContentGroup?.id,
-    selectedContentGroup?.title,
-    selectedContentGroup?.description,
-    selectedContentGroup?.coverUrl,
-    selectedContentGroup?.coverSourceType,
-    selectedContentGroup?.coverWebsiteUrl,
-    selectedContentGroup?.githubUrl,
-    selectedContentGroup?.demoUrl,
-    selectedContentGroup?.articleAttribution,
-    selectedContentGroup?.momentType,
-    selectedContentGroup?.priority,
-    selectedContentGroup?.tags,
-    selectedContentGroup?.status,
-    selectedContentGroup?.visibility,
-    selectedContentGroup?.pinned,
-    metadataSavingId,
-  ]);
+  }, [selectedContentGroup?.id]);
+
+  React.useEffect(() => {
+    if (!selectedContentGroup || !settingsBaseline || metadataDirty || publishingDirty) return;
+    if (settingsBaseline.id !== selectedContentGroup.id || metadataDraft.title === selectedContentGroup.title) return;
+    const metadata = { ...metadataDraft, title: selectedContentGroup.title };
+    setMetadataDraft(metadata);
+    setSettingsBaseline({ ...settingsBaseline, metadata });
+  }, [selectedContentGroup?.title, metadataDirty, publishingDirty]);
 
   React.useEffect(() => {
     setRelationshipError(null);
@@ -2870,40 +2927,15 @@ export default function App() {
     }
   }, [selectedContentGroup?.id, commentVisibilityPendingId, loadDocuments]);
 
-  const resetMetadataDraftForGroup = (group: ContentGroup) => {
-    setMetadataDraft({
-      title: group.title,
-      description: group.description || '',
-      cover_url: group.coverUrl || '',
-      cover_source_type: group.coverSourceType || inferCoverSourceType(group.coverUrl),
-      cover_website_url: group.coverWebsiteUrl || '',
-      github_url: group.githubUrl || '',
-      demo_url: group.demoUrl || '',
-      article_attribution: group.articleAttribution || defaultArticleAttribution(),
-      moment_type: group.momentType || 'progress',
-      priority: group.priority || 'medium',
-      tags: (group.tags || []).join(', '),
-    });
-    setPublishingDraft({
-      status: group.status,
-      visibility: group.visibility,
-      pinned: Boolean(group.pinned),
-    });
-    setMetadataError(null);
-    setMetadataCoverError(undefined);
-    setMetadataCoverLocalPreview('');
-  };
-
-  const closeContentEditorLayer = () => {
+  const closeContentEditorLayer = async () => {
+    // Closing the overlay keeps workspace drafts; source failure must not trap navigation.
+    if (!checkpointEditor()) return;
+    void flushEditorRef.current();
     if (contentRailPanel === 'settings') {
-      if (selectedContentGroup) {
-        if (metadataSavingId === selectedContentGroup.id) return;
-        resetMetadataDraftForGroup(selectedContentGroup);
-      }
       setContentRailPanel(contentRailMode === 'interaction' ? 'reactions' : 'parts');
-      return;
+    } else {
+      setContentEditorOpen(false);
     }
-    setContentEditorOpen(false);
   };
 
   const uploadMetadataCover = async (file: File) => {
@@ -2931,68 +2963,188 @@ export default function App() {
     }
   };
 
-  const saveContentSettings = async () => {
-    if (!selectedContentGroup || !selectedMetadataTranslation || metadataSavingId) return;
+  const persistContentSettings = async () => {
+    if (conflictRef.current) return false;
+    if (!selectedContentGroup || !selectedMetadataTranslation) return false;
     const title = metadataDraft.title.trim();
     if (!title) {
       setMetadataError('Title is required.');
-      return;
-    }
-    if (dirtyIds.has(selectedMetadataTranslation.id)) {
-      setMetadataError('Save Markdown before changing settings.');
-      return;
+      return false;
     }
     setMetadataSavingId(selectedContentGroup.id);
     setMetadataError(null);
     try {
-      const saved = await invoke<EditorDocument>('save_content_settings', {
-        id: selectedMetadataTranslation.id,
-        metadata: {
-          title,
-          description: selectedMetadataSummaryLabel ? metadataDraft.description.trim() : null,
-          cover_url: selectedMetadataCoverLabel ? metadataDraft.cover_url.trim() : null,
-          cover_source_type: selectedContentGroup.kind === 'project' ? metadataDraft.cover_source_type : null,
-          cover_website_url: selectedContentGroup.kind === 'project' ? metadataDraft.cover_website_url.trim() : null,
-          github_url: selectedContentGroup.kind === 'project' ? metadataDraft.github_url.trim() : null,
-          demo_url: selectedContentGroup.kind === 'project' ? metadataDraft.demo_url.trim() : null,
-          article_attribution: selectedContentGroup.kind === 'blog'
-            ? metadataDraft.article_attribution
-            : null,
-          moment_type: selectedContentGroup.kind === 'moment' ? metadataDraft.moment_type : null,
-          priority: selectedContentGroup.kind === 'moment' ? metadataDraft.priority : null,
-          tags: selectedContentGroup.kind === 'moment' ? parseMetadataTags(metadataDraft.tags) : null,
-        },
-        state: {
-          status: publishingDraft.status,
-          visibility: publishingDraft.visibility,
-          pinned: selectedContentGroup.kind === 'moment' ? Boolean(publishingDraft.pinned) : null,
-        },
-        expectedRevision: selectedMetadataTranslation.revision,
+      await flushMarkdown();
+      await autosaveQueue.run(async () => {
+        const saved = await invoke<EditorDocument>('save_content_settings', {
+          id: selectedMetadataTranslation.id,
+          metadata: {
+            title,
+            description: selectedMetadataSummaryLabel ? metadataDraft.description.trim() : null,
+            cover_url: selectedMetadataCoverLabel ? metadataDraft.cover_url.trim() : null,
+            cover_source_type: selectedContentGroup.kind === 'project' ? metadataDraft.cover_source_type : null,
+            cover_website_url: selectedContentGroup.kind === 'project' ? metadataDraft.cover_website_url.trim() : null,
+            github_url: selectedContentGroup.kind === 'project' ? metadataDraft.github_url.trim() : null,
+            demo_url: selectedContentGroup.kind === 'project' ? metadataDraft.demo_url.trim() : null,
+            article_attribution: selectedContentGroup.kind === 'blog'
+              ? metadataDraft.article_attribution
+              : null,
+            moment_type: selectedContentGroup.kind === 'moment' ? metadataDraft.moment_type : null,
+            priority: selectedContentGroup.kind === 'moment' ? metadataDraft.priority : null,
+            tags: selectedContentGroup.kind === 'moment' ? parseMetadataTags(metadataDraft.tags) : null,
+          },
+          state: {
+            status: publishingDraft.status,
+            visibility: publishingDraft.visibility,
+            pinned: selectedContentGroup.kind === 'moment' ? Boolean(publishingDraft.pinned) : null,
+          },
+          expectedRevision: settingsRevisionRef.current ?? documentsRef.current.flatMap((item) => item.translations)
+            .find((item) => item.id === selectedMetadataTranslation.id)?.revision,
+        });
+        mergeSavedDocument(saved);
+        setSettingsBaseline({ id: selectedContentGroup.id, metadata: metadataDraft, publishing: publishingDraft });
+        settingsRevisionRef.current = null;
+        // A newer settings draft is checkpointed by the following render.
+        recovery.removeIf<SettingsRecovery>('settings', selectedContentGroup.id, (copy) =>
+          JSON.stringify(copy.metadata) === JSON.stringify(metadataDraft)
+            && JSON.stringify(copy.publishing) === JSON.stringify(publishingDraft));
       });
-      mergeSavedDocument(saved);
-      setMetadataDraft({
-        title: saved.title,
-        description: saved.description || '',
-        cover_url: saved.cover_url || '',
-        cover_source_type: saved.cover_source_type || inferCoverSourceType(saved.cover_url),
-        cover_website_url: saved.cover_website_url || '',
-        github_url: saved.github_url || '',
-        demo_url: saved.demo_url || '',
-        article_attribution: saved.article_attribution || defaultArticleAttribution(),
-        moment_type: saved.moment_type || 'progress',
-        priority: saved.priority || 'medium',
-        tags: saved.tags.join(', '),
-      });
-      setPublishingDraft({
-        status: saved.status,
-        visibility: saved.visibility,
-        pinned: Boolean(saved.pinned),
-      });
+      return true;
     } catch (reason) {
       setMetadataError(String(reason));
+      if (isSourceConflict(reason)) {
+        conflictRef.current = true;
+        setSourceConflict({ id: selectedMetadataTranslation.id, kind: 'settings', disk: null });
+        setConflictReviewOpen(true);
+        try {
+          const fresh = await invoke<EditorDocument[]>('list_documents');
+          const disk = fresh.flatMap((item) => item.translations).find((item) => item.id === selectedMetadataTranslation.id);
+          if (disk) { setSourceConflict({ id: disk.id, kind: 'settings', disk }); setConflictReviewOpen(true); }
+        } catch (readError) { setError(String(readError)); }
+      }
+      return false;
     } finally {
       setMetadataSavingId('');
     }
+  };
+
+  const saveContentSettings = () => {
+    if (settingsWriteRef.current) return settingsWriteRef.current;
+    const write = persistContentSettings().finally(() => { settingsWriteRef.current = null; });
+    settingsWriteRef.current = write;
+    return write;
+  };
+
+  const checkpointEditor = () => {
+    try {
+      for (const document of documentsRef.current) {
+        for (const draft of document.translations) {
+          if (dirtyIdsRef.current.has(draft.id)) recovery.write('markdown', draft.id, draft);
+        }
+      }
+      if (contentSettingsDirty && selectedContentGroup && selectedMetadataTranslation) {
+        settingsRevisionRef.current ??= selectedMetadataTranslation.revision;
+        recovery.write<SettingsRecovery>('settings', selectedContentGroup.id, {
+          metadata: metadataDraft, publishing: publishingDraft,
+          revision: settingsRevisionRef.current ?? selectedMetadataTranslation.revision,
+        });
+      }
+      return true;
+    } catch (reason) {
+      setError(`Recovery copy could not be saved. Keep this window open: ${String(reason)}`);
+      return false;
+    }
+  };
+  const checkpointRef = React.useRef(checkpointEditor);
+  checkpointRef.current = checkpointEditor;
+  React.useEffect(() => { checkpointRef.current(); }, [documents, dirtyIds, metadataDraft, publishingDraft]);
+
+  const flushEditorRef = React.useRef(async () => true);
+  flushEditorRef.current = async () => {
+    if (contentSettingsDirty && !await saveContentSettings()) return false;
+    try { await flushMarkdown(); return true; } catch { return false; }
+  };
+
+  React.useEffect(() => {
+    if (!contentSettingsDirty || metadataSavingId || !selectedMetadataTranslation || conflictRef.current) return;
+    const timer = window.setTimeout(() => { void saveContentSettings(); }, metadataError ? 5000 : 650);
+    return () => window.clearTimeout(timer);
+  }, [metadataDraft, publishingDraft, contentSettingsDirty, metadataSavingId, metadataError, selectedMetadataTranslation?.id]);
+
+  React.useEffect(() => {
+    const blur = () => { void flushEditorRef.current(); };
+    window.addEventListener('blur', blur);
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    if (isTauri()) {
+      void getCurrentWindow().onCloseRequested(async (event) => {
+        event.preventDefault();
+        if (closingRef.current) return;
+        closingRef.current = true;
+        try {
+          if (!checkpointRef.current()) return;
+          if (await waitForSave(flushEditorRef.current())) {
+            if (checkpointRef.current()) await getCurrentWindow().destroy();
+          } else setCloseRecoveryOpen(true);
+        } catch (reason) { setError(String(reason)); setCloseRecoveryOpen(true); }
+        finally { closingRef.current = false; }
+      }).then((stop) => { if (disposed) stop(); else unlisten = stop; });
+    }
+    return () => { disposed = true; unlisten?.(); window.removeEventListener('blur', blur); };
+  }, []);
+
+  const parkConflictedDraft = async () => {
+    const conflict = sourceConflict;
+    if (!conflict || !checkpointRef.current()) return;
+    dirtyIdsRef.current = new Set([...dirtyIdsRef.current].filter((id) => id !== conflict.id));
+    setDirtyIds(dirtyIdsRef.current);
+    if (conflict.kind === 'settings' && selectedContentGroup && selectedMetadataTranslation?.id === conflict.id) {
+      setSettingsBaseline({ id: selectedContentGroup.id, metadata: metadataDraft, publishing: publishingDraft });
+    }
+    conflictRef.current = false;
+    setSourceConflict(null);
+    setSaveFailed(false);
+    setMetadataError(null);
+    setError(null);
+    setRecoveryCopies(recovery.list());
+    setRecoveryCopiesOpen(true);
+    await loadDocuments();
+  };
+
+  const resolveSourceConflict = async (useDraft: boolean) => {
+    const conflict = sourceConflict;
+    if (!conflict?.disk) return;
+    const disk = conflict.disk;
+    if (conflict.kind === 'settings' && selectedMetadataTranslation?.id !== conflict.id) {
+      const target = documentsRef.current.find((document) => document.translations.some((part) => part.id === conflict.id));
+      if (target) { setSelectedId(target.id); setContentEditorOpen(true); }
+      setError('Review the original document settings before applying this choice.');
+      return;
+    }
+    if (conflict.kind === 'settings') {
+      // Explicit user choice authorizes rebasing settings; a later disk write still conflicts.
+      settingsRevisionRef.current = disk.revision;
+    } else {
+      const next = documentsRef.current.map((document) => ({
+        ...document,
+        translations: document.translations.map((draft) => draft.id !== conflict.id ? draft
+          : useDraft ? { ...draft, revision: disk.revision } : disk),
+      }));
+      if (!useDraft) {
+        dirtyIdsRef.current = new Set([...dirtyIdsRef.current].filter((id) => id !== conflict.id));
+        recovery.remove('markdown', conflict.id);
+        setDirtyIds(dirtyIdsRef.current);
+      }
+      documentsRef.current = next;
+      setDocuments(next);
+    }
+    conflictRef.current = false;
+    setSourceConflict(null);
+    setError(null);
+    setSaveFailed(false);
+    if (conflict.kind === 'settings') await saveContentSettings();
+    else if (useDraft) await saveSelected();
+    else await loadDocuments();
   };
 
   const reloadDocumentsAfterRelationship = async (saved: EditorDocument) => {
@@ -3023,17 +3175,11 @@ export default function App() {
     nextPage: ContentSettingsPage = 'relations',
   ) => {
     if (!selectedContentGroup || relationshipBusy) return;
-    const hasDirtyMarkdown = selectedContentGroup.documents.some((document) => (
-      document.translations.some((translation) => dirtyIds.has(translation.id))
-    ));
-    if (hasDirtyMarkdown) {
-      setRelationshipError('Save Markdown before changing relationships.');
-      return;
-    }
     setRelationshipBusy(busyKey);
     setRelationshipError(null);
     try {
-      const saved = await invoke<EditorDocument>(command, args);
+      if (!await flushEditorRef.current()) return;
+      const saved = await autosaveQueue.run(() => invoke<EditorDocument>(command, args));
       await reloadDocumentsAfterRelationship(saved);
       setContentSettingsPage(nextPage);
       if (command === 'link_moment_to_content' || command === 'unlink_moment_from_content') {
@@ -3202,6 +3348,11 @@ export default function App() {
         data-has-moments-background={updatesShellActive && momentsCoverImage ? 'true' : undefined}
         style={mainStyle}
       >
+        {recoveryCopies.length > 0 && (
+          <button type="button" onClick={() => { setRecoveryCopies(recovery.list()); setRecoveryCopiesOpen(true); }}>
+            Local recovery copies ({recoveryCopies.length})
+          </button>
+        )}
         {error && (
           <div className="error" role="alert">
             <AlertCircle size={16} />
@@ -3975,7 +4126,7 @@ export default function App() {
                           ariaLabel={`${selected.title} ${selected.role} Markdown editor`}
                           previewLabel={`${selected.title} · ${selected.role} · ${selectedTranslation.language}`}
                           activity={workspaceActivity}
-                          disabled={saving}
+                          disabled={false}
                           toolbarVisible={toolbarVisible}
                           reviewFindings={selectedReviewFindings}
                           onReviewFindingActivate={languageReview.openReport}
@@ -4088,15 +4239,7 @@ export default function App() {
                   onChange={changeMarkdownWorkspaceView}
                 />
               )}
-              <button
-                className={`primary ${saving ? 'pending' : ''}`}
-                type="button"
-                disabled={!selected || !dirty || saving}
-                onClick={() => void saveSelected()}
-              >
-                <Save size={16} />
-                {saving ? 'Saving' : saveFailed ? 'Retry save' : 'Save Markdown'}
-              </button>
+              <span role="status">{saving ? 'Saving automatically…' : saveFailed ? 'Save failed · retrying' : dirty ? 'Autosave pending…' : 'All changes saved'}</span>
             </div>
           </div>
         )}
@@ -4529,15 +4672,9 @@ export default function App() {
                     >
                       <Type size={15} />
                     </button>
-                    <button
-                      type="button"
-                      className={`content-save ${saving ? 'pending' : ''}`}
-                      disabled={!dirty || saving}
-                      onClick={() => void saveSelected()}
-                    >
-                      {saving ? <LoaderCircle size={15} /> : <Save size={15} />}
-                      {saving ? 'Saving' : saveFailed ? 'Retry' : 'Save'}
-                    </button>
+                    <span className="content-save" role="status">
+                      {saving ? 'Saving…' : sourceConflict ? 'Source conflict · draft kept' : saveFailed ? 'Save failed · retrying' : dirty ? 'Autosave pending…' : 'Saved'}
+                    </span>
                   </div>
                 )}
               </header>
@@ -4551,6 +4688,15 @@ export default function App() {
                 onClose: closeContentEditorLayer,
               })}
 
+              {sourceConflict && (
+                <div className="error" role="alert">
+                  The source changed on disk. Your draft is retained.
+                  <button type="button" onClick={() => setConflictReviewOpen(true)}>Review conflict</button>
+                </div>
+              )}
+              {(saveFailed || metadataError) && !sourceConflict && (
+                <div className="error" role="alert">{metadataError || error || 'Save failed. Your draft is retained.'}</div>
+              )}
               <div className="content-editor-body" data-panel={contentRailPanel}>
                 {contentRailPanel !== 'settings' && (
                 <aside className="content-part-rail" aria-label="Content side rail">
@@ -4751,7 +4897,7 @@ export default function App() {
                           ariaLabel={`${selected.title} ${selected.role} Markdown editor`}
                           previewLabel={`${selected.title} · ${selected.role} · ${selectedTranslation.language}`}
                           activity={workspaceActivity}
-                          disabled={saving}
+                          disabled={false}
                           toolbarVisible={toolbarVisible}
                           documentMeta={{
                             authorName: workspacePreferences?.identity.display_name || 'Silan Hu',
@@ -5213,7 +5359,7 @@ export default function App() {
                                 <section className="resume-editor-section content-settings-section">
                                   <div className="content-settings-section-heading">
                                     <h3>Availability</h3>
-                                    <p>Choose the lifecycle and audience, then save both with the rest of this page. Open Markdown edits must be saved first.</p>
+                                    <p>Changes to lifecycle and audience are saved automatically.</p>
                                   </div>
                                   <ContentPublishingFields
                                     kind={selectedContentGroup.kind}
@@ -5268,14 +5414,9 @@ export default function App() {
                         </main>
                       </div>
                       <div className="resume-editor-actions" aria-label="Settings actions">
-                        <button
-                          type="button"
-                          className="resume-editor-save"
-                          disabled={!contentSettingsDirty || !selectedMetadataTranslation || metadataSavingId === selectedContentGroup.id}
-                          onClick={() => void saveContentSettings()}
-                        >
-                          {metadataSavingId === selectedContentGroup.id ? 'Saving' : 'Save settings'}
-                        </button>
+                        <span role="status">
+                          {metadataSavingId ? 'Saving automatically…' : metadataError ? 'Save failed · retrying' : contentSettingsDirty ? 'Autosave pending…' : 'All changes saved'}
+                        </span>
                       </div>
                     </section>
                   )}
@@ -5428,6 +5569,66 @@ export default function App() {
           }
         }}
       />
+      {sourceConflict && conflictReviewOpen && !closeRecoveryOpen && (
+        <div className="dialog-overlay" style={{ zIndex: 10000 }}>
+          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Resolve source conflict">
+            <h2>The source changed on disk</h2>
+            <p>Your draft has been kept separately. Choose which version to save; newer disk changes will still be checked.</p>
+            <p>{sourceConflict.disk?.source_path || error || 'The current source could not be read yet.'}</p>
+            {!sourceConflict.disk && <button type="button" onClick={() => {
+              const pending = sourceConflict;
+              void invoke<EditorDocument[]>('list_documents').then((fresh) => {
+                const disk = fresh.flatMap((item) => item.translations).find((item) => item.id === pending.id);
+                if (disk) setSourceConflict({ ...pending, disk });
+                else setError('This source was removed from disk. Your local draft is still retained.');
+              }).catch((reason) => setError(String(reason)));
+            }}>Read current disk version</button>}
+            <label>Current disk version
+              <textarea readOnly value={sourceConflict.disk?.content || ''} rows={8} style={{ width: '100%' }} />
+            </label>
+            <label>Your {sourceConflict.kind === 'settings' ? 'settings' : 'draft'}
+              <textarea readOnly rows={8} style={{ width: '100%' }} value={sourceConflict.kind === 'settings'
+                ? JSON.stringify({ metadata: metadataDraft, publishing: publishingDraft }, null, 2)
+                : documentsRef.current.flatMap((item) => item.translations).find((item) => item.id === sourceConflict.id)?.content || ''} />
+            </label>
+            <div className="dialog-actions">
+              <button type="button" onClick={() => setConflictReviewOpen(false)}>Continue editing</button>
+              <button type="button" onClick={() => void parkConflictedDraft()}>Keep recovery copy and resume other saves</button>
+              {sourceConflict.kind === 'markdown' && <button type="button" disabled={!sourceConflict.disk} onClick={() => void resolveSourceConflict(false)}>Use disk version</button>}
+              <button type="button" disabled={!sourceConflict.disk} onClick={() => void resolveSourceConflict(true)}>Save my {sourceConflict.kind === 'settings' ? 'settings' : 'draft'}</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {recoveryCopiesOpen && (
+        <div className="dialog-overlay" style={{ zIndex: 10002 }}>
+          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Local recovery copies">
+            <h2>Local recovery copies</h2>
+            <p>These copies remain available even if their original file was removed. Select and copy the text you need.</p>
+            {recoveryCopies.map((copy) => (
+              <label key={`${copy.kind}:${copy.id}`} style={{ display: 'block' }}>{copy.kind} · {copy.id}
+                <textarea readOnly rows={8} style={{ width: '100%' }} value={copy.kind === 'markdown'
+                  ? String((copy.value as EditorTranslation).content || '') : JSON.stringify(copy.value, null, 2)} />
+              </label>
+            ))}
+            <button type="button" onClick={() => setRecoveryCopiesOpen(false)}>Close</button>
+          </section>
+        </div>
+      )}
+      {closeRecoveryOpen && (
+        <div className="dialog-overlay" style={{ zIndex: 10001 }}>
+          <section className="dialog-card" style={{ width: 'min(720px, 90vw)', maxHeight: '85vh', overflow: 'auto' }} role="dialog" aria-modal="true" aria-label="Close with recovery copy">
+            <h2>Source save did not finish</h2>
+            <p>You can keep editing, or close with a local recovery copy. Pending drafts return when this workspace opens again.</p>
+            <div className="dialog-actions">
+              <button type="button" onClick={() => setCloseRecoveryOpen(false)}>Keep editing</button>
+              <button type="button" onClick={() => {
+                if (checkpointRef.current()) void getCurrentWindow().destroy().catch((reason) => setError(String(reason)));
+              }}>Close with recovery copy</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

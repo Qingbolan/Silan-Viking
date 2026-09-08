@@ -14,7 +14,7 @@
     "test:shelf-interaction": "node --experimental-strip-types --test src/lib/shelfInteractionMode.test.mjs",
     "test:startup-sequence": "esbuild src/lib/startupOrb.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/silan-startup-orb.test.mjs && node --experimental-strip-types --test src/lib/bootPrimer.test.mjs src/lib/startupSequence.test.mjs /tmp/silan-startup-orb.test.mjs",
     "test:language-review": "node --experimental-strip-types --test src/lib/languageReviewWorkflow.test.mjs",
-    "test:editor-workflows": "node --experimental-strip-types --test src/lib/markdownBlockDiff.test.mjs src/lib/translationSyncWorkflow.test.mjs",
+    "test:editor-workflows": "node --experimental-strip-types --test src/lib/markdownBlockDiff.test.mjs src/lib/translationSyncWorkflow.test.mjs src/lib/autosaveQueue.test.mjs src/lib/editorRecovery.test.mjs",
     "test:deployment-readiness": "node --experimental-strip-types --test src/lib/deploymentReadiness.test.mjs",
     "test:workspace-view": "node --experimental-strip-types --test src/lib/markdownWorkspaceView.test.mjs",
     "test:onboarding": "node --experimental-strip-types --test src/lib/workspaceOnboardingModel.test.mjs",

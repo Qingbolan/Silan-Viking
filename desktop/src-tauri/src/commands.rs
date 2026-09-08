@@ -79,8 +79,11 @@ pub(crate) fn complete_workspace_onboarding(
 }
 
 #[tauri::command]
-pub(crate) fn list_documents() -> Result<Vec<EditorDocument>, String> {
-    DesktopWorkspace::from_environment()?.list_documents()
+pub(crate) async fn list_documents() -> Result<Vec<EditorDocument>, String> {
+    run_background("list documents", || {
+        DesktopWorkspace::from_environment()?.list_documents()
+    })
+    .await
 }
 
 #[tauri::command]
@@ -306,13 +309,16 @@ pub(crate) async fn commit_workspace_changes(
 }
 
 #[tauri::command]
-pub(crate) fn save_document(
+pub(crate) async fn save_document(
     id: String,
     title: String,
     content: String,
     expected_revision: String,
 ) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.save_document(&id, &title, &content, &expected_revision)
+    run_background("save document", move || {
+        DesktopWorkspace::from_environment()?.save_document(&id, &title, &content, &expected_revision)
+    })
+    .await
 }
 
 #[tauri::command]
@@ -417,18 +423,21 @@ pub(crate) fn delete_archived_resource(
 }
 
 #[tauri::command]
-pub(crate) fn save_content_settings(
+pub(crate) async fn save_content_settings(
     id: String,
     metadata: ContentMetadataInput,
     state: DocumentStateInput,
     expected_revision: String,
 ) -> Result<EditorDocument, String> {
-    DesktopWorkspace::from_environment()?.save_content_settings(
-        &id,
-        metadata,
-        state,
-        &expected_revision,
-    )
+    run_background("save content settings", move || {
+        DesktopWorkspace::from_environment()?.save_content_settings(
+            &id,
+            metadata,
+            state,
+            &expected_revision,
+        )
+    })
+    .await
 }
 
 #[tauri::command]
