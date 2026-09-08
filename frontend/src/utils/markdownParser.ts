@@ -51,7 +51,7 @@ export const parseAcademicMarkdown = (markdownText: string): BlogContent[] => {
   const content: BlogContent[] = [];
   const lines = markdownText.split('\n');
   let currentParagraph = '';
-  let inCodeBlock = false;
+  let codeFence: string | null = null;
   let codeContent = '';
   let codeLanguage = '';
   let inQuote = false;
@@ -127,25 +127,27 @@ export const parseAcademicMarkdown = (markdownText: string): BlogContent[] => {
     const trimmedLine = line.trim();
     const nextLine = lines[i + 1] ?? '';
 
-    // Handle code blocks
-    if (trimmedLine.startsWith('```')) {
-      if (!inCodeBlock) {
-        // Start of code block
-        pushParagraph();
-        pushQuote();
-        inCodeBlock = true;
-        inQuote = false;
-        codeLanguage = trimmedLine.substring(3).trim();
-      } else {
-        // End of code block
+    // A closing fence must use the opening marker and at least its length.
+    // Preserve every line inside the fence before parsing other block syntax.
+    const fence = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+    if (codeFence) {
+      if (fence && fence[1][0] === codeFence[0]
+        && fence[1].length >= codeFence.length && !fence[2].trim()) {
         pushCodeBlock();
-        inCodeBlock = false;
+        codeFence = null;
+      } else {
+        codeContent += line + '\n';
       }
       continue;
     }
-
-    if (inCodeBlock) {
-      codeContent += line + '\n';
+    if (fence && !(fence[1][0] === '`' && fence[2].includes('`'))) {
+      pushParagraph();
+      pushQuote();
+      pushList();
+      pushTable();
+      codeFence = fence[1];
+      inQuote = false;
+      codeLanguage = fence[2].trim().split(/\s+/)[0];
       continue;
     }
 
