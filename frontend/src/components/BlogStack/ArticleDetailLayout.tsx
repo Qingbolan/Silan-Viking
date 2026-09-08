@@ -16,7 +16,7 @@ import {
 import { useLanguage } from '../LanguageContext';
 import { BlogData, UserAnnotation, SelectedText } from './types/blog';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
-import AuthorByline from './components/AuthorByline';
+import ArticleHero from './components/ArticleHero';
 import { ArticleResourceStrip } from './components/ArticleResourceStrip';
 import { useBlogEngagement } from './hooks/useBlogEngagement';
 import {
@@ -184,7 +184,18 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
   }, [language, post.publishDate]);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div data-ds id={ARTICLE_ID} className="scroll-mt-24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <ArticleHero
+        id={ARTICLE_HEADER_ID}
+        title={title}
+        author={authorName}
+        date={formattedDate}
+        readTime={post.readTime}
+        category={post.category}
+        tags={post.tags}
+        coverImage={coverImage}
+        language={language}
+      />
       <KnowledgeBaseShell
         overview={{
           label: title,
@@ -198,45 +209,12 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         wordCount={wordCount}
         showLeftRail={false}
         outlineHeadingSelector="header h1, h2, h3"
-        outlineDefaultCollapsed
         likes={likes}
         commentsCount={commentsCount}
       >
         {/* Body — article title, short deck, then the long-form content.
             `#kb-active-part` is the contract DOMOutline scans for headings. */}
-        <div data-ds id={ARTICLE_ID} className="prose-content markdown-body w-full scroll-mt-24">
-          <header id={ARTICLE_HEADER_ID} className="scroll-mt-24 pb-8 pt-6">
-            <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-ds-xs leading-5 text-ds-fg-subtle">
-              {formattedDate && <span>{formattedDate}</span>}
-              {post.category && <span>{post.category}</span>}
-              {post.readTime && <span>{post.readTime}</span>}
-            </div>
-            <h1
-              className="max-w-[70rem] break-words text-balance font-display text-ds-3xl font-medium leading-[1.08] tracking-normal text-ds-fg sm:text-ds-4xl lg:text-7xl"
-            >
-              {title}
-            </h1>
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-ds-base font-medium leading-6 text-ds-fg-muted">
-              <AuthorByline name={authorName} />
-              {post.tags?.slice(0, 3).map((tag) => (
-                <span key={tag} className="font-mono text-ds-xs text-ds-fg-subtle">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-            {coverImage && (
-              <figure className="mt-10 max-w-[74rem] overflow-hidden rounded-ds-lg border border-ds-border bg-ds-surface-2 shadow-ds-2">
-                <div className="aspect-[16/9] w-full overflow-hidden">
-                  <img
-                    src={coverImage}
-                    alt={`${title} cover`}
-                    loading="eager"
-                    className="size-full object-cover"
-                  />
-                </div>
-              </figure>
-            )}
-          </header>
+        <div data-ds className="prose-content markdown-body w-full">
 
           <nav data-ds aria-label={language === 'zh' ? '文章章节' : 'Article sections'} className="mt-2 flex flex-wrap items-end gap-2 border-b border-ds-border">
             {sectionTabs.map((tab) => {
