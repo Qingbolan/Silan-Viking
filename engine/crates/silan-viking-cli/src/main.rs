@@ -1,5 +1,6 @@
 //! `silan-viking` CLI binary — M8 command surface.
 
+mod backend_build;
 mod banner;
 mod cover;
 mod credentials;
@@ -3023,7 +3024,7 @@ enum DeployWhat {
     Content,
     /// Install a committed frontend code artifact and publish its static view.
     Frontend,
-    /// Install a committed backend artifact, build, restart and verify.
+    /// Cross-compile a committed backend locally, upload, restart and verify.
     Backend,
     /// Install matching code artifacts, then complete via the content release.
     All,
@@ -3517,44 +3518,6 @@ impl<'a> RemoteArtifactTransport<'a> {
             }
         }
         Err(last_error.unwrap_or_else(|| format!("[transfer] {label}: upload failed")))
-    }
-
-    fn sync_backend_source(&self, backend: &Path, remote_build_dir: &str) -> Result<(), String> {
-        if !backend.is_dir() {
-            return Err(format!(
-                "[backend] source directory not found: {}",
-                backend.display()
-            ));
-        }
-        ssh_exec(
-            self.cfg,
-            &format!("mkdir -p {}", shell_quote(remote_build_dir)),
-        )?;
-        let mut cmd = Command::new("rsync");
-        cmd.args([
-            "-az",
-            "--delete",
-            "--exclude=.git/",
-            "--exclude=*.log",
-            "--exclude=silan-backend",
-            "--exclude=silan-backend-mac",
-            "--exclude=._*",
-            "--exclude=.DS_Store",
-        ]);
-        cmd.arg("-e").arg(self.rsync_ssh_command());
-        cmd.arg(format!("{}/", backend.display()));
-        cmd.arg(format!(
-            "{}:{}/",
-            ssh_target(self.cfg),
-            remote_build_dir.trim_end_matches('/')
-        ));
-        let status = run_status_with_timeout(&mut cmd, self.timeout, "[backend] rsync source")?;
-        if !status.success() {
-            return Err(format!(
-                "[backend] rsync source exited with status {status}"
-            ));
-        }
-        Ok(())
     }
 
     fn sync_frontend_source(&self, frontend: &Path, remote_source_dir: &str) -> Result<(), String> {
@@ -4252,6 +4215,10 @@ fn run_nginx_deploy(
         println!("  auth    project machine token; OAuth remains server-managed");
         println!("  scope   --what={}", what.label());
         let mut step = 1;
+        if what.does_backend() {
+            println!("  {step} backend  probe Linux target; local Go + Zig cross-build and validate API + sqlite2pg");
+            step += 1;
+        }
         if what.does_frontend() {
             println!("  {step} frontend source → persistent server build workspace");
             step += 1;
@@ -4261,7 +4228,7 @@ fn run_nginx_deploy(
             step += 1;
         }
         if what.does_backend() {
-            println!("  {step} backend  incremental rsync source → build API + sqlite2pg (remote)");
+            println!("  {step} backend  upload verified static binaries → atomic install");
             step += 1;
         }
         if what.does_backend() {
@@ -4299,6 +4266,16 @@ fn run_nginx_deploy(
         return Ok(());
     }
 
+    // Complete both local builds before any remote mutation, including --what=all.
+    let backend_artifact = if what.does_backend() {
+        backend_build::BuiltBackend::preflight()?;
+        let platform = ssh_exec(cfg, "uname -s; uname -m")?;
+        let target = backend_build::LinuxTarget::parse(&platform)?;
+        Some(backend_build::BuiltBackend::build(project_root, target)?)
+    } else {
+        None
+    };
+
     let refresh_frontend = what.does_frontend();
     let mut did_work = false;
     // Stage frontend source and provision all failure-prone build dependencies
@@ -4317,7 +4294,7 @@ fn run_nginx_deploy(
     // Backend goes before content so the matching sqlite2pg importer is
     // installed before the content phase invokes it.
     if what.does_backend() {
-        deploy_nginx_backend(project_root, cfg)?;
+        deploy_nginx_backend(backend_artifact.as_ref().expect("backend built"), cfg)?;
         did_work = true;
     }
     if what.does_backend() {
@@ -4922,42 +4899,29 @@ fn compile_nginx_frontend(cfg: &DeployConfig) -> Result<(), String> {
 /// transaction. Code deployment installs it; clients never invoke it over SSH.
 const REMOTE_SQLITE2PG_BIN: &str = "/usr/local/bin/silan-sqlite2pg";
 
-/// Phase 3 — backend. Incrementally sync the Go source, build on the server
-/// (CGO_ENABLED=1 — the SQLite driver needs cgo + libsqlite on the target's
-/// libc), and drop the binary at `<remote_dir>/api/silan-backend`. A
-/// `backend-api.yaml` is written if one isn't already there; the caller
-/// restarts systemd to pick it up.
-fn deploy_nginx_backend(project_root: &Path, cfg: &DeployConfig) -> Result<(), String> {
-    let artifact = GitCodeArtifact::materialize(project_root, "backend")?;
-    let backend = artifact.component("backend");
-    if !backend.is_dir() {
-        return Err(format!(
-            "[backend] {} not found — silan-viking expects backend/ next to engine/",
-            backend.display(),
-        ));
-    }
-    let remote_build_dir = "/tmp/silan-backend-build";
-    println!("[backend] rsync source → {remote_build_dir}");
-    RemoteArtifactTransport::new(cfg).sync_backend_source(&backend, remote_build_dir)?;
-
+/// Upload locally cross-compiled binaries. The server only installs and runs them.
+fn deploy_nginx_backend(
+    artifact: &backend_build::BuiltBackend,
+    cfg: &DeployConfig,
+) -> Result<(), String> {
+    let backend = artifact.source();
     let api_dir = format!("{}/api", cfg.remote_dir);
     let etc_dir = format!("{api_dir}/etc");
     let bin_path = format!("{api_dir}/silan-backend");
     let importer = REMOTE_SQLITE2PG_BIN;
-    // Go's build cache makes this fast after the first run, and a fresh build
-    // catches any drift between local source and what is deployed.
-    println!("[backend] remote build (API + runtime-safe sqlite2pg importer)");
-    ssh_exec(
-        cfg,
-        &format!(
-            "set -e && \
-             mkdir -p {api_dir} {etc_dir} && \
-             install -d -o www -g www -m 0750 /var/lib/silan-viking/content-releases && \
-             cd {remote_build_dir} && \
-             CGO_ENABLED=1 go build -o {bin_path} backend.go && \
-             CGO_ENABLED=1 go build -o {importer} ./cmd/sqlite2pg"
-        ),
-    )?;
+    // Stage both verified binaries before replacing either executable. Temporary
+    // files sit on the destination filesystem so each final rename is atomic.
+    let suffix = format!(".next-{}", std::process::id());
+    let api_next = format!("{bin_path}{suffix}");
+    let importer_next = format!("{importer}{suffix}");
+    scp_to(cfg, &artifact.api(), &api_next)?;
+    scp_to(cfg, &artifact.importer(), &importer_next)?;
+    ssh_exec(cfg, &format!(
+        "set -e; mkdir -p {etc}; install -d -o www -g www -m 0750 /var/lib/silan-viking/content-releases; chmod 0755 {api_next} {importer_next}; {api_next} -h >/dev/null 2>&1; {importer_next} -h >/dev/null 2>&1; mv -f {importer_next} {importer}; mv -f {api_next} {api}",
+        etc = shell_quote(&etc_dir), api_next = shell_quote(&api_next),
+        importer_next = shell_quote(&importer_next), importer = shell_quote(importer),
+        api = shell_quote(&bin_path),
+    ))?;
     deploy_nginx_geoip_database(cfg)?;
 
     // Write etc/backend-api.yaml if missing. Don't clobber a hand-edited

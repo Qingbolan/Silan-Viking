@@ -1,6 +1,6 @@
 # 16 · Unified content release and code delivery architecture
 
-> Decision owner: Silan.Hu · Status: settled · Revised: 2026-08-26
+> Decision owner: Silan.Hu · Status: settled · Revised: 2026-09-09
 
 ## 16.1 Decision
 
@@ -86,10 +86,23 @@ from one committed project revision. They do not rsync the mutable worktree.
 This gives code delivery a stable provenance boundary and prevents unrelated
 local edits from leaking into production.
 
-The server may compile the bounded artifact because the Go SQLite dependency
-requires the target libc and the frontend renderer requires the managed browser
-runtime. This compilation is a code-release operation, never a content-release
-operation.
+Backend code is cross-compiled locally using Go and Zig, with CGO enabled and
+musl linked statically. The target is discovered with read-only `uname` over SSH;
+Linux x86_64 and aarch64 are supported. Both the API and sqlite2pg importer must
+build from the committed source and pass ELF architecture/static-link checks
+before any remote mutation (including for `--what=all`). Go and Zig must be on
+local PATH. Missing tools, unsupported targets, or compilation failures stop the
+release; there is no remote compilation fallback.
+
+The transport uploads only the binaries, verifies checksums, stages both files,
+then installs each using a same-filesystem atomic rename. Restart and health
+checks follow. The server needs neither Go nor a C compiler for backend delivery.
+Frontend compilation and rendering still use the managed server browser runtime.
+
+Backend delivery phases are `probe -> local build -> validate -> upload ->
+install -> restart -> verify`. Failure before upload leaves live files unchanged;
+failure during upload leaves live binaries unchanged. Installation uses atomic
+rename per executable, not a transaction spanning both destination files.
 
 ## 16.6 Public behavior
 
@@ -98,7 +111,7 @@ operation.
 - `silan site deploy --what=frontend --confirm`: committed frontend artifact,
   compile baseline, render and publish.
 - `silan site deploy --what=backend --confirm`: committed backend artifact,
-  build, restart and health-check.
+  local cross-build, binary upload, restart and health-check.
 - `silan site deploy --what=all --confirm`: install matching code artifacts,
   compile the frontend baseline, then finish through the content transaction.
 - `silan site preview --confirm`: disposable local Docker stack.
@@ -130,6 +143,7 @@ all validation and Git initialization succeeds.
 The following paths are intentionally obsolete and must not be reintroduced as
 fallbacks:
 
+- backend source uploads and production-host Go/CGO compilation;
 - embedding recursive frontend/backend source tarballs in the CLI build;
 - Docker image shipping as an alternative production strategy;
 - SSH content promotion, live SQLite download, operator-side table promotion,
