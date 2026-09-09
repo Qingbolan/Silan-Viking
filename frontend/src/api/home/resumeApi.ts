@@ -249,7 +249,7 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
   const [response, moments, portfolioProjects] = await Promise.all([
     get<ResumeResponse>('/api/v1/resume', { lang: formatLanguage(language), ...acquisition }),
     fetchMomentsApi(language),
-    fetchProjects({ status: 'active', featured: true, size: 100 }, language),
+    fetchProjects({ featured: true, size: 100 }, language),
   ]);
 
   const parts = response.parts || [];
@@ -374,7 +374,6 @@ export const fetchResumeData = async (language: Language = 'en'): Promise<Resume
           date: update.date,
           tags: update.tags || [],
           type: update.type,
-          status: update.status,
           priority: update.priority,
           pinned: update.pinned,
         })),

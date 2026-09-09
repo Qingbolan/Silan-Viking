@@ -86,20 +86,6 @@ func (pc *ProjectCreate) SetNillableProjectType(s *string) *ProjectCreate {
 	return pc
 }
 
-// SetStatus sets the "status" field.
-func (pc *ProjectCreate) SetStatus(pr project.Status) *ProjectCreate {
-	pc.mutation.SetStatus(pr)
-	return pc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (pc *ProjectCreate) SetNillableStatus(pr *project.Status) *ProjectCreate {
-	if pr != nil {
-		pc.SetStatus(*pr)
-	}
-	return pc
-}
-
 // SetStartDate sets the "start_date" field.
 func (pc *ProjectCreate) SetStartDate(s string) *ProjectCreate {
 	pc.mutation.SetStartDate(s)
@@ -180,6 +166,34 @@ func (pc *ProjectCreate) SetThumbnailURL(s string) *ProjectCreate {
 func (pc *ProjectCreate) SetNillableThumbnailURL(s *string) *ProjectCreate {
 	if s != nil {
 		pc.SetThumbnailURL(*s)
+	}
+	return pc
+}
+
+// SetCoverSourceType sets the "cover_source_type" field.
+func (pc *ProjectCreate) SetCoverSourceType(pst project.CoverSourceType) *ProjectCreate {
+	pc.mutation.SetCoverSourceType(pst)
+	return pc
+}
+
+// SetNillableCoverSourceType sets the "cover_source_type" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableCoverSourceType(pst *project.CoverSourceType) *ProjectCreate {
+	if pst != nil {
+		pc.SetCoverSourceType(*pst)
+	}
+	return pc
+}
+
+// SetCoverWebsiteURL sets the "cover_website_url" field.
+func (pc *ProjectCreate) SetCoverWebsiteURL(s string) *ProjectCreate {
+	pc.mutation.SetCoverWebsiteURL(s)
+	return pc
+}
+
+// SetNillableCoverWebsiteURL sets the "cover_website_url" field if the given value is not nil.
+func (pc *ProjectCreate) SetNillableCoverWebsiteURL(s *string) *ProjectCreate {
+	if s != nil {
+		pc.SetCoverWebsiteURL(*s)
 	}
 	return pc
 }
@@ -399,9 +413,9 @@ func (pc *ProjectCreate) defaults() {
 		v := project.DefaultProjectType
 		pc.mutation.SetProjectType(v)
 	}
-	if _, ok := pc.mutation.Status(); !ok {
-		v := project.DefaultStatus
-		pc.mutation.SetStatus(v)
+	if _, ok := pc.mutation.CoverSourceType(); !ok {
+		v := project.DefaultCoverSourceType
+		pc.mutation.SetCoverSourceType(v)
 	}
 	if _, ok := pc.mutation.IsFeatured(); !ok {
 		v := project.DefaultIsFeatured
@@ -460,14 +474,6 @@ func (pc *ProjectCreate) check() error {
 			return &ValidationError{Name: "project_type", err: fmt.Errorf(`ent: validator failed for field "Project.project_type": %w`, err)}
 		}
 	}
-	if _, ok := pc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Project.status"`)}
-	}
-	if v, ok := pc.mutation.Status(); ok {
-		if err := project.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Project.status": %w`, err)}
-		}
-	}
 	if v, ok := pc.mutation.GithubURL(); ok {
 		if err := project.GithubURLValidator(v); err != nil {
 			return &ValidationError{Name: "github_url", err: fmt.Errorf(`ent: validator failed for field "Project.github_url": %w`, err)}
@@ -486,6 +492,14 @@ func (pc *ProjectCreate) check() error {
 	if v, ok := pc.mutation.ThumbnailURL(); ok {
 		if err := project.ThumbnailURLValidator(v); err != nil {
 			return &ValidationError{Name: "thumbnail_url", err: fmt.Errorf(`ent: validator failed for field "Project.thumbnail_url": %w`, err)}
+		}
+	}
+	if _, ok := pc.mutation.CoverSourceType(); !ok {
+		return &ValidationError{Name: "cover_source_type", err: errors.New(`ent: missing required field "Project.cover_source_type"`)}
+	}
+	if v, ok := pc.mutation.CoverSourceType(); ok {
+		if err := project.CoverSourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "cover_source_type", err: fmt.Errorf(`ent: validator failed for field "Project.cover_source_type": %w`, err)}
 		}
 	}
 	if _, ok := pc.mutation.IsFeatured(); !ok {
@@ -563,10 +577,6 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 		_spec.SetField(project.FieldProjectType, field.TypeString, value)
 		_node.ProjectType = value
 	}
-	if value, ok := pc.mutation.Status(); ok {
-		_spec.SetField(project.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
-	}
 	if value, ok := pc.mutation.StartDate(); ok {
 		_spec.SetField(project.FieldStartDate, field.TypeString, value)
 		_node.StartDate = value
@@ -590,6 +600,14 @@ func (pc *ProjectCreate) createSpec() (*Project, *sqlgraph.CreateSpec) {
 	if value, ok := pc.mutation.ThumbnailURL(); ok {
 		_spec.SetField(project.FieldThumbnailURL, field.TypeString, value)
 		_node.ThumbnailURL = value
+	}
+	if value, ok := pc.mutation.CoverSourceType(); ok {
+		_spec.SetField(project.FieldCoverSourceType, field.TypeEnum, value)
+		_node.CoverSourceType = value
+	}
+	if value, ok := pc.mutation.CoverWebsiteURL(); ok {
+		_spec.SetField(project.FieldCoverWebsiteURL, field.TypeString, value)
+		_node.CoverWebsiteURL = value
 	}
 	if value, ok := pc.mutation.IsFeatured(); ok {
 		_spec.SetField(project.FieldIsFeatured, field.TypeBool, value)

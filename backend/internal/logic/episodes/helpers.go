@@ -62,7 +62,6 @@ func episodePartBody(ctx context.Context, svcCtx *svc.ServiceContext, episodeID,
 
 func publicEpisodeQuery(q *ent.EpisodeQuery) {
 	q.Where(
-		episode.StatusEQ(episode.StatusPublished),
 		episode.VisibilityEQ(episode.VisibilityPublic),
 	).
 		WithTranslations().
@@ -124,14 +123,14 @@ func episodeToData(ep *ent.Episode, language string) types.EpisodeData {
 	}
 
 	return types.EpisodeData{
-		ID:              ep.ID,
-		SeriesID:        ep.SeriesID,
-		SeriesSlug:      seriesSlug,
-		Slug:            ep.Slug,
-		Title:           title,
-		Description:     description,
-		EpisodeNumber:   ep.EpisodeNumber,
-		Status:          string(ep.Status),
+		ID:            ep.ID,
+		SeriesID:      ep.SeriesID,
+		SeriesSlug:    seriesSlug,
+		Slug:          ep.Slug,
+		Title:         title,
+		Description:   description,
+		EpisodeNumber: ep.EpisodeNumber,
+
 		Visibility:      string(ep.Visibility),
 		PublishDate:     publishDate,
 		UpdatedAt:       ep.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
@@ -188,9 +187,9 @@ func seriesToData(series *ent.EpisodeSeries, language string) types.EpisodeSerie
 		Title:       title,
 		Description: description,
 		CoverURL:    coverURL,
-		Status:      string(series.Status),
-		Episodes:    episodes,
-		CreatedAt:   series.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   series.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+
+		Episodes:  episodes,
+		CreatedAt: series.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: series.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }

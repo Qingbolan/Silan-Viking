@@ -44,11 +44,8 @@ func (Episode) Fields() []ent.Field {
 			MaxLen(500).
 			Optional(),
 		field.Int("episode_number"),
-		field.Enum("status").
-			Values("draft", "published", "archived").
-			Default("draft"),
 		field.Enum("visibility").
-			Values("private", "unlisted", "public").
+			Values("private", "public").
 			Default("private"),
 		field.String("published_at").
 			Optional().

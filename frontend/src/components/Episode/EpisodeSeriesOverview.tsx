@@ -119,7 +119,6 @@ const EpisodeSeriesOverview: React.FC = () => {
           metadata={<>
             <span>{zh ? '系列' : 'Series'}</span>
             <span>{series.episodes.length} {zh ? '集' : 'episodes'}</span>
-            {series.status && <span>{series.status}</span>}
           </>}
         />}
         overview={{

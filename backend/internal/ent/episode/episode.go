@@ -23,8 +23,6 @@ const (
 	FieldTitle = "title"
 	// FieldEpisodeNumber holds the string denoting the episode_number field in the database.
 	FieldEpisodeNumber = "episode_number"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
 	// FieldVisibility holds the string denoting the visibility field in the database.
 	FieldVisibility = "visibility"
 	// FieldPublishedAt holds the string denoting the published_at field in the database.
@@ -64,7 +62,6 @@ var Columns = []string{
 	FieldSlug,
 	FieldTitle,
 	FieldEpisodeNumber,
-	FieldStatus,
 	FieldVisibility,
 	FieldPublishedAt,
 	FieldDurationMinutes,
@@ -97,33 +94,6 @@ var (
 	DefaultID func() string
 )
 
-// Status defines the type for the "status" enum field.
-type Status string
-
-// StatusDraft is the default value of the Status enum.
-const DefaultStatus = StatusDraft
-
-// Status values.
-const (
-	StatusDraft     Status = "draft"
-	StatusPublished Status = "published"
-	StatusArchived  Status = "archived"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusDraft, StatusPublished, StatusArchived:
-		return nil
-	default:
-		return fmt.Errorf("episode: invalid enum value for status field: %q", s)
-	}
-}
-
 // Visibility defines the type for the "visibility" enum field.
 type Visibility string
 
@@ -132,9 +102,8 @@ const DefaultVisibility = VisibilityPrivate
 
 // Visibility values.
 const (
-	VisibilityPrivate  Visibility = "private"
-	VisibilityUnlisted Visibility = "unlisted"
-	VisibilityPublic   Visibility = "public"
+	VisibilityPrivate Visibility = "private"
+	VisibilityPublic  Visibility = "public"
 )
 
 func (v Visibility) String() string {
@@ -144,7 +113,7 @@ func (v Visibility) String() string {
 // VisibilityValidator is a validator for the "visibility" field enum values. It is called by the builders before save.
 func VisibilityValidator(v Visibility) error {
 	switch v {
-	case VisibilityPrivate, VisibilityUnlisted, VisibilityPublic:
+	case VisibilityPrivate, VisibilityPublic:
 		return nil
 	default:
 		return fmt.Errorf("episode: invalid enum value for visibility field: %q", v)
@@ -177,11 +146,6 @@ func ByTitle(opts ...sql.OrderTermOption) OrderOption {
 // ByEpisodeNumber orders the results by the episode_number field.
 func ByEpisodeNumber(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEpisodeNumber, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // ByVisibility orders the results by the visibility field.

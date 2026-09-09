@@ -45,9 +45,6 @@ func (EpisodeSeries) Fields() []ent.Field {
 			MaxLen(1000).
 			Optional().
 			Nillable(),
-		field.Enum("status").
-			Values("ongoing", "completed", "archived").
-			Default("ongoing"),
 		field.Time("created_at").
 			Default(time.Now).
 			Optional().

@@ -84,20 +84,6 @@ func (ic *IdeaCreate) SetNillableAbstract(s *string) *IdeaCreate {
 	return ic
 }
 
-// SetStatus sets the "status" field.
-func (ic *IdeaCreate) SetStatus(i idea.Status) *IdeaCreate {
-	ic.mutation.SetStatus(i)
-	return ic
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ic *IdeaCreate) SetNillableStatus(i *idea.Status) *IdeaCreate {
-	if i != nil {
-		ic.SetStatus(*i)
-	}
-	return ic
-}
-
 // SetVisibility sets the "visibility" field.
 func (ic *IdeaCreate) SetVisibility(i idea.Visibility) *IdeaCreate {
 	ic.mutation.SetVisibility(i)
@@ -265,10 +251,6 @@ func (ic *IdeaCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ic *IdeaCreate) defaults() {
-	if _, ok := ic.mutation.Status(); !ok {
-		v := idea.DefaultStatus
-		ic.mutation.SetStatus(v)
-	}
 	if _, ok := ic.mutation.Visibility(); !ok {
 		v := idea.DefaultVisibility
 		ic.mutation.SetVisibility(v)
@@ -312,14 +294,6 @@ func (ic *IdeaCreate) check() error {
 	if v, ok := ic.mutation.Slug(); ok {
 		if err := idea.SlugValidator(v); err != nil {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Idea.slug": %w`, err)}
-		}
-	}
-	if _, ok := ic.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Idea.status"`)}
-	}
-	if v, ok := ic.mutation.Status(); ok {
-		if err := idea.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Idea.status": %w`, err)}
 		}
 	}
 	if _, ok := ic.mutation.Visibility(); !ok {
@@ -395,10 +369,6 @@ func (ic *IdeaCreate) createSpec() (*Idea, *sqlgraph.CreateSpec) {
 	if value, ok := ic.mutation.Abstract(); ok {
 		_spec.SetField(idea.FieldAbstract, field.TypeString, value)
 		_node.Abstract = value
-	}
-	if value, ok := ic.mutation.Status(); ok {
-		_spec.SetField(idea.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
 	}
 	if value, ok := ic.mutation.Visibility(); ok {
 		_spec.SetField(idea.FieldVisibility, field.TypeEnum, value)

@@ -100,7 +100,6 @@ const searchProjects = async (
       path: `/projects/${project.slug || project.id}`,
       tags: Array.isArray(project.tags) ? project.tags : [],
       date: project.updated_at || undefined,
-      context: project.status || undefined,
     })),
   };
 };
@@ -115,7 +114,6 @@ const searchMoments = async (
     const haystack = [
       moment.title,
       moment.description,
-      moment.status,
       moment.type,
       moment.moment_type,
       ...(moment.tags ?? []),
@@ -132,7 +130,7 @@ const searchMoments = async (
       path: `/moments?id=${encodeURIComponent(moment.slug || moment.id)}`,
       tags: Array.isArray(moment.tags) ? moment.tags : [],
       date: moment.date || moment.updated_at || moment.created_at || undefined,
-      context: moment.status || moment.type || undefined,
+      context: moment.type || undefined,
     })),
   };
 };

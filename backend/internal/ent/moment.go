@@ -36,8 +36,6 @@ type Moment struct {
 	Date string `json:"date,omitempty"`
 	// Tags holds the value of the "tags" field.
 	Tags []string `json:"tags,omitempty"`
-	// Status holds the value of the "status" field.
-	Status moment.Status `json:"status,omitempty"`
 	// Priority holds the value of the "priority" field.
 	Priority moment.Priority `json:"priority,omitempty"`
 	// Pinned holds the value of the "pinned" field.
@@ -105,7 +103,7 @@ func (*Moment) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case moment.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case moment.FieldID, moment.FieldUserID, moment.FieldSlug, moment.FieldSubjectKind, moment.FieldMomentType, moment.FieldVisibility, moment.FieldTitle, moment.FieldDescription, moment.FieldDate, moment.FieldStatus, moment.FieldPriority, moment.FieldExternalID, moment.FieldImageURL, moment.FieldVideoURL, moment.FieldDocumentURL, moment.FieldDemoURL, moment.FieldGithubURL, moment.FieldExternalURL:
+		case moment.FieldID, moment.FieldUserID, moment.FieldSlug, moment.FieldSubjectKind, moment.FieldMomentType, moment.FieldVisibility, moment.FieldTitle, moment.FieldDescription, moment.FieldDate, moment.FieldPriority, moment.FieldExternalID, moment.FieldImageURL, moment.FieldVideoURL, moment.FieldDocumentURL, moment.FieldDemoURL, moment.FieldGithubURL, moment.FieldExternalURL:
 			values[i] = new(sql.NullString)
 		case moment.FieldCreatedAt, moment.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -185,12 +183,6 @@ func (m *Moment) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &m.Tags); err != nil {
 					return fmt.Errorf("unmarshal field tags: %w", err)
 				}
-			}
-		case moment.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				m.Status = moment.Status(value.String)
 			}
 		case moment.FieldPriority:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -363,9 +355,6 @@ func (m *Moment) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("tags=")
 	builder.WriteString(fmt.Sprintf("%v", m.Tags))
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", m.Status))
 	builder.WriteString(", ")
 	builder.WriteString("priority=")
 	builder.WriteString(fmt.Sprintf("%v", m.Priority))

@@ -125,20 +125,6 @@ func (bpc *BlogPostCreate) SetNillableContentType(bt *blogpost.ContentType) *Blo
 	return bpc
 }
 
-// SetStatus sets the "status" field.
-func (bpc *BlogPostCreate) SetStatus(b blogpost.Status) *BlogPostCreate {
-	bpc.mutation.SetStatus(b)
-	return bpc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (bpc *BlogPostCreate) SetNillableStatus(b *blogpost.Status) *BlogPostCreate {
-	if b != nil {
-		bpc.SetStatus(*b)
-	}
-	return bpc
-}
-
 // SetVisibility sets the "visibility" field.
 func (bpc *BlogPostCreate) SetVisibility(b blogpost.Visibility) *BlogPostCreate {
 	bpc.mutation.SetVisibility(b)
@@ -417,10 +403,6 @@ func (bpc *BlogPostCreate) defaults() {
 		v := blogpost.DefaultContentType
 		bpc.mutation.SetContentType(v)
 	}
-	if _, ok := bpc.mutation.Status(); !ok {
-		v := blogpost.DefaultStatus
-		bpc.mutation.SetStatus(v)
-	}
 	if _, ok := bpc.mutation.Visibility(); !ok {
 		v := blogpost.DefaultVisibility
 		bpc.mutation.SetVisibility(v)
@@ -476,14 +458,6 @@ func (bpc *BlogPostCreate) check() error {
 	if v, ok := bpc.mutation.ContentType(); ok {
 		if err := blogpost.ContentTypeValidator(v); err != nil {
 			return &ValidationError{Name: "content_type", err: fmt.Errorf(`ent: validator failed for field "BlogPost.content_type": %w`, err)}
-		}
-	}
-	if _, ok := bpc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "BlogPost.status"`)}
-	}
-	if v, ok := bpc.mutation.Status(); ok {
-		if err := blogpost.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "BlogPost.status": %w`, err)}
 		}
 	}
 	if _, ok := bpc.mutation.Visibility(); !ok {
@@ -592,10 +566,6 @@ func (bpc *BlogPostCreate) createSpec() (*BlogPost, *sqlgraph.CreateSpec) {
 	if value, ok := bpc.mutation.ContentType(); ok {
 		_spec.SetField(blogpost.FieldContentType, field.TypeEnum, value)
 		_node.ContentType = value
-	}
-	if value, ok := bpc.mutation.Status(); ok {
-		_spec.SetField(blogpost.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
 	}
 	if value, ok := bpc.mutation.Visibility(); ok {
 		_spec.SetField(blogpost.FieldVisibility, field.TypeEnum, value)

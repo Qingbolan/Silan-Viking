@@ -24,7 +24,6 @@ func (l *GetBlogPostByIdLogic) GetBlogPostById(req *types.BlogByIdRequest) (*typ
 	post, err := l.svcCtx.DB.BlogPost.Query().
 		Where(
 			blogpost.ID(req.ID),
-			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
 		WithTranslations().

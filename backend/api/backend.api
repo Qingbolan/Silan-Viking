@@ -50,7 +50,7 @@ type (
 		Description    string                `json:"description"`
 		Date           string                `json:"date"`
 		Tags           []string              `json:"tags"`
-		Status         string                `json:"status"`
+
 		Priority       string                `json:"priority"`
 		Pinned         bool                  `json:"pinned"`
 		CreatedAt      string                `json:"created_at"`
@@ -150,7 +150,7 @@ type (
 		Tags             []string `json:"tags"`
 		Year             int      `json:"year"`
 		IsFeatured       bool     `json:"is_featured"`
-		Status           string   `json:"status"`
+
 		StartDate        string   `json:"start_date,omitempty"`
 		EndDate          string   `json:"end_date,omitempty"`
 		GithubURL        string   `json:"github_url,omitempty"`
@@ -170,7 +170,7 @@ type (
 		Description      string   `json:"description"`
 		FullDescription  string   `json:"full_description,omitempty"`
 		ProjectType      string   `json:"project_type"`
-		Status           string   `json:"status"`
+
 		StartDate        string   `json:"start_date,omitempty"`
 		EndDate          string   `json:"end_date,omitempty"`
 		Technologies     []string `json:"technologies"`
@@ -274,7 +274,7 @@ type (
 		Size       int    `form:"size,default=10"`
 		Type       string `form:"type,optional"`
 		Featured   bool   `form:"featured,optional"`
-		Status     string `form:"status,optional"`
+
 		Search     string `form:"search,optional"`
 		Year       int    `form:"year,optional"`
 		Tags       string `form:"tags,optional"`
@@ -392,7 +392,7 @@ type (
 		Title           string        `json:"title"`
 		Description     string        `json:"description,omitempty"`
 		EpisodeNumber   int           `json:"episode_number"`
-		Status          string        `json:"status"`
+
 		Visibility      string        `json:"visibility"`
 		PublishDate     string        `json:"publish_date,omitempty"`
 		UpdatedAt        string        `json:"updated_at,omitempty"`
@@ -409,7 +409,7 @@ type (
 		Title       string        `json:"title"`
 		Description string        `json:"description,omitempty"`
 		CoverURL    string        `json:"cover_url,omitempty"`
-		Status      string        `json:"status"`
+
 		Episodes    []EpisodeData `json:"episodes"`
 		CreatedAt   string        `json:"created_at"`
 		UpdatedAt   string        `json:"updated_at"`
@@ -500,7 +500,7 @@ type (
 	BlogListRequest {
 		Page        int    `form:"page,default=1"`
 		Size        int    `form:"size,default=10"`
-		Status      string `form:"status,optional"`
+
 		ContentType string `form:"content_type,optional"`
 		Featured    bool   `form:"featured,optional"`
 		Tag         string `form:"tag,optional"`

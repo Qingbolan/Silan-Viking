@@ -11,6 +11,7 @@ import (
 	"silan-backend/internal/config"
 	"silan-backend/internal/contentdeploy"
 	"silan-backend/internal/contenttag"
+	"silan-backend/internal/contentvisibility"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/migrate"
 	"silan-backend/internal/middleware"
@@ -39,6 +40,9 @@ type ServiceContext struct {
 func NewServiceContext(c config.Config) *ServiceContext {
 	if err := migrateMomentDomain(c.Database.Driver, c.Database.Source); err != nil {
 		log.Fatalf("failed migrating Updates to Moments: %v", err)
+	}
+	if err := contentvisibility.Migrate(context.Background(), c.Database.Driver, c.Database.Source); err != nil {
+		log.Fatalf("failed migrating content visibility: %v", err)
 	}
 	client, err := ent.Open(c.Database.Driver, c.Database.Source)
 	if err != nil {

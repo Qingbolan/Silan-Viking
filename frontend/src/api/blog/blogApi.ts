@@ -8,7 +8,6 @@ import { normalizeContentTimestamp } from '../../utils/contentTimestamp';
 
 // Backend API request/response types
 interface BlogListRequest extends PaginationRequest {
-  status?: string;
   content_type?: string;
   featured?: boolean;
   tag?: string;

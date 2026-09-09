@@ -33,8 +33,6 @@ const (
 	FieldDate = "date"
 	// FieldTags holds the string denoting the tags field in the database.
 	FieldTags = "tags"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
 	// FieldPriority holds the string denoting the priority field in the database.
 	FieldPriority = "priority"
 	// FieldPinned holds the string denoting the pinned field in the database.
@@ -92,7 +90,6 @@ var Columns = []string{
 	FieldDescription,
 	FieldDate,
 	FieldTags,
-	FieldStatus,
 	FieldPriority,
 	FieldPinned,
 	FieldExternalID,
@@ -223,9 +220,8 @@ const DefaultVisibility = VisibilityPrivate
 
 // Visibility values.
 const (
-	VisibilityPrivate  Visibility = "private"
-	VisibilityUnlisted Visibility = "unlisted"
-	VisibilityPublic   Visibility = "public"
+	VisibilityPrivate Visibility = "private"
+	VisibilityPublic  Visibility = "public"
 )
 
 func (v Visibility) String() string {
@@ -235,37 +231,10 @@ func (v Visibility) String() string {
 // VisibilityValidator is a validator for the "visibility" field enum values. It is called by the builders before save.
 func VisibilityValidator(v Visibility) error {
 	switch v {
-	case VisibilityPrivate, VisibilityUnlisted, VisibilityPublic:
+	case VisibilityPrivate, VisibilityPublic:
 		return nil
 	default:
 		return fmt.Errorf("moment: invalid enum value for visibility field: %q", v)
-	}
-}
-
-// Status defines the type for the "status" enum field.
-type Status string
-
-// StatusActive is the default value of the Status enum.
-const DefaultStatus = StatusActive
-
-// Status values.
-const (
-	StatusActive    Status = "active"
-	StatusOngoing   Status = "ongoing"
-	StatusCompleted Status = "completed"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusActive, StatusOngoing, StatusCompleted:
-		return nil
-	default:
-		return fmt.Errorf("moment: invalid enum value for status field: %q", s)
 	}
 }
 
@@ -342,11 +311,6 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByDate orders the results by the date field.
 func ByDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDate, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // ByPriority orders the results by the priority field.

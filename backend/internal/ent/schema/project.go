@@ -45,9 +45,6 @@ func (Project) Fields() []ent.Field {
 			MaxLen(50).
 			NotEmpty().
 			Default("Web Application"),
-		field.Enum("status").
-			Values("active", "completed", "paused", "cancelled", "archived").
-			Default("active"),
 		field.String("start_date").Optional(),
 		field.String("end_date").Optional(),
 		field.String("github_url").
@@ -62,13 +59,17 @@ func (Project) Fields() []ent.Field {
 		field.String("thumbnail_url").
 			Optional().
 			MaxLen(500),
+		field.Enum("cover_source_type").
+			Values("image", "website").
+			Default("image"),
+		field.String("cover_website_url").Optional(),
 		field.Bool("is_featured").
 			Default(false),
 		// M0.5a §11.7: is_public dropped, unified onto visibility (10 §10.3).
 		// Default `private` — uniform with blog_posts / ideas: new content is
 		// not public until the author explicitly publishes it (silan ruling).
 		field.Enum("visibility").
-			Values("private", "unlisted", "public").
+			Values("private", "public").
 			Default("private"),
 		field.Int("view_count").
 			Default(0),

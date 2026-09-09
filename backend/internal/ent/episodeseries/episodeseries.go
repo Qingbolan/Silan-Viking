@@ -3,7 +3,6 @@
 package episodeseries
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -23,8 +22,6 @@ const (
 	FieldDescription = "description"
 	// FieldCoverURL holds the string denoting the cover_url field in the database.
 	FieldCoverURL = "cover_url"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -58,7 +55,6 @@ var Columns = []string{
 	FieldTitle,
 	FieldDescription,
 	FieldCoverURL,
-	FieldStatus,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -90,33 +86,6 @@ var (
 	DefaultID func() string
 )
 
-// Status defines the type for the "status" enum field.
-type Status string
-
-// StatusOngoing is the default value of the Status enum.
-const DefaultStatus = StatusOngoing
-
-// Status values.
-const (
-	StatusOngoing   Status = "ongoing"
-	StatusCompleted Status = "completed"
-	StatusArchived  Status = "archived"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusOngoing, StatusCompleted, StatusArchived:
-		return nil
-	default:
-		return fmt.Errorf("episodeseries: invalid enum value for status field: %q", s)
-	}
-}
-
 // OrderOption defines the ordering options for the EpisodeSeries queries.
 type OrderOption func(*sql.Selector)
 
@@ -143,11 +112,6 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 // ByCoverURL orders the results by the cover_url field.
 func ByCoverURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCoverURL, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

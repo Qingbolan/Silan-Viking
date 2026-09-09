@@ -85,7 +85,6 @@ func (l *GetProjectRelatedBlogsLogic) GetProjectRelatedBlogs(req *types.ProjectD
 	posts, err := l.svcCtx.DB.BlogPost.Query().
 		Where(
 			blogpost.IDIn(blogIDs...),
-			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
 		All(l.ctx)

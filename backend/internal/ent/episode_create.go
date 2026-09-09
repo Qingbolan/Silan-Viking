@@ -54,20 +54,6 @@ func (ec *EpisodeCreate) SetEpisodeNumber(i int) *EpisodeCreate {
 	return ec
 }
 
-// SetStatus sets the "status" field.
-func (ec *EpisodeCreate) SetStatus(e episode.Status) *EpisodeCreate {
-	ec.mutation.SetStatus(e)
-	return ec
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ec *EpisodeCreate) SetNillableStatus(e *episode.Status) *EpisodeCreate {
-	if e != nil {
-		ec.SetStatus(*e)
-	}
-	return ec
-}
-
 // SetVisibility sets the "visibility" field.
 func (ec *EpisodeCreate) SetVisibility(e episode.Visibility) *EpisodeCreate {
 	ec.mutation.SetVisibility(e)
@@ -207,10 +193,6 @@ func (ec *EpisodeCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ec *EpisodeCreate) defaults() {
-	if _, ok := ec.mutation.Status(); !ok {
-		v := episode.DefaultStatus
-		ec.mutation.SetStatus(v)
-	}
 	if _, ok := ec.mutation.Visibility(); !ok {
 		v := episode.DefaultVisibility
 		ec.mutation.SetVisibility(v)
@@ -249,14 +231,6 @@ func (ec *EpisodeCreate) check() error {
 	}
 	if _, ok := ec.mutation.EpisodeNumber(); !ok {
 		return &ValidationError{Name: "episode_number", err: errors.New(`ent: missing required field "Episode.episode_number"`)}
-	}
-	if _, ok := ec.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Episode.status"`)}
-	}
-	if v, ok := ec.mutation.Status(); ok {
-		if err := episode.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Episode.status": %w`, err)}
-		}
 	}
 	if _, ok := ec.mutation.Visibility(); !ok {
 		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "Episode.visibility"`)}
@@ -315,10 +289,6 @@ func (ec *EpisodeCreate) createSpec() (*Episode, *sqlgraph.CreateSpec) {
 	if value, ok := ec.mutation.EpisodeNumber(); ok {
 		_spec.SetField(episode.FieldEpisodeNumber, field.TypeInt, value)
 		_node.EpisodeNumber = value
-	}
-	if value, ok := ec.mutation.Status(); ok {
-		_spec.SetField(episode.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
 	}
 	if value, ok := ec.mutation.Visibility(); ok {
 		_spec.SetField(episode.FieldVisibility, field.TypeEnum, value)

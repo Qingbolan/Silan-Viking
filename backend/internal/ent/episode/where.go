@@ -350,26 +350,6 @@ func EpisodeNumberLTE(v int) predicate.Episode {
 	return predicate.Episode(sql.FieldLTE(FieldEpisodeNumber, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.Episode {
-	return predicate.Episode(sql.FieldEQ(FieldStatus, v))
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.Episode {
-	return predicate.Episode(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.Episode {
-	return predicate.Episode(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.Episode {
-	return predicate.Episode(sql.FieldNotIn(FieldStatus, vs...))
-}
-
 // VisibilityEQ applies the EQ predicate on the "visibility" field.
 func VisibilityEQ(v Visibility) predicate.Episode {
 	return predicate.Episode(sql.FieldEQ(FieldVisibility, v))

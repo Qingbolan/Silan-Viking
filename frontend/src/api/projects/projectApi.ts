@@ -14,7 +14,6 @@ import { normalizeContentTimestamp } from '../../utils/contentTimestamp';
 interface ProjectListRequest extends PaginationRequest {
   type?: string;
   featured?: boolean;
-  status?: string;
   search?: string;
   year?: number;
   tags?: string;
@@ -41,7 +40,6 @@ const normalizeProject = (raw: any): Project => {
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     year: Number.isFinite(Number(raw.year)) ? Number(raw.year) : 0,
     isFeatured: Boolean(raw.isFeatured ?? raw.is_featured),
-    status: raw.status || undefined,
     startDate: raw.startDate || raw.start_date || undefined,
     endDate: raw.endDate || raw.end_date || undefined,
     githubUrl: raw.githubUrl || raw.github_url || undefined,
@@ -132,9 +130,8 @@ export const fetchProjectDetailById = async (
     relatedBlogs: projectDetail?.related_blogs || [],
     github: basicProject.githubUrl,
     demo: basicProject.demoUrl,
-    status: (basicProject.status || basicProject.updatedAt || license)
+    status: (basicProject.updatedAt || license)
       ? {
-          lifecycle: basicProject.status,
           lastUpdated: basicProject.updatedAt,
           license,
         }

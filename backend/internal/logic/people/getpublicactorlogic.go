@@ -300,7 +300,6 @@ func (l *GetPublicActorLogic) loadPublicEntitySummaries(events []actorActivity, 
 	if values := ids("blog"); len(values) > 0 {
 		rows, err := l.svcCtx.DB.BlogPost.Query().Where(
 			blogpost.IDIn(values...),
-			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).WithTranslations().All(l.ctx)
 		if err != nil {
@@ -335,7 +334,6 @@ func (l *GetPublicActorLogic) loadPublicEntitySummaries(events []actorActivity, 
 	if values := ids("episode"); len(values) > 0 {
 		rows, err := l.svcCtx.DB.Episode.Query().Where(
 			episode.IDIn(values...),
-			episode.StatusEQ(episode.StatusPublished),
 			episode.VisibilityEQ(episode.VisibilityPublic),
 		).WithTranslations().All(l.ctx)
 		if err != nil {

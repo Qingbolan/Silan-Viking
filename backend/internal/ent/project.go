@@ -28,8 +28,6 @@ type Project struct {
 	Description string `json:"description,omitempty"`
 	// ProjectType holds the value of the "project_type" field.
 	ProjectType string `json:"project_type,omitempty"`
-	// Status holds the value of the "status" field.
-	Status project.Status `json:"status,omitempty"`
 	// StartDate holds the value of the "start_date" field.
 	StartDate string `json:"start_date,omitempty"`
 	// EndDate holds the value of the "end_date" field.
@@ -42,6 +40,10 @@ type Project struct {
 	DocumentationURL string `json:"documentation_url,omitempty"`
 	// ThumbnailURL holds the value of the "thumbnail_url" field.
 	ThumbnailURL string `json:"thumbnail_url,omitempty"`
+	// CoverSourceType holds the value of the "cover_source_type" field.
+	CoverSourceType project.CoverSourceType `json:"cover_source_type,omitempty"`
+	// CoverWebsiteURL holds the value of the "cover_website_url" field.
+	CoverWebsiteURL string `json:"cover_website_url,omitempty"`
 	// IsFeatured holds the value of the "is_featured" field.
 	IsFeatured bool `json:"is_featured,omitempty"`
 	// Visibility holds the value of the "visibility" field.
@@ -124,7 +126,7 @@ func (*Project) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case project.FieldViewCount, project.FieldLikeCount, project.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
-		case project.FieldID, project.FieldUserID, project.FieldTitle, project.FieldSlug, project.FieldDescription, project.FieldProjectType, project.FieldStatus, project.FieldStartDate, project.FieldEndDate, project.FieldGithubURL, project.FieldDemoURL, project.FieldDocumentationURL, project.FieldThumbnailURL, project.FieldVisibility:
+		case project.FieldID, project.FieldUserID, project.FieldTitle, project.FieldSlug, project.FieldDescription, project.FieldProjectType, project.FieldStartDate, project.FieldEndDate, project.FieldGithubURL, project.FieldDemoURL, project.FieldDocumentationURL, project.FieldThumbnailURL, project.FieldCoverSourceType, project.FieldCoverWebsiteURL, project.FieldVisibility:
 			values[i] = new(sql.NullString)
 		case project.FieldCreatedAt, project.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -179,12 +181,6 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pr.ProjectType = value.String
 			}
-		case project.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				pr.Status = project.Status(value.String)
-			}
 		case project.FieldStartDate:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field start_date", values[i])
@@ -220,6 +216,18 @@ func (pr *Project) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field thumbnail_url", values[i])
 			} else if value.Valid {
 				pr.ThumbnailURL = value.String
+			}
+		case project.FieldCoverSourceType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field cover_source_type", values[i])
+			} else if value.Valid {
+				pr.CoverSourceType = project.CoverSourceType(value.String)
+			}
+		case project.FieldCoverWebsiteURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field cover_website_url", values[i])
+			} else if value.Valid {
+				pr.CoverWebsiteURL = value.String
 			}
 		case project.FieldIsFeatured:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -334,9 +342,6 @@ func (pr *Project) String() string {
 	builder.WriteString("project_type=")
 	builder.WriteString(pr.ProjectType)
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", pr.Status))
-	builder.WriteString(", ")
 	builder.WriteString("start_date=")
 	builder.WriteString(pr.StartDate)
 	builder.WriteString(", ")
@@ -354,6 +359,12 @@ func (pr *Project) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("thumbnail_url=")
 	builder.WriteString(pr.ThumbnailURL)
+	builder.WriteString(", ")
+	builder.WriteString("cover_source_type=")
+	builder.WriteString(fmt.Sprintf("%v", pr.CoverSourceType))
+	builder.WriteString(", ")
+	builder.WriteString("cover_website_url=")
+	builder.WriteString(pr.CoverWebsiteURL)
 	builder.WriteString(", ")
 	builder.WriteString("is_featured=")
 	builder.WriteString(fmt.Sprintf("%v", pr.IsFeatured))

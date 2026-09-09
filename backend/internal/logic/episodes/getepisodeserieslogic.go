@@ -28,7 +28,6 @@ func (l *GetEpisodeSeriesLogic) GetEpisodeSeries(req *types.EpisodeSeriesRequest
 	series, err := l.svcCtx.DB.EpisodeSeries.Query().
 		Where(
 			episodeseries.Slug(req.SeriesSlug),
-			episodeseries.StatusNEQ(episodeseries.StatusArchived),
 		).
 		WithTranslations().
 		WithEpisodes(publicEpisodeQuery).

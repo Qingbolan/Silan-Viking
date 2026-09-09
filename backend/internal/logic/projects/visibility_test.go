@@ -12,7 +12,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func TestPublicProjectExcludesArchivedAndPrivateRecords(t *testing.T) {
+func TestPublicProjectUsesVisibilityOnly(t *testing.T) {
 	ctx := context.Background()
 	client := enttest.Open(
 		t,
@@ -28,7 +28,6 @@ func TestPublicProjectExcludesArchivedAndPrivateRecords(t *testing.T) {
 	client.Project.Create().
 		SetID("public-archived").
 		SetSlug("public-archived").
-		SetStatus(project.StatusArchived).
 		SetVisibility(project.VisibilityPublic).
 		SaveX(ctx)
 	client.Project.Create().
@@ -39,7 +38,7 @@ func TestPublicProjectExcludesArchivedAndPrivateRecords(t *testing.T) {
 	projects := client.Project.Query().
 		Where(publicProject()).
 		AllX(ctx)
-	if len(projects) != 1 || projects[0].ID != "public-active" {
-		t.Fatalf("public projects = %#v, want only public-active", projects)
+	if len(projects) != 2 {
+		t.Fatalf("public projects = %#v, want both public projects", projects)
 	}
 }

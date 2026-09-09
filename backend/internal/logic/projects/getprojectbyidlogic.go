@@ -68,14 +68,14 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 	}
 
 	return &types.Project{
-		ID:               proj.ID,
-		Slug:             proj.Slug,
-		Name:             name,
-		Description:      description,
-		Tags:             tags,
-		Year:             year,
-		IsFeatured:       proj.IsFeatured,
-		Status:           string(proj.Status),
+		ID:          proj.ID,
+		Slug:        proj.Slug,
+		Name:        name,
+		Description: description,
+		Tags:        tags,
+		Year:        year,
+		IsFeatured:  proj.IsFeatured,
+
 		StartDate:        proj.StartDate,
 		EndDate:          proj.EndDate,
 		GithubURL:        proj.GithubURL,

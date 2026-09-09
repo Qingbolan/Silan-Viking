@@ -81,7 +81,7 @@ export interface Moment {
   description: string;
   date: string;
   tags: string[];
-  status: string;
+
   priority: string;
   pinned: boolean;
   created_at: string;
@@ -208,7 +208,7 @@ export interface ResumeData {
         date: string;
         tags: string[];
         type: string;
-        status: string;
+
         priority: string;
       }[];
     };
@@ -308,7 +308,6 @@ export interface Project {
   tags: string[];
   year: number;
   isFeatured: boolean;
-  status?: 'active' | 'completed' | 'paused' | 'cancelled' | 'archived';
   startDate?: string;
   endDate?: string;
   githubUrl?: string;
@@ -360,7 +359,6 @@ export interface ProjectDetail {
 
   // Project status
   status?: {
-    lifecycle?: 'active' | 'completed' | 'paused' | 'cancelled' | 'archived';
     buildStatus?: 'passing' | 'failing';
     coverage?: number;
     vulnerabilities?: number;

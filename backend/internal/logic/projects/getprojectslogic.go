@@ -48,10 +48,6 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 		query = query.Where(project.IsFeatured(true))
 	}
 
-	if req.Status != "" {
-		query = query.Where(project.StatusEQ(project.Status(req.Status)))
-	}
-
 	if search := strings.TrimSpace(req.Search); search != "" {
 		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
 			l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, search, req.Language,
@@ -157,14 +153,14 @@ func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types
 
 	year := projectYear(proj)
 	return types.Project{
-		ID:               proj.ID,
-		Slug:             proj.Slug,
-		Name:             name,
-		Description:      description,
-		Tags:             tags,
-		Year:             year,
-		IsFeatured:       proj.IsFeatured,
-		Status:           string(proj.Status),
+		ID:          proj.ID,
+		Slug:        proj.Slug,
+		Name:        name,
+		Description: description,
+		Tags:        tags,
+		Year:        year,
+		IsFeatured:  proj.IsFeatured,
+
 		StartDate:        proj.StartDate,
 		EndDate:          proj.EndDate,
 		GithubURL:        proj.GithubURL,

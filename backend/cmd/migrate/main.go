@@ -13,6 +13,7 @@ import (
 	"flag"
 	"log"
 
+	"silan-backend/internal/contentvisibility"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/language"
 
@@ -28,6 +29,9 @@ func main() {
 		log.Fatal("migrate: -db-source is required")
 	}
 
+	if err := contentvisibility.Migrate(context.Background(), *dbDriver, *dbSource); err != nil {
+		log.Fatalf("migrate visibility: %v", err)
+	}
 	client, err := ent.Open(*dbDriver, *dbSource)
 	if err != nil {
 		log.Fatalf("migrate: failed to open database: %v", err)

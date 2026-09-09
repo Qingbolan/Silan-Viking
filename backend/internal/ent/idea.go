@@ -28,8 +28,6 @@ type Idea struct {
 	Description string `json:"description,omitempty"`
 	// Abstract holds the value of the "abstract" field.
 	Abstract string `json:"abstract,omitempty"`
-	// Status holds the value of the "status" field.
-	Status idea.Status `json:"status,omitempty"`
 	// Visibility holds the value of the "visibility" field.
 	Visibility idea.Visibility `json:"visibility,omitempty"`
 	// ViewCount holds the value of the "view_count" field.
@@ -86,7 +84,7 @@ func (*Idea) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case idea.FieldViewCount, idea.FieldLikeCount:
 			values[i] = new(sql.NullInt64)
-		case idea.FieldID, idea.FieldUserID, idea.FieldTitle, idea.FieldSlug, idea.FieldDescription, idea.FieldAbstract, idea.FieldStatus, idea.FieldVisibility, idea.FieldCategory:
+		case idea.FieldID, idea.FieldUserID, idea.FieldTitle, idea.FieldSlug, idea.FieldDescription, idea.FieldAbstract, idea.FieldVisibility, idea.FieldCategory:
 			values[i] = new(sql.NullString)
 		case idea.FieldCreatedAt, idea.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -140,12 +138,6 @@ func (i *Idea) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field abstract", values[j])
 			} else if value.Valid {
 				i.Abstract = value.String
-			}
-		case idea.FieldStatus:
-			if value, ok := values[j].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[j])
-			} else if value.Valid {
-				i.Status = idea.Status(value.String)
 			}
 		case idea.FieldVisibility:
 			if value, ok := values[j].(*sql.NullString); !ok {
@@ -243,9 +235,6 @@ func (i *Idea) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("abstract=")
 	builder.WriteString(i.Abstract)
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", i.Status))
 	builder.WriteString(", ")
 	builder.WriteString("visibility=")
 	builder.WriteString(fmt.Sprintf("%v", i.Visibility))

@@ -26,8 +26,6 @@ type Episode struct {
 	Title string `json:"title,omitempty"`
 	// EpisodeNumber holds the value of the "episode_number" field.
 	EpisodeNumber int `json:"episode_number,omitempty"`
-	// Status holds the value of the "status" field.
-	Status episode.Status `json:"status,omitempty"`
 	// Visibility holds the value of the "visibility" field.
 	Visibility episode.Visibility `json:"visibility,omitempty"`
 	// PublishedAt holds the value of the "published_at" field.
@@ -82,7 +80,7 @@ func (*Episode) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case episode.FieldEpisodeNumber, episode.FieldDurationMinutes:
 			values[i] = new(sql.NullInt64)
-		case episode.FieldID, episode.FieldSeriesID, episode.FieldSlug, episode.FieldTitle, episode.FieldStatus, episode.FieldVisibility, episode.FieldPublishedAt:
+		case episode.FieldID, episode.FieldSeriesID, episode.FieldSlug, episode.FieldTitle, episode.FieldVisibility, episode.FieldPublishedAt:
 			values[i] = new(sql.NullString)
 		case episode.FieldCreatedAt, episode.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -130,12 +128,6 @@ func (e *Episode) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field episode_number", values[i])
 			} else if value.Valid {
 				e.EpisodeNumber = int(value.Int64)
-			}
-		case episode.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				e.Status = episode.Status(value.String)
 			}
 		case episode.FieldVisibility:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -226,9 +218,6 @@ func (e *Episode) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("episode_number=")
 	builder.WriteString(fmt.Sprintf("%v", e.EpisodeNumber))
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", e.Status))
 	builder.WriteString(", ")
 	builder.WriteString("visibility=")
 	builder.WriteString(fmt.Sprintf("%v", e.Visibility))

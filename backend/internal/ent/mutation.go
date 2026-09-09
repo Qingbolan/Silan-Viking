@@ -4650,7 +4650,6 @@ type BlogPostMutation struct {
 	excerpt                 *string
 	content                 *string
 	content_type            *blogpost.ContentType
-	status                  *blogpost.Status
 	visibility              *blogpost.Visibility
 	is_featured             *bool
 	featured_image_url      *string
@@ -5148,42 +5147,6 @@ func (m *BlogPostMutation) OldContentType(ctx context.Context) (v blogpost.Conte
 // ResetContentType resets all changes to the "content_type" field.
 func (m *BlogPostMutation) ResetContentType() {
 	m.content_type = nil
-}
-
-// SetStatus sets the "status" field.
-func (m *BlogPostMutation) SetStatus(b blogpost.Status) {
-	m.status = &b
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *BlogPostMutation) Status() (r blogpost.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the BlogPost entity.
-// If the BlogPost object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BlogPostMutation) OldStatus(ctx context.Context) (v blogpost.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *BlogPostMutation) ResetStatus() {
-	m.status = nil
 }
 
 // SetVisibility sets the "visibility" field.
@@ -6046,7 +6009,7 @@ func (m *BlogPostMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BlogPostMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 23)
 	if m.user_id != nil {
 		fields = append(fields, blogpost.FieldUserID)
 	}
@@ -6070,9 +6033,6 @@ func (m *BlogPostMutation) Fields() []string {
 	}
 	if m.content_type != nil {
 		fields = append(fields, blogpost.FieldContentType)
-	}
-	if m.status != nil {
-		fields = append(fields, blogpost.FieldStatus)
 	}
 	if m.visibility != nil {
 		fields = append(fields, blogpost.FieldVisibility)
@@ -6143,8 +6103,6 @@ func (m *BlogPostMutation) Field(name string) (ent.Value, bool) {
 		return m.Content()
 	case blogpost.FieldContentType:
 		return m.ContentType()
-	case blogpost.FieldStatus:
-		return m.Status()
 	case blogpost.FieldVisibility:
 		return m.Visibility()
 	case blogpost.FieldIsFeatured:
@@ -6200,8 +6158,6 @@ func (m *BlogPostMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldContent(ctx)
 	case blogpost.FieldContentType:
 		return m.OldContentType(ctx)
-	case blogpost.FieldStatus:
-		return m.OldStatus(ctx)
 	case blogpost.FieldVisibility:
 		return m.OldVisibility(ctx)
 	case blogpost.FieldIsFeatured:
@@ -6296,13 +6252,6 @@ func (m *BlogPostMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetContentType(v)
-		return nil
-	case blogpost.FieldStatus:
-		v, ok := value.(blogpost.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	case blogpost.FieldVisibility:
 		v, ok := value.(blogpost.Visibility)
@@ -6643,9 +6592,6 @@ func (m *BlogPostMutation) ResetField(name string) error {
 		return nil
 	case blogpost.FieldContentType:
 		m.ResetContentType()
-		return nil
-	case blogpost.FieldStatus:
-		m.ResetStatus()
 		return nil
 	case blogpost.FieldVisibility:
 		m.ResetVisibility()
@@ -18890,7 +18836,6 @@ type EpisodeMutation struct {
 	title               *string
 	episode_number      *int
 	addepisode_number   *int
-	status              *episode.Status
 	visibility          *episode.Visibility
 	published_at        *string
 	duration_minutes    *int
@@ -19187,42 +19132,6 @@ func (m *EpisodeMutation) AddedEpisodeNumber() (r int, exists bool) {
 func (m *EpisodeMutation) ResetEpisodeNumber() {
 	m.episode_number = nil
 	m.addepisode_number = nil
-}
-
-// SetStatus sets the "status" field.
-func (m *EpisodeMutation) SetStatus(e episode.Status) {
-	m.status = &e
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *EpisodeMutation) Status() (r episode.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the Episode entity.
-// If the Episode object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EpisodeMutation) OldStatus(ctx context.Context) (v episode.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *EpisodeMutation) ResetStatus() {
-	m.status = nil
 }
 
 // SetVisibility sets the "visibility" field.
@@ -19593,7 +19502,7 @@ func (m *EpisodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EpisodeMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 9)
 	if m.series != nil {
 		fields = append(fields, episode.FieldSeriesID)
 	}
@@ -19605,9 +19514,6 @@ func (m *EpisodeMutation) Fields() []string {
 	}
 	if m.episode_number != nil {
 		fields = append(fields, episode.FieldEpisodeNumber)
-	}
-	if m.status != nil {
-		fields = append(fields, episode.FieldStatus)
 	}
 	if m.visibility != nil {
 		fields = append(fields, episode.FieldVisibility)
@@ -19640,8 +19546,6 @@ func (m *EpisodeMutation) Field(name string) (ent.Value, bool) {
 		return m.Title()
 	case episode.FieldEpisodeNumber:
 		return m.EpisodeNumber()
-	case episode.FieldStatus:
-		return m.Status()
 	case episode.FieldVisibility:
 		return m.Visibility()
 	case episode.FieldPublishedAt:
@@ -19669,8 +19573,6 @@ func (m *EpisodeMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldTitle(ctx)
 	case episode.FieldEpisodeNumber:
 		return m.OldEpisodeNumber(ctx)
-	case episode.FieldStatus:
-		return m.OldStatus(ctx)
 	case episode.FieldVisibility:
 		return m.OldVisibility(ctx)
 	case episode.FieldPublishedAt:
@@ -19717,13 +19619,6 @@ func (m *EpisodeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEpisodeNumber(v)
-		return nil
-	case episode.FieldStatus:
-		v, ok := value.(episode.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	case episode.FieldVisibility:
 		v, ok := value.(episode.Visibility)
@@ -19881,9 +19776,6 @@ func (m *EpisodeMutation) ResetField(name string) error {
 	case episode.FieldEpisodeNumber:
 		m.ResetEpisodeNumber()
 		return nil
-	case episode.FieldStatus:
-		m.ResetStatus()
-		return nil
 	case episode.FieldVisibility:
 		m.ResetVisibility()
 		return nil
@@ -20015,7 +19907,6 @@ type EpisodeSeriesMutation struct {
 	title               *string
 	description         *string
 	cover_url           *string
-	status              *episodeseries.Status
 	created_at          *time.Time
 	updated_at          *time.Time
 	clearedFields       map[string]struct{}
@@ -20317,42 +20208,6 @@ func (m *EpisodeSeriesMutation) ResetCoverURL() {
 	delete(m.clearedFields, episodeseries.FieldCoverURL)
 }
 
-// SetStatus sets the "status" field.
-func (m *EpisodeSeriesMutation) SetStatus(e episodeseries.Status) {
-	m.status = &e
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *EpisodeSeriesMutation) Status() (r episodeseries.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the EpisodeSeries entity.
-// If the EpisodeSeries object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EpisodeSeriesMutation) OldStatus(ctx context.Context) (v episodeseries.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *EpisodeSeriesMutation) ResetStatus() {
-	m.status = nil
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (m *EpisodeSeriesMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -20593,7 +20448,7 @@ func (m *EpisodeSeriesMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EpisodeSeriesMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 6)
 	if m.slug != nil {
 		fields = append(fields, episodeseries.FieldSlug)
 	}
@@ -20605,9 +20460,6 @@ func (m *EpisodeSeriesMutation) Fields() []string {
 	}
 	if m.cover_url != nil {
 		fields = append(fields, episodeseries.FieldCoverURL)
-	}
-	if m.status != nil {
-		fields = append(fields, episodeseries.FieldStatus)
 	}
 	if m.created_at != nil {
 		fields = append(fields, episodeseries.FieldCreatedAt)
@@ -20631,8 +20483,6 @@ func (m *EpisodeSeriesMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case episodeseries.FieldCoverURL:
 		return m.CoverURL()
-	case episodeseries.FieldStatus:
-		return m.Status()
 	case episodeseries.FieldCreatedAt:
 		return m.CreatedAt()
 	case episodeseries.FieldUpdatedAt:
@@ -20654,8 +20504,6 @@ func (m *EpisodeSeriesMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldDescription(ctx)
 	case episodeseries.FieldCoverURL:
 		return m.OldCoverURL(ctx)
-	case episodeseries.FieldStatus:
-		return m.OldStatus(ctx)
 	case episodeseries.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case episodeseries.FieldUpdatedAt:
@@ -20696,13 +20544,6 @@ func (m *EpisodeSeriesMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCoverURL(v)
-		return nil
-	case episodeseries.FieldStatus:
-		v, ok := value.(episodeseries.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	case episodeseries.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -20811,9 +20652,6 @@ func (m *EpisodeSeriesMutation) ResetField(name string) error {
 		return nil
 	case episodeseries.FieldCoverURL:
 		m.ResetCoverURL()
-		return nil
-	case episodeseries.FieldStatus:
-		m.ResetStatus()
 		return nil
 	case episodeseries.FieldCreatedAt:
 		m.ResetCreatedAt()
@@ -22270,7 +22108,6 @@ type IdeaMutation struct {
 	slug                *string
 	description         *string
 	abstract            *string
-	status              *idea.Status
 	visibility          *idea.Visibility
 	view_count          *int
 	addview_count       *int
@@ -22624,42 +22461,6 @@ func (m *IdeaMutation) AbstractCleared() bool {
 func (m *IdeaMutation) ResetAbstract() {
 	m.abstract = nil
 	delete(m.clearedFields, idea.FieldAbstract)
-}
-
-// SetStatus sets the "status" field.
-func (m *IdeaMutation) SetStatus(i idea.Status) {
-	m.status = &i
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *IdeaMutation) Status() (r idea.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the Idea entity.
-// If the Idea object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *IdeaMutation) OldStatus(ctx context.Context) (v idea.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *IdeaMutation) ResetStatus() {
-	m.status = nil
 }
 
 // SetVisibility sets the "visibility" field.
@@ -23084,7 +22885,7 @@ func (m *IdeaMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *IdeaMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 11)
 	if m.user_id != nil {
 		fields = append(fields, idea.FieldUserID)
 	}
@@ -23099,9 +22900,6 @@ func (m *IdeaMutation) Fields() []string {
 	}
 	if m.abstract != nil {
 		fields = append(fields, idea.FieldAbstract)
-	}
-	if m.status != nil {
-		fields = append(fields, idea.FieldStatus)
 	}
 	if m.visibility != nil {
 		fields = append(fields, idea.FieldVisibility)
@@ -23139,8 +22937,6 @@ func (m *IdeaMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case idea.FieldAbstract:
 		return m.Abstract()
-	case idea.FieldStatus:
-		return m.Status()
 	case idea.FieldVisibility:
 		return m.Visibility()
 	case idea.FieldViewCount:
@@ -23172,8 +22968,6 @@ func (m *IdeaMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDescription(ctx)
 	case idea.FieldAbstract:
 		return m.OldAbstract(ctx)
-	case idea.FieldStatus:
-		return m.OldStatus(ctx)
 	case idea.FieldVisibility:
 		return m.OldVisibility(ctx)
 	case idea.FieldViewCount:
@@ -23229,13 +23023,6 @@ func (m *IdeaMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAbstract(v)
-		return nil
-	case idea.FieldStatus:
-		v, ok := value.(idea.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	case idea.FieldVisibility:
 		v, ok := value.(idea.Visibility)
@@ -23414,9 +23201,6 @@ func (m *IdeaMutation) ResetField(name string) error {
 		return nil
 	case idea.FieldAbstract:
 		m.ResetAbstract()
-		return nil
-	case idea.FieldStatus:
-		m.ResetStatus()
 		return nil
 	case idea.FieldVisibility:
 		m.ResetVisibility()
@@ -29707,7 +29491,6 @@ type MomentMutation struct {
 	date                *string
 	tags                *[]string
 	appendtags          []string
-	status              *moment.Status
 	priority            *moment.Priority
 	pinned              *bool
 	external_id         *string
@@ -30244,42 +30027,6 @@ func (m *MomentMutation) ResetTags() {
 	m.tags = nil
 	m.appendtags = nil
 	delete(m.clearedFields, moment.FieldTags)
-}
-
-// SetStatus sets the "status" field.
-func (m *MomentMutation) SetStatus(value moment.Status) {
-	m.status = &value
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *MomentMutation) Status() (r moment.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the Moment entity.
-// If the Moment object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MomentMutation) OldStatus(ctx context.Context) (v moment.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *MomentMutation) ResetStatus() {
-	m.status = nil
 }
 
 // SetPriority sets the "priority" field.
@@ -31183,7 +30930,7 @@ func (m *MomentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MomentMutation) Fields() []string {
-	fields := make([]string, 0, 26)
+	fields := make([]string, 0, 25)
 	if m.user_id != nil {
 		fields = append(fields, moment.FieldUserID)
 	}
@@ -31210,9 +30957,6 @@ func (m *MomentMutation) Fields() []string {
 	}
 	if m.tags != nil {
 		fields = append(fields, moment.FieldTags)
-	}
-	if m.status != nil {
-		fields = append(fields, moment.FieldStatus)
 	}
 	if m.priority != nil {
 		fields = append(fields, moment.FieldPriority)
@@ -31288,8 +31032,6 @@ func (m *MomentMutation) Field(name string) (ent.Value, bool) {
 		return m.Date()
 	case moment.FieldTags:
 		return m.Tags()
-	case moment.FieldStatus:
-		return m.Status()
 	case moment.FieldPriority:
 		return m.Priority()
 	case moment.FieldPinned:
@@ -31349,8 +31091,6 @@ func (m *MomentMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldDate(ctx)
 	case moment.FieldTags:
 		return m.OldTags(ctx)
-	case moment.FieldStatus:
-		return m.OldStatus(ctx)
 	case moment.FieldPriority:
 		return m.OldPriority(ctx)
 	case moment.FieldPinned:
@@ -31454,13 +31194,6 @@ func (m *MomentMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTags(v)
-		return nil
-	case moment.FieldStatus:
-		v, ok := value.(moment.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	case moment.FieldPriority:
 		v, ok := value.(moment.Priority)
@@ -31775,9 +31508,6 @@ func (m *MomentMutation) ResetField(name string) error {
 		return nil
 	case moment.FieldTags:
 		m.ResetTags()
-		return nil
-	case moment.FieldStatus:
-		m.ResetStatus()
 		return nil
 	case moment.FieldPriority:
 		m.ResetPriority()
@@ -36143,13 +35873,14 @@ type ProjectMutation struct {
 	slug                *string
 	description         *string
 	project_type        *string
-	status              *project.Status
 	start_date          *string
 	end_date            *string
 	github_url          *string
 	demo_url            *string
 	documentation_url   *string
 	thumbnail_url       *string
+	cover_source_type   *project.CoverSourceType
+	cover_website_url   *string
 	is_featured         *bool
 	visibility          *project.Visibility
 	view_count          *int
@@ -36500,42 +36231,6 @@ func (m *ProjectMutation) ResetProjectType() {
 	m.project_type = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *ProjectMutation) SetStatus(pr project.Status) {
-	m.status = &pr
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *ProjectMutation) Status() (r project.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the Project entity.
-// If the Project object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProjectMutation) OldStatus(ctx context.Context) (v project.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *ProjectMutation) ResetStatus() {
-	m.status = nil
-}
-
 // SetStartDate sets the "start_date" field.
 func (m *ProjectMutation) SetStartDate(s string) {
 	m.start_date = &s
@@ -36828,6 +36523,91 @@ func (m *ProjectMutation) ThumbnailURLCleared() bool {
 func (m *ProjectMutation) ResetThumbnailURL() {
 	m.thumbnail_url = nil
 	delete(m.clearedFields, project.FieldThumbnailURL)
+}
+
+// SetCoverSourceType sets the "cover_source_type" field.
+func (m *ProjectMutation) SetCoverSourceType(pst project.CoverSourceType) {
+	m.cover_source_type = &pst
+}
+
+// CoverSourceType returns the value of the "cover_source_type" field in the mutation.
+func (m *ProjectMutation) CoverSourceType() (r project.CoverSourceType, exists bool) {
+	v := m.cover_source_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCoverSourceType returns the old "cover_source_type" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldCoverSourceType(ctx context.Context) (v project.CoverSourceType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCoverSourceType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCoverSourceType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCoverSourceType: %w", err)
+	}
+	return oldValue.CoverSourceType, nil
+}
+
+// ResetCoverSourceType resets all changes to the "cover_source_type" field.
+func (m *ProjectMutation) ResetCoverSourceType() {
+	m.cover_source_type = nil
+}
+
+// SetCoverWebsiteURL sets the "cover_website_url" field.
+func (m *ProjectMutation) SetCoverWebsiteURL(s string) {
+	m.cover_website_url = &s
+}
+
+// CoverWebsiteURL returns the value of the "cover_website_url" field in the mutation.
+func (m *ProjectMutation) CoverWebsiteURL() (r string, exists bool) {
+	v := m.cover_website_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCoverWebsiteURL returns the old "cover_website_url" field's value of the Project entity.
+// If the Project object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProjectMutation) OldCoverWebsiteURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCoverWebsiteURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCoverWebsiteURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCoverWebsiteURL: %w", err)
+	}
+	return oldValue.CoverWebsiteURL, nil
+}
+
+// ClearCoverWebsiteURL clears the value of the "cover_website_url" field.
+func (m *ProjectMutation) ClearCoverWebsiteURL() {
+	m.cover_website_url = nil
+	m.clearedFields[project.FieldCoverWebsiteURL] = struct{}{}
+}
+
+// CoverWebsiteURLCleared returns if the "cover_website_url" field was cleared in this mutation.
+func (m *ProjectMutation) CoverWebsiteURLCleared() bool {
+	_, ok := m.clearedFields[project.FieldCoverWebsiteURL]
+	return ok
+}
+
+// ResetCoverWebsiteURL resets all changes to the "cover_website_url" field.
+func (m *ProjectMutation) ResetCoverWebsiteURL() {
+	m.cover_website_url = nil
+	delete(m.clearedFields, project.FieldCoverWebsiteURL)
 }
 
 // SetIsFeatured sets the "is_featured" field.
@@ -37403,7 +37183,7 @@ func (m *ProjectMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProjectMutation) Fields() []string {
-	fields := make([]string, 0, 19)
+	fields := make([]string, 0, 20)
 	if m.user_id != nil {
 		fields = append(fields, project.FieldUserID)
 	}
@@ -37418,9 +37198,6 @@ func (m *ProjectMutation) Fields() []string {
 	}
 	if m.project_type != nil {
 		fields = append(fields, project.FieldProjectType)
-	}
-	if m.status != nil {
-		fields = append(fields, project.FieldStatus)
 	}
 	if m.start_date != nil {
 		fields = append(fields, project.FieldStartDate)
@@ -37439,6 +37216,12 @@ func (m *ProjectMutation) Fields() []string {
 	}
 	if m.thumbnail_url != nil {
 		fields = append(fields, project.FieldThumbnailURL)
+	}
+	if m.cover_source_type != nil {
+		fields = append(fields, project.FieldCoverSourceType)
+	}
+	if m.cover_website_url != nil {
+		fields = append(fields, project.FieldCoverWebsiteURL)
 	}
 	if m.is_featured != nil {
 		fields = append(fields, project.FieldIsFeatured)
@@ -37479,8 +37262,6 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case project.FieldProjectType:
 		return m.ProjectType()
-	case project.FieldStatus:
-		return m.Status()
 	case project.FieldStartDate:
 		return m.StartDate()
 	case project.FieldEndDate:
@@ -37493,6 +37274,10 @@ func (m *ProjectMutation) Field(name string) (ent.Value, bool) {
 		return m.DocumentationURL()
 	case project.FieldThumbnailURL:
 		return m.ThumbnailURL()
+	case project.FieldCoverSourceType:
+		return m.CoverSourceType()
+	case project.FieldCoverWebsiteURL:
+		return m.CoverWebsiteURL()
 	case project.FieldIsFeatured:
 		return m.IsFeatured()
 	case project.FieldVisibility:
@@ -37526,8 +37311,6 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDescription(ctx)
 	case project.FieldProjectType:
 		return m.OldProjectType(ctx)
-	case project.FieldStatus:
-		return m.OldStatus(ctx)
 	case project.FieldStartDate:
 		return m.OldStartDate(ctx)
 	case project.FieldEndDate:
@@ -37540,6 +37323,10 @@ func (m *ProjectMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldDocumentationURL(ctx)
 	case project.FieldThumbnailURL:
 		return m.OldThumbnailURL(ctx)
+	case project.FieldCoverSourceType:
+		return m.OldCoverSourceType(ctx)
+	case project.FieldCoverWebsiteURL:
+		return m.OldCoverWebsiteURL(ctx)
 	case project.FieldIsFeatured:
 		return m.OldIsFeatured(ctx)
 	case project.FieldVisibility:
@@ -37598,13 +37385,6 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetProjectType(v)
 		return nil
-	case project.FieldStatus:
-		v, ok := value.(project.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
-		return nil
 	case project.FieldStartDate:
 		v, ok := value.(string)
 		if !ok {
@@ -37646,6 +37426,20 @@ func (m *ProjectMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetThumbnailURL(v)
+		return nil
+	case project.FieldCoverSourceType:
+		v, ok := value.(project.CoverSourceType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCoverSourceType(v)
+		return nil
+	case project.FieldCoverWebsiteURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCoverWebsiteURL(v)
 		return nil
 	case project.FieldIsFeatured:
 		v, ok := value.(bool)
@@ -37792,6 +37586,9 @@ func (m *ProjectMutation) ClearedFields() []string {
 	if m.FieldCleared(project.FieldThumbnailURL) {
 		fields = append(fields, project.FieldThumbnailURL)
 	}
+	if m.FieldCleared(project.FieldCoverWebsiteURL) {
+		fields = append(fields, project.FieldCoverWebsiteURL)
+	}
 	if m.FieldCleared(project.FieldCreatedAt) {
 		fields = append(fields, project.FieldCreatedAt)
 	}
@@ -37839,6 +37636,9 @@ func (m *ProjectMutation) ClearField(name string) error {
 	case project.FieldThumbnailURL:
 		m.ClearThumbnailURL()
 		return nil
+	case project.FieldCoverWebsiteURL:
+		m.ClearCoverWebsiteURL()
+		return nil
 	case project.FieldCreatedAt:
 		m.ClearCreatedAt()
 		return nil
@@ -37868,9 +37668,6 @@ func (m *ProjectMutation) ResetField(name string) error {
 	case project.FieldProjectType:
 		m.ResetProjectType()
 		return nil
-	case project.FieldStatus:
-		m.ResetStatus()
-		return nil
 	case project.FieldStartDate:
 		m.ResetStartDate()
 		return nil
@@ -37888,6 +37685,12 @@ func (m *ProjectMutation) ResetField(name string) error {
 		return nil
 	case project.FieldThumbnailURL:
 		m.ResetThumbnailURL()
+		return nil
+	case project.FieldCoverSourceType:
+		m.ResetCoverSourceType()
+		return nil
+	case project.FieldCoverWebsiteURL:
+		m.ResetCoverWebsiteURL()
 		return nil
 	case project.FieldIsFeatured:
 		m.ResetIsFeatured()

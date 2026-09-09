@@ -40,6 +40,45 @@ func TestExtractBundleRejectsPathTraversal(t *testing.T) {
 	}
 }
 
+func TestReadManifestReportsProtocolMismatch(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		version int
+		schema  int
+		want    string
+	}{
+		{"current", BundleVersion, ProjectionSchemaVersion, ""},
+		{"old schema", BundleVersion, ProjectionSchemaVersion - 1, "deploy matching backend code before content"},
+		{"future schema", BundleVersion, ProjectionSchemaVersion + 1, "server supports"},
+		{"future bundle", BundleVersion + 1, ProjectionSchemaVersion, "unsupported deployment bundle version"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			manifest := Manifest{
+				Version: tc.version, SchemaVersion: tc.schema,
+				ContentCommit: strings.Repeat("a", 40), ContentHash: "hash",
+				DatabaseSHA: strings.Repeat("b", 64), SourceSHA: strings.Repeat("c", 64),
+				Media: []MediaAsset{},
+			}
+			data, err := json.Marshal(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "manifest.json")
+			if err := os.WriteFile(path, data, 0600); err != nil {
+				t.Fatal(err)
+			}
+			_, err = readManifest(path)
+			if tc.want == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("expected %q, got %v", tc.want, err)
+			}
+		})
+	}
+}
+
 func TestValidateDatabaseBindsManifestToProjection(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "portfolio.db")
 	db, err := sql.Open("sqlite3", path)

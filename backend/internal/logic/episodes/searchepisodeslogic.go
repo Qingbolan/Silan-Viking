@@ -45,7 +45,6 @@ func (l *SearchEpisodesLogic) SearchEpisodes(req *types.EpisodeSearchRequest) (*
 	}
 
 	query := l.svcCtx.DB.Episode.Query().Where(
-		episode.StatusEQ(episode.StatusPublished),
 		episode.VisibilityEQ(episode.VisibilityPublic),
 	)
 

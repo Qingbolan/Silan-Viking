@@ -107,9 +107,9 @@ type BlogData struct {
 }
 
 type BlogListRequest struct {
-	Page        int    `form:"page,default=1"`
-	Size        int    `form:"size,default=10"`
-	Status      string `form:"status,optional"`
+	Page int `form:"page,default=1"`
+	Size int `form:"size,default=10"`
+
 	ContentType string `form:"content_type,optional"`
 	Featured    bool   `form:"featured,optional"`
 	Tag         string `form:"tag,optional"`
@@ -318,14 +318,14 @@ type DeleteProjectRequest struct {
 }
 
 type EpisodeData struct {
-	ID              string        `json:"id"`
-	SeriesID        string        `json:"series_id"`
-	SeriesSlug      string        `json:"series_slug"`
-	Slug            string        `json:"slug"`
-	Title           string        `json:"title"`
-	Description     string        `json:"description,omitempty"`
-	EpisodeNumber   int           `json:"episode_number"`
-	Status          string        `json:"status"`
+	ID            string `json:"id"`
+	SeriesID      string `json:"series_id"`
+	SeriesSlug    string `json:"series_slug"`
+	Slug          string `json:"slug"`
+	Title         string `json:"title"`
+	Description   string `json:"description,omitempty"`
+	EpisodeNumber int    `json:"episode_number"`
+
 	Visibility      string        `json:"visibility"`
 	PublishDate     string        `json:"publish_date,omitempty"`
 	UpdatedAt       string        `json:"updated_at,omitempty"`
@@ -360,15 +360,15 @@ type EpisodeSearchResponse struct {
 }
 
 type EpisodeSeriesData struct {
-	ID          string        `json:"id"`
-	Slug        string        `json:"slug"`
-	Title       string        `json:"title"`
-	Description string        `json:"description,omitempty"`
-	CoverURL    string        `json:"cover_url,omitempty"`
-	Status      string        `json:"status"`
-	Episodes    []EpisodeData `json:"episodes"`
-	CreatedAt   string        `json:"created_at"`
-	UpdatedAt   string        `json:"updated_at"`
+	ID          string `json:"id"`
+	Slug        string `json:"slug"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	CoverURL    string `json:"cover_url,omitempty"`
+
+	Episodes  []EpisodeData `json:"episodes"`
+	CreatedAt string        `json:"created_at"`
+	UpdatedAt string        `json:"updated_at"`
 }
 
 type EpisodeSeriesListRequest struct {
@@ -541,23 +541,23 @@ type PersonalInfoRequest struct {
 }
 
 type Project struct {
-	ID               string   `json:"id"`
-	Slug             string   `json:"slug"`
-	Name             string   `json:"name"`
-	Description      string   `json:"description"`
-	Tags             []string `json:"tags"`
-	Year             int      `json:"year"`
-	IsFeatured       bool     `json:"is_featured"`
-	Status           string   `json:"status"`
-	StartDate        string   `json:"start_date,omitempty"`
-	EndDate          string   `json:"end_date,omitempty"`
-	GithubURL        string   `json:"github_url,omitempty"`
-	DemoURL          string   `json:"demo_url,omitempty"`
-	DocumentationURL string   `json:"documentation_url,omitempty"`
-	ThumbnailURL     string   `json:"thumbnail_url,omitempty"`
-	CoverSourceType  string   `json:"cover_source_type,omitempty"`
-	CoverWebsiteURL  string   `json:"cover_website_url,omitempty"`
-	UpdatedAt        string   `json:"updated_at,omitempty"`
+	ID          string   `json:"id"`
+	Slug        string   `json:"slug"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Tags        []string `json:"tags"`
+	Year        int      `json:"year"`
+	IsFeatured  bool     `json:"is_featured"`
+
+	StartDate        string `json:"start_date,omitempty"`
+	EndDate          string `json:"end_date,omitempty"`
+	GithubURL        string `json:"github_url,omitempty"`
+	DemoURL          string `json:"demo_url,omitempty"`
+	DocumentationURL string `json:"documentation_url,omitempty"`
+	ThumbnailURL     string `json:"thumbnail_url,omitempty"`
+	CoverSourceType  string `json:"cover_source_type,omitempty"`
+	CoverWebsiteURL  string `json:"cover_website_url,omitempty"`
+	UpdatedAt        string `json:"updated_at,omitempty"`
 }
 
 type ProjectBlogRef struct {
@@ -643,14 +643,14 @@ type ProjectDetailRequest struct {
 }
 
 type ProjectExtended struct {
-	ID               string   `json:"id"`
-	UserID           string   `json:"user_id"`
-	Title            string   `json:"title"`
-	Slug             string   `json:"slug"`
-	Description      string   `json:"description"`
-	FullDescription  string   `json:"full_description,omitempty"`
-	ProjectType      string   `json:"project_type"`
-	Status           string   `json:"status"`
+	ID              string `json:"id"`
+	UserID          string `json:"user_id"`
+	Title           string `json:"title"`
+	Slug            string `json:"slug"`
+	Description     string `json:"description"`
+	FullDescription string `json:"full_description,omitempty"`
+	ProjectType     string `json:"project_type"`
+
 	StartDate        string   `json:"start_date,omitempty"`
 	EndDate          string   `json:"end_date,omitempty"`
 	Technologies     []string `json:"technologies"`
@@ -682,7 +682,7 @@ type ProjectListRequest struct {
 	Size     int    `form:"size,default=10"`
 	Type     string `form:"type,optional"`
 	Featured bool   `form:"featured,optional"`
-	Status   string `form:"status,optional"`
+
 	Search   string `form:"search,optional"`
 	Year     int    `form:"year,optional"`
 	Tags     string `form:"tags,optional"`
@@ -737,17 +737,17 @@ type ProjectTimeline struct {
 }
 
 type Moment struct {
-	ID             string                `json:"id"`
-	UserID         string                `json:"user_id"`
-	Slug           string                `json:"slug"`
-	Type           string                `json:"type"`
-	MomentType     string                `json:"moment_type"`
-	Visibility     string                `json:"visibility"`
-	Title          string                `json:"title"`
-	Description    string                `json:"description"`
-	Date           string                `json:"date"`
-	Tags           []string              `json:"tags"`
-	Status         string                `json:"status"`
+	ID          string   `json:"id"`
+	UserID      string   `json:"user_id"`
+	Slug        string   `json:"slug"`
+	Type        string   `json:"type"`
+	MomentType  string   `json:"moment_type"`
+	Visibility  string   `json:"visibility"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Date        string   `json:"date"`
+	Tags        []string `json:"tags"`
+
 	Priority       string                `json:"priority"`
 	Pinned         bool                  `json:"pinned"`
 	CreatedAt      string                `json:"created_at"`

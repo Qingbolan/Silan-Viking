@@ -281,43 +281,43 @@ func init() {
 		}
 	}()
 	// blogpostDescIsFeatured is the schema descriptor for is_featured field.
-	blogpostDescIsFeatured := blogpostFields[11].Descriptor()
+	blogpostDescIsFeatured := blogpostFields[10].Descriptor()
 	// blogpost.DefaultIsFeatured holds the default value on creation for the is_featured field.
 	blogpost.DefaultIsFeatured = blogpostDescIsFeatured.Default.(bool)
 	// blogpostDescFeaturedImageURL is the schema descriptor for featured_image_url field.
-	blogpostDescFeaturedImageURL := blogpostFields[12].Descriptor()
+	blogpostDescFeaturedImageURL := blogpostFields[11].Descriptor()
 	// blogpost.FeaturedImageURLValidator is a validator for the "featured_image_url" field. It is called by the builders before save.
 	blogpost.FeaturedImageURLValidator = blogpostDescFeaturedImageURL.Validators[0].(func(string) error)
 	// blogpostDescProjectName is the schema descriptor for project_name field.
-	blogpostDescProjectName := blogpostFields[13].Descriptor()
+	blogpostDescProjectName := blogpostFields[12].Descriptor()
 	// blogpost.ProjectNameValidator is a validator for the "project_name" field. It is called by the builders before save.
 	blogpost.ProjectNameValidator = blogpostDescProjectName.Validators[0].(func(string) error)
 	// blogpostDescPublicationVenue is the schema descriptor for publication_venue field.
-	blogpostDescPublicationVenue := blogpostFields[14].Descriptor()
+	blogpostDescPublicationVenue := blogpostFields[13].Descriptor()
 	// blogpost.PublicationVenueValidator is a validator for the "publication_venue" field. It is called by the builders before save.
 	blogpost.PublicationVenueValidator = blogpostDescPublicationVenue.Validators[0].(func(string) error)
 	// blogpostDescProjectURL is the schema descriptor for project_url field.
-	blogpostDescProjectURL := blogpostFields[15].Descriptor()
+	blogpostDescProjectURL := blogpostFields[14].Descriptor()
 	// blogpost.ProjectURLValidator is a validator for the "project_url" field. It is called by the builders before save.
 	blogpost.ProjectURLValidator = blogpostDescProjectURL.Validators[0].(func(string) error)
 	// blogpostDescViewCount is the schema descriptor for view_count field.
-	blogpostDescViewCount := blogpostFields[18].Descriptor()
+	blogpostDescViewCount := blogpostFields[17].Descriptor()
 	// blogpost.DefaultViewCount holds the default value on creation for the view_count field.
 	blogpost.DefaultViewCount = blogpostDescViewCount.Default.(int)
 	// blogpostDescLikeCount is the schema descriptor for like_count field.
-	blogpostDescLikeCount := blogpostFields[19].Descriptor()
+	blogpostDescLikeCount := blogpostFields[18].Descriptor()
 	// blogpost.DefaultLikeCount holds the default value on creation for the like_count field.
 	blogpost.DefaultLikeCount = blogpostDescLikeCount.Default.(int)
 	// blogpostDescCommentCount is the schema descriptor for comment_count field.
-	blogpostDescCommentCount := blogpostFields[20].Descriptor()
+	blogpostDescCommentCount := blogpostFields[19].Descriptor()
 	// blogpost.DefaultCommentCount holds the default value on creation for the comment_count field.
 	blogpost.DefaultCommentCount = blogpostDescCommentCount.Default.(int)
 	// blogpostDescCreatedAt is the schema descriptor for created_at field.
-	blogpostDescCreatedAt := blogpostFields[23].Descriptor()
+	blogpostDescCreatedAt := blogpostFields[22].Descriptor()
 	// blogpost.DefaultCreatedAt holds the default value on creation for the created_at field.
 	blogpost.DefaultCreatedAt = blogpostDescCreatedAt.Default.(func() time.Time)
 	// blogpostDescUpdatedAt is the schema descriptor for updated_at field.
-	blogpostDescUpdatedAt := blogpostFields[24].Descriptor()
+	blogpostDescUpdatedAt := blogpostFields[23].Descriptor()
 	// blogpost.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	blogpost.DefaultUpdatedAt = blogpostDescUpdatedAt.Default.(func() time.Time)
 	// blogpost.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -787,11 +787,11 @@ func init() {
 	// episode.TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	episode.TitleValidator = episodeDescTitle.Validators[0].(func(string) error)
 	// episodeDescCreatedAt is the schema descriptor for created_at field.
-	episodeDescCreatedAt := episodeFields[9].Descriptor()
+	episodeDescCreatedAt := episodeFields[8].Descriptor()
 	// episode.DefaultCreatedAt holds the default value on creation for the created_at field.
 	episode.DefaultCreatedAt = episodeDescCreatedAt.Default.(func() time.Time)
 	// episodeDescUpdatedAt is the schema descriptor for updated_at field.
-	episodeDescUpdatedAt := episodeFields[10].Descriptor()
+	episodeDescUpdatedAt := episodeFields[9].Descriptor()
 	// episode.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	episode.DefaultUpdatedAt = episodeDescUpdatedAt.Default.(func() time.Time)
 	// episode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -829,11 +829,11 @@ func init() {
 	// episodeseries.CoverURLValidator is a validator for the "cover_url" field. It is called by the builders before save.
 	episodeseries.CoverURLValidator = episodeseriesDescCoverURL.Validators[0].(func(string) error)
 	// episodeseriesDescCreatedAt is the schema descriptor for created_at field.
-	episodeseriesDescCreatedAt := episodeseriesFields[6].Descriptor()
+	episodeseriesDescCreatedAt := episodeseriesFields[5].Descriptor()
 	// episodeseries.DefaultCreatedAt holds the default value on creation for the created_at field.
 	episodeseries.DefaultCreatedAt = episodeseriesDescCreatedAt.Default.(func() time.Time)
 	// episodeseriesDescUpdatedAt is the schema descriptor for updated_at field.
-	episodeseriesDescUpdatedAt := episodeseriesFields[7].Descriptor()
+	episodeseriesDescUpdatedAt := episodeseriesFields[6].Descriptor()
 	// episodeseries.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	episodeseries.DefaultUpdatedAt = episodeseriesDescUpdatedAt.Default.(func() time.Time)
 	// episodeseries.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -931,25 +931,25 @@ func init() {
 		}
 	}()
 	// ideaDescViewCount is the schema descriptor for view_count field.
-	ideaDescViewCount := ideaFields[8].Descriptor()
+	ideaDescViewCount := ideaFields[7].Descriptor()
 	// idea.DefaultViewCount holds the default value on creation for the view_count field.
 	idea.DefaultViewCount = ideaDescViewCount.Default.(int)
 	// ideaDescLikeCount is the schema descriptor for like_count field.
-	ideaDescLikeCount := ideaFields[9].Descriptor()
+	ideaDescLikeCount := ideaFields[8].Descriptor()
 	// idea.DefaultLikeCount holds the default value on creation for the like_count field.
 	idea.DefaultLikeCount = ideaDescLikeCount.Default.(int)
 	// ideaDescCategory is the schema descriptor for category field.
-	ideaDescCategory := ideaFields[10].Descriptor()
+	ideaDescCategory := ideaFields[9].Descriptor()
 	// idea.DefaultCategory holds the default value on creation for the category field.
 	idea.DefaultCategory = ideaDescCategory.Default.(string)
 	// idea.CategoryValidator is a validator for the "category" field. It is called by the builders before save.
 	idea.CategoryValidator = ideaDescCategory.Validators[0].(func(string) error)
 	// ideaDescCreatedAt is the schema descriptor for created_at field.
-	ideaDescCreatedAt := ideaFields[11].Descriptor()
+	ideaDescCreatedAt := ideaFields[10].Descriptor()
 	// idea.DefaultCreatedAt holds the default value on creation for the created_at field.
 	idea.DefaultCreatedAt = ideaDescCreatedAt.Default.(func() time.Time)
 	// ideaDescUpdatedAt is the schema descriptor for updated_at field.
-	ideaDescUpdatedAt := ideaFields[12].Descriptor()
+	ideaDescUpdatedAt := ideaFields[11].Descriptor()
 	// idea.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	idea.DefaultUpdatedAt = ideaDescUpdatedAt.Default.(func() time.Time)
 	// idea.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -1133,47 +1133,47 @@ func init() {
 	// moment.TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	moment.TitleValidator = momentDescTitle.Validators[0].(func(string) error)
 	// momentDescPinned is the schema descriptor for pinned field.
-	momentDescPinned := momentFields[12].Descriptor()
+	momentDescPinned := momentFields[11].Descriptor()
 	// moment.DefaultPinned holds the default value on creation for the pinned field.
 	moment.DefaultPinned = momentDescPinned.Default.(bool)
 	// momentDescExternalID is the schema descriptor for external_id field.
-	momentDescExternalID := momentFields[13].Descriptor()
+	momentDescExternalID := momentFields[12].Descriptor()
 	// moment.ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
 	moment.ExternalIDValidator = momentDescExternalID.Validators[0].(func(string) error)
 	// momentDescImageURL is the schema descriptor for image_url field.
-	momentDescImageURL := momentFields[14].Descriptor()
+	momentDescImageURL := momentFields[13].Descriptor()
 	// moment.ImageURLValidator is a validator for the "image_url" field. It is called by the builders before save.
 	moment.ImageURLValidator = momentDescImageURL.Validators[0].(func(string) error)
 	// momentDescVideoURL is the schema descriptor for video_url field.
-	momentDescVideoURL := momentFields[15].Descriptor()
+	momentDescVideoURL := momentFields[14].Descriptor()
 	// moment.VideoURLValidator is a validator for the "video_url" field. It is called by the builders before save.
 	moment.VideoURLValidator = momentDescVideoURL.Validators[0].(func(string) error)
 	// momentDescDocumentURL is the schema descriptor for document_url field.
-	momentDescDocumentURL := momentFields[16].Descriptor()
+	momentDescDocumentURL := momentFields[15].Descriptor()
 	// moment.DocumentURLValidator is a validator for the "document_url" field. It is called by the builders before save.
 	moment.DocumentURLValidator = momentDescDocumentURL.Validators[0].(func(string) error)
 	// momentDescDemoURL is the schema descriptor for demo_url field.
-	momentDescDemoURL := momentFields[20].Descriptor()
+	momentDescDemoURL := momentFields[19].Descriptor()
 	// moment.DemoURLValidator is a validator for the "demo_url" field. It is called by the builders before save.
 	moment.DemoURLValidator = momentDescDemoURL.Validators[0].(func(string) error)
 	// momentDescGithubURL is the schema descriptor for github_url field.
-	momentDescGithubURL := momentFields[21].Descriptor()
+	momentDescGithubURL := momentFields[20].Descriptor()
 	// moment.GithubURLValidator is a validator for the "github_url" field. It is called by the builders before save.
 	moment.GithubURLValidator = momentDescGithubURL.Validators[0].(func(string) error)
 	// momentDescExternalURL is the schema descriptor for external_url field.
-	momentDescExternalURL := momentFields[22].Descriptor()
+	momentDescExternalURL := momentFields[21].Descriptor()
 	// moment.ExternalURLValidator is a validator for the "external_url" field. It is called by the builders before save.
 	moment.ExternalURLValidator = momentDescExternalURL.Validators[0].(func(string) error)
 	// momentDescSortOrder is the schema descriptor for sort_order field.
-	momentDescSortOrder := momentFields[24].Descriptor()
+	momentDescSortOrder := momentFields[23].Descriptor()
 	// moment.DefaultSortOrder holds the default value on creation for the sort_order field.
 	moment.DefaultSortOrder = momentDescSortOrder.Default.(int)
 	// momentDescCreatedAt is the schema descriptor for created_at field.
-	momentDescCreatedAt := momentFields[25].Descriptor()
+	momentDescCreatedAt := momentFields[24].Descriptor()
 	// moment.DefaultCreatedAt holds the default value on creation for the created_at field.
 	moment.DefaultCreatedAt = momentDescCreatedAt.Default.(func() time.Time)
 	// momentDescUpdatedAt is the schema descriptor for updated_at field.
-	momentDescUpdatedAt := momentFields[26].Descriptor()
+	momentDescUpdatedAt := momentFields[25].Descriptor()
 	// moment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	moment.DefaultUpdatedAt = momentDescUpdatedAt.Default.(func() time.Time)
 	// moment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -1357,43 +1357,43 @@ func init() {
 		}
 	}()
 	// projectDescGithubURL is the schema descriptor for github_url field.
-	projectDescGithubURL := projectFields[9].Descriptor()
+	projectDescGithubURL := projectFields[8].Descriptor()
 	// project.GithubURLValidator is a validator for the "github_url" field. It is called by the builders before save.
 	project.GithubURLValidator = projectDescGithubURL.Validators[0].(func(string) error)
 	// projectDescDemoURL is the schema descriptor for demo_url field.
-	projectDescDemoURL := projectFields[10].Descriptor()
+	projectDescDemoURL := projectFields[9].Descriptor()
 	// project.DemoURLValidator is a validator for the "demo_url" field. It is called by the builders before save.
 	project.DemoURLValidator = projectDescDemoURL.Validators[0].(func(string) error)
 	// projectDescDocumentationURL is the schema descriptor for documentation_url field.
-	projectDescDocumentationURL := projectFields[11].Descriptor()
+	projectDescDocumentationURL := projectFields[10].Descriptor()
 	// project.DocumentationURLValidator is a validator for the "documentation_url" field. It is called by the builders before save.
 	project.DocumentationURLValidator = projectDescDocumentationURL.Validators[0].(func(string) error)
 	// projectDescThumbnailURL is the schema descriptor for thumbnail_url field.
-	projectDescThumbnailURL := projectFields[12].Descriptor()
+	projectDescThumbnailURL := projectFields[11].Descriptor()
 	// project.ThumbnailURLValidator is a validator for the "thumbnail_url" field. It is called by the builders before save.
 	project.ThumbnailURLValidator = projectDescThumbnailURL.Validators[0].(func(string) error)
 	// projectDescIsFeatured is the schema descriptor for is_featured field.
-	projectDescIsFeatured := projectFields[13].Descriptor()
+	projectDescIsFeatured := projectFields[14].Descriptor()
 	// project.DefaultIsFeatured holds the default value on creation for the is_featured field.
 	project.DefaultIsFeatured = projectDescIsFeatured.Default.(bool)
 	// projectDescViewCount is the schema descriptor for view_count field.
-	projectDescViewCount := projectFields[15].Descriptor()
+	projectDescViewCount := projectFields[16].Descriptor()
 	// project.DefaultViewCount holds the default value on creation for the view_count field.
 	project.DefaultViewCount = projectDescViewCount.Default.(int)
 	// projectDescLikeCount is the schema descriptor for like_count field.
-	projectDescLikeCount := projectFields[16].Descriptor()
+	projectDescLikeCount := projectFields[17].Descriptor()
 	// project.DefaultLikeCount holds the default value on creation for the like_count field.
 	project.DefaultLikeCount = projectDescLikeCount.Default.(int)
 	// projectDescSortOrder is the schema descriptor for sort_order field.
-	projectDescSortOrder := projectFields[17].Descriptor()
+	projectDescSortOrder := projectFields[18].Descriptor()
 	// project.DefaultSortOrder holds the default value on creation for the sort_order field.
 	project.DefaultSortOrder = projectDescSortOrder.Default.(int)
 	// projectDescCreatedAt is the schema descriptor for created_at field.
-	projectDescCreatedAt := projectFields[18].Descriptor()
+	projectDescCreatedAt := projectFields[19].Descriptor()
 	// project.DefaultCreatedAt holds the default value on creation for the created_at field.
 	project.DefaultCreatedAt = projectDescCreatedAt.Default.(func() time.Time)
 	// projectDescUpdatedAt is the schema descriptor for updated_at field.
-	projectDescUpdatedAt := projectFields[19].Descriptor()
+	projectDescUpdatedAt := projectFields[20].Descriptor()
 	// project.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	project.DefaultUpdatedAt = projectDescUpdatedAt.Default.(func() time.Time)
 	// project.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

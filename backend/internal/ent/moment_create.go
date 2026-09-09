@@ -131,20 +131,6 @@ func (mc *MomentCreate) SetTags(s []string) *MomentCreate {
 	return mc
 }
 
-// SetStatus sets the "status" field.
-func (mc *MomentCreate) SetStatus(m moment.Status) *MomentCreate {
-	mc.mutation.SetStatus(m)
-	return mc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (mc *MomentCreate) SetNillableStatus(m *moment.Status) *MomentCreate {
-	if m != nil {
-		mc.SetStatus(*m)
-	}
-	return mc
-}
-
 // SetPriority sets the "priority" field.
 func (mc *MomentCreate) SetPriority(m moment.Priority) *MomentCreate {
 	mc.mutation.SetPriority(m)
@@ -413,10 +399,6 @@ func (mc *MomentCreate) defaults() {
 		v := moment.DefaultVisibility
 		mc.mutation.SetVisibility(v)
 	}
-	if _, ok := mc.mutation.Status(); !ok {
-		v := moment.DefaultStatus
-		mc.mutation.SetStatus(v)
-	}
 	if _, ok := mc.mutation.Priority(); !ok {
 		v := moment.DefaultPriority
 		mc.mutation.SetPriority(v)
@@ -480,14 +462,6 @@ func (mc *MomentCreate) check() error {
 	if v, ok := mc.mutation.Title(); ok {
 		if err := moment.TitleValidator(v); err != nil {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Moment.title": %w`, err)}
-		}
-	}
-	if _, ok := mc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Moment.status"`)}
-	}
-	if v, ok := mc.mutation.Status(); ok {
-		if err := moment.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Moment.status": %w`, err)}
 		}
 	}
 	if _, ok := mc.mutation.Priority(); !ok {
@@ -609,10 +583,6 @@ func (mc *MomentCreate) createSpec() (*Moment, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.Tags(); ok {
 		_spec.SetField(moment.FieldTags, field.TypeJSON, value)
 		_node.Tags = value
-	}
-	if value, ok := mc.mutation.Status(); ok {
-		_spec.SetField(moment.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
 	}
 	if value, ok := mc.mutation.Priority(); ok {
 		_spec.SetField(moment.FieldPriority, field.TypeEnum, value)

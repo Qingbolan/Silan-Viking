@@ -70,20 +70,6 @@ func (esc *EpisodeSeriesCreate) SetNillableCoverURL(s *string) *EpisodeSeriesCre
 	return esc
 }
 
-// SetStatus sets the "status" field.
-func (esc *EpisodeSeriesCreate) SetStatus(e episodeseries.Status) *EpisodeSeriesCreate {
-	esc.mutation.SetStatus(e)
-	return esc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (esc *EpisodeSeriesCreate) SetNillableStatus(e *episodeseries.Status) *EpisodeSeriesCreate {
-	if e != nil {
-		esc.SetStatus(*e)
-	}
-	return esc
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (esc *EpisodeSeriesCreate) SetCreatedAt(t time.Time) *EpisodeSeriesCreate {
 	esc.mutation.SetCreatedAt(t)
@@ -191,10 +177,6 @@ func (esc *EpisodeSeriesCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (esc *EpisodeSeriesCreate) defaults() {
-	if _, ok := esc.mutation.Status(); !ok {
-		v := episodeseries.DefaultStatus
-		esc.mutation.SetStatus(v)
-	}
 	if _, ok := esc.mutation.CreatedAt(); !ok {
 		v := episodeseries.DefaultCreatedAt()
 		esc.mutation.SetCreatedAt(v)
@@ -227,14 +209,6 @@ func (esc *EpisodeSeriesCreate) check() error {
 	if v, ok := esc.mutation.CoverURL(); ok {
 		if err := episodeseries.CoverURLValidator(v); err != nil {
 			return &ValidationError{Name: "cover_url", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.cover_url": %w`, err)}
-		}
-	}
-	if _, ok := esc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "EpisodeSeries.status"`)}
-	}
-	if v, ok := esc.mutation.Status(); ok {
-		if err := episodeseries.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "EpisodeSeries.status": %w`, err)}
 		}
 	}
 	return nil
@@ -287,10 +261,6 @@ func (esc *EpisodeSeriesCreate) createSpec() (*EpisodeSeries, *sqlgraph.CreateSp
 	if value, ok := esc.mutation.CoverURL(); ok {
 		_spec.SetField(episodeseries.FieldCoverURL, field.TypeString, value)
 		_node.CoverURL = &value
-	}
-	if value, ok := esc.mutation.Status(); ok {
-		_spec.SetField(episodeseries.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
 	}
 	if value, ok := esc.mutation.CreatedAt(); ok {
 		_spec.SetField(episodeseries.FieldCreatedAt, field.TypeTime, value)

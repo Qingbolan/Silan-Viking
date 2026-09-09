@@ -25,7 +25,6 @@ func newBlogEngagementTestContext(t *testing.T) (context.Context, *svc.ServiceCo
 	client.BlogPost.Create().
 		SetID("blog-one").
 		SetSlug("blog-one").
-		SetStatus(blogpost.StatusPublished).
 		SetVisibility(blogpost.VisibilityPublic).
 		SetLikeCount(73).
 		SetViewCount(83).

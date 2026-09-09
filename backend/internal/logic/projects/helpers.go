@@ -17,7 +17,6 @@ import (
 func publicProject() predicate.Project {
 	return project.And(
 		project.VisibilityEQ(project.VisibilityPublic),
-		project.StatusNEQ(project.StatusArchived),
 	)
 }
 

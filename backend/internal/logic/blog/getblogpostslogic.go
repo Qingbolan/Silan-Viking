@@ -36,7 +36,6 @@ func NewGetBlogPostsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetB
 func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *types.BlogListResponse, err error) {
 	query := l.svcCtx.DB.BlogPost.Query().
 		Where(
-			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
 		WithTranslations()

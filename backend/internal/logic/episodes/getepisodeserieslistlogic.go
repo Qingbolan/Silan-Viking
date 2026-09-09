@@ -26,7 +26,6 @@ func NewGetEpisodeSeriesListLogic(ctx context.Context, svcCtx *svc.ServiceContex
 
 func (l *GetEpisodeSeriesListLogic) GetEpisodeSeriesList(language string) (*types.EpisodeSeriesListResponse, error) {
 	series, err := l.svcCtx.DB.EpisodeSeries.Query().
-		Where(episodeseries.StatusNEQ(episodeseries.StatusArchived)).
 		WithTranslations().
 		WithEpisodes(publicEpisodeQuery).
 		Order(episodeseries.ByCreatedAt()).

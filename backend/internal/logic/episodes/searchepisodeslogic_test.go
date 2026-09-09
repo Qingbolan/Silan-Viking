@@ -25,7 +25,6 @@ func TestSearchEpisodesMatchesTranslatedTitleSeriesAndMarkdownBody(t *testing.T)
 	series := client.EpisodeSeries.Create().
 		SetID("series-one").
 		SetSlug("agent-runtime").
-		SetStatus("ongoing").
 		SaveX(ctx)
 	client.EpisodeSeriesTranslation.Create().
 		SetEpisodeSeries(series).
@@ -37,7 +36,6 @@ func TestSearchEpisodesMatchesTranslatedTitleSeriesAndMarkdownBody(t *testing.T)
 		SetSeries(series).
 		SetSlug("durable-memory").
 		SetEpisodeNumber(1).
-		SetStatus("published").
 		SetVisibility("public").
 		SaveX(ctx)
 	client.EpisodeTranslation.Create().

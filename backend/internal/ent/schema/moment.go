@@ -53,7 +53,7 @@ func (Moment) Fields() []ent.Field {
 				"announcement", "insight", "learning", "reflection").
 			Default("progress"),
 		field.Enum("visibility").
-			Values("private", "unlisted", "public").
+			Values("private", "public").
 			Default("private"),
 		field.String("title").
 			MaxLen(200).
@@ -65,9 +65,6 @@ func (Moment) Fields() []ent.Field {
 		// Metadata
 		field.JSON("tags", []string{}).
 			Optional(),
-		field.Enum("status").
-			Values("active", "ongoing", "completed").
-			Default("active"),
 		field.Enum("priority").
 			Values("high", "medium", "low").
 			Default("medium"),

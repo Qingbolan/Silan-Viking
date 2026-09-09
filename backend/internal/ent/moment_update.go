@@ -184,20 +184,6 @@ func (mu *MomentUpdate) ClearTags() *MomentUpdate {
 	return mu
 }
 
-// SetStatus sets the "status" field.
-func (mu *MomentUpdate) SetStatus(m moment.Status) *MomentUpdate {
-	mu.mutation.SetStatus(m)
-	return mu
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (mu *MomentUpdate) SetNillableStatus(m *moment.Status) *MomentUpdate {
-	if m != nil {
-		mu.SetStatus(*m)
-	}
-	return mu
-}
-
 // SetPriority sets the "priority" field.
 func (mu *MomentUpdate) SetPriority(m moment.Priority) *MomentUpdate {
 	mu.mutation.SetPriority(m)
@@ -569,11 +555,6 @@ func (mu *MomentUpdate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Moment.title": %w`, err)}
 		}
 	}
-	if v, ok := mu.mutation.Status(); ok {
-		if err := moment.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Moment.status": %w`, err)}
-		}
-	}
 	if v, ok := mu.mutation.Priority(); ok {
 		if err := moment.PriorityValidator(v); err != nil {
 			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "Moment.priority": %w`, err)}
@@ -675,9 +656,6 @@ func (mu *MomentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if mu.mutation.TagsCleared() {
 		_spec.ClearField(moment.FieldTags, field.TypeJSON)
-	}
-	if value, ok := mu.mutation.Status(); ok {
-		_spec.SetField(moment.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := mu.mutation.Priority(); ok {
 		_spec.SetField(moment.FieldPriority, field.TypeEnum, value)
@@ -997,20 +975,6 @@ func (muo *MomentUpdateOne) AppendTags(s []string) *MomentUpdateOne {
 // ClearTags clears the value of the "tags" field.
 func (muo *MomentUpdateOne) ClearTags() *MomentUpdateOne {
 	muo.mutation.ClearTags()
-	return muo
-}
-
-// SetStatus sets the "status" field.
-func (muo *MomentUpdateOne) SetStatus(m moment.Status) *MomentUpdateOne {
-	muo.mutation.SetStatus(m)
-	return muo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (muo *MomentUpdateOne) SetNillableStatus(m *moment.Status) *MomentUpdateOne {
-	if m != nil {
-		muo.SetStatus(*m)
-	}
 	return muo
 }
 
@@ -1398,11 +1362,6 @@ func (muo *MomentUpdateOne) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Moment.title": %w`, err)}
 		}
 	}
-	if v, ok := muo.mutation.Status(); ok {
-		if err := moment.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Moment.status": %w`, err)}
-		}
-	}
 	if v, ok := muo.mutation.Priority(); ok {
 		if err := moment.PriorityValidator(v); err != nil {
 			return &ValidationError{Name: "priority", err: fmt.Errorf(`ent: validator failed for field "Moment.priority": %w`, err)}
@@ -1521,9 +1480,6 @@ func (muo *MomentUpdateOne) sqlSave(ctx context.Context) (_node *Moment, err err
 	}
 	if muo.mutation.TagsCleared() {
 		_spec.ClearField(moment.FieldTags, field.TypeJSON)
-	}
-	if value, ok := muo.mutation.Status(); ok {
-		_spec.SetField(moment.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := muo.mutation.Priority(); ok {
 		_spec.SetField(moment.FieldPriority, field.TypeEnum, value)

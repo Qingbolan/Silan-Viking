@@ -124,20 +124,6 @@ func (iu *IdeaUpdate) ClearAbstract() *IdeaUpdate {
 	return iu
 }
 
-// SetStatus sets the "status" field.
-func (iu *IdeaUpdate) SetStatus(i idea.Status) *IdeaUpdate {
-	iu.mutation.SetStatus(i)
-	return iu
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (iu *IdeaUpdate) SetNillableStatus(i *idea.Status) *IdeaUpdate {
-	if i != nil {
-		iu.SetStatus(*i)
-	}
-	return iu
-}
-
 // SetVisibility sets the "visibility" field.
 func (iu *IdeaUpdate) SetVisibility(i idea.Visibility) *IdeaUpdate {
 	iu.mutation.SetVisibility(i)
@@ -340,11 +326,6 @@ func (iu *IdeaUpdate) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Idea.slug": %w`, err)}
 		}
 	}
-	if v, ok := iu.mutation.Status(); ok {
-		if err := idea.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Idea.status": %w`, err)}
-		}
-	}
 	if v, ok := iu.mutation.Visibility(); ok {
 		if err := idea.VisibilityValidator(v); err != nil {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Idea.visibility": %w`, err)}
@@ -396,9 +377,6 @@ func (iu *IdeaUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if iu.mutation.AbstractCleared() {
 		_spec.ClearField(idea.FieldAbstract, field.TypeString)
-	}
-	if value, ok := iu.mutation.Status(); ok {
-		_spec.SetField(idea.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := iu.mutation.Visibility(); ok {
 		_spec.SetField(idea.FieldVisibility, field.TypeEnum, value)
@@ -618,20 +596,6 @@ func (iuo *IdeaUpdateOne) ClearAbstract() *IdeaUpdateOne {
 	return iuo
 }
 
-// SetStatus sets the "status" field.
-func (iuo *IdeaUpdateOne) SetStatus(i idea.Status) *IdeaUpdateOne {
-	iuo.mutation.SetStatus(i)
-	return iuo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (iuo *IdeaUpdateOne) SetNillableStatus(i *idea.Status) *IdeaUpdateOne {
-	if i != nil {
-		iuo.SetStatus(*i)
-	}
-	return iuo
-}
-
 // SetVisibility sets the "visibility" field.
 func (iuo *IdeaUpdateOne) SetVisibility(i idea.Visibility) *IdeaUpdateOne {
 	iuo.mutation.SetVisibility(i)
@@ -847,11 +811,6 @@ func (iuo *IdeaUpdateOne) check() error {
 			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Idea.slug": %w`, err)}
 		}
 	}
-	if v, ok := iuo.mutation.Status(); ok {
-		if err := idea.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Idea.status": %w`, err)}
-		}
-	}
 	if v, ok := iuo.mutation.Visibility(); ok {
 		if err := idea.VisibilityValidator(v); err != nil {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "Idea.visibility": %w`, err)}
@@ -920,9 +879,6 @@ func (iuo *IdeaUpdateOne) sqlSave(ctx context.Context) (_node *Idea, err error) 
 	}
 	if iuo.mutation.AbstractCleared() {
 		_spec.ClearField(idea.FieldAbstract, field.TypeString)
-	}
-	if value, ok := iuo.mutation.Status(); ok {
-		_spec.SetField(idea.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := iuo.mutation.Visibility(); ok {
 		_spec.SetField(idea.FieldVisibility, field.TypeEnum, value)

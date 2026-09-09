@@ -106,10 +106,10 @@ func updateToData(ctx context.Context, tags *contenttag.Repository, moment *ent.
 		Description: description,
 		Date:        moment.Date,
 		Tags:        labels,
-		Status:      string(moment.Status),
-		Priority:    string(moment.Priority),
-		Pinned:      moment.Pinned,
-		CreatedAt:   moment.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   moment.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+
+		Priority:  string(moment.Priority),
+		Pinned:    moment.Pinned,
+		CreatedAt: moment.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt: moment.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }

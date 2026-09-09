@@ -120,6 +120,11 @@ func ThumbnailURL(v string) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldThumbnailURL, v))
 }
 
+// CoverWebsiteURL applies equality check predicate on the "cover_website_url" field. It's identical to CoverWebsiteURLEQ.
+func CoverWebsiteURL(v string) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldCoverWebsiteURL, v))
+}
+
 // IsFeatured applies equality check predicate on the "is_featured" field. It's identical to IsFeaturedEQ.
 func IsFeatured(v bool) predicate.Project {
 	return predicate.Project(sql.FieldEQ(FieldIsFeatured, v))
@@ -503,26 +508,6 @@ func ProjectTypeEqualFold(v string) predicate.Project {
 // ProjectTypeContainsFold applies the ContainsFold predicate on the "project_type" field.
 func ProjectTypeContainsFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldContainsFold(FieldProjectType, v))
-}
-
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.Project {
-	return predicate.Project(sql.FieldEQ(FieldStatus, v))
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.Project {
-	return predicate.Project(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.Project {
-	return predicate.Project(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.Project {
-	return predicate.Project(sql.FieldNotIn(FieldStatus, vs...))
 }
 
 // StartDateEQ applies the EQ predicate on the "start_date" field.
@@ -973,6 +958,101 @@ func ThumbnailURLEqualFold(v string) predicate.Project {
 // ThumbnailURLContainsFold applies the ContainsFold predicate on the "thumbnail_url" field.
 func ThumbnailURLContainsFold(v string) predicate.Project {
 	return predicate.Project(sql.FieldContainsFold(FieldThumbnailURL, v))
+}
+
+// CoverSourceTypeEQ applies the EQ predicate on the "cover_source_type" field.
+func CoverSourceTypeEQ(v CoverSourceType) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldCoverSourceType, v))
+}
+
+// CoverSourceTypeNEQ applies the NEQ predicate on the "cover_source_type" field.
+func CoverSourceTypeNEQ(v CoverSourceType) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldCoverSourceType, v))
+}
+
+// CoverSourceTypeIn applies the In predicate on the "cover_source_type" field.
+func CoverSourceTypeIn(vs ...CoverSourceType) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldCoverSourceType, vs...))
+}
+
+// CoverSourceTypeNotIn applies the NotIn predicate on the "cover_source_type" field.
+func CoverSourceTypeNotIn(vs ...CoverSourceType) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldCoverSourceType, vs...))
+}
+
+// CoverWebsiteURLEQ applies the EQ predicate on the "cover_website_url" field.
+func CoverWebsiteURLEQ(v string) predicate.Project {
+	return predicate.Project(sql.FieldEQ(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLNEQ applies the NEQ predicate on the "cover_website_url" field.
+func CoverWebsiteURLNEQ(v string) predicate.Project {
+	return predicate.Project(sql.FieldNEQ(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLIn applies the In predicate on the "cover_website_url" field.
+func CoverWebsiteURLIn(vs ...string) predicate.Project {
+	return predicate.Project(sql.FieldIn(FieldCoverWebsiteURL, vs...))
+}
+
+// CoverWebsiteURLNotIn applies the NotIn predicate on the "cover_website_url" field.
+func CoverWebsiteURLNotIn(vs ...string) predicate.Project {
+	return predicate.Project(sql.FieldNotIn(FieldCoverWebsiteURL, vs...))
+}
+
+// CoverWebsiteURLGT applies the GT predicate on the "cover_website_url" field.
+func CoverWebsiteURLGT(v string) predicate.Project {
+	return predicate.Project(sql.FieldGT(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLGTE applies the GTE predicate on the "cover_website_url" field.
+func CoverWebsiteURLGTE(v string) predicate.Project {
+	return predicate.Project(sql.FieldGTE(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLLT applies the LT predicate on the "cover_website_url" field.
+func CoverWebsiteURLLT(v string) predicate.Project {
+	return predicate.Project(sql.FieldLT(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLLTE applies the LTE predicate on the "cover_website_url" field.
+func CoverWebsiteURLLTE(v string) predicate.Project {
+	return predicate.Project(sql.FieldLTE(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLContains applies the Contains predicate on the "cover_website_url" field.
+func CoverWebsiteURLContains(v string) predicate.Project {
+	return predicate.Project(sql.FieldContains(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLHasPrefix applies the HasPrefix predicate on the "cover_website_url" field.
+func CoverWebsiteURLHasPrefix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasPrefix(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLHasSuffix applies the HasSuffix predicate on the "cover_website_url" field.
+func CoverWebsiteURLHasSuffix(v string) predicate.Project {
+	return predicate.Project(sql.FieldHasSuffix(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLIsNil applies the IsNil predicate on the "cover_website_url" field.
+func CoverWebsiteURLIsNil() predicate.Project {
+	return predicate.Project(sql.FieldIsNull(FieldCoverWebsiteURL))
+}
+
+// CoverWebsiteURLNotNil applies the NotNil predicate on the "cover_website_url" field.
+func CoverWebsiteURLNotNil() predicate.Project {
+	return predicate.Project(sql.FieldNotNull(FieldCoverWebsiteURL))
+}
+
+// CoverWebsiteURLEqualFold applies the EqualFold predicate on the "cover_website_url" field.
+func CoverWebsiteURLEqualFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldEqualFold(FieldCoverWebsiteURL, v))
+}
+
+// CoverWebsiteURLContainsFold applies the ContainsFold predicate on the "cover_website_url" field.
+func CoverWebsiteURLContainsFold(v string) predicate.Project {
+	return predicate.Project(sql.FieldContainsFold(FieldCoverWebsiteURL, v))
 }
 
 // IsFeaturedEQ applies the EQ predicate on the "is_featured" field.

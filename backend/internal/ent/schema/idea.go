@@ -43,12 +43,9 @@ func (Idea) Fields() []ent.Field {
 			Optional(),
 		field.Text("abstract").
 			Optional(),
-		field.Enum("status").
-			Values("draft", "hypothesis", "experimenting", "validating", "published", "concluded").
-			Default("draft"),
 		// M0.5a §11.7: is_public dropped, unified onto visibility (10 §10.3).
 		field.Enum("visibility").
-			Values("private", "unlisted", "public").
+			Values("private", "public").
 			Default("private"),
 		field.Int("view_count").
 			Default(0),

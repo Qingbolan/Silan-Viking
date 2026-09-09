@@ -26,7 +26,7 @@ import (
 const (
 	BundleVersion           = 3
 	LegacyBundleVersion     = 2
-	ProjectionSchemaVersion = 1
+	ProjectionSchemaVersion = 2
 )
 
 type State string
@@ -552,9 +552,13 @@ func readManifest(path string) (*Manifest, error) {
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return nil, fmt.Errorf("decode deployment manifest: %w", err)
 	}
-	if (manifest.Version != BundleVersion && manifest.Version != LegacyBundleVersion) ||
-		manifest.SchemaVersion != ProjectionSchemaVersion ||
-		!isHexDigest(manifest.ContentCommit, 40) ||
+	if manifest.Version != BundleVersion && manifest.Version != LegacyBundleVersion {
+		return nil, fmt.Errorf("unsupported deployment bundle version %d: server supports %d and %d", manifest.Version, LegacyBundleVersion, BundleVersion)
+	}
+	if manifest.SchemaVersion != ProjectionSchemaVersion {
+		return nil, fmt.Errorf("unsupported deployment schema version %d: server supports %d; deploy matching backend code before content", manifest.SchemaVersion, ProjectionSchemaVersion)
+	}
+	if !isHexDigest(manifest.ContentCommit, 40) ||
 		manifest.ContentHash == "" ||
 		!isHexDigest(manifest.DatabaseSHA, 64) ||
 		manifest.Media == nil {

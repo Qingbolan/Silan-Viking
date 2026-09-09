@@ -33,8 +33,6 @@ type BlogPost struct {
 	Content string `json:"content,omitempty"`
 	// ContentType holds the value of the "content_type" field.
 	ContentType blogpost.ContentType `json:"content_type,omitempty"`
-	// Status holds the value of the "status" field.
-	Status blogpost.Status `json:"status,omitempty"`
 	// Visibility holds the value of the "visibility" field.
 	Visibility blogpost.Visibility `json:"visibility,omitempty"`
 	// IsFeatured holds the value of the "is_featured" field.
@@ -98,7 +96,7 @@ func (*BlogPost) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case blogpost.FieldReadingTimeMinutes, blogpost.FieldViewCount, blogpost.FieldLikeCount, blogpost.FieldCommentCount, blogpost.FieldSeriesOrder:
 			values[i] = new(sql.NullInt64)
-		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID, blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldStatus, blogpost.FieldVisibility, blogpost.FieldFeaturedImageURL, blogpost.FieldProjectName, blogpost.FieldPublicationVenue, blogpost.FieldProjectURL, blogpost.FieldExternalResources, blogpost.FieldPublishedAt:
+		case blogpost.FieldID, blogpost.FieldUserID, blogpost.FieldCategoryID, blogpost.FieldSeriesID, blogpost.FieldTitle, blogpost.FieldSlug, blogpost.FieldExcerpt, blogpost.FieldContent, blogpost.FieldContentType, blogpost.FieldVisibility, blogpost.FieldFeaturedImageURL, blogpost.FieldProjectName, blogpost.FieldPublicationVenue, blogpost.FieldProjectURL, blogpost.FieldExternalResources, blogpost.FieldPublishedAt:
 			values[i] = new(sql.NullString)
 		case blogpost.FieldCreatedAt, blogpost.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -170,12 +168,6 @@ func (bp *BlogPost) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field content_type", values[i])
 			} else if value.Valid {
 				bp.ContentType = blogpost.ContentType(value.String)
-			}
-		case blogpost.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				bp.Status = blogpost.Status(value.String)
 			}
 		case blogpost.FieldVisibility:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -331,9 +323,6 @@ func (bp *BlogPost) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("content_type=")
 	builder.WriteString(fmt.Sprintf("%v", bp.ContentType))
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", bp.Status))
 	builder.WriteString(", ")
 	builder.WriteString("visibility=")
 	builder.WriteString(fmt.Sprintf("%v", bp.Visibility))

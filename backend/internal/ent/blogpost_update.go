@@ -177,20 +177,6 @@ func (bpu *BlogPostUpdate) SetNillableContentType(bt *blogpost.ContentType) *Blo
 	return bpu
 }
 
-// SetStatus sets the "status" field.
-func (bpu *BlogPostUpdate) SetStatus(b blogpost.Status) *BlogPostUpdate {
-	bpu.mutation.SetStatus(b)
-	return bpu
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (bpu *BlogPostUpdate) SetNillableStatus(b *blogpost.Status) *BlogPostUpdate {
-	if b != nil {
-		bpu.SetStatus(*b)
-	}
-	return bpu
-}
-
 // SetVisibility sets the "visibility" field.
 func (bpu *BlogPostUpdate) SetVisibility(b blogpost.Visibility) *BlogPostUpdate {
 	bpu.mutation.SetVisibility(b)
@@ -562,11 +548,6 @@ func (bpu *BlogPostUpdate) check() error {
 			return &ValidationError{Name: "content_type", err: fmt.Errorf(`ent: validator failed for field "BlogPost.content_type": %w`, err)}
 		}
 	}
-	if v, ok := bpu.mutation.Status(); ok {
-		if err := blogpost.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "BlogPost.status": %w`, err)}
-		}
-	}
 	if v, ok := bpu.mutation.Visibility(); ok {
 		if err := blogpost.VisibilityValidator(v); err != nil {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "BlogPost.visibility": %w`, err)}
@@ -648,9 +629,6 @@ func (bpu *BlogPostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := bpu.mutation.ContentType(); ok {
 		_spec.SetField(blogpost.FieldContentType, field.TypeEnum, value)
-	}
-	if value, ok := bpu.mutation.Status(); ok {
-		_spec.SetField(blogpost.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := bpu.mutation.Visibility(); ok {
 		_spec.SetField(blogpost.FieldVisibility, field.TypeEnum, value)
@@ -948,20 +926,6 @@ func (bpuo *BlogPostUpdateOne) SetContentType(bt blogpost.ContentType) *BlogPost
 func (bpuo *BlogPostUpdateOne) SetNillableContentType(bt *blogpost.ContentType) *BlogPostUpdateOne {
 	if bt != nil {
 		bpuo.SetContentType(*bt)
-	}
-	return bpuo
-}
-
-// SetStatus sets the "status" field.
-func (bpuo *BlogPostUpdateOne) SetStatus(b blogpost.Status) *BlogPostUpdateOne {
-	bpuo.mutation.SetStatus(b)
-	return bpuo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (bpuo *BlogPostUpdateOne) SetNillableStatus(b *blogpost.Status) *BlogPostUpdateOne {
-	if b != nil {
-		bpuo.SetStatus(*b)
 	}
 	return bpuo
 }
@@ -1350,11 +1314,6 @@ func (bpuo *BlogPostUpdateOne) check() error {
 			return &ValidationError{Name: "content_type", err: fmt.Errorf(`ent: validator failed for field "BlogPost.content_type": %w`, err)}
 		}
 	}
-	if v, ok := bpuo.mutation.Status(); ok {
-		if err := blogpost.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "BlogPost.status": %w`, err)}
-		}
-	}
 	if v, ok := bpuo.mutation.Visibility(); ok {
 		if err := blogpost.VisibilityValidator(v); err != nil {
 			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "BlogPost.visibility": %w`, err)}
@@ -1453,9 +1412,6 @@ func (bpuo *BlogPostUpdateOne) sqlSave(ctx context.Context) (_node *BlogPost, er
 	}
 	if value, ok := bpuo.mutation.ContentType(); ok {
 		_spec.SetField(blogpost.FieldContentType, field.TypeEnum, value)
-	}
-	if value, ok := bpuo.mutation.Status(); ok {
-		_spec.SetField(blogpost.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := bpuo.mutation.Visibility(); ok {
 		_spec.SetField(blogpost.FieldVisibility, field.TypeEnum, value)

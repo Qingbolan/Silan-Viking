@@ -580,26 +580,6 @@ func TagsNotNil() predicate.Moment {
 	return predicate.Moment(sql.FieldNotNull(FieldTags))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.Moment {
-	return predicate.Moment(sql.FieldEQ(FieldStatus, v))
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.Moment {
-	return predicate.Moment(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.Moment {
-	return predicate.Moment(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.Moment {
-	return predicate.Moment(sql.FieldNotIn(FieldStatus, vs...))
-}
-
 // PriorityEQ applies the EQ predicate on the "priority" field.
 func PriorityEQ(v Priority) predicate.Moment {
 	return predicate.Moment(sql.FieldEQ(FieldPriority, v))

@@ -56,12 +56,9 @@ func (BlogPost) Fields() []ent.Field {
 		field.Enum("content_type").
 			Values("article", "podcast", "vlog", "tutorial").
 			Default("article"),
-		field.Enum("status").
-			Values("draft", "published", "archived").
-			Default("draft"),
-		// M0.5a §11.7: status/visibility separation (10 §10.3).
+		// Visibility is the only content exposure state.
 		field.Enum("visibility").
-			Values("private", "unlisted", "public").
+			Values("private", "public").
 			Default("private"),
 		field.Bool("is_featured").
 			Default(false),

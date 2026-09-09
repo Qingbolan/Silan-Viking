@@ -31,7 +31,6 @@ func (l *GetEpisodeLogic) GetEpisode(req *types.EpisodeRequest) (*types.EpisodeD
 	ep, err := l.svcCtx.DB.Episode.Query().
 		Where(
 			episode.Slug(req.Slug),
-			episode.StatusEQ(episode.StatusPublished),
 			episode.VisibilityEQ(episode.VisibilityPublic),
 		).
 		WithSeries().

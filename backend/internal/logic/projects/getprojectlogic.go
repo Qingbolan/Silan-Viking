@@ -87,13 +87,13 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 	var userID string
 
 	return &types.ProjectExtended{
-		ID:               proj.ID,
-		UserID:           userID,
-		Title:            title,
-		Slug:             proj.Slug,
-		Description:      description,
-		ProjectType:      proj.ProjectType,
-		Status:           string(proj.Status),
+		ID:          proj.ID,
+		UserID:      userID,
+		Title:       title,
+		Slug:        proj.Slug,
+		Description: description,
+		ProjectType: proj.ProjectType,
+
 		StartDate:        startDate,
 		EndDate:          endDate,
 		Technologies:     technologies,

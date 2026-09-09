@@ -120,20 +120,6 @@ func (pu *ProjectUpdate) SetNillableProjectType(s *string) *ProjectUpdate {
 	return pu
 }
 
-// SetStatus sets the "status" field.
-func (pu *ProjectUpdate) SetStatus(pr project.Status) *ProjectUpdate {
-	pu.mutation.SetStatus(pr)
-	return pu
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (pu *ProjectUpdate) SetNillableStatus(pr *project.Status) *ProjectUpdate {
-	if pr != nil {
-		pu.SetStatus(*pr)
-	}
-	return pu
-}
-
 // SetStartDate sets the "start_date" field.
 func (pu *ProjectUpdate) SetStartDate(s string) *ProjectUpdate {
 	pu.mutation.SetStartDate(s)
@@ -251,6 +237,40 @@ func (pu *ProjectUpdate) SetNillableThumbnailURL(s *string) *ProjectUpdate {
 // ClearThumbnailURL clears the value of the "thumbnail_url" field.
 func (pu *ProjectUpdate) ClearThumbnailURL() *ProjectUpdate {
 	pu.mutation.ClearThumbnailURL()
+	return pu
+}
+
+// SetCoverSourceType sets the "cover_source_type" field.
+func (pu *ProjectUpdate) SetCoverSourceType(pst project.CoverSourceType) *ProjectUpdate {
+	pu.mutation.SetCoverSourceType(pst)
+	return pu
+}
+
+// SetNillableCoverSourceType sets the "cover_source_type" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableCoverSourceType(pst *project.CoverSourceType) *ProjectUpdate {
+	if pst != nil {
+		pu.SetCoverSourceType(*pst)
+	}
+	return pu
+}
+
+// SetCoverWebsiteURL sets the "cover_website_url" field.
+func (pu *ProjectUpdate) SetCoverWebsiteURL(s string) *ProjectUpdate {
+	pu.mutation.SetCoverWebsiteURL(s)
+	return pu
+}
+
+// SetNillableCoverWebsiteURL sets the "cover_website_url" field if the given value is not nil.
+func (pu *ProjectUpdate) SetNillableCoverWebsiteURL(s *string) *ProjectUpdate {
+	if s != nil {
+		pu.SetCoverWebsiteURL(*s)
+	}
+	return pu
+}
+
+// ClearCoverWebsiteURL clears the value of the "cover_website_url" field.
+func (pu *ProjectUpdate) ClearCoverWebsiteURL() *ProjectUpdate {
+	pu.mutation.ClearCoverWebsiteURL()
 	return pu
 }
 
@@ -548,11 +568,6 @@ func (pu *ProjectUpdate) check() error {
 			return &ValidationError{Name: "project_type", err: fmt.Errorf(`ent: validator failed for field "Project.project_type": %w`, err)}
 		}
 	}
-	if v, ok := pu.mutation.Status(); ok {
-		if err := project.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Project.status": %w`, err)}
-		}
-	}
 	if v, ok := pu.mutation.GithubURL(); ok {
 		if err := project.GithubURLValidator(v); err != nil {
 			return &ValidationError{Name: "github_url", err: fmt.Errorf(`ent: validator failed for field "Project.github_url": %w`, err)}
@@ -571,6 +586,11 @@ func (pu *ProjectUpdate) check() error {
 	if v, ok := pu.mutation.ThumbnailURL(); ok {
 		if err := project.ThumbnailURLValidator(v); err != nil {
 			return &ValidationError{Name: "thumbnail_url", err: fmt.Errorf(`ent: validator failed for field "Project.thumbnail_url": %w`, err)}
+		}
+	}
+	if v, ok := pu.mutation.CoverSourceType(); ok {
+		if err := project.CoverSourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "cover_source_type", err: fmt.Errorf(`ent: validator failed for field "Project.cover_source_type": %w`, err)}
 		}
 	}
 	if v, ok := pu.mutation.Visibility(); ok {
@@ -617,9 +637,6 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.ProjectType(); ok {
 		_spec.SetField(project.FieldProjectType, field.TypeString, value)
 	}
-	if value, ok := pu.mutation.Status(); ok {
-		_spec.SetField(project.FieldStatus, field.TypeEnum, value)
-	}
 	if value, ok := pu.mutation.StartDate(); ok {
 		_spec.SetField(project.FieldStartDate, field.TypeString, value)
 	}
@@ -655,6 +672,15 @@ func (pu *ProjectUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if pu.mutation.ThumbnailURLCleared() {
 		_spec.ClearField(project.FieldThumbnailURL, field.TypeString)
+	}
+	if value, ok := pu.mutation.CoverSourceType(); ok {
+		_spec.SetField(project.FieldCoverSourceType, field.TypeEnum, value)
+	}
+	if value, ok := pu.mutation.CoverWebsiteURL(); ok {
+		_spec.SetField(project.FieldCoverWebsiteURL, field.TypeString, value)
+	}
+	if pu.mutation.CoverWebsiteURLCleared() {
+		_spec.ClearField(project.FieldCoverWebsiteURL, field.TypeString)
 	}
 	if value, ok := pu.mutation.IsFeatured(); ok {
 		_spec.SetField(project.FieldIsFeatured, field.TypeBool, value)
@@ -961,20 +987,6 @@ func (puo *ProjectUpdateOne) SetNillableProjectType(s *string) *ProjectUpdateOne
 	return puo
 }
 
-// SetStatus sets the "status" field.
-func (puo *ProjectUpdateOne) SetStatus(pr project.Status) *ProjectUpdateOne {
-	puo.mutation.SetStatus(pr)
-	return puo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (puo *ProjectUpdateOne) SetNillableStatus(pr *project.Status) *ProjectUpdateOne {
-	if pr != nil {
-		puo.SetStatus(*pr)
-	}
-	return puo
-}
-
 // SetStartDate sets the "start_date" field.
 func (puo *ProjectUpdateOne) SetStartDate(s string) *ProjectUpdateOne {
 	puo.mutation.SetStartDate(s)
@@ -1092,6 +1104,40 @@ func (puo *ProjectUpdateOne) SetNillableThumbnailURL(s *string) *ProjectUpdateOn
 // ClearThumbnailURL clears the value of the "thumbnail_url" field.
 func (puo *ProjectUpdateOne) ClearThumbnailURL() *ProjectUpdateOne {
 	puo.mutation.ClearThumbnailURL()
+	return puo
+}
+
+// SetCoverSourceType sets the "cover_source_type" field.
+func (puo *ProjectUpdateOne) SetCoverSourceType(pst project.CoverSourceType) *ProjectUpdateOne {
+	puo.mutation.SetCoverSourceType(pst)
+	return puo
+}
+
+// SetNillableCoverSourceType sets the "cover_source_type" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableCoverSourceType(pst *project.CoverSourceType) *ProjectUpdateOne {
+	if pst != nil {
+		puo.SetCoverSourceType(*pst)
+	}
+	return puo
+}
+
+// SetCoverWebsiteURL sets the "cover_website_url" field.
+func (puo *ProjectUpdateOne) SetCoverWebsiteURL(s string) *ProjectUpdateOne {
+	puo.mutation.SetCoverWebsiteURL(s)
+	return puo
+}
+
+// SetNillableCoverWebsiteURL sets the "cover_website_url" field if the given value is not nil.
+func (puo *ProjectUpdateOne) SetNillableCoverWebsiteURL(s *string) *ProjectUpdateOne {
+	if s != nil {
+		puo.SetCoverWebsiteURL(*s)
+	}
+	return puo
+}
+
+// ClearCoverWebsiteURL clears the value of the "cover_website_url" field.
+func (puo *ProjectUpdateOne) ClearCoverWebsiteURL() *ProjectUpdateOne {
+	puo.mutation.ClearCoverWebsiteURL()
 	return puo
 }
 
@@ -1402,11 +1448,6 @@ func (puo *ProjectUpdateOne) check() error {
 			return &ValidationError{Name: "project_type", err: fmt.Errorf(`ent: validator failed for field "Project.project_type": %w`, err)}
 		}
 	}
-	if v, ok := puo.mutation.Status(); ok {
-		if err := project.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Project.status": %w`, err)}
-		}
-	}
 	if v, ok := puo.mutation.GithubURL(); ok {
 		if err := project.GithubURLValidator(v); err != nil {
 			return &ValidationError{Name: "github_url", err: fmt.Errorf(`ent: validator failed for field "Project.github_url": %w`, err)}
@@ -1425,6 +1466,11 @@ func (puo *ProjectUpdateOne) check() error {
 	if v, ok := puo.mutation.ThumbnailURL(); ok {
 		if err := project.ThumbnailURLValidator(v); err != nil {
 			return &ValidationError{Name: "thumbnail_url", err: fmt.Errorf(`ent: validator failed for field "Project.thumbnail_url": %w`, err)}
+		}
+	}
+	if v, ok := puo.mutation.CoverSourceType(); ok {
+		if err := project.CoverSourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "cover_source_type", err: fmt.Errorf(`ent: validator failed for field "Project.cover_source_type": %w`, err)}
 		}
 	}
 	if v, ok := puo.mutation.Visibility(); ok {
@@ -1488,9 +1534,6 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	if value, ok := puo.mutation.ProjectType(); ok {
 		_spec.SetField(project.FieldProjectType, field.TypeString, value)
 	}
-	if value, ok := puo.mutation.Status(); ok {
-		_spec.SetField(project.FieldStatus, field.TypeEnum, value)
-	}
 	if value, ok := puo.mutation.StartDate(); ok {
 		_spec.SetField(project.FieldStartDate, field.TypeString, value)
 	}
@@ -1526,6 +1569,15 @@ func (puo *ProjectUpdateOne) sqlSave(ctx context.Context) (_node *Project, err e
 	}
 	if puo.mutation.ThumbnailURLCleared() {
 		_spec.ClearField(project.FieldThumbnailURL, field.TypeString)
+	}
+	if value, ok := puo.mutation.CoverSourceType(); ok {
+		_spec.SetField(project.FieldCoverSourceType, field.TypeEnum, value)
+	}
+	if value, ok := puo.mutation.CoverWebsiteURL(); ok {
+		_spec.SetField(project.FieldCoverWebsiteURL, field.TypeString, value)
+	}
+	if puo.mutation.CoverWebsiteURLCleared() {
+		_spec.ClearField(project.FieldCoverWebsiteURL, field.TypeString)
 	}
 	if value, ok := puo.mutation.IsFeatured(); ok {
 		_spec.SetField(project.FieldIsFeatured, field.TypeBool, value)

@@ -179,7 +179,6 @@ func momentOutputBlogs(
 	posts, err := svcCtx.DB.BlogPost.Query().
 		Where(
 			blogpost.Or(blogpost.IDIn(ids...), blogpost.SlugIn(ids...)),
-			blogpost.StatusEQ(blogpost.StatusPublished),
 			blogpost.VisibilityEQ(blogpost.VisibilityPublic),
 		).
 		WithTranslations().

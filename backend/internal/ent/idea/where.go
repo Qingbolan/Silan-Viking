@@ -480,26 +480,6 @@ func AbstractContainsFold(v string) predicate.Idea {
 	return predicate.Idea(sql.FieldContainsFold(FieldAbstract, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.Idea {
-	return predicate.Idea(sql.FieldEQ(FieldStatus, v))
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.Idea {
-	return predicate.Idea(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.Idea {
-	return predicate.Idea(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.Idea {
-	return predicate.Idea(sql.FieldNotIn(FieldStatus, vs...))
-}
-
 // VisibilityEQ applies the EQ predicate on the "visibility" field.
 func VisibilityEQ(v Visibility) predicate.Idea {
 	return predicate.Idea(sql.FieldEQ(FieldVisibility, v))

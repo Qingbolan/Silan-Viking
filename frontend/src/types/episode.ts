@@ -8,7 +8,7 @@ export interface EpisodeData {
   title: string;
   description?: string;
   episode_number: number;
-  status: string;
+
   visibility: string;
   publish_date?: string;
   updated_at?: string;
@@ -26,7 +26,7 @@ export interface EpisodeSeriesData {
   title: string;
   description?: string;
   cover_url?: string;
-  status: string;
+
   episodes: EpisodeData[];
   created_at?: string;
   updated_at?: string;

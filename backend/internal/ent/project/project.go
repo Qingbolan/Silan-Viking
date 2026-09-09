@@ -25,8 +25,6 @@ const (
 	FieldDescription = "description"
 	// FieldProjectType holds the string denoting the project_type field in the database.
 	FieldProjectType = "project_type"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
 	// FieldStartDate holds the string denoting the start_date field in the database.
 	FieldStartDate = "start_date"
 	// FieldEndDate holds the string denoting the end_date field in the database.
@@ -39,6 +37,10 @@ const (
 	FieldDocumentationURL = "documentation_url"
 	// FieldThumbnailURL holds the string denoting the thumbnail_url field in the database.
 	FieldThumbnailURL = "thumbnail_url"
+	// FieldCoverSourceType holds the string denoting the cover_source_type field in the database.
+	FieldCoverSourceType = "cover_source_type"
+	// FieldCoverWebsiteURL holds the string denoting the cover_website_url field in the database.
+	FieldCoverWebsiteURL = "cover_website_url"
 	// FieldIsFeatured holds the string denoting the is_featured field in the database.
 	FieldIsFeatured = "is_featured"
 	// FieldVisibility holds the string denoting the visibility field in the database.
@@ -101,13 +103,14 @@ var Columns = []string{
 	FieldSlug,
 	FieldDescription,
 	FieldProjectType,
-	FieldStatus,
 	FieldStartDate,
 	FieldEndDate,
 	FieldGithubURL,
 	FieldDemoURL,
 	FieldDocumentationURL,
 	FieldThumbnailURL,
+	FieldCoverSourceType,
+	FieldCoverWebsiteURL,
 	FieldIsFeatured,
 	FieldVisibility,
 	FieldViewCount,
@@ -162,32 +165,29 @@ var (
 	DefaultID func() string
 )
 
-// Status defines the type for the "status" enum field.
-type Status string
+// CoverSourceType defines the type for the "cover_source_type" enum field.
+type CoverSourceType string
 
-// StatusActive is the default value of the Status enum.
-const DefaultStatus = StatusActive
+// CoverSourceTypeImage is the default value of the CoverSourceType enum.
+const DefaultCoverSourceType = CoverSourceTypeImage
 
-// Status values.
+// CoverSourceType values.
 const (
-	StatusActive    Status = "active"
-	StatusCompleted Status = "completed"
-	StatusPaused    Status = "paused"
-	StatusCancelled Status = "cancelled"
-	StatusArchived  Status = "archived"
+	CoverSourceTypeImage   CoverSourceType = "image"
+	CoverSourceTypeWebsite CoverSourceType = "website"
 )
 
-func (s Status) String() string {
-	return string(s)
+func (cst CoverSourceType) String() string {
+	return string(cst)
 }
 
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusActive, StatusCompleted, StatusPaused, StatusCancelled, StatusArchived:
+// CoverSourceTypeValidator is a validator for the "cover_source_type" field enum values. It is called by the builders before save.
+func CoverSourceTypeValidator(cst CoverSourceType) error {
+	switch cst {
+	case CoverSourceTypeImage, CoverSourceTypeWebsite:
 		return nil
 	default:
-		return fmt.Errorf("project: invalid enum value for status field: %q", s)
+		return fmt.Errorf("project: invalid enum value for cover_source_type field: %q", cst)
 	}
 }
 
@@ -199,9 +199,8 @@ const DefaultVisibility = VisibilityPrivate
 
 // Visibility values.
 const (
-	VisibilityPrivate  Visibility = "private"
-	VisibilityUnlisted Visibility = "unlisted"
-	VisibilityPublic   Visibility = "public"
+	VisibilityPrivate Visibility = "private"
+	VisibilityPublic  Visibility = "public"
 )
 
 func (v Visibility) String() string {
@@ -211,7 +210,7 @@ func (v Visibility) String() string {
 // VisibilityValidator is a validator for the "visibility" field enum values. It is called by the builders before save.
 func VisibilityValidator(v Visibility) error {
 	switch v {
-	case VisibilityPrivate, VisibilityUnlisted, VisibilityPublic:
+	case VisibilityPrivate, VisibilityPublic:
 		return nil
 	default:
 		return fmt.Errorf("project: invalid enum value for visibility field: %q", v)
@@ -251,11 +250,6 @@ func ByProjectType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProjectType, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
-}
-
 // ByStartDate orders the results by the start_date field.
 func ByStartDate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStartDate, opts...).ToFunc()
@@ -284,6 +278,16 @@ func ByDocumentationURL(opts ...sql.OrderTermOption) OrderOption {
 // ByThumbnailURL orders the results by the thumbnail_url field.
 func ByThumbnailURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldThumbnailURL, opts...).ToFunc()
+}
+
+// ByCoverSourceType orders the results by the cover_source_type field.
+func ByCoverSourceType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCoverSourceType, opts...).ToFunc()
+}
+
+// ByCoverWebsiteURL orders the results by the cover_website_url field.
+func ByCoverWebsiteURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCoverWebsiteURL, opts...).ToFunc()
 }
 
 // ByIsFeatured orders the results by the is_featured field.

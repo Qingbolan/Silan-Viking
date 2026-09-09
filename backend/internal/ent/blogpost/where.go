@@ -705,26 +705,6 @@ func ContentTypeNotIn(vs ...ContentType) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldNotIn(FieldContentType, vs...))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldEQ(FieldStatus, v))
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.BlogPost {
-	return predicate.BlogPost(sql.FieldNotIn(FieldStatus, vs...))
-}
-
 // VisibilityEQ applies the EQ predicate on the "visibility" field.
 func VisibilityEQ(v Visibility) predicate.BlogPost {
 	return predicate.BlogPost(sql.FieldEQ(FieldVisibility, v))
