@@ -27,25 +27,25 @@ import {
   DialogTitle,
 } from './ds/Dialog';
 import { Input } from './ds/Input';
-import { contentLifecycleFor, contentStateSummary } from '../lib/contentLifecycle';
+import { contentVisibilityFor, contentStateSummary } from '../lib/contentVisibility';
 import { formatShortDate } from '../lib/format';
 import { toWebviewMediaUrl } from '../lib/media';
 import { useApiCredentials, type ApiCredentialProvider } from '../lib/apiCredentials';
 import type { ContentGroup, WorkspacePreferences } from '../types';
 
-type SettingsTab = 'profile' | 'connection' | 'archive';
+type SettingsTab = 'profile' | 'connection' | 'private';
 type ProfileSavePhase = 'idle' | 'language' | 'avatar' | 'removing';
 
 type WorkspaceSettingsPageProps = {
-  archivedResources: ContentGroup[];
+  privateResources: ContentGroup[];
   restoringResourceId: string;
   preferences: WorkspacePreferences | null;
   onPreferencesChange: (preferences: WorkspacePreferences) => void;
-  onRestoreResource: (resource: ContentGroup) => Promise<void>;
+  onMakePublicResource: (resource: ContentGroup) => Promise<void>;
   onDeleteResource: (resource: ContentGroup, confirmation: string) => Promise<void>;
 };
 
-const archiveKindMeta = {
+const privateKindMeta = {
   blog: { label: 'Article', Icon: BookOpen },
   episode: { label: 'Episode', Icon: Radio },
   project: { label: 'Project', Icon: FolderKanban },
@@ -73,8 +73,8 @@ const settingsTabMeta = {
   connection: {
     label: 'AI connection',
   },
-  archive: {
-    label: 'Archived resources',
+  private: {
+    label: 'Private resources',
   },
 } as const;
 
@@ -415,15 +415,15 @@ function ApiProviderConnectionSettings({ provider }: { provider: ApiCredentialPr
   );
 }
 
-function ArchivedResourceSettings({
+function PrivateResourceSettings({
   resources,
   restoringResourceId,
-  onRestoreResource,
+  onMakePublicResource,
   onDeleteResource,
 }: {
   resources: ContentGroup[];
   restoringResourceId: string;
-  onRestoreResource: (resource: ContentGroup) => Promise<void>;
+  onMakePublicResource: (resource: ContentGroup) => Promise<void>;
   onDeleteResource: (resource: ContentGroup, confirmation: string) => Promise<void>;
 }) {
   const [query, setQuery] = useState('');
@@ -472,18 +472,17 @@ function ArchivedResourceSettings({
 
   return (
     <section
-      className="workspace-settings-section workspace-archive-section"
-      aria-labelledby="workspace-archive-heading"
+      className="workspace-settings-section workspace-private-section"
+      aria-labelledby="workspace-private-heading"
     >
       <header className="workspace-settings-section-header">
-        <h2 id="workspace-archive-heading">Archived resources</h2>
+        <h2 id="workspace-private-heading">Private resources</h2>
         <p>
-          Archived content stays in its source files but is removed from content shelves,
-          navigation counts, and editor references.
+          Private content stays in your workspace and is excluded from the next website deployment.
         </p>
       </header>
 
-      <div className="workspace-archive-summary" aria-label="Archive summary">
+      <div className="workspace-private-summary" aria-label="Archive summary">
         <span><strong>{resources.length}</strong> total</span>
         <span><strong>{articleCount}</strong> articles</span>
         <span><strong>{episodeCount}</strong> episodes</span>
@@ -491,56 +490,56 @@ function ArchivedResourceSettings({
       </div>
 
       {resources.length > 0 && (
-        <label className="workspace-archive-search">
+        <label className="workspace-private-search">
           <Search size={14} />
           <input
             type="search"
             value={query}
-            placeholder="Search archived resources"
+            placeholder="Search private resources"
             onChange={(event) => setQuery(event.target.value)}
           />
         </label>
       )}
 
-      <div className="workspace-archive-list" aria-live="polite">
+      <div className="workspace-private-list" aria-live="polite">
         {visibleResources.map((resource) => {
-          const meta = archiveKindMeta[resource.kind as keyof typeof archiveKindMeta];
+          const meta = privateKindMeta[resource.kind as keyof typeof privateKindMeta];
           const primary = selectPrimaryDocument(resource);
           const Icon = meta?.Icon || Archive;
           const restoring = restoringResourceId === resource.id;
-          const restoreAction = contentLifecycleFor(resource.kind, 'archived', 'private')
+          const restoreAction = contentVisibilityFor('private')
             .actions
-            .find((action) => action.id === 'restore');
+            .find((action) => action.id === 'make-public');
           const context = resource.kind === 'episode'
             ? primary?.series_title || primary?.series_slug || 'Unfiled series'
             : resource.slug;
           return (
-            <article className="workspace-archive-row" key={resource.id}>
-              <div className="workspace-archive-row-icon"><Icon size={15} /></div>
-              <div className="workspace-archive-row-copy">
+            <article className="workspace-private-row" key={resource.id}>
+              <div className="workspace-private-row-icon"><Icon size={15} /></div>
+              <div className="workspace-private-row-copy">
                 <div>
                   <span>{meta?.label || resource.kind}</span>
-                  <small>{contentStateSummary(resource.kind, resource.status, resource.visibility)}</small>
+                  <small>{contentStateSummary(resource.visibility)}</small>
                 </div>
                 <strong>{resource.title}</strong>
-                <p>{context} · archived {formatShortDate(primary?.updated_at || '')}</p>
+                <p>{context} · {formatShortDate(primary?.updated_at || '')}</p>
               </div>
-              <div className="workspace-archive-actions">
+              <div className="workspace-private-actions">
                 <button
                   type="button"
-                  className="workspace-archive-restore"
+                  className="workspace-private-restore"
                   disabled={Boolean(restoringResourceId)}
-                  title={restoreAction?.description || 'Restore this resource privately'}
-                  onClick={() => void onRestoreResource(resource)}
+                  title={restoreAction?.description || 'Make this resource public'}
+                  onClick={() => void onMakePublicResource(resource)}
                 >
                   {restoring
                     ? <LoaderCircle size={14} className="spin" />
                     : <RotateCcw size={14} />}
-                  {restoring ? 'Restoring' : restoreAction?.label || 'Restore'}
+                  {restoring ? 'Updating' : restoreAction?.label || 'Make public'}
                 </button>
                 <button
                   type="button"
-                  className="workspace-archive-delete"
+                  className="workspace-private-delete"
                   disabled={Boolean(restoringResourceId)}
                   title={`Permanently delete ${resource.title}`}
                   onClick={() => {
@@ -558,16 +557,16 @@ function ArchivedResourceSettings({
         })}
 
         {resources.length === 0 && (
-          <div className="workspace-archive-empty">
+          <div className="workspace-private-empty">
             <CheckCircle2 size={20} />
-            <strong>No archived resources</strong>
-            <p>Archived articles, episodes, and projects will appear here for restoration.</p>
+            <strong>No private resources</strong>
+            <p>Private content appears here.</p>
           </div>
         )}
         {resources.length > 0 && visibleResources.length === 0 && (
-          <div className="workspace-archive-empty">
+          <div className="workspace-private-empty">
             <Search size={20} />
-            <strong>No archive matches</strong>
+            <strong>No private content matches</strong>
             <p>Try a title, slug, type, or series name.</p>
           </div>
         )}
@@ -578,9 +577,9 @@ function ArchivedResourceSettings({
           <DialogTitle id="archive-delete-title">Permanently delete this resource?</DialogTitle>
           <DialogDescription>
             This erases <strong>{deleteTarget?.title}</strong> and all of its source files from
-            the local content workspace. It cannot be restored from the archive afterward.
+            the local content workspace. This action cannot be undone.
           </DialogDescription>
-          <label className="workspace-archive-delete-confirmation">
+          <label className="workspace-private-delete-confirmation">
             <span>Type <strong>{deleteCoordinate}</strong> to confirm</span>
             <Input
               value={deleteConfirmation}
@@ -596,7 +595,7 @@ function ArchivedResourceSettings({
             />
           </label>
           {deleteError && (
-            <p className="workspace-archive-delete-error" role="alert">{deleteError}</p>
+            <p className="workspace-private-delete-error" role="alert">{deleteError}</p>
           )}
           <DialogActions>
             <Button type="button" variant="secondary" size="sm" disabled={deleting} onClick={closeDeleteDialog}>
@@ -620,11 +619,11 @@ function ArchivedResourceSettings({
 }
 
 export function WorkspaceSettingsPage({
-  archivedResources,
+  privateResources,
   restoringResourceId,
   preferences,
   onPreferencesChange,
-  onRestoreResource,
+  onMakePublicResource,
   onDeleteResource,
 }: WorkspaceSettingsPageProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
@@ -646,8 +645,8 @@ export function WorkspaceSettingsPage({
                 onClick={() => setActiveTab(tab)}
               >
                 <span>{meta.label}</span>
-                {tab === 'archive' && (
-                  <strong className="workspace-settings-tab-count">{archivedResources.length}</strong>
+                {tab === 'private' && (
+                  <strong className="workspace-settings-tab-count">{privateResources.length}</strong>
                 )}
               </button>
             );
@@ -673,11 +672,11 @@ export function WorkspaceSettingsPage({
             <ApiProviderConnectionSettings provider="deepseek" />
           </div>
         )}
-        {activeTab === 'archive' && (
-          <ArchivedResourceSettings
-            resources={archivedResources}
+        {activeTab === 'private' && (
+          <PrivateResourceSettings
+            resources={privateResources}
             restoringResourceId={restoringResourceId}
-            onRestoreResource={onRestoreResource}
+            onMakePublicResource={onMakePublicResource}
             onDeleteResource={onDeleteResource}
           />
         )}

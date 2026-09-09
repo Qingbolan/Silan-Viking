@@ -42,13 +42,13 @@ const cardVariants = cva(
         // Mica — quiet window-base material.
         mica: 'ds-mica',
       },
-      padding: { none: 'p-0', sm: 'p-4', md: 'p-5', lg: 'p-7' },
+      padding: { none: 'p-0', sm: 'p-3', md: 'p-4', lg: 'p-5' },
       interactive: {
-        true: 'cursor-pointer hover:-translate-y-0.5 hover:shadow-ds-3 focus-visible:shadow-ds-focus outline-none',
+        true: 'cursor-pointer hover:border-ds-fg-subtle focus-visible:shadow-ds-focus outline-none',
         false: '',
       },
     },
-    defaultVariants: { variant: 'elevated', padding: 'md', interactive: false },
+    defaultVariants: { variant: 'flat', padding: 'md', interactive: false },
   },
 );
 
@@ -114,7 +114,7 @@ export const CardHeader: React.FC<
 
 export const CardTitle: React.FC<React.HTMLAttributes<HTMLElement>> = ({ className, ...props }) => (
   <h3
-    className={cn('text-ds-lg font-semibold leading-tight tracking-[-0.01em] text-ds-fg', className)}
+    className={cn('text-ds-sm font-semibold leading-tight tracking-[-0.01em] text-ds-fg', className)}
     {...props}
   />
 );
@@ -151,10 +151,10 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon,
   className,
 }) => (
-  <Card variant="elevated" padding="md" spotlight className={cn('overflow-hidden', className)}>
+  <Card variant="elevated" padding="md" className={cn('overflow-hidden', className)}>
     <div className="flex items-start justify-between gap-3">
       <div className="space-y-1">
-        <div className="text-ds-xs font-medium uppercase tracking-[0.06em] text-ds-fg-subtle">
+        <div className="text-ds-xs font-medium text-ds-fg-subtle">
           {label}
         </div>
         <div className="text-ds-2xl font-semibold tracking-[-0.02em] text-ds-fg">

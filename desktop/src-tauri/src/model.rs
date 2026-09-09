@@ -18,7 +18,6 @@ pub(crate) struct EditorDocument {
     pub(crate) canonical_language: String,
     pub(crate) title: String,
     pub(crate) description: Option<String>,
-    pub(crate) status: String,
     pub(crate) visibility: String,
     pub(crate) date: Option<String>,
     pub(crate) pinned: bool,
@@ -403,7 +402,6 @@ pub(crate) struct DashboardItem {
     pub(crate) entity_type: String,
     pub(crate) title: String,
     pub(crate) slug: String,
-    pub(crate) status: String,
     pub(crate) visibility: String,
     pub(crate) updated_at: String,
 }
@@ -505,7 +503,6 @@ pub(crate) struct EpisodeSeriesSource {
     pub(crate) description: String,
     pub(crate) cover_url: String,
     pub(crate) cover_media: Option<String>,
-    pub(crate) status: String,
     pub(crate) revision: String,
     pub(crate) relative_path: String,
 }
@@ -515,12 +512,10 @@ pub(crate) struct EpisodeSeriesInput {
     pub(crate) title: String,
     pub(crate) description: String,
     pub(crate) cover_url: String,
-    pub(crate) status: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct DocumentStateInput {
-    pub(crate) status: String,
     pub(crate) visibility: String,
     pub(crate) pinned: Option<bool>,
 }

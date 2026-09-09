@@ -1,7 +1,7 @@
 import { ArrowLeft, FileText, Heart, MessageCircle, PencilLine } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { badgeClass, contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
-import { contentStateSummary } from '../lib/contentLifecycle';
+import { contentStateSummary } from '../lib/contentVisibility';
 import { formatShortDate } from '../lib/format';
 import { toWebviewMediaUrl } from '../lib/media';
 import type { ContentGroup, EpisodeGroup, EpisodeSeries } from '../types';
@@ -96,7 +96,7 @@ export function SeriesDetail({
                   <span className="series-episode-meta">
                     <span>{date || 'No date'}</span>
                     <span className="content-state-pills">
-                      {contentStateSummary(episode.kind, episode.status, episode.visibility).split(' · ').map((part) => (
+                      {contentStateSummary(episode.visibility).split(' · ').map((part) => (
                         <span
                           key={part}
                           data-visibility={part.toLowerCase().includes('private') ? 'private' : undefined}

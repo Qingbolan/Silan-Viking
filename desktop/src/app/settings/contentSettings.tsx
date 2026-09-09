@@ -1,7 +1,13 @@
 import type { ArticleAttribution, ContentKind } from '../../types';
 
 export type ContentRailPanel = 'parts' | 'settings' | 'reactions';
-export type ContentRailMode = 'files' | 'interaction';
+export type ContentRailMode = 'files' | 'interaction' | 'outline';
+
+export const nextContentRailMode: Record<ContentRailMode, ContentRailMode> = {
+  files: 'interaction',
+  interaction: 'outline',
+  outline: 'files',
+};
 
 export type ContentSettingsPage =
   | 'overview'
@@ -32,7 +38,7 @@ export const contentSettingsPages: Array<SettingsPageItem<ContentSettingsPage>> 
   { id: 'discovery', label: 'Discovery', description: 'Resources and image credit' },
   { id: 'links', label: 'Links', description: 'Repository and demo' },
   { id: 'relations', label: 'Relations', description: 'Convert and connect' },
-  { id: 'publishing', label: 'Publishing', description: 'Visibility and lifecycle' },
+  { id: 'publishing', label: 'Visibility', description: 'Public or private' },
   { id: 'source', label: 'Source', description: 'Identifiers and files' },
 ];
 

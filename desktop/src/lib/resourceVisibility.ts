@@ -1,6 +1,6 @@
 import type { ContentKind, EditorDocument, EntityFilter } from '../types';
 
-export type ResourceView = 'active' | 'archived';
+export type ResourceView = 'all' | 'private';
 
 export type ResourceFilter = {
   entityFilter?: EntityFilter;
@@ -8,24 +8,20 @@ export type ResourceFilter = {
   view: ResourceView;
 };
 
-const normalizeStatus = (status: string | null | undefined) => (
-  status?.trim().toLowerCase() || ''
-);
-
 const resourceKey = (document: Pick<EditorDocument, 'entity_type' | 'entity_id'>) => (
   `${document.entity_type}:${document.entity_id}`
 );
 
-export const isArchivedResource = (
-  resource: Pick<EditorDocument, 'status'> | { status: string | null | undefined },
-) => normalizeStatus(resource.status) === 'archived';
+export const isPrivateResource = (
+  resource: Pick<EditorDocument, 'visibility'> | { visibility: string | null | undefined },
+) => resource.visibility === 'private';
 
 export const isDocumentInResourceView = (
-  document: Pick<EditorDocument, 'status'>,
+  document: Pick<EditorDocument, 'visibility'>,
   view: ResourceView,
-) => view === 'archived'
-  ? isArchivedResource(document)
-  : !isArchivedResource(document);
+) => view === 'private'
+  ? isPrivateResource(document)
+  : true;
 
 export const documentBelongsToShelf = (
   document: Pick<EditorDocument, 'entity_type'>,
@@ -62,7 +58,7 @@ export const filterResourceDocuments = (
 
 export const countResourcesByShelf = (
   documents: EditorDocument[],
-  view: ResourceView = 'active',
+  view: ResourceView = 'all',
 ) => {
   const idsByKind = new Map<ContentKind, Set<string>>();
   filterResourceDocuments(documents, { view }).forEach((document) => {

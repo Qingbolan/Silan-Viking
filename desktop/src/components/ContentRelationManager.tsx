@@ -1,5 +1,5 @@
 import { ExternalLink, Link2, Unlink2 } from 'lucide-react';
-import { contentStateSummary } from '../lib/contentLifecycle';
+import { contentStateSummary } from '../lib/contentVisibility';
 import type { ContentKind, ContentRelation } from '../types';
 import { Badge } from './ds/Badge';
 import { Button } from './ds/Button';
@@ -11,7 +11,6 @@ export type ContentReferenceOption = {
   kind: RelationTargetKind;
   slug: string;
   title: string;
-  status: string;
   visibility: string;
 };
 
@@ -88,7 +87,7 @@ export function ContentRelationManager({
                       <Badge size="sm" tone="neutral">{humanizeRelationType(relation.relation_type)}</Badge>
                       {target && (
                         <Badge size="sm" tone={target.visibility === 'public' ? 'success' : 'neutral'}>
-                          {contentStateSummary(target.kind, target.status, target.visibility)}
+                          {contentStateSummary(target.visibility)}
                         </Badge>
                       )}
                     </span>
@@ -143,7 +142,7 @@ export function ContentRelationManager({
             <option value="">Select {targetKind === 'blog' ? 'a blog' : 'a project'}</option>
             {targetOptions.map((target) => (
               <option key={`${target.kind}:${target.slug}`} value={target.slug}>
-                {target.title} — {contentStateSummary(target.kind, target.status, target.visibility)}
+                {target.title} — {contentStateSummary(target.visibility)}
               </option>
             ))}
           </Select>

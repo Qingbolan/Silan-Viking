@@ -55,7 +55,7 @@ fn main() {
             commands::generate_workspace_commit_message,
             commands::generate_missing_translation,
             commands::generate_cover_asset,
-            commands::delete_archived_resource,
+            commands::delete_private_resource,
             commands::import_episode_series_media_asset,
             commands::import_media_asset,
             commands::import_media_asset_bytes,

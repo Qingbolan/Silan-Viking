@@ -238,7 +238,7 @@ export function InteractionDetailsPanel({
 }: Props) {
   const copy = language === 'zh'
     ? {
-        likedBy: '点赞的人', comments: '评论', noLikes: '还没有人点赞', noComments: '还没有评论',
+        likedBy: '点赞', comments: '评论',
         retry: '重新读取', sync: '同步网站互动', loadError: '互动详情读取失败',
         upgradeTitle: '网站服务需要更新',
         upgradeBody: '线上统计接口仍只返回汇总数字，尚未提供点赞者身份和评论记录。部署当前后端后即可读取完整互动。',
@@ -246,7 +246,7 @@ export function InteractionDetailsPanel({
         people: (count: number) => `${count} 人`, threads: (count: number) => `${count} 条`,
       }
     : {
-        likedBy: 'Liked by', comments: 'Comments', noLikes: 'No likes yet', noComments: 'No comments yet',
+        likedBy: 'Liked by', comments: 'Comments',
         retry: 'Read again', sync: 'Sync site interactions', loadError: 'Interaction details could not be read',
         upgradeTitle: 'Website service update required',
         upgradeBody: 'The deployed statistics API still returns aggregate counts without liker identities or comment records. Deploy the current backend to make the full interaction feed available.',
@@ -289,14 +289,11 @@ export function InteractionDetailsPanel({
       <section id="interaction-likers" className="interaction-detail-section" aria-labelledby="interaction-likers-heading">
         <header className="interaction-section-heading">
           <div>
-            <Heart aria-hidden="true" />
-            <span>
-              <h3 id="interaction-likers-heading">{copy.likedBy}</h3>
-              <small>{copy.people(likers.length)}</small>
-            </span>
+            <h3 id="interaction-likers-heading">{copy.likedBy}</h3>
+            {likers.length > 0 && <small aria-label={copy.people(likers.length)}>{likers.length}</small>}
           </div>
-          <Button size="sm" variant="ghost" onClick={onRefresh} loading={refreshing} aria-label={copy.sync}>
-            {!refreshing && <RefreshCw aria-hidden="true" />} {copy.sync}
+          <Button size="sm" variant="ghost" onClick={onRefresh} loading={refreshing} aria-label={copy.sync} title={copy.sync}>
+            {!refreshing && <RefreshCw aria-hidden="true" />} {language === 'zh' ? '同步' : 'Sync'}
           </Button>
         </header>
         {likers.length > 0 ? (
@@ -321,19 +318,14 @@ export function InteractionDetailsPanel({
               );
             })}
           </ul>
-        ) : (
-          <div className="interaction-empty-state"><Heart aria-hidden="true" /><span>{copy.noLikes}</span></div>
-        )}
+        ) : null}
       </section>
 
       <section id="interaction-comments" className="interaction-detail-section" aria-labelledby="interaction-comments-heading">
         <header className="interaction-section-heading">
           <div>
-            <MessageSquareText aria-hidden="true" />
-            <span>
-              <h3 id="interaction-comments-heading">{copy.comments}</h3>
-              <small>{copy.threads(commentCount)}</small>
-            </span>
+            <h3 id="interaction-comments-heading">{copy.comments}</h3>
+            {commentCount > 0 && <small aria-label={copy.threads(commentCount)}>{commentCount}</small>}
           </div>
         </header>
         {visibilityError && <p className="interaction-action-error" role="alert">{visibilityError}</p>}
@@ -350,9 +342,7 @@ export function InteractionDetailsPanel({
               />
             ))}
           </ol>
-        ) : (
-          <div className="interaction-empty-state"><MessageSquareText aria-hidden="true" /><span>{copy.noComments}</span></div>
-        )}
+        ) : null}
       </section>
     </div>
   );

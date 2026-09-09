@@ -51,7 +51,9 @@ import { CaptureSheet } from './components/CaptureSheet';
 import { AiCoverGenerator } from './components/AiCoverGenerator';
 import { ArticleDiscoverySettings } from './components/ArticleDiscoverySettings';
 import { CommitWall, TrafficWall } from './components/CommitWall';
+import { ContentOutline } from './components/ContentOutline';
 import { ContentCard } from './components/ContentCard';
+import { ContentMasonry } from './components/ContentMasonry';
 import { ContentPublishingFields } from './components/ContentPublishingFields';
 import {
   ContentRelationManager,
@@ -151,6 +153,7 @@ import {
   SettingsPageIntro,
   SettingsPageNavigation,
   type ContentRailMode,
+  nextContentRailMode,
   type ContentRailPanel,
   type ContentSettingsPage,
   type RelationTargetKind,
@@ -166,14 +169,14 @@ import {
   selectPrimaryDocument,
 } from './lib/content';
 import {
-  contentLifecycleFor,
+  contentVisibilityFor,
   contentStateSummary,
   hasDocumentStateChanges,
-  seriesLifecycleFor,
+  seriesVisibilityFor,
   type DocumentStateInput,
-  type LifecycleAction,
-  type SeriesLifecycleAction,
-} from './lib/contentLifecycle';
+  type VisibilityAction,
+  type SeriesVisibilityAction,
+} from './lib/contentVisibility';
 import { inferCoverSourceType, type CoverSourceType } from './lib/coverSource';
 import { formatShortDate, formatSyncedAgo } from './lib/format';
 import { summarizeMarkdownBlockChanges } from './lib/markdownBlockDiff';
@@ -185,7 +188,6 @@ import {
 import {
   countResourcesByShelf,
   filterResourceDocuments,
-  isArchivedResource,
 } from './lib/resourceVisibility';
 import { useTranslationSyncWorkflow } from './lib/translationSyncWorkflow';
 import { desktopWindowChromeClassName } from './lib/desktopWindow';
@@ -276,49 +278,9 @@ const parseMetadataTags = (value: string) => (
     .filter((tag, index, tags) => Boolean(tag) && tags.indexOf(tag) === index)
 );
 
-const lifecycleIconFor = (action: LifecycleAction | SeriesLifecycleAction) => {
-  switch (action.id) {
-    case 'publish':
-    case 'publish-all':
-      return <Send size={13} />;
-    case 'unpublish':
-    case 'unpublish-all':
-    case 'make-private':
-      return <EyeOff size={13} />;
-    case 'archive':
-    case 'archive-all':
-      return <Archive size={13} />;
-    case 'restore':
-      return <RotateCcw size={13} />;
-    case 'make-public':
-      return <Eye size={13} />;
-    case 'make-unlisted':
-      return <Link2 size={13} />;
-    case 'activate':
-    case 'start':
-    case 'experiment':
-    case 'validate':
-    case 'hypothesis':
-      return <PlayCircle size={13} />;
-    case 'reset':
-      return <RotateCcw size={13} />;
-    case 'pause':
-      return <PauseCircle size={13} />;
-    case 'complete':
-    case 'conclude':
-      return <CheckCircle2 size={13} />;
-    case 'cancel':
-      return <X size={13} />;
-    default:
-      return null;
-  }
-};
-
-const lifecycleButtonVariantFor = (tone: LifecycleAction['tone'] | SeriesLifecycleAction['tone']) => {
-  if (tone === 'primary') return 'primary' as const;
-  if (tone === 'danger') return 'destructive' as const;
-  return 'secondary' as const;
-};
+const lifecycleIconFor = (action: VisibilityAction | SeriesVisibilityAction) =>
+  action.id === 'make-public' ? <Eye size={13} /> : <EyeOff size={13} />;
+const lifecycleButtonVariantFor = (tone: VisibilityAction['tone']) => tone;
 
 export default function App() {
   const [documents, setDocuments] = React.useState<EditorDocument[]>([]);
@@ -404,7 +366,7 @@ export default function App() {
   });
   const [metadataSavingId, setMetadataSavingId] = React.useState('');
   const [publishingDraft, setPublishingDraft] = React.useState<DocumentStateInput>({
-    status: 'draft',
+
     visibility: 'private',
     pinned: false,
   });
@@ -463,7 +425,7 @@ export default function App() {
     title: '',
     description: '',
     cover_url: '',
-    status: 'ongoing',
+
   });
   const [seriesEditorLoading, setSeriesEditorLoading] = React.useState(false);
   const [seriesEditorSaving, setSeriesEditorSaving] = React.useState(false);
@@ -603,11 +565,11 @@ export default function App() {
   }, [moveWorkspaceHistory]);
 
   const activeDocuments = React.useMemo(
-    () => filterResourceDocuments(documents, { view: 'active' }),
+    () => filterResourceDocuments(documents, { view: 'all' }),
     [documents],
   );
-  const archivedDocuments = React.useMemo(
-    () => filterResourceDocuments(documents, { view: 'archived' }),
+  const privateDocuments = React.useMemo(
+    () => filterResourceDocuments(documents, { view: 'private' }),
     [documents],
   );
   const entityCounts = React.useMemo(
@@ -618,7 +580,7 @@ export default function App() {
     () => filterResourceDocuments(activeDocuments, {
       entityFilter,
       query,
-      view: 'active',
+      view: 'all',
     }),
     [activeDocuments, entityFilter, query],
   );
@@ -641,19 +603,19 @@ export default function App() {
         kind: group.kind as 'blog' | 'project',
         slug: group.slug,
         title: group.title,
-        status: group.status,
+
         visibility: group.visibility,
       }))
       .sort((left, right) => left.kind.localeCompare(right.kind) || left.title.localeCompare(right.title))
   ), [relationTargetGroups]);
-  const archivedResources = React.useMemo(
-    () => groupDocumentsByResource(archivedDocuments)
+  const privateResources = React.useMemo(
+    () => groupDocumentsByResource(privateDocuments)
       .filter((group) => archivableKinds.has(group.kind))
       .sort((left, right) => (
         (right.documents[0]?.updated_at || '').localeCompare(left.documents[0]?.updated_at || '')
         || left.title.localeCompare(right.title)
       )),
-    [archivedDocuments],
+    [privateDocuments],
   );
 
   const episodeSeries = React.useMemo(() => {
@@ -688,7 +650,7 @@ export default function App() {
           title: document.title,
           slug: document.slug,
           description: document.description || null,
-          status: document.status,
+
           visibility: document.visibility,
           date: document.date || null,
           pinned: Boolean(document.pinned),
@@ -726,13 +688,13 @@ export default function App() {
     const latestEpisode = [...series.episodes].sort(
       (left, right) => (right.episodeNumber || 0) - (left.episodeNumber || 0),
     )[0];
-    const lifecycle = seriesLifecycleFor(series.episodes);
+    const lifecycle = seriesVisibilityFor(series.episodes);
     return {
       id: `series:${series.id}`,
       kind: 'episode',
       title: series.title,
       slug: series.slug,
-      status: lifecycle.statusLabel,
+
       visibility: lifecycle.visibilityLabel,
       coverUrl: series.coverUrl || undefined,
       description: series.description || null,
@@ -754,7 +716,6 @@ export default function App() {
       kind: ContentKind;
       title: string;
       slug: string;
-      status: string;
       visibility: string;
       updatedAt: string;
     }>();
@@ -766,7 +727,7 @@ export default function App() {
           kind: document.entity_type,
           title: document.title,
           slug: document.slug,
-          status: document.status,
+
           visibility: document.visibility,
           updatedAt: document.updated_at,
         });
@@ -798,7 +759,6 @@ export default function App() {
       kind: ContentKind;
       title: string;
       slug: string;
-      status: string;
       visibility: string;
       updatedAt: string;
       likes: number;
@@ -812,7 +772,7 @@ export default function App() {
           kind: document.entity_type,
           title: document.title,
           slug: document.slug,
-          status: document.status,
+
           visibility: document.visibility,
           updatedAt: document.updated_at,
           likes: document.engagement.likes,
@@ -1113,9 +1073,7 @@ export default function App() {
     pulling: pullingRemoteContent,
   });
   const canDeployCommittedContent = deploymentReadiness.canDeploy;
-  const visibleRecentItems = (dashboard?.recent_items || []).filter(
-    (item) => !isArchivedResource(item),
-  );
+  const visibleRecentItems = (dashboard?.recent_items || []);
   const selectedCommitItems = selectedCommitDay
     ? visibleRecentItems.filter((item) => {
         const scope = item.entity_type === 'episode' ? 'blog' : item.entity_type;
@@ -1233,10 +1191,10 @@ export default function App() {
       setDocuments(mergedDocuments);
       setSelectedId((current) => (
         current && nextDocuments.some((document) => (
-          document.id === current && !isArchivedResource(document)
+          document.id === current
         ))
           ? current
-          : nextDocuments.find((document) => !isArchivedResource(document))?.id || ''
+          : nextDocuments[0]?.id || ''
       ));
       setLanguageByDocument((current) => {
         const next: Record<string, string> = {};
@@ -2282,7 +2240,7 @@ export default function App() {
         priority: saved.priority,
         tags: saved.tags,
         relations: saved.relations,
-        status: saved.status,
+
         visibility: saved.visibility,
         pinned: saved.pinned,
       };
@@ -2312,15 +2270,7 @@ export default function App() {
         expectedRevision: translation.revision,
       });
       mergeSavedDocument(saved);
-      if (
-        state.status === 'archived'
-        && contentEditorOpen
-        && selected?.entity_type === group.kind
-        && selected.entity_id === group.documents[0]?.entity_id
-      ) {
-        setContentEditorOpen(false);
-        setSelectedId('');
-      }
+
     } catch (reason) {
       setError(String(reason));
     } finally {
@@ -2328,10 +2278,10 @@ export default function App() {
     }
   };
 
-  const restoreArchivedResource = async (group: ContentGroup) => {
-    const restoreAction = contentLifecycleFor(group.kind, 'archived', 'private')
+  const makeResourcePublic = async (group: ContentGroup) => {
+    const restoreAction = contentVisibilityFor('private')
       .actions
-      .find((action) => action.id === 'restore');
+      .find((action) => action.id === 'make-public');
     if (!restoreAction) {
       setError(`${group.title} does not support restoration.`);
       return;
@@ -2339,7 +2289,7 @@ export default function App() {
     await saveGroupState(group, restoreAction.nextState);
   };
 
-  const deleteArchivedResource = async (group: ContentGroup, confirmation: string) => {
+  const deletePrivateResource = async (group: ContentGroup, confirmation: string) => {
     const { translation } = stateTargetForGroup(group);
     if (!translation) {
       const reason = `No source revision found for ${group.title}`;
@@ -2355,7 +2305,7 @@ export default function App() {
     setStateSavingId(group.id);
     setError(null);
     try {
-      await invoke('delete_archived_resource', {
+      await invoke('delete_private_resource', {
         id: translation.id,
         expectedRevision: translation.revision,
         confirmation,
@@ -2404,11 +2354,7 @@ export default function App() {
         });
         mergeSavedDocument(saved);
       }
-      if (state.status === 'archived') {
-        setSelectedSeriesId('');
-        setContentEditorOpen(false);
-        setSelectedId('');
-      }
+
     } catch (reason) {
       setError(String(reason));
     } finally {
@@ -2423,13 +2369,11 @@ export default function App() {
     const stateDirty = Boolean(translation && dirtyIds.has(translation.id));
     const savingState = stateSavingId === group.id;
     const disabled = savingState || stateDirty || !translation;
-    const lifecycle = contentLifecycleFor(group.kind, group.status, group.visibility);
+    const lifecycle = contentVisibilityFor(group.visibility);
     const showStateSummary = variant === 'header';
-    const visibleActions = showStateSummary
-      ? lifecycle.actions
-      : lifecycle.actions.filter((action) => action.group === 'status');
+    const visibleActions = lifecycle.actions;
     if (visibleActions.length === 0 && group.kind !== 'moment') return null;
-    const renderLifecycleAction = (action: LifecycleAction) => (
+    const renderVisibilityAction = (action: VisibilityAction) => (
       <Button
         key={action.id}
         size="sm"
@@ -2444,10 +2388,10 @@ export default function App() {
         {action.label}
       </Button>
     );
-    const groupedActions = (['status', 'visibility'] as const)
+    const groupedActions = (['visibility'] as const)
       .map((actionGroup) => ({
         id: actionGroup,
-        label: actionGroup === 'status' ? 'Lifecycle' : 'Visibility',
+        label: 'Visibility',
         actions: visibleActions.filter((action) => action.group === actionGroup),
       }))
       .filter((actionGroup) => actionGroup.actions.length > 0);
@@ -2459,7 +2403,6 @@ export default function App() {
       >
         {showStateSummary && (
           <span className="state-control-summary" aria-label={`${group.title} state`}>
-            <span data-state-role="status" data-state-value={lifecycle.status}>{lifecycle.statusLabel}</span>
             <span data-state-role="visibility" data-state-value={lifecycle.visibility}>{lifecycle.visibilityLabel}</span>
           </span>
         )}
@@ -2473,11 +2416,11 @@ export default function App() {
                 key={actionGroup.id}
               >
                 <span className="state-action-group-label">{actionGroup.label}</span>
-                <div>{actionGroup.actions.map(renderLifecycleAction)}</div>
+                <div>{actionGroup.actions.map(renderVisibilityAction)}</div>
               </div>
             ))}
           </div>
-        ) : visibleActions.map(renderLifecycleAction)}
+        ) : visibleActions.map(renderVisibilityAction)}
         {group.kind === 'moment' && (
           <Button
             size="sm"
@@ -2486,7 +2429,7 @@ export default function App() {
             className={`state-action ${group.pinned ? 'active' : ''}`}
             title={group.pinned ? 'Remove this moment from the top' : 'Keep this moment at the top'}
             onClick={() => void saveGroupState(group, {
-              status: group.status,
+
               visibility: group.visibility,
               pinned: !group.pinned,
             })}
@@ -2499,7 +2442,7 @@ export default function App() {
   };
 
   const renderSeriesStateControls = (series: EpisodeSeries, variant: 'card' | 'header' = 'card') => {
-    const lifecycle = seriesLifecycleFor(series.episodes);
+    const lifecycle = seriesVisibilityFor(series.episodes);
     const savingState = stateSavingId === `series:${series.id}`;
     const stateDirty = series.episodes.some((episode) => {
       const { translation } = stateTargetForGroup(episode);
@@ -2515,7 +2458,6 @@ export default function App() {
       >
         {showStateSummary && (
           <span className="state-control-summary" aria-label={`${series.title} state`}>
-            <span data-state-role="status" data-state-value={lifecycle.status}>{lifecycle.statusLabel}</span>
             <span data-state-role="visibility" data-state-value={lifecycle.visibility}>{lifecycle.visibilityLabel}</span>
           </span>
         )}
@@ -2546,7 +2488,7 @@ export default function App() {
       title: series.title,
       description: series.description || '',
       cover_url: series.coverUrl || '',
-      status: 'ongoing',
+
     });
     setSeriesEditorError(null);
     setSeriesCoverError(undefined);
@@ -2559,7 +2501,7 @@ export default function App() {
         title: source.title,
         description: source.description,
         cover_url: source.cover_url,
-        status: source.status || 'ongoing',
+
       });
     } catch (reason) {
       setSeriesEditorError(String(reason));
@@ -2583,7 +2525,7 @@ export default function App() {
       title: seriesDraft.title.trim(),
       description: seriesDraft.description.trim(),
       cover_url: seriesDraft.cover_url.trim(),
-      status: seriesDraft.status.trim() || 'ongoing',
+
     };
     if (!next.title) {
       setSeriesEditorError('Series title is required.');
@@ -2602,7 +2544,7 @@ export default function App() {
         title: saved.title,
         description: saved.description,
         cover_url: saved.cover_url,
-        status: saved.status || 'ongoing',
+
       });
       setSeriesCoverLocalPreview('');
       await loadDocuments();
@@ -2829,7 +2771,7 @@ export default function App() {
       tags: (selectedContentGroup.tags || []).join(', '),
     };
     const publishing: typeof publishingDraft = {
-      status: selectedContentGroup.status,
+
       visibility: selectedContentGroup.visibility,
       pinned: Boolean(selectedContentGroup.pinned),
     };
@@ -2994,7 +2936,7 @@ export default function App() {
             tags: selectedContentGroup.kind === 'moment' ? parseMetadataTags(metadataDraft.tags) : null,
           },
           state: {
-            status: publishingDraft.status,
+
             visibility: publishingDraft.visibility,
             pinned: selectedContentGroup.kind === 'moment' ? Boolean(publishingDraft.pinned) : null,
           },
@@ -3223,10 +3165,6 @@ export default function App() {
     if (mode === 'interaction') setInteractionRailSection('likers');
   };
 
-  const toggleContentRailMode = () => {
-    openContentRailMode(contentRailMode === 'files' ? 'interaction' : 'files');
-  };
-
   const focusInteractionSection = (section: 'likers' | 'comments') => {
     setContentRailMode('interaction');
     setContentRailPanel('reactions');
@@ -3362,12 +3300,12 @@ export default function App() {
 
         {screen === 'settings' ? (
           <WorkspaceSettingsPage
-            archivedResources={archivedResources}
+            privateResources={privateResources}
             restoringResourceId={stateSavingId}
             preferences={workspacePreferences}
             onPreferencesChange={applyWorkspacePreferences}
-            onRestoreResource={restoreArchivedResource}
-            onDeleteResource={deleteArchivedResource}
+            onMakePublicResource={makeResourcePublic}
+            onDeleteResource={deletePrivateResource}
           />
         ) : screen === 'dashboard' ? (
           <section className="dashboard-area">
@@ -3927,7 +3865,7 @@ export default function App() {
                       >
                         <span className={badgeClass(item.entity_type as ContentKind)}>{item.entity_type}</span>
                         <strong>{item.title}</strong>
-                        <small>{contentStateSummary(item.entity_type as ContentKind, item.status, item.visibility)}</small>
+                        <small>{contentStateSummary(item.visibility)}</small>
                       </button>
                     ))}
                     {selectedCommitDay && selectedCommitItems.length === 0 && <p className="activity-empty">No recently indexed content matches this commit scope.</p>}
@@ -3982,8 +3920,7 @@ export default function App() {
               ) : masonryGroups.length === 0 ? (
                 <div className="empty content-empty">{query.trim() ? 'No matches for your search.' : currentShelf.empty}</div>
               ) : (
-                <div className="content-grid">
-                  {masonryGroups.map((group) => (
+                <ContentMasonry groups={masonryGroups} renderCard={(group) => (
                     <ContentCard
                       key={group.id}
                       group={group}
@@ -4001,8 +3938,7 @@ export default function App() {
                           ? renderStateControls(group, 'card')
                           : undefined}
                     />
-                  ))}
-                </div>
+                  )} />
               )
             ) : (
               <div className="workspace">
@@ -4044,7 +3980,7 @@ export default function App() {
                         <div className="item-head">
                           {entityFilter === 'all' && <span className={badgeClass(group.kind)}>{group.kind}</span>}
                           <strong>{group.title}</strong>
-                            <small>{contentStateSummary(group.kind, group.status, group.visibility)}</small>
+                            <small>{contentStateSummary(group.visibility)}</small>
                         </div>
                           {group.documents.map((document) => renderDocumentRow(document))}
                         </section>
@@ -4315,8 +4251,10 @@ export default function App() {
                   onClose: closeVersionPanel,
                 })}
               </div>
-              <h3 id="version-card-title">Version management</h3>
-              <p>{versionStatus?.scope_label || 'Section'} Git history under content/</p>
+              <header className="workspace-settings-section-header">
+                <h2 id="version-card-title">{chromeLanguage === 'zh' ? '提交历史' : 'Commit history'}</h2>
+                <p>{versionStatus?.scope_label || 'Section'}</p>
+              </header>
               {versionLoading ? (
                 <div className="version-loading">
                   <LoaderCircle size={15} />
@@ -4345,7 +4283,7 @@ export default function App() {
                   </div>
                   <section className="version-section">
                     <div className="version-section-head">
-                      <span>Working tree</span>
+                      <h3>{chromeLanguage === 'zh' ? '本地修改' : 'Working tree'}</h3>
                       <div className="version-section-actions">
                         {versionStatus.dirty_count > 0 && (
                           <button
@@ -4375,9 +4313,12 @@ export default function App() {
                   </section>
                   <section className="version-section">
                     <div className="version-section-head">
-                      <span>Recent commits</span>
+                      <h3>{chromeLanguage === 'zh' ? '最近提交' : 'Recent commits'}</h3>
                     </div>
                     <div className="version-commit-list">
+                      {versionStatus.recent_commits.length === 0 && (
+                        <div className="version-empty">{chromeLanguage === 'zh' ? '还没有提交记录。' : 'No commits yet.'}</div>
+                      )}
                       {versionStatus.recent_commits.map((commit) => (
                         <div className="version-commit-row" key={commit.hash}>
                           <code>{commit.hash}</code>
@@ -4562,11 +4503,7 @@ export default function App() {
                             <small>The stable folder and URL identifier. Rename it in source control to avoid broken episode links.</small>
                             <input type="text" value={seriesEditingSlug} disabled />
                           </label>
-                          <label className="content-settings-field">
-                            <span>Series metadata status</span>
-                            <small>The value stored in series.toml. Episode visibility is managed on the Publishing page.</small>
-                            <input type="text" value={seriesDraft.status} disabled />
-                          </label>
+
                           <label className="content-settings-field content-settings-field--wide">
                             <span>Metadata source</span>
                             <small>The TOML file read and written by this settings editor.</small>
@@ -4634,6 +4571,7 @@ export default function App() {
                   </div>
                 </div>
                 {contentRailPanel === 'parts' && (
+                  <>
                   <div className="quick-dock content-editor-actions">
                     <MarkdownWorkspaceViewToggle
                       className="content-close content-view-toggle"
@@ -4672,10 +4610,11 @@ export default function App() {
                     >
                       <Type size={15} />
                     </button>
-                    <span className="content-save" role="status">
-                      {saving ? 'Saving…' : sourceConflict ? 'Source conflict · draft kept' : saveFailed ? 'Save failed · retrying' : dirty ? 'Autosave pending…' : 'Saved'}
-                    </span>
                   </div>
+                  <span className="content-editor-save-status" role="status">
+                    {saving ? 'Saving…' : sourceConflict ? 'Source conflict · draft kept' : saveFailed ? 'Save failed · retrying' : dirty ? 'Autosave pending…' : 'Saved'}
+                  </span>
+                  </>
                 )}
               </header>
 
@@ -4701,6 +4640,7 @@ export default function App() {
                 {contentRailPanel !== 'settings' && (
                 <aside className="content-part-rail" aria-label="Content side rail">
                   <header className="content-explorer-top">
+                    <div className="content-explorer-window-space" data-tauri-drag-region aria-hidden="true" />
                     <button
                       type="button"
                       className="content-explorer-icon"
@@ -4716,15 +4656,19 @@ export default function App() {
                     <button
                       type="button"
                       className="content-explorer-title"
-                      onClick={toggleContentRailMode}
+                      aria-label={`${contentRailMode.toUpperCase()} · Switch to ${nextContentRailMode[contentRailMode].toUpperCase()}`}
+                      title={`Switch to ${nextContentRailMode[contentRailMode].toUpperCase()}`}
+                      onClick={() => openContentRailMode(nextContentRailMode[contentRailMode])}
                     >
-                      {contentRailMode === 'files' ? 'FILES' : 'INTERACTION'}
+                      {contentRailMode.toUpperCase()}
                     </button>
                   </header>
 
-                  <nav className="content-explorer-tree" aria-label={contentRailMode === 'files' ? 'Content parts' : 'Content interactions'}>
+                  <nav className="content-explorer-tree" aria-label="Content navigation">
                     {selectedContentGroup.documents.length === 0 ? (
                       <div className="content-explorer-empty">No content selected.</div>
+                    ) : contentRailMode === 'outline' ? (
+                      <ContentOutline key={selectedTranslation?.id} markdown={selectedTranslation?.content || ''} language={chromeLanguage} />
                     ) : contentRailMode === 'interaction' ? (
                       <>
                         {selected.entity_type === 'episode' && selectedSeries && (
@@ -5422,12 +5366,9 @@ export default function App() {
                   )}
                   {contentRailPanel === 'reactions' && (
                     <section className="content-settings-panel content-settings-panel--interactions" aria-label="Reader interactions">
-                      <header className="content-settings-header">
-                        <div>
-                          <span>READER INTERACTIONS</span>
-                          <h2>{selectedContentGroup.title}</h2>
-                          <p>Review the website liker list and comment threads, then control which comments remain public.</p>
-                        </div>
+                      <header className="workspace-settings-section-header">
+                        <h2>{chromeLanguage === 'zh' ? '读者互动' : 'Reader interactions'}</h2>
+                        <p>{selectedContentGroup.title}</p>
                       </header>
                       <div className="content-interaction-canvas">
                         <InteractionDetailsPanel

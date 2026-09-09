@@ -101,6 +101,7 @@ export function DesktopTitlebar(props: DesktopTitlebarProps) {
   return (
     <header
       className="desktop-titlebar"
+      data-fullscreen={fullscreen ? 'true' : 'false'}
       data-workspace-navigation={showWorkspaceNavigation ? 'visible' : 'hidden'}
       style={{ '--window-navigation-inset': `${navigationInset}px` } as React.CSSProperties}
     >

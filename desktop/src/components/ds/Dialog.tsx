@@ -112,7 +112,7 @@ export const DialogCard = React.forwardRef<
     role="dialog"
     aria-modal="true"
     className={cn(
-      'w-full max-w-md rounded-ds-xl border border-ds-border bg-ds-surface-1 p-6 shadow-ds-4',
+      'w-full max-w-md rounded-ds-xl border border-ds-border bg-ds-surface-1 p-5 shadow-ds-4',
       'ds-animate-pop-in',
       className,
     )}
@@ -143,4 +143,4 @@ export const DialogDescription: React.FC<React.HTMLAttributes<HTMLElement>> = ({
 export const DialogActions: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   className,
   ...props
-}) => <div className={cn('mt-6 flex justify-end gap-2', className)} {...props} />;
+}) => <div className={cn('mt-4 flex justify-end gap-2', className)} {...props} />;

@@ -96,7 +96,7 @@ export const groupDocumentsByResource = (documents: EditorDocument[]) => {
         title: document.title,
         slug: document.slug,
         description: document.description || null,
-        status: document.status,
+
         visibility: document.visibility,
         date: document.date || null,
         pinned: Boolean(document.pinned),

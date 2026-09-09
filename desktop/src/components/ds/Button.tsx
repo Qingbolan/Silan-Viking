@@ -26,14 +26,14 @@ const buttonVariants = cva(
         // Filled neutral surface with a hairline.
         secondary: 'bg-ds-surface-2 border border-ds-border text-ds-fg hover:bg-ds-surface-3',
         // Quiet — transparent until hovered.
-        ghost: 'bg-transparent text-ds-fg-muted hover:bg-ds-surface-2 hover:text-ds-fg',
+        ghost: 'border-0 bg-transparent text-ds-fg-muted hover:bg-ds-surface-2 hover:text-ds-fg',
         // Destructive — irreversible actions only. No `error-fg` token
         // exists, so the label is plain white; hover deepens via brightness.
         destructive: 'bg-ds-error text-white hover:brightness-[0.92]',
       },
       size: {
         sm: 'h-7 px-3 gap-1.5 rounded-ds-sm text-ds-xs [&_svg]:size-3.5',
-        md: 'h-9 px-4 gap-2 rounded-ds-md text-ds-sm [&_svg]:size-4',
+        md: 'h-8 px-3 gap-1.5 rounded-ds-md text-ds-sm [&_svg]:size-4',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

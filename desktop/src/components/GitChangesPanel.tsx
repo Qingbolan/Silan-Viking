@@ -3,7 +3,6 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   AlertCircle,
   FileCode2,
-  GitBranch,
   GitCommitHorizontal,
   LoaderCircle,
   Sparkles,
@@ -61,8 +60,7 @@ function DiffView({ diff }: { diff: string }) {
             data-tone={tone}
             data-empty={line.length === 0 ? 'true' : undefined}
           >
-            {line}
-            {'\n'}
+            {line || ' '}
           </span>
         );
       })}
@@ -200,9 +198,7 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
     <section className="resume-editor-workspace git-panel-workspace" role="dialog" aria-modal="true" aria-labelledby="git-panel-title">
       <header className="resume-editor-topbar git-panel-topbar">
         <div className="git-panel-heading">
-          <div className="git-panel-heading-icon"><GitBranch size={17} /></div>
           <div className="resume-editor-title">
-            <span>Content repository</span>
             <strong id="git-panel-title">Uncommitted changes</strong>
             <em>
               {changes.length} file{changes.length === 1 ? '' : 's'} changed
@@ -287,7 +283,6 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
             <>
               <div className="git-panel-diff-header">
                 <div className="git-panel-diff-identity">
-                  <span>File preview</span>
                   <strong>{selectedPathParts?.fileName}</strong>
                   <code>{selectedPathParts?.directory}</code>
                 </div>

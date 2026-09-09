@@ -1,4 +1,4 @@
-import { contentStateSummary } from '../../lib/contentLifecycle';
+import { contentStateSummary } from '../../lib/contentVisibility';
 import type { ContentKind, DashboardData, TrafficEvidence } from '../../types';
 import { isContentKind } from '../content/contentModel';
 
@@ -39,7 +39,6 @@ type DashboardContentMetadata = Map<string, {
   kind: ContentKind;
   title: string;
   slug: string;
-  status: string;
   visibility: string;
   updatedAt: string;
 }>;
@@ -48,7 +47,6 @@ type DashboardEngagementRecord = {
   kind: ContentKind;
   title: string;
   slug: string;
-  status: string;
   visibility: string;
   updatedAt: string;
   likes: number;
@@ -213,7 +211,6 @@ export const buildDashboardRankingItems = ({
       kind,
       title,
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-      status: '',
       visibility: '',
       updatedAt: '',
     };
@@ -230,8 +227,8 @@ export const buildDashboardRankingItems = ({
       title: metadata.title,
       slug: metadata.slug,
       count,
-      detail: detail || (metadata.status && metadata.visibility
-        ? contentStateSummary(metadata.kind, metadata.status, metadata.visibility)
+      detail: detail || (metadata.visibility
+        ? contentStateSummary(metadata.visibility)
         : contentType),
       updatedAt: metadata.updatedAt,
     };
@@ -242,7 +239,7 @@ export const buildDashboardRankingItems = ({
         item.kind,
         item.title,
         item[metric],
-        contentStateSummary(item.kind, item.status, item.visibility),
+        contentStateSummary(item.visibility),
       ))
       .filter((item) => item.count > 0)
       .sort((left, right) => (

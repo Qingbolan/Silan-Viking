@@ -1,5 +1,5 @@
 import { Pin } from 'lucide-react';
-import { contentLifecycleFor, type DocumentStateInput } from '../lib/contentLifecycle';
+import { contentVisibilityFor, type DocumentStateInput } from '../lib/contentVisibility';
 import type { ContentKind } from '../types';
 import { Select } from './ds/Select';
 
@@ -25,43 +25,19 @@ export function ContentPublishingFields({
   disabled = false,
   onChange,
 }: ContentPublishingFieldsProps) {
-  const lifecycle = contentLifecycleFor(kind, value.status, value.visibility);
-  const statusOptions = uniqueOptions([
-    { value: lifecycle.status, label: lifecycle.statusLabel },
-    ...lifecycle.actions
-      .filter((action) => action.group === 'status')
-      .map((action) => ({
-        value: action.nextState.status,
-        label: contentLifecycleFor(kind, action.nextState.status, value.visibility).statusLabel,
-      })),
-  ]);
+  const lifecycle = contentVisibilityFor(value.visibility);
   const visibilityOptions = uniqueOptions([
     { value: lifecycle.visibility, label: lifecycle.visibilityLabel },
     ...lifecycle.actions
       .filter((action) => action.group === 'visibility')
       .map((action) => ({
         value: action.nextState.visibility,
-        label: contentLifecycleFor(kind, value.status, action.nextState.visibility).visibilityLabel,
+        label: contentVisibilityFor(action.nextState.visibility).visibilityLabel,
       })),
   ]);
 
   return (
     <div className="content-publishing-fields">
-      <div className="content-settings-control">
-        <span>Lifecycle</span>
-        <small>Where this work currently sits in its own process.</small>
-        <Select
-          aria-label="Lifecycle status"
-          value={value.status}
-          disabled={disabled}
-          onChange={(event) => onChange({ ...value, status: event.target.value })}
-        >
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </Select>
-      </div>
-
       <div className="content-settings-control">
         <span>Visibility</span>
         <small>Who can discover the content after the next deployment.</small>

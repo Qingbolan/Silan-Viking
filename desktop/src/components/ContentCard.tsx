@@ -1,6 +1,6 @@
 import { Heart, MessageCircle } from 'lucide-react';
 import { contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
-import { contentStateSummary } from '../lib/contentLifecycle';
+import { contentStateSummary } from '../lib/contentVisibility';
 import { formatShortDate } from '../lib/format';
 import { toWebviewMediaUrl } from '../lib/media';
 import { ProjectPreviewSurface } from './ds/ProjectPreviewSurface';
@@ -33,9 +33,7 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
   const updatedAt = contentGroupUpdatedAt(group);
   const date = updatedAt ? formatShortDate(updatedAt) : '';
   const partCount = group.documents.length;
-  const stateSummary = isSeries
-    ? [group.status, group.visibility].filter(Boolean).join(' · ')
-    : contentStateSummary(group.kind, group.status, group.visibility);
+  const stateSummary = contentStateSummary(group.visibility);
   const coverUrl = toWebviewMediaUrl(group.coverUrl);
   const projectWebsiteUrl = group.coverSourceType === 'website'
     ? group.demoUrl || group.coverWebsiteUrl
@@ -48,9 +46,10 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
 
   return (
     <article
-      className={`content-card ${isSeries ? 'content-card--span2' : ''}`}
+      className="content-card"
+      data-visibility={group.visibility}
     >
-      <button type="button" className="content-card-open" onClick={() => onOpen(group)}>
+      <button type="button" className="content-card-open" onClick={() => onOpen(group)} aria-label={`${group.title} · ${stateSummary}`}>
         {isProject ? (
           <span className="content-card-cover" data-mode={group.coverSourceType || 'image'}>
             <ProjectPreviewSurface
@@ -67,18 +66,7 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
         <span className="content-card-body">
           <span className="content-card-meta">
             <span>{meta.join(' · ')}</span>
-            {stateSummary && (
-              <span className="content-card-status content-state-pills">
-                {stateSummary.split(' · ').map((part) => (
-                  <span
-                    key={part}
-                    data-visibility={part.toLowerCase().includes('private') ? 'private' : undefined}
-                  >
-                    {part}
-                  </span>
-                ))}
-              </span>
-            )}
+
           </span>
           <span className="content-card-title">{group.title}</span>
           {excerpt && <span className="content-card-excerpt">{excerpt}</span>}

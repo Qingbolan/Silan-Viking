@@ -1,9 +1,9 @@
-import { Heart, Link2, Lock, MessageCircle, PencilLine } from 'lucide-react';
-import { contentGroupTags, contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
-import { contentLifecycleFor } from '../lib/contentLifecycle';
+import { ArrowUpRight, Heart, MessageCircle } from 'lucide-react';
+import { contentGroupTags, contentGroupUpdatedAt, localizedDocumentTitle, selectPrimaryDocument, translationPreview } from '../lib/content';
+import { contentVisibilityFor } from '../lib/contentVisibility';
 import { toWebviewMediaUrl } from '../lib/media';
 import { Badge } from './ds/Badge';
-import type { ContentGroup, EditorDocument, MomentsSettings } from '../types';
+import type { ContentGroup, MomentsSettings } from '../types';
 
 type MomentFeedProps = {
   groups: ContentGroup[];
@@ -14,27 +14,12 @@ type MomentFeedProps = {
   onOpen: (group: ContentGroup) => void;
 };
 
-const primaryTranslation = (document?: EditorDocument | null) => (
-  document?.translations.find((translation) => translation.language === document.canonical_language)
-  || document?.translations[0]
-  || null
-);
-
-const updateDateParts = (value: string) => {
-  const date = value ? new Date(value) : null;
-  if (!date || Number.isNaN(date.getTime())) return { day: '', month: '' };
-  return {
-    day: new Intl.DateTimeFormat('en', { day: 'numeric' }).format(date),
-    month: new Intl.DateTimeFormat('en', { month: 'short' }).format(date),
-  };
-};
-
 const contentGroupDate = (group: ContentGroup) => group.date || contentGroupUpdatedAt(group);
 
-const momentVisibilityIcon = (visibility: string) => {
-  if (visibility === 'private') return <Lock size={18} aria-label="Private moment" />;
-  if (visibility === 'unlisted') return <Link2 size={18} aria-label="Unlisted moment" />;
-  return <PencilLine size={16} aria-label="Public moment" />;
+const timelineDate = (group: ContentGroup) => {
+  const key = contentGroupDate(group).slice(0, 10);
+  const date = new Date(`${key}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : { key, date };
 };
 
 export function MomentFeed({
@@ -46,9 +31,18 @@ export function MomentFeed({
   onOpen,
 }: MomentFeedProps) {
   const ordered = [...groups].sort((left, right) =>
-    Number(Boolean(right.pinned)) - Number(Boolean(left.pinned))
-    || contentGroupDate(right).localeCompare(contentGroupDate(left)),
+    contentGroupDate(right).localeCompare(contentGroupDate(left)),
   );
+  const years = new Map<string, Map<string, { date: Date | null; items: ContentGroup[] }>>();
+  for (const group of ordered) {
+    const value = timelineDate(group);
+    const year = value ? String(value.date.getFullYear()) : 'Undated';
+    const key = value?.key || 'undated';
+    if (!years.has(year)) years.set(year, new Map());
+    const days = years.get(year)!;
+    if (!days.has(key)) days.set(key, { date: value?.date || null, items: [] });
+    days.get(key)!.items.push(group);
+  }
 
   if (ordered.length === 0) {
     return (
@@ -76,56 +70,57 @@ export function MomentFeed({
       </header>
 
       <div className="moments-timeline">
-        {ordered.map((group) => {
-          const document = selectPrimaryDocument(group);
-          const preferredLanguage = document ? languageByDocument[document.id] : '';
-          const translation = document?.translations.find((item) => item.language === preferredLanguage)
-            || primaryTranslation(document);
-          const updateDate = contentGroupDate(group);
-          const date = updateDateParts(updateDate);
-          const tags = contentGroupTags(group, 3);
-          const preview = translation?.content || translationPreview(document) || group.title;
-          const lifecycle = contentLifecycleFor('moment', group.status, group.visibility);
-
-          return (
-            <article className="moments-timeline-row" key={group.id}>
-              <time className="moments-date" dateTime={updateDate}>
-                {group.pinned && <em>PIN</em>}
-                <strong>{date.day}</strong>
-                <span>{date.month}.</span>
-              </time>
-              <button type="button" className="moments-entry" onClick={() => onOpen(group)}>
-                <div>
-                  <p>{preview}</p>
-                  <div className="moments-tags">
-                    <Badge size="sm" tone="neutral">{lifecycle.statusLabel}</Badge>
-                    <Badge
-                      size="sm"
-                      tone={lifecycle.visibility === 'public' ? 'success' : lifecycle.visibility === 'unlisted' ? 'warning' : 'neutral'}
-                    >
-                      {lifecycle.visibilityLabel}
-                    </Badge>
-                    {tags.map((tag) => <span key={tag}>#{tag}</span>)}
+        {[...years].map(([year, days]) => (
+          <section className="moments-year" key={year} aria-label={year}>
+            <h2 className="moments-year-heading">{year}</h2>
+            <ol className="moments-day-list">
+              {[...days].sort(([, left], [, right]) =>
+                Number(right.items.some((item) => item.pinned)) - Number(left.items.some((item) => item.pinned)),
+              ).map(([key, { date, items }]) => (
+                <li className="moments-timeline-row" key={key}>
+                  <div className="moments-date">
+                    <time dateTime={date ? key : undefined}>{date?.getDate() ?? '—'}</time>
+                    {date && <span>{date.toLocaleDateString('en-SG', { month: 'short' })}</span>}
                   </div>
-                  <div
-                    className="moments-engagement"
-                    aria-label={`${group.engagement.likes} likes and ${group.engagement.comments} comments`}
-                  >
-                    <span title={`${group.engagement.likes} likes`}>
-                      <Heart size={14} />
-                      {group.engagement.likes}
-                    </span>
-                    <span title={`${group.engagement.comments} comments`}>
-                      <MessageCircle size={14} />
-                      {group.engagement.comments}
-                    </span>
+                  <div className="moments-day-posts" data-multiple={items.length > 1}>
+                    {[...items].sort((left, right) => Number(Boolean(right.pinned)) - Number(Boolean(left.pinned))).map((group) => {
+                      const document = selectPrimaryDocument(group);
+                      const language = document ? languageByDocument[document.id] : undefined;
+                      const title = localizedDocumentTitle(document, language) || group.title;
+                      const preview = translationPreview(document, language) || group.description;
+                      const visibility = contentVisibilityFor(group.visibility);
+                      const tags = contentGroupTags(group, 3);
+                      return (
+                        <article className="moments-post" key={group.id}>
+                          <button type="button" className="moments-entry" onClick={() => onOpen(group)} aria-label={`Edit ${title}`}>
+                            {group.pinned && <span className="moments-post-pin">Pin</span>}
+                            <div className="moments-entry-heading">
+                              <h3>{title}</h3>
+                              <ArrowUpRight className="moments-open-arrow" size={14} aria-hidden="true" />
+                            </div>
+                            {preview && <p>{preview}</p>}
+                            {tags.length > 0 && <div className="moments-tags">
+                              {tags.map((tag) => <span key={tag}>#{tag}</span>)}
+                            </div>}
+                          </button>
+                          <div className="moments-post-footer">
+                            <Badge size="sm" tone={visibility.visibility === 'public' ? 'success' : 'neutral'}>
+                              {visibility.visibilityLabel}
+                            </Badge>
+                            <div className="moments-engagement" aria-label={`${group.engagement.likes} likes and ${group.engagement.comments} comments`}>
+                              <span><Heart size={12} aria-hidden="true" />{group.engagement.likes}</span>
+                              <span><MessageCircle size={12} aria-hidden="true" />{group.engagement.comments}</span>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
-                </div>
-                {momentVisibilityIcon(lifecycle.visibility)}
-              </button>
-            </article>
-          );
-        })}
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
       </div>
     </section>
   );

@@ -20,14 +20,14 @@ use silan_viking_app::{
     ArticleImageAttributionResult, ArticleImageAttributionWorkspace, ContentCreator, ContentEditor,
     ContentKind, ContentRelationshipEditor, CoverBrief, CoverGenerationInput, CoverWorkspace,
     CreateTranslationInput, DeepSeekApiKey, DeepSeekCommitMessageGenerator,
-    DeleteArchivedResourceInput, DeletedArchivedResource, DeliveryControl, EditableDocument,
+    DeletePrivateResourceInput, DeletedPrivateResource, DeliveryControl, EditableDocument,
     EditablePart, EditableSection, GeoAdvisor, IdeaCategory, ImageOutputFormat, ImageQuality,
     ImageSize, LanguageAuditReport, LanguageAuditScope, LanguageAuditWorkflow,
     MarkdownSelectionEditAction, MarkdownSelectionEditRequest, MarkdownTranslationRequest,
     MarkdownTranslationSyncRequest, MediaAssetRef, MediaLibrary, OpenAiApiKey,
     OpenAiMarkdownTranslator, RelationshipTargetKind, ReleaseScope, ResumeProfileUpdate,
-    SaveLifecycleInput, SaveMetadataInput, SaveTranslationInput, StatsCache, StatsError, StatsSync,
-    WebsiteInsights, WorkspaceContent,
+    SaveMetadataInput, SaveTranslationInput, SaveVisibilityInput, StatsCache, StatsError,
+    StatsSync, WebsiteInsights, WorkspaceContent,
 };
 use std::collections::BTreeMap;
 use std::env;
@@ -202,7 +202,6 @@ impl DesktopWorkspace {
                     entity_type: item.content_type,
                     title: item.title,
                     slug: item.slug,
-                    status: item.status,
                     visibility: item.visibility,
                     updated_at: item.updated_at,
                 })
@@ -588,7 +587,6 @@ impl DesktopWorkspace {
             description: source.description,
             cover_url: source.cover_url,
             cover_media,
-            status: source.status,
             revision: source.revision,
             relative_path: source.relative_path,
         })
@@ -607,7 +605,6 @@ impl DesktopWorkspace {
                 input.title.trim(),
                 input.description.trim(),
                 input.cover_url.trim(),
-                input.status.trim(),
                 expected_revision,
                 &self.db_path,
             )
@@ -619,7 +616,6 @@ impl DesktopWorkspace {
             description: saved.description,
             cover_url: saved.cover_url,
             cover_media,
-            status: saved.status,
             revision: saved.revision,
             relative_path: saved.relative_path,
         })
@@ -1106,10 +1102,9 @@ impl DesktopWorkspace {
         validate_document_state(&current.content_type, &state)?;
         let saved = self
             .workspace_content
-            .save_lifecycle(
-                &SaveLifecycleInput {
+            .save_visibility(
+                &SaveVisibilityInput {
                     translation_id: translation_id.to_owned(),
-                    status: state.status,
                     visibility: state.visibility,
                     pinned: state.pinned,
                     expected_revision: expected_revision.to_owned(),
@@ -1128,15 +1123,15 @@ impl DesktopWorkspace {
             .ok_or_else(|| format!("saved translation `{translation_id}` was not returned"))
     }
 
-    pub(crate) fn delete_archived_resource(
+    pub(crate) fn delete_private_resource(
         &self,
         translation_id: &str,
         expected_revision: &str,
         confirmation: &str,
-    ) -> Result<DeletedArchivedResource, String> {
+    ) -> Result<DeletedPrivateResource, String> {
         self.workspace_content
-            .delete_archived_resource(
-                &DeleteArchivedResourceInput {
+            .delete_private_resource(
+                &DeletePrivateResourceInput {
                     translation_id: translation_id.to_owned(),
                     expected_revision: expected_revision.to_owned(),
                     confirmation: confirmation.to_owned(),
@@ -1161,9 +1156,8 @@ impl DesktopWorkspace {
             .translation(translation_id)
             .map_err(|error| error.to_string())?;
         validate_document_state(&current.content_type, &state)?;
-        let lifecycle = SaveLifecycleInput {
+        let lifecycle = SaveVisibilityInput {
             translation_id: translation_id.to_owned(),
-            status: state.status,
             visibility: state.visibility,
             pinned: state.pinned,
             expected_revision: expected_revision.to_owned(),
@@ -1921,7 +1915,6 @@ fn map_editable_document(
         description,
         series_slug,
         episode_number,
-        status,
         visibility,
         updated_at,
         cover_uri,
@@ -1966,7 +1959,6 @@ fn map_editable_document(
                 canonical_language,
                 title: title.clone(),
                 description: description.clone(),
-                status: status.clone(),
                 visibility: visibility.clone(),
                 date: date.clone(),
                 pinned,
@@ -2245,19 +2237,12 @@ fn put_yaml_social_links(map: &mut serde_yaml::Mapping, links: &[ResumeSocialLin
 }
 
 fn validate_document_state(kind: &str, state: &DocumentStateInput) -> Result<(), String> {
-    let allowed_status = match kind {
-        "blog" | "episode" => &["draft", "published", "archived"][..],
-        "project" => &["active", "completed", "paused", "cancelled", "archived"][..],
-        "moment" => &["active", "ongoing", "completed"][..],
-        other => return Err(format!("state controls are not supported for `{other}`")),
-    };
-    if !allowed_status.contains(&state.status.as_str()) {
+    if !["blog", "episode", "project", "idea", "moment", "resume"].contains(&kind) {
         return Err(format!(
-            "`{}` is not a valid status for `{kind}`",
-            state.status
+            "visibility controls are not supported for `{kind}`"
         ));
     }
-    if !["private", "unlisted", "public"].contains(&state.visibility.as_str()) {
+    if !["private", "public"].contains(&state.visibility.as_str()) {
         return Err(format!("`{}` is not a valid visibility", state.visibility));
     }
     Ok(())
@@ -2290,46 +2275,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn project_archive_is_a_valid_private_lifecycle_state() {
-        assert!(validate_document_state(
-            "project",
-            &DocumentStateInput {
-                status: "archived".to_owned(),
-                visibility: "private".to_owned(),
-                pinned: None,
-            },
-        )
-        .is_ok());
-    }
-
-    #[test]
-    fn moment_lifecycle_accepts_all_supported_visibility_modes() {
-        for status in ["active", "ongoing", "completed"] {
-            for visibility in ["private", "unlisted", "public"] {
-                assert!(validate_document_state(
-                    "moment",
-                    &DocumentStateInput {
-                        status: status.to_owned(),
-                        visibility: visibility.to_owned(),
-                        pinned: None,
-                    },
-                )
-                .is_ok());
+    fn content_visibility_accepts_only_public_or_private() {
+        for kind in ["blog", "project", "moment", "episode"] {
+            for visibility in ["public", "private", "unlisted", "draft"] {
+                let input = DocumentStateInput {
+                    visibility: visibility.to_owned(),
+                    pinned: None,
+                };
+                assert_eq!(
+                    validate_document_state(kind, &input).is_ok(),
+                    matches!(visibility, "public" | "private")
+                );
             }
         }
-    }
-
-    #[test]
-    fn moment_lifecycle_rejects_prose_publication_statuses() {
-        assert!(validate_document_state(
-            "moment",
-            &DocumentStateInput {
-                status: "published".to_owned(),
-                visibility: "public".to_owned(),
-                pinned: None,
-            },
-        )
-        .is_err());
     }
 
     #[test]

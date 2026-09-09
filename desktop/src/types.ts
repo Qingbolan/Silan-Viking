@@ -117,7 +117,6 @@ export type EditorDocument = {
   canonical_language: string;
   title: string;
   description?: string | null;
-  status: string;
   visibility: string;
   date?: string | null;
   pinned?: boolean;
@@ -427,7 +426,6 @@ export type DashboardItem = {
   entity_type: string;
   title: string;
   slug: string;
-  status: string;
   visibility: string;
   updated_at: string;
 };
@@ -442,7 +440,6 @@ export type ContentGroup = {
   kind: ContentKind;
   title: string;
   slug: string;
-  status: string;
   visibility: string;
   date?: string | null;
   pinned?: boolean;
@@ -512,7 +509,6 @@ export type EpisodeSeriesSource = {
   description: string;
   cover_url: string;
   cover_media?: string;
-  status: string;
   revision: string;
   relative_path: string;
 };
@@ -521,7 +517,6 @@ export type EpisodeSeriesInput = {
   title: string;
   description: string;
   cover_url: string;
-  status: string;
 };
 
 export type ResumeFieldValue = string | number | boolean | string[] | null;

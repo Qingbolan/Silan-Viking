@@ -19,7 +19,7 @@ use crate::workspace_onboarding::{
 };
 use silan_viking_app::{
     ArticleImageAttributionPlan, ArticleImageAttributionResult, AudioTranscriptionRequest,
-    DeletedArchivedResource, LanguageAuditReport, OpenAiAudioTranscriber,
+    DeletedPrivateResource, LanguageAuditReport, OpenAiAudioTranscriber,
 };
 use std::path::PathBuf;
 use tauri::Manager;
@@ -316,7 +316,12 @@ pub(crate) async fn save_document(
     expected_revision: String,
 ) -> Result<EditorDocument, String> {
     run_background("save document", move || {
-        DesktopWorkspace::from_environment()?.save_document(&id, &title, &content, &expected_revision)
+        DesktopWorkspace::from_environment()?.save_document(
+            &id,
+            &title,
+            &content,
+            &expected_revision,
+        )
     })
     .await
 }
@@ -410,12 +415,12 @@ pub(crate) fn save_document_state(
 }
 
 #[tauri::command]
-pub(crate) fn delete_archived_resource(
+pub(crate) fn delete_private_resource(
     id: String,
     expected_revision: String,
     confirmation: String,
-) -> Result<DeletedArchivedResource, String> {
-    DesktopWorkspace::from_environment()?.delete_archived_resource(
+) -> Result<DeletedPrivateResource, String> {
+    DesktopWorkspace::from_environment()?.delete_private_resource(
         &id,
         &expected_revision,
         &confirmation,

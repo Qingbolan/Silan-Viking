@@ -22,7 +22,7 @@ import { Select } from '../Controls';
 import { scrollToAnchor } from '../../../lib/scrollToAnchor';
 
 const MOBILE_OVERVIEW_ID = '__mobile_overview__';
-const READER_MAX_WIDTH = '82rem';
+const READER_MAX_WIDTH = '64rem';
 const LEFT_RAIL_WIDTH = '18rem';
 const OUTLINE_TRACK_MINIMUM = {
   collapsed: '3.5rem',
@@ -90,14 +90,16 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
   const centreRef = useRef<HTMLDivElement>(null);
   const [outlineCollapsed, setOutlineCollapsed] = useState(outlineDefaultCollapsed);
   const outlineMode = outlineCollapsed ? 'collapsed' : 'expanded';
-  // The document measure and the Outline are sibling tracks. The reader grows
-  // to its explicit maximum first; only then does the Outline consume the
-  // remaining right-side space. This prevents a wide, empty centre track from
-  // squeezing the Outline back to its minimum width.
+  // Equal outer tracks center the bounded reader + outline as one unit.
+  // The chapter rail keeps its full-height position at the page edge.
+  const readerColumn = showLeftRail ? 3 : 2;
+  const bodyRow = header ? 2 : 1;
   const gridTemplateColumns = [
     ...(showLeftRail ? [LEFT_RAIL_WIDTH] : []),
+    'minmax(0, 1fr)',
     `minmax(0, ${READER_MAX_WIDTH})`,
-    `minmax(${OUTLINE_TRACK_MINIMUM[outlineMode]}, 1fr)`,
+    OUTLINE_TRACK_MINIMUM[outlineMode],
+    'minmax(0, 1fr)',
   ].join(' ');
   // Tab semantics: caller drives currentChapterId. Fall back to first chapter
   // so something is highlighted even before a click.
@@ -206,18 +208,18 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
         {header && (
           <div
             data-kb-header
-            className={cn('min-w-0 lg:row-start-1 lg:col-span-2', showLeftRail ? 'lg:col-start-2' : 'lg:col-start-1')}
+            className={cn('min-w-0 lg:row-start-1 lg:col-span-4', showLeftRail ? 'lg:col-start-2' : 'lg:col-start-1')}
           >
             {header}
           </div>
         )}
 
         {/* Centre — flow content. */}
-        <div data-kb-reader-track className="min-w-0">
+        <div data-kb-reader-track className="min-w-0" style={{ gridColumn: readerColumn, gridRow: bodyRow }}>
           <div
             ref={centreRef}
             className={cn(
-              'mx-auto w-full max-w-[82rem] py-6 sm:py-8 lg:px-12',
+              'mx-auto w-full py-6 sm:py-8 lg:px-12',
               contentClassName,
             )}
           >
@@ -228,6 +230,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
         {/* Right rail — outline. Hidden below lg. */}
         <aside
           data-kb-outline-rail
+          style={{ gridColumn: readerColumn + 1, gridRow: bodyRow }}
           className={cn(
             'relative z-30 hidden lg:block',
             'min-h-full transition-[padding] duration-ds-base',
