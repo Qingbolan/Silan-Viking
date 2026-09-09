@@ -62,7 +62,7 @@ fn capture_creates_markdown_source_then_projects_it() {
     let markdown =
         fs::read_to_string(item_root.join("parts/body/zh.md")).expect("read captured Markdown");
     assert!(markdown.contains("kind: moment"));
-    assert!(markdown.contains("status: ongoing"));
+    assert!(!markdown.contains("status:"));
     assert!(markdown.contains("记录真正的本地 Markdown Moment。"));
 
     let connection = Connection::open(db_path).expect("open projection");

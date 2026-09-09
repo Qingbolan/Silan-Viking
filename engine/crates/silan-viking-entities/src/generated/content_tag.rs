@@ -4,23 +4,18 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "content_relation")]
+#[sea_orm(table_name = "content_tag")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
-    pub id: String,
+    #[sea_orm(primary_key)]
+    pub id: i32,
     #[sea_orm(column_type = "Text")]
-    pub from_type: String,
+    pub tag_id: String,
     #[sea_orm(column_type = "Text")]
-    pub from_id: String,
+    pub entity_type: String,
     #[sea_orm(column_type = "Text")]
-    pub to_type: String,
+    pub entity_id: String,
     #[sea_orm(column_type = "Text")]
-    pub to_id: String,
-    #[sea_orm(column_type = "Text")]
-    pub relation_type: String,
-    pub sort_order: Option<i32>,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
-    pub created_at: Option<String>,
+    pub entity_slug: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

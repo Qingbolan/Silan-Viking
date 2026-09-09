@@ -156,10 +156,10 @@ pub use website_insights::{
 };
 pub use workspace::{LintIssue, ScanError, ScannedAsset, Workspace};
 pub use workspace_content::{
-    ArticleAttribution, ArticleResource, CreateTranslationInput, DeleteArchivedResourceInput,
-    DeletedArchivedResource, EditableDocument, EditableEntry, EditablePart, EditableSection,
-    EditableTranslation, EditableWorkspace, SaveLifecycleInput, SaveMetadataInput,
-    SaveProjectFeaturedInput, SaveTranslationInput, SourceRevision, WorkspaceContent,
+    ArticleAttribution, ArticleResource, CreateTranslationInput, DeletePrivateResourceInput,
+    DeletedPrivateResource, EditableDocument, EditableEntry, EditablePart, EditableSection,
+    EditableTranslation, EditableWorkspace, SaveMetadataInput, SaveProjectFeaturedInput,
+    SaveTranslationInput, SaveVisibilityInput, SourceRevision, WorkspaceContent,
     WorkspaceContentError, WorkspaceEntityCount,
 };
 pub use workspace_join::{

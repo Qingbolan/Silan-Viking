@@ -38,7 +38,7 @@ pub use generated::*;
 
 /// `content/SCHEMA.md`'s `version:` value. The reverse-generated Entities
 /// must match the schema this constant pins.
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 
 /// One row of the M4 endpoint read matrix: a Go API endpoint and the SQL
 /// tables / public fields it reads. `tables` names must match generated

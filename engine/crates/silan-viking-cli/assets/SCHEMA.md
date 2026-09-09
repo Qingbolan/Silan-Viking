@@ -21,7 +21,7 @@ only reads it. Rebuilding the projection must never mint a new identity,
 because comments, likes and views reference that id.
 
 ```yaml
-version: 1
+version: 2
 layout: latest-only
 
 # ---------------------------------------------------------------------------
@@ -76,8 +76,7 @@ types:
       - { name: title,              type: string,                              required: true,  default: null,    source: "py,ent", column: "blog_posts.title" }
       - { name: kind,               type: "enum(blog)",                        required: true,  default: blog,    source: new,      column: null }
       - { name: content_type,       type: "enum(article,podcast,vlog,tutorial)", required: false, default: article, source: "py,ent", column: "blog_posts.content_type" }
-      - { name: status,             type: "enum(draft,published,archived)",    required: true,  default: draft,   source: "py,ent", column: "blog_posts.status" }
-      - { name: visibility,         type: "enum(private,unlisted,public)",     required: true,  default: private, source: new,      column: "blog_posts.visibility" }
+      - { name: visibility,         type: "enum(private,public)",     required: true,  default: private, source: new,      column: "blog_posts.visibility" }
       - { name: excerpt,            type: text,                                 required: false, default: null,    source: "py,ent", column: "blog_posts.excerpt" }
       - { name: is_featured,        type: bool,                                 required: false, default: false,   source: "py,ent", column: "blog_posts.is_featured" }
       - { name: featured_image_url, type: string,                               required: false, default: null,    source: "py,ent", column: "blog_post_translations.featured_image_url", translatable: true }
@@ -105,8 +104,7 @@ types:
       - { name: slug,               type: slug,                                       required: true,  default: null,            source: "py,ent", column: "projects.slug" }
       - { name: title,              type: string,                                     required: true,  default: null,            source: "py,ent", column: "projects.title" }
       - { name: kind,               type: "enum(project)",                            required: true,  default: project,         source: new,      column: null }
-      - { name: status,             type: "enum(active,completed,paused,cancelled,archived)", required: true, default: active, source: "py,ent", column: "projects.status" }
-      - { name: visibility,         type: "enum(private,unlisted,public)",            required: true,  default: private,         source: new,      column: "projects.visibility" }
+      - { name: visibility,         type: "enum(private,public)",            required: true,  default: private,         source: new,      column: "projects.visibility" }
       - { name: description,        type: text,                                       required: false, default: null,            source: "py,ent", column: "projects.description" }
       - { name: project_type,       type: string,                                     required: false, default: "Web Application", source: "py,ent", column: "projects.project_type" }
       - { name: start_date,         type: date,                                       required: false, default: null,            source: "py,ent", column: "projects.start_date" }
@@ -144,15 +142,13 @@ types:
         - { name: slug,        type: slug,                                  required: true,  default: null,               source: py,  column: "episode_series.slug" }
         - { name: description, type: text,                                  required: false, default: null,               source: py,  column: "episode_series.description" }
         - { name: cover_url,   type: string,                                required: false, default: null,               source: py,  column: "episode_series.cover_url" }
-        - { name: status,      type: "enum(ongoing,completed,archived)",    required: true,  default: ongoing,            source: py,  column: "episode_series.status" }
     fields:
       - { name: slug,             type: slug,                              required: true,  default: null,    source: py,  column: "episodes.slug" }
       - { name: title,            type: string,                            required: true,  default: null,    source: py,  column: "episodes.title" }
       - { name: kind,             type: "enum(episode)",                   required: true,  default: episode, source: new, column: null }
       - { name: series,           type: "string(slug)",                    required: true,  default: null,    source: py,  column: "episodes.series_id" }
       - { name: episode_number,   type: int,                               required: true,  default: null,    source: py,  column: "episodes.episode_number" }
-      - { name: status,           type: "enum(draft,published,archived)",  required: true,  default: draft,   source: py,  column: "episodes.status" }
-      - { name: visibility,       type: "enum(private,unlisted,public)",   required: true,  default: private, source: new, column: "episodes.visibility" }
+      - { name: visibility,       type: "enum(private,public)",   required: true,  default: private, source: new, column: "episodes.visibility" }
       - { name: published_at,     type: datetime,                          required: false, default: null,    source: py,  column: "episodes.published_at" }
       - { name: duration_minutes, type: int,                               required: false, default: null,    source: py,  column: "episodes.duration_minutes" }
       - { name: tags,             type: "list<string>",                    required: false, default: [],      source: "py,ent", column: "content_tag" }
@@ -168,9 +164,8 @@ types:
       - { name: title,       type: string,                                                                required: true,  default: null,    source: "py,ent", column: "moments.title" }
       - { name: kind,        type: "enum(moment)",                                                        required: true,  default: moment,  source: new,      column: null }
       - { name: moment_type, type: "enum(milestone,achievement,progress,release,announcement,insight,learning,reflection)", required: true, default: progress, source: py, column: "moments.moment_type" }
-      - { name: status,      type: "enum(active,ongoing,completed)",                                      required: true,  default: active,  source: "py,ent", column: "moments.status" }
       - { name: priority,    type: "enum(high,medium,low)",                                               required: false, default: medium,  source: "py,ent", column: "moments.priority" }
-      - { name: visibility,  type: "enum(private,unlisted,public)",                                       required: true,  default: private, source: new,      column: "moments.visibility" }
+      - { name: visibility,  type: "enum(private,public)",                                       required: true,  default: private, source: new,      column: "moments.visibility" }
       - { name: date,        type: date,                                                                  required: true,  default: null,    source: "py,ent", column: "moments.date" }
       - { name: tags,        type: "list<string>",                                                       required: false, default: [],      source: "py,ent", column: "content_tag" }
       - { name: relations,   type: "list<relation>",                                                     required: false, default: [],      source: new,      column: "content_relation" }
@@ -185,7 +180,7 @@ types:
       - { name: full_name,      type: string,                            required: true,  default: null,    source: "py,ent", column: "personal_info.full_name" }
       - { name: title,          type: string,                            required: true,  default: null,    source: "py,ent", column: "personal_info.title" }
       - { name: kind,           type: "enum(resume)",                    required: true,  default: resume,  source: new,      column: null }
-      - { name: visibility,     type: "enum(private,unlisted,public)",   required: true,  default: private, source: new,      column: null }
+      - { name: visibility,     type: "enum(private,public)",   required: true,  default: private, source: new,      column: null }
       - { name: current_status, type: text,                              required: false, default: null,    source: "py,ent", column: "personal_info.current_status" }
       - { name: email,          type: string,                            required: false, default: null,    source: "py,ent", column: "personal_info.email" }
       - { name: phone,          type: string,                            required: false, default: null,    source: "py,ent", column: "personal_info.phone" }
@@ -354,9 +349,7 @@ errors:
 5. **Language-neutral fields are read only from `canonical_lang`**; if a
    non-canonical file also writes such a field, the value is ignored and a
    `warn: main_field_lang_mismatch` is raised.
-6. **`status` and `visibility` are never merged** — `status` is the lifecycle,
-   `visibility` is the visibility; only `visibility=public` lets the
-   `SiteProjector` project an Item.
+6. **Visibility is the only exposure state** — `public` or `private`. Only public content is projected to the website.
 
 ## Frontmatter `relations` entry format
 

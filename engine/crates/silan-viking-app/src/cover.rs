@@ -52,7 +52,6 @@ pub struct CoverTargetSummary {
     pub title: String,
     pub description: String,
     pub current_cover_uri: Option<String>,
-    pub status: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -226,7 +225,6 @@ impl CoverWorkspace {
                     title: non_empty(&series.title, &series.slug),
                     description: series.description.clone(),
                     current_cover_uri: optional_text(&series.cover_url),
-                    status: series.status.clone(),
                 };
                 if let Some(score) = match_score(&target, query) {
                     ranked.push((score, target));
@@ -377,7 +375,6 @@ impl CoverWorkspace {
                         &source.title,
                         &source.description,
                         asset_uri,
-                        &source.status,
                         &source.revision,
                         db_path,
                     )
@@ -457,7 +454,6 @@ fn blog_summary(document: &EditableDocument) -> CoverTargetSummary {
         title: non_empty(&document.title, &document.slug),
         description: document.description.clone().unwrap_or_default(),
         current_cover_uri: document.cover_uri.clone(),
-        status: document.status.clone(),
     }
 }
 
@@ -469,7 +465,6 @@ fn series_summary(source: &SeriesMetadataSource) -> CoverTargetSummary {
         title: non_empty(&source.title, &source.slug),
         description: source.description.clone(),
         current_cover_uri: optional_text(&source.cover_url),
-        status: source.status.clone(),
     }
 }
 

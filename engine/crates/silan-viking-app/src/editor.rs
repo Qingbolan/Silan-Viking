@@ -129,7 +129,6 @@ pub struct SeriesMetadataSource {
     /// Series cover image URL/reference stored in `series.toml`.
     pub cover_url: String,
     /// Series status stored in `series.toml`.
-    pub status: String,
     /// Hash of the complete `series.toml`, used for optimistic concurrency.
     pub revision: String,
     /// Source path relative to `content/` for user-facing context.
@@ -693,7 +692,6 @@ impl ContentEditor {
         title: &str,
         description: &str,
         cover_url: &str,
-        status: &str,
         expected_revision: &str,
         db_path: impl AsRef<Path>,
     ) -> Result<SeriesMetadataSource, EditorError> {
@@ -725,7 +723,6 @@ impl ContentEditor {
             "cover_url".to_owned(),
             toml::Value::String(cover_url.to_owned()),
         );
-        table.insert("status".to_owned(), toml::Value::String(status.to_owned()));
         let updated = toml::to_string_pretty(&toml::Value::Table(table)).map_err(|error| {
             EditorError::Io {
                 path: self.relative_path(&path),
@@ -873,12 +870,6 @@ impl ContentEditor {
             title: text("title"),
             description: text("description"),
             cover_url: text("cover_url"),
-            status: table
-                .get("status")
-                .and_then(toml::Value::as_str)
-                .filter(|value| !value.is_empty())
-                .unwrap_or("ongoing")
-                .to_owned(),
             revision: ContentHash::of(source.as_bytes()).to_string(),
             relative_path: self.relative_path(path),
         })

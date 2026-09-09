@@ -84,8 +84,6 @@ pub struct ScannedSeries {
     pub description: String,
     /// The series cover image URL/reference, from `series.toml` (`""` if absent).
     pub cover_url: String,
-    /// The series status, from `series.toml` (defaults to `"ongoing"`).
-    pub status: String,
 }
 
 /// A binary resource file discovered inside an Item's `assets/` directory.
@@ -323,18 +321,11 @@ fn read_series(series_dir: &Path) -> Result<ScannedSeries, ScanError> {
             .unwrap_or_default()
             .to_owned()
     };
-    let status = doc
-        .get("status")
-        .and_then(toml::Value::as_str)
-        .filter(|s| !s.is_empty())
-        .unwrap_or("ongoing")
-        .to_owned();
     Ok(ScannedSeries {
         slug,
         title: field("title"),
         description: field("description"),
         cover_url: field("cover_url"),
-        status,
     })
 }
 
@@ -636,7 +627,6 @@ mod tests {
             series.cover_url,
             "silan://resources/episode/building-easynet/assets/cover.png"
         );
-        assert_eq!(series.status, "completed");
         let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
     }
 
@@ -653,7 +643,6 @@ mod tests {
         assert_eq!(series.title, "");
         assert_eq!(series.description, "");
         assert_eq!(series.cover_url, "");
-        assert_eq!(series.status, "ongoing");
         let _ = std::fs::remove_dir_all(dir.parent().expect("parent"));
     }
 

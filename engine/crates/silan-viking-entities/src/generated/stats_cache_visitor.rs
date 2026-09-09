@@ -4,23 +4,26 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "content_relation")]
+#[sea_orm(table_name = "stats_cache_visitor")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
-    pub id: String,
+    #[sea_orm(primary_key)]
+    pub id: i32,
     #[sea_orm(column_type = "Text")]
-    pub from_type: String,
+    pub entity_type: String,
     #[sea_orm(column_type = "Text")]
-    pub from_id: String,
+    pub entity_id: String,
     #[sea_orm(column_type = "Text")]
-    pub to_type: String,
+    pub fingerprint: String,
     #[sea_orm(column_type = "Text")]
-    pub to_id: String,
+    pub ip_masked: String,
     #[sea_orm(column_type = "Text")]
-    pub relation_type: String,
-    pub sort_order: Option<i32>,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
-    pub created_at: Option<String>,
+    pub visitor_kind: String,
+    #[sea_orm(column_type = "Text")]
+    pub referrer_kind: String,
+    #[sea_orm(column_type = "custom(\"datetime\")")]
+    pub last_seen_at: String,
+    #[sea_orm(column_type = "custom(\"datetime\")")]
+    pub synced_at: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

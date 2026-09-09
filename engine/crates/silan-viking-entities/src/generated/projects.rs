@@ -6,21 +6,21 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "projects")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
-    #[sea_orm(column_type = "Text")]
-    pub title: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub user_id: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub title: Option<String>,
     #[sea_orm(column_type = "Text", unique)]
     pub slug: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub description: Option<String>,
     #[sea_orm(column_type = "Text")]
     pub project_type: String,
-    #[sea_orm(column_type = "Text")]
-    pub status: String,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub start_date: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub end_date: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub github_url: Option<String>,
@@ -30,8 +30,8 @@ pub struct Model {
     pub documentation_url: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub thumbnail_url: Option<String>,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub cover_source_type: Option<String>,
+    #[sea_orm(column_type = "Text")]
+    pub cover_source_type: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub cover_website_url: Option<String>,
     #[sea_orm(column_type = "custom(\"bool\")")]
@@ -41,12 +41,10 @@ pub struct Model {
     pub view_count: i32,
     pub like_count: i32,
     pub sort_order: i32,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub user_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -55,22 +53,10 @@ pub enum Relation {
     ProjectDetails,
     #[sea_orm(has_many = "super::project_images::Entity")]
     ProjectImages,
-    #[sea_orm(has_many = "super::project_likes::Entity")]
-    ProjectLikes,
     #[sea_orm(has_many = "super::project_technologies::Entity")]
     ProjectTechnologies,
     #[sea_orm(has_many = "super::project_translations::Entity")]
     ProjectTranslations,
-    #[sea_orm(has_many = "super::project_views::Entity")]
-    ProjectViews,
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Users,
 }
 
 impl Related<super::project_details::Entity> for Entity {
@@ -85,12 +71,6 @@ impl Related<super::project_images::Entity> for Entity {
     }
 }
 
-impl Related<super::project_likes::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ProjectLikes.def()
-    }
-}
-
 impl Related<super::project_technologies::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::ProjectTechnologies.def()
@@ -100,18 +80,6 @@ impl Related<super::project_technologies::Entity> for Entity {
 impl Related<super::project_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::ProjectTranslations.def()
-    }
-}
-
-impl Related<super::project_views::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ProjectViews.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
     }
 }
 

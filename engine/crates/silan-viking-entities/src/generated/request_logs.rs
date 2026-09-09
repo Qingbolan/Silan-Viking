@@ -22,8 +22,32 @@ pub struct Model {
     pub ip: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub lang: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub country_code: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub region_code: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub region_name: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub city: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub postal_code: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub place_name: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub place_feature_code: Option<String>,
+    pub place_distance_km: Option<Decimal>,
+    pub latitude: Option<Decimal>,
+    pub longitude: Option<Decimal>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub time_zone: Option<String>,
+    pub accuracy_radius: Option<i32>,
+    #[sea_orm(column_type = "custom(\"bool\")")]
+    pub is_bot: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub bot_name: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

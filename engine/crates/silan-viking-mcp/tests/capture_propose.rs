@@ -119,8 +119,8 @@ fn capture_with_kind_idea_scaffolds_an_item_under_resources() {
         "frontmatter must declare kind: idea"
     );
     assert!(
-        on_branch.contains("status: draft"),
-        "default status is draft"
+        !on_branch.contains("status:"),
+        "content has no lifecycle status"
     );
     assert!(
         on_branch.contains("visibility: private"),
@@ -323,7 +323,7 @@ fn propose_creates_a_multi_part_item_as_one_proposal() {
     let root = fresh_repo("propose-multipart");
 
     let overview = "---\nslug: multi-demo\ntitle: Multi Demo\nkind: project\n\
-                    status: active\nvisibility: private\n---\n\n# Multi Demo\n\noverview body.\n";
+                    visibility: private\n---\n\n# Multi Demo\n\noverview body.\n";
     let created = silan_viking_mcp::propose(
         &root,
         "silan://resources/projects/multi-demo",
@@ -427,7 +427,7 @@ fn propose_creates_an_episode_in_a_new_series() {
         "silan://resources/episode/how-to-series/getting-started",
         Some(
             "---\nslug: getting-started\ntitle: Getting Started\nkind: episode\n\
-         series: how-to-series\nepisode_number: 1\nstatus: draft\n\
+         series: how-to-series\nepisode_number: 1\n\
          visibility: private\n---\n\n# Getting Started\n\nepisode body.\n",
         ),
         "en",
@@ -457,8 +457,7 @@ fn propose_creates_an_episode_in_a_new_series() {
         ],
     );
     assert!(
-        series.contains("slug        = \"how-to-series\"")
-            && series.contains("status      = \"ongoing\""),
+        series.contains("slug        = \"how-to-series\""),
         "series.toml must carry the series identity: {series}"
     );
 
@@ -497,7 +496,7 @@ fn propose_returns_a_next_step_hint() {
         "silan://resources/projects/hint-demo",
         Some(
             "---\nslug: hint-demo\ntitle: Hint Demo\nkind: project\n\
-         status: active\nvisibility: private\n---\n\n# Hint Demo\n\noverview.\n",
+         visibility: private\n---\n\n# Hint Demo\n\noverview.\n",
         ),
         "en",
         &[],

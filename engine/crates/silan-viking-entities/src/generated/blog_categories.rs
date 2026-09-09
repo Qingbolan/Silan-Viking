@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "blog_categories")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
     #[sea_orm(column_type = "Text")]
     pub name: String,
@@ -17,29 +17,21 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub color: Option<String>,
     pub sort_order: i32,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::blog_category_translations::Entity")]
     BlogCategoryTranslations,
-    #[sea_orm(has_many = "super::blog_posts::Entity")]
-    BlogPosts,
 }
 
 impl Related<super::blog_category_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::BlogCategoryTranslations.def()
-    }
-}
-
-impl Related<super::blog_posts::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::BlogPosts.def()
     }
 }
 

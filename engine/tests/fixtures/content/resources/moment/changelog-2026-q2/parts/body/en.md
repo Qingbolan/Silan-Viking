@@ -3,7 +3,6 @@ slug: changelog-2026-q2
 title: Changelog 2026 Q2
 kind: moment
 moment_type: release
-status: completed
 priority: medium
 visibility: public
 date: 2026-05-17

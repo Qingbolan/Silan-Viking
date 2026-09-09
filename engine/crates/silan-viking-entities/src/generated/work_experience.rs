@@ -6,15 +6,17 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "work_experience")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
+    #[sea_orm(column_type = "Text")]
+    pub user_id: String,
     #[sea_orm(column_type = "Text")]
     pub company: String,
     #[sea_orm(column_type = "Text")]
     pub position: String,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub start_date: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub end_date: Option<String>,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub is_current: String,
@@ -25,34 +27,18 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub company_logo_url: Option<String>,
     pub sort_order: i32,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub user_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Users,
     #[sea_orm(has_many = "super::work_experience_details::Entity")]
     WorkExperienceDetails,
     #[sea_orm(has_many = "super::work_experience_translations::Entity")]
     WorkExperienceTranslations,
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
-    }
 }
 
 impl Related<super::work_experience_details::Entity> for Entity {

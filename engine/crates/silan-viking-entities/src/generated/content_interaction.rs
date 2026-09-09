@@ -3,14 +3,14 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "content_interaction")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
     #[sea_orm(column_type = "Text")]
     pub entity_type: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
+    #[sea_orm(column_type = "Text")]
     pub entity_id: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub section_anchor: Option<String>,
@@ -29,11 +29,35 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub referrer_kind: String,
     #[sea_orm(column_type = "Text", nullable)]
+    pub referrer: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub landing_url: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
     pub crawler_name: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub country_code: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub region_code: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub region_name: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub city: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub postal_code: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub place_name: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub place_feature_code: Option<String>,
+    pub place_distance_km: Option<Decimal>,
+    pub latitude: Option<Decimal>,
+    pub longitude: Option<Decimal>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub time_zone: Option<String>,
+    pub accuracy_radius: Option<i32>,
     pub session_duration: i32,
-    pub scroll_progress: f64,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
+    pub scroll_progress: Decimal,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -6,25 +6,23 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "episodes")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
     #[sea_orm(column_type = "Text", unique)]
     pub slug: String,
-    #[sea_orm(column_type = "Text")]
-    pub title: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub title: Option<String>,
     pub episode_number: i32,
     #[sea_orm(column_type = "Text")]
-    pub status: String,
-    #[sea_orm(column_type = "Text")]
     pub visibility: String,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub published_at: Option<String>,
     pub duration_minutes: Option<i32>,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
+    #[sea_orm(column_type = "Text")]
     pub series_id: String,
 }
 

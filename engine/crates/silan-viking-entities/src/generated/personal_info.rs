@@ -6,12 +6,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "personal_info")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
-    #[sea_orm(column_type = "Text")]
-    pub full_name: String,
-    #[sea_orm(column_type = "Text")]
-    pub title: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub user_id: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub full_name: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub title: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub current_status: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
@@ -26,12 +28,10 @@ pub struct Model {
     pub avatar_url: Option<String>,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub is_primary: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub user_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -40,14 +40,6 @@ pub enum Relation {
     PersonalInfoTranslations,
     #[sea_orm(has_many = "super::social_links::Entity")]
     SocialLinks,
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Users,
 }
 
 impl Related<super::personal_info_translations::Entity> for Entity {
@@ -59,12 +51,6 @@ impl Related<super::personal_info_translations::Entity> for Entity {
 impl Related<super::social_links::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::SocialLinks.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
     }
 }
 

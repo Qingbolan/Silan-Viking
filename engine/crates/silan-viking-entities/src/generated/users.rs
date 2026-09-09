@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "users")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
     #[sea_orm(column_type = "Text", unique)]
     pub username: String,
@@ -28,94 +28,13 @@ pub struct Model {
     pub is_admin: String,
     #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
     pub last_login_at: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(has_many = "super::awards::Entity")]
-    Awards,
-    #[sea_orm(has_many = "super::blog_posts::Entity")]
-    BlogPosts,
-    #[sea_orm(has_many = "super::education::Entity")]
-    Education,
-    #[sea_orm(has_many = "super::ideas::Entity")]
-    Ideas,
-    #[sea_orm(has_many = "super::personal_info::Entity")]
-    PersonalInfo,
-    #[sea_orm(has_many = "super::projects::Entity")]
-    Projects,
-    #[sea_orm(has_many = "super::publications::Entity")]
-    Publications,
-    #[sea_orm(has_many = "super::moments::Entity")]
-    Moments,
-    #[sea_orm(has_many = "super::research_projects::Entity")]
-    ResearchProjects,
-    #[sea_orm(has_many = "super::work_experience::Entity")]
-    WorkExperience,
-}
-
-impl Related<super::awards::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Awards.def()
-    }
-}
-
-impl Related<super::blog_posts::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::BlogPosts.def()
-    }
-}
-
-impl Related<super::education::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Education.def()
-    }
-}
-
-impl Related<super::ideas::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Ideas.def()
-    }
-}
-
-impl Related<super::personal_info::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::PersonalInfo.def()
-    }
-}
-
-impl Related<super::projects::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Projects.def()
-    }
-}
-
-impl Related<super::publications::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Publications.def()
-    }
-}
-
-impl Related<super::moments::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Moments.def()
-    }
-}
-
-impl Related<super::research_projects::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::ResearchProjects.def()
-    }
-}
-
-impl Related<super::work_experience::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::WorkExperience.def()
-    }
-}
+pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}

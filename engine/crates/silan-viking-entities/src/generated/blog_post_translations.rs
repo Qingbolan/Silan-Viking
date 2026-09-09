@@ -6,19 +6,19 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "blog_post_translations")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
-    #[sea_orm(column_type = "Text")]
-    pub title: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub title: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub excerpt: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub featured_image_url: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub content: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
     #[sea_orm(column_type = "Text")]
-    pub content: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
     pub blog_post_id: String,
     #[sea_orm(column_type = "Text")]
     pub language_code: String,

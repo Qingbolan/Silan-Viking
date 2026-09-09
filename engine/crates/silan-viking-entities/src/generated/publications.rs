@@ -6,8 +6,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "publications")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
+    #[sea_orm(column_type = "Text")]
+    pub user_id: String,
     #[sea_orm(column_type = "Text")]
     pub title: String,
     #[sea_orm(column_type = "Text")]
@@ -22,7 +24,7 @@ pub struct Model {
     pub issue: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub pages: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub publication_date: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub doi: Option<String>,
@@ -32,16 +34,16 @@ pub struct Model {
     pub url: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub pdf_url: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub image_url: Option<String>,
     pub citation_count: i32,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub is_peer_reviewed: String,
     pub sort_order: i32,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub user_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -50,14 +52,6 @@ pub enum Relation {
     PublicationAuthors,
     #[sea_orm(has_many = "super::publication_translations::Entity")]
     PublicationTranslations,
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Users,
 }
 
 impl Related<super::publication_authors::Entity> for Entity {
@@ -69,12 +63,6 @@ impl Related<super::publication_authors::Entity> for Entity {
 impl Related<super::publication_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::PublicationTranslations.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
     }
 }
 

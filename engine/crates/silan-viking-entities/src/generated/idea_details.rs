@@ -6,23 +6,23 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "idea_details")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
     pub estimated_duration_months: Option<i32>,
     #[sea_orm(column_type = "Text", nullable)]
     pub required_resources: Option<String>,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub priority: Option<String>,
+    #[sea_orm(column_type = "Text")]
+    pub priority: String,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub collaboration_needed: String,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub funding_required: String,
     pub estimated_budget: Option<Decimal>,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")", unique)]
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
+    #[sea_orm(column_type = "Text", unique)]
     pub idea_id: String,
 }
 

@@ -6,17 +6,19 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "education")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
+    #[sea_orm(column_type = "Text")]
+    pub user_id: String,
     #[sea_orm(column_type = "Text")]
     pub institution: String,
     #[sea_orm(column_type = "Text")]
     pub degree: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub field_of_study: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub start_date: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    #[sea_orm(column_type = "Text", nullable)]
     pub end_date: Option<String>,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub is_current: String,
@@ -29,12 +31,10 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub institution_logo_url: Option<String>,
     pub sort_order: i32,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub user_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -43,14 +43,6 @@ pub enum Relation {
     EducationDetails,
     #[sea_orm(has_many = "super::education_translations::Entity")]
     EducationTranslations,
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Users,
 }
 
 impl Related<super::education_details::Entity> for Entity {
@@ -62,12 +54,6 @@ impl Related<super::education_details::Entity> for Entity {
 impl Related<super::education_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::EducationTranslations.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
     }
 }
 

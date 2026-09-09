@@ -109,14 +109,6 @@ impl CaptureKind {
         }
     }
 
-    fn initial_status(self) -> &'static str {
-        match self {
-            Self::Project => "active",
-            Self::Moment => "ongoing",
-            Self::Idea(_) | Self::Blog(_) => "draft",
-        }
-    }
-
     fn staging_prefix(self) -> &'static str {
         match self {
             Self::Idea(_) => ".idea-capture-",
@@ -416,7 +408,6 @@ fn build_files(
             &time::OffsetDateTime::now_utc().date().to_string(),
         );
     }
-    insert(&mut frontmatter, "status", kind.initial_status());
     insert(&mut frontmatter, "visibility", "private");
     if let CaptureKind::Idea(category) | CaptureKind::Blog(category) = kind {
         insert(&mut frontmatter, "category", category.as_str());
@@ -538,7 +529,7 @@ mod tests {
         assert!(files.part.contains("type           = \"body\""));
         assert!(files.markdown.contains("kind: moment"));
         assert!(files.markdown.contains("moment_type: progress"));
-        assert!(files.markdown.contains("status: ongoing"));
+        assert!(!files.markdown.contains("status:"));
         assert!(files.markdown.contains("date: "));
     }
 

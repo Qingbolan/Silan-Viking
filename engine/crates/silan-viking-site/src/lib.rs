@@ -379,7 +379,6 @@ mod tests {
             kind,
             slug: slug.to_owned(),
             title: title.to_owned(),
-            status: Some("published".to_owned()),
             visibility: Some("public".to_owned()),
             tags: vec!["AI systems".to_owned()],
             languages: vec!["en".to_owned()],

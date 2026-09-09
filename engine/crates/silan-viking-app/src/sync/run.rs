@@ -256,8 +256,7 @@ fn episode_series_rows(scan: &ScanReport, media: &MediaCatalog) -> RowSet {
                 .with(
                     "cover_url",
                     SqlValue::Text(media_uri::rewrite_reference(&series.cover_url, media)),
-                )
-                .with("status", SqlValue::Text(series.status.clone())),
+                ),
         );
     }
     set

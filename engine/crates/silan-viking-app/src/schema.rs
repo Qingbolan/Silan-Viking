@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use thiserror::Error;
 
 /// The `version:` value this build of the engine understands.
-pub const SUPPORTED_SCHEMA_VERSION: u64 = 1;
+pub const SUPPORTED_SCHEMA_VERSION: u64 = 2;
 
 /// All ways loading `SCHEMA.md` can fail.
 #[derive(Debug, Error)]
@@ -452,8 +452,8 @@ mod tests {
     }
 
     #[test]
-    fn the_repo_schema_parses_at_version_one() {
-        assert_eq!(real_schema().version(), 1);
+    fn the_repo_schema_parses_at_version_two() {
+        assert_eq!(real_schema().version(), 2);
     }
 
     #[test]
@@ -475,12 +475,13 @@ mod tests {
     }
 
     #[test]
-    fn blog_status_field_is_a_three_value_enum() {
+    fn blog_visibility_is_the_only_exposure_state() {
         let schema = real_schema();
         let blog = schema.type_spec(ContentKind::Blog).expect("blog spec");
-        let status = blog.field("status").expect("status field");
+        assert!(blog.field("status").is_none());
+        let status = blog.field("visibility").expect("visibility field");
         let values = status.enum_values().expect("status is an enum");
-        assert_eq!(values, ["draft", "published", "archived"]);
+        assert_eq!(values, ["private", "public"]);
     }
 
     #[test]

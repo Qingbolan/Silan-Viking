@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 use silan_viking_app::{
-    workspace_content::{DeleteArchivedResourceInput, WorkspaceContent, WorkspaceContentError},
+    workspace_content::{DeletePrivateResourceInput, WorkspaceContent, WorkspaceContentError},
     ContentEditor, ContentKind, EditorError, ResumeProfileUpdate, TranslationLocator, Workspace,
 };
 use std::fs;
@@ -272,28 +272,28 @@ fn save_frontmatter_fields_updates_source_then_refreshes_the_projection() {
     let saved = editor
         .save_frontmatter_fields_and_sync(
             &locator,
-            &[("status", "published"), ("visibility", "public")],
+            &[("visibility", "public")],
             &original.revision,
             &db_path,
         )
         .expect("save frontmatter and sync");
 
     let source_after = fs::read_to_string(source_path).expect("read updated source");
-    assert!(source_after.contains("status: published"));
+    assert!(!source_after.contains("status:"));
     assert!(source_after.contains("visibility: public"));
     assert_eq!(saved.body, original.body);
     assert_ne!(saved.revision, original.revision);
     assert_ne!(source_after, source_before);
 
     let conn = Connection::open(&db_path).expect("open refreshed projection");
-    let projected: (String, String) = conn
+    let projected: String = conn
         .query_row(
-            "SELECT status, visibility FROM blog_posts WHERE slug = 'hello-world'",
+            "SELECT visibility FROM blog_posts WHERE slug = 'hello-world'",
             [],
-            |row| Ok((row.get(0)?, row.get(1)?)),
+            |row| row.get(0),
         )
         .expect("projected state");
-    assert_eq!(projected, ("published".to_owned(), "public".to_owned()));
+    assert_eq!(projected, "public");
 }
 
 #[test]
@@ -555,7 +555,6 @@ fn save_episode_series_metadata_rewrites_series_toml_then_refreshes_projection()
         "Updated Series",
         "Edited through ContentEditor.",
         "https://example.com/cover.png",
-        "completed",
         "stale",
         &db_path,
     );
@@ -570,7 +569,6 @@ fn save_episode_series_metadata_rewrites_series_toml_then_refreshes_projection()
             "Updated Series",
             "Edited through ContentEditor.",
             "https://example.com/cover.png",
-            "completed",
             &original.revision,
             &db_path,
         )
@@ -578,7 +576,6 @@ fn save_episode_series_metadata_rewrites_series_toml_then_refreshes_projection()
     assert_eq!(saved.title, "Updated Series");
     assert_eq!(saved.description, "Edited through ContentEditor.");
     assert_eq!(saved.cover_url, "https://example.com/cover.png");
-    assert_eq!(saved.status, "completed");
     assert_ne!(saved.revision, original.revision);
 
     let source = fs::read_to_string(content_root.join(&saved.relative_path))
@@ -586,14 +583,14 @@ fn save_episode_series_metadata_rewrites_series_toml_then_refreshes_projection()
     assert!(source.contains("title = \"Updated Series\""));
     assert!(source.contains("description = \"Edited through ContentEditor.\""));
     assert!(source.contains("cover_url = \"https://example.com/cover.png\""));
-    assert!(source.contains("status = \"completed\""));
+    assert!(!source.contains("status ="));
 
     let connection = Connection::open(&db_path).expect("open projection");
-    let projected: (String, String, String, String) = connection
+    let projected: (String, String, String) = connection
         .query_row(
-            "SELECT title, description, cover_url, status FROM episode_series WHERE slug = 'tutorial-series'",
+            "SELECT title, description, cover_url FROM episode_series WHERE slug = 'tutorial-series'",
             [],
-            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
         .expect("projected series metadata");
     assert_eq!(
@@ -602,7 +599,6 @@ fn save_episode_series_metadata_rewrites_series_toml_then_refreshes_projection()
             "Updated Series".to_owned(),
             "Edited through ContentEditor.".to_owned(),
             "https://example.com/cover.png".to_owned(),
-            "completed".to_owned()
         )
     );
 }
@@ -614,7 +610,6 @@ fn permanent_deletion_removes_only_an_archived_resource_and_refreshes_projection
     let db_path = temporary.path().join("portfolio.db");
     copy_tree(&fixture_root(), &content_root);
     let source = content_root.join("resources/blog/hello-world/parts/body/en.md");
-    replace_fixture_text(&source, "status: published", "status: archived");
     replace_fixture_text(&source, "visibility: public", "visibility: private");
 
     Workspace::open(&content_root)
@@ -631,8 +626,8 @@ fn permanent_deletion_removes_only_an_archived_resource_and_refreshes_projection
     let translation = &document.parts[0].translations[0];
 
     let deleted = workspace
-        .delete_archived_resource(
-            &DeleteArchivedResourceInput {
+        .delete_private_resource(
+            &DeletePrivateResourceInput {
                 translation_id: translation.id.clone(),
                 expected_revision: translation.source_revision.0.clone(),
                 confirmation: "hello-world".to_owned(),
@@ -674,8 +669,8 @@ fn permanent_deletion_rejects_active_or_referenced_resources() {
         .expect("active blog");
     let blog_translation = &active_blog.parts[0].translations[0];
     let active_error = workspace
-        .delete_archived_resource(
-            &DeleteArchivedResourceInput {
+        .delete_private_resource(
+            &DeletePrivateResourceInput {
                 translation_id: blog_translation.id.clone(),
                 expected_revision: blog_translation.source_revision.0.clone(),
                 confirmation: active_blog.slug.clone(),
@@ -685,12 +680,11 @@ fn permanent_deletion_rejects_active_or_referenced_resources() {
         .expect_err("active resource must not be deleted");
     assert!(matches!(
         active_error,
-        WorkspaceContentError::DeleteRequiresArchive(_)
+        WorkspaceContentError::DeleteRequiresPrivate(_)
     ));
 
     let project_source =
         content_root.join("resources/projects/sample-project/parts/overview/en.md");
-    replace_fixture_text(&project_source, "status: active", "status: archived");
     replace_fixture_text(&project_source, "visibility: public", "visibility: private");
     let workspace = WorkspaceContent::open(&content_root).expect("reopen workspace content");
     let project = workspace
@@ -701,8 +695,8 @@ fn permanent_deletion_rejects_active_or_referenced_resources() {
         .expect("archived project");
     let project_translation = &project.parts[0].translations[0];
     let relation_error = workspace
-        .delete_archived_resource(
-            &DeleteArchivedResourceInput {
+        .delete_private_resource(
+            &DeletePrivateResourceInput {
                 translation_id: project_translation.id.clone(),
                 expected_revision: project_translation.source_revision.0.clone(),
                 confirmation: project.slug.clone(),
@@ -725,7 +719,6 @@ fn permanent_deletion_restores_source_when_projection_fails() {
     let content_root = temporary.path().join("content");
     copy_tree(&fixture_root(), &content_root);
     let source = content_root.join("resources/blog/hello-world/parts/body/en.md");
-    replace_fixture_text(&source, "status: published", "status: archived");
     replace_fixture_text(&source, "visibility: public", "visibility: private");
 
     let invalid_database_path = temporary.path().join("database-directory");
@@ -740,8 +733,8 @@ fn permanent_deletion_restores_source_when_projection_fails() {
     let translation = &document.parts[0].translations[0];
 
     let error = workspace
-        .delete_archived_resource(
-            &DeleteArchivedResourceInput {
+        .delete_private_resource(
+            &DeletePrivateResourceInput {
                 translation_id: translation.id.clone(),
                 expected_revision: translation.source_revision.0.clone(),
                 confirmation: document.slug.clone(),

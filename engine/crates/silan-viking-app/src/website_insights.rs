@@ -168,7 +168,6 @@ pub struct RecentContentItem {
     pub document_id: String,
     pub title: String,
     pub slug: String,
-    pub status: String,
     pub visibility: String,
     pub updated_at: String,
 }
@@ -187,7 +186,6 @@ pub struct AttentionItem {
 pub enum AttentionKind {
     StatsFreshness,
     PendingComments,
-    PrivatePublishedContent,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -230,7 +228,6 @@ impl WebsiteInsights {
                 document_id: document.id,
                 title: document.title,
                 slug: document.slug,
-                status: document.status,
                 visibility: document.visibility,
                 updated_at: document.updated_at,
             })
@@ -1102,20 +1099,6 @@ fn attention_for(snapshot: &DashboardSnapshot) -> Vec<AttentionItem> {
             document_id: None,
         });
     }
-    attention.extend(
-        snapshot
-            .recent_content
-            .iter()
-            .filter(|item| item.status == "published" && item.visibility != "public")
-            .map(|item| AttentionItem {
-                kind: AttentionKind::PrivatePublishedContent,
-                severity: AttentionSeverity::Info,
-                label: format!("{} is published but not public", item.title),
-                detail: "Lifecycle and visibility are independent; confirm this is intentional."
-                    .to_owned(),
-                document_id: Some(item.document_id.clone()),
-            }),
-    );
     attention
 }
 

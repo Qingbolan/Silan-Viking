@@ -126,7 +126,7 @@ fn empty_project_to_skill_full_chain() {
     );
 
     // 7. archive — takes the Item off the site, file stays. moment has no
-    //    `archived` status value, so archive sets visibility=unlisted
+    //    `archived` status value, so archive sets visibility=private
     //    (`10` rule 6: only visibility=public is projected).
     ok_in(&root, &["moment", "archive", "rust-context-engine"]);
     let archived = std::fs::read_to_string(
@@ -134,8 +134,8 @@ fn empty_project_to_skill_full_chain() {
     )
     .expect("read");
     assert!(
-        archived.contains("visibility: unlisted"),
-        "archiving a moment must set visibility=unlisted: {archived}"
+        archived.contains("visibility: private"),
+        "archiving a moment must set visibility=private: {archived}"
     );
 
     // 8. skill emit + status — the skill package round-trips.

@@ -75,9 +75,6 @@ pub struct CollectionEntry {
     pub slug: Slug,
     /// The Item's presentation sort key (lower sorts first).
     pub sort_order: i64,
-    /// The Item's lifecycle status string (kept opaque at L2 — the parser
-    /// owns the per-type enum).
-    pub status: String,
 }
 
 /// Registers every Item under one Collection (`01` §1.4).
@@ -212,7 +209,6 @@ mod tests {
             vec![CollectionEntry {
                 slug: slug("hello-world"),
                 sort_order: 0,
-                status: "published".to_owned(),
             }],
         );
         assert!(manifest.registers(&slug("hello-world")));

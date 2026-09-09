@@ -3,7 +3,6 @@ slug: hello-world
 title: Hello World
 kind: blog
 content_type: article
-status: published
 visibility: public
 is_featured: true
 featured_image_url: https://example.com/cover-en.png

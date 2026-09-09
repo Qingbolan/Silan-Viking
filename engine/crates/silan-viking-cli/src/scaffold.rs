@@ -145,24 +145,20 @@ fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
         "blog" => {
             lines.push("kind: blog".to_owned());
             lines.push("content_type: article".to_owned());
-            lines.push("status: draft".to_owned());
             lines.push("visibility: private".to_owned());
         }
         "project" => {
             lines.push("kind: project".to_owned());
-            lines.push("status: active".to_owned());
             lines.push("visibility: private".to_owned());
             lines.push("is_featured: false".to_owned());
         }
         "episode" => {
             lines.push("kind: episode".to_owned());
-            lines.push("status: draft".to_owned());
             lines.push("visibility: private".to_owned());
         }
         "moment" => {
             lines.push("kind: moment".to_owned());
             lines.push("moment_type: progress".to_owned());
-            lines.push("status: active".to_owned());
             lines.push("visibility: private".to_owned());
             // `date` is a required field for `moment` (content/SCHEMA.md).
             lines.push(format!("date: {}", today_iso8601()));
@@ -279,8 +275,7 @@ pub fn new_series(content_root: &Path, series: &str) -> Result<Scaffolded, Scaff
         "# Episode container series (per 10 §10.4.4).\n\
          title       = \"{}\"\n\
          slug        = \"{series}\"\n\
-         description = \"\"\n\
-         status      = \"ongoing\"\n",
+         description = \"\"\n",
         slug_to_title(series)
     );
     fs::write(&series_toml, body)?;

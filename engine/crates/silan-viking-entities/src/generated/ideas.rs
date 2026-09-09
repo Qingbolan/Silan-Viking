@@ -6,10 +6,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "ideas")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
-    #[sea_orm(column_type = "Text")]
-    pub title: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub user_id: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub title: Option<String>,
     #[sea_orm(column_type = "Text", unique)]
     pub slug: String,
     #[sea_orm(column_type = "Text", nullable)]
@@ -17,45 +19,23 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub r#abstract: Option<String>,
     #[sea_orm(column_type = "Text")]
-    pub status: String,
-    #[sea_orm(column_type = "Text")]
     pub visibility: String,
     pub view_count: i32,
     pub like_count: i32,
     #[sea_orm(column_type = "Text", nullable)]
     pub category: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub user_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::comments::Entity")]
-    Comments,
     #[sea_orm(has_one = "super::idea_details::Entity")]
     IdeaDetails,
-    #[sea_orm(has_many = "super::idea_tags_join::Entity")]
-    IdeaTagsJoin,
     #[sea_orm(has_many = "super::idea_translations::Entity")]
     IdeaTranslations,
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Users,
-}
-
-impl Related<super::comments::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Comments.def()
-    }
 }
 
 impl Related<super::idea_details::Entity> for Entity {
@@ -64,30 +44,9 @@ impl Related<super::idea_details::Entity> for Entity {
     }
 }
 
-impl Related<super::idea_tags_join::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::IdeaTagsJoin.def()
-    }
-}
-
 impl Related<super::idea_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::IdeaTranslations.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
-    }
-}
-
-impl Related<super::idea_tags::Entity> for Entity {
-    fn to() -> RelationDef {
-        super::idea_tags_join::Relation::IdeaTags.def()
-    }
-    fn via() -> Option<RelationDef> {
-        Some(super::idea_tags_join::Relation::Ideas.def().rev())
     }
 }
 

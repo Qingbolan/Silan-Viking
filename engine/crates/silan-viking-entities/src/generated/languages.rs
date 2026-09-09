@@ -14,8 +14,8 @@ pub struct Model {
     pub native_name: String,
     #[sea_orm(column_type = "custom(\"bool\")")]
     pub is_active: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -26,8 +26,6 @@ pub enum Relation {
     BlogCategoryTranslations,
     #[sea_orm(has_many = "super::blog_post_translations::Entity")]
     BlogPostTranslations,
-    #[sea_orm(has_many = "super::blog_series_translations::Entity")]
-    BlogSeriesTranslations,
     #[sea_orm(has_many = "super::education_detail_translations::Entity")]
     EducationDetailTranslations,
     #[sea_orm(has_many = "super::education_translations::Entity")]
@@ -36,6 +34,8 @@ pub enum Relation {
     IdeaDetailTranslations,
     #[sea_orm(has_many = "super::idea_translations::Entity")]
     IdeaTranslations,
+    #[sea_orm(has_many = "super::moment_translations::Entity")]
+    MomentTranslations,
     #[sea_orm(has_many = "super::personal_info_translations::Entity")]
     PersonalInfoTranslations,
     #[sea_orm(has_many = "super::project_detail_translations::Entity")]
@@ -46,8 +46,6 @@ pub enum Relation {
     ProjectTranslations,
     #[sea_orm(has_many = "super::publication_translations::Entity")]
     PublicationTranslations,
-    #[sea_orm(has_many = "super::moment_translations::Entity")]
-    MomentTranslations,
     #[sea_orm(has_many = "super::research_project_detail_translations::Entity")]
     ResearchProjectDetailTranslations,
     #[sea_orm(has_many = "super::research_project_translations::Entity")]
@@ -76,12 +74,6 @@ impl Related<super::blog_post_translations::Entity> for Entity {
     }
 }
 
-impl Related<super::blog_series_translations::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::BlogSeriesTranslations.def()
-    }
-}
-
 impl Related<super::education_detail_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::EducationDetailTranslations.def()
@@ -103,6 +95,12 @@ impl Related<super::idea_detail_translations::Entity> for Entity {
 impl Related<super::idea_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::IdeaTranslations.def()
+    }
+}
+
+impl Related<super::moment_translations::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::MomentTranslations.def()
     }
 }
 
@@ -133,12 +131,6 @@ impl Related<super::project_translations::Entity> for Entity {
 impl Related<super::publication_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::PublicationTranslations.def()
-    }
-}
-
-impl Related<super::moment_translations::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::MomentTranslations.def()
     }
 }
 

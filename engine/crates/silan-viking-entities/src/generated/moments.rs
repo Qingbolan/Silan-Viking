@@ -6,8 +6,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "moments")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub user_id: Option<String>,
     #[sea_orm(column_type = "Text", unique)]
     pub slug: String,
     #[sea_orm(column_type = "Text")]
@@ -16,19 +18,18 @@ pub struct Model {
     pub moment_type: String,
     #[sea_orm(column_type = "Text")]
     pub visibility: String,
-    #[sea_orm(column_type = "Text")]
-    pub title: String,
-    #[sea_orm(column_type = "Text")]
-    pub description: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub date: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub title: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub description: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub date: Option<String>,
     #[sea_orm(column_type = "custom(\"json\")", nullable)]
     pub tags: Option<String>,
     #[sea_orm(column_type = "Text")]
-    pub status: String,
-    #[sea_orm(column_type = "Text")]
     pub priority: String,
-    pub pinned: bool,
+    #[sea_orm(column_type = "custom(\"bool\")")]
+    pub pinned: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub external_id: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
@@ -52,37 +53,21 @@ pub struct Model {
     #[sea_orm(column_type = "custom(\"json\")", nullable)]
     pub social_links: Option<String>,
     pub sort_order: i32,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub user_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::moment_translations::Entity")]
     MomentTranslations,
-    #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::UserId",
-        to = "super::users::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Users,
 }
 
 impl Related<super::moment_translations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::MomentTranslations.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
     }
 }
 

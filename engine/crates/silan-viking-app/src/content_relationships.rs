@@ -622,7 +622,7 @@ fn convert_markdown_for_new_item(
 
 fn normalize_frontmatter_for_kind(
     map: &mut serde_yaml::Mapping,
-    from_kind: ContentKind,
+    _from_kind: ContentKind,
     to_kind: ContentKind,
     slug: Option<&str>,
 ) {
@@ -656,24 +656,13 @@ fn normalize_frontmatter_for_kind(
             put_text(map, "moment_type", "progress");
             put_text(map, "priority", "medium");
             put_text(map, "date", &today_iso8601());
-            let status = text_field(map, "status");
-            let next_status = match status.as_deref() {
-                Some("archived" | "published" | "completed") => "completed",
-                Some("ongoing") => "ongoing",
-                _ => "active",
-            };
-            put_text(map, "status", next_status);
         }
         ContentKind::Blog => {
             remove_keys(map, &["moment_type", "priority", "pinned", "date"]);
             put_text(map, "content_type", "article");
-            if from_kind == ContentKind::Moment {
-                put_text(map, "status", "draft");
-            }
         }
         ContentKind::Project => {
             remove_keys(map, &["moment_type", "priority", "pinned", "date"]);
-            put_text(map, "status", "active");
             put_bool(map, "is_featured", false);
         }
         _ => {}
@@ -762,12 +751,6 @@ fn render_markdown(
         }
     })?;
     Ok(format!("---\n{}\n---\n{}", yaml.trim_end(), body))
-}
-
-fn text_field(map: &serde_yaml::Mapping, key: &str) -> Option<String> {
-    map.get(serde_yaml::Value::String(key.to_owned()))
-        .and_then(serde_yaml::Value::as_str)
-        .map(str::to_owned)
 }
 
 fn put_text(map: &mut serde_yaml::Mapping, key: &str, value: &str) {
@@ -948,7 +931,7 @@ mod tests {
     #[test]
     fn converts_blog_frontmatter_to_moment_contract() {
         let source = markdown(
-            "slug: demo\ntitle: Demo\nkind: blog\ncontent_type: article\nstatus: draft\nvisibility: private\nexcerpt: Old",
+            "slug: demo\ntitle: Demo\nkind: blog\ncontent_type: article\nvisibility: private\nexcerpt: Old",
         );
         let converted = convert_markdown_kind(
             &source,
@@ -959,7 +942,7 @@ mod tests {
         .expect("convert frontmatter");
         assert!(converted.contains("kind: moment"));
         assert!(converted.contains("moment_type: progress"));
-        assert!(converted.contains("status: active"));
+        assert!(!converted.contains("status:"));
         assert!(!converted.contains("content_type:"));
         assert!(!converted.contains("excerpt:"));
     }

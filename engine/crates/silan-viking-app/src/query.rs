@@ -36,8 +36,6 @@ pub struct QueryDocument {
     pub slug: String,
     /// Best title found across languages; falls back to slug.
     pub title: String,
-    /// Status, if the type has one.
-    pub status: Option<String>,
     /// Visibility, if the type has one. `Some("public")` is the only value
     /// `SiteProjector` projects to the website (`01` §1.7 second layer /
     /// `10` §10.3); `private` / `unlisted` Items remain in the index for
@@ -116,13 +114,13 @@ impl QueryIndex {
     pub fn list(
         &self,
         kind: Option<ContentKind>,
-        status: Option<&str>,
+        visibility: Option<&str>,
         tag: Option<&str>,
     ) -> Vec<QueryDocument> {
         self.documents
             .iter()
             .filter(|doc| kind.is_none_or(|k| doc.kind == k))
-            .filter(|doc| status.is_none_or(|s| doc.status.as_deref() == Some(s)))
+            .filter(|doc| visibility.is_none_or(|s| doc.visibility.as_deref() == Some(s)))
             .filter(|doc| tag.is_none_or(|t| doc.tags.iter().any(|d| d.eq_ignore_ascii_case(t))))
             .cloned()
             .collect()
@@ -224,7 +222,6 @@ fn document_from_parsed(item: &Item, parsed: &Parsed) -> QueryDocument {
         kind: item.kind(),
         slug: item.slug().to_string(),
         title: title.unwrap_or_else(|| item.slug().to_string()),
-        status: parsed.main().text("status").map(str::to_owned),
         visibility: parsed.main().text("visibility").map(str::to_owned),
         tags,
         languages,

@@ -2,7 +2,6 @@
 slug: sample-project
 title: Sample Project
 kind: project
-status: active
 visibility: public
 project_type: Web Application
 is_featured: false

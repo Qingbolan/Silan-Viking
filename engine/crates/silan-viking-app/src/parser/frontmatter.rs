@@ -77,7 +77,18 @@ pub fn parse_yaml(frontmatter: &str, location: &str) -> Result<serde_yaml::Mappi
             detail: e.to_string(),
         })?;
     match value {
-        serde_yaml::Value::Mapping(map) => Ok(map),
+        serde_yaml::Value::Mapping(map) => {
+            if map.contains_key(serde_yaml::Value::String("status".to_owned())) {
+                return Err(ParseError::Malformed {
+                    kind: "frontmatter",
+                    location: location.to_owned(),
+                    detail:
+                        "content status was removed in schema v2; use visibility: public or private"
+                            .to_owned(),
+                });
+            }
+            Ok(map)
+        }
         serde_yaml::Value::Null => Ok(serde_yaml::Mapping::new()),
         _ => Err(ParseError::Malformed {
             kind: "frontmatter",

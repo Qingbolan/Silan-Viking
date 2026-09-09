@@ -128,10 +128,10 @@ pub fn tool_specs() -> Vec<ToolSpec> {
         ToolSpec {
             name: "list",
             tier: ReadOnly,
-            description: "structured list by content type and status",
+            description: "structured list by content type and visibility",
             input_schema: serde_json::json!({
                 "type": "object",
-                "properties": {"type": {"type":"string","description":"content type: idea/blog/project/episode/moment/resume"},"filter": {"type":"object","description":"optional {status, tag} filter","properties":{"status":{"type":"string"},"tag":{"type":"string"}}}},
+                "properties": {"type": {"type":"string","description":"content type: idea/blog/project/episode/moment/resume"},"filter": {"type":"object","description":"optional {visibility, tag} filter","properties":{"visibility":{"type":"string","enum":["public","private"]},"tag":{"type":"string"}}}},
                 "required": [],
             }),
         },
@@ -356,18 +356,7 @@ pub fn tool_specs() -> Vec<ToolSpec> {
                 "required": ["uri"],
             }),
         },
-        ToolSpec {
-            name: "suggest_lifecycle",
-            tier: Evolve,
-            description: "propose a status transition based on content \
-                          maturity (E1, `15` §15.2). For idea: \
-                          draft→hypothesis→experimenting→validating→published.",
-            input_schema: serde_json::json!({
-                "type": "object",
-                "properties": {"uri": {"type":"string","description":"the silan:// Item URI to assess"}},
-                "required": ["uri"],
-            }),
-        },
+
     ]
 }
 
@@ -439,14 +428,14 @@ pub fn recall(content_root: &Path, query: &str, limit: usize) -> Result<Vec<Quer
 pub fn list(
     content_root: &Path,
     kind: Option<ContentKind>,
-    status: Option<&str>,
+    visibility: Option<&str>,
     tag: Option<&str>,
 ) -> Result<Vec<silan_viking_app::QueryDocument>, McpError> {
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
     let index = ws
         .query_index()
         .map_err(|e| McpError::Workspace(e.to_string()))?;
-    Ok(index.list(kind, status, tag))
+    Ok(index.list(kind, visibility, tag))
 }
 
 /// Enumerate every tag used in the workspace with a count of Items per tag.
@@ -961,7 +950,7 @@ fn propose_hint(
 ///   `silan://resources/<type>/<slug>/`. The proposal scaffolds the primary Part
 ///   (`overview` for idea/project; `body` for blog/episode/moment;
 ///   `summary` for resume) with the note as the body, frontmatter pre-filled
-///   with `slug` / `title` / `kind` / `status: draft` / `visibility: private`.
+///   with `slug` / `title` / `kind` / `visibility: private`.
 ///   The owner accepts → `silan index sync` and the Item is live in the db.
 ///
 /// This is the GOAL §1.2 owner-view tape: silan voices a half-formed thought →
@@ -1062,16 +1051,7 @@ pub fn capture(
     let meta_rel = format!("{}/meta.toml", part_dir_rel);
     let item_uri = format!("silan://resources/{}/{}", type_dir, chosen_slug);
 
-    // The body file: frontmatter with the SCHEMA-required fields. Each
-    // content type has its own `status` enum (`10` §10.4) — idea/blog/episode
-    // use `draft` as the initial value, project and moment don't have a
-    // `draft` state and start at `active`. update additionally requires
-    // `moment_type` and `date` (per `10` §10.4.6). resume has no `status`.
-    let initial_status = match content_kind {
-        silan_viking_app::ContentKind::Project | silan_viking_app::ContentKind::Moment => "active",
-        silan_viking_app::ContentKind::Resume => "", // no status field
-        _ => "draft",
-    };
+    // New content is private until the owner changes its visibility.
 
     // Extra frontmatter lines specific to certain kinds — kept minimal so a
     // capture stays a single-call proposal, but still SCHEMA-valid.
@@ -1086,18 +1066,11 @@ pub fn capture(
         _ => String::new(),
     };
 
-    let status_line = if initial_status.is_empty() {
-        String::new()
-    } else {
-        format!("status: {initial_status}\n")
-    };
-
     let body = format!(
-        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\n{status}visibility: private\n{extra}---\n\n# {title}\n\n{note}\n",
+        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\nvisibility: private\n{extra}---\n\n# {title}\n\n{note}\n",
         slug = chosen_slug,
         title = derived_title,
         kind = kind,
-        status = status_line,
         extra = extra_lines,
         note = note,
     );
@@ -1257,11 +1230,6 @@ fn maybe_inject_frontmatter<'a>(
     };
 
     let title = humanize_slug(&slug);
-    let status_line = match kind.as_str() {
-        "project" | "moment" => "status: active\n",
-        "resume" => "",
-        _ => "status: draft\n",
-    };
     let extra = if kind == "moment" {
         let today = today_iso_date();
         format!("moment_type: progress\ndate: {today}\n")
@@ -1270,11 +1238,10 @@ fn maybe_inject_frontmatter<'a>(
     };
 
     let fm = format!(
-        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\n{status}visibility: private\n{extra}---\n\n",
+        "---\nslug: {slug}\ntitle: {title}\nkind: {kind}\nvisibility: private\n{extra}---\n\n",
         slug = slug,
         title = title,
         kind = kind,
-        status = status_line,
         extra = extra,
     );
     std::borrow::Cow::Owned(format!("{fm}{}", draft.trim_start()))
@@ -1512,7 +1479,7 @@ fn episode_series_file(target: &ProposalTarget) -> Option<(String, String)> {
          title       = \"{title}\"\n\
          slug        = \"{series_slug}\"\n\
          description = \"\"\n\
-         status      = \"ongoing\"\n",
+",
     );
     Some((rel, content))
 }
@@ -1734,7 +1701,7 @@ pub fn summarize_moments(content_root: &Path, summary: &str) -> Result<ProposalC
     let uri = format!("silan://resources/moment/{slug}");
     let draft = format!(
         "---\nslug: {slug}\ntitle: Moment Summary\nkind: moment\nmoment_type: progress\n\
-         status: active\nvisibility: private\ndate: {}\n---\n\n{summary}\n",
+         visibility: private\ndate: {}\n---\n\n{summary}\n",
         today_utc()
     );
     propose(content_root, &uri, Some(&draft), "en", &[])
@@ -1903,9 +1870,9 @@ pub fn call(
                         .ok_or_else(|| McpError::InvalidRequest(format!("unknown type `{t}`")))
                 })
                 .transpose()?;
-            // `03` §3.2: `filter` is a nested object whose keys are `status`,
+            // `03` §3.2: `filter` is a nested object whose keys are `visibility`,
             // `visibility`, `updated_after`, `updated_before`, `tag`. Read
-            // `status`/`tag` from `filter`, falling back to a top-level key.
+            // `visibility`/`tag` from `filter`, falling back to a top-level key.
             let filter = args.get("filter").and_then(|v| v.as_object());
             let from_filter = |key: &str| -> Option<String> {
                 filter
@@ -1914,13 +1881,13 @@ pub fn call(
                     .map(str::to_owned)
                     .or_else(|| opt_str(key))
             };
-            let status = from_filter("status");
+            let visibility = from_filter("visibility");
             let tag = from_filter("tag");
-            let docs = list(content_root, kind, status.as_deref(), tag.as_deref())?;
+            let docs = list(content_root, kind, visibility.as_deref(), tag.as_deref())?;
             Ok(json!({
                 "items": docs.iter().map(|d| json!({
                     "uri": d.uri, "slug": d.slug, "title": d.title,
-                    "status": d.status, "tags": d.tags,
+                    "visibility": d.visibility, "tags": d.tags,
                 })).collect::<Vec<_>>()
             }))
         }
@@ -2093,16 +2060,6 @@ pub fn call(
             let uri = str_arg("uri")?;
             Ok(json!({ "uri": uri, "suggestions": [] }))
         }
-        "suggest_lifecycle" => {
-            let uri = str_arg("uri")?;
-            Ok(json!({
-                "uri": uri,
-                "current_status": null,
-                "suggested_status": null,
-                "rationale": "stub: lifecycle inference not yet implemented",
-                "proposal_id": null,
-            }))
-        }
         other => Err(McpError::UnknownTool(other.to_owned())),
     }
 }
@@ -2149,16 +2106,10 @@ mod tests {
     /// surfaced. Tag count is now ReadOnly tier, so the default surface
     /// also bumped from 17 → 18.
     #[test]
-    fn closed_set_is_22_through_e1() {
+    fn closed_set_is_21_through_e1() {
         let names: Vec<&'static str> = tool_specs().iter().map(|t| t.name).collect();
-        assert_eq!(names.len(), 22, "tool count = {}, want 22", names.len());
-        for required in [
-            "deploy",
-            "suggest_relations",
-            "suggest_parts",
-            "suggest_lifecycle",
-            "list_tags",
-        ] {
+        assert_eq!(names.len(), 21, "tool count = {}, want 21", names.len());
+        for required in ["deploy", "suggest_relations", "suggest_parts", "list_tags"] {
             assert!(names.contains(&required), "closed set missing `{required}`");
         }
     }
@@ -2171,12 +2122,7 @@ mod tests {
     fn default_gate_advertises_18_tools() {
         let surface = advertised_tool_specs(ToolGate::default());
         assert_eq!(surface.len(), 18, "default surface = {}", surface.len());
-        for hidden in [
-            "deploy",
-            "suggest_relations",
-            "suggest_parts",
-            "suggest_lifecycle",
-        ] {
+        for hidden in ["deploy", "suggest_relations", "suggest_parts"] {
             assert!(
                 !surface.iter().any(|t| t.name == hidden),
                 "`{hidden}` must be hidden by default"

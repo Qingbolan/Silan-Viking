@@ -6,34 +6,26 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "project_likes")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
+    #[sea_orm(column_type = "Text")]
+    pub project_id: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub fingerprint: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub ip_address: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub user_agent: Option<String>,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
-    pub project_id: String,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub user_identity_id: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::projects::Entity",
-        from = "Column::ProjectId",
-        to = "super::projects::Column::Id",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Projects,
     #[sea_orm(
         belongs_to = "super::user_identities::Entity",
         from = "Column::UserIdentityId",
@@ -42,12 +34,6 @@ pub enum Relation {
         on_delete = "SetNull"
     )]
     UserIdentities,
-}
-
-impl Related<super::projects::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Projects.def()
-    }
 }
 
 impl Related<super::user_identities::Entity> for Entity {

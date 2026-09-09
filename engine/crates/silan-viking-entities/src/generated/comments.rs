@@ -6,16 +6,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "comments")]
 pub struct Model {
-    #[sea_orm(primary_key, auto_increment = false, column_type = "custom(\"uuid\")")]
+    #[sea_orm(primary_key, auto_increment = false, column_type = "Text")]
     pub id: String,
     #[sea_orm(column_type = "Text")]
     pub entity_type: String,
-    #[sea_orm(column_type = "custom(\"uuid\")")]
+    #[sea_orm(column_type = "Text")]
     pub entity_id: String,
     #[sea_orm(column_type = "Text")]
     pub author_name: String,
-    #[sea_orm(column_type = "Text")]
-    pub author_email: String,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub author_email: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub author_website: Option<String>,
     #[sea_orm(column_type = "Text")]
@@ -31,32 +31,22 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub ip_address: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
+    pub country_code: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
     pub user_agent: Option<String>,
     pub likes_count: i32,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub created_at: String,
-    #[sea_orm(column_type = "custom(\"datetime\")")]
-    pub updated_at: String,
-    #[sea_orm(column_type = "custom(\"uuid\")", nullable)]
-    pub blog_post_comments: Option<String>,
-    #[sea_orm(column_type = "custom(\"uuid\")", nullable)]
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub created_at: Option<String>,
+    #[sea_orm(column_type = "custom(\"datetime\")", nullable)]
+    pub updated_at: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
     pub parent_id: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub user_identity_id: Option<String>,
-    #[sea_orm(column_type = "custom(\"uuid\")", nullable)]
-    pub idea_comments: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::blog_posts::Entity",
-        from = "Column::BlogPostComments",
-        to = "super::blog_posts::Column::Id",
-        on_update = "NoAction",
-        on_delete = "SetNull"
-    )]
-    BlogPosts,
     #[sea_orm(
         belongs_to = "Entity",
         from = "Column::ParentId",
@@ -66,14 +56,6 @@ pub enum Relation {
     )]
     SelfRef,
     #[sea_orm(
-        belongs_to = "super::ideas::Entity",
-        from = "Column::IdeaComments",
-        to = "super::ideas::Column::Id",
-        on_update = "NoAction",
-        on_delete = "SetNull"
-    )]
-    Ideas,
-    #[sea_orm(
         belongs_to = "super::user_identities::Entity",
         from = "Column::UserIdentityId",
         to = "super::user_identities::Column::Id",
@@ -81,18 +63,6 @@ pub enum Relation {
         on_delete = "SetNull"
     )]
     UserIdentities,
-}
-
-impl Related<super::blog_posts::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::BlogPosts.def()
-    }
-}
-
-impl Related<super::ideas::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Ideas.def()
-    }
 }
 
 impl Related<super::user_identities::Entity> for Entity {

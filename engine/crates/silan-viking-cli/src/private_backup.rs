@@ -33,8 +33,8 @@ pub(crate) enum BackupRepair {
 }
 
 pub(crate) fn ensure_private_backup(content_root: &Path) -> Result<BackupRepair, String> {
-    let repo = GitRepo::open(content_root)
-        .map_err(|error| format!("open content repository: {error}"))?;
+    let repo =
+        GitRepo::open(content_root).map_err(|error| format!("open content repository: {error}"))?;
     match repo
         .remote_backup_state()
         .map_err(|error| format!("query backup state: {error}"))?
@@ -57,9 +57,7 @@ pub(crate) fn ensure_private_backup(content_root: &Path) -> Result<BackupRepair,
         }
         RemoteBackupState::MissingUpstream { branch } => {
             if branch == "HEAD" {
-                return Err(
-                    "HEAD is detached; check out a branch before backing up".to_owned(),
-                );
+                return Err("HEAD is detached; check out a branch before backing up".to_owned());
             }
             let remotes = repo
                 .run(["remote"])
@@ -136,9 +134,7 @@ fn server_repository_path(remote_dir: &str) -> Result<String, String> {
         .file_name()
         .and_then(|name| name.to_str())
         .filter(|name| !name.is_empty())
-        .ok_or_else(|| {
-            format!("[deploy].remote_dir `{remote_dir}` has no site directory name")
-        })?;
+        .ok_or_else(|| format!("[deploy].remote_dir `{remote_dir}` has no site directory name"))?;
     Ok(format!("{SERVER_BACKUP_ROOT}/{site}.git"))
 }
 
@@ -176,9 +172,7 @@ fn git_ssh_command(cfg: &crate::DeployConfig) -> String {
     let mut command = "ssh".to_owned();
     if !cfg.ssh_key_path.as_os_str().is_empty() {
         command.push_str(" -i ");
-        command.push_str(&crate::shell_quote(
-            &cfg.ssh_key_path.display().to_string(),
-        ));
+        command.push_str(&crate::shell_quote(&cfg.ssh_key_path.display().to_string()));
         command.push_str(" -o IdentitiesOnly=yes");
     }
     command.push_str(" -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10");

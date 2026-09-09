@@ -109,7 +109,9 @@ pub(crate) fn run(expected_content_root: &Path, flags: &[&str]) -> Result<(), St
     // so the recovery commit is durable before any further authoring.
     match crate::private_backup::ensure_private_backup(&result.destination) {
         Ok(crate::private_backup::BackupRepair::Provisioned { url }) => {
-            println!("  backup       provisioned private remote `{url}` and pushed this recovery commit");
+            println!(
+                "  backup       provisioned private remote `{url}` and pushed this recovery commit"
+            );
         }
         Ok(crate::private_backup::BackupRepair::Pushed { upstream })
         | Ok(crate::private_backup::BackupRepair::Synchronized { upstream }) => {

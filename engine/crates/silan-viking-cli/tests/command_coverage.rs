@@ -63,7 +63,10 @@ fn blog_group_every_verb() {
     ok(&c, &["blog", "publish", "a-post"]);
     let md =
         std::fs::read_to_string(c.join("resources/blog/a-post/parts/body/en.md")).expect("read");
-    assert!(md.contains("status: published"), "publish must set status");
+    assert!(
+        md.contains("visibility: public"),
+        "publish must set visibility"
+    );
     ok(&c, &["blog", "unpublish", "a-post"]);
     ok(&c, &["blog", "archive", "a-post"]);
     ok(&c, &["blog", "rm", "a-post"]);
@@ -90,7 +93,7 @@ fn project_group_every_verb() {
     let archived =
         std::fs::read_to_string(c.join("resources/projects/a-proj/parts/overview/en.md"))
             .expect("read archived project");
-    assert!(archived.contains("status: archived"));
+    assert!(!archived.contains("status:"));
     assert!(archived.contains("visibility: private"));
     ok(&c, &["project", "rm", "a-proj"]);
     let _ = std::fs::remove_dir_all(c.parent().expect("root"));
@@ -103,7 +106,7 @@ fn moment_group_every_verb() {
     ok(&c, &["moment", "list"]);
     ok(&c, &["moment", "show", "an-update"]);
     ok(&c, &["moment", "edit", "an-update"]);
-    ok(&c, &["moment", "status", "an-update", "ongoing"]);
+    err(&c, &["moment", "status", "an-update", "ongoing"]);
     ok(&c, &["moment", "set-type", "an-update", "milestone"]);
     let md = std::fs::read_to_string(c.join("resources/moment/an-update/parts/body/en.md"))
         .expect("read");
@@ -132,7 +135,7 @@ fn episode_group_every_verb() {
     ok(&c, &["episode", "publish", "a-series", "ep-one"]);
     let md = std::fs::read_to_string(c.join("resources/episode/a-series/ep-one/parts/body/en.md"))
         .expect("read");
-    assert!(md.contains("status: published"));
+    assert!(md.contains("visibility: public"));
     ok(&c, &["episode", "unpublish", "a-series", "ep-one"]);
     ok(&c, &["episode", "archive", "a-series", "ep-one"]);
     // reorder: explicit order rewrites episode_number.

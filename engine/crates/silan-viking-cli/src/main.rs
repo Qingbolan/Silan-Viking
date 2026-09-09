@@ -52,7 +52,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "blog convert-to-moment <slug>",
             "blog add-part <slug> <role> · blog add-lang <slug> <lang>",
             "blog publish|unpublish <slug>",
-            "blog list [--status <status>|--tag <tag>]",
+            "blog list [--visibility <public|private>|--tag <tag>]",
             "blog reader-review [<slug>] [--model MODEL] [--min-confidence N] [--report PATH] [--json]",
             "blog language-check [<slug>] [--model MODEL] [--min-confidence N] [--report PATH] [--json]",
         ],
@@ -60,7 +60,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "project new|list|show|edit|archive|rm <slug>",
             "project add-part <slug> <role> · project add-lang <slug> <lang>",
             "project progress <slug> · project feature|unfeature <slug>",
-            "project list [--status <status>|--tag <tag>]",
+            "project list [--visibility <public|private>|--tag <tag>]",
         ],
         "moment" => &[
             "moment new|list|show|edit|archive|rm <slug>",
@@ -68,8 +68,8 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "moment create-blog|create-project <slug>",
             "moment link|unlink <slug> <blog|project> <target-slug>",
             "moment add-part <slug> <role> · moment add-lang <slug> <lang>",
-            "moment status <slug> <state> · moment set-type <slug> <moment-type>",
-            "moment list [--status <status>|--tag <tag>]",
+            "moment set-type <slug> <moment-type>",
+            "moment list [--visibility <public|private>|--tag <tag>]",
         ],
         "episode" => &[
             "episode series new|list|show|reorder|archive|rm <series>",
@@ -414,15 +414,14 @@ fn run(args: Vec<String>) -> Result<(), String> {
             episode_add_lang(&opts.content_root, series, slug, lang)
         }
         ["episode", "publish", series, slug] => {
-            // Like blog publish: flip both status and visibility so the
-            // episode actually projects to the site.
-            episode_set_publish(&opts.content_root, series, slug, "published", "public")
+            // Visibility alone controls website eligibility.
+            episode_set_publish(&opts.content_root, series, slug, "public")
         }
         ["episode", "unpublish", series, slug] => {
-            episode_set_publish(&opts.content_root, series, slug, "draft", "private")
+            episode_set_publish(&opts.content_root, series, slug, "private")
         }
         ["episode", "archive", series, slug] => {
-            episode_set_status(&opts.content_root, series, slug, "archived")
+            episode_set_publish(&opts.content_root, series, slug, "private")
         }
         ["episode", "rm", series, slug] => episode_rm(&opts.content_root, series, slug),
 
@@ -436,14 +435,11 @@ fn run(args: Vec<String>) -> Result<(), String> {
 
         // -- type-specific verbs --
         ["blog", "publish", slug] => {
-            // Publish writes BOTH status=published AND visibility=public so the
-            // post actually reaches the website — `status` alone leaves it
-            // private and unprojected (USAGE §3 table).
-            type_set_lifecycle_state(&opts.content_root, "blog", slug, "published", "public")
+            // Visibility alone controls website eligibility.
+            type_set_field(&opts.content_root, "blog", slug, "visibility", "public")
         }
         ["blog", "unpublish", slug] => {
-            // Reverse: status back to draft AND visibility back to private.
-            type_set_lifecycle_state(&opts.content_root, "blog", slug, "draft", "private")
+            type_set_field(&opts.content_root, "blog", slug, "visibility", "private")
         }
         ["blog", "convert-to-moment", slug] => {
             convert_blog_to_moment(&opts.content_root, &opts.db_path, slug)
@@ -461,9 +457,6 @@ fn run(args: Vec<String>) -> Result<(), String> {
         }
         ["project", "unfeature", slug] => {
             type_set_field(&opts.content_root, "project", slug, "is_featured", "false")
-        }
-        ["moment", "status", slug, state] => {
-            type_set_field(&opts.content_root, "moment", slug, "status", state)
         }
         ["moment", "set-type", slug, ut] => {
             type_set_field(&opts.content_root, "moment", slug, "moment_type", ut)
@@ -527,7 +520,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
         [kind, "list"] if parse_kind(kind).is_some() => {
             type_list(&opts.content_root, kind, None, None)
         }
-        [kind, "list", "--status", status] if parse_kind(kind).is_some() => {
+        [kind, "list", "--visibility", status] if parse_kind(kind).is_some() => {
             type_list(&opts.content_root, kind, Some(status), None)
         }
         // `silan tags` — enumerate every tag used across the workspace, with
@@ -1004,10 +997,7 @@ fn print_help(content_root: &Path) {
         "  {}",
         d("blog reader-review|language-check [<slug>] [--min-confidence N] [--report PATH] [--json]")
     );
-    println!(
-        "  {}",
-        d("moment status <slug> <state> · moment set-type <slug> <moment-type>")
-    );
+    println!("  {}", d("moment set-type <slug> <moment-type>"));
     println!(
         "  {}",
         d("episode series new|list|show|reorder|archive|rm <series>")
@@ -1891,17 +1881,17 @@ fn content_lint_drift() -> Result<(), String> {
 fn type_list(
     content_root: &Path,
     kind: &str,
-    status: Option<&str>,
+    visibility: Option<&str>,
     tag: Option<&str>,
 ) -> Result<(), String> {
     let kind = parse_kind(kind).ok_or("unknown kind")?;
     let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
     let index = ws.query_index().map_err(|e| e.to_string())?;
-    for doc in index.list(Some(kind), status, tag) {
+    for doc in index.list(Some(kind), visibility, tag) {
         println!(
             "{}\t{}\t{}",
             doc.slug,
-            doc.status.unwrap_or_default(),
+            doc.visibility.clone().unwrap_or_default(),
             doc.title
         );
     }
@@ -5526,24 +5516,9 @@ fn type_edit(
     Ok(())
 }
 
-/// `archive` takes an Item off the site (`02` §一). Types with an `archived`
-/// lifecycle value move to that state and become private in one write.
-/// Types without it (currently moment) retain their status and become
-/// unlisted instead (`10` rule 6: only `visibility=public` is projected).
+/// Make an Item private for the next website deployment.
 fn type_archive(content_root: &Path, kind: &str, slug: &str) -> Result<(), String> {
-    let content_kind = parse_kind(kind).ok_or_else(|| format!("unknown type `{kind}`"))?;
-    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
-    let status_has_archived = ws
-        .schema()
-        .type_spec(content_kind)
-        .and_then(|s| s.field("status"))
-        .and_then(|f| f.enum_values())
-        .is_some_and(|vals| vals.contains(&"archived"));
-    if status_has_archived {
-        type_set_lifecycle_state(content_root, kind, slug, "archived", "private")
-    } else {
-        type_set_field(content_root, kind, slug, "visibility", "unlisted")
-    }
+    type_set_field(content_root, kind, slug, "visibility", "private")
 }
 
 /// `silan <type> rm <slug>` — delete an Item. Before this fix, rm was an
@@ -5744,7 +5719,7 @@ fn primary_role(kind: &str) -> &'static str {
 
 /// Set a frontmatter field of a flat-type Item, validating the value against
 /// the SCHEMA enum if the field is enumerated. This backs
-/// `blog publish/unpublish`, `moment status/set-type`, and `archive`
+/// `blog publish/unpublish`, `moment set-type`, and `archive`
 /// (`02` §一 type-specific verbs). The frontmatter lives in the canonical
 /// `en.md` of the type's primary Part (`01` §1.3.1).
 fn type_set_field(
@@ -5791,50 +5766,6 @@ fn type_set_field(
 /// Change lifecycle and projection state together. Publish, unpublish, and
 /// archive all cross both boundaries; writing one field without the other
 /// can leave an Item visible in a terminal lifecycle state.
-fn type_set_lifecycle_state(
-    content_root: &Path,
-    kind: &str,
-    slug: &str,
-    status: &str,
-    visibility: &str,
-) -> Result<(), String> {
-    let content_kind = parse_kind(kind).ok_or_else(|| format!("unknown type `{kind}`"))?;
-    let type_dir = scaffold::type_dir_name(kind).map_err(|e| e.to_string())?;
-    let file = content_root
-        .join("resources")
-        .join(type_dir)
-        .join(slug)
-        .join("parts")
-        .join(primary_role(kind))
-        .join("en.md");
-    if !file.exists() {
-        return Err(format!("{kind} `{slug}` not found"));
-    }
-
-    // Validate both enum values up-front so a bad input fails before any
-    // file write — keeps publish atomic from the owner's view.
-    let ws = Workspace::open(content_root).map_err(|e| e.to_string())?;
-    if let Some(spec) = ws.schema().type_spec(content_kind) {
-        for (field, value) in [("status", status), ("visibility", visibility)] {
-            if let Some(field_spec) = spec.field(field) {
-                if let Some(allowed) = field_spec.enum_values() {
-                    if !allowed.contains(&value) {
-                        return Err(format!(
-                            "`{value}` is not a valid {kind} {field} — allowed: {}",
-                            allowed.join(", ")
-                        ));
-                    }
-                }
-            }
-        }
-    }
-
-    rewrite_frontmatter_field(&file, "status", status)?;
-    rewrite_frontmatter_field(&file, "visibility", visibility)?;
-    println!("{kind} `{slug}` status -> {status}, visibility -> {visibility}");
-    Ok(())
-}
-
 /// Rewrite (or append) a `key: value` line inside a file's `---` frontmatter
 /// block. If the key is absent it is inserted before the closing `---`.
 fn rewrite_frontmatter_field(file: &Path, key: &str, value: &str) -> Result<(), String> {
@@ -5969,21 +5900,17 @@ fn episode_series_reorder(content_root: &Path, series: &str, order: &[&str]) -> 
 
 fn episode_series_archive(content_root: &Path, series: &str) -> Result<(), String> {
     let dir = scaffold::series_dir(content_root, series).map_err(|e| e.to_string())?;
-    let toml_path = dir.join("series.toml");
-    let text = fs::read_to_string(&toml_path).map_err(|e| e.to_string())?;
-    let rewritten: String = text
-        .lines()
-        .map(|l| {
-            if l.trim_start().starts_with("status") {
-                "status      = \"archived\"".to_owned()
-            } else {
-                l.to_owned()
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
-    fs::write(&toml_path, format!("{rewritten}\n")).map_err(|e| e.to_string())?;
-    println!("episode series `{series}` -> archived");
+    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if entry.path().join("parts/body/en.md").is_file() {
+            episode_set_publish(
+                content_root,
+                series,
+                &entry.file_name().to_string_lossy(),
+                "private",
+            )?;
+        }
+    }
     Ok(())
 }
 
@@ -6042,33 +5969,16 @@ fn episode_add_lang(
     report_scaffold(scaffold::add_lang_at(&dir.join("parts/body"), lang))
 }
 
-fn episode_set_status(
-    content_root: &Path,
-    series: &str,
-    slug: &str,
-    status: &str,
-) -> Result<(), String> {
-    let dir = scaffold::episode_dir(content_root, series, slug).map_err(|e| e.to_string())?;
-    rewrite_frontmatter_field(&dir.join("parts/body/en.md"), "status", status)?;
-    println!("episode `{series}/{slug}` status -> {status}");
-    Ok(())
-}
-
-/// Episode counterpart of `type_set_lifecycle_state` — flip status AND visibility in
-/// the same call so `silan episode publish` actually projects to the site,
-/// not just changes the lifecycle. See `type_set_lifecycle_state` for the rationale.
 fn episode_set_publish(
     content_root: &Path,
     series: &str,
     slug: &str,
-    status: &str,
     visibility: &str,
 ) -> Result<(), String> {
     let dir = scaffold::episode_dir(content_root, series, slug).map_err(|e| e.to_string())?;
     let file = dir.join("parts/body/en.md");
-    rewrite_frontmatter_field(&file, "status", status)?;
     rewrite_frontmatter_field(&file, "visibility", visibility)?;
-    println!("episode `{series}/{slug}` status -> {status}, visibility -> {visibility}");
+    println!("episode `{series}/{slug}` visibility -> {visibility}");
     Ok(())
 }
 

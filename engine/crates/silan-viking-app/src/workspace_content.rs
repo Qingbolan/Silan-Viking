@@ -31,8 +31,8 @@ pub enum WorkspaceContentError {
     InvalidTranslationId(String),
     #[error("invalid content metadata: {0}")]
     InvalidMetadata(String),
-    #[error("resource `{0}` must be archived before it can be permanently deleted")]
-    DeleteRequiresArchive(String),
+    #[error("resource `{0}` must be private before it can be permanently deleted")]
+    DeleteRequiresPrivate(String),
     #[error("permanent deletion confirmation must exactly match `{0}`")]
     DeleteConfirmation(String),
     #[error("resource `{resource}` has incoming relations:\n{relations}")]
@@ -64,7 +64,6 @@ pub struct EditableDocument {
     pub description: Option<String>,
     pub series_slug: Option<String>,
     pub episode_number: Option<i64>,
-    pub status: String,
     pub visibility: String,
     pub updated_at: String,
     pub cover_uri: Option<String>,
@@ -154,9 +153,8 @@ pub struct SaveTranslationInput {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct SaveLifecycleInput {
+pub struct SaveVisibilityInput {
     pub translation_id: String,
-    pub status: String,
     pub visibility: String,
     pub pinned: Option<bool>,
     pub expected_revision: String,
@@ -186,21 +184,21 @@ pub struct SaveProjectFeaturedInput {
     pub expected_revision: String,
 }
 
-/// Explicit, concurrency-safe request to erase one archived resource.
+/// Explicit, concurrency-safe request to erase one private resource.
 ///
 /// The confirmation is a human-entered source coordinate (`slug`, or
 /// `series/slug` for an episode). Keeping it inside the application contract
 /// prevents presentation adapters from bypassing the destructive-action
 /// guard.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-pub struct DeleteArchivedResourceInput {
+pub struct DeletePrivateResourceInput {
     pub translation_id: String,
     pub expected_revision: String,
     pub confirmation: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct DeletedArchivedResource {
+pub struct DeletedPrivateResource {
     pub document_id: String,
     pub content_type: String,
     pub slug: String,
@@ -372,7 +370,6 @@ impl WorkspaceContent {
                 description,
                 series_slug,
                 episode_number: parsed.main().int("episode_number"),
-                status: parsed.main().text("status").unwrap_or("draft").to_owned(),
                 visibility: parsed
                     .main()
                     .text("visibility")
@@ -592,18 +589,15 @@ impl WorkspaceContent {
         WorkspaceContent::open(&self.content_root)?.editable_document(&document.id)
     }
 
-    pub fn save_lifecycle(
+    pub fn save_visibility(
         &self,
-        input: &SaveLifecycleInput,
+        input: &SaveVisibilityInput,
         db_path: impl AsRef<Path>,
     ) -> Result<EditableDocument, WorkspaceContentError> {
         let (document, part, translation) = self.translation(&input.translation_id)?;
         let locator = locator(&document, &part, &translation.language)?;
         let pinned = input.pinned.map(|value| value.to_string());
-        let mut fields = vec![
-            ("status", input.status.as_str()),
-            ("visibility", input.visibility.as_str()),
-        ];
+        let mut fields = vec![("visibility", input.visibility.as_str())];
         if let Some(value) = pinned.as_deref() {
             fields.push(("pinned", value));
         }
@@ -640,7 +634,7 @@ impl WorkspaceContent {
     /// partial saves and optimistic-concurrency conflicts.
     pub fn save_settings(
         &self,
-        lifecycle: &SaveLifecycleInput,
+        lifecycle: &SaveVisibilityInput,
         metadata: &SaveMetadataInput,
         db_path: impl AsRef<Path>,
     ) -> Result<EditableDocument, WorkspaceContentError> {
@@ -698,14 +692,14 @@ impl WorkspaceContent {
     /// projection is rebuilt. A projection failure moves the exact directory
     /// back before returning. Incoming relations are rejected so deletion
     /// cannot silently leave dangling authored links.
-    pub fn delete_archived_resource(
+    pub fn delete_private_resource(
         &self,
-        input: &DeleteArchivedResourceInput,
+        input: &DeletePrivateResourceInput,
         db_path: impl AsRef<Path>,
-    ) -> Result<DeletedArchivedResource, WorkspaceContentError> {
+    ) -> Result<DeletedPrivateResource, WorkspaceContentError> {
         let (document, _, translation) = self.translation(&input.translation_id)?;
-        if !document.status.trim().eq_ignore_ascii_case("archived") {
-            return Err(WorkspaceContentError::DeleteRequiresArchive(
+        if !document.visibility.trim().eq_ignore_ascii_case("private") {
+            return Err(WorkspaceContentError::DeleteRequiresPrivate(
                 document.slug.clone(),
             ));
         }
@@ -797,7 +791,7 @@ impl WorkspaceContent {
             ),
         })?;
 
-        Ok(DeletedArchivedResource {
+        Ok(DeletedPrivateResource {
             document_id: document.id,
             content_type: document.content_type,
             slug: document.slug,
@@ -1187,11 +1181,10 @@ fn content_metadata_fields(
 
 fn content_settings_fields(
     kind: ContentKind,
-    lifecycle: &SaveLifecycleInput,
+    lifecycle: &SaveVisibilityInput,
     metadata: &SaveMetadataInput,
 ) -> Result<Vec<(String, serde_yaml::Value)>, WorkspaceContentError> {
     let mut fields = content_metadata_fields(kind, metadata)?;
-    fields.push(yaml_text("status", lifecycle.status.trim()));
     fields.push(yaml_text("visibility", lifecycle.visibility.trim()));
     if let Some(pinned) = lifecycle.pinned {
         fields.push(("pinned".to_owned(), serde_yaml::Value::Bool(pinned)));
@@ -1429,10 +1422,9 @@ mod tests {
             tags: Some(vec!["research".to_owned()]),
             expected_revision: "revision".to_owned(),
         };
-        let lifecycle = SaveLifecycleInput {
+        let lifecycle = SaveVisibilityInput {
             translation_id: "part:en".to_owned(),
-            status: "ongoing".to_owned(),
-            visibility: "unlisted".to_owned(),
+            visibility: "private".to_owned(),
             pinned: Some(true),
             expected_revision: "revision".to_owned(),
         };
@@ -1446,11 +1438,11 @@ mod tests {
         );
         assert_eq!(
             values.get("status").and_then(serde_yaml::Value::as_str),
-            Some("ongoing")
+            None
         );
         assert_eq!(
             values.get("visibility").and_then(serde_yaml::Value::as_str),
-            Some("unlisted")
+            Some("private")
         );
         assert_eq!(
             values.get("pinned").and_then(serde_yaml::Value::as_bool),
