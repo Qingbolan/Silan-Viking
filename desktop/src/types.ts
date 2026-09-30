@@ -124,6 +124,7 @@ export type EditorDocument = {
   cover_url?: string | null;
   cover_source_type?: 'image' | 'website' | null;
   cover_website_url?: string | null;
+  is_featured?: boolean | null;
   github_url?: string | null;
   demo_url?: string | null;
   article_attribution?: ArticleAttribution | null;
@@ -450,6 +451,7 @@ export type ContentGroup = {
   coverUrl?: string;
   coverSourceType?: 'image' | 'website';
   coverWebsiteUrl?: string;
+  isFeatured?: boolean;
   githubUrl?: string;
   demoUrl?: string;
   articleAttribution?: ArticleAttribution;

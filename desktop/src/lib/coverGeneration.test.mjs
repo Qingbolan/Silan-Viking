@@ -33,6 +33,19 @@ test('series covers use the series context and portrait orientation when selecte
   assert.equal(brief.value, 'A practical research diary.');
 });
 
+test('project covers describe the project audience instead of article readers', () => {
+  const brief = createCoverBrief({
+    contentKind: 'project',
+    title: 'Silan Viking',
+    description: 'Make research work findable.',
+    language: 'en',
+  });
+
+  assert.equal(brief.contentKind, 'project');
+  assert.match(brief.audience, /project/);
+  assert.equal(brief.value, 'Make research work findable.');
+});
+
 test('cover generation requires an explicit candidate and apply transition', () => {
   const asset = {
     uri: 'silan://resources/blog/example/assets/cover.png',

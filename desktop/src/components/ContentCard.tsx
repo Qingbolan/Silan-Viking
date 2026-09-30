@@ -22,8 +22,8 @@ type ContentCardProps = {
 
 /**
  * Flat, text-first library card. Project covers follow the public frontend's
- * image → website preview → branded placeholder contract. Other content only
- * renders media it explicitly declares.
+ * image → website preview contract. Projects without either source stay
+ * text-only, matching the media-optional contract used by other content.
  */
 export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) {
   const isSeries = group.cardKind === 'series';
@@ -38,6 +38,7 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
   const projectWebsiteUrl = group.coverSourceType === 'website'
     ? group.demoUrl || group.coverWebsiteUrl
     : undefined;
+  const hasProjectCover = Boolean(coverUrl || projectWebsiteUrl);
 
   const meta: string[] = [kindLabel];
   if (isSeries && group.episodeCount != null) meta.push(`${group.episodeCount} episodes`);
@@ -50,7 +51,7 @@ export function ContentCard({ group, onOpen, stateControls }: ContentCardProps) 
       data-visibility={group.visibility}
     >
       <button type="button" className="content-card-open" onClick={() => onOpen(group)} aria-label={`${group.title} · ${stateSummary}`}>
-        {isProject ? (
+        {isProject && hasProjectCover ? (
           <span className="content-card-cover" data-mode={group.coverSourceType || 'image'}>
             <ProjectPreviewSurface
               title={group.title}

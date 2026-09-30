@@ -1,7 +1,7 @@
 //! Source-backed cover discovery, generation, storage, and application.
 //!
-//! A Blog is an Item while an episode series is a directory-level aggregate.
-//! This module gives adapters one target contract for both without erasing
+//! Blogs and projects are Items while an episode series is a directory-level
+//! aggregate. This module gives adapters one target contract without erasing
 //! that ownership distinction.
 
 use crate::{
@@ -22,6 +22,7 @@ const DEFAULT_RESULT_LIMIT: usize = 20;
 #[serde(rename_all = "snake_case")]
 pub enum CoverTargetKind {
     Blog,
+    Project,
     EpisodeSeries,
 }
 
@@ -29,9 +30,10 @@ impl CoverTargetKind {
     pub fn parse(value: &str) -> Result<Self, CoverError> {
         match value.trim() {
             "blog" => Ok(Self::Blog),
+            "project" | "projects" => Ok(Self::Project),
             "series" | "episode_series" | "episode-series" => Ok(Self::EpisodeSeries),
             other => Err(CoverError::InvalidTarget(format!(
-                "unsupported cover target type `{other}`; expected `blog` or `series`"
+                "unsupported cover target type `{other}`; expected `blog`, `project`, or `series`"
             ))),
         }
     }
@@ -39,6 +41,7 @@ impl CoverTargetKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Blog => "blog",
+            Self::Project => "project",
             Self::EpisodeSeries => "series",
         }
     }
@@ -109,6 +112,7 @@ impl CoverBrief {
                 "Create a {orientation} editorial cover for a {}.",
                 match target_kind {
                     CoverTargetKind::Blog => "blog article",
+                    CoverTargetKind::Project => "project",
                     CoverTargetKind::EpisodeSeries => "content series",
                 }
             ),
@@ -190,7 +194,7 @@ impl CoverWorkspace {
         })
     }
 
-    /// Find Blog and series targets by human title, slug, or description.
+    /// Find Blog, Project, and series targets by human title, slug, or description.
     ///
     /// This search intentionally supports Unicode substring matching because
     /// target selection must work for Chinese titles as well as ASCII slugs.
@@ -201,12 +205,19 @@ impl CoverWorkspace {
         limit: Option<usize>,
     ) -> Result<Vec<CoverTargetSummary>, CoverError> {
         let mut ranked = Vec::new();
-        if kind.is_none_or(|value| value == CoverTargetKind::Blog) {
+        if kind
+            .is_none_or(|value| matches!(value, CoverTargetKind::Blog | CoverTargetKind::Project))
+        {
             for document in self.content.editable_documents()? {
-                if document.content_type != "blog" {
+                let target_kind = match document.content_type.as_str() {
+                    "blog" => CoverTargetKind::Blog,
+                    "project" => CoverTargetKind::Project,
+                    _ => continue,
+                };
+                if kind.is_some_and(|value| value != target_kind) {
                     continue;
                 }
-                let target = blog_summary(&document);
+                let target = content_summary(&document, target_kind);
                 if let Some(score) = match_score(&target, query) {
                     ranked.push((score, target));
                 }
@@ -307,7 +318,7 @@ impl CoverWorkspace {
         generated: &GeneratedImageAsset,
     ) -> Result<MediaAssetRef, CoverError> {
         match self.resolve_target(target_uri)? {
-            ResolvedCoverTarget::Blog { document, .. } => Ok(self.media.import_asset_bytes(
+            ResolvedCoverTarget::Content { document, .. } => Ok(self.media.import_asset_bytes(
                 &document.id,
                 &generated.file_name,
                 &generated.bytes,
@@ -333,12 +344,19 @@ impl CoverWorkspace {
         validate_asset_owner(resolved.summary(), asset_uri)?;
         self.media.resolve_uri(asset_uri)?;
         match resolved {
-            ResolvedCoverTarget::Blog { document, .. } => {
+            ResolvedCoverTarget::Content { summary, document } => {
                 let document = *document;
+                let primary_role = match summary.kind {
+                    CoverTargetKind::Blog => "body",
+                    CoverTargetKind::Project => "overview",
+                    CoverTargetKind::EpisodeSeries => {
+                        unreachable!("series metadata is not stored in an Item")
+                    }
+                };
                 let part = document
                     .parts
                     .iter()
-                    .find(|part| part.role == "body")
+                    .find(|part| part.role == primary_role)
                     .or_else(|| document.parts.first())
                     .ok_or_else(|| CoverError::TargetNotFound(target_uri.to_owned()))?;
                 let translation = part
@@ -356,6 +374,7 @@ impl CoverWorkspace {
                             cover_url: Some(asset_uri.to_owned()),
                             cover_source_type: document.cover_source_type,
                             cover_website_url: document.cover_website_url,
+                            is_featured: None,
                             github_url: document.github_url,
                             demo_url: document.demo_url,
                             article_attribution: document.article_attribution,
@@ -393,19 +412,24 @@ impl CoverWorkspace {
             ));
         }
         match uri.segments() {
-            [kind, slug] if kind == "blog" => {
+            [kind, slug] if kind == "blog" || kind == "projects" => {
                 Slug::new(slug.as_str())
                     .map_err(|error| CoverError::InvalidTarget(error.to_string()))?;
+                let (content_type, target_kind) = if kind == "blog" {
+                    ("blog", CoverTargetKind::Blog)
+                } else {
+                    ("project", CoverTargetKind::Project)
+                };
                 let document = self
                     .content
                     .editable_documents()?
                     .into_iter()
                     .find(|document| {
-                        document.content_type == "blog" && document.slug == slug.as_str()
+                        document.content_type == content_type && document.slug == slug.as_str()
                     })
                     .ok_or_else(|| CoverError::TargetNotFound(target_uri.to_owned()))?;
-                Ok(ResolvedCoverTarget::Blog {
-                    summary: blog_summary(&document),
+                Ok(ResolvedCoverTarget::Content {
+                    summary: content_summary(&document, target_kind),
                     document: Box::new(document),
                 })
             }
@@ -420,7 +444,7 @@ impl CoverWorkspace {
                 Ok(ResolvedCoverTarget::Series { summary, source })
             }
             _ => Err(CoverError::InvalidTarget(
-                "expected silan://resources/blog/<slug> or silan://resources/episode/<series_slug>"
+                "expected silan://resources/blog/<slug>, silan://resources/projects/<slug>, or silan://resources/episode/<series_slug>"
                     .to_owned(),
             )),
         }
@@ -428,7 +452,7 @@ impl CoverWorkspace {
 }
 
 enum ResolvedCoverTarget {
-    Blog {
+    Content {
         summary: CoverTargetSummary,
         document: Box<EditableDocument>,
     },
@@ -441,15 +465,20 @@ enum ResolvedCoverTarget {
 impl ResolvedCoverTarget {
     fn summary(&self) -> &CoverTargetSummary {
         match self {
-            Self::Blog { summary, .. } | Self::Series { summary, .. } => summary,
+            Self::Content { summary, .. } | Self::Series { summary, .. } => summary,
         }
     }
 }
 
-fn blog_summary(document: &EditableDocument) -> CoverTargetSummary {
+fn content_summary(document: &EditableDocument, kind: CoverTargetKind) -> CoverTargetSummary {
+    let directory = match kind {
+        CoverTargetKind::Blog => "blog",
+        CoverTargetKind::Project => "projects",
+        CoverTargetKind::EpisodeSeries => unreachable!("series does not use Item metadata"),
+    };
     CoverTargetSummary {
-        uri: format!("silan://resources/blog/{}", document.slug),
-        kind: CoverTargetKind::Blog,
+        uri: format!("silan://resources/{directory}/{}", document.slug),
+        kind,
         slug: document.slug.clone(),
         title: non_empty(&document.title, &document.slug),
         description: document.description.clone().unwrap_or_default(),
@@ -515,8 +544,12 @@ fn default_audience(language: &str, target_kind: CoverTargetKind) -> &'static st
     let chinese = language.trim().to_ascii_lowercase().starts_with("zh");
     match (chinese, target_kind) {
         (true, CoverTargetKind::EpisodeSeries) => "希望持续跟进这个主题的读者",
+        (true, CoverTargetKind::Project) => "正在评估这个项目是否适合其实际问题的人",
         (true, CoverTargetKind::Blog) => "正在解决同类问题、需要快速判断这篇内容是否值得读的人",
         (false, CoverTargetKind::EpisodeSeries) => "Readers deciding whether to follow this topic",
+        (false, CoverTargetKind::Project) => {
+            "People evaluating whether this project fits their practical problem"
+        }
         (false, CoverTargetKind::Blog) => {
             "Readers deciding whether this article solves their current problem"
         }
@@ -561,12 +594,17 @@ mod tests {
     }
 
     #[test]
-    fn finds_blog_and_series_with_stable_target_uris() {
+    fn finds_content_and_series_with_stable_target_uris() {
         let workspace = CoverWorkspace::open(fixture()).expect("open cover workspace");
         let blogs = workspace
             .find_targets("hello", Some(CoverTargetKind::Blog), None)
             .expect("find blog");
         assert_eq!(blogs[0].uri, "silan://resources/blog/hello-world");
+
+        let projects = workspace
+            .find_targets("Sample", Some(CoverTargetKind::Project), None)
+            .expect("find project");
+        assert_eq!(projects[0].uri, "silan://resources/projects/sample-project");
 
         let series = workspace
             .find_targets("Tutorial", Some(CoverTargetKind::EpisodeSeries), None)
@@ -645,6 +683,40 @@ mod tests {
         assert_eq!(
             asset.uri,
             "silan://resources/episode/tutorial-series/assets/ai-cover-tutorial-series.webp"
+        );
+    }
+
+    #[test]
+    fn project_assets_are_stored_and_applied_by_the_project_item() {
+        let temp = tempfile::tempdir().expect("temp workspace");
+        let content_root = temp.path().join("content");
+        copy_tree(&fixture(), &content_root);
+        let workspace = CoverWorkspace::open(&content_root).expect("open cover workspace");
+        let asset = workspace
+            .store_cover_asset(
+                "silan://resources/projects/sample-project",
+                &GeneratedImageAsset {
+                    file_name: "ai-cover-sample-project.png".to_owned(),
+                    mime_type: "image/png".to_owned(),
+                    bytes: b"fake-project-png".to_vec(),
+                },
+            )
+            .expect("store project cover");
+        assert_eq!(
+            asset.uri,
+            "silan://resources/projects/sample-project/assets/ai-cover-sample-project.png"
+        );
+
+        let applied = workspace
+            .apply_cover_asset(
+                "silan://resources/projects/sample-project",
+                &asset.uri,
+                temp.path().join("portfolio.db"),
+            )
+            .expect("apply project cover");
+        assert_eq!(
+            applied.current_cover_uri.as_deref(),
+            Some(asset.uri.as_str())
         );
     }
 }

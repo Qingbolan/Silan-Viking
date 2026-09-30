@@ -107,6 +107,7 @@ export const groupDocumentsByResource = (documents: EditorDocument[]) => {
         coverUrl: document.cover_url || undefined,
         coverSourceType: document.cover_source_type || 'image',
         coverWebsiteUrl: document.cover_website_url || undefined,
+        isFeatured: Boolean(document.is_featured),
         githubUrl: document.github_url || undefined,
         demoUrl: document.demo_url || undefined,
         articleAttribution: document.article_attribution || undefined,

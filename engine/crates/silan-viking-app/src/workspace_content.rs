@@ -69,6 +69,7 @@ pub struct EditableDocument {
     pub cover_uri: Option<String>,
     pub cover_source_type: Option<String>,
     pub cover_website_url: Option<String>,
+    pub is_featured: Option<bool>,
     pub github_url: Option<String>,
     pub demo_url: Option<String>,
     pub article_attribution: Option<ArticleAttribution>,
@@ -168,6 +169,7 @@ pub struct SaveMetadataInput {
     pub cover_url: Option<String>,
     pub cover_source_type: Option<String>,
     pub cover_website_url: Option<String>,
+    pub is_featured: Option<bool>,
     pub github_url: Option<String>,
     pub demo_url: Option<String>,
     pub article_attribution: Option<ArticleAttribution>,
@@ -402,6 +404,7 @@ impl WorkspaceContent {
                     }
                     _ => None,
                 },
+                is_featured: Some(parsed.main().bool("is_featured").unwrap_or(false)),
                 github_url: match item.kind() {
                     ContentKind::Project => parsed.main().text("github_url").map(str::to_owned),
                     _ => None,
@@ -1111,6 +1114,9 @@ fn content_metadata_fields(
         ));
     }
     if kind == ContentKind::Project {
+        if let Some(featured) = input.is_featured {
+            fields.push(("is_featured".to_owned(), serde_yaml::Value::Bool(featured)));
+        }
         fields.push(yaml_text(
             "cover_source_type",
             &normalize_cover_source_type(input.cover_source_type.as_deref()),
@@ -1414,6 +1420,7 @@ mod tests {
             cover_url: None,
             cover_source_type: None,
             cover_website_url: None,
+            is_featured: None,
             github_url: None,
             demo_url: None,
             article_attribution: None,
@@ -1428,6 +1435,28 @@ mod tests {
             pinned: Some(true),
             expected_revision: "revision".to_owned(),
         };
+
+        // Featured selection is a typed project field; omitted updates preserve it.
+        for featured in [None, Some(true), Some(false)] {
+            let project_metadata = SaveMetadataInput {
+                is_featured: featured,
+                ..metadata.clone()
+            };
+            let fields =
+                content_settings_fields(ContentKind::Project, &lifecycle, &project_metadata)
+                    .expect("valid project settings");
+            let values = fields.into_iter().collect::<BTreeMap<_, _>>();
+            assert_eq!(
+                values
+                    .get("is_featured")
+                    .and_then(serde_yaml::Value::as_bool),
+                featured
+            );
+            let fields =
+                content_settings_fields(ContentKind::Moment, &lifecycle, &project_metadata)
+                    .expect("valid moment settings");
+            assert!(!fields.iter().any(|(key, _)| key == "is_featured"));
+        }
 
         let fields = content_settings_fields(ContentKind::Moment, &lifecycle, &metadata)
             .expect("valid settings fields");

@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import {
   createCoverBrief,
@@ -11,6 +12,42 @@ import {
 import { toWebviewMediaUrl } from '../lib/media';
 import type { ImportedMediaAsset, OpenAiCredentialStatus } from '../types';
 
+function CoverGenerationDialog({
+  headline,
+  orientation,
+}: {
+  headline: string;
+  orientation: 'wide' | 'portrait';
+}) {
+  return createPortal(
+    <div className="ai-cover-progress-overlay" role="dialog" aria-modal="true" aria-labelledby="ai-cover-progress-title">
+      <section className="ai-cover-progress-card">
+        <div className="ai-cover-progress-visual" data-orientation={orientation} aria-hidden="true">
+          <span className="ai-cover-progress-sheet ai-cover-progress-sheet--back" />
+          <span className="ai-cover-progress-sheet ai-cover-progress-sheet--middle" />
+          <span className="ai-cover-progress-sheet ai-cover-progress-sheet--front">
+            <i />
+            <b />
+            <em />
+          </span>
+          <span className="ai-cover-progress-scan" />
+        </div>
+        <div className="ai-cover-progress-copy" aria-live="polite">
+          <span>OpenAI image generation</span>
+          <h3 id="ai-cover-progress-title">Composing your cover</h3>
+          <p>{headline || 'Building the visual hierarchy and final image.'}</p>
+          <div className="ai-cover-progress-status">
+            <span aria-hidden="true"><i /><i /><i /></span>
+            <strong>Generating image</strong>
+          </div>
+          <small>This can take a minute. Keep this window open.</small>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
 export function AiCoverGenerator({
   target,
   contentKind,
@@ -22,7 +59,7 @@ export function AiCoverGenerator({
   onUse,
 }: {
   target: CoverTarget;
-  contentKind: 'blog' | 'series';
+  contentKind: 'blog' | 'project' | 'series';
   title: string;
   description?: string | null;
   language?: string | null;
@@ -30,6 +67,11 @@ export function AiCoverGenerator({
   onConfigureOpenAi?: () => void;
   onUse: (asset: ImportedMediaAsset) => void;
 }) {
+  const subjectLabel = contentKind === 'blog'
+    ? 'article'
+    : contentKind === 'project'
+      ? 'project'
+      : 'series';
   const [brief, setBrief] = React.useState(() => createCoverBrief({
     contentKind,
     title,
@@ -100,9 +142,15 @@ export function AiCoverGenerator({
 
   return (
     <div className="ai-cover-generator" data-expanded={optionsVisible || undefined}>
+      {generating && (
+        <CoverGenerationDialog
+          headline={brief.headline.trim()}
+          orientation={size === '1024x1536' ? 'portrait' : 'wide'}
+        />
+      )}
       {!optionsVisible ? (
         <div className="ai-cover-launch">
-          <span>Generate a new cover from the article title and summary.</span>
+          <span>Generate a new cover from the {subjectLabel} title and summary.</span>
           <button
             type="button"
             disabled={disabled}
@@ -173,7 +221,7 @@ export function AiCoverGenerator({
         </label>
         <label className="ai-cover-field ai-cover-field--wide">
           <span>Problem and value</span>
-          <small className="ai-cover-field-help">State the practical problem and the result this article or series delivers.</small>
+          <small className="ai-cover-field-help">State the practical problem and the result this {subjectLabel} delivers.</small>
           <textarea
             rows={3}
             value={brief.value}

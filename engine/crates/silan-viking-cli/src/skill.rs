@@ -162,7 +162,7 @@ fn render_skill_md(content_root: &Path) -> String {
          | undo the last content push | `silan-viking site rollback` (restores `portfolio.db.prev`) |\n\
          | restore public content after losing or changing devices | `silan-viking site recover --from https://silan.tech --to ./content` (prompts securely for the recovery token when needed) |\n\
          | flip an Item to public *locally* | `silan-viking site publish <uri>` (this only edits frontmatter; still needs `update-content` to reach prod) |\n\
-         | find the Blog or series that needs a cover | `silan-viking cover find <query> --type blog|series --json` |\n\
+         | find the Blog, Project, or series that needs a cover | `silan-viking cover find <query> --type blog|project|series --json` |\n\
          | generate and apply its cover | review `silan-viking cover generate <target-uri> --dry-run --json`, then rerun without `--dry-run` |\n\
          \n\
          ## Read-only review CLI\n\

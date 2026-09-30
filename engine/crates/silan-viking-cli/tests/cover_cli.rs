@@ -20,7 +20,7 @@ fn run(args: &[&str]) -> (bool, String, String) {
 }
 
 #[test]
-fn cover_find_returns_blog_and_series_target_uris_as_json() {
+fn cover_find_returns_content_and_series_target_uris_as_json() {
     let content = fixture();
     let content = content.to_str().expect("fixture path");
 
@@ -38,6 +38,24 @@ fn cover_find_returns_blog_and_series_target_uris_as_json() {
     let blogs: Value = serde_json::from_str(&stdout).expect("blog output is JSON");
     assert_eq!(blogs[0]["uri"], "silan://resources/blog/hello-world");
     assert_eq!(blogs[0]["kind"], "blog");
+
+    let (ok, stdout, stderr) = run(&[
+        "--content",
+        content,
+        "cover",
+        "find",
+        "Sample",
+        "--type",
+        "project",
+        "--json",
+    ]);
+    assert!(ok, "cover find project failed: {stderr}");
+    let projects: Value = serde_json::from_str(&stdout).expect("project output is JSON");
+    assert_eq!(
+        projects[0]["uri"],
+        "silan://resources/projects/sample-project"
+    );
+    assert_eq!(projects[0]["kind"], "project");
 
     let (ok, stdout, stderr) = run(&[
         "--content",

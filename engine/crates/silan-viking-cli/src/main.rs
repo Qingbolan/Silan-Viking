@@ -85,7 +85,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "resume edit <role> [lang]",
         ],
         "cover" => &[
-            "cover find [query] [--type blog|series] [--limit N] [--json]",
+            "cover find [query] [--type blog|project|series] [--limit N] [--json]",
             "cover generate <target-uri> [--headline TEXT] [--audience TEXT] [--value TEXT] [--visual TEXT]",
             "cover generate <target-uri> [--language en|zh] [--prompt TEXT]",
             "cover generate <target-uri> [--size wide|portrait|square] [--quality low|medium|high] [--format png|webp|jpeg]",
@@ -1016,7 +1016,7 @@ fn print_help(content_root: &Path) {
     );
     println!(
         "  {}",
-        d("cover find [query] [--type blog|series] · cover generate <target-uri> [options]")
+        d("cover find [query] [--type blog|project|series] · cover generate <target-uri> [options]")
     );
     println!(
         "  {}",

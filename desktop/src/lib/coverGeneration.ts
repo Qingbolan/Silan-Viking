@@ -4,7 +4,7 @@ import type { ImportedMediaAsset } from '../types';
 export type CoverTarget = { uri: string };
 
 export type CoverBrief = {
-  contentKind: 'blog' | 'series';
+  contentKind: 'blog' | 'project' | 'series';
   language: 'en' | 'zh';
   headline: string;
   audience: string;
@@ -73,13 +73,22 @@ export const createCoverBrief = ({
     ? 'zh'
     : 'en';
   const isSeries = contentKind === 'series';
+  const isProject = contentKind === 'project';
   return {
     contentKind,
     language: normalizedLanguage,
     headline: compact(title),
     audience: normalizedLanguage === 'zh'
-      ? isSeries ? '希望持续跟进这个主题的读者' : '正在解决同类问题、需要快速判断这篇内容是否值得读的人'
-      : isSeries ? 'Readers deciding whether to follow this topic' : 'Readers deciding whether this article solves their current problem',
+      ? isSeries
+        ? '希望持续跟进这个主题的读者'
+        : isProject
+          ? '正在评估这个项目是否适合其实际问题的人'
+          : '正在解决同类问题、需要快速判断这篇内容是否值得读的人'
+      : isSeries
+        ? 'Readers deciding whether to follow this topic'
+        : isProject
+          ? 'People evaluating whether this project fits their practical problem'
+          : 'Readers deciding whether this article solves their current problem',
     value: compact(description || title),
     visualDirection: '',
   };

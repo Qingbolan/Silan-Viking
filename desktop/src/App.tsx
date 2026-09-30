@@ -354,6 +354,7 @@ export default function App() {
     cover_url: string;
     cover_source_type: CoverSourceType;
     cover_website_url: string;
+    is_featured: boolean;
     github_url: string;
     demo_url: string;
     article_attribution: ArticleAttribution;
@@ -366,6 +367,7 @@ export default function App() {
     cover_url: '',
     cover_source_type: 'image',
     cover_website_url: '',
+    is_featured: false,
     github_url: '',
     demo_url: '',
     article_attribution: defaultArticleAttribution(),
@@ -2235,6 +2237,7 @@ export default function App() {
         cover_url: saved.cover_url,
         cover_source_type: saved.cover_source_type,
         cover_website_url: saved.cover_website_url,
+        is_featured: saved.is_featured,
         github_url: saved.github_url,
         demo_url: saved.demo_url,
         moment_type: saved.moment_type,
@@ -2764,6 +2767,7 @@ export default function App() {
       cover_url: selectedContentGroup.coverUrl || '',
       cover_source_type: selectedContentGroup.coverSourceType || inferCoverSourceType(selectedContentGroup.coverUrl),
       cover_website_url: selectedContentGroup.coverWebsiteUrl || '',
+      is_featured: Boolean(selectedContentGroup.isFeatured),
       github_url: selectedContentGroup.githubUrl || '',
       demo_url: selectedContentGroup.demoUrl || '',
       article_attribution: selectedContentGroup.articleAttribution || defaultArticleAttribution(),
@@ -2927,6 +2931,7 @@ export default function App() {
             cover_url: selectedMetadataCoverLabel ? metadataDraft.cover_url.trim() : null,
             cover_source_type: selectedContentGroup.kind === 'project' ? metadataDraft.cover_source_type : null,
             cover_website_url: selectedContentGroup.kind === 'project' ? metadataDraft.cover_website_url.trim() : null,
+            is_featured: selectedContentGroup.kind === 'project' ? metadataDraft.is_featured : null,
             github_url: selectedContentGroup.kind === 'project' ? metadataDraft.github_url.trim() : null,
             demo_url: selectedContentGroup.kind === 'project' ? metadataDraft.demo_url.trim() : null,
             article_attribution: selectedContentGroup.kind === 'blog'
@@ -5306,6 +5311,23 @@ export default function App() {
                                     <h3>Availability</h3>
                                     <p>Changes to lifecycle and audience are saved automatically.</p>
                                   </div>
+                                  {selectedContentGroup.kind === 'project' && (
+                                    <label className="content-publishing-pin">
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(metadataDraft.is_featured)}
+                                        disabled={metadataSavingId === selectedContentGroup.id}
+                                        onChange={(event) => setMetadataDraft((current) => ({
+                                          ...current, is_featured: event.target.checked,
+                                        }))}
+                                      />
+                                      <span className="content-publishing-switch" aria-hidden="true"><i /></span>
+                                      <span className="content-publishing-pin-copy">
+                                        <strong>Feature project</strong>
+                                        <small>Show this project on the website home page after the next deployment. The project must be public.</small>
+                                      </span>
+                                    </label>
+                                  )}
                                   <ContentPublishingFields
                                     kind={selectedContentGroup.kind}
                                     value={publishingDraft}
