@@ -496,6 +496,33 @@ pub(crate) fn import_media_asset(
     DesktopWorkspace::from_environment()?.import_media_asset(&id, &source_path)
 }
 
+// Raw IPC avoids expanding a video into a JSON array of byte numbers.
+#[tauri::command]
+pub(crate) async fn import_media_asset_data(
+    request: tauri::ipc::Request<'_>,
+) -> Result<ImportedMediaAsset, String> {
+    let id = request
+        .headers()
+        .get("x-media-document")
+        .and_then(|value| value.to_str().ok())
+        .ok_or("missing media document")?
+        .to_owned();
+    let name = request
+        .headers()
+        .get("x-media-name")
+        .and_then(|value| value.to_str().ok())
+        .ok_or("missing media file name")?;
+    let file_name: String = serde_json::from_str(name).map_err(|error| error.to_string())?;
+    let bytes = match request.body() {
+        tauri::ipc::InvokeBody::Raw(bytes) => bytes.clone(),
+        _ => return Err("media import requires a binary body".to_owned()),
+    };
+    run_background("import media", move || {
+        DesktopWorkspace::from_environment()?.import_media_asset_bytes(&id, &file_name, &bytes)
+    })
+    .await
+}
+
 #[tauri::command]
 pub(crate) fn import_media_asset_bytes(
     id: String,

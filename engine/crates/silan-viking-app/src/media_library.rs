@@ -8,7 +8,7 @@ use thiserror::Error;
 
 const URI_PREFIX: &str = "silan://resources/";
 const MEDIA_ROUTE_PREFIX: &str = "/api/v1/media?f=";
-const EXTENSIONS: &[&str] = &[
+pub(crate) const MEDIA_EXTENSIONS: &[&str] = &[
     "png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico", "mp4", "webm", "mov", "m4v",
 ];
 
@@ -269,7 +269,9 @@ fn valid_uri_tail(uri: &str) -> Result<&str, MediaLibraryError> {
     let supported = Path::new(tail)
         .extension()
         .and_then(|value| value.to_str())
-        .is_some_and(|extension| EXTENSIONS.contains(&extension.to_ascii_lowercase().as_str()));
+        .is_some_and(|extension| {
+            MEDIA_EXTENSIONS.contains(&extension.to_ascii_lowercase().as_str())
+        });
     if safe && is_asset && supported {
         Ok(tail)
     } else {
@@ -283,7 +285,7 @@ fn supported_extension(file_name: &str) -> Result<String, MediaLibraryError> {
         .and_then(|value| value.to_str())
         .map(str::to_ascii_lowercase)
         .ok_or_else(|| MediaLibraryError::UnsupportedExtension(String::new()))?;
-    if EXTENSIONS.contains(&extension.as_str()) {
+    if MEDIA_EXTENSIONS.contains(&extension.as_str()) {
         Ok(extension)
     } else {
         Err(MediaLibraryError::UnsupportedExtension(extension))

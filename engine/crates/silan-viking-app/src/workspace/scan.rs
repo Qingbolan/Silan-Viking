@@ -17,6 +17,7 @@
 //! The scan only builds the content tree — it does no schema validation
 //! (that is the parser's job) and no IO beyond reading files.
 
+use crate::media_library::MEDIA_EXTENSIONS;
 use silan_viking_base::{ContentHash, ItemId, Lang, Meta, Namespace, PartId, SilanUri, Slug};
 use silan_viking_content::{ContentError, ContentKind, File, Item, Part, PartRole, PartShape};
 use std::path::{Path, PathBuf};
@@ -144,11 +145,6 @@ impl ScanReport {
     }
 }
 
-/// File extensions the scan treats as binary resources (lower-cased, no dot).
-/// A deliberately closed list — an unrecognised extension under `assets/` is
-/// ignored rather than shipped, so a stray file cannot bloat the deploy.
-const ASSET_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico"];
-
 /// Scan `content_root/resources/` and build every `Item`.
 pub fn scan_resources(content_root: &Path) -> Result<ScanReport, ScanError> {
     let resources = content_root.join("resources");
@@ -242,7 +238,7 @@ fn scan_episode_type(
 /// `resources_root` is `content/resources` — the prefix stripped to form the
 /// `rel_path` an asset is addressed by. An Item with no `assets/` folder
 /// contributes nothing. The walk recurses, so `assets/diagrams/a.svg` is
-/// found, but only [`ASSET_EXTENSIONS`] files are recorded.
+/// found, but only [`MEDIA_EXTENSIONS`] files are recorded.
 fn collect_assets(
     item_dir: &Path,
     resources_root: &Path,
@@ -255,7 +251,7 @@ fn collect_assets(
     collect_assets_recursive(&assets_dir, resources_root, out)
 }
 
-/// Recurse a directory, recording every [`ASSET_EXTENSIONS`] file in `out`.
+/// Recurse a directory, recording every [`MEDIA_EXTENSIONS`] file in `out`.
 fn collect_assets_recursive(
     dir: &Path,
     resources_root: &Path,
@@ -269,10 +265,10 @@ fn collect_assets_recursive(
         let is_asset = entry
             .extension()
             .and_then(|e| e.to_str())
-            .map(|e| ASSET_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+            .map(|e| MEDIA_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
             .unwrap_or(false);
         if !is_asset {
-            continue; // a non-image file under `assets/` — not shipped
+            continue; // an unsupported media file under `assets/` — not shipped
         }
         // The `rel_path` is the file's path below `content/resources/`. A
         // file outside that root (impossible for a real scan, but defended)
@@ -671,9 +667,8 @@ mod tests {
     }
 
     #[test]
-    fn collect_assets_finds_images_recursively_and_skips_non_images() {
-        // Layout: resources/blog/my-post/assets/{cover.png, diagrams/flow.svg,
-        // notes.txt}. Only the two images are recorded; `notes.txt` is not.
+    fn collect_assets_finds_media_recursively_and_skips_other_files() {
+        // Video and poster assets must travel together in the publication bundle.
         let root = tmp_dir("assets");
         let assets = root.join("blog/my-post/assets");
         std::fs::create_dir_all(assets.join("diagrams")).expect("mkdir");
@@ -681,6 +676,10 @@ mod tests {
         std::fs::write(assets.join("diagrams/flow.svg"), b"<svg/>").expect("write svg");
         std::fs::write(assets.join("notes.txt"), b"not an image").expect("write txt");
 
+        for extension in ["mp4", "webm", "mov", "m4v"] {
+            std::fs::write(assets.join(format!("clip.{extension}")), b"video fixture")
+                .expect("write video");
+        }
         let mut out = Vec::new();
         collect_assets(&root.join("blog/my-post"), &root, &mut out).expect("collect");
         out.sort_by(|a, b| a.rel_path.cmp(&b.rel_path));
@@ -689,10 +688,14 @@ mod tests {
         assert_eq!(
             paths,
             [
+                "blog/my-post/assets/clip.m4v",
+                "blog/my-post/assets/clip.mov",
+                "blog/my-post/assets/clip.mp4",
+                "blog/my-post/assets/clip.webm",
                 "blog/my-post/assets/cover.png",
                 "blog/my-post/assets/diagrams/flow.svg"
             ],
-            "only the two images, addressed by their path below resources/"
+            "media assets, addressed by their path below resources/"
         );
         let _ = std::fs::remove_dir_all(&root);
     }

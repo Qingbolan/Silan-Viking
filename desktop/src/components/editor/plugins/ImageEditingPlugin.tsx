@@ -145,6 +145,8 @@ export function ImageEditingPlugin({
       editor.registerCommand(
         CLICK_COMMAND,
         (event) => {
+          // Native video controls must receive their click (play, seek, volume).
+          if (event.target instanceof Element && event.target.closest('video')) return false;
           if (disabled || !$selectImageFromDOM(event.target)) return false;
           event.preventDefault();
           if (event.detail >= 2) queueMicrotask(() => setMetadataOpen(true));

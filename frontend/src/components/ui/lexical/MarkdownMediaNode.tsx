@@ -1,9 +1,11 @@
+import { $createLinkNode } from '@lexical/link';
 import React, { type JSX } from 'react';
 import {
   MdastImportExtension,
   type MdastExportHandler,
   type MdastImportHandler,
   type MdastNode,
+  type MdastParent,
 } from '@lexical/mdast';
 import {
   $applyNodeReplacement,
@@ -23,6 +25,7 @@ type SerializedMarkdownMediaNode = Spread<
     altText: string;
     src: string;
     title?: string;
+    poster?: string;
   },
   SerializedLexicalNode
 >;
@@ -49,12 +52,13 @@ const MarkdownMedia: React.FC<{
   altText: string;
   src: string;
   title?: string;
-}> = ({ altText, src, title }) => {
+  poster?: string;
+}> = ({ altText, src, title, poster }) => {
   const resolvedSource = trustedMediaSource(src);
   if (!resolvedSource) return null;
 
   return isVideoResource(src) ? (
-    <video controls preload="metadata" aria-label={altText || title || 'Embedded video'}>
+    <video controls playsInline poster={poster ? trustedMediaSource(poster) : undefined} preload="metadata" aria-label={altText || title || 'Embedded video'}>
       <source src={resolvedSource} />
     </video>
   ) : (
@@ -72,13 +76,14 @@ export class MarkdownMediaNode extends DecoratorNode<JSX.Element> {
   __src: string;
   __altText: string;
   __title?: string;
+  __poster?: string;
 
   $config() {
     return this.config('markdown-media', { extends: DecoratorNode });
   }
 
   static clone(node: MarkdownMediaNode): MarkdownMediaNode {
-    return new MarkdownMediaNode(node.__src, node.__altText, node.__title, node.__key);
+    return new MarkdownMediaNode(node.__src, node.__altText, node.__title, node.__key, node.__poster);
   }
 
   static importJSON(serializedNode: SerializedMarkdownMediaNode): MarkdownMediaNode {
@@ -86,14 +91,16 @@ export class MarkdownMediaNode extends DecoratorNode<JSX.Element> {
       altText: serializedNode.altText,
       src: serializedNode.src,
       title: serializedNode.title,
+      poster: serializedNode.poster,
     });
   }
 
-  constructor(src = '', altText = '', title?: string, key?: NodeKey) {
+  constructor(src = '', altText = '', title?: string, key?: NodeKey, poster?: string) {
     super(key);
     this.__src = src;
     this.__altText = altText;
     this.__title = title;
+    this.__poster = poster;
   }
 
   createDOM(config: EditorConfig): HTMLElement {
@@ -117,6 +124,7 @@ export class MarkdownMediaNode extends DecoratorNode<JSX.Element> {
       altText: this.getAltText(),
       src: this.getSrc(),
       title: this.getTitle(),
+      poster: this.getPoster(),
     };
   }
 
@@ -128,6 +136,8 @@ export class MarkdownMediaNode extends DecoratorNode<JSX.Element> {
     return this.getLatest().__altText;
   }
 
+  getPoster(): string | undefined { return this.getLatest().__poster; }
+
   getTitle(): string | undefined {
     return this.getLatest().__title;
   }
@@ -137,7 +147,7 @@ export class MarkdownMediaNode extends DecoratorNode<JSX.Element> {
   }
 
   decorate(): JSX.Element {
-    return <MarkdownMedia src={this.__src} altText={this.__altText} title={this.__title} />;
+    return <MarkdownMedia src={this.__src} altText={this.__altText} title={this.__title} poster={this.__poster} />;
   }
 }
 
@@ -145,12 +155,14 @@ export const $createMarkdownMediaNode = ({
   altText,
   src,
   title,
+  poster,
 }: {
   altText: string;
   src: string;
   title?: string;
+  poster?: string;
 }): MarkdownMediaNode => (
-  $applyNodeReplacement(new MarkdownMediaNode(src, altText, title))
+  $applyNodeReplacement(new MarkdownMediaNode(src, altText, title, undefined, poster))
 );
 
 export const $isMarkdownMediaNode = (
@@ -187,8 +199,19 @@ const $importMedia: MdastImportHandler = (node, context) => {
   return null;
 };
 
+const $importVideoPoster: MdastImportHandler = (node, context) => {
+  const link = node as MdastNode & { url?: string; title?: string; children?: ImageAstNode[] };
+  const image = link.children?.[0];
+  if (!link.url) return null;
+  if (!isVideoResource(link.url) || link.children?.length !== 1 || image?.type !== 'image' || !image.url) {
+    return $createLinkNode(link.url, { title: link.title }).append(...context.importChildren(node as MdastParent));
+  }
+  return $createMarkdownMediaNode({ src: link.url, altText: image.alt || '', title: image.title || undefined, poster: image.url });
+};
+
 const $exportMedia: MdastExportHandler = (node) => {
   if (!$isMarkdownMediaNode(node)) return null;
+  if (node.getPoster()) return { type: 'link', url: node.getSrc(), children: [{ type: 'image', url: node.getPoster(), alt: node.getAltText(), title: node.getTitle() ?? null }] } as MdastNode;
   return {
     alt: node.getAltText(),
     title: node.getTitle() ?? null,
@@ -202,6 +225,7 @@ export const MarkdownMediaExtension = defineExtension({
     configExtension(MdastImportExtension, {
       exportRules: [{ $export: $exportMedia, type: 'markdown-media' }],
       importRules: [
+        { $import: $importVideoPoster, type: 'link' },
         { $import: $importMedia, type: 'image' },
         { $import: $importMedia, type: 'imageReference' },
       ],

@@ -48,6 +48,7 @@ export function $readSelectedImage(): ImageSelectionState | null {
     alt: image.getAltText(),
     key: image.getKey(),
     src: image.getSource(),
+    poster: image.getPoster(),
     title: image.getTitle(),
   };
 }
@@ -61,7 +62,8 @@ export function sameImageSelection(
   return left.alt === right.alt
     && left.key === right.key
     && left.src === right.src
-    && left.title === right.title;
+    && left.title === right.title
+    && left.poster === right.poster;
 }
 
 export function $selectImageFromDOM(target: EventTarget | null) {

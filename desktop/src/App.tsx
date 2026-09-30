@@ -1,4 +1,7 @@
 import React from 'react';
+import { CaptureSubmission } from './lib/captureSubmission';
+import type { VideoCoverState } from './lib/videoCover';
+import { captureMarkdown } from './lib/captureDraft';
 import { AutosaveQueue, mergePersistedTranslations } from './lib/autosaveQueue';
 import { EditorRecovery, isSourceConflict, preserveDraftRevision, waitForSave } from './lib/editorRecovery';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -180,7 +183,7 @@ import {
 import { inferCoverSourceType, type CoverSourceType } from './lib/coverSource';
 import { formatShortDate, formatSyncedAgo } from './lib/format';
 import { summarizeMarkdownBlockChanges } from './lib/markdownBlockDiff';
-import { cssBackgroundImage, toWebviewMediaUrl } from './lib/media';
+import { cssBackgroundImage, mediaFileNameHeader, toWebviewMediaUrl } from './lib/media';
 import {
   languageReviewFindingId,
   useLanguageReviewWorkflow,
@@ -321,11 +324,17 @@ export default function App() {
   const [error, setError] = React.useState<string | null>(null);
   const [generatingTranslation, setGeneratingTranslation] = React.useState('');
   const [confirmingRefresh, setConfirmingRefresh] = React.useState(false);
+  const captureSubmissionRef = React.useRef(new CaptureSubmission());
   const [capturePhase, setCapturePhase] = React.useState<CapturePhase>('closed');
   const [captureOrigin, setCaptureOrigin] = React.useState({ x: 0, y: 0 });
   const [captureTarget, setCaptureTarget] = React.useState<CaptureTarget>('moment');
   const [captureNote, setCaptureNote] = React.useState('');
+  const [captureTitle, setCaptureTitle] = React.useState('');
   const [captureAttachments, setCaptureAttachments] = React.useState<File[]>([]);
+  const [captureCovers, setCaptureCovers] = React.useState(new Map<File, VideoCoverState>());
+  const setCaptureCover = React.useCallback((file: File, cover: VideoCoverState) => {
+    setCaptureCovers(current => new Map(current).set(file, cover));
+  }, []);
   const [captureCategory, setCaptureCategory] = React.useState<IdeaCategory>('inspiration');
   const [captureError, setCaptureError] = React.useState<string | null>(null);
   const [chromeLanguage, setChromeLanguage] = React.useState('en');
@@ -1583,7 +1592,7 @@ export default function App() {
 
   const requestCaptureClose = () => {
     if (capturePhase === 'submitting') return;
-    if (captureNote.trim() || captureAttachments.length > 0) {
+    if (captureTitle.trim() || captureNote.trim() || captureAttachments.length > 0) {
       setCapturePhase('confirming-close');
       return;
     }
@@ -1591,14 +1600,17 @@ export default function App() {
   };
 
   const discardCapture = () => {
+    captureSubmissionRef.current = new CaptureSubmission();
     setCaptureNote('');
+    setCaptureTitle('');
     setCaptureAttachments([]);
+    setCaptureCovers(new Map());
     setCaptureError(null);
     setCapturePhase('closing');
   };
 
   const submitCapture = async () => {
-    const note = captureNote.trim();
+    const note = captureMarkdown(captureTitle, captureNote);
     const hasAttachments = captureAttachments.length > 0;
     if ((!note && !hasAttachments) || capturePhase === 'submitting') return;
     const captureBody = note || attachmentOnlyCaptureNote(captureTarget, chromeLanguage);
@@ -1606,29 +1618,17 @@ export default function App() {
     setCaptureError(null);
     try {
       const language = inferMarkdownLanguage(captureBody, chromeLanguage);
-      const created = captureTarget === 'moment'
-        ? await invoke<EditorDocument>('capture_moment', { event: captureBody, language })
-        : await invoke<EditorDocument>('capture_blog', { draft: captureBody, category: captureCategory, language });
-      let savedCreated = created;
-      if (captureAttachments.length > 0) {
-        const createdTranslation = created.translations.find((translation) => translation.language === language)
-          || created.translations[0];
-        if (createdTranslation) {
-          try {
-            const imported = await importFileAssets(createdTranslation.id, captureAttachments);
-            const attachmentMarkdown = imported.map((asset) => asset.markdown).join('\n\n');
-            savedCreated = await invoke<EditorDocument>('save_document', {
-              id: createdTranslation.id,
-              title: createdTranslation.title,
-              content: `${createdTranslation.content.trim()}\n\n${attachmentMarkdown}`,
-              expectedRevision: createdTranslation.revision,
-            });
-            setLastImportedAsset(imported[imported.length - 1] || null);
-          } catch (reason) {
-            setMediaDropError(String(reason));
-          }
-        }
-      }
+      const savedCreated = await captureSubmissionRef.current.save({
+        title: captureTitle, note: captureNote, language,
+        moment: captureTarget === 'moment', files: captureAttachments, covers: captureCovers,
+      }, {
+        create: () => captureTarget === 'moment'
+          ? invoke<EditorDocument>('capture_moment', { event: captureBody, language })
+          : invoke<EditorDocument>('capture_blog', { draft: captureBody, category: captureCategory, language }),
+        import: async (id, file) => (await importFileAssets(id, [file]))[0],
+        save: input => invoke<EditorDocument>('save_document', input),
+      });
+      captureSubmissionRef.current = new CaptureSubmission();
       setDocuments((current) => [
         ...current.filter((document) => document.id !== savedCreated.id),
         savedCreated,
@@ -1646,7 +1646,9 @@ export default function App() {
       // completed and published without hunting for the card.
       setContentEditorOpen(true);
       setCaptureNote('');
+      setCaptureTitle('');
       setCaptureAttachments([]);
+      setCaptureCovers(new Map());
       setCapturePhase('closing');
     } catch (reason) {
       setCaptureError(String(reason));
@@ -2038,11 +2040,10 @@ export default function App() {
   const importFileAssets = React.useCallback(async (translationId: string, files: File[]) => {
     const imported: ImportedMediaAsset[] = [];
     for (const file of files) {
-      imported.push(await invoke<ImportedMediaAsset>('import_media_asset_bytes', {
-        id: translationId,
-        fileName: file.name,
-        bytes: await fileBytes(file),
-      }));
+      imported.push(await invoke<ImportedMediaAsset>('import_media_asset_data',
+        new Uint8Array(await file.arrayBuffer()),
+        { headers: { 'x-media-document': translationId, 'x-media-name': mediaFileNameHeader(file.name) } },
+      ));
     }
     return imported;
   }, []);
@@ -5076,16 +5077,16 @@ export default function App() {
                                     </label>
                                   ) : null}
                                 </section>
-                                {selectedContentGroup.kind === 'blog' && selectedMetadataTranslation && (
+                                {(selectedContentGroup.kind === 'blog' || selectedContentGroup.kind === 'project') && selectedMetadataTranslation && (
                                   <section className="resume-editor-section content-settings-section content-settings-cover-section">
                                     <div className="content-settings-section-heading">
                                       <h3>Generate a cover</h3>
-                                      <p>Turn the article promise into an editorial brief, generate with OpenAI, and select the result only after review.</p>
+                                      <p>Turn the page promise into an editorial brief, generate with OpenAI, and select the result only after review.</p>
                                     </div>
                                     <AiCoverGenerator
-                                      key={`blog-cover:${selectedContentGroup.id}:${selectedMetadataTranslation.language}`}
-                                      target={{ uri: `silan://resources/blog/${selectedContentGroup.slug}` }}
-                                      contentKind="blog"
+                                      key={`${selectedContentGroup.kind}-cover:${selectedContentGroup.id}:${selectedMetadataTranslation.language}`}
+                                      target={{ uri: `silan://resources/${selectedContentGroup.kind === 'project' ? 'projects' : 'blog'}/${selectedContentGroup.slug}` }}
+                                      contentKind={selectedContentGroup.kind}
                                       title={metadataDraft.title}
                                       description={metadataDraft.description}
                                       language={selectedMetadataTranslation.language}
@@ -5474,15 +5475,20 @@ export default function App() {
         phase={capturePhase}
         origin={captureOrigin}
         target={captureTarget}
+        sourceCreated={captureSubmissionRef.current.hasDraft}
         onTargetChange={setCaptureTarget}
         category={captureCategory}
         language={chromeLanguage}
         onCategoryChange={setCaptureCategory}
         onLanguageChange={setChromeLanguage}
         categories={ideaCategories}
+        title={captureTitle}
+        onTitleChange={setCaptureTitle}
         note={captureNote}
         onNoteChange={setCaptureNote}
         attachments={captureAttachments}
+        covers={captureCovers}
+        onCoverChange={setCaptureCover}
         references={editorAssistReferences}
         error={captureError}
         authorName={workspacePreferences?.identity.display_name || 'Silan Hu'}
@@ -5493,6 +5499,7 @@ export default function App() {
         inputRef={captureInputRef}
         onAttachFiles={attachFilesToCapture}
         onRemoveAttachment={(index) => {
+          setCaptureCovers(current => { const next = new Map(current); next.delete(captureAttachments[index]); return next; });
           setCaptureAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
         }}
         onRequestClose={requestCaptureClose}

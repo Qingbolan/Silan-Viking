@@ -1,4 +1,6 @@
+import { $createLinkNode } from '@lexical/link';
 import React from 'react';
+import { isVideoResource } from '../../../lib/media';
 import {
   $applyNodeReplacement,
   DecoratorNode,
@@ -17,24 +19,33 @@ import {
   type MdastExportHandler,
   type MdastImportHandler,
   type MdastNode,
+  type MdastParent,
 } from '@lexical/mdast';
 
 export type MarkdownImageData = {
   alt: string;
   src: string;
   title: string | null;
+  poster?: string;
 };
 
 type SerializedMarkdownImageNode = Spread<MarkdownImageData, SerializedLexicalNode>;
 
-function MarkdownImageView({ alt, src, title }: MarkdownImageData) {
+function MarkdownImageView({ alt, src, title, poster }: MarkdownImageData) {
   const [loadState, setLoadState] = React.useState<'loading' | 'ready' | 'error'>('loading');
 
   React.useEffect(() => setLoadState('loading'), [src]);
 
+  const video = isVideoResource(src);
   return (
     <>
-      <img
+      {video ? (
+        <video src={src} poster={poster} controls playsInline preload="metadata" aria-label={alt || title || 'Video'}
+          data-load-state={loadState}
+          onLoadedMetadata={() => setLoadState('ready')}
+          onError={() => setLoadState('error')}
+        />
+      ) : <img
         src={src}
         alt={alt}
         title={title || undefined}
@@ -42,10 +53,10 @@ function MarkdownImageView({ alt, src, title }: MarkdownImageData) {
         data-load-state={loadState}
         onLoad={() => setLoadState('ready')}
         onError={() => setLoadState('error')}
-      />
+      />}
       {loadState === 'error' && (
         <span className="lexical-image-node__error" role="status">
-          <strong>Image unavailable</strong>
+          <strong>{video ? 'Video unavailable' : 'Image unavailable'}</strong>
           <span>{alt || src}</span>
         </span>
       )}
@@ -57,17 +68,18 @@ export class MarkdownImageNode extends DecoratorNode<React.ReactNode> {
   __src: string;
   __alt: string;
   __title: string | null;
+  __poster?: string;
 
   static getType() {
     return 'markdown-image';
   }
 
   static clone(node: MarkdownImageNode) {
-    return new MarkdownImageNode(node.__src, node.__alt, node.__title, node.__key);
+    return new MarkdownImageNode(node.__src, node.__alt, node.__title, node.__key, node.__poster);
   }
 
   static importJSON(serialized: SerializedMarkdownImageNode) {
-    return new MarkdownImageNode(serialized.src, serialized.alt, serialized.title);
+    return new MarkdownImageNode(serialized.src, serialized.alt, serialized.title, undefined, serialized.poster);
   }
 
   static importDOM(): DOMConversionMap | null {
@@ -88,11 +100,12 @@ export class MarkdownImageNode extends DecoratorNode<React.ReactNode> {
     };
   }
 
-  constructor(src: string, alt = '', title: string | null = null, key?: NodeKey) {
+  constructor(src: string, alt = '', title: string | null = null, key?: NodeKey, poster?: string) {
     super(key);
     this.__src = src;
     this.__alt = alt;
     this.__title = title;
+    this.__poster = poster;
   }
 
   exportJSON(): SerializedMarkdownImageNode {
@@ -101,12 +114,21 @@ export class MarkdownImageNode extends DecoratorNode<React.ReactNode> {
       alt: this.__alt,
       src: this.__src,
       title: this.__title,
+      poster: this.__poster,
       type: 'markdown-image',
       version: 1,
     };
   }
 
   exportDOM(): DOMExportOutput {
+    if (isVideoResource(this.__src)) {
+      const video = document.createElement('video');
+      video.src = this.__src;
+      video.controls = true;
+      if (this.__poster) video.poster = this.__poster;
+      video.setAttribute('aria-label', this.__alt);
+      return { element: video };
+    }
     const image = document.createElement('img');
     image.src = this.__src;
     image.alt = this.__alt;
@@ -126,7 +148,7 @@ export class MarkdownImageNode extends DecoratorNode<React.ReactNode> {
   }
 
   decorate() {
-    return <MarkdownImageView alt={this.__alt} src={this.__src} title={this.__title} />;
+    return <MarkdownImageView alt={this.__alt} src={this.__src} title={this.__title} poster={this.__poster} />;
   }
 
   getTextContent() {
@@ -144,6 +166,8 @@ export class MarkdownImageNode extends DecoratorNode<React.ReactNode> {
   getAltText() {
     return this.getLatest().__alt;
   }
+
+  getPoster() { return this.getLatest().__poster; }
 
   getTitle() {
     return this.getLatest().__title;
@@ -165,8 +189,8 @@ export class MarkdownImageNode extends DecoratorNode<React.ReactNode> {
   }
 }
 
-export function $createMarkdownImageNode(src: string, alt = '', title: string | null = null) {
-  return $applyNodeReplacement(new MarkdownImageNode(src, alt, title));
+export function $createMarkdownImageNode(src: string, alt = '', title: string | null = null, poster?: string) {
+  return $applyNodeReplacement(new MarkdownImageNode(src, alt, title, undefined, poster));
 }
 
 export function $isMarkdownImageNode(node: LexicalNode | null | undefined): node is MarkdownImageNode {
@@ -199,8 +223,21 @@ const $importImage: MdastImportHandler = (node, context) => {
   return null;
 };
 
+// Standard linked-image Markdown stores both assets without hiding media
+// references in custom attributes: [![caption](poster)](video).
+const $importVideoPoster: MdastImportHandler = (node, context) => {
+  const link = node as MdastNode & { url?: string; title?: string; children?: ImageAstNode[] };
+  const image = link.children?.[0];
+  if (!link.url) return null;
+  if (!isVideoResource(link.url) || link.children?.length !== 1 || image?.type !== 'image' || !image.url) {
+    return $createLinkNode(link.url, { title: link.title }).append(...context.importChildren(node as MdastParent));
+  }
+  return $createMarkdownImageNode(link.url, image.alt || '', image.title || null, image.url);
+};
+
 const $exportImage: MdastExportHandler = (node) => {
   if (!$isMarkdownImageNode(node)) return null;
+  if (node.getPoster()) return { type: 'link', url: node.getSource(), children: [{ type: 'image', url: node.getPoster(), alt: node.getAltText(), title: node.getTitle() }] } as MdastNode;
   return {
     alt: node.getAltText(),
     title: node.getTitle(),
@@ -214,6 +251,7 @@ export const MarkdownImageExtension = defineExtension({
     configExtension(MdastImportExtension, {
       exportRules: [{ $export: $exportImage, type: 'markdown-image' }],
       importRules: [
+        { $import: $importVideoPoster, type: 'link' },
         { $import: $importImage, type: 'image' },
         { $import: $importImage, type: 'imageReference' },
       ],
@@ -226,7 +264,8 @@ export const MarkdownImageExtension = defineExtension({
 const escapeAltText = (value: string) => value.replace(/([\\\]])/g, '\\$1');
 const escapeTitle = (value: string) => value.replace(/([\\"])/g, '\\$1');
 
-export function markdownForImage({ alt, src, title }: MarkdownImageData) {
+export function markdownForImage({ alt, src, title, poster }: MarkdownImageData): string {
+  if (poster) return `[${markdownForImage({ alt, src: poster, title })}](${src})`;
   const destination = /[\s()]/.test(src) ? `<${src.replace(/>/g, '%3E')}>` : src;
   const titleSuffix = title ? ` "${escapeTitle(title)}"` : '';
   return `![${escapeAltText(alt)}](${destination}${titleSuffix})`;

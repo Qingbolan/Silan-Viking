@@ -1,4 +1,5 @@
 import React from 'react';
+import { MEDIA_FILE_ACCEPT } from '../../lib/media';
 import { Aperture, BookOpen, Briefcase, Paperclip, type LucideIcon } from 'lucide-react';
 import type { ContentKind } from '../../types';
 import type { SlashCommandDefinition } from './extensionPoints';
@@ -93,12 +94,12 @@ export function useEditorAssistSlashCommands({
       type="file"
       multiple
       className="editor-assist-file-input"
-      accept="image/*,video/mp4,video/webm,video/quicktime"
+      accept={MEDIA_FILE_ACCEPT}
       onChange={attachFiles}
       tabIndex={-1}
       aria-hidden="true"
     />
   );
 
-  return { slashCommands, fileInput };
+  return { slashCommands, fileInput, openFilePicker: () => fileInputRef.current?.click() };
 }

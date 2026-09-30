@@ -199,3 +199,61 @@ fn failed_projection_removes_the_new_project_directory() {
     assert!(matches!(result, Err(CaptureError::Projection { .. })));
     assert_eq!(project_directories(&content_root), before);
 }
+
+#[test]
+fn video_moment_keeps_owned_assets_and_markdown_through_save_and_sync() {
+    use silan_viking_app::{MediaLibrary, SaveTranslationInput, WorkspaceContent};
+    let temporary = tempfile::tempdir().expect("workspace");
+    let root = temporary.path().join("content");
+    let db = temporary.path().join("portfolio.db");
+    copy_tree(&fixture_root(), &root);
+    let captured = ContentCreator::open(&root)
+        .unwrap()
+        .capture_moment_and_sync("Video demo", "en", &db)
+        .unwrap();
+    let workspace = WorkspaceContent::open(&root).unwrap();
+    let document = workspace
+        .editable_documents()
+        .unwrap()
+        .into_iter()
+        .find(|document| document.slug == captured.slug)
+        .unwrap();
+    let translation = &document.parts[0].translations[0];
+    let library = MediaLibrary::open(&root).unwrap();
+    let mut markdown = translation.content.clone();
+    for extension in ["mp4", "webm", "mov", "m4v"] {
+        let asset = library
+            .import_asset_bytes(&document.id, &format!("demo.{extension}"), b"video fixture")
+            .unwrap();
+        assert!(asset.uri.starts_with(&format!(
+            "silan://resources/moment/{}/assets/",
+            captured.slug
+        )));
+        assert_eq!(
+            fs::read(library.resolve_local_path(&asset.uri).unwrap()).unwrap(),
+            b"video fixture"
+        );
+        markdown.push_str(&format!("\n\n{}", asset.markdown));
+    }
+    let saved = workspace
+        .save_translation(
+            &SaveTranslationInput {
+                translation_id: translation.id.clone(),
+                title: translation.title.clone(),
+                content: markdown.clone(),
+                expected_revision: translation.source_revision.0.clone(),
+            },
+            &db,
+        )
+        .unwrap();
+    assert_eq!(
+        saved.parts[0].translations[0].content.trim(),
+        markdown.trim()
+    );
+    let projected: String = Connection::open(&db).unwrap().query_row(
+        "SELECT t.body FROM item_part_translation t JOIN item_part p ON p.id = t.item_part_id WHERE p.part_id = ?1 AND t.language_code = 'en'",
+        [&captured.part_id], |row| row.get(0),
+    ).unwrap();
+    assert!(projected.contains("demo.mp4"));
+    assert!(projected.contains("demo.m4v"));
+}

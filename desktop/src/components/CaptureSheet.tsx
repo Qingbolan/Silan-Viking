@@ -1,4 +1,7 @@
 import React from 'react';
+import { CaptureVideo } from './CaptureVideo';
+import type { VideoCoverState } from '../lib/videoCover';
+import { isVideoFile } from '../lib/media';
 import { invoke } from '@tauri-apps/api/core';
 import {
   AlertCircle,
@@ -40,6 +43,7 @@ type CaptureCategoryOption = { value: IdeaCategory; label: string; Icon: typeof 
 
 type CaptureSheetProps = {
   phase: CapturePhase;
+  sourceCreated: boolean;
   target: CaptureTarget;
   onTargetChange: (target: CaptureTarget) => void;
   category: IdeaCategory;
@@ -47,9 +51,13 @@ type CaptureSheetProps = {
   onCategoryChange: (category: IdeaCategory) => void;
   onLanguageChange: (language: string) => void;
   categories: CaptureCategoryOption[];
+  title: string;
+  onTitleChange: (title: string) => void;
   note: string;
   onNoteChange: (note: string) => void;
   attachments: File[];
+  covers: Map<File, VideoCoverState>;
+  onCoverChange: (file: File, cover: VideoCoverState) => void;
   references: EditorAssistReference[];
   error: string | null;
   inputRef: React.Ref<MarkdownEditorHandle>;
@@ -81,17 +89,20 @@ function CaptureAttachmentPreview({
   const [previewUrl, setPreviewUrl] = React.useState('');
 
   React.useEffect(() => {
-    if (!file.type.startsWith('image/')) return undefined;
+    setPreviewUrl('');
+    if (!file.type.startsWith('image/') && !isVideoFile(file)) return undefined;
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
   return (
-    <article className="capture-attachment">
-      <div className="capture-attachment__preview">
+    <article className="capture-attachment" data-video={isVideoFile(file)}>
+      <div className="capture-attachment__preview" data-video={isVideoFile(file)}>
         {previewUrl
-          ? <img src={previewUrl} alt={`Attachment preview: ${file.name}`} />
+          ? isVideoFile(file)
+            ? <video src={previewUrl} controls playsInline preload="metadata" aria-label={`Video preview: ${file.name}`} />
+            : <img src={previewUrl} alt={`Attachment preview: ${file.name}`} />
           : <Paperclip size={16} />}
       </div>
       <div className="capture-attachment__copy">
@@ -112,6 +123,7 @@ function CaptureAttachmentPreview({
 
 export function CaptureSheet({
   phase,
+  sourceCreated,
   target,
   onTargetChange,
   category,
@@ -119,9 +131,13 @@ export function CaptureSheet({
   onCategoryChange,
   onLanguageChange,
   categories,
+  title,
+  onTitleChange,
   note,
   onNoteChange,
   attachments,
+  covers,
+  onCoverChange,
   references,
   error,
   inputRef,
@@ -319,6 +335,8 @@ export function CaptureSheet({
   const documentTitle = target === 'moment'
     ? (isChinese ? '未命名事件' : 'Untitled moment')
     : (isChinese ? '未命名文章' : 'Untitled article');
+  const videos = attachments.filter(isVideoFile);
+  const coversReady = videos.every(file => covers.get(file)?.status === 'ready');
   const editedLabel = isChinese ? '刚刚编辑' : 'Edited just now';
 
   return (
@@ -327,6 +345,14 @@ export function CaptureSheet({
       data-phase={phase}
       data-target={target}
       aria-hidden={phase === 'closed'}
+      onPasteCapture={(event) => {
+        const files = Array.from(event.clipboardData.files);
+        if (phase !== 'submitting' && files.some(isVideoFile)) {
+          event.preventDefault();
+          event.stopPropagation();
+          onAttachFiles(files);
+        }
+      }}
       onTransitionEnd={onTransitionEnd}
       style={{
         '--capture-origin-x': `${origin.x}px`,
@@ -341,7 +367,7 @@ export function CaptureSheet({
             aria-selected={target === 'blog'}
             className={target === 'blog' ? 'active' : ''}
             onClick={() => onTargetChange('blog')}
-            disabled={phase === 'submitting'}
+            disabled={phase === 'submitting' || sourceCreated}
           >
             快速写文章
           </button>
@@ -351,7 +377,7 @@ export function CaptureSheet({
             aria-selected={target === 'moment'}
             className={target === 'moment' ? 'active' : ''}
             onClick={() => onTargetChange('moment')}
-            disabled={phase === 'submitting'}
+            disabled={phase === 'submitting' || sourceCreated}
           >
             记录事件
           </button>
@@ -360,7 +386,7 @@ export function CaptureSheet({
           className="capture-language-close"
           languages={[{ language: 'en' }, { language: 'zh' }]}
           activeLanguage={language}
-          disabled={phase === 'submitting'}
+          disabled={phase === 'submitting' || sourceCreated}
           closeLabel="Close capture"
           closeTitle="Close capture"
           onLanguageSelect={onLanguageChange}
@@ -370,8 +396,42 @@ export function CaptureSheet({
 
       <div className="capture-workspace">
         <article className="capture-document" aria-labelledby="capture-document-title">
+          {target === 'moment' && (
+            <div className="capture-media-stage">
+              {videos.map(file => <CaptureVideo key={`${file.name}:${file.size}:${file.lastModified}`}
+                file={file} cover={covers.get(file)} disabled={phase === 'submitting'} chinese={isChinese}
+                onCover={onCoverChange} onRemove={() => onRemoveAttachment(attachments.indexOf(file))} />)}
+              {videos.length === 0 && (
+                <button className="capture-video-empty" type="button" disabled={phase === 'submitting'} onClick={editorAssist.openFilePicker}>
+                  <FileImage size={30} />
+                  <strong>{isChinese ? '分享这一刻的视频' : 'Share a video moment'}</strong>
+                  <span>{isChinese ? '选择视频，再写下你想记录的文字' : 'Choose a video, then add a few words'}</span>
+                  <small>MP4 · MOV · WebM · M4V</small>
+                </button>
+              )}
+            </div>
+          )}
           <header className="capture-document-header">
-            <h1 id="capture-document-title">{documentTitle}</h1>
+            <h1 id="capture-document-title">
+              <input
+                className="capture-title-input"
+                aria-label={isChinese ? '标题' : 'Title'}
+                value={title}
+                placeholder={documentTitle}
+                disabled={phase === 'submitting'}
+                onChange={(event) => onTitleChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
+                  if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey) {
+                    event.preventDefault();
+                    if (target === 'moment') event.currentTarget.closest('article')?.querySelector<HTMLTextAreaElement>('.capture-caption')?.focus();
+                    else if (inputRef && typeof inputRef !== 'function') inputRef.current?.focus();
+                  } else {
+                    onKeyDown(event);
+                  }
+                }}
+              />
+            </h1>
             <div className="capture-document-meta">
               <span className="capture-document-avatar" aria-hidden="true">
                 {authorAvatarUrl
@@ -405,25 +465,28 @@ export function CaptureSheet({
           )}
 
           <div className="capture-sheet">
-            <MarkdownEditor
+            {target === 'moment' ? (
+              <textarea className="capture-caption" aria-label={isChinese ? '文字说明' : 'Caption'}
+                value={note} rows={4} disabled={phase === 'submitting'}
+                placeholder={isChinese ? '写下这一刻的故事、进展或想法（选填）…' : 'Add a story, update or thought (optional)…'}
+                onChange={event => onNoteChange(event.target.value)} />
+            ) : <MarkdownEditor
               ref={inputRef}
               value={note}
               disabled={phase === 'submitting'}
               toolbarVisible
               slashCommands={editorAssist.slashCommands}
               onImportImages={importCaptureImages}
-              ariaLabel={target === 'moment' ? '事件内容' : '文章草稿'}
-              placeholder={target === 'moment'
-                ? '记录刚发生的进展、事件或状态变化... 输入 / 插入事件模板，[[ 连接已有内容'
-                : '先把文章草稿写下来... 输入 / 插入结构块，[[ 连接已有内容'}
+              ariaLabel="文章草稿"
+              placeholder="先把文章草稿写下来... 输入 / 插入结构块，[[ 连接已有内容"
               onChange={onNoteChange}
               onKeyDown={onKeyDown}
               onSelectionAssist={requestSelectionAssist}
-            />
+            />}
             {editorAssist.fileInput}
           </div>
 
-          {attachments.length > 0 && (
+          {attachments.some(file => target !== 'moment' || !isVideoFile(file)) && (
             <section className="capture-attachments" aria-label="Capture attachments">
               <header>
                 <FileImage size={14} />
@@ -431,7 +494,7 @@ export function CaptureSheet({
                 <span>Imported when this draft is saved</span>
               </header>
               <div>
-                {attachments.map((file, index) => (
+                {attachments.map((file, index) => target === 'moment' && isVideoFile(file) ? null : (
                   <CaptureAttachmentPreview
                     key={`${file.name}:${file.size}:${file.lastModified}:${index}`}
                     file={file}
@@ -453,6 +516,15 @@ export function CaptureSheet({
       </div>
 
       <div className="capture-action-dock" aria-label="Capture actions">
+        <button
+          type="button"
+          onClick={editorAssist.openFilePicker}
+          disabled={phase === 'submitting'}
+          title={isChinese ? '添加图片或视频' : 'Add photos or videos'}
+        >
+          <Paperclip size={16} />
+          {isChinese ? '图片 / 视频' : 'Photos / videos'}
+        </button>
         <button
           type="button"
           className={voicePhase === 'recording' ? 'recording' : ''}
@@ -479,7 +551,7 @@ export function CaptureSheet({
         <button
           type="button"
           className="capture-confirm"
-          disabled={(!note.trim() && attachments.length === 0) || phase === 'submitting' || voicePhase !== 'idle'}
+          disabled={(!title.trim() && !note.trim() && attachments.length === 0) || phase === 'submitting' || voicePhase !== 'idle' || (target === 'moment' && !coversReady)}
           onClick={onSubmit}
           title={target === 'moment' ? '记录事件' : '保存文章草稿'}
         >
@@ -492,7 +564,7 @@ export function CaptureSheet({
         <Dialog open onClose={onKeepWriting}>
           <DialogCard role="alertdialog" aria-labelledby="capture-discard-title">
             <DialogTitle id="capture-discard-title">Discard this thought?</DialogTitle>
-            <DialogDescription>Nothing has been written to content/ yet.</DialogDescription>
+            <DialogDescription>{sourceCreated ? 'The saved draft remains in your workspace. Unsaved changes will be discarded.' : 'Nothing has been written to your workspace yet.'}</DialogDescription>
             <DialogActions>
               <Button type="button" variant="secondary" size="sm" onClick={onKeepWriting}>Keep writing</Button>
               <Button type="button" variant="destructive" size="sm" onClick={onDiscard}>Discard</Button>

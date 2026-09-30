@@ -4,11 +4,11 @@ mod application;
 mod commands;
 mod credential_store;
 mod deepseek_credentials;
+mod media_protocol;
 mod model;
 mod openai_credentials;
 mod workspace_onboarding;
 mod workspace_runtime;
-use std::path::Path;
 use tauri::{http, Manager};
 
 fn main() {
@@ -59,6 +59,7 @@ fn main() {
             commands::import_episode_series_media_asset,
             commands::import_media_asset,
             commands::import_media_asset_bytes,
+            commands::import_media_asset_data,
             commands::import_resume_media_asset,
             commands::join_workspace,
             commands::get_interaction_details,
@@ -118,32 +119,7 @@ fn silan_protocol_response(request: http::Request<Vec<u8>>) -> http::Response<Ve
     let Ok(path) = library.resolve_local_path(&uri) else {
         return text_response(http::StatusCode::NOT_FOUND, "asset not found");
     };
-    match std::fs::read(&path) {
-        Ok(bytes) => http::Response::builder()
-            .header(http::header::CONTENT_TYPE, content_type_for(&path))
-            .header("Access-Control-Allow-Origin", "*")
-            .body(bytes)
-            .unwrap(),
-        Err(_) => text_response(http::StatusCode::INTERNAL_SERVER_ERROR, "cannot read asset"),
-    }
-}
-
-fn content_type_for(path: &Path) -> &'static str {
-    match path
-        .extension()
-        .and_then(|value| value.to_str())
-        .map(|value| value.to_ascii_lowercase())
-        .as_deref()
-    {
-        Some("png") => "image/png",
-        Some("jpg") | Some("jpeg") => "image/jpeg",
-        Some("gif") => "image/gif",
-        Some("svg") => "image/svg+xml",
-        Some("webp") => "image/webp",
-        Some("avif") => "image/avif",
-        Some("ico") => "image/x-icon",
-        _ => "application/octet-stream",
-    }
+    media_protocol::respond(&path, &request)
 }
 
 fn text_response(status: http::StatusCode, message: &str) -> http::Response<Vec<u8>> {

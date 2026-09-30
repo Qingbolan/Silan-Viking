@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { renderToStaticMarkup } from 'react-dom/server.browser';
 import { buildEditorFromExtensions } from '@lexical/extension';
 import {
   $createParagraphNode,
@@ -542,4 +543,33 @@ unregister();
 assert.match(listenerOutput, /Listener update/);
 
 editor.dispose();
-console.log('Lexical Markdown AST round-trip verified.');
+
+// Videos use the same source-backed Markdown syntax as images. Editing must
+// preserve the URI so publication can discover and include the owned asset.
+for (const extension of ['mp4', 'webm', 'mov', 'm4v']) {
+  const markdown = `![Demo](silan://resources/moment/demo/assets/clip.${extension})`;
+  const videoEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, [], markdown));
+  assert.equal(videoEditor.read(() => $documentToMarkdown()), markdown);
+  const rendered = videoEditor.read(() => {
+    const node = $getRoot().getFirstDescendant();
+    assert($isMarkdownImageNode(node));
+    return renderToStaticMarkup(node.decorate());
+  });
+  assert.match(rendered, /<video[^>]*controls/);
+  assert.doesNotMatch(rendered, /<img/);
+  videoEditor.dispose();
+}
+
+console.log('Lexical Markdown AST round-trip and video rendering verified.');
+
+const posterMarkdown = '[![Video cover](silan://resources/moment/demo/assets/cover.jpg)](silan://resources/moment/demo/assets/clip.mp4)';
+const posterEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, [], posterMarkdown));
+assert.equal(posterEditor.read(() => $documentToMarkdown()), posterMarkdown);
+const posterRendered = posterEditor.read(() => {
+  const node = $getRoot().getFirstDescendant();
+  assert($isMarkdownImageNode(node), 'video poster must import as one media node');
+  assert.equal(node.getPoster(), 'silan://resources/moment/demo/assets/cover.jpg');
+  return renderToStaticMarkup(node.decorate());
+});
+assert.match(posterRendered, /<video[^>]*poster="silan:\/\/resources\/moment\/demo\/assets\/cover.jpg"/);
+posterEditor.dispose();
