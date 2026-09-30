@@ -51,7 +51,7 @@ export interface ArticleFooterProps {
   onShare?: (target: ShareTarget) => void | Promise<void>;
 }
 
-const LikerStrip: React.FC<{
+export const ArticleLikerStrip: React.FC<{
   likers: ArticleLiker[];
   likes: number;
 }> = ({ likers, likes }) => {
@@ -127,7 +127,7 @@ const ArticleFooter: React.FC<ArticleFooterProps> = ({
           pending={likePending}
           onLike={onLike}
         />
-        <LikerStrip likers={likers} likes={likes} />
+        <ArticleLikerStrip likers={likers} likes={likes} />
       </div>
       <ArticleMeta
         contributors={contributors}

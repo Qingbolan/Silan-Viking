@@ -79,9 +79,13 @@ const Composer: React.FC<{
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const comment = content.trim();
-    if (!comment) return;
-    await onSubmit(comment, composerName);
-    setContent('');
+    if (!comment || submitting) return;
+    try {
+      await onSubmit(comment, composerName);
+      setContent('');
+    } catch {
+      // The discussion owns the inline error; retain the draft for retry.
+    }
   };
 
   const handleUseSignedInIdentity = async () => {
@@ -367,8 +371,9 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
     try {
       await onSubmit({ authorName, content, parentId });
       setReplyTarget(null);
-    } catch {
+    } catch (error) {
       setFormError(language === 'zh' ? '评论未能发布，请重试。' : 'The comment was not published. Please retry.');
+      throw error;
     }
   };
 
@@ -424,7 +429,7 @@ const CompactComments: React.FC<CompactCommentsProps> = ({
         postAria={labels?.postAria || (language === 'zh' ? '发布评论' : 'Post comment')}
         submitting={submitting}
         surface={surface}
-        onSubmit={(content, authorName) => { void submitDraft(content, authorName, replyTarget?.id); }}
+        onSubmit={(content, authorName) => submitDraft(content, authorName, replyTarget?.id)}
         onIdentityMerged={() => onRetry()}
         onIdentityMergeError={() => setFormError(
           language === 'zh'

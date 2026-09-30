@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { adjacentMoments } from '../src/lib/momentNavigation';
+import type { Moment } from '../src/types/api';
+const rows = [{ id: 'a', slug: 'alpha', date: '2026-09-30' }, { id: 'b', slug: 'beta', date: '2026-09-30' }, { id: 'c', slug: 'gamma', date: '2026-08-01' }] as Moment[];
+assert.deepEqual(adjacentMoments(rows, 'a'), { previous: null, next: rows[1] });
+assert.deepEqual(adjacentMoments(rows, 'beta'), { previous: rows[0], next: rows[2] });
+assert.deepEqual(adjacentMoments(rows, 'c'), { previous: rows[1], next: null });
+assert.deepEqual(adjacentMoments(rows, 'missing'), { previous: null, next: null });
+assert.deepEqual(adjacentMoments([], 'a'), { previous: null, next: null });
+assert.equal(rows[0].id, 'a');
+console.log('Moment navigation preserves same-day entries and timeline boundaries.');

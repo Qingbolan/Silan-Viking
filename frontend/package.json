@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --fix",
-    "test:media": "esbuild scripts/verify-video-media.ts --bundle --platform=node --format=esm --define:import.meta.env={} --outfile=/tmp/silan-public-video-test.mjs && node /tmp/silan-public-video-test.mjs"
+    "test:media": "esbuild scripts/verify-video-media.ts --bundle --platform=node --format=esm --define:import.meta.env={} --outfile=/tmp/silan-public-video-test.mjs && node /tmp/silan-public-video-test.mjs",
+    "test:moment-navigation": "esbuild scripts/moment-navigation.test.ts --bundle --platform=node --format=esm --outfile=/tmp/silan-neighbors-test.mjs && node /tmp/silan-neighbors-test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

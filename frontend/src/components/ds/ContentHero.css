@@ -64,17 +64,3 @@
   overflow-wrap: anywhere;
   text-wrap: balance;
 }
-
-.content-hero__link {
-  transition: color 160ms ease;
-}
-
-.content-hero__link:hover {
-  color: var(--ds-color-primary);
-}
-
-.content-hero__link:focus-visible {
-  outline: 2px solid var(--ds-color-primary);
-  outline-offset: 4px;
-  border-radius: 2px;
-}

@@ -1,19 +1,21 @@
 import React, { useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { fetchMoment } from '../api/moments/momentApi';
+import { fetchMoment, fetchMoments } from '../api/moments/momentApi';
 import { fetchPersonalInfo } from '../api/home/resumeApi';
 import { mediaUrl } from '../api/utils';
 import type { Moment, PersonalInfo } from '../types/api';
 import Markdown from '../components/ui/Markdown';
 import MomentVideoPlayer from '../components/Moments/MomentVideoPlayer';
 import { momentVideoContent } from '../lib/momentMedia';
-import MomentActions from '../components/Resume/MomentActions';
+import MomentReadingRail from '../components/Moments/MomentReadingRail';
+import MomentScrollTransition from '../components/Moments/MomentScrollTransition';
+import { adjacentMoments } from '../lib/momentNavigation';
+import { ContentBreadcrumb } from '../components/ds/ContentBreadcrumb';
 import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
 import { useLanguage } from '../components/LanguageContext';
 import { Seo, creativeWorkJsonLd } from '../components/Seo';
 import { Avatar, Badge, BrandLoading, NetworkError } from '../components/ds';
-import { useRemoteResource } from '../hooks/useRemoteResource';
+import { useRemoteResource, type RemoteResource } from '../hooks/useRemoteResource';
 import { useSetPageTitle } from '../layout/PageTitleContext';
 import { markdownToPlainExcerpt, withoutRepeatedTitle } from '../lib/markdown';
 import { normalizeContentTimestamp } from '../utils/contentTimestamp';
@@ -54,6 +56,8 @@ const MomentDetail: React.FC = () => {
   );
   const resource = useRemoteResource<Moment>(slug, loadMoment);
   const moment = resource.data;
+  const loadTimeline = useCallback(() => fetchMoments(lang), [lang]);
+  const timeline = useRemoteResource<Moment[]>(`moment-timeline-${lang}`, loadTimeline);
   const loadAuthor = useCallback(() => fetchPersonalInfo(lang), [lang]);
   const authorResource = useRemoteResource<PersonalInfo>(`moment-author-${lang}`, loadAuthor);
   const authorName = authorResource.data?.full_name || 'Silan Hu';
@@ -73,14 +77,14 @@ const MomentDetail: React.FC = () => {
 
   const copy = lang === 'zh'
     ? {
-        back: '返回动态',
+
         loading: '正在加载动态',
         notFoundTitle: '动态不存在',
         notFoundBody: '这条动态不存在，或尚未公开。',
         related: '关联内容',
       }
     : {
-        back: 'Back to moments',
+
         loading: 'Loading moment',
         notFoundTitle: 'Moment not found',
         notFoundBody: 'This moment does not exist or is not public.',
@@ -105,7 +109,9 @@ const MomentDetail: React.FC = () => {
     </div>
   ) : (
     <MomentDetailBody
+      key={moment.id}
       moment={moment}
+      timeline={timeline}
       lang={lang}
       copy={copy}
       authorName={authorName}
@@ -114,7 +120,7 @@ const MomentDetail: React.FC = () => {
   );
 
   return (
-    <div className="mx-auto w-full max-w-[76rem] px-5 pb-0 pt-4 sm:px-8 sm:pt-7 lg:px-0">
+    <div className="mx-auto w-full max-w-[84rem] px-5 pb-32 pt-4 sm:px-8 sm:pt-6">
       {moment && (
         <Seo
           title={moment.title}
@@ -133,42 +139,38 @@ const MomentDetail: React.FC = () => {
         />
       )}
 
-      <Link
-        to={canonicalInternalPath('/moments')}
-        className="inline-flex min-h-9 items-center gap-1.5 text-ds-sm font-medium text-ds-fg-muted transition-colors hover:text-ds-primary"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        {copy.back}
-      </Link>
+      <ContentBreadcrumb
+        title={moment?.title || (lang === 'zh' ? '动态详情' : 'Moment')}
+        language={lang}
+        parent={{ label: lang === 'zh' ? '动态' : 'Moments', to: canonicalInternalPath('/moments') }}
+        className="border-b border-ds-border pb-5"
+      />
 
-      <div className="mt-3 sm:mt-5">{body}</div>
+      <div className="mt-6 sm:mt-8">{body}</div>
     </div>
   );
 };
 
-// Video Moments use a wide watch page with discussion below the description.
-// Text Moments retain their article and sticky interaction rail.
+// Media, prose and discussion follow the same vertical reading order.
 const MomentDetailBody: React.FC<{
   moment: Moment;
+  timeline: RemoteResource<Moment[]>;
   lang: 'en' | 'zh';
   copy: {
     related: string;
   };
   authorName: string;
   authorAvatarUrl: string;
-}> = ({ moment, lang, copy, authorName, authorAvatarUrl }) => {
+}> = ({ moment, timeline, lang, copy, authorName, authorAvatarUrl }) => {
   const { video, body: remainingBody } = momentVideoContent(moment.description);
   const bodyText = withoutRepeatedTitle(remainingBody, moment.title);
-  // A Moment is a dated public record. Its interaction footer must use the
-  // same public date as the article header; creation time is projection
-  // metadata and can differ after imports or migrations.
-  const timestamp = `${moment.date}T00:00:00`;
   const formattedDate = formatMomentDate(moment, lang);
 
   return (
-    <div className={video ? 'mx-auto max-w-[68rem]' : 'lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]'}>
-      <article className="min-w-0 pb-5 sm:pb-8">
-        <div className={video ? 'w-full' : 'mx-auto max-w-[44rem]'}>
+    <MomentScrollTransition {...adjacentMoments(timeline.data ?? [], moment.id)} ready={timeline.status === 'ready'} language={lang}>
+    <div className="mx-auto flex w-full max-w-[52rem] flex-col gap-6">
+      <article className="w-full min-w-0 pb-5 sm:pb-8">
+        <div className={'w-full'}>
           {video && <div className="mb-5"><MomentVideoPlayer video={video} title={moment.title} /></div>}
           <header>
             <h1 className="moment-detail-title text-pretty text-[1.625rem] font-semibold leading-[1.16] tracking-[-0.025em] text-ds-fg sm:text-ds-3xl lg:text-ds-4xl">
@@ -208,7 +210,7 @@ const MomentDetailBody: React.FC<{
 
           <Markdown
             documentTitle={moment.title}
-            className="moment-detail-prose mt-5 text-ds-base leading-[1.68] text-ds-fg-muted sm:text-ds-lg [&_.markdown-body]:!pl-0"
+            className="moment-detail-prose mt-6 max-w-[65ch] text-ds-base leading-[1.68] text-ds-fg-muted sm:text-ds-lg [&_.markdown-body]:!pl-0"
           >
             {bodyText}
           </Markdown>
@@ -221,24 +223,12 @@ const MomentDetailBody: React.FC<{
             className="mt-6"
           />
 
-          {/* Below lg, the interaction rail collapses back into the
-              article flow — the sidebar variant only makes sense with
-              room beside the text. */}
-          <div className={video ? 'mt-6' : 'mt-6 lg:hidden'}>
-            <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} />
-          </div>
         </div>
       </article>
 
-      {!video && <aside className="hidden lg:block">
-        {/* Sticky rail: the sidebar variant needs a bounded height so its
-            comment list scrolls internally while the article keeps using
-            the page scroll. */}
-        <div className="sticky top-6 h-[calc(100dvh-10rem)] min-h-[24rem] overflow-hidden rounded-ds-lg border border-ds-border bg-ds-surface-2">
-          <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} variant="sidebar" />
-        </div>
-      </aside>}
+      <MomentReadingRail moment={moment} timeline={timeline} language={lang} />
     </div>
+    </MomentScrollTransition>
   );
 };
 

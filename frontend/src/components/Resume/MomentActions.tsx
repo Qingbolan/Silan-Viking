@@ -15,6 +15,8 @@ import type { CommentDraft } from '../ds/article-footer/types';
 import { useLanguage } from '../LanguageContext';
 import MomentEngagementControls from './MomentEngagementControls';
 import MomentLikerStrip from './MomentLikerStrip';
+import LikePanel from '../ds/article-footer/LikePanel';
+import { ArticleLikerStrip } from '../ds/ArticleFooter';
 
 interface MomentActionsProps {
   momentKey: string;
@@ -135,9 +137,9 @@ const MomentActions: React.FC<MomentActionsProps> = ({
 
   const discussion = (
     <EntityDiscussion
-      composerPosition={variant === 'sidebar' ? 'bottom' : 'sticky-bottom'}
+      composerPosition={variant === 'sidebar' ? 'top' : 'sticky-bottom'}
       composerVisible={composerOpen}
-      surface={variant === 'sidebar' ? 'sidebar' : 'default'}
+      surface="default"
       loadComments={loadComments}
       createComment={createComment}
       toggleCommentLike={(commentId, fingerprint) => toggleMomentCommentLike(commentId, fingerprint)}
@@ -147,22 +149,11 @@ const MomentActions: React.FC<MomentActionsProps> = ({
 
   if (variant === 'sidebar') {
     return (
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="shrink-0 p-4 pb-2">
-          <MomentEngagementControls
-            liked={engagement.is_liked_by_user}
-            likePending={likePending}
-            language={lang}
-            onLike={() => void toggleLike()}
-            onComment={openDiscussion}
-          />
-          <MomentLikerStrip
-            likers={engagement.likers ?? []}
-            liked={engagement.is_liked_by_user}
-            language={lang}
-          />
-        </div>
-        <div className="min-h-0 flex-1 px-4 pb-3">{discussion}</div>
+      <div className="px-4 pb-5">
+        <LikePanel likes={engagement.likes} liked={engagement.is_liked_by_user}
+          pending={likePending} onLike={toggleLike} />
+        <ArticleLikerStrip likers={engagement.likers ?? []} likes={engagement.likes} />
+        <div className="mt-5">{discussion}</div>
       </div>
     );
   }
