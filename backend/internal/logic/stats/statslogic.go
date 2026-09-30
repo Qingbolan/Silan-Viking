@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"silan-backend/internal/ent"
@@ -37,25 +36,39 @@ type StatsLogic struct {
 // Per-item aggregation stays inside the backend so clients do not fan out
 // four requests for every content item.
 func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
-	interactions, err := l.svcCtx.DB.ContentInteraction.Query().All(l.ctx)
+	interactions, err := l.svcCtx.DB.ContentInteraction.Query().Order(contentinteraction.ByCreatedAt()).All(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-	comments, err := l.svcCtx.DB.Comment.Query().All(l.ctx)
+	comments, err := l.svcCtx.DB.Comment.Query().Order(comment.ByCreatedAt()).All(l.ctx)
 	if err != nil {
 		return nil, err
 	}
 	type entity struct{ kind, id string }
 	entities := map[entity]struct{}{}
+	interactionsByEntity := map[entity][]*ent.ContentInteraction{}
+	commentCounts := map[entity]int{}
+	commentsByEntity := map[entity][]*ent.Comment{}
+	projectIDs := []string{}
 	for _, row := range interactions {
-		entities[entity{kind: row.EntityType.String(), id: row.EntityID}] = struct{}{}
+		key := entity{kind: row.EntityType.String(), id: row.EntityID}
+		entities[key] = struct{}{}
+		interactionsByEntity[key] = append(interactionsByEntity[key], row)
 	}
 	for _, row := range comments {
-		entities[entity{kind: row.EntityType.String(), id: row.EntityID}] = struct{}{}
+		key := entity{kind: row.EntityType.String(), id: row.EntityID}
+		entities[key] = struct{}{}
+		commentsByEntity[key] = append(commentsByEntity[key], row)
+		if row.IsApproved {
+			commentCounts[key]++
+		}
 	}
 	keys := make([]entity, 0, len(entities))
 	for key := range entities {
 		keys = append(keys, key)
+		if key.kind == "project" {
+			projectIDs = append(projectIDs, key.id)
+		}
 	}
 	sort.Slice(keys, func(i, j int) bool {
 		if keys[i].kind == keys[j].kind {
@@ -64,27 +77,31 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		return keys[i].kind < keys[j].kind
 	})
 
+	projectCounts, err := engagement.ProjectCounts(l.ctx, l.svcCtx.DB, projectIDs)
+	if err != nil {
+		return nil, err
+	}
 	items := make([]types.StatsSnapshotItem, 0, len(keys))
 	for _, key := range keys {
-		req := &types.StatsRequest{EntityType: key.kind, EntityID: key.id}
-		itemStats, statsErr := l.Stats(req)
-		if statsErr != nil {
-			return nil, statsErr
+		rows := interactionsByEntity[key]
+		itemStats := types.StatsResponse{EntityType: key.kind, EntityID: key.id, Comments: commentCounts[key]}
+		for _, row := range rows {
+			switch row.Kind {
+			case contentinteraction.KindView:
+				itemStats.Views++
+			case contentinteraction.KindLike:
+				itemStats.Likes++
+			}
 		}
-		visitors, visitorsErr := l.Visitors(req)
-		if visitorsErr != nil {
-			return nil, visitorsErr
+		if key.kind == "project" {
+			itemStats.Views, itemStats.Likes = projectCounts[key.id].Views, projectCounts[key.id].Likes
 		}
-		crawlers, crawlersErr := l.CrawlerBreakdown(req)
-		if crawlersErr != nil {
-			return nil, crawlersErr
-		}
-		sources, sourcesErr := l.SourceBreakdown(req)
-		if sourcesErr != nil {
-			return nil, sourcesErr
+		legacyLocations, err := l.legacyVisitorLocations(rows)
+		if err != nil {
+			return nil, err
 		}
 		commentList, commentsErr := bloglogic.NewListBlogCommentsLogic(l.ctx, l.svcCtx).
-			ListAllComments(&types.BlogCommentListRequest{ID: key.id}, comment.EntityType(key.kind))
+			ProjectAllComments(commentsByEntity[key])
 		if commentsErr != nil {
 			return nil, commentsErr
 		}
@@ -92,38 +109,24 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		if key.kind == "project" {
 			likerRows, err = engagement.ProjectLikers(l.ctx, l.svcCtx.DB, key.id, -1)
 		} else {
-			likerRows, err = engagement.ContentLikers(
-				l.ctx,
-				l.svcCtx.DB,
-				contentinteraction.EntityType(key.kind),
-				key.id,
-				-1,
-			)
+			likerRows, err = engagement.ContentLikersFromRows(l.ctx, l.svcCtx.DB, rows)
 		}
 		if err != nil {
 			return nil, err
 		}
 		items = append(items, types.StatsSnapshotItem{
-			Stats:    *itemStats,
-			Visitors: visitors.Visitors,
-			Crawlers: crawlers.Items,
-			Sources:  sources.Items,
+			Stats:    itemStats,
+			Visitors: projectVisitors(rows, legacyLocations),
+			Crawlers: projectCrawlers(rows),
+			Sources:  projectSources(rows),
 			Likers:   bloglogic.UpdateLikers(likerRows),
 			Comments: commentList.Comments,
 		})
 	}
-	countryLogs, err := l.svcCtx.DB.RequestLog.Query().
-		Where(requestlog.IsBot(false), requestlog.CountryCodeNEQ("")).
-		All(l.ctx)
+	countryLogs, err := l.latestCountryLogs()
 	if err != nil {
 		return nil, err
 	}
-	// One visitor can trigger several API requests for a page. Count each
-	// observed network address once per country so endpoint fan-out does not
-	// inflate the geographical ranking.
-	sort.Slice(countryLogs, func(i, j int) bool {
-		return countryLogs[i].CreatedAt.After(countryLogs[j].CreatedAt)
-	})
 	type locationKey struct {
 		country        string
 		regionCode     string
@@ -139,15 +142,7 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		accuracyRadius int
 	}
 	locationVisitors := make(map[locationKey]map[string]struct{})
-	seenVisitors := make(map[string]struct{})
 	for _, row := range countryLogs {
-		if strings.HasPrefix(row.Path, "/api/v1/stats") {
-			continue
-		}
-		if _, seen := seenVisitors[row.IP]; seen {
-			continue
-		}
-		seenVisitors[row.IP] = struct{}{}
 		key := locationKey{
 			country:        row.CountryCode,
 			regionCode:     row.RegionCode,
@@ -354,6 +349,13 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 		return nil, err
 	}
 
+	return &types.VisitorsResponse{
+		EntityType: req.EntityType, EntityID: req.EntityID,
+		Visitors: projectVisitors(rows, legacyLocations),
+	}, nil
+}
+
+func projectVisitors(rows []*ent.ContentInteraction, legacyLocations map[string]traffic.GeoLocation) []types.VisitorRow {
 	visitors := make([]types.VisitorRow, 0, len(rows))
 	for _, row := range rows {
 		ip := ""
@@ -417,11 +419,7 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 			LastSeenAt:     row.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		})
 	}
-	return &types.VisitorsResponse{
-		EntityType: req.EntityType,
-		EntityID:   req.EntityID,
-		Visitors:   visitors,
-	}, nil
+	return visitors
 }
 
 // legacyVisitorLocations restores coarse geography for interactions recorded
@@ -434,10 +432,12 @@ func (l *StatsLogic) legacyVisitorLocations(rows []*ent.ContentInteraction) (map
 		return locations, nil
 	}
 	ips := make([]string, 0, len(rows))
+	seenIPs := make(map[string]bool)
 	earliest, latest := rows[0].CreatedAt, rows[0].CreatedAt
 	for _, row := range rows {
-		if row.IPAddress != nil && *row.IPAddress != "" {
+		if row.CountryCode == "" && row.IPAddress != nil && *row.IPAddress != "" && !seenIPs[*row.IPAddress] {
 			ips = append(ips, *row.IPAddress)
+			seenIPs[*row.IPAddress] = true
 		}
 		if row.CreatedAt.Before(earliest) {
 			earliest = row.CreatedAt
@@ -455,8 +455,8 @@ func (l *StatsLogic) legacyVisitorLocations(rows []*ent.ContentInteraction) (map
 			requestlog.CountryCodeNEQ(""),
 			requestlog.CreatedAtGTE(earliest.Add(-time.Minute)),
 			requestlog.CreatedAtLTE(latest.Add(time.Minute)),
+			latestRequestLogPerIP,
 		).
-		Order(requestlog.ByCreatedAt(sql.OrderDesc())).
 		All(l.ctx)
 	if err != nil {
 		return nil, err
@@ -504,6 +504,10 @@ func (l *StatsLogic) CrawlerBreakdown(req *types.StatsRequest) (*types.CrawlerBr
 	if err != nil {
 		return nil, err
 	}
+	return &types.CrawlerBreakdownResponse{Items: projectCrawlers(rows)}, nil
+}
+
+func projectCrawlers(rows []*ent.ContentInteraction) []types.CrawlerRow {
 	counts := map[string]int{}
 	for _, row := range rows {
 		counts[row.VisitorKind.String()]++
@@ -514,7 +518,7 @@ func (l *StatsLogic) CrawlerBreakdown(req *types.StatsRequest) (*types.CrawlerBr
 			items = append(items, types.CrawlerRow{VisitorKind: kind, Count: c})
 		}
 	}
-	return &types.CrawlerBreakdownResponse{Items: items}, nil
+	return items
 }
 
 // SourceBreakdown aggregates interactions by referrer source.
@@ -538,6 +542,10 @@ func (l *StatsLogic) SourceBreakdown(req *types.StatsRequest) (*types.SourceBrea
 	if err != nil {
 		return nil, err
 	}
+	return &types.SourceBreakdownResponse{Items: projectSources(rows)}, nil
+}
+
+func projectSources(rows []*ent.ContentInteraction) []types.SourceRow {
 	counts := map[string]int{}
 	for _, row := range rows {
 		counts[row.ReferrerKind.String()]++
@@ -548,5 +556,29 @@ func (l *StatsLogic) SourceBreakdown(req *types.StatsRequest) (*types.SourceBrea
 			items = append(items, types.SourceRow{Source: src, Count: c})
 		}
 	}
-	return &types.SourceBreakdownResponse{Items: items}, nil
+	return items
+}
+
+// latestCountryLogs reduces historical requests to one observation per IP in
+// the database. Filtering precedes ranking: stats requests must never displace
+// a real visit. The ID breaks timestamp ties deterministically.
+func (l *StatsLogic) latestCountryLogs() ([]*ent.RequestLog, error) {
+	return l.svcCtx.DB.RequestLog.Query().Where(
+		requestlog.IsBot(false),
+		requestlog.CountryCodeNEQ(""),
+		requestlog.Not(requestlog.PathHasPrefix("/api/v1/stats")),
+		latestRequestLogPerIP,
+	).All(l.ctx)
+}
+
+// Apply last, after eligibility predicates, so the ranking only considers
+// matching observations. Both geography projections share this reduction.
+func latestRequestLogPerIP(s *sql.Selector) {
+	ranked := s.Clone().Select(s.C(requestlog.FieldID)).
+		AppendSelectExprAs(sql.RowNumber().PartitionBy(s.C(requestlog.FieldIP)).
+			OrderBy(sql.Desc(s.C(requestlog.FieldCreatedAt)), sql.Desc(s.C(requestlog.FieldID))), "visit_rank").
+		As("ranked_visits")
+	latest := sql.Select(ranked.C(requestlog.FieldID)).From(ranked).
+		Where(sql.EQ(ranked.C("visit_rank"), 1))
+	s.Where(sql.In(s.C(requestlog.FieldID), latest))
 }

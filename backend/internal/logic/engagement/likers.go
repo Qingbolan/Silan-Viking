@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"sort"
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/contentinteraction"
@@ -99,6 +100,21 @@ func ContentLikers(ctx context.Context, client *ent.Client, entityType contentin
 	if err != nil {
 		return nil, err
 	}
+
+	return ContentLikersFromRows(ctx, client, rows)
+}
+
+// ContentLikersFromRows shares identity projection with full-site snapshots,
+// without re-reading interactions for each item. It accepts all interaction
+// kinds and preserves the newest-first ordering of the public endpoint.
+func ContentLikersFromRows(ctx context.Context, client *ent.Client, interactions []*ent.ContentInteraction) ([]Liker, error) {
+	rows := make([]*ent.ContentInteraction, 0)
+	for _, row := range interactions {
+		if row.Kind == contentinteraction.KindLike {
+			rows = append(rows, row)
+		}
+	}
+	sort.SliceStable(rows, func(i, j int) bool { return rows[i].CreatedAt.After(rows[j].CreatedAt) })
 
 	identityIDs := make([]string, 0, len(rows))
 	for _, row := range rows {

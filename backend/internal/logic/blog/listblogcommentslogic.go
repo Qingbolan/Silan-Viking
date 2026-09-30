@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"silan-backend/internal/commentruntime"
+	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/comment"
 	"silan-backend/internal/ent/commentlike"
 	engagementlogic "silan-backend/internal/logic/engagement"
@@ -48,7 +49,6 @@ func (l *ListBlogCommentsLogic) ListAllComments(req *types.BlogCommentListReques
 
 func (l *ListBlogCommentsLogic) listComments(req *types.BlogCommentListRequest, entityType comment.EntityType, clientIP, fingerprint, userIdentityID string, includePrivate bool) (resp *types.BlogCommentListResponse, err error) {
 	postID := req.ID
-	actor := commentruntime.NewActor(userIdentityID, fingerprint)
 
 	query := l.svcCtx.DB.Comment.
 		Query().
@@ -61,6 +61,21 @@ func (l *ListBlogCommentsLogic) listComments(req *types.BlogCommentListRequest, 
 		return nil, err
 	}
 
+	return l.projectComments(list, postID, clientIP, fingerprint, userIdentityID)
+}
+
+// ProjectAllComments projects already-loaded private snapshot rows through the
+// same moderation tree builder as individual comment endpoints. Rows must be
+// ordered by creation time and belong to one content item.
+func (l *ListBlogCommentsLogic) ProjectAllComments(list []*ent.Comment) (*types.BlogCommentListResponse, error) {
+	if len(list) == 0 {
+		return &types.BlogCommentListResponse{Comments: []types.BlogCommentData{}}, nil
+	}
+	return l.projectComments(list, list[0].EntityID, "", "", "")
+}
+
+func (l *ListBlogCommentsLogic) projectComments(list []*ent.Comment, postID, clientIP, fingerprint, userIdentityID string) (*types.BlogCommentListResponse, error) {
+	actor := commentruntime.NewActor(userIdentityID, fingerprint)
 	// cache avatar/provider lookups per email within this request
 	type identityInfo struct {
 		avatar   string
@@ -168,7 +183,7 @@ func (l *ListBlogCommentsLogic) listComments(req *types.BlogCommentListRequest, 
 
 	// Log analytics data (optional - could be moved to a separate analytics service)
 	l.Infof("Returned %d comments (%d root, %d total) for post %s to IP %s",
-		len(rootComments), len(rootComments), len(list), req.ID, clientIP)
+		len(rootComments), len(rootComments), len(list), postID, clientIP)
 
 	return &types.BlogCommentListResponse{Comments: rootComments, Total: len(list)}, nil
 }
