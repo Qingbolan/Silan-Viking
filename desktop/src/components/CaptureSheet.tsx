@@ -424,7 +424,7 @@ export function CaptureSheet({
       <div className="capture-workspace" data-drag-active={dragActive}
         onDragOver={event => { if (phase !== 'submitting' && event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setDragActive(true); } }}
         onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragActive(false); }}
-        onDrop={event => { event.preventDefault(); setDragActive(false); if (phase !== 'submitting') onAttachFiles(Array.from(event.dataTransfer.files).filter(file => isVideoFile(file) || file.type.startsWith('image/'))); }}>
+        onDropCapture={event => { if (!event.dataTransfer.types.includes('Files')) return; event.preventDefault(); event.stopPropagation(); setDragActive(false); if (phase !== 'submitting') onAttachFiles(Array.from(event.dataTransfer.files).filter(file => isVideoFile(file) || file.type.startsWith('image/'))); }}>
         {dropError && <p role="alert">{dropError}</p>}
         <article className="capture-document" aria-labelledby="capture-document-title">
           {target === 'moment' && videos.length > 0 && (
@@ -447,8 +447,7 @@ export function CaptureSheet({
                   if (event.nativeEvent.isComposing) return;
                   if (event.key === 'Enter' && !event.metaKey && !event.ctrlKey) {
                     event.preventDefault();
-                    if (target === 'moment') event.currentTarget.closest('article')?.querySelector<HTMLTextAreaElement>('.capture-caption')?.focus();
-                    else if (inputRef && typeof inputRef !== 'function') inputRef.current?.focus();
+                    if (inputRef && typeof inputRef !== 'function') inputRef.current?.focus();
                   } else {
                     onKeyDown(event);
                   }
@@ -488,24 +487,21 @@ export function CaptureSheet({
           )}
 
           <div className="capture-sheet">
-            {target === 'moment' ? (
-              <textarea className="capture-caption" aria-label={isChinese ? '文字说明' : 'Caption'}
-                value={note} rows={4} disabled={phase === 'submitting'}
-                placeholder={isChinese ? '记录这一刻，或将视频、图片拖到这里…' : 'Write about this moment, or drop videos and photos here…'}
-                onChange={event => onNoteChange(event.target.value)} />
-            ) : <MarkdownEditor
+            <MarkdownEditor
               ref={inputRef}
               value={note}
               disabled={phase === 'submitting'}
               toolbarVisible
               slashCommands={editorAssist.slashCommands}
               onImportImages={importCaptureImages}
-              ariaLabel="文章草稿"
-              placeholder="先把文章草稿写下来... 输入 / 插入结构块，[[ 连接已有内容"
+              ariaLabel={target === 'moment' ? '事件内容' : '文章草稿'}
+              placeholder={target === 'moment'
+                ? (isChinese ? '记录这一刻，或将视频、图片拖到这里… 输入 / 插入内容' : 'Write about this moment, or drop videos and photos here…')
+                : '先把文章草稿写下来... 输入 / 插入结构块，[[ 连接已有内容'}
               onChange={onNoteChange}
               onKeyDown={onKeyDown}
               onSelectionAssist={requestSelectionAssist}
-            />}
+            />
             {editorAssist.fileInput}
           </div>
 

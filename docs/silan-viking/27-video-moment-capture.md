@@ -8,7 +8,9 @@ Photos / videos action and Attach media slash command select MP4, WebM, MOV,
 and M4V files; clipboard video files can also be queued. Capture previews use
 object URLs that are revoked when the attachment changes or unmounts.
 
-Moment capture presents the video before an editable title and optional caption.
+Moment capture presents the video before an editable title and optional rich-text body.
+Capture retains the shared WYSIWYG Markdown editor, formatting toolbar, slash
+commands and reference links for both Moments and articles.
 The first decoded frame becomes its JPEG cover automatically; authors may upload
 a cover or use the player’s current frame. Extraction runs locally and failures
 keep saving disabled until a cover is selected.
