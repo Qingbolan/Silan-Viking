@@ -1,6 +1,9 @@
 # Video Moment capture
 
-Local Capture uses the existing Moment body and owned asset model. The
+Local Capture uses the existing Moment body and owned asset model. The normal
+writing area accepts dropped videos and images without a separate upload panel.
+Native desktop file drops and browser file drops queue the same File objects;
+while Capture is open, the background document editor cannot consume its drops. The
 Photos / videos action and Attach media slash command select MP4, WebM, MOV,
 and M4V files; clipboard video files can also be queued. Capture previews use
 object URLs that are revoked when the attachment changes or unmounts.

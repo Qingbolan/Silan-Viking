@@ -60,6 +60,7 @@ fn main() {
             commands::import_media_asset,
             commands::import_media_asset_bytes,
             commands::import_media_asset_data,
+            commands::read_capture_attachment,
             commands::import_resume_media_asset,
             commands::join_workspace,
             commands::get_interaction_details,

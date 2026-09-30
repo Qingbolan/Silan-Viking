@@ -48,7 +48,7 @@ export function $readSelectedImage(): ImageSelectionState | null {
     alt: image.getAltText(),
     key: image.getKey(),
     src: image.getSource(),
-    poster: image.getPoster(),
+    ...(image.getPoster() ? { poster: image.getPoster() } : {}),
     title: image.getTitle(),
   };
 }

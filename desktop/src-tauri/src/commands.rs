@@ -496,6 +496,17 @@ pub(crate) fn import_media_asset(
     DesktopWorkspace::from_environment()?.import_media_asset(&id, &source_path)
 }
 
+// Native file drops arrive as paths; return bytes without JSON expansion.
+#[tauri::command]
+pub(crate) async fn read_capture_attachment(path: String) -> Result<tauri::ipc::Response, String> {
+    run_background("read capture attachment", move || {
+        std::fs::read(path)
+            .map(tauri::ipc::Response::new)
+            .map_err(|error| error.to_string())
+    })
+    .await
+}
+
 // Raw IPC avoids expanding a video into a JSON array of byte numbers.
 #[tauri::command]
 pub(crate) async fn import_media_asset_data(

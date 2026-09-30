@@ -12466,15 +12466,8 @@ button.ai-cover-credential:hover:not(:disabled) {
 .moment-capture[data-target='moment'] .capture-document-header h1 { font-size: clamp(25px, 3vw, 34px); }
 .moment-capture[data-target='moment'] .capture-sheet { margin-top: 18px; }
 .capture-media-stage { display: grid; gap: 24px; }
-.capture-video-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; width: 100%; min-height: 280px; padding: 32px;
-  border: 1px dashed var(--line); border-radius: 12px;
-  background: var(--color-surfaceSecondary); color: var(--muted); cursor: pointer;
-}
-.capture-video-empty strong { font-size: 22px; color: var(--ink); }
-.capture-video-empty:hover { border-color: var(--accent); }
-.capture-video-empty:focus-visible, .capture-video button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.capture-workspace[data-drag-active="true"] .capture-document { outline: 2px dashed var(--accent); outline-offset: 12px; }
+.capture-video button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .capture-video { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 24px; }
 .capture-video__player { position: relative; display: grid; place-items: center; min-width: 0; border-radius: 12px; overflow: hidden; background: #18191b; }
 .capture-video__player video { display: block; width: 100%; max-height: 430px; aspect-ratio: 16/10; object-fit: contain; }

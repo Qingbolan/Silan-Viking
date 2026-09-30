@@ -2144,7 +2144,7 @@ export default function App() {
   }, [deploymentPlan, insertMarkdownAtCursor, loadDeploymentPlan, selectedTranslation]);
 
   React.useEffect(() => {
-    if (!contentEditorOpen || !isTauri()) {
+    if (!contentEditorOpen || capturePhase !== 'closed' || !isTauri()) {
       setMediaDragActive(false);
       return;
     }
@@ -2174,7 +2174,7 @@ export default function App() {
       disposed = true;
       unlisten?.();
     };
-  }, [contentEditorOpen, importDroppedMedia, selectedTranslation]);
+  }, [capturePhase, contentEditorOpen, importDroppedMedia, selectedTranslation]);
 
   const openGeoPanel = async () => {
     if (!selectedTranslation || geoLoading) return;

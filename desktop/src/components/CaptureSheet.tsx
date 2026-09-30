@@ -2,7 +2,8 @@ import React from 'react';
 import { CaptureVideo } from './CaptureVideo';
 import type { VideoCoverState } from '../lib/videoCover';
 import { isVideoFile } from '../lib/media';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, isTauri } from '@tauri-apps/api/core';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import {
   AlertCircle,
   Check,
@@ -154,6 +155,32 @@ export function CaptureSheet({
   authorAvatarUrl,
   authorAvatarLabel,
 }: CaptureSheetProps) {
+  const [dragActive, setDragActive] = React.useState(false);
+  const [dropError, setDropError] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (!isTauri() || phase === 'closed' || phase === 'closing' || phase === 'submitting') return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    getCurrentWebview().onDragDropEvent(async ({ payload }) => {
+      if (payload.type === 'enter' || payload.type === 'over') { setDragActive(true); return; }
+      setDragActive(false);
+      if (payload.type !== 'drop') return;
+      setDropError(null);
+      try {
+        const files: File[] = [];
+        for (const path of payload.paths) {
+          const name = path.split(/[\\/]/).pop() || 'media';
+          if (!/\.(png|jpe?g|gif|svg|webp|avif|ico|mp4|webm|mov|m4v)$/i.test(name)) continue;
+          const bytes = await invoke<ArrayBuffer>('read_capture_attachment', { path });
+          const extension = name.split('.').pop()!.toLowerCase();
+          const type = isVideoFile({name,type:''}) ? `video/${extension === 'mov' ? 'quicktime' : extension === 'm4v' ? 'mp4' : extension}` : `image/${extension === 'jpg' ? 'jpeg' : extension === 'svg' ? 'svg+xml' : extension}`;
+          files.push(new File([bytes], name, { type }));
+        }
+        if (!disposed) onAttachFiles(files);
+      } catch (reason) { if (!disposed) setDropError(String(reason)); }
+    }).then(remove => { if (disposed) remove(); else unlisten = remove; }).catch(reason => setDropError(String(reason)));
+    return () => { disposed = true; unlisten?.(); };
+  }, [phase, onAttachFiles]);
   const [voicePhase, setVoicePhase] = React.useState<'idle' | 'recording' | 'transcribing'>('idle');
   const [voiceError, setVoiceError] = React.useState<string | null>(null);
   const [recordingSeconds, setRecordingSeconds] = React.useState(0);
@@ -394,21 +421,17 @@ export function CaptureSheet({
         />
       </header>
 
-      <div className="capture-workspace">
+      <div className="capture-workspace" data-drag-active={dragActive}
+        onDragOver={event => { if (phase !== 'submitting' && event.dataTransfer.types.includes('Files')) { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; setDragActive(true); } }}
+        onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragActive(false); }}
+        onDrop={event => { event.preventDefault(); setDragActive(false); if (phase !== 'submitting') onAttachFiles(Array.from(event.dataTransfer.files).filter(file => isVideoFile(file) || file.type.startsWith('image/'))); }}>
+        {dropError && <p role="alert">{dropError}</p>}
         <article className="capture-document" aria-labelledby="capture-document-title">
-          {target === 'moment' && (
+          {target === 'moment' && videos.length > 0 && (
             <div className="capture-media-stage">
               {videos.map(file => <CaptureVideo key={`${file.name}:${file.size}:${file.lastModified}`}
                 file={file} cover={covers.get(file)} disabled={phase === 'submitting'} chinese={isChinese}
                 onCover={onCoverChange} onRemove={() => onRemoveAttachment(attachments.indexOf(file))} />)}
-              {videos.length === 0 && (
-                <button className="capture-video-empty" type="button" disabled={phase === 'submitting'} onClick={editorAssist.openFilePicker}>
-                  <FileImage size={30} />
-                  <strong>{isChinese ? '分享这一刻的视频' : 'Share a video moment'}</strong>
-                  <span>{isChinese ? '选择视频，再写下你想记录的文字' : 'Choose a video, then add a few words'}</span>
-                  <small>MP4 · MOV · WebM · M4V</small>
-                </button>
-              )}
             </div>
           )}
           <header className="capture-document-header">
@@ -468,7 +491,7 @@ export function CaptureSheet({
             {target === 'moment' ? (
               <textarea className="capture-caption" aria-label={isChinese ? '文字说明' : 'Caption'}
                 value={note} rows={4} disabled={phase === 'submitting'}
-                placeholder={isChinese ? '写下这一刻的故事、进展或想法（选填）…' : 'Add a story, update or thought (optional)…'}
+                placeholder={isChinese ? '记录这一刻，或将视频、图片拖到这里…' : 'Write about this moment, or drop videos and photos here…'}
                 onChange={event => onNoteChange(event.target.value)} />
             ) : <MarkdownEditor
               ref={inputRef}
