@@ -22,6 +22,7 @@ import {
   Skeleton,
 } from '../components/ds';
 import { markdownToPlainExcerpt } from '../lib/markdown';
+import { firstMomentVideo } from '../lib/momentMedia';
 import { cn } from '../lib/utils';
 import { publicAssetUrl } from '../utils/publicAsset';
 import { dsRoot } from '../components/ds/dsAttr';
@@ -334,7 +335,6 @@ const Moments: React.FC = () => {
 
                 <ol className="space-y-1.5 sm:space-y-2">
                   {group.dateGroups.map((dateGroup) => {
-                    const isMultiEntryDay = dateGroup.items.length > 1;
                     const day = dateGroup.date
                       ? String(dateGroup.date.getDate())
                       : dateGroup.items[0]?.date;
@@ -362,13 +362,11 @@ const Moments: React.FC = () => {
                         </div>
 
                         <div
-                          className={cn(
-                            'grid min-w-0 gap-x-5',
-                            isMultiEntryDay && 'xl:grid-cols-2',
-                          )}
+                          className="flex min-w-0 flex-col"
                         >
                           {dateGroup.items.map((moment, index) => {
                             const momentPath = `/moments/${encodeURIComponent(moment.slug || moment.id)}`;
+                            const video = firstMomentVideo(moment.description);
                             const excerpt = markdownToPlainExcerpt(moment.description, moment.title);
 
                             return (
@@ -381,14 +379,22 @@ const Moments: React.FC = () => {
                                 className={cn(
                                   'min-w-0 scroll-mt-24 px-3 py-3 sm:px-4 sm:py-3.5',
                                   index > 0 && 'border-t border-ds-border',
-                                  isMultiEntryDay && index % 2 === 1 && 'xl:border-l xl:pl-5',
-                                  isMultiEntryDay && index === 1 && 'xl:border-t-0',
                                 )}
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.28, delay: Math.min(index * 0.05, 0.15) }}
                               >
-                                <div className="group">
+                                <div className={cn('group', video && 'grid items-start gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]')}>
+                                  {video && (
+                                    <video
+                                      className="aspect-video w-full rounded-ds-sm bg-black object-contain"
+                                      src={mediaUrl(video.src)}
+                                      poster={video.poster ? mediaUrl(video.poster) : undefined}
+                                      controls playsInline preload="metadata"
+                                      aria-label={moment.title}
+                                    />
+                                  )}
+                                  <div className="min-w-0">
                                   <Link
                                     to={momentPath}
                                     className="block rounded-ds-sm outline-none focus-visible:shadow-ds-focus"
@@ -409,7 +415,6 @@ const Moments: React.FC = () => {
                                       <p
                                         className={cn(
                                           'moment-feed-excerpt mt-1.5 line-clamp-3 text-pretty text-ds-sm leading-[1.5] text-ds-fg-muted md:text-ds-base',
-                                          isMultiEntryDay && 'xl:line-clamp-3',
                                         )}
                                       >
                                         {excerpt}
@@ -437,6 +442,7 @@ const Moments: React.FC = () => {
                                       className="mt-2.5"
                                     />
                                   )}
+                                  </div>
                                 </div>
                               </motion.article>
                             );

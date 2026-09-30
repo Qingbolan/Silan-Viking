@@ -53,8 +53,15 @@ export const routeFromSilanResource = (path: string): string | null => {
   return null;
 };
 
-export const isVideoResource = (path: string): boolean =>
-  /\.(?:mp4|webm|mov|m4v)(?:[?#].*)?$/i.test(path);
+export const isVideoResource = (path: string): boolean => {
+  try {
+    const url = new URL(path, 'https://media.invalid/');
+    const resource = url.pathname === '/api/v1/media' ? url.searchParams.get('f') || '' : url.pathname;
+    return /\.(?:mp4|webm|mov|m4v)$/i.test(resource);
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Resolve either an API media path or a canonical content-resource reference.

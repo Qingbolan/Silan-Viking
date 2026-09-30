@@ -18,6 +18,7 @@ export const markdownToPlainExcerpt = (
     // instead of repeating it as summary prose.
     .replace(/^\s*#{1,6}\s+[^\r\n]+(?:\r?\n|$)/, ' ')
     .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/\[!\[[^\]]*]\([^)]*\)]\([^)]*\)/g, ' ')
     .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
     .replace(/\[([^\]]+)]\([^)]*\)/g, '$1')
     .replace(/^#{1,6}\s+/gm, '')
