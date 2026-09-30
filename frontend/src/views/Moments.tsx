@@ -11,6 +11,7 @@ import { fetchMoments } from '../api/moments/momentApi';
 import { fetchPersonalInfo } from '../api/home/resumeApi';
 import { mediaUrl } from '../api/utils';
 import type { Moment, PersonalInfo } from '../types/api';
+import MomentVideoPlayer from '../components/Moments/MomentVideoPlayer';
 import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
 import MomentsProfileHero from '../components/Moments/MomentsProfileHero';
 import { EDITORIAL_CONTENT_FRAME_CLASS } from '../layout/contentFrame';
@@ -386,13 +387,10 @@ const Moments: React.FC = () => {
                               >
                                 <div className={cn('group', video && 'grid items-start gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]')}>
                                   {video && (
-                                    <video
-                                      className="aspect-video w-full rounded-ds-sm bg-black object-contain"
-                                      src={mediaUrl(video.src)}
-                                      poster={video.poster ? mediaUrl(video.poster) : undefined}
-                                      controls playsInline preload="metadata"
-                                      aria-label={moment.title}
-                                    />
+                                    <Link to={momentPath} aria-label={moment.title}
+                                      className="block overflow-hidden rounded-ds-md outline-none focus-visible:shadow-ds-focus">
+                                      <MomentVideoPlayer video={video} title={moment.title} preview />
+                                    </Link>
                                   )}
                                   <div className="min-w-0">
                                   <Link

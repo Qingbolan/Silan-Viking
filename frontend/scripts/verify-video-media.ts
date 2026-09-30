@@ -47,3 +47,8 @@ servedEditor.read(() => {
 });
 servedEditor.dispose();
 console.log('Published video URLs, feed posters and excerpts verified.');
+const { momentVideoContent } = await import('../src/lib/momentMedia');
+assert.deepEqual(momentVideoContent(servedMarkdown), { video: {src: servedVideo, poster: servedPoster}, body: 'The caption.' });
+assert.equal(momentVideoContent('Text only.').body, 'Text only.');
+const multi = `${servedMarkdown}\n\n![Second](/second.mp4)`;
+assert.match(momentVideoContent(multi).body, /second\.mp4/);

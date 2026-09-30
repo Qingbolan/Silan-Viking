@@ -6,6 +6,8 @@ import { fetchPersonalInfo } from '../api/home/resumeApi';
 import { mediaUrl } from '../api/utils';
 import type { Moment, PersonalInfo } from '../types/api';
 import Markdown from '../components/ui/Markdown';
+import MomentVideoPlayer from '../components/Moments/MomentVideoPlayer';
+import { momentVideoContent } from '../lib/momentMedia';
 import MomentActions from '../components/Resume/MomentActions';
 import MomentRelatedOutputs from '../components/Moments/MomentRelatedOutputs';
 import { useLanguage } from '../components/LanguageContext';
@@ -144,10 +146,8 @@ const MomentDetail: React.FC = () => {
   );
 };
 
-// The two-pane body — article on the left, the interaction rail on the
-// right pinned sticky beside it (the comment list scrolls inside the
-// rail). Below lg it is a single column: content first, actions/comments
-// in flow after the article.
+// Video Moments use a wide watch page with discussion below the description.
+// Text Moments retain their article and sticky interaction rail.
 const MomentDetailBody: React.FC<{
   moment: Moment;
   lang: 'en' | 'zh';
@@ -157,7 +157,8 @@ const MomentDetailBody: React.FC<{
   authorName: string;
   authorAvatarUrl: string;
 }> = ({ moment, lang, copy, authorName, authorAvatarUrl }) => {
-  const bodyText = withoutRepeatedTitle(moment.description, moment.title);
+  const { video, body: remainingBody } = momentVideoContent(moment.description);
+  const bodyText = withoutRepeatedTitle(remainingBody, moment.title);
   // A Moment is a dated public record. Its interaction footer must use the
   // same public date as the article header; creation time is projection
   // metadata and can differ after imports or migrations.
@@ -165,9 +166,10 @@ const MomentDetailBody: React.FC<{
   const formattedDate = formatMomentDate(moment, lang);
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]">
+    <div className={video ? 'mx-auto max-w-[68rem]' : 'lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_26rem]'}>
       <article className="min-w-0 pb-5 sm:pb-8">
-        <div className="mx-auto max-w-[44rem]">
+        <div className={video ? 'w-full' : 'mx-auto max-w-[44rem]'}>
+          {video && <div className="mb-5"><MomentVideoPlayer video={video} title={moment.title} /></div>}
           <header>
             <h1 className="moment-detail-title text-pretty text-[1.625rem] font-semibold leading-[1.16] tracking-[-0.025em] text-ds-fg sm:text-ds-3xl lg:text-ds-4xl">
               {moment.title}
@@ -222,20 +224,20 @@ const MomentDetailBody: React.FC<{
           {/* Below lg, the interaction rail collapses back into the
               article flow — the sidebar variant only makes sense with
               room beside the text. */}
-          <div className="mt-6 lg:hidden">
+          <div className={video ? 'mt-6' : 'mt-6 lg:hidden'}>
             <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} />
           </div>
         </div>
       </article>
 
-      <aside className="hidden lg:block">
+      {!video && <aside className="hidden lg:block">
         {/* Sticky rail: the sidebar variant needs a bounded height so its
             comment list scrolls internally while the article keeps using
             the page scroll. */}
         <div className="sticky top-6 h-[calc(100dvh-10rem)] min-h-[24rem] overflow-hidden rounded-ds-lg border border-ds-border bg-ds-surface-2">
           <MomentActions momentKey={moment.slug || moment.id} timestamp={timestamp} variant="sidebar" />
         </div>
-      </aside>
+      </aside>}
     </div>
   );
 };
