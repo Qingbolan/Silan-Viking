@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"silan-backend/internal/ent/contentinteraction"
-	bloglogic "silan-backend/internal/logic/blog"
+	"silan-backend/internal/logic/analytics"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -29,6 +29,6 @@ func (l *UpdateEpisodeViewsLogic) UpdateEpisodeViews(req *types.UpdateBlogViewsR
 	if _, err := l.svcCtx.DB.Episode.Get(l.ctx, req.ID); err != nil {
 		return err
 	}
-	return bloglogic.NewUpdateBlogViewsLogic(l.ctx, l.svcCtx).
-		UpdateContentViews(req, contentinteraction.EntityTypeEpisode)
+	return analytics.NewContentViewsRecorder(l.ctx, l.svcCtx).
+		Record(req, contentinteraction.EntityTypeEpisode)
 }

@@ -1,4 +1,4 @@
-import { apiUrl, get, post, formatLanguage, mediaUrl } from '../utils';
+import { get, post, formatLanguage, mediaUrl } from '../utils';
 import type { EpisodeData, EpisodeSeriesData, EpisodeSeriesListResponse } from '../../types/episode';
 import type {
   BlogCommentData,
@@ -6,7 +6,7 @@ import type {
   UpdateBlogLikesResponse,
 } from '../blog/blogApi';
 import { getClientFingerprint } from '../../utils/fingerprint';
-import { isPrerenderRuntime } from '../../utils/runtimeContext';
+import { recordContentView } from '../contentViews';
 import { normalizeContentTimestamp } from '../../utils/contentTimestamp';
 
 const normalizeEpisode = (episode: EpisodeData): EpisodeData => ({
@@ -68,37 +68,8 @@ export const updateEpisodeLikes = async (
   });
 };
 
-export const updateEpisodeViews = async (
-  id: string,
-  language: 'en' | 'zh' = 'en',
-): Promise<boolean> => {
-  if (isPrerenderRuntime()) return false;
-
-  try {
-    const response = await fetch(apiUrl(`/api/v1/episodes/${id}/views?lang=${formatLanguage(language)}`), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        fingerprint: getClientFingerprint(),
-        user_agent_full: navigator.userAgent,
-        referrer: document.referrer,
-        landing_url: window.location.href,
-      }),
-    });
-
-    if (!response.ok) {
-      console.warn(`Failed to update episode views: ${response.status} ${response.statusText}`);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.warn('Failed to update episode views (non-critical):', error);
-    return false;
-  }
-};
+export const updateEpisodeViews = (id: string, language: 'en' | 'zh' = 'en'): Promise<boolean> =>
+  recordContentView(`/api/v1/episodes/${encodeURIComponent(id)}/views`, language);
 
 export const listEpisodeComments = async (
   episodeId: string,

@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchMoment, fetchMoments } from '../api/moments/momentApi';
+import { fetchMoment, fetchMoments, updateMomentViews } from '../api/moments/momentApi';
 import { fetchPersonalInfo } from '../api/home/resumeApi';
 import { mediaUrl } from '../api/utils';
 import type { Moment, PersonalInfo } from '../types/api';
@@ -56,6 +56,10 @@ const MomentDetail: React.FC = () => {
   );
   const resource = useRemoteResource<Moment>(slug, loadMoment);
   const moment = resource.data;
+  const momentId = moment?.id;
+  useEffect(() => {
+    if (momentId) void updateMomentViews(momentId, lang);
+  }, [momentId, lang]);
   const loadTimeline = useCallback(() => fetchMoments(lang), [lang]);
   const timeline = useRemoteResource<Moment[]>(`moment-timeline-${lang}`, loadTimeline);
   const loadAuthor = useCallback(() => fetchPersonalInfo(lang), [lang]);

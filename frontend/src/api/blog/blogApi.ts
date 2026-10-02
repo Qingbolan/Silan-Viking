@@ -1,9 +1,9 @@
 import type { BlogData, BlogLiker } from '../../components/BlogStack/types/blog';
-import { get, post, formatLanguage, del, apiUrl, mediaUrl } from '../utils';
+import { get, post, formatLanguage, del, mediaUrl } from '../utils';
 import { type PaginationRequest } from '../config';
 import { processRawContent } from '../../utils/markdownParser';
 import { getClientFingerprint } from '../../utils/fingerprint';
-import { isPrerenderRuntime } from '../../utils/runtimeContext';
+import { recordContentView } from '../contentViews';
 import { normalizeContentTimestamp } from '../../utils/contentTimestamp';
 
 // Backend API request/response types
@@ -125,34 +125,8 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
 /**
  * Update blog views
  */
-export const updateBlogViews = async (id: string, language: 'en' | 'zh' = 'en'): Promise<boolean> => {
-  if (isPrerenderRuntime()) return false;
-
-  try {
-    const response = await fetch(apiUrl(`/api/v1/blog/posts/${id}/views?lang=${formatLanguage(language)}`), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        fingerprint: getClientFingerprint(),
-        user_agent_full: navigator.userAgent,
-        referrer: document.referrer,
-        landing_url: window.location.href,
-      }),
-    });
-    
-    if (!response.ok) {
-      console.warn(`Failed to update blog views: ${response.status} ${response.statusText}`);
-      return false;
-    }
-    return true;
-  } catch (error) {
-    console.warn('Failed to update blog views (non-critical):', error);
-    return false;
-  }
-};
+export const updateBlogViews = (id: string, language: 'en' | 'zh' = 'en'): Promise<boolean> =>
+  recordContentView(`/api/v1/blog/posts/${encodeURIComponent(id)}/views`, language);
 
 /**
  * Update blog likes

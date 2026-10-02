@@ -922,6 +922,10 @@ service backend-api {
 	@handler GetMoment
 	get /:slug (MomentRequest) returns (Moment)
 
+	@doc "Record a public moment view"
+	@handler UpdateMomentViews
+	post /:id/views (UpdateBlogViewsRequest)
+
 	@doc "Get moment engagement"
 	@handler GetEngagement
 	get /:slug/engagement (MomentRequest) returns (UpdateEngagementResponse)

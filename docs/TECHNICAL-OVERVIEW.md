@@ -34,6 +34,25 @@ Crate dependencies are one-way: `cli/mcp/site → app → entities/content →
 base`. Cargo enforces the layer boundary at compile time, which keeps the
 engine testable without starting the Go service or React app.
 
+## Content view observations
+
+Blog, episode, and moment detail pages report browser views explicitly after
+loading content. Their API adapters share `recordContentView`, which suppresses
+static prerender observations and keeps reporting failures non-blocking.
+`POST /api/v1/moments/:id/views` accepts the existing view request contract and
+requires a public moment. Content fetches and timeline listings do not count as
+individual detail-page views.
+
+The backend `analytics.ContentViewsRecorder` owns the shared one-hour visitor
+identity/fingerprint deduplication rule and writes the content interaction ledger.
+Stats snapshots carry moment observations through the existing engine sync into
+desktop insights. Static crawler observations retain their separate edge collector.
+Previously unrecorded browser visits cannot be reconstructed by this change.
+
+Regression checks: `cd backend && go test ./...`; in `frontend`, run
+`./node_modules/.bin/esbuild scripts/content-views.test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --outfile=/tmp/silan-content-views-test.mjs`
+and `node /tmp/silan-content-views-test.mjs`.
+
 ## Repository Layout
 
 | Path | Responsibility |

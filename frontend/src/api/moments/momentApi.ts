@@ -1,3 +1,4 @@
+import { recordContentView } from '../contentViews';
 import { del, get, post, formatLanguage } from '../utils';
 import type { Moment } from '../../types/api';
 import type { RemoteDiscussionComment, DiscussionLikeResult } from '../../components/ds/EntityDiscussion';
@@ -87,3 +88,6 @@ export const deleteMomentComment = (
   fingerprint: string,
 ): Promise<void> =>
   del(`/api/v1/moments/comments/${encodeURIComponent(commentId)}`, { fingerprint });
+
+export const updateMomentViews = (id: string, language: 'en' | 'zh' = 'en'): Promise<boolean> =>
+  recordContentView(`/api/v1/moments/${encodeURIComponent(id)}/views`, language);

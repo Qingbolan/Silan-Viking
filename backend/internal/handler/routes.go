@@ -454,6 +454,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/:slug",
 					Handler: moments.GetMomentHandler(serverCtx),
 				},
+				{Method: http.MethodPost, Path: "/:id/views", Handler: moments.UpdateMomentViewsHandler(serverCtx)},
 				{Method: http.MethodGet, Path: "/:slug/engagement", Handler: moments.GetEngagementHandler(serverCtx)},
 				{Method: http.MethodPost, Path: "/:id/like", Handler: moments.ToggleLikeHandler(serverCtx)},
 				{Method: http.MethodGet, Path: "/:slug/comments", Handler: moments.ListCommentsHandler(serverCtx)},
