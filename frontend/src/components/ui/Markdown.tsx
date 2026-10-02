@@ -4,6 +4,7 @@
 // Markdown text; this component owns authored-content normalization, resource
 // routing, link navigation, and the stable public rendering contract.
 import React from 'react';
+import { withoutRepeatedTitle } from '../../lib/markdown';
 import { useNavigate } from 'react-router-dom';
 import { mediaUrl, routeFromSilanResource } from '../../api/utils';
 import LexicalMarkdownRenderer from './lexical/LexicalMarkdownRenderer';
@@ -20,23 +21,6 @@ interface MarkdownProps {
   /** Turn plain links into rich favicon pills. Disable for dense UI text. */
   richLinks?: boolean;
 }
-
-const normalizedHeading = (value: string): string =>
-  value
-    .replace(/[`*_~]/g, '')
-    .replace(/[—–]+/g, '-')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLocaleLowerCase();
-
-const stripLeadingHeading = (markdown: string, renderedTitle?: string): string => {
-  if (!renderedTitle) return markdown;
-  const leadingHeading = markdown.match(/^\s*#{1,6}\s+([^\r\n]+)\r?\n/);
-  if (!leadingHeading || normalizedHeading(leadingHeading[1]) !== normalizedHeading(renderedTitle)) {
-    return markdown;
-  }
-  return markdown.slice(leadingHeading[0].length).replace(/^\s*\r?\n/, '');
-};
 
 const shiftLocalOutline = (markdown: string): string => {
   if (!/^#(?!#)\s+/m.test(markdown)) return markdown;
@@ -91,7 +75,7 @@ const prepareMarkdown = (markdown: string, documentTitle?: string, sectionTitle?
     normalizeStrongLabelSpacing(
       unwrapSoftBreaks(
         shiftLocalOutline(
-          stripLeadingHeading(stripLeadingHeading(markdown ?? '', documentTitle), sectionTitle),
+          withoutRepeatedTitle(withoutRepeatedTitle(markdown ?? '', documentTitle), sectionTitle),
         ),
       ),
     ),

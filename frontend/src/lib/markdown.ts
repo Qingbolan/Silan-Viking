@@ -1,10 +1,24 @@
-export const withoutRepeatedTitle = (markdown: string, title: string) => {
-  const lines = markdown.trimStart().split('\n');
-  const first = lines[0]?.match(/^#{1,6}\s+(.+?)\s*#*\s*$/);
-  if (first?.[1].trim().toLocaleLowerCase() === title.trim().toLocaleLowerCase()) {
-    return lines.slice(1).join('\n').trimStart();
-  }
-  return markdown;
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import type { RootContent } from 'mdast';
+
+const headingText = (node: RootContent): string => {
+  if ('children' in node) return node.children.map(headingText).join('');
+  if (node.type === 'image') return node.alt ?? '';
+  return 'value' in node ? node.value : '';
+};
+
+const normalizedTitle = (value: string): string =>
+  value.normalize('NFKC').replace(/[\u200b\ufeff]/g, '').replace(/[—–]+/g, '-').replace(/\s+/g, ' ').trim().toLocaleLowerCase();
+
+/** Compare rendered text, including entities and inline formatting, only at the document start. */
+export const withoutRepeatedTitle = (markdown: string, title?: string): string => {
+  if (!title) return markdown;
+  const first = fromMarkdown(markdown).children[0];
+  if (first?.type !== 'heading') return markdown;
+  const renderedTitle = fromMarkdown(title).children.map(headingText).join('');
+  if (normalizedTitle(headingText(first)) !== normalizedTitle(renderedTitle)) return markdown;
+  const end = first.position?.end.offset;
+  return end === undefined ? markdown : markdown.slice(end).trimStart();
 };
 
 export const markdownToPlainExcerpt = (

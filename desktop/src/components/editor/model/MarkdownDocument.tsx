@@ -38,6 +38,8 @@ import type { MarkdownEditorPlugin } from '../extensionPoints';
 import { MarkdownImageExtension } from './MarkdownImage';
 import { MarkdownTableSemanticsExtension } from './MarkdownTable';
 
+import { cleanMarkdownHeadings } from './MarkdownHygiene';
+
 export const SOURCE_TREE_SYNC_TAG = 'markdown-source-tree-sync';
 export const EXTERNAL_MARKDOWN_SYNC_TAG = 'external-markdown-sync';
 export const REVIEW_DECORATION_TAG = 'review-decoration';
@@ -269,17 +271,17 @@ export function createMarkdownEditorExtension(
 }
 
 export function $replaceDocumentFromMarkdown(markdown: string) {
-  $convertFromMarkdownString(markdown);
+  $convertFromMarkdownString(cleanMarkdownHeadings(markdown));
 }
 
 export function $documentToMarkdown() {
-  return $convertToMarkdownString();
+  return cleanMarkdownHeadings($convertToMarkdownString());
 }
 
 export function $insertMarkdown(markdown: string) {
   const selection = $getSelection();
   if (!$isRangeSelection(selection)) return false;
-  selection.insertNodes($generateNodesFromMarkdownString(markdown));
+  selection.insertNodes($generateNodesFromMarkdownString(cleanMarkdownHeadings(markdown)));
   return true;
 }
 

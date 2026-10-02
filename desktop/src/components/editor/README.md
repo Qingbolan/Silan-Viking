@@ -86,3 +86,12 @@ includes the fetched image binary when the platform allows it. Pasting copied
 editor Markdown reuses the existing URI, while an image-only OS clipboard
 (such as a screenshot) goes through the application media importer. This keeps
 document structure and file ownership separate without duplicate import paths.
+
+## Heading hygiene
+
+MarkdownHygiene removes nonsemantic whitespace artifacts in heading text at the
+import/export boundary. Source mode preserves keystrokes and cleans on blur or
+explicit Markdown retrieval. Code, link destinations, body hard breaks, and
+meaningful Unicode such as joiners remain untouched. Regression coverage lives
+in scripts/verify-lexical-editor.ts. Public readers separately compare rendered
+heading text against page titles, so existing published source needs no rewrite.

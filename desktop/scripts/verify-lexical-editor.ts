@@ -1,3 +1,4 @@
+import { cleanMarkdownHeadings } from '../src/components/editor/model/MarkdownHygiene';
 import assert from 'node:assert/strict';
 import { renderToStaticMarkup } from 'react-dom/server.browser';
 import { buildEditorFromExtensions } from '@lexical/extension';
@@ -573,3 +574,11 @@ const posterRendered = posterEditor.read(() => {
 });
 assert.match(posterRendered, /<video[^>]*poster="silan:\/\/resources\/moment\/demo\/assets\/cover.jpg"/);
 posterEditor.dispose();
+
+const cleanTitleEditor = buildEditorFromExtensions(createMarkdownEditorExtension(false, [], '# Research&#x20;\n\nBody'));
+assert.equal(cleanTitleEditor.read(() => $documentToMarkdown()), '# Research\n\nBody');
+
+assert.equal(cleanMarkdownHeadings('# A\u200b&nbsp;B&#x20;'), '# A B');
+for (const source of ['~~~md\n# Code&#x20;\n~~~', '# `Code&#x20;`', '[url](https://example.com/a&#x20;)', 'Body  \nHard break', '# [Link](https://example.com/a&#x20;)']) {
+  assert.equal(cleanMarkdownHeadings(source), source);
+}

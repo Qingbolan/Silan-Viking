@@ -1,3 +1,4 @@
+import { withoutRepeatedTitle } from '../../../lib/markdown';
 import React, { useMemo } from 'react';
 import { BlogContent, UserAnnotation, SelectedText } from '../types/blog';
 import {
@@ -214,12 +215,15 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
         kindIndex: counters[canonType]++,
       };
 
+      if (idx === 0 && (canonType === 'text' || canonType === 'markdown')) {
+        base.content = withoutRepeatedTitle(base.content || '', documentTitle);
+      }
       if (canonType === 'heading') {
         base.level = coerceHeadingLevel(item.type as string | undefined, item.level);
       }
       return base;
     });
-  }, [content]);
+  }, [content, documentTitle]);
 
   const renderMarkdown = (item: PreparedItem) => {
     const shouldTweak = item.content && !/```/.test(item.content);
@@ -331,6 +335,7 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
       }
 
       case 'heading':
+        if (item === prepared[0] && documentTitle && withoutRepeatedTitle(`# ${item.content}`, documentTitle) === '') return null;
         return (
           <HeadingContent
             key={item.id}

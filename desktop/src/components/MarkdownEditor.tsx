@@ -1,3 +1,4 @@
+import { cleanMarkdownHeadings } from './editor/model/MarkdownHygiene';
 import React from 'react';
 import { LexicalExtensionComposer } from '@lexical/react/LexicalExtensionComposer';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
@@ -326,7 +327,7 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
     }, [editor, sourceMode]);
 
     const currentMarkdown = React.useCallback(
-      () => (sourceMode || !editor ? valueRef.current : readMarkdown(editor)),
+      () => cleanMarkdownHeadings(sourceMode || !editor ? valueRef.current : readMarkdown(editor)),
       [editor, sourceMode],
     );
 
@@ -649,6 +650,7 @@ const MarkdownEditor = React.forwardRef<MarkdownEditorHandle, MarkdownEditorProp
               aria-label={`${ariaLabel} source`}
               placeholder={placeholder}
               onChange={(event) => syncSourceToTree(event.target.value)}
+              onBlur={(event) => syncSourceToTree(cleanMarkdownHeadings(event.target.value))}
               onKeyDown={(event) => {
                 const action = resolveEditorShortcut(event.nativeEvent, 'source');
                 if (action?.kind !== 'toggle-source') return;
