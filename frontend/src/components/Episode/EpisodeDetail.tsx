@@ -16,6 +16,7 @@ import { fetchEpisode, fetchEpisodeSeries, updateEpisodeViews } from '../../api/
 import type { EpisodeData, EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from '../BlogStack/components/BlogContentRenderer';
 import SeriesDocumentFrame, {
+  SeriesDocumentHeader,
   SERIES_HEADER_ID,
 } from '../BlogStack/components/SeriesDocumentFrame';
 import { stripLeadingMetadataDuplicates } from '../BlogStack/utils/contentText';
@@ -58,9 +59,10 @@ const EpisodeDetail: React.FC = () => {
     () => slug ? fetchEpisode(slug, language as 'en' | 'zh') : Promise.resolve(null),
     [language, slug],
   );
-  const episodeResource = useRemoteResource<EpisodeData>(slug, loadEpisode);
+  const episodeResource = useRemoteResource<EpisodeData>(slug, loadEpisode, true);
   const episode = episodeResource.data;
   const isOverview = activeChapter === SERIES_OVERVIEW_ID;
+  const changingChapter = episodeResource.status === 'loading' && Boolean(episode);
 
   useEffect(() => {
     if (!episode) {
@@ -80,18 +82,18 @@ const EpisodeDetail: React.FC = () => {
           : null,
   );
 
+  const episodeSeriesSlug = episode?.series_slug;
   // Series metadata is an optional enhancement around the canonical episode
   // resource. A series failure must not hide an otherwise readable episode.
   useEffect(() => {
-    if (!episode) {
+    if (!episodeSeriesSlug) {
       setSeriesData(null);
       return;
     }
     let cancelled = false;
-    setActiveChapter(episode.id);
-    setSeriesData(null);
-    if (episode.series_slug) {
-      void fetchEpisodeSeries(episode.series_slug, language as 'en' | 'zh')
+
+    if (episodeSeriesSlug) {
+      void fetchEpisodeSeries(episodeSeriesSlug, language as 'en' | 'zh')
         .then((series) => {
           if (!cancelled) setSeriesData(series);
         })
@@ -102,7 +104,11 @@ const EpisodeDetail: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [episode, language]);
+  }, [episodeSeriesSlug, language]);
+
+  useEffect(() => {
+    if (episodeResource.status === 'ready' && episode) setActiveChapter(episode.id);
+  }, [episode, episodeResource.status]);
 
   useEffect(() => {
     if (!episode || isOverview) return;
@@ -160,7 +166,7 @@ const EpisodeDetail: React.FC = () => {
 
 
 
-  if (episodeResource.status === 'loading') return <BrandLoading />;
+  if (episodeResource.status === 'loading' && !episode) return <BrandLoading />;
   if (episodeResource.status === 'error') {
     return <NetworkError onRetry={episodeResource.reload} />;
   }
@@ -221,6 +227,7 @@ const EpisodeDetail: React.FC = () => {
         })}
       />
       <KnowledgeBaseShell
+        contentClassName="!pt-0"
         header={isOverview ? <ContentHero
           id={SERIES_HEADER_ID}
           title={seriesTitle}
@@ -231,7 +238,19 @@ const EpisodeDetail: React.FC = () => {
             <span>{language === 'zh' ? '系列' : 'Series'}</span>
             {seriesData && <span>{seriesData.episodes.length} {language === 'zh' ? '集' : 'episodes'}</span>}
           </>}
-        /> : undefined}
+        /> : <SeriesDocumentHeader
+            language={language}
+            eyebrow={episodeEyebrow}
+            title={episode.title}
+            coverImage={episode.cover_url || seriesData?.cover_url}
+            author={episode.author || 'Silan Hu'}
+            meta={[
+              ...(episode.publish_date ? [{ icon: Calendar, label: episode.publish_date }] : []),
+              ...(episode.duration_minutes
+                ? [{ icon: Clock, label: `${episode.duration_minutes} min` }]
+                : []),
+            ]}
+          />}
         overview={{
           label: seriesTitle,
           icon: BookOpen,
@@ -248,15 +267,15 @@ const EpisodeDetail: React.FC = () => {
         {isOverview ? (
           <>
             {seriesData?.description && (
-              <section className="mt-8 rounded-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8">
-                <p className="max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg sm:leading-[1.55]">
+              <section className="scroll-mt-24">
+                <p className="!m-0 text-pretty text-ds-lg font-normal italic leading-7 text-ds-fg-muted">
                   {seriesData.description}
                 </p>
               </section>
             )}
 
             {seriesData && seriesData.episodes.length > 0 && (
-              <div className="mt-12 max-w-[68rem] space-y-1">
+              <div className="mt-6 max-w-[68rem] space-y-1">
                 <div className="mb-4 flex items-center gap-3">
                   <span className="font-mono text-ds-2xs font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
                     {language === 'en' ? 'Episodes' : '章节'}
@@ -294,24 +313,15 @@ const EpisodeDetail: React.FC = () => {
           //
           // `#kb-active-part` is the contract DOMOutline scans for headings;
           // KnowledgeBaseShell's right-rail Outline finds h2/h3 inside it.
-          <SeriesDocumentFrame
-            language={language}
-            eyebrow={episodeEyebrow}
-            title={episode.title}
-            summary={episodeSummary}
-            meta={[
-              ...(episode.publish_date ? [{ icon: Calendar, label: episode.publish_date }] : []),
-              ...(episode.duration_minutes
-                ? [{ icon: Clock, label: `${episode.duration_minutes} min` }]
-                : []),
-            ]}
-          >
+          <SeriesDocumentFrame summary={changingChapter ? undefined : episodeSummary}>
+            {changingChapter ? <div role="status" className="py-8 text-ds-sm text-ds-fg-muted">{language === 'zh' ? '正在加载章节…' : 'Loading chapter…'}</div> : (
             <BlogContentRenderer
               content={episodeContent}
               isWideScreen={true}
               documentTitle={episode.title}
               readOnly
             />
+            )}
           </SeriesDocumentFrame>
         )}
         {isOverview && (
@@ -321,7 +331,7 @@ const EpisodeDetail: React.FC = () => {
             className="mt-12"
           />
         )}
-        {!isOverview && (
+        {!isOverview && !changingChapter && (
           <ArticleFooter
             likes={engagement.likes}
             liked={engagement.liked}

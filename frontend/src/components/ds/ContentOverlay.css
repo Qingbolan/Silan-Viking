@@ -1,0 +1,15 @@
+:root {
+  --content-dark-overlay: linear-gradient(
+    to bottom,
+    rgb(17 21 27 / 66%),
+    rgb(17 21 27 / 86%) 20%,
+    rgb(17 21 27 / 88%) 50%,
+    rgb(17 21 27 / 86%) 80%,
+    rgb(17 21 27 / 68%)
+  );
+
+}
+
+.content-dark-overlay {
+  background: var(--content-dark-overlay);
+}

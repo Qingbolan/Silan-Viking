@@ -6,6 +6,8 @@
 // future episode (single-blob markdown). It targets a CSS selector you pass
 // in (default `.prose-content, .markdown-body`).
 import React, { useEffect, useState } from 'react';
+import { ListTree } from 'lucide-react';
+import { Tooltip } from '../Tooltip';
 import { cn } from '../../../lib/utils';
 import { scrollToAnchor } from '../../../lib/scrollToAnchor';
 
@@ -32,6 +34,9 @@ interface HeadingEntry {
   id: string;
   text: string;
   level: number;
+  label: string;
+  number: string;
+  title: string;
 }
 
 const slugify = (text: string): string =>
@@ -44,13 +49,15 @@ const slugify = (text: string): string =>
 
 const DOMOutline: React.FC<DOMOutlineProps> = ({
   containerSelector = '#kb-active-part',
-  headingSelector = 'h2, h3',
+  headingSelector = 'h2, h3, h4, h5, h6',
   className,
   collapsed = false,
   onCollapsedChange,
   activeKey,
 }) => {
   const [headings, setHeadings] = useState<HeadingEntry[]>([]);
+  const navRef = React.useRef<HTMLElement>(null);
+  const manualScroll = React.useRef(false);
   const [activeId, setActiveId] = useState<string>('');
 
   // Scan + observe — re-runs whenever the content DOM changes (e.g. tab
@@ -62,6 +69,7 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
       const els = Array.from(root.querySelectorAll<HTMLHeadingElement>(headingSelector));
       const seen = new Set<string>();
       const result: HeadingEntry[] = [];
+      const numbering: { level: number; count: number }[] = [];
       for (const el of els) {
         // Markdown headings include a clickable “#” permalink inside the
         // heading node. It is a control, not part of the heading label.
@@ -76,7 +84,15 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
         }
         seen.add(id);
         if (!el.id) el.id = id;
-        result.push({ id, text, level: Number(el.tagName.charAt(1)) });
+        const level = Number(el.tagName.charAt(1));
+        while (numbering.length && numbering[numbering.length - 1].level > level) numbering.pop();
+        const current = numbering[numbering.length - 1];
+        if (current?.level === level) current.count += 1;
+        else numbering.push({ level, count: 1 });
+        const number = numbering.map((entry) => entry.count).join('.') + (numbering.length === 1 ? '.' : '');
+        const title = text.replace(/^\d+(?:\.\d+)*(?:[.)])?\s+/, '');
+        const label = `${number} ${title}`;
+        result.push({ id, text, level, label, number, title });
       }
       return result;
     };
@@ -97,94 +113,111 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
     };
   }, [containerSelector, headingSelector, activeKey]);
 
-  // Scroll-spy via IntersectionObserver against the same containing scroll
-  // surface used by the rest of the reading page (#browser-window if it
-  // exists, viewport otherwise).
+  // Resolve the current section from reading position, including large scroll
+  // jumps where no heading intersects a narrow observer band.
   useEffect(() => {
-    if (headings.length === 0) return;
-    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .map((e) => e.target.id);
-        if (visible.length > 0) setActiveId(visible[0]);
-      },
-      {
-        root: scrollRoot,
-        rootMargin: '-80px 0px -70% 0px',
-        threshold: 0,
-      },
-    );
-    for (const h of headings) {
-      const el = document.getElementById(h.id);
-      if (el) obs.observe(el);
-    }
-    return () => obs.disconnect();
+    if (!headings.length) return;
+    const root = document.querySelector<HTMLElement>('#browser-window');
+    const surface = root ?? window;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const readingLine = (root?.getBoundingClientRect().top ?? 0) + 100;
+      let current = headings[0].id;
+      for (const heading of headings) {
+        const element = document.getElementById(heading.id);
+        if (!element) continue;
+        if (element.getBoundingClientRect().top > readingLine) break;
+        current = heading.id;
+      }
+      setActiveId(current);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    surface.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      surface.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+    };
   }, [headings]);
+
+  const hasOutline = headings.length > 1;
+
+  // User scroll intent takes ownership; programmatic scrolling never disables follow.
+  useEffect(() => {
+    manualScroll.current = false;
+    const surface = navRef.current?.closest<HTMLElement>('[data-outline-scroll]');
+    if (!surface) return;
+    const stopFollowing = () => { manualScroll.current = true; };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) stopFollowing();
+    };
+    surface.addEventListener('wheel', stopFollowing, { passive: true });
+    surface.addEventListener('touchmove', stopFollowing, { passive: true });
+    surface.addEventListener('keydown', onKeyDown);
+    return () => {
+      surface.removeEventListener('wheel', stopFollowing);
+      surface.removeEventListener('touchmove', stopFollowing);
+      surface.removeEventListener('keydown', onKeyDown);
+    };
+  }, [activeKey, containerSelector, hasOutline]);
+
+  useEffect(() => {
+    if (manualScroll.current) return;
+    const surface = navRef.current?.closest<HTMLElement>('[data-outline-scroll]');
+    const current = navRef.current?.querySelector<HTMLElement>('[aria-current="location"]');
+    if (!surface || !current) return;
+    const bounds = surface.getBoundingClientRect();
+    const item = current.getBoundingClientRect();
+    const padding = 12;
+    const offset = item.top < bounds.top + padding
+      ? item.top - bounds.top - padding
+      : item.bottom > bounds.bottom - padding
+        ? item.bottom - bounds.bottom + padding
+        : 0;
+    if (offset) surface.scrollBy({ top: offset, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  }, [activeId, collapsed, headings]);
 
   if (headings.length < 2) return null;
 
-  const activeHeading = headings.find((heading) => heading.id === activeId) ?? headings[0];
-  const outlineLabel = 'Article outline';
-
-  if (collapsed) {
-    const lineGap = headings.length > 24 ? 3 : headings.length > 14 ? 4 : 6;
-
-    return (
-      <nav data-ds aria-label={outlineLabel} className={cn('flex w-full justify-center', className)}>
-        <button
-          type="button"
-          aria-label="Expand article outline"
-          title="Expand outline"
-          onClick={() => onCollapsedChange?.(false)}
-          className={cn(
-            'group flex max-h-[calc(100dvh-6rem)] w-8 flex-col items-center overflow-y-auto rounded-full py-3',
-            '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-            'bg-ds-surface-1/80 transition-colors hover:bg-ds-surface-2',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/30',
-          )}
-          style={{ gap: lineGap }}
-        >
-          {headings.map((h) => {
-            const active = h.id === activeHeading.id;
-            const width = h.level <= 1 ? 22 : h.level === 2 ? 18 : 13;
-            const height = h.level <= 1 ? 3 : h.level === 2 ? 2.5 : 2;
-            return (
-              <span
-                key={h.id}
-                aria-hidden
-                className={cn(
-                  'block h-[3px] rounded-full transition-[background-color,opacity]',
-                  active
-                    ? 'bg-ds-primary opacity-100'
-                    : 'bg-ds-fg-subtle opacity-50 group-hover:opacity-75',
-                )}
-                style={{ width, height, minHeight: height }}
-              />
-            );
-          })}
-        </button>
-      </nav>
-    );
-  }
-
   return (
-    <nav data-ds aria-label="Outline" className={cn('w-full', className)}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="font-mono text-ds-2xs font-semibold uppercase tracking-[0.08em] text-ds-fg-subtle">
-          Outline
-        </span>
+    <nav ref={navRef} data-ds aria-label="Article outline" className={cn('w-full', collapsed && 'flex flex-col items-center', className)}>
+      <div className={cn(!collapsed && 'mb-2')}>
         <button
           type="button"
-          aria-label="Collapse article outline"
-          title="Collapse outline"
-          onClick={() => onCollapsedChange?.(true)}
-          className="rounded-ds-sm px-2 py-1 font-mono text-ds-2xs font-semibold text-ds-fg-subtle transition-colors hover:bg-ds-surface-2 hover:text-ds-fg focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/30"
+          aria-label={collapsed ? 'Expand article outline' : 'Collapse article outline'}
+          aria-expanded={!collapsed}
+          title={collapsed ? 'Expand outline' : 'Collapse outline'}
+          onClick={() => onCollapsedChange?.(!collapsed)}
+          className="flex size-8 items-center justify-center rounded-ds-sm text-ds-fg-muted transition-colors hover:bg-ds-surface-2 hover:text-ds-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary"
         >
-          Min
+          <ListTree className="size-4" aria-hidden />
         </button>
       </div>
+      {collapsed && (
+        <ol className="flex w-full flex-col items-center">
+          {headings.map((heading) => {
+            const active = heading.id === activeId;
+            return <li key={heading.id}>
+              <Tooltip side="left" delay={100} className="w-max max-w-[calc(100vw-5rem)]" content={<span className="block w-max max-w-[min(24rem,calc(100vw-5rem))] truncate text-ds-xs leading-5"><span className="text-ds-primary">{heading.number}</span>{' '}{heading.title}</span>}>
+                <button type="button" aria-label={heading.label} aria-current={active ? 'location' : undefined}
+                  onClick={() => scrollToAnchor(heading.id)}
+                  className="group flex h-3 w-9 items-center justify-end rounded-ds-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary">
+                  <span aria-hidden className={cn(
+                    'block h-[3px] rounded-full transition-[width,background-color,opacity] duration-300 ease-out motion-reduce:transition-none group-hover:w-8 group-hover:opacity-100 group-hover:bg-ds-primary group-focus-visible:w-8 group-focus-visible:opacity-100 group-focus-visible:bg-ds-primary',
+                    active ? 'w-8 bg-ds-primary' : heading.level >= 3 ? 'w-3 bg-ds-fg-subtle opacity-50' : 'w-5 bg-ds-fg-subtle opacity-50',
+                  )} />
+                </button>
+              </Tooltip>
+            </li>;
+          })}
+        </ol>
+      )}
+      {!collapsed && (
       <ol className="space-y-0.5">
         {headings.map((h) => {
           const active = h.id === activeId;
@@ -192,13 +225,14 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
             <li key={h.id}>
               <button
                 type="button"
+                aria-current={active ? 'location' : undefined}
                 onClick={() => scrollToAnchor(h.id)}
                 className={cn(
                   'block w-full rounded-ds-sm py-1 pr-1 text-left leading-[1.32] transition-colors',
                   'break-words focus:outline-none focus-visible:ring-2 focus-visible:ring-ds-primary/30',
                   h.level === 1 && 'text-ds-sm',
                   h.level === 2 && 'pl-2.5 text-ds-xs',
-                  h.level === 3 && 'pl-4 text-ds-xs',
+                  h.level >= 3 && 'pl-4 text-ds-xs',
                   active
                     ? 'font-semibold text-ds-primary'
                     : h.level === 1
@@ -206,12 +240,13 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
                       : 'font-medium text-ds-fg-muted hover:text-ds-primary',
                 )}
               >
-                {h.text}
+                <span className="text-ds-primary">{h.number}</span>{' '}{h.title}
               </button>
             </li>
           );
         })}
       </ol>
+      )}
     </nav>
   );
 };

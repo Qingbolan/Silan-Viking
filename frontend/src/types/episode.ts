@@ -8,6 +8,8 @@ export interface EpisodeData {
   title: string;
   description?: string;
   episode_number: number;
+  cover_url?: string;
+  author?: string;
 
   visibility: string;
   publish_date?: string;

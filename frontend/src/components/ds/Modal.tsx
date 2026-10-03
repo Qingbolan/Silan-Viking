@@ -19,6 +19,8 @@ export interface ModalProps {
   /** Footer content — actions live here. */
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  appearance?: 'acrylic' | 'plain';
+  density?: 'default' | 'compact';
   /** Present compact mobile workflows as a bottom sheet while keeping the desktop dialog. */
   placement?: 'center' | 'mobile-bottom';
   /** Hide the top-right close button. */
@@ -40,6 +42,8 @@ export const Modal: React.FC<ModalProps> = ({
   description,
   footer,
   size = 'md',
+  appearance = 'acrylic',
+  density = 'default',
   placement = 'center',
   hideClose = false,
   closeLabel = 'Close',
@@ -139,12 +143,14 @@ export const Modal: React.FC<ModalProps> = ({
             ref={panelRef}
             tabIndex={-1}
             className={cn(
-              'relative w-full rounded-ds-xl ds-acrylic ds-ridge p-6',
+              'relative w-full rounded-ds-xl',
+              appearance === 'plain' ? 'bg-ds-surface-1' : 'ds-acrylic ds-ridge',
+              density === 'compact' ? 'p-4' : 'p-6',
               placement === 'mobile-bottom' && '-mb-4 rounded-b-none pb-[calc(1rem+env(safe-area-inset-bottom))] sm:mb-0 sm:rounded-ds-xl sm:pb-6',
               sizeMap[size],
               className,
             )}
-            style={{ boxShadow: 'var(--ds-elevation-4)' }}
+            style={{ boxShadow: appearance === 'plain' ? 'none' : 'var(--ds-elevation-4)' }}
             initial={{ opacity: 0, scale: 0.94, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -162,9 +168,9 @@ export const Modal: React.FC<ModalProps> = ({
               </Button>
             )}
             {(title || description) && (
-              <div className="mb-4 space-y-1 pr-8">
+              <div className={cn('space-y-1 pr-8', density === 'compact' ? 'mb-2' : 'mb-4')}>
                 {title && (
-                  <h2 id={titleId} className="text-ds-xl font-semibold tracking-[-0.01em] text-ds-fg">
+                  <h2 id={titleId} className={cn('font-semibold tracking-[-0.01em] text-ds-fg', density === 'compact' ? 'text-ds-base' : 'text-ds-xl')}>
                     {title}
                   </h2>
                 )}

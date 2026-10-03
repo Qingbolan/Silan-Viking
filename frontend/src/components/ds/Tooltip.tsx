@@ -17,6 +17,7 @@ export interface TooltipProps {
   side?: Side;
   /** Show delay in ms. */
   delay?: number;
+  className?: string;
   children: React.ReactElement;
 }
 
@@ -24,6 +25,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   content,
   side = 'top',
   delay = 250,
+  className,
   children,
 }) => {
   const [open, setOpen] = React.useState(false);
@@ -78,18 +80,27 @@ export const Tooltip: React.FC<TooltipProps> = ({
           {open && (
             <motion.div
               {...dsRoot}
-              role="tooltip"
-              className={cn(
-                'pointer-events-none fixed ds-acrylic rounded-ds-sm px-2 py-1',
-                'text-ds-2xs font-medium text-ds-fg',
-              )}
+              className="pointer-events-none fixed w-max"
               style={{ left: pos.x, top: pos.y, transform: translate[side], zIndex: 1200 }}
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.12 }}
             >
-              {content}
+              {/* Keep positioning separate from the animated scale transform. */}
+              <motion.div
+                role="tooltip"
+                className={cn(
+                  'ds-acrylic rounded-ds-sm px-2 py-1 text-ds-2xs font-medium text-ds-fg',
+                  className,
+                )}
+                initial={{ scale: 0.92 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.92 }}
+                transition={{ duration: 0.12 }}
+              >
+                {content}
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>,

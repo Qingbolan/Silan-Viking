@@ -11,6 +11,7 @@ import { normalizeContentTimestamp } from '../../utils/contentTimestamp';
 
 const normalizeEpisode = (episode: EpisodeData): EpisodeData => ({
   ...episode,
+  cover_url: episode.cover_url ? mediaUrl(episode.cover_url) : undefined,
   publish_date: normalizeContentTimestamp(episode.publish_date),
   updated_at: normalizeContentTimestamp(episode.updated_at),
 });

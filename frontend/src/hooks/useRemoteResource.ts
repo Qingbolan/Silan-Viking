@@ -20,6 +20,7 @@ export interface RemoteResource<T> {
 export const useRemoteResource = <T>(
   resourceKey: string | undefined,
   load: () => Promise<T | null>,
+  keepPreviousData = false,
 ): RemoteResource<T> => {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -38,7 +39,7 @@ export const useRemoteResource = <T>(
       };
     }
 
-    setData(null);
+    if (!keepPreviousData) setData(null);
     setError(null);
     setStatus('loading');
 
@@ -46,6 +47,7 @@ export const useRemoteResource = <T>(
       .then((value) => {
         if (!active) return;
         if (value === null) {
+          setData(null);
           setStatus('not-found');
           return;
         }
@@ -54,6 +56,7 @@ export const useRemoteResource = <T>(
       })
       .catch((cause: unknown) => {
         if (!active) return;
+        setData(null);
         setError(cause);
         setStatus(cause instanceof ApiError && cause.status === 404 ? 'not-found' : 'error');
       });
@@ -61,7 +64,7 @@ export const useRemoteResource = <T>(
     return () => {
       active = false;
     };
-  }, [load, reloadToken, resourceKey]);
+  }, [keepPreviousData, load, reloadToken, resourceKey]);
 
   const reload = useCallback(() => setReloadToken((value) => value + 1), []);
 

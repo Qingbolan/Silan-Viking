@@ -19,6 +19,7 @@ import type { EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
 import AuthorByline from './components/AuthorByline';
 import SeriesDocumentFrame, {
+  SeriesDocumentHeader,
   SERIES_HEADER_ID,
 } from './components/SeriesDocumentFrame';
 import { useBlogEngagement } from './hooks/useBlogEngagement';
@@ -151,6 +152,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <KnowledgeBaseShell
+        contentClassName="!pt-0"
         header={isOverview ? <ContentHero
           id={SERIES_HEADER_ID}
           title={seriesTitle}
@@ -164,7 +166,17 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
             {post.publishDate && <span>{post.publishDate}</span>}
             {post.readTime && <span>{post.readTime}</span>}
           </>}
-        /> : undefined}
+        /> : <SeriesDocumentHeader
+            language={language}
+            eyebrow={episodeEyebrow}
+            title={post.title}
+            coverImage={post.coverImage || post.vlogCover || post.videoThumbnail || seriesData?.cover_url || post.seriesImage}
+            author={typeof post.author === 'string' ? post.author : 'Silan Hu'}
+            meta={[
+              ...(post.publishDate ? [{ icon: Calendar, label: post.publishDate }] : []),
+              ...(post.readTime ? [{ icon: Clock, label: post.readTime }] : []),
+            ]}
+          />}
         overview={{
           label: seriesTitle,
           icon: BookOpen,
@@ -183,8 +195,8 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
           // a quick list of all episodes so the reader can pick one.
           <>
             {post.seriesDescription && (
-              <section className="mt-8 rounded-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8">
-                <p className="max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg sm:leading-[1.55]">
+              <section className="scroll-mt-24">
+                <p className="!m-0 text-pretty text-ds-lg font-normal italic leading-7 text-ds-fg-muted">
                   {post.seriesDescription}
                 </p>
               </section>
@@ -192,7 +204,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
 
             {/* Episode quicklist */}
             {seriesData && seriesData.episodes.length > 0 && (
-              <div className="mt-12 max-w-[68rem] space-y-1">
+              <div className="mt-6 max-w-[68rem] space-y-1">
                 <div className="mb-4 flex items-center gap-3">
                   <span className="font-mono text-ds-2xs font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
                   {language === 'en' ? 'Episodes' : '章节'}
@@ -226,28 +238,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
         ) : (
           // Episode body — markdown content rendered by BlogContentRenderer,
           // which preserves annotation / vlog handling intact.
-          <SeriesDocumentFrame
-            language={language}
-            eyebrow={episodeEyebrow}
-            title={post.title}
-            summary={episodeSummary}
-            meta={[
-              ...(typeof post.author === 'string' && post.author
-                ? [{
-                    label: post.author,
-                    content: (
-                      <AuthorByline
-                        name={post.author}
-                        className="gap-1.5 text-ds-fg-subtle"
-                        avatarClassName="size-4"
-                      />
-                    ),
-                  }]
-                : []),
-              ...(post.publishDate ? [{ icon: Calendar, label: post.publishDate }] : []),
-              ...(post.readTime ? [{ icon: Clock, label: post.readTime }] : []),
-            ]}
-          >
+          <SeriesDocumentFrame summary={episodeSummary}>
             <BlogContentRenderer
               content={episodeContent}
               isWideScreen={true}

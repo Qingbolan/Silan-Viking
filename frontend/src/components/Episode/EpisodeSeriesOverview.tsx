@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BookOpen, Calendar, Clock } from 'lucide-react';
+import { BookOpen, Calendar, Clock, ChevronRight } from 'lucide-react';
 import { Seo, creativeWorkJsonLd } from '../Seo';
 import { fetchEpisodeSeries } from '../../api/episodes/episodeApi';
 import type { EpisodeSeriesData } from '../../types/episode';
@@ -90,7 +90,7 @@ const EpisodeSeriesOverview: React.FC = () => {
   const wordCount = wordCountOf(series.description);
 
   return (
-    <motion.div id="episode-series-document" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div data-ds id="episode-series-document" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Seo
         title={series.title}
         description={series.description}
@@ -109,6 +109,7 @@ const EpisodeSeriesOverview: React.FC = () => {
         })}
       />
       <KnowledgeBaseShell
+        contentClassName="!pt-0"
         outlineContainerSelector="#episode-series-document"
         header={<ContentHero
           id={SERIES_HEADER_ID}
@@ -134,34 +135,33 @@ const EpisodeSeriesOverview: React.FC = () => {
       >
 
         {series.description && (
-          <section className="mt-8 border-l border-ds-border pl-5">
-            <p className="max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg sm:leading-[1.55]">
+          <section className="scroll-mt-24">
+            <p className="!m-0 text-pretty text-ds-lg font-normal italic leading-7 text-ds-fg-muted">
               {series.description}
             </p>
           </section>
         )}
 
-        <section className="mt-12 max-w-[68rem] space-y-1" aria-labelledby="series-episodes">
+        <section className="mt-6 max-w-[68rem]" aria-labelledby="series-episodes">
           <div className="mb-4 flex items-center gap-3">
-            <h2 id="series-episodes" className="font-mono text-ds-2xs font-medium uppercase tracking-[0.12em] text-ds-fg-subtle">
+            <h2 id="series-episodes" className="text-ds-sm font-medium text-ds-fg-subtle">
               {zh ? '章节' : 'Episodes'}
             </h2>
             <span className="h-px flex-1 bg-ds-border" aria-hidden />
           </div>
-          <ol className="space-y-1.5">
+          <ol className="divide-y divide-ds-border">
             {series.episodes.map((episode, index) => (
               <li key={episode.id}>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/episodes/${episode.slug}`)}
-                  className="group flex w-full items-start gap-4 rounded-ds-md px-3 py-3 text-left transition-colors hover:bg-ds-surface-2"
+                <Link
+                  to={canonicalInternalPath(`/episodes/${episode.slug}`)}
+                  className="group flex w-full items-center gap-3 rounded-ds-sm py-3 text-left transition-colors hover:bg-ds-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary"
                 >
-                  <span className="pt-1 font-mono text-ds-xs text-ds-fg-subtle">
+                  <span className="w-7 shrink-0 self-start pt-0.5 font-mono text-ds-sm tabular-nums text-ds-fg-subtle">
                     {String(episode.episode_number || index + 1).padStart(2, '0')}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-ds-lg font-medium leading-7 text-ds-fg group-hover:text-ds-primary">
-                      {episode.title}
+                    <span className="block text-ds-base font-medium leading-6 text-ds-fg group-hover:text-ds-primary">
+                      {episode.title.replace(/^Episode\s+\d+\s*[-–—:]\s*/i, '')}
                     </span>
                     <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-ds-xs text-ds-fg-subtle">
                       {episode.publish_date && (
@@ -178,7 +178,8 @@ const EpisodeSeriesOverview: React.FC = () => {
                       )}
                     </span>
                   </span>
-                </button>
+                  <ChevronRight className="size-4 shrink-0 text-ds-fg-subtle group-hover:text-ds-primary" aria-hidden />
+                </Link>
               </li>
             ))}
           </ol>

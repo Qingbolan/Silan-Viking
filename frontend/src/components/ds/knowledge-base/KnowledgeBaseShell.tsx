@@ -18,12 +18,15 @@ import { cn } from '../../../lib/utils';
 import BookNav, { type BookNavChapter } from './BookNav';
 import DOMOutline from './DOMOutline';
 import EngagementFAB from './EngagementFAB';
-import { Select } from '../Controls';
+import { Modal } from '../Modal';
+import '../ContentOverlay.css';
+import { BookOpen, Check, ChevronDown } from 'lucide-react';
+import { useLanguage } from '../../LanguageContext';
 import { scrollToAnchor } from '../../../lib/scrollToAnchor';
 
 const MOBILE_OVERVIEW_ID = '__mobile_overview__';
 const READER_MAX_WIDTH = '64rem';
-const LEFT_RAIL_WIDTH = '18rem';
+const LEFT_RAIL_WIDTH = '16rem';
 const OUTLINE_TRACK_MINIMUM = {
   collapsed: '3.5rem',
   expanded: '15rem',
@@ -109,8 +112,15 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
     ...(overview ? [{ value: MOBILE_OVERVIEW_ID, label: overview.label }] : []),
     ...chapters.map((chapter) => ({ value: chapter.id, label: chapter.label })),
   ];
+  const currentChapterIndex = chapters.findIndex((chapter) => chapter.id === mobileChapter);
+  const currentChapterLabel = chapters[currentChapterIndex]?.label.replace(/^Episode\s+\d+\s*[-–—:]\s*/i, '');
   const showMobileChapterNav = showLeftRail && mobileOptions.length > 1;
+  const [chapterPickerOpen, setChapterPickerOpen] = useState(false);
+  const chapterTrigger = useRef<HTMLButtonElement>(null);
+  const { language } = useLanguage();
+  const chapterPickerLabel = language === 'zh' ? '系列目录' : 'Series contents';
   const handleMobileChapterChange = (value: string) => {
+    setChapterPickerOpen(false);
     if (value === MOBILE_OVERVIEW_ID) {
       overview?.onClick();
       return;
@@ -135,25 +145,41 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
 
   return (
     <>
-      {/* Compact chapter navigation below desktop breakpoints. A native
-          select keeps long book titles usable and invokes the platform's
-          accessible picker on touch devices. */}
       {showMobileChapterNav && (
-        <nav
-          data-ds
-          aria-label="Reading sections"
-          className="sticky top-0 z-20 border-b border-ds-border bg-ds-surface-1/92 px-4 py-2 backdrop-blur-md lg:hidden"
-        >
-          <div className="mx-auto max-w-3xl">
-            <Select
-              aria-label="Current reading section"
-              size="sm"
-              value={mobileChapter}
-              options={mobileOptions}
-              onChange={(event) => handleMobileChapterChange(event.target.value)}
-              className="bg-transparent font-medium"
-            />
-          </div>
+        <nav data-ds aria-label={chapterPickerLabel}
+          className="content-dark-overlay sticky top-0 z-20 px-4 lg:hidden">
+          <button ref={chapterTrigger} type="button" aria-haspopup="dialog" aria-expanded={chapterPickerOpen}
+            onClick={() => setChapterPickerOpen(true)}
+            className="mx-auto flex min-h-11 w-full max-w-3xl items-center gap-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary">
+            <BookOpen className="size-4 shrink-0 text-[#ffad70]" aria-hidden />
+            <span className="min-w-0 flex-1 truncate text-ds-sm font-medium text-white">
+              {overview?.label || mobileOptions.find((option) => option.value === mobileChapter)?.label}
+            </span>
+            {currentChapterIndex >= 0 && (
+              <span className="flex min-w-0 max-w-[55%] items-center gap-1.5 text-ds-xs text-white/90">
+                <span className="shrink-0 font-mono text-[#ffad70]">#{String(currentChapterIndex + 1).padStart(2, '0')}</span>
+                <span className="truncate">{currentChapterLabel}</span>
+              </span>
+            )}
+            <ChevronDown className="size-4 shrink-0 text-white/70" aria-hidden />
+          </button>
+          <Modal open={chapterPickerOpen} onClose={() => setChapterPickerOpen(false)}
+            title={chapterPickerLabel} appearance="plain" density="compact" size="sm" placement="mobile-bottom" returnFocusRef={chapterTrigger}
+            closeLabel={language === 'zh' ? '关闭目录' : 'Close contents'}>
+            <div className="space-y-1">
+              {mobileOptions.map((option) => {
+                const selected = option.value === mobileChapter;
+                const chapterIndex = chapters.findIndex((chapter) => chapter.id === option.value);
+                return <button key={option.value} type="button" aria-current={selected ? 'page' : undefined}
+                  onClick={() => handleMobileChapterChange(option.value)}
+                  className={cn('flex min-h-11 w-full items-center gap-2 rounded-ds-sm px-2 py-2 text-left text-ds-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary', selected ? 'bg-ds-primary-soft font-semibold text-ds-primary' : 'text-ds-fg hover:bg-ds-surface-2')}>
+                  <span className="w-6 shrink-0 text-ds-xs tabular-nums text-ds-fg-muted">{chapterIndex < 0 ? <BookOpen className="size-4" aria-hidden /> : String(chapterIndex + 1).padStart(2, '0')}</span>
+                  <span className="min-w-0 flex-1 break-words leading-5">{chapterIndex < 0 ? option.label : option.label.replace(/^Episode\s+\d+\s*[-–—:]\s*/i, '')}</span>
+                  {selected && <Check className="size-4 shrink-0" aria-hidden />}
+                </button>;
+              })}
+            </div>
+          </Modal>
         </nav>
       )}
 
@@ -188,11 +214,11 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
               header && 'lg:col-start-1 lg:row-start-1 lg:row-span-2',
             )}
             style={{
-              backgroundColor: 'var(--color-backgroundSecondary, #f5f5f5)',
+              backgroundColor: 'var(--ds-color-surface-1)' ,
               borderRight: '1px solid var(--color-backgroundTertiary, #e5e5e5)',
             }}
           >
-            <div className="sticky top-0 flex h-[calc(100dvh-3.5rem)] flex-col px-4 py-5">
+            <div className="sticky top-0 flex h-[calc(100dvh-3.5rem)] flex-col px-2 py-3">
               <BookNav
                 overview={overview}
                 chapters={chapters}
@@ -245,8 +271,9 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
           )}
         >
           <div
+            data-outline-scroll
             className={cn(
-              'no-scrollbar sticky top-0 max-h-[calc(100dvh-4rem)] overflow-y-auto pt-6',
+              'no-scrollbar sticky top-0 max-h-[calc(100dvh-4rem)] overflow-y-auto',
               outlineCollapsed ? 'max-w-14' : 'max-w-[34rem]',
             )}
           >

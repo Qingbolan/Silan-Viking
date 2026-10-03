@@ -1,19 +1,25 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
+import AuthorByline from './AuthorByline';
 import { ContentHero } from '../../ds/ContentHero';
 import { cn } from '../../../lib/utils';
 
-interface SeriesDocumentFrameProps {
-  id?: string;
+interface SeriesDocumentHeaderProps {
   language: string;
   eyebrow: string;
   title: string;
-  summary?: string;
+  coverImage?: string;
+  author?: string;
   meta?: Array<{
     icon?: LucideIcon;
     label: string;
     content?: React.ReactNode;
   }>;
+}
+
+interface SeriesDocumentFrameProps {
+  id?: string;
+  summary?: string;
   children: React.ReactNode;
 }
 
@@ -21,24 +27,18 @@ export const SERIES_HEADER_ID = 'kb-series-header';
 export const SERIES_SUMMARY_ID = 'kb-series-summary';
 export const SERIES_BODY_ID = 'kb-series-body';
 
-export const SeriesDocumentFrame: React.FC<SeriesDocumentFrameProps> = ({
-  id = 'kb-active-part',
-  language,
-  eyebrow,
-  title,
-  summary,
-  meta = [],
-  children,
-}) => {
-  return (
-    <div data-ds id={id} className="prose-content markdown-body w-full scroll-mt-24">
+export const SeriesDocumentHeader: React.FC<SeriesDocumentHeaderProps> = ({
+  language, title, eyebrow, coverImage, author = 'Silan Hu', meta = [],
+}) => (
       <ContentHero
         id={SERIES_HEADER_ID}
         title={title}
         language={language}
+        coverImage={coverImage}
         parent={{ label: language === 'zh' ? '博客' : 'Blog', to: '/blog/' }}
+        details={<span>{eyebrow}</span>}
         metadata={<>
-          <span>{eyebrow}</span>
+          <AuthorByline name={author} />
           {meta.map((item) => {
             const Icon = item.icon;
             return <span key={item.label} className="inline-flex items-center gap-1.5">
@@ -48,12 +48,22 @@ export const SeriesDocumentFrame: React.FC<SeriesDocumentFrameProps> = ({
         </>}
       />
 
+);
+
+export const SeriesDocumentFrame: React.FC<SeriesDocumentFrameProps> = ({
+  id = 'kb-active-part',
+  summary,
+  children,
+}) => {
+  return (
+    <div data-ds id={id} className="prose-content w-full scroll-mt-24">
+
       {summary && (
         <section
           id={SERIES_SUMMARY_ID}
-          className="scroll-mt-24 rounded-ds-lg bg-ds-surface-2 px-6 py-6 sm:px-8"
+          className="scroll-mt-24"
         >
-          <p className="max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg sm:leading-[1.55]">
+          <p className="!m-0 text-pretty text-ds-lg font-normal italic leading-7 text-ds-fg-muted">
             {summary}
           </p>
         </section>

@@ -1,3 +1,5 @@
+@import './ContentOverlay.css';
+
 .content-hero {
   position: relative;
   isolation: isolate;
@@ -34,15 +36,7 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgb(17 21 27 / 66%),
-    rgb(17 21 27 / 86%) 20%,
-    rgb(17 21 27 / 88%) 50%,
-    rgb(17 21 27 / 86%) 80%,
-    rgb(17 21 27 / 68%)
-  );
-}
+  background: var(--content-dark-overlay);}
 
 .content-hero__content {
   max-width: 72rem;
