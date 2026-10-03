@@ -208,8 +208,8 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
                   onClick={() => scrollToAnchor(heading.id)}
                   className="group flex h-3 w-9 items-center justify-end rounded-ds-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary">
                   <span aria-hidden className={cn(
-                    'block h-[3px] rounded-full transition-[width,background-color,opacity] duration-300 ease-out motion-reduce:transition-none group-hover:w-8 group-hover:opacity-100 group-hover:bg-ds-primary group-focus-visible:w-8 group-focus-visible:opacity-100 group-focus-visible:bg-ds-primary',
-                    active ? 'w-8 bg-ds-primary' : heading.level >= 3 ? 'w-3 bg-ds-fg-subtle opacity-50' : 'w-5 bg-ds-fg-subtle opacity-50',
+                    'block h-[3px] w-8 origin-right rounded-full transition-[transform,background-color,opacity] duration-300 ease-out motion-reduce:transition-none group-hover:scale-x-100 group-hover:opacity-100 group-hover:bg-ds-primary group-focus-visible:scale-x-100 group-focus-visible:opacity-100 group-focus-visible:bg-ds-primary',
+                    active ? 'scale-x-100 bg-ds-primary' : heading.level >= 3 ? 'scale-x-[0.375] bg-ds-fg-subtle opacity-50' : 'scale-x-[0.625] bg-ds-fg-subtle opacity-50',
                   )} />
                 </button>
               </Tooltip>
