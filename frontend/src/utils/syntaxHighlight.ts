@@ -190,7 +190,22 @@ const pythonRules: TokenRule[] = [
   { className: 'punctuation', pattern: /^[{}()[\],.;]/ },
 ];
 
+// Plain-text fences use restrained Markdown highlighting while preserving text.
+const markdownRules: TokenRule[] = [
+  { className: 'comment', pattern: /^<!--[\s\S]*?-->/ },
+  { className: 'keyword', pattern: /^#{1,6}(?=\s)/ },
+  { className: 'string', pattern: /^`+[^`\r\n]+`+/ },
+  { className: 'important', pattern: /^\*\*[^*\r\n]+\*\*|^__[^_\r\n]+__/ },
+  { className: 'string', pattern: /^\*[^*\r\n]+\*|^_[^_\r\n]+_/ },
+  { className: 'url', pattern: /^!?\[[^\]\r\n]*\]\([^)\r\n]*\)|^https?:\/\/[^\s<>]+/ },
+  { className: 'boolean', pattern: /^\[[ xX]\]/ },
+  { className: 'punctuation', pattern: /^(?:[-+*>]|\d+[.)])(?=\s)/ },
+];
+
 const languageRules: Record<string, TokenRule[]> = {
+  text: markdownRules,
+  plaintext: markdownRules,
+  markdown: markdownRules,
   bash: bashRules,
   sh: bashRules,
   shell: bashRules,
@@ -200,6 +215,7 @@ const languageRules: Record<string, TokenRule[]> = {
   javascript: javascriptRules,
   js: javascriptRules,
   json: jsonRules,
+  jsonl: jsonRules,
   jsonc: [
     { className: 'comment', pattern: /^\/\/.*|^\/\*[\s\S]*?\*\// },
     ...jsonRules,
@@ -226,6 +242,9 @@ const aliases: Record<string, string> = {
   javascript: 'javascript',
   js: 'javascript',
   json: 'json',
+  jsonl: 'jsonl',
+  ndjson: 'jsonl',
+  'json-lines': 'jsonl',
   jsonc: 'jsonc',
   jsx: 'jsx',
   markdown: 'markdown',
@@ -274,6 +293,13 @@ export const codeLanguageClass = (language?: string): string => {
 
 export const highlightCodeToHtml = (code: string, language?: string): string => {
   const normalized = normalizeCodeLanguage(language) || inferCodeLanguage(code);
+  // Each JSON Lines record is independent; malformed lines cannot consume
+  // tokens from the next record. Keep original LF/CRLF separators intact.
+  if (normalized === 'jsonl') {
+    return code.split(/(\r?\n)/).map((part) =>
+      /^\r?\n$/.test(part) ? part : highlightCodeToHtml(part, 'json'),
+    ).join('');
+  }
   const rules = languageRules[normalized];
   if (!rules) return escapeHtml(code);
 

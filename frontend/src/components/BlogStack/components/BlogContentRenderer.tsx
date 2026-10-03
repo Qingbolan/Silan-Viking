@@ -168,7 +168,7 @@ type PreparedItem = BlogContent & {
   id: string;
   type: CanonicalType;
   level?: number;
-  kindIndex: number; // 稳定的“同类内索引”，用于 drop cap / 布局
+  kindIndex: number; // 稳定的“同类内索引”，用于布局
 };
 
 export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) => {
@@ -273,7 +273,6 @@ export const BlogContentRenderer: React.FC<BlogContentRendererProps> = (props) =
           <TextContent
             key={item.id}
             item={item}
-            index={item.kindIndex}
             isWideScreen={isWideScreen}
             interactiveAnnotations={!readOnly}
             userAnnotations={userAnnotations}

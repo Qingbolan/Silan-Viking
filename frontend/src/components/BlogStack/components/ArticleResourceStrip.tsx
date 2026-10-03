@@ -1,29 +1,10 @@
-import {
-  BookOpen,
-  ExternalLink,
-  FileText,
-  Github,
-  Globe2,
-  Link2,
-  Paperclip,
-} from 'lucide-react';
+import { ExternalLink, FileText, Github, Globe2, BookOpen, Link2, Paperclip } from 'lucide-react';
+import { Badge } from '../../ds/Badge';
 import type { BlogResource } from '../types/blog';
 
-const resourceIcon = (kind: string) => {
-  switch (kind) {
-    case 'github':
-      return Github;
-    case 'paper':
-    case 'doi':
-      return FileText;
-    case 'website':
-      return Globe2;
-    case 'documentation':
-      return BookOpen;
-    default:
-      return Link2;
-  }
-};
+const resourcePriority: Record<string, number> = { paper: 0, website: 1, github: 2, documentation: 3, doi: 4 };
+
+const resourceIcons = { github: Github, paper: FileText, doi: FileText, website: Globe2, documentation: BookOpen };
 
 export function ArticleResourceStrip({
   projectName,
@@ -38,47 +19,43 @@ export function ArticleResourceStrip({
 }) {
   if (!projectName && !publicationVenue && resources.length === 0) return null;
 
+  const orderedResources = [...resources].sort((a, b) =>
+    (resourcePriority[a.kind] ?? 5) - (resourcePriority[b.kind] ?? 5),
+  );
+
   return (
     <aside
       data-ds
       aria-label={language === 'zh' ? '文章外部资源' : 'Article resources'}
-      className="mt-3 overflow-hidden rounded-ds-lg border border-ds-border bg-ds-surface"
+      className="space-y-2 rounded-ds-md bg-ds-surface-2 p-3"
     >
-      <div className="flex min-w-0 flex-col lg:flex-row lg:items-stretch">
-        <div className="flex min-w-0 items-center gap-3 border-b border-ds-border pl-0 pr-2 py-2 lg:shrink-0 lg:border-b-0 lg:border-r">
-          <Paperclip className="size-[17px] shrink-0 text-ds-primary" aria-hidden />
-          <span className="min-w-0">
-            {projectName && (
-              <strong className="block truncate text-ds-sm font-semibold text-ds-fg">
-                {projectName}
-              </strong>
-            )}
-            {publicationVenue && (
-              <span className="block text-ds-xs text-ds-fg-muted">{publicationVenue}</span>
-            )}
-          </span>
+      {(projectName || publicationVenue) && (
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Paperclip className="size-4 text-ds-primary" aria-hidden />
+          {projectName && <strong className="text-ds-base font-semibold tracking-tight text-ds-fg">{projectName}</strong>}
+          {publicationVenue && <Badge tone="neutral" size="sm">{publicationVenue}</Badge>}
         </div>
-        <div className="flex min-w-0 flex-1 snap-x gap-1 overflow-x-auto p-1">
-          {resources.map((resource) => {
-            const Icon = resourceIcon(resource.kind);
+      )}
+      {resources.length > 0 && (
+        <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] gap-2">
+          {orderedResources.map((resource) => {
+            const Icon = resourceIcons[resource.kind as keyof typeof resourceIcons] ?? Link2;
             return (
               <a
                 key={`${resource.kind}:${resource.url}`}
                 href={resource.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex min-w-[9rem] snap-start items-center gap-3 rounded-ds-md px-3 py-2 text-ds-fg transition hover:bg-ds-surface-2"
+                className="ds-hairline group flex min-w-0 items-center gap-2 rounded-ds-sm bg-ds-surface-1 px-3 py-2 text-ds-fg transition-colors hover:text-ds-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               >
-                <Icon className="size-[17px] shrink-0 text-ds-fg-subtle transition group-hover:text-ds-primary" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-ds-sm font-semibold">{resource.label}</span>
-                </span>
-                <ExternalLink className="size-[13px] shrink-0 text-ds-fg-subtle" aria-hidden />
+                <Icon className="size-4 shrink-0 text-ds-fg-muted group-hover:text-ds-primary" aria-hidden />
+                <span className="min-w-0 flex-1 break-words text-ds-sm font-normal leading-5">{resource.label}</span>
+                <ExternalLink className="size-3 shrink-0 text-ds-fg-subtle" aria-hidden />
               </a>
             );
           })}
         </div>
-      </div>
+      )}
     </aside>
   );
 }

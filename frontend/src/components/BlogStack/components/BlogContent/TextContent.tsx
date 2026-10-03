@@ -9,7 +9,6 @@ import Markdown from '../../../ui/Markdown';
 
 interface TextContentProps {
   item: BlogContent;
-  index: number;
   isWideScreen: boolean;
   interactiveAnnotations: boolean;
   userAnnotations: Record<string, UserAnnotation>;
@@ -33,7 +32,6 @@ interface TextContentProps {
 
 export const TextContent: React.FC<TextContentProps> = ({
   item,
-  index,
   isWideScreen,
   interactiveAnnotations,
   userAnnotations,
@@ -51,8 +49,6 @@ export const TextContent: React.FC<TextContentProps> = ({
   const [clickedAnnotation, setClickedAnnotation] = React.useState<string | null>(null);
   const [hoveredAnnotation, setHoveredAnnotation] = React.useState<string | null>(null);
 
-  // Check if this is the first text content (index 0)
-  const isFirstParagraph = index === 0;
 
   // Get annotations for this content
   const contentAnnotations = Object.entries(userAnnotations).filter(
@@ -72,10 +68,7 @@ export const TextContent: React.FC<TextContentProps> = ({
     const hasBlockElements = React.isValidElement(processedText);
 
     if (relevantAnnotations.length === 0) {
-      const result = isFirstParagraph && (typeof processedText === 'string' || React.isValidElement(processedText))
-        ? renderFirstLetterDropCap(processedText)
-        : processedText;
-      return { content: result, hasBlockElements };
+      return { content: processedText, hasBlockElements };
     }
 
     // Sort annotations by start offset to avoid overlap issues
@@ -111,16 +104,7 @@ export const TextContent: React.FC<TextContentProps> = ({
         const beforeText = text.slice(lastIndex, startOffset);
         const processedBeforeText = processMarkdownText(beforeText);
         if (processedBeforeText !== undefined && processedBeforeText !== null) {
-          if (isFirstParagraph && lastIndex === 0) {
-            if (typeof processedBeforeText === 'string' || React.isValidElement(processedBeforeText)) {
-              const dropCapResult = renderFirstLetterDropCap(processedBeforeText);
-              if (typeof dropCapResult === 'string' || React.isValidElement(dropCapResult)) {
-                parts.push(dropCapResult as string | JSX.Element);
-              } else {
-                parts.push(processedBeforeText as string | JSX.Element);
-              }
-            }
-          } else if (typeof processedBeforeText === 'string' || React.isValidElement(processedBeforeText)) {
+          if (typeof processedBeforeText === 'string' || React.isValidElement(processedBeforeText)) {
             parts.push(processedBeforeText as string | JSX.Element);
           }
         }
@@ -245,38 +229,6 @@ export const TextContent: React.FC<TextContentProps> = ({
     return { content: partsWithKeys, hasBlockElements };
   };
 
-  // Function to render first letter as drop cap
-  const renderFirstLetterDropCap = (content: string | React.ReactElement): React.ReactNode => {
-    // If content is a string, process as before
-    if (typeof content === 'string') {
-      if (!content || content.length === 0) return content;
-      
-      const firstChar = content.charAt(0);
-      const restOfText = content.slice(1);
-      
-      return (
-        <>
-          <span className="sm:hidden">{firstChar}</span>
-          <span
-            key="drop-cap"
-            className="font-display hidden sm:block float-left text-4xl lg:text-5xl leading-none
-                       text-theme-accent font-semibold mr-2.5 mt-1"
-            style={{
-              lineHeight: '0.86',
-              paddingTop: '3px'
-            }}
-          >
-            {firstChar}
-          </span>
-          <span key="rest-text">{restOfText}</span>
-        </>
-      );
-    }
-    
-    // If content is already a React node, return as is
-    return content;
-  };
-
   const hasMarkdownFormatting = (text: string): boolean => {
     const patterns = [
       /\*\*.*?\*\*/,
@@ -376,7 +328,7 @@ export const TextContent: React.FC<TextContentProps> = ({
   const isHeader = item.content.match(/^#+\s/);
 
   return (
-    <article className="mb-8 break-inside-avoid group relative" onClick={handleOutsideClick}>
+    <article className="mb-4 last:mb-0 break-inside-avoid group relative" onClick={handleOutsideClick}>
       {/* Main Text Content */}
       <div 
         id={item.id}
@@ -399,9 +351,7 @@ export const TextContent: React.FC<TextContentProps> = ({
               return (
                 <p className={`font-article text-theme-text-primary/85 text-ds-lg leading-[1.58] font-normal
                                selection:bg-theme-accent/20
-                               ${
-                                 isFirstParagraph ? 'first-letter:text-theme-accent first-letter:font-bold' : ''
-                               }`}
+                               `}
                    style={{
                      color: 'color-mix(in oklch, var(--color-textPrimary) 76%, var(--color-textSecondary))',
                      textRendering: 'optimizeLegibility',

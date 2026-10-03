@@ -848,34 +848,31 @@ p:not([data-ds] *) {
   background: linear-gradient(145deg, rgba(50, 49, 48, 0.9), rgba(45, 44, 43, 0.9));
 }
 
-/* Syntax highlight — token colours are inherited from the code surface so
-   light article snippets and dark code panels can each keep readable contrast. */
+/* Dracula official palette: https://draculatheme.com/contribute */
 :root {
-  --syntax-fg: var(--color-textPrimary, #1f2937);
-  --syntax-muted: color-mix(in oklch, var(--color-textSecondary, #6b7280) 82%, transparent);
-  --syntax-punctuation: color-mix(in oklch, var(--color-textSecondary, #6b7280) 92%, var(--color-textPrimary, #1f2937));
-  --syntax-keyword: var(--ds-color-accent, var(--color-primary, #2563eb));
-  --syntax-property: oklch(0.46 0.13 264);
-  --syntax-string: oklch(0.50 0.12 150);
-  --syntax-number: oklch(0.58 0.15 62);
-  --syntax-function: oklch(0.50 0.14 300);
-  --syntax-variable: oklch(0.56 0.17 28);
-  --syntax-type: oklch(0.48 0.13 220);
+  --syntax-bg: #282a36;
+  --syntax-fg: #f8f8f2;
+  --syntax-muted: #6272a4;
+  --syntax-punctuation: #f8f8f2;
+  --syntax-keyword: #ff79c6;
+  --syntax-property: #f8f8f2;
+  --syntax-string: #f1fa8c;
+  --syntax-number: #bd93f9;
+  --syntax-function: #50fa7b;
+  --syntax-variable: #f8f8f2;
+  --syntax-type: #8be9fd;
 }
-
-.syntax-surface--dark,
-.dark {
-  --syntax-fg: oklch(0.93 0.006 264);
-  --syntax-muted: oklch(0.67 0.012 264);
-  --syntax-punctuation: oklch(0.76 0.01 264);
-  --syntax-keyword: oklch(0.76 0.12 256);
-  --syntax-property: oklch(0.76 0.12 230);
-  --syntax-string: oklch(0.78 0.12 150);
-  --syntax-number: oklch(0.82 0.14 72);
-  --syntax-function: oklch(0.80 0.12 310);
-  --syntax-variable: oklch(0.78 0.13 36);
-  --syntax-type: oklch(0.78 0.10 205);
+.dracula-code-surface {
+  --ds-color-surface-1: #282a36;
+  --ds-color-surface-2: #282a36;
+  --ds-color-surface-3: #44475a;
+  --ds-color-border: #44475a;
+  --color-textPrimary: #f8f8f2;
+  --color-textSecondary: #f8f8f2;
+  --color-textTertiary: #6272a4;
+  color: #f8f8f2;
 }
+pre::selection, pre ::selection { background: #44475a; color: #f8f8f2; }
 
 pre[class*="language-"], code[class*="language-"] {
   color: var(--syntax-fg);
@@ -1590,6 +1587,14 @@ code[class*="language-"] .token.italic { font-style: italic; }
   transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, transform 180ms ease;
   vertical-align: -0.12em;
 }
+/* Let wrapped article links paint a separate chip on each text line. */
+.markdown-content .markdown-body a.markdown-rich-link {
+  display: inline;
+  line-height: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  overflow-wrap: anywhere;
+}
 .markdown-content .markdown-body a.markdown-rich-link:hover,
 .rich-link:hover {
   background: color-mix(in srgb, var(--color-textPrimary, #171717) 10%, var(--color-background, #ffffff));
@@ -1616,7 +1621,9 @@ code[class*="language-"] .token.italic { font-style: italic; }
   border-radius: 999px;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-cardBorder, #e5e7eb) 72%, transparent);
   content: '';
-  flex: 0 0 auto;
+  display: inline-block;
+  vertical-align: -0.18em;
+  margin-right: 0.32rem;
   height: 1.12em;
   width: 1.12em;
 }
@@ -1677,29 +1684,10 @@ code[class*="language-"] .token.italic { font-style: italic; }
 }
 .markdown-content .markdown-body pre,
 .markdown-content .markdown-body code.markdown-code-block {
-  --syntax-fg: var(--color-textPrimary, #171717);
-  --syntax-muted: color-mix(in oklch, var(--color-textSecondary, #525252) 78%, transparent);
-  --syntax-punctuation: color-mix(in oklch, var(--color-textSecondary, #525252) 88%, var(--color-textPrimary, #171717));
-  --syntax-keyword: var(--ds-color-accent, var(--color-primary, #1d4ed8));
-  --syntax-property: oklch(0.43 0.13 264);
-  --syntax-string: oklch(0.43 0.12 150);
-  --syntax-number: oklch(0.54 0.15 62);
-  --syntax-function: oklch(0.45 0.14 300);
-  --syntax-variable: oklch(0.52 0.16 28);
-  --syntax-type: oklch(0.43 0.13 220);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-background, #ffffff) 12%, transparent),
-      transparent 34%
-    ),
-    color-mix(in srgb, var(--color-textPrimary, #171717) 5%, var(--color-background, #ffffff));
-  border: 1px solid color-mix(in srgb, var(--color-textPrimary, #171717) 16%, transparent);
+  background: var(--syntax-bg);
+  border: 1px solid #44475a;
   border-radius: 0.7rem;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--color-background, #ffffff) 76%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, var(--color-textPrimary, #171717) 5%, transparent);
-  color: var(--color-textPrimary, #171717);
+  color: var(--syntax-fg);
   margin: 1.1rem 0 1.35rem;
   overflow-x: auto;
   padding: 1rem 1.125rem;
@@ -1722,27 +1710,6 @@ code[class*="language-"] .token.italic { font-style: italic; }
   font-weight: 500;
   line-height: 1.55;
   white-space: pre;
-}
-.dark .markdown-content .markdown-body pre,
-.dark .markdown-content .markdown-body code.markdown-code-block {
-  --syntax-fg: oklch(0.94 0.006 264);
-  --syntax-muted: oklch(0.67 0.012 264);
-  --syntax-punctuation: oklch(0.76 0.01 264);
-  --syntax-keyword: oklch(0.76 0.12 256);
-  --syntax-property: oklch(0.76 0.12 230);
-  --syntax-string: oklch(0.78 0.12 150);
-  --syntax-number: oklch(0.82 0.14 72);
-  --syntax-function: oklch(0.80 0.12 310);
-  --syntax-variable: oklch(0.78 0.13 36);
-  --syntax-type: oklch(0.78 0.10 205);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 38%),
-    #121316;
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.045),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
-  color: rgba(255, 255, 255, 0.88);
 }
 .dark .markdown-content .markdown-body code:not(.markdown-code-block) {
   background: rgba(255, 255, 255, 0.075);

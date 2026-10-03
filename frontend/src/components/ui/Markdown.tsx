@@ -4,6 +4,8 @@
 // Markdown text; this component owns authored-content normalization, resource
 // routing, link navigation, and the stable public rendering contract.
 import React from 'react';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { CodeBlock } from './CodeBlock';
 import { withoutRepeatedTitle } from '../../lib/markdown';
 import { useNavigate } from 'react-router-dom';
 import { mediaUrl, routeFromSilanResource } from '../../api/utils';
@@ -95,6 +97,21 @@ const Markdown: React.FC<MarkdownProps> = ({
     [children, documentTitle, sectionTitle],
   );
 
+  const blocks = React.useMemo(() => {
+    const blocks: Array<{ markdown: string } | { code: string; language: string }> = [];
+    let offset = 0;
+    for (const node of fromMarkdown(content).children) {
+      if (node.type !== 'code' || node.position?.start.offset === undefined || node.position.end.offset === undefined) continue;
+      const before = content.slice(offset, node.position.start.offset);
+      if (before.trim()) blocks.push({ markdown: before });
+      blocks.push({ code: node.value, language: node.lang || 'text' });
+      offset = node.position.end.offset;
+    }
+    const remaining = content.slice(offset);
+    if (remaining.trim()) blocks.push({ markdown: remaining });
+    return blocks;
+  }, [content]);
+
   const onClick = React.useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     const target = event.target as Element | null;
     const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
@@ -133,7 +150,9 @@ const Markdown: React.FC<MarkdownProps> = ({
       ].filter(Boolean).join(' ')}
       onClick={onClick}
     >
-      <LexicalMarkdownRenderer content={content} richLinks={richLinks} />
+      {blocks.map((block, index) => 'code' in block
+        ? <CodeBlock key={index} content={block.code} language={block.language} />
+        : <LexicalMarkdownRenderer key={index} content={block.markdown} richLinks={richLinks} />)}
     </div>
   );
 };

@@ -47,7 +47,7 @@ export const ImageContent: React.FC<ImageContentProps> = ({ item, index, isWideS
   const alt = item.caption || (language === 'zh' ? '文章插图' : 'Article figure');
 
   return <>
-    <figure className={`my-16 break-inside-avoid ${isWideScreen ? 'col-span-2' : ''}`}>
+    <figure className={`my-6 first:mt-0 last:mb-0 break-inside-avoid ${isWideScreen ? 'col-span-2' : ''}`}>
       <div className="overflow-hidden rounded-2xl bg-ds-surface-1">
         <div className="relative overflow-hidden bg-ds-surface-2">
           {unpublished || imageError ? (
