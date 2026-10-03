@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"silan-backend/internal/traffic"
 	"sort"
+	"strings"
 
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/contentinteraction"
@@ -26,7 +28,11 @@ type Liker struct {
 // ProjectLikers returns the most recent active project likers. Authenticated
 // users expose their profile avatar; anonymous actors are represented by a
 // stable visitor number derived from the browser fingerprint.
-func ProjectLikers(ctx context.Context, client *ent.Client, projectID string, limit int) ([]Liker, error) {
+type CountryLookup interface {
+	Resolve(string) traffic.GeoLocation
+}
+
+func ProjectLikers(ctx context.Context, client *ent.Client, projectID string, limit int, countries CountryLookup) ([]Liker, error) {
 	if limit == 0 {
 		limit = 24
 	}
@@ -71,8 +77,13 @@ func ProjectLikers(ctx context.Context, client *ent.Client, projectID string, li
 			})
 			continue
 		}
+		country := ""
+		if countries != nil {
+			country = strings.ToUpper(countries.Resolve(row.IPAddress).CountryCode)
+		}
 		likers = append(likers, Liker{
 			ActorID:       publicactor.ID(publicactor.Visitor, row.Fingerprint),
+			CountryCode:   country,
 			Kind:          "visitor",
 			VisitorNumber: VisitorNumber(row.Fingerprint),
 		})

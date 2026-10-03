@@ -130,7 +130,7 @@ func (l *LikeProjectLogic) LikeProject(req *types.LikeProjectRequest) (resp *typ
 	if err != nil {
 		return nil, err
 	}
-	likers, err := engagement.ProjectLikers(l.ctx, client, projectID, 24)
+	likers, err := engagement.ProjectLikers(l.ctx, client, projectID, 24, l.svcCtx.CountryResolver)
 	if err != nil {
 		return nil, err
 	}

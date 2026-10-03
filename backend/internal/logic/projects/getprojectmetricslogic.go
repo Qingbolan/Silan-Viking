@@ -48,7 +48,7 @@ func (l *GetProjectMetricsLogic) GetProjectMetrics(req *types.ProjectMetricsRequ
 	if err != nil {
 		return nil, err
 	}
-	likers, err := engagement.ProjectLikers(l.ctx, l.svcCtx.DB, projectID, 24)
+	likers, err := engagement.ProjectLikers(l.ctx, l.svcCtx.DB, projectID, 24, l.svcCtx.CountryResolver)
 	if err != nil {
 		return nil, err
 	}

@@ -107,7 +107,7 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		}
 		var likerRows []engagement.Liker
 		if key.kind == "project" {
-			likerRows, err = engagement.ProjectLikers(l.ctx, l.svcCtx.DB, key.id, -1)
+			likerRows, err = engagement.ProjectLikers(l.ctx, l.svcCtx.DB, key.id, -1, l.svcCtx.CountryResolver)
 		} else {
 			likerRows, err = engagement.ContentLikersFromRows(l.ctx, l.svcCtx.DB, rows)
 		}
