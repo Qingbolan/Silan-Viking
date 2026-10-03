@@ -36,7 +36,7 @@ type Scanner interface {
 type CommandScanner struct{}
 
 func (CommandScanner) Scan(ctx context.Context, path string) error {
-	err := exec.CommandContext(ctx, "clamscan", "--no-summary", "--", path).Run()
+	err := exec.CommandContext(ctx, "clamdscan", "--stream", "--no-summary", "--", path).Run()
 	if err == nil {
 		return nil
 	}

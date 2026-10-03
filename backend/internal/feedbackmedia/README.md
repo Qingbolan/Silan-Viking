@@ -32,12 +32,14 @@ Set `FEEDBACK_MEDIA_ROOT` to a persistent backend-writable directory (default
 and out of direct Nginx static serving. Multiple hosts require a shared atomic
 filesystem; separate local volumes would each grant their own quota.
 
-Install `clamav`, `clamav-freshclam`, and `ffmpeg` on the backend host. Initialize
+Install `clamav-daemon`, `clamdscan`, `clamav-freshclam`, and `ffmpeg` on the backend host. Initialize
 and keep the ClamAV signature database updated with the distro freshclam service.
-The backend service account must be able to execute `clamscan`, `ffprobe`, and
-`ffmpeg`, read the ClamAV database, and write the storage directory. Container
+The backend service account must be able to access the ClamAV daemon socket and execute `clamdscan`, `ffprobe`, and
+`ffmpeg`, write the storage directory. Container
 installations must provision the same binaries/database and a persistent mount.
-Scanner failure (including missing binary/database) returns 503 and never bypasses
+Enable the ClamAV daemon after the first database update. Streaming scans keep
+the signature database resident and do not require the daemon to read private
+quarantine paths. Scanner failure (including missing binary/database/daemon) returns 503 and never bypasses
 scanning. The API checks malware and media integrity, not semantic content
 moderation. Keep media decoders and antivirus packages patched.
 
