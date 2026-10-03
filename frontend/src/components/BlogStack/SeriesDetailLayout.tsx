@@ -19,15 +19,10 @@ import type { EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from './components/BlogContentRenderer';
 import AuthorByline from './components/AuthorByline';
 import SeriesDocumentFrame, {
-  SERIES_BODY_ID,
-  SERIES_COMMENTS_ID,
   SERIES_HEADER_ID,
-  SERIES_LIKES_ID,
-  SERIES_SUMMARY_ID,
 } from './components/SeriesDocumentFrame';
 import { useBlogEngagement } from './hooks/useBlogEngagement';
 import { stripLeadingMetadataDuplicates } from './utils/contentText';
-import { scrollToAnchor } from '../../lib/scrollToAnchor';
 import {
   ArticleFooter,
   KnowledgeBaseShell,
@@ -86,7 +81,6 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   // Active chapter: the current episode id, or the overview sentinel
   // when the user lands on / clicks the series cover.
   const [activeChapter, setActiveChapter] = useState<string>(post.id);
-  const [activeSection, setActiveSection] = useState<string>(SERIES_HEADER_ID);
   const engagement = useBlogEngagement({
     postId: post.id,
     initialLikes: post.likes ?? 0,
@@ -99,7 +93,6 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
   // BlogDetail re-renders with a new `post` after navigation.
   useEffect(() => {
     setActiveChapter(post.id);
-    setActiveSection(SERIES_HEADER_ID);
   }, [post.id]);
 
   // Fetch the sibling episode list for the left rail.
@@ -153,31 +146,7 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
     post.episodeNumber ? `${language === 'zh' ? '第' : 'Episode'} ${post.episodeNumber}` : '',
   ].filter(Boolean).join(' · ');
 
-  useEffect(() => {
-    if (isOverview) return;
-    const ids = [
-      SERIES_HEADER_ID,
-      SERIES_SUMMARY_ID,
-      SERIES_BODY_ID,
-      SERIES_LIKES_ID,
-      SERIES_COMMENTS_ID,
-    ];
-    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const hit = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (hit) setActiveSection(hit.target.id);
-      },
-      { root: scrollRoot, rootMargin: '-80px 0px -70% 0px', threshold: 0 },
-    );
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    }
-    return () => obs.disconnect();
-  }, [isOverview, post.id]);
+
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -262,10 +231,6 @@ const SeriesDetailLayout: React.FC<SeriesDetailLayoutProps> = ({
             eyebrow={episodeEyebrow}
             title={post.title}
             summary={episodeSummary}
-            activeSection={activeSection}
-            likes={engagement.likes}
-            commentsCount={engagement.commentsCount}
-            onSectionClick={scrollToAnchor}
             meta={[
               ...(typeof post.author === 'string' && post.author
                 ? [{

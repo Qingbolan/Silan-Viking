@@ -16,18 +16,13 @@ import { fetchEpisode, fetchEpisodeSeries, updateEpisodeViews } from '../../api/
 import type { EpisodeData, EpisodeSeriesData } from '../../types/episode';
 import { BlogContentRenderer } from '../BlogStack/components/BlogContentRenderer';
 import SeriesDocumentFrame, {
-  SERIES_BODY_ID,
-  SERIES_COMMENTS_ID,
   SERIES_HEADER_ID,
-  SERIES_LIKES_ID,
-  SERIES_SUMMARY_ID,
 } from '../BlogStack/components/SeriesDocumentFrame';
 import { stripLeadingMetadataDuplicates } from '../BlogStack/utils/contentText';
 import { useBlogEngagement } from '../BlogStack/hooks/useBlogEngagement';
 import { useRemoteResource } from '../../hooks/useRemoteResource';
 import { canonicalInternalPath } from '../../utils/navigation';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
-import { scrollToAnchor } from '../../lib/scrollToAnchor';
 import { shouldCreditViewDisplay } from '../../utils/viewDisplayCredit';
 import {
   ArticleFooter,
@@ -57,7 +52,6 @@ const EpisodeDetail: React.FC = () => {
 
   const [seriesData, setSeriesData] = useState<EpisodeSeriesData | null>(null);
   const [activeChapter, setActiveChapter] = useState<string>('');
-  const [activeSection, setActiveSection] = useState<string>(SERIES_HEADER_ID);
   const [displayViews, setDisplayViews] = useState(0);
 
   const loadEpisode = useCallback(
@@ -95,7 +89,6 @@ const EpisodeDetail: React.FC = () => {
     }
     let cancelled = false;
     setActiveChapter(episode.id);
-    setActiveSection(SERIES_HEADER_ID);
     setSeriesData(null);
     if (episode.series_slug) {
       void fetchEpisodeSeries(episode.series_slug, language as 'en' | 'zh')
@@ -165,31 +158,7 @@ const EpisodeDetail: React.FC = () => {
     enabled: Boolean(episode),
   });
 
-  useEffect(() => {
-    if (!episode || isOverview) return;
-    const ids = [
-      SERIES_HEADER_ID,
-      SERIES_SUMMARY_ID,
-      SERIES_BODY_ID,
-      SERIES_LIKES_ID,
-      SERIES_COMMENTS_ID,
-    ];
-    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        const hit = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-        if (hit) setActiveSection(hit.target.id);
-      },
-      { root: scrollRoot, rootMargin: '-80px 0px -70% 0px', threshold: 0 },
-    );
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    }
-    return () => obs.disconnect();
-  }, [episode, isOverview]);
+
 
   if (episodeResource.status === 'loading') return <BrandLoading />;
   if (episodeResource.status === 'error') {
@@ -330,10 +299,6 @@ const EpisodeDetail: React.FC = () => {
             eyebrow={episodeEyebrow}
             title={episode.title}
             summary={episodeSummary}
-            activeSection={activeSection}
-            likes={engagement.likes}
-            commentsCount={engagement.commentsCount}
-            onSectionClick={scrollToAnchor}
             meta={[
               ...(episode.publish_date ? [{ icon: Calendar, label: episode.publish_date }] : []),
               ...(episode.duration_minutes

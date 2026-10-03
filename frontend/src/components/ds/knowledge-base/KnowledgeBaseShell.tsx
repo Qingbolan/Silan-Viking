@@ -13,7 +13,7 @@
 // overlays. That keeps the reader chrome scoped to the article/idea body, so
 // it cannot cover the global footer when the page scrolls past the content.
 // Below `lg` the rails collapse to compact native navigation.
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { cn } from '../../../lib/utils';
 import BookNav, { type BookNavChapter } from './BookNav';
 import DOMOutline from './DOMOutline';
@@ -118,6 +118,13 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
     chapters.find((chapter) => chapter.id === value)?.onClick?.();
   };
 
+  const handleBackToTop = useCallback(() => {
+    const scrollRoot = document.querySelector<HTMLElement>('#browser-window');
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'instant' : 'smooth';
+    (scrollRoot ?? window).scrollTo({ top: 0, behavior });
+  }, []);
+
   const handleLikeClick = () => {
     scrollToAnchor('#kb-likes');
   };
@@ -219,7 +226,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
           <div
             ref={centreRef}
             className={cn(
-              'mx-auto w-full py-6 sm:py-8 lg:px-12',
+              'mx-auto w-full px-5 py-6 sm:px-8 sm:py-8 lg:px-12',
               contentClassName,
             )}
           >
@@ -257,6 +264,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
       {/* Floating engagement pills */}
       {(typeof likes === 'number' || typeof commentsCount === 'number') && (
         <EngagementFAB
+          onBackToTop={handleBackToTop}
           likes={likes}
           comments={commentsCount}
           onLikeClick={typeof likes === 'number' ? handleLikeClick : undefined}

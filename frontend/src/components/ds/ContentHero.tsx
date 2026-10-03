@@ -17,9 +17,13 @@ export const ContentHero: React.FC<ContentHeroProps> = ({
   id, title, coverImage, language, parent, metadata, details,
 }) => {
   const [failedCover, setFailedCover] = useState<string>();
+  const hasCover = Boolean(coverImage && failedCover !== coverImage);
+  const breadcrumb = (
+    <ContentBreadcrumb title={title} language={language} parent={parent} centered={hasCover} className={hasCover ? 'mt-6' : 'mb-5'} />
+  );
   return (
-    <header data-ds id={id} className="content-hero scroll-mt-24">
-      {coverImage && failedCover !== coverImage && (
+    <header data-ds data-has-cover={hasCover} id={id} className="content-hero scroll-mt-24">
+      {hasCover && (
         <img
           key={coverImage}
           src={coverImage}
@@ -32,16 +36,17 @@ export const ContentHero: React.FC<ContentHeroProps> = ({
         />
       )}
       <div className="content-hero__content">
-        <h1 className="content-hero__title content-hero__halo font-display text-ds-fg">{title}</h1>
-        <div className="content-hero__info content-hero__halo mt-6">
+        {!hasCover && breadcrumb}
+        <h1 className="content-hero__title font-display text-ds-fg">{title}</h1>
+        <div className="content-hero__info">
         {metadata && (
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-ds-sm text-ds-fg-muted">
+          <div className="content-hero__metadata flex flex-wrap items-center gap-x-4 gap-y-2 text-ds-sm text-ds-fg-muted">
             {metadata}
           </div>
         )}
-        <ContentBreadcrumb title={title} language={language} parent={parent} centered className="mt-6" />
+        {hasCover && breadcrumb}
         {details && (
-          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-ds-xs text-ds-fg-muted">
+          <div className="content-hero__details mt-4 flex flex-wrap gap-x-4 gap-y-1 text-ds-xs text-ds-fg-muted">
             {details}
           </div>
         )}

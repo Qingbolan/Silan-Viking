@@ -17,36 +17,31 @@
   object-position: center 65%;
 }
 
-/* Two feathered pools follow the title and supporting copy, not every line. */
-.content-hero__halo {
-  position: relative;
-  isolation: isolate;
-  width: fit-content;
-  max-width: 100%;
-  margin-inline: auto;
-  text-shadow: 0 1px 6px color-mix(in srgb, var(--ds-color-surface-2) 65%, transparent);
+/* A photographic header has its own contrast palette in either page theme.
+   Scope the tokens here so bylines, breadcrumbs and tags share that palette. */
+.content-hero[data-has-cover='true'] {
+  --color-textPrimary: #ffffff;
+  --color-textSecondary: #e1e4e8;
+  --color-textTertiary: #cbd0d6;
+  --ds-color-primary: #ffad70;
+  --ds-color-border: rgb(255 255 255 / 24%);
+  background: #171b21;
 }
 
-.content-hero__halo::before {
+.content-hero[data-has-cover='true']::before {
   content: '';
   position: absolute;
-  inset: -1.5rem -2rem;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
-  border-radius: 45%;
-  filter: blur(16px);
-  background: radial-gradient(
-    ellipse closest-side,
-    color-mix(in srgb, var(--ds-color-surface-2) 88%, transparent) 15%,
-    color-mix(in srgb, var(--ds-color-surface-2) 72%, transparent) 45%,
-    color-mix(in srgb, var(--ds-color-surface-2) 24%, transparent) 78%,
-    transparent 100%
+  background: linear-gradient(
+    to bottom,
+    rgb(17 21 27 / 66%),
+    rgb(17 21 27 / 86%) 20%,
+    rgb(17 21 27 / 88%) 50%,
+    rgb(17 21 27 / 86%) 80%,
+    rgb(17 21 27 / 68%)
   );
-}
-
-.content-hero__info::before {
-  inset: -1.5rem -2.5rem;
-  filter: blur(20px);
 }
 
 .content-hero__content {
@@ -56,11 +51,50 @@
 }
 
 .content-hero__title {
-  margin-block: 0;
+  max-width: 32ch;
+  margin: 0 auto;
   font-size: clamp(1.75rem, 3.4vw, 3rem);
   font-weight: 500;
   line-height: 1.22;
   letter-spacing: -0.015em;
   overflow-wrap: anywhere;
   text-wrap: balance;
+}
+
+.content-hero__info {
+  margin-top: 1.5rem;
+}
+
+.content-hero__metadata,
+.content-hero__details {
+  justify-content: center;
+}
+
+/* A chapter without artwork is a document heading, not an empty cover. */
+.content-hero[data-has-cover='false'] {
+  background: transparent;
+  padding: 0.5rem 0 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.content-hero[data-has-cover='false'] .content-hero__content {
+  text-align: left;
+}
+
+.content-hero[data-has-cover='false'] .content-hero__title {
+  max-width: 36ch;
+  margin-inline: 0;
+  font-size: clamp(1.625rem, 2.4vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: pretty;
+}
+
+.content-hero[data-has-cover='false'] .content-hero__info {
+  margin-top: 1rem;
+}
+
+.content-hero[data-has-cover='false'] .content-hero__metadata,
+.content-hero[data-has-cover='false'] .content-hero__details {
+  justify-content: flex-start;
 }

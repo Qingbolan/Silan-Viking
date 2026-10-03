@@ -214,7 +214,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
         currentChapterId={activeChapter}
         wordCount={wordCount}
         showLeftRail={false}
-        contentClassName="!pt-0 !pl-0 lg:pr-6"
+        contentClassName="!pt-0 lg:!pl-0 lg:pr-6"
         outlineHeadingSelector="header h1, h2, h3"
         likes={likes}
         commentsCount={commentsCount}
@@ -238,7 +238,7 @@ const ArticleDetailLayout: React.FC<ArticleDetailLayoutProps> = ({
                   type="button"
                   onClick={() => scrollToAnchor(tab.id)}
                   className={cn(
-                    'inline-flex h-12 items-center gap-2 rounded-t-ds-md px-4 first:pl-0 text-ds-base font-semibold transition',
+                    'inline-flex h-12 items-center gap-1.5 rounded-t-ds-md px-3 first:pl-0 text-ds-sm font-semibold transition sm:gap-2 sm:px-4 sm:text-ds-base',
                     active
                       ? 'text-ds-primary'
                       : 'text-ds-fg-muted hover:text-ds-primary',
