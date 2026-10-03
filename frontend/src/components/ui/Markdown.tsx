@@ -72,12 +72,25 @@ const resolveContentReferences = (markdown: string): string => (
   )
 );
 
+const withoutEmptyHeadings = (markdown: string): string => {
+  const empty = fromMarkdown(markdown).children.filter((node) =>
+    node.type === 'heading' && node.children.length === 0,
+  );
+  let result = markdown;
+  for (const node of empty.reverse()) {
+    const start = node.position?.start.offset;
+    const end = node.position?.end.offset;
+    if (start !== undefined && end !== undefined) result = result.slice(0, start) + result.slice(end);
+  }
+  return result.trimStart();
+};
+
 const prepareMarkdown = (markdown: string, documentTitle?: string, sectionTitle?: string): string =>
   resolveContentReferences(
     normalizeStrongLabelSpacing(
       unwrapSoftBreaks(
         shiftLocalOutline(
-          withoutRepeatedTitle(withoutRepeatedTitle(markdown ?? '', documentTitle), sectionTitle),
+          withoutEmptyHeadings(withoutRepeatedTitle(withoutRepeatedTitle(markdown ?? '', documentTitle), sectionTitle)),
         ),
       ),
     ),

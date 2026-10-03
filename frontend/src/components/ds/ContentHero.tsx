@@ -10,11 +10,13 @@ interface ContentHeroProps {
   parent: { label: string; to: string };
   metadata?: React.ReactNode;
   details?: React.ReactNode;
+  summary?: string;
+  actions?: React.ReactNode;
 }
 
 /** Shared page identity, independent of reader rails and content type. */
 export const ContentHero: React.FC<ContentHeroProps> = ({
-  id, title, coverImage, language, parent, metadata, details,
+  id, title, coverImage, language, parent, metadata, details, summary, actions,
 }) => {
   const [failedCover, setFailedCover] = useState<string>();
   const hasCover = Boolean(coverImage && failedCover !== coverImage);
@@ -45,6 +47,8 @@ export const ContentHero: React.FC<ContentHeroProps> = ({
           </div>
         )}
         {hasCover && breadcrumb}
+        {summary && <p className="content-hero__summary">{summary}</p>}
+        {actions}
         {details && (
           <div className="content-hero__details mt-4 flex flex-wrap gap-x-4 gap-y-1 text-ds-xs text-ds-fg-muted">
             {details}

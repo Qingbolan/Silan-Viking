@@ -30,7 +30,6 @@ import { Seo, creativeWorkJsonLd } from '../Seo';
 import { canonicalInternalPath } from '../../utils/navigation';
 import {
   fetchProjectDetailById,
-  type ProjectLiker,
 } from '../../api/projects/projectApi';
 import type { ProjectDetail as ProjectDetailType } from '../../types/api';
 import { useSetPageTitle } from '../../layout/PageTitleContext';
@@ -44,11 +43,8 @@ import {
 } from '../../lib/contentAttribution';
 import type { ContentPart } from '../../types';
 import {
-  Badge,
   Button,
   CardAuthor,
-  ContentAttribution,
-  Divider,
   BrandLoading,
   ErrorState,
   NetworkError,
@@ -57,8 +53,8 @@ import {
 } from '../../components/ds';
 import Markdown from '../ui/Markdown';
 import { ContentHero } from '../ds/ContentHero';
-import CompactComments from '../ds/article-footer/CompactComments';
-import LikerAvatar from '../ds/article-footer/Avatar';
+import ArticleFooter from '../ds/ArticleFooter';
+import ProjectIssuesList from './ProjectIssuesList';
 
 const PROJECT_HEADER_ID = 'project-header';
 const PROJECT_FEEDBACK_ID = 'tab-issues';
@@ -148,178 +144,14 @@ const PartPanel: React.FC<{
   documentTitle: string;
 }> = ({ part, label, language, documentTitle }) => {
   const body = partBody(part, language);
-  if (part.role === 'overview') {
-    return (
-      <section id={part.role} className="max-w-[68rem] scroll-mt-24">
-        <Markdown
-          className="text-ds-lg font-medium leading-[1.55] text-ds-fg"
-          documentTitle={documentTitle}
-          sectionTitle={label}
-        >
-          {body}
-        </Markdown>
-      </section>
-    );
-  }
 
   return (
     <section id={part.role} aria-label={label} className="scroll-mt-24">
       {part.shape === 'entry_list' ? (
         <PartEntryList part={part} />
       ) : (
-        <Markdown documentTitle={documentTitle} sectionTitle={label}>{body}</Markdown>
+        <Markdown className="[&>.markdown-body:first-child>:first-child]:!mt-0 [&>figure:first-child]:!mt-0" documentTitle={documentTitle} sectionTitle={label}>{body}</Markdown>
       )}
-    </section>
-  );
-};
-
-const ProjectLikerWall: React.FC<{
-  likers: ProjectLiker[];
-  likesCount: number;
-  language: 'en' | 'zh';
-}> = ({ likers, likesCount, language }) => {
-  if (likesCount <= 0 || likers.length === 0) return null;
-
-  const label = language === 'zh'
-    ? `${likesCount} 位读者点赞`
-    : `${likesCount} reader${likesCount === 1 ? '' : 's'} liked this`;
-
-  return (
-    <div
-      className="mb-6 mt-4 grid max-w-[34rem] grid-cols-[repeat(auto-fill,minmax(2.25rem,2.25rem))] gap-2"
-      aria-label={label}
-    >
-      {likers.map((liker, index) => {
-        const name = liker.label
-          || (liker.kind === 'visitor'
-            ? (language === 'zh' ? `访客 ${liker.visitor_number || index + 1}` : `Visitor ${liker.visitor_number || index + 1}`)
-            : (language === 'zh' ? '读者' : 'Reader'));
-        const avatar = (
-          <LikerAvatar
-            key={`${liker.kind}-${liker.label || liker.visitor_number || index}`}
-            name={name}
-            src={liker.avatar_url}
-            countryCode={liker.country_code}
-            visitorNumber={liker.visitor_number}
-            size="lg"
-            className="rounded-[8px]"
-          />
-        );
-        return liker.actor_id ? (
-          <Link
-            key={liker.actor_id}
-            to={canonicalInternalPath(`/people/${encodeURIComponent(liker.actor_id)}`)}
-            aria-label={language === 'zh' ? `查看${name}的资料` : `View ${name}'s profile`}
-            className="rounded-[8px] transition-transform hover:-translate-y-0.5 focus-visible:shadow-ds-focus"
-          >
-            {avatar}
-          </Link>
-        ) : avatar;
-      })}
-    </div>
-  );
-};
-
-const ProjectFeedbackPanel: React.FC<{
-  language: 'en' | 'zh';
-  likers: ProjectLiker[];
-  likesCount: number;
-  comments: ReturnType<typeof useProjectEngagement>['comments'];
-  commentsCount: number;
-  commentsState: ReturnType<typeof useProjectEngagement>['commentsState'];
-  commentsError?: string;
-  commentSubmitting: boolean;
-  interactionError?: string;
-  onRetryComments: () => void | Promise<void>;
-  onComment: ReturnType<typeof useProjectEngagement>['submitComment'];
-  onCommentLike: ReturnType<typeof useProjectEngagement>['toggleCommentLike'];
-  isCommentLikePending: ReturnType<typeof useProjectEngagement>['isCommentLikePending'];
-  onCommentDelete: ReturnType<typeof useProjectEngagement>['deleteComment'];
-  isCommentDeletePending: ReturnType<typeof useProjectEngagement>['isCommentDeletePending'];
-}> = ({
-  language,
-  likers,
-  likesCount,
-  comments,
-  commentsCount,
-  commentsState,
-  commentsError,
-  commentSubmitting,
-  interactionError,
-  onRetryComments,
-  onComment,
-  onCommentLike,
-  isCommentLikePending,
-  onCommentDelete,
-  isCommentDeletePending,
-}) => {
-  const copy = language === 'zh'
-    ? {
-        title: '项目反馈',
-        description: '围绕这个项目的具体问题、建议、使用体验和后续想法。',
-        placeholder: '写下项目反馈…',
-        postAria: '发布项目反馈',
-        empty: '还没有项目反馈',
-        count: (count: number) => `共 ${count} 条项目反馈`,
-        viewAll: (count: number) => `查看全部 ${count} 条项目反馈`,
-      }
-    : {
-        title: 'Project feedback',
-        description: 'Questions, suggestions, usage notes, and follow-up thoughts for this project.',
-        placeholder: 'Share project feedback…',
-        postAria: 'Post project feedback',
-        empty: 'No project feedback yet',
-        count: (count: number) => `${count} project feedback`,
-        viewAll: (count: number) => `View all ${count} project feedback`,
-      };
-
-  return (
-    <section id={PROJECT_FEEDBACK_ID} className="scroll-mt-24">
-      <header data-ds className="mb-5 flex flex-col gap-2 border-b border-ds-border pb-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h2 className="text-ds-2xl font-semibold tracking-[-0.02em] text-ds-fg">
-              {copy.title}
-            </h2>
-            <Badge appearance="soft" tone="neutral">{commentsCount}</Badge>
-          </div>
-          <p className="mt-1 max-w-2xl text-ds-sm leading-6 text-ds-fg-muted">
-            {copy.description}
-          </p>
-        </div>
-      </header>
-
-      <ProjectLikerWall
-        likers={likers}
-        likesCount={likesCount}
-        language={language}
-      />
-
-      {interactionError && (
-        <p className="mb-3 text-ds-xs text-red-600" role="status">
-          {interactionError}
-        </p>
-      )}
-
-      <CompactComments
-        comments={comments}
-        state={commentsState}
-        error={commentsError}
-        submitting={commentSubmitting}
-        onRetry={onRetryComments}
-        onSubmit={onComment}
-        onCommentLike={onCommentLike}
-        isCommentLikePending={isCommentLikePending}
-        onCommentDelete={onCommentDelete}
-        isCommentDeletePending={isCommentDeletePending}
-        labels={{
-          placeholder: copy.placeholder,
-          postAria: copy.postAria,
-          empty: copy.empty,
-          count: copy.count,
-          viewAll: copy.viewAll,
-        }}
-      />
     </section>
   );
 };
@@ -408,12 +240,12 @@ const ProjectDetail: React.FC = () => {
       {
         id: PROJECT_FEEDBACK_ID,
         label: language === 'zh'
-          ? `项目反馈 ${engagement.commentsCount}`
-          : `Project feedback ${engagement.commentsCount}`,
+          ? '项目反馈'
+          : 'Project feedback',
         icon: MessageSquareText,
       },
     ],
-    [engagement.commentsCount, language, visibleParts],
+    [language, visibleParts],
   );
 
   const defaultPanel = visibleParts.length === 0
@@ -505,6 +337,61 @@ const ProjectDetail: React.FC = () => {
           id={PROJECT_HEADER_ID}
           title={title}
           coverImage={project.image}
+          summary={project.description || undefined}
+          actions={
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+              <div className="flex items-center gap-3 text-ds-sm text-ds-fg-muted sm:flex sm:flex-wrap sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => void engagement.toggleLike()}
+                  disabled={engagement.likePending}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 whitespace-nowrap rounded-ds-sm px-1 py-0.5 transition-colors hover:text-ds-error',
+                    engagement.metrics.is_liked_by_user && 'text-ds-error',
+                    engagement.likePending && 'cursor-not-allowed opacity-60',
+                  )}
+                >
+                  <Heart
+                    size={15}
+                    className={engagement.metrics.is_liked_by_user ? 'fill-current' : undefined}
+                  />
+                  {engagement.metrics.likes_count} {t('projects.likes')}
+                </button>
+
+              </div>
+
+              <div className="flex shrink-0 flex-wrap items-center justify-center gap-2">
+                {coverWebsiteUrl && coverWebsiteUrl !== project.demo && (
+                  <a className="project-hero-link" href={coverWebsiteUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-4" aria-hidden />
+                      {language === 'zh' ? '访问项目网站' : 'Visit project website'}
+
+                  </a>
+                )}
+                {project.demo && (
+                  <a className="project-hero-link project-hero-link--primary" href={project.demo} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="size-4" aria-hidden />
+                      {t('projects.liveDemo')}
+
+                  </a>
+                )}
+                {project.github && (
+                  <a className="project-hero-link" href={project.github} target="_blank" rel="noopener noreferrer">
+                    <Github className="size-4" aria-hidden />
+                      {t('projects.sourceCode')}
+
+                  </a>
+                )}
+                {downloadableAsset && (
+                  <a className="project-hero-link" href={downloadableAsset.downloadUrl} download>
+                    <Download className="size-4" aria-hidden />
+                      {t('projects.download')} {downloadableAsset.name}
+
+                  </a>
+                )}
+              </div>
+            </div>
+          }
           language={language}
           parent={{ label: language === 'zh' ? '项目' : 'Projects', to: '/projects/' }}
           metadata={<>
@@ -523,81 +410,11 @@ const ProjectDetail: React.FC = () => {
           onClick: () => scrollToAnchor(PROJECT_HEADER_ID),
           isActive: activeSection === PROJECT_HEADER_ID,
         }}
-        chapters={chapters}
-        currentChapterId={activeSection}
-        wordCount={wordCount}
-        showLeftRail={false}
-        contentClassName="!py-0 !px-4 sm:!px-5"
-        outlineContainerSelector="#project-detail-document"
-        outlineHeadingSelector="header h1, h2, h3"
-      >
-        <article data-ds className="w-full">
-          {project.description && (
-            <p className="mb-6 max-w-[58rem] text-pretty text-ds-lg font-medium leading-7 text-ds-fg-muted">
-              {project.description}
-            </p>
-          )}
-            <div className="mt-4 flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="grid grid-cols-2 items-center gap-x-4 gap-y-3 text-ds-sm text-ds-fg-muted sm:flex sm:flex-wrap sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => void engagement.toggleLike()}
-                  disabled={engagement.likePending}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 whitespace-nowrap rounded-ds-sm px-1 py-0.5 transition-colors hover:text-ds-error',
-                    engagement.metrics.is_liked_by_user && 'text-ds-error',
-                    engagement.likePending && 'cursor-not-allowed opacity-60',
-                  )}
-                >
-                  <Heart
-                    size={15}
-                    className={engagement.metrics.is_liked_by_user ? 'fill-current' : undefined}
-                  />
-                  {engagement.metrics.likes_count} {t('projects.likes')}
-                </button>
-                <Divider orientation="vertical" className="hidden h-3.5 sm:block" />
-                <span className="inline-flex items-center whitespace-nowrap font-mono text-ds-xs tabular-nums text-ds-fg-subtle">
-                  {engagement.metrics.views_count} views
-                </span>
-              </div>
-
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                {coverWebsiteUrl && coverWebsiteUrl !== project.demo && (
-                  <a href={coverWebsiteUrl} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" leadingIcon={<ExternalLink />}>
-                      {language === 'zh' ? '访问项目网站' : 'Visit project website'}
-                    </Button>
-                  </a>
-                )}
-                {project.demo && (
-                  <a href={project.demo} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" leadingIcon={<ExternalLink />}>
-                      {t('projects.liveDemo')}
-                    </Button>
-                  </a>
-                )}
-                {project.github && (
-                  <a href={project.github} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm" leadingIcon={<Github />}>
-                      {t('projects.sourceCode')}
-                    </Button>
-                  </a>
-                )}
-                {downloadableAsset && (
-                  <a href={downloadableAsset.downloadUrl} download>
-                    <Button variant="secondary" size="sm" leadingIcon={<Download />}>
-                      {t('projects.download')} {downloadableAsset.name}
-                    </Button>
-                  </a>
-                )}
-              </div>
-            </div>
-
-
+        navigation={
           <nav
             data-ds
             aria-label={language === 'zh' ? '项目详情章节' : 'Project detail sections'}
-            className="content-dark-capsule no-scrollbar sticky top-0 z-20 -mx-4 flex min-h-11 flex-nowrap items-center overflow-x-auto px-2 sm:-mx-5"
+            className="content-dark-capsule no-scrollbar  flex min-h-11 flex-nowrap items-center overflow-x-auto px-2"
           >
             {sectionTabs.map((tab) => {
               const Icon = tab.icon;
@@ -621,8 +438,22 @@ const ProjectDetail: React.FC = () => {
               );
             })}
           </nav>
+        }
+        chapters={chapters}
+        currentChapterId={activePanel}
+        wordCount={wordCount}
+        showLeftRail={false}
+        contentClassName="!py-0 !px-4 sm:!px-5"
+        likes={activePanel === PROJECT_FEEDBACK_ID ? undefined : engagement.metrics.likes_count}
+        commentsCount={activePanel === PROJECT_FEEDBACK_ID ? undefined : engagement.commentsCount}
+        outlineContainerSelector="#project-active-part"
+        outlineHeadingSelector="header h1, h2, h3"
+      >
+        <article data-ds className="w-full">
 
-          <div className="mt-6">
+
+          <div className="pt-2">
+            <div id="project-active-part" className="prose-content w-full">
             {activePart && (
               <PartPanel
                 part={activePart}
@@ -632,31 +463,32 @@ const ProjectDetail: React.FC = () => {
               />
             )}
 
+            </div>
             {activePanel === PROJECT_FEEDBACK_ID && (
-              <ProjectFeedbackPanel
-                language={language as 'en' | 'zh'}
-                likers={engagement.metrics.likers ?? []}
-                likesCount={engagement.metrics.likes_count}
-                comments={engagement.comments}
-                commentsCount={engagement.commentsCount}
-                commentsState={engagement.commentsState}
-                commentsError={engagement.commentsError}
-                commentSubmitting={engagement.commentSubmitting}
-                interactionError={engagement.interactionError}
-                onRetryComments={engagement.reloadComments}
-                onComment={engagement.submitComment}
-                onCommentLike={engagement.toggleCommentLike}
-                isCommentLikePending={engagement.isCommentLikePending}
-                onCommentDelete={engagement.deleteComment}
-                isCommentDeletePending={engagement.isCommentDeletePending}
-              />
+              <section id={PROJECT_FEEDBACK_ID}>
+                <ProjectIssuesList projectId={project.id} />
+              </section>
             )}
-
-            <ContentAttribution
-              canonicalPath={`/projects/${id}`}
-              kind="project"
-              className="mt-12"
-            />
+            {activePanel !== PROJECT_FEEDBACK_ID && <ArticleFooter
+              likes={engagement.metrics.likes_count}
+              liked={engagement.metrics.is_liked_by_user}
+              likePending={engagement.likePending}
+              likers={engagement.metrics.likers ?? []}
+              shareTitle={title}
+              attribution={{ canonicalPath: `/projects/${id}`, kind: 'project' }}
+              comments={engagement.comments}
+              commentsState={engagement.commentsState}
+              commentsError={engagement.commentsError}
+              commentSubmitting={engagement.commentSubmitting}
+              interactionError={engagement.interactionError}
+              onLike={engagement.toggleLike}
+              onRetryComments={engagement.reloadComments}
+              onComment={engagement.submitComment}
+              onCommentLike={engagement.toggleCommentLike}
+              isCommentLikePending={engagement.isCommentLikePending}
+              onCommentDelete={engagement.deleteComment}
+              isCommentDeletePending={engagement.isCommentDeletePending}
+            />}
           </div>
         </article>
       </KnowledgeBaseShell>

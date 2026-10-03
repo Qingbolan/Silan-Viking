@@ -28,6 +28,7 @@ interface DOMOutlineProps {
    * exist on the first mount, so we can't rely solely on the observer.
    */
   activeKey?: string;
+  onHeadingCountChange?: (count: number) => void;
 }
 
 interface HeadingEntry {
@@ -54,6 +55,7 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
   collapsed = false,
   onCollapsedChange,
   activeKey,
+  onHeadingCountChange,
 }) => {
   const [headings, setHeadings] = useState<HeadingEntry[]>([]);
   const navRef = React.useRef<HTMLElement>(null);
@@ -145,7 +147,9 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
     };
   }, [headings]);
 
-  const hasOutline = headings.length > 1;
+  useEffect(() => { onHeadingCountChange?.(headings.length); }, [headings.length, onHeadingCountChange]);
+
+  const hasOutline = headings.length > 0;
 
   // User scroll intent takes ownership; programmatic scrolling never disables follow.
   useEffect(() => {
@@ -182,7 +186,7 @@ const DOMOutline: React.FC<DOMOutlineProps> = ({
     if (offset) surface.scrollBy({ top: offset, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
   }, [activeId, collapsed, headings]);
 
-  if (headings.length < 2) return null;
+  if (!hasOutline) return null;
 
   return (
     <nav ref={navRef} data-ds aria-label="Article outline" className={cn('w-full', collapsed && 'flex flex-col items-center', className)}>

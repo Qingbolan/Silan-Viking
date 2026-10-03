@@ -59,6 +59,7 @@ export interface KnowledgeBaseShellProps {
   children: React.ReactNode;
   /** Page identity spans the reader and outline, beside the full-height book rail. */
   header?: React.ReactNode;
+  navigation?: React.ReactNode;
   contentClassName?: string;
 
   // Right rail Outline behaviour
@@ -82,6 +83,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
   showLeftRail = true,
   children,
   header,
+  navigation,
   contentClassName,
   outlineContainerSelector,
   outlineHeadingSelector,
@@ -92,16 +94,18 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
 }) => {
   const centreRef = useRef<HTMLDivElement>(null);
   const [outlineCollapsed, setOutlineCollapsed] = useState(outlineDefaultCollapsed);
+  const [headingCount, setHeadingCount] = useState(0);
+  const hideOutline = Boolean(navigation) && headingCount === 0;
   const outlineMode = outlineCollapsed ? 'collapsed' : 'expanded';
   // Equal outer tracks center the bounded reader + outline as one unit.
   // The chapter rail keeps its full-height position at the page edge.
   const readerColumn = showLeftRail ? 3 : 2;
-  const bodyRow = header ? 2 : 1;
+  const bodyRow = (header ? 2 : 1) + (navigation ? 1 : 0);
   const gridTemplateColumns = [
     ...(showLeftRail ? [LEFT_RAIL_WIDTH] : []),
     'minmax(0, 1fr)',
     `minmax(0, ${READER_MAX_WIDTH})`,
-    OUTLINE_TRACK_MINIMUM[outlineMode],
+    hideOutline ? '0px' : OUTLINE_TRACK_MINIMUM[outlineMode],
     'minmax(0, 1fr)',
   ].join(' ');
   // Tab semantics: caller drives currentChapterId. Fall back to first chapter
@@ -199,7 +203,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
               ]
             : undefined,
         )}
-        style={{ gridTemplateColumns, gridTemplateRows: header ? 'auto minmax(0, 1fr)' : undefined }}
+        style={{ gridTemplateColumns, gridTemplateRows: `${header ? 'auto ' : ''}${navigation ? 'auto ' : ''}minmax(0, 1fr)` }}
       >
         {/* Left rail — book nav. Hidden below lg. Width matches Yuque
             (288px). Border is inline-styled because Tailwind's `border-r`
@@ -247,6 +251,12 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
           </div>
         )}
 
+        {navigation && (
+          <div className="sticky top-0 z-40 min-w-0" style={{ gridColumn: `${showLeftRail ? 2 : 1} / -1`, gridRow: header ? 2 : 1 }}>
+            {navigation}
+          </div>
+        )}
+
         {/* Centre — flow content. */}
         <div data-kb-reader-track className="min-w-0" style={{ gridColumn: readerColumn, gridRow: bodyRow }}>
           <div
@@ -267,13 +277,14 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
           className={cn(
             'relative z-30 hidden lg:block',
             'min-h-full transition-[padding] duration-ds-base',
-            outlineCollapsed ? 'px-2' : 'px-4 2xl:px-5',
+            hideOutline ? 'invisible overflow-hidden px-0' : outlineCollapsed ? 'px-2' : 'px-4 2xl:px-5',
           )}
         >
           <div
             data-outline-scroll
             className={cn(
-              'no-scrollbar sticky top-0 max-h-[calc(100dvh-4rem)] overflow-y-auto',
+              'no-scrollbar sticky overflow-y-auto',
+              navigation ? 'top-11 max-h-[calc(100dvh-7rem)]' : 'top-0 max-h-[calc(100dvh-4rem)]',
               outlineCollapsed ? 'max-w-14' : 'max-w-[34rem]',
             )}
           >
@@ -281,6 +292,7 @@ const KnowledgeBaseShell: React.FC<KnowledgeBaseShellProps> = ({
               containerSelector={outlineContainerSelector}
               headingSelector={outlineHeadingSelector}
               activeKey={activeChapter}
+              onHeadingCountChange={setHeadingCount}
               collapsed={outlineCollapsed}
               onCollapsedChange={setOutlineCollapsed}
             />
