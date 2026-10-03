@@ -362,6 +362,11 @@ if grep -q '"blogList"' "$dist/zh/blog/index.html"; then
 fi
 prepare_search_engine_submission
 
+# Open tabs may still request lazy chunks from the preceding release.
+if [[ -L "$current_link" ]]; then
+  node "$source_root/scripts/retain-release-assets.mjs" "$dist" "$(readlink -f "$current_link")"
+fi
+
 next_release="$releases_root/.${release_id}.next"
 release="$releases_root/$release_id"
 next_current="$published_root/.current.next"
