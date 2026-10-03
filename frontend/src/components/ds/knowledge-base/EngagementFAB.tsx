@@ -119,10 +119,8 @@ const EngagementFAB: React.FC<EngagementFABProps> = ({
   }, []);
 
   return (
-    // The mobile reading column uses the canonical ArticleFooter for these
-    // actions; a second fixed stack would cover text. Desktop keeps the
-    // shortcuts where the wider viewport has room for them.
-    <div className="fixed bottom-6 right-6 z-30 hidden flex-col gap-3 sm:flex">
+    // Keep mobile shortcuts above the tab bar and device safe area.
+    <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3 z-30 flex flex-col gap-3 sm:bottom-6 sm:right-6">
       <AnimatePresence initial={false}>
         {(showBackToTop || launching) && (
           <motion.div

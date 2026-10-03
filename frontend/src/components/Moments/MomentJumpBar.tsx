@@ -19,7 +19,7 @@ export default function MomentJumpBar({ previous, next, language, visible }: {
   if (!visible || (!previous && !next)) return null;
   return createPortal(
     <nav aria-label={language === 'zh' ? '底部动态跳转' : 'Moment quick navigation'}
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-4 z-40 mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 rounded-ds-lg border border-ds-border bg-ds-surface-1 p-1.5 text-ds-fg shadow-ds-2">
+      className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] sm:bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-4 z-40 mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 rounded-ds-lg border border-ds-border bg-ds-surface-1 p-1.5 text-ds-fg shadow-ds-2">
       <JumpLink moment={previous} language={language} />
       <button type="button" aria-label={language === 'zh' ? '回到顶部' : 'Back to top'} title={language === 'zh' ? '回到顶部' : 'Back to top'}
         className="rounded-full p-3 text-ds-fg-muted transition-colors hover:bg-ds-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary"

@@ -144,7 +144,6 @@ const Composer: React.FC<{
         useSignedInPending={identityMergePending}
         onSignIn={!isAuthenticated && githubAvailable ? handleSignInAndUseIdentity : undefined}
         signInPending={signInPending}
-        className={surface !== 'sidebar' ? 'pl-[42px]' : undefined}
       />
       <form
         onSubmit={(event) => { void handleSubmit(event); }}

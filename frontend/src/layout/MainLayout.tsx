@@ -208,7 +208,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           desktop chrome capsules (NavBefore/NavAfter) are hidden. It remains
           in this flex layout so the content viewport ends above the rail and
           no card, footer action, or final paragraph is hidden underneath. */}
-      {!isSearchRoute && !isStandaloneDetailRoute && <MobileTabBar />}
+      {!isSearchRoute && !isPublicActorRoute && <MobileTabBar />}
     </div>
   );
 };
