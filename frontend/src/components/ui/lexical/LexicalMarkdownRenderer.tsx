@@ -178,7 +178,7 @@ const contentKey = (content: string, richLinks: boolean): string => {
   return `${hash >>> 0}-${content.length}-${richLinks ? 'rich' : 'plain'}`;
 };
 
-const createPublicMarkdownExtension = (content: string) => defineExtension({
+export const createPublicMarkdownExtension = (content: string, editable = false) => defineExtension({
   $initialEditorState: () => $convertFromMarkdownString(content),
   dependencies: [
     MdastCommonMarkExtension,
@@ -188,9 +188,9 @@ const createPublicMarkdownExtension = (content: string) => defineExtension({
     CodeExtension,
     MdastExtension,
     MarkdownMediaExtension,
-    configExtension(MdastShortcutsExtension, { disabled: true }),
+    configExtension(MdastShortcutsExtension, { disabled: !editable }),
   ],
-  editable: false,
+  editable,
   name: 'silan/public-markdown',
   namespace: 'silan-public-markdown',
   onError: (error: Error) => {

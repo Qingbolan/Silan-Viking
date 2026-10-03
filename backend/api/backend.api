@@ -1225,3 +1225,9 @@ service backend-api {
 	@handler GetMedia
 	get /media (MediaRequest)
 }
+
+// Reader attachment transport is multipart/binary, registered explicitly in
+// handler/routes.go (not goctl JSON request parsing):
+// POST /api/v1/feedback-media?kind=image|video; first multipart field: file.
+// 201 {url, kind}; 400 invalid/unsafe, 429 UTC IP quota, 503 scanner unavailable.
+// GET /api/v1/feedback-media/:name; published attachment with range support.

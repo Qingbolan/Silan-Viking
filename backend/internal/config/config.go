@@ -292,3 +292,11 @@ func (c *Config) buildConnectionString() string {
 		return c.Database.Source
 	}
 }
+
+// FeedbackMediaRoot is runtime-owned and never replaced by content deployment.
+func (c *Config) FeedbackMediaRoot() string {
+	if root := os.Getenv("FEEDBACK_MEDIA_ROOT"); root != "" {
+		return root
+	}
+	return "/var/lib/silan-viking/feedback-media"
+}

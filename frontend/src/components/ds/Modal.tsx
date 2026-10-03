@@ -15,6 +15,7 @@ export interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: React.ReactNode;
+  ariaLabel?: string;
   description?: React.ReactNode;
   /** Footer content — actions live here. */
   footer?: React.ReactNode;
@@ -39,6 +40,7 @@ export const Modal: React.FC<ModalProps> = ({
   open,
   onClose,
   title,
+  ariaLabel,
   description,
   footer,
   size = 'md',
@@ -127,6 +129,7 @@ export const Modal: React.FC<ModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby={title ? titleId : undefined}
+          aria-label={!title ? ariaLabel : undefined}
           aria-describedby={description ? descriptionId : undefined}
         >
           {/* Scrim */}

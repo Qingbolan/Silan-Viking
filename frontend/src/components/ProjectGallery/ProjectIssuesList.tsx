@@ -1,3 +1,4 @@
+import './ProjectFeedback.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -23,7 +24,6 @@ import {
 import { getClientFingerprint } from '../../utils/fingerprint';
 import {
   Alert,
-  Badge,
   Button,
   EmptyState,
   Input,
@@ -139,7 +139,6 @@ const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
     });
   }, [issues, locale, searchQuery, typeFilter]);
 
-  const totalReplies = issues.reduce((sum, issue) => sum + issue.comments, 0);
 
   const canDeleteIssue = (issue: ProjectIssueRecord) => issue.comment.can_delete;
 
@@ -167,20 +166,8 @@ const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
   ];
 
   return (
-    <section aria-labelledby="project-feedback-title" className="space-y-6">
-      <header className="flex flex-col gap-4 border-b border-ds-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h2 id="project-feedback-title" className="text-ds-2xl font-semibold tracking-[-0.02em] text-ds-fg">{copy.title}</h2>
-            <Badge appearance="soft" tone="neutral">{issues.length}</Badge>
-            {totalReplies > 0 && <span className="text-ds-xs text-ds-fg-subtle">{totalReplies} {copy.replies}</span>}
-          </div>
-          <p className="mt-1 max-w-2xl text-ds-sm leading-6 text-ds-fg-muted">{copy.description}</p>
-        </div>
-        <Button leadingIcon={<Plus />} onClick={() => setShowNewIssueForm(true)}>{copy.newFeedback}</Button>
-      </header>
-
-      <div className="grid gap-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
+    <section aria-label={copy.title} className="space-y-6">
+      <div className="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[12rem_minmax(0,1fr)_auto] sm:gap-3">
         <Select
           value={typeFilter}
           onChange={(event) => setTypeFilter(event.target.value as FeedbackType)}
@@ -194,6 +181,7 @@ const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
           placeholder={copy.search}
           aria-label={copy.search}
         />
+        <Button className="whitespace-nowrap" leadingIcon={<Plus />} onClick={() => setShowNewIssueForm(true)}>{copy.newFeedback}</Button>
       </div>
 
       {loadState === 'loading' && (
@@ -257,7 +245,7 @@ const ProjectIssuesList: React.FC<ProjectIssuesListProps> = ({ projectId }) => {
         </ol>
       )}
 
-      <Modal open={showNewIssueForm} onClose={() => setShowNewIssueForm(false)} title={copy.modalTitle} size="lg" closeLabel={copy.cancel}>
+      <Modal className="feedback-envelope" appearance="plain" open={showNewIssueForm} onClose={() => setShowNewIssueForm(false)} ariaLabel={copy.modalTitle} size="lg" closeLabel={copy.cancel}>
         <NewIssueForm projectId={projectId} onIssueCreated={async () => { setShowNewIssueForm(false); await loadIssues(); }} />
       </Modal>
 

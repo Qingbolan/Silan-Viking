@@ -5,6 +5,7 @@ package handler
 
 import (
 	"net/http"
+	"silan-backend/internal/feedbackmedia"
 
 	analytics "silan-backend/internal/handler/analytics"
 	auth "silan-backend/internal/handler/auth"
@@ -24,6 +25,9 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	uploads := feedbackmedia.New(serverCtx.Config.FeedbackMediaRoot())
+	server.AddRoute(rest.Route{Method: http.MethodPost, Path: "/api/v1/feedback-media", Handler: uploads.UploadHandler()})
+	server.AddRoute(rest.Route{Method: http.MethodGet, Path: "/api/v1/feedback-media/:name", Handler: uploads.GetHandler()})
 	server.AddRoute(rest.Route{
 		Method:  http.MethodGet,
 		Path:    "/api/v1/analytics/crawler-hit",

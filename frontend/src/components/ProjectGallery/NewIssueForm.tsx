@@ -1,20 +1,19 @@
+import Avatar from '../ds/article-footer/Avatar';
+import { FeedbackEditor } from '../ui/FeedbackEditor';
 import React, { useState } from 'react';
 import { Bug, FileText, HelpCircle, Lightbulb } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
 import { useAuth } from '../InteractiveContact';
 import { getClientFingerprint } from '../../utils/fingerprint';
 import { createProjectIssue, type ProjectIssueRecord } from '../../api/projects/projectApi';
+import { buildDefaultGuestName } from '../../lib/commenterIdentity';
+import { publicDisplayName } from '../../lib/publicIdentity';
 import { useCommenterIdentity } from '../../lib/useCommenterIdentity';
 import {
-  Alert,
   Button,
   Checkbox,
   Field,
   GuestIdentityEditor,
-  Input,
-  RadioGroup,
-  Select,
-  Textarea,
   useToast,
 } from '../ds';
 
@@ -48,6 +47,7 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
   const { user, isAuthenticated } = useAuth();
   const { commenter, setAuthorName } = useCommenterIdentity();
   const toast = useToast();
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -62,7 +62,8 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
           question: ['Question', 'Ask about setup, behavior, or design.'],
           documentation: ['Documentation', 'Point out missing or unclear documentation.'],
         },
-        title: 'Title',
+        title: 'Untitle（Optional）',
+        untitled: 'Untitle',
         titlePlaceholder: 'A concise summary',
         description: 'Details',
         descriptionPlaceholder: 'Include the context, expected behavior, and what you observed.',
@@ -72,7 +73,6 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
         submit: 'Submit feedback',
         submitted: 'Feedback submitted',
         submitError: 'Feedback could not be submitted',
-        titleRequired: 'Use at least 5 characters',
         descriptionRequired: 'Use at least 10 characters',
       }
     : {
@@ -84,7 +84,8 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
           question: ['问题', '询问安装、行为或设计。'],
           documentation: ['文档', '指出缺失或不清晰的说明。'],
         },
-        title: '标题',
+        title: '未命名（选填）',
+        untitled: '未命名',
         titlePlaceholder: '简洁概括反馈内容',
         description: '详细说明',
         descriptionPlaceholder: '请说明背景、预期行为和实际观察。',
@@ -94,7 +95,6 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
         submit: '提交反馈',
         submitted: '反馈已提交',
         submitError: '反馈提交失败',
-        titleRequired: '标题至少需要 5 个字符',
         descriptionRequired: '详细说明至少需要 10 个字符',
       };
 
@@ -111,7 +111,6 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
 
   const validate = () => {
     const next: Record<string, string> = {};
-    if (form.title.trim().length < 5) next.title = copy.titleRequired;
     if (form.description.trim().length < 10) next.description = copy.descriptionRequired;
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -119,12 +118,12 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validate()) return;
+    if (uploading || submitting || !validate()) return;
     setSubmitting(true);
     try {
       const issue = await createProjectIssue({
         projectId,
-        title: form.title.trim(),
+        title: form.title.trim() || copy.untitled,
         description: form.description.trim(),
         issueType: form.type,
         priority: form.priority,
@@ -145,28 +144,37 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
   };
 
   return (
-    <form onSubmit={submit} className="space-y-6">
-      {isAuthenticated && user ? (
-        <Alert tone="success" title={`${copy.submittingAs} ${user.username}`} />
-      ) : (
-        <GuestIdentityEditor name={commenter.authorName} onChange={setAuthorName} />
-      )}
-
-      <Field label={copy.type} required>
-        <RadioGroup value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as IssueType }))} options={typeOptions} className="grid gap-3 sm:grid-cols-2" />
-      </Field>
-
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_10rem]">
-        <Field label={copy.title} htmlFor="feedback-title" required error={errors.title}>
-          <Input id="feedback-title" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder={copy.titlePlaceholder} invalid={Boolean(errors.title)} maxLength={160} />
-        </Field>
-        <Field label={copy.priority} htmlFor="feedback-priority" required>
-          <Select id="feedback-priority" value={form.priority} onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as Priority }))} options={(Object.keys(copy.priorities) as Priority[]).map((value) => ({ value, label: copy.priorities[value] }))} />
-        </Field>
+    <form onSubmit={submit} className="feedback-letter space-y-5">
+      <div className="pr-8">
+        <input id="feedback-title" aria-label={copy.title} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'feedback-title-error' : undefined}
+          value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+          placeholder={copy.title} maxLength={160}
+          className="w-full bg-transparent py-1 text-ds-xl font-semibold text-ds-fg outline-none placeholder:text-ds-fg-muted" />
+        {errors.title && <p id="feedback-title-error" role="alert" className="text-ds-xs text-red-500">{errors.title}</p>}
+      </div>
+      <div className="flex items-center gap-3">
+        <Avatar countryCode={!isAuthenticated && commenter.countryCode !== 'XX' ? commenter.countryCode : undefined} src={isAuthenticated ? user?.avatar : undefined} name={isAuthenticated && user ? user.username : publicDisplayName(commenter.authorName, undefined, locale)} size="md" />
+        <div className="min-w-0">
+          {isAuthenticated && user ? <p className="text-ds-sm font-medium">{user.username}</p> : <GuestIdentityEditor name={commenter.authorName} onChange={setAuthorName} />}
+          <p className="break-all text-ds-xs text-ds-fg-muted">ID: {isAuthenticated && user ? user.id : buildDefaultGuestName(commenter.countryCode, commenter.regionCode, getClientFingerprint()).split('/').pop()?.replace('>', '')}</p>
+        </div>
       </div>
 
+      <Field label={copy.type} required>
+        <div role="radiogroup" aria-label={copy.type} className="flex flex-nowrap gap-3 overflow-x-auto overscroll-x-contain p-1">
+          {typeOptions.map((option) => (
+            <button key={option.value} type="button" role="radio" aria-checked={form.type === option.value}
+              className="feedback-type shrink-0 whitespace-nowrap text-left rounded-ds-md p-3"
+              onClick={() => setForm((current) => ({ ...current, type: option.value as IssueType }))}>
+              <span className="flex items-center gap-2 text-ds-sm font-medium"><span className="feedback-type-dot" aria-hidden />{option.label}</span>
+              <span className="mt-1 block text-ds-xs text-ds-fg-muted">{option.description}</span>
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <Field label={copy.description} htmlFor="feedback-description" required error={errors.description}>
-        <Textarea id="feedback-description" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder={copy.descriptionPlaceholder} invalid={Boolean(errors.description)} rows={6} maxLength={3000} />
+        <FeedbackEditor value={form.description} onChange={(description) => setForm((current) => ({ ...current, description }))} label={copy.description} onUploadingChange={setUploading} />
       </Field>
 
       <Field label={copy.labels}>
@@ -178,7 +186,7 @@ const NewIssueForm: React.FC<NewIssueFormProps> = ({ projectId, onIssueCreated }
       </Field>
 
       <div className="flex justify-end border-t border-ds-border pt-4">
-        <Button type="submit" loading={submitting}>{copy.submit}</Button>
+        <Button type="submit" disabled={uploading} loading={submitting}>{copy.submit}</Button>
       </div>
     </form>
   );
