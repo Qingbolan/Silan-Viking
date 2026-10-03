@@ -1,3 +1,4 @@
+import '../ds/ContentOverlay.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -596,7 +597,7 @@ const ProjectDetail: React.FC = () => {
           <nav
             data-ds
             aria-label={language === 'zh' ? '项目详情章节' : 'Project detail sections'}
-            className="no-scrollbar sticky top-0 z-20 flex flex-nowrap items-center overflow-x-auto bg-ds-surface-2 dark:bg-ds-surface-1"
+            className="content-dark-capsule no-scrollbar sticky top-0 z-20 -mx-4 flex min-h-11 flex-nowrap items-center overflow-x-auto px-2 sm:-mx-5"
           >
             {sectionTabs.map((tab) => {
               const Icon = tab.icon;
@@ -610,8 +611,8 @@ const ProjectDetail: React.FC = () => {
                     setActivePanel(tab.id);
                   }}
                   className={cn(
-                    'inline-flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-ds-md px-3 first:pl-0 text-ds-sm font-semibold transition',
-                    active ? 'text-ds-primary' : 'text-ds-fg-muted hover:text-ds-primary dark:text-white dark:hover:text-ds-primary',
+                    'inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-ds-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffad70] focus-visible:-outline-offset-2',
+                    active ? 'text-[#ffad70]' : 'text-white/85 hover:text-white',
                   )}
                 >
                   <Icon className="size-4" aria-hidden />
