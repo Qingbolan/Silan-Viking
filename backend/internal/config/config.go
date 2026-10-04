@@ -93,14 +93,16 @@ func (c *Config) MediaRoot() string {
 }
 
 type DatabaseConfig struct {
-	Driver   string `json:"driver,env=DB_DRIVER"`
-	Source   string `json:"source,env=DB_SOURCE"`
-	Host     string `json:"host,env=DB_HOST"`
-	Port     string `json:"port,env=DB_PORT"`
-	User     string `json:"user,env=DB_USER"`
-	Password string `json:"password,env=DB_PASSWORD"`
-	Name     string `json:"name,env=DB_NAME"`
-	SSLMode  string `json:"ssl_mode,env=DB_SSL_MODE"`
+	MaxOpenConnections int    `json:",default=32"`
+	MaxIdleConnections int    `json:",default=8"`
+	Driver             string `json:"driver,env=DB_DRIVER"`
+	Source             string `json:"source,env=DB_SOURCE"`
+	Host               string `json:"host,env=DB_HOST"`
+	Port               string `json:"port,env=DB_PORT"`
+	User               string `json:"user,env=DB_USER"`
+	Password           string `json:"password,env=DB_PASSWORD"`
+	Name               string `json:"name,env=DB_NAME"`
+	SSLMode            string `json:"ssl_mode,env=DB_SSL_MODE"`
 }
 
 type BotSignatureConfig struct {

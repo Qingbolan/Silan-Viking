@@ -47,7 +47,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	if err := migrateProjectPresentation(c.Database.Driver, c.Database.Source); err != nil {
 		log.Fatalf("failed migrating project presentation: %v", err)
 	}
-	client, err := ent.Open(c.Database.Driver, c.Database.Source)
+	client, rawDB, err := openDatabase(c.Database)
 	if err != nil {
 		log.Fatalf("failed opening connection to database: %v", err)
 	}
@@ -80,12 +80,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		migrate.WithForeignKeys(false),
 	); err != nil {
 		log.Fatalf("failed creating schema resources: %v", err)
-	}
-
-	// Open a standard database/sql connection for lightweight analytics inserts
-	rawDB, err := sql.Open(c.Database.Driver, c.Database.Source)
-	if err != nil {
-		log.Fatalf("failed opening raw DB connection: %v", err)
 	}
 
 	// request_logs — a runtime access-log table written by the analytics
