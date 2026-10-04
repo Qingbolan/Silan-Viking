@@ -45,8 +45,6 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQue
 
   const copy = language === 'en'
     ? {
-        title: 'Search the knowledge base',
-        description: 'Articles, episodes, projects, and moments.',
         placeholder: 'Search by title, topic, or phrase…',
         idleTitle: 'Start with a topic or phrase',
         idleBody: 'Press Enter to open the full result page.',
@@ -59,8 +57,6 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQue
         close: 'Close search',
       }
     : {
-        title: '搜索知识库',
-        description: '文章、系列章节、项目与瞬间。',
         placeholder: '按标题、主题或短语搜索…',
         idleTitle: '输入主题或短语',
         idleBody: '按回车可打开完整搜索结果页。',
@@ -128,8 +124,8 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQue
     <Modal
       open={isOpen}
       onClose={onClose}
-      title={copy.title}
-      description={copy.description}
+      ariaLabel={language === 'en' ? 'Search' : '搜索'}
+      appearance="plain"
       size="lg"
       closeLabel={copy.close}
       returnFocusRef={returnFocusRef}
@@ -137,7 +133,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, initialQue
     >
       <form
         role="search"
-        className="border-b border-ds-border pb-4"
+        className="border-b border-ds-border pb-4 pr-8"
         onSubmit={(event) => {
           event.preventDefault();
           // Read the control's current value so an immediate Enter after
