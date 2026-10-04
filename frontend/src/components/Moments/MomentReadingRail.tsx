@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '../ThemeContext';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Play } from 'lucide-react';
 import type { Moment } from '../../types/api';
@@ -26,11 +27,12 @@ function NeighborPreview({ moment, direction, language }: { moment: Moment | nul
 }
 
 export default function MomentReadingRail({ moment, timeline, language }: { moment: Moment; timeline: RemoteResource<Moment[]>; language: 'en' | 'zh' }) {
+  const { isDarkMode } = useTheme();
   const rail = React.useRef<HTMLElement>(null);
   const jumpVisible = useMomentJumpBar(rail);
   const neighbors = adjacentMoments(timeline.data ?? [], moment.id);
   return <><aside ref={rail} aria-label={language === 'zh' ? '讨论与相邻动态' : 'Discussion and nearby moments'} className="w-full min-w-0 border-t border-ds-border">
-    <div className="overflow-hidden rounded-ds-lg bg-ds-surface-1">
+    <div className={`overflow-hidden rounded-ds-lg ${isDarkMode ? 'bg-ds-surface-1' : 'bg-ds-surface-2'}`}>
       <section aria-label={language === 'zh' ? '评论' : 'Comments'}>
         <div className="min-w-0">
           <MomentActions momentKey={moment.slug || moment.id} timestamp={`${moment.date}T00:00:00`} variant="sidebar" />
