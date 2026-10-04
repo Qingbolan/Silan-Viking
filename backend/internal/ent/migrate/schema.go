@@ -165,6 +165,18 @@ var (
 		Name:       "blog_posts",
 		Columns:    BlogPostsColumns,
 		PrimaryKey: []*schema.Column{BlogPostsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "blogpost_visibility_published_at_id",
+				Unique:  false,
+				Columns: []*schema.Column{BlogPostsColumns[9], BlogPostsColumns[20], BlogPostsColumns[0]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						BlogPostsColumns[20].Name: true,
+					},
+				},
+			},
+		},
 	}
 	// BlogPostTranslationsColumns holds the columns for the "blog_post_translations" table.
 	BlogPostTranslationsColumns = []*schema.Column{
@@ -1102,6 +1114,20 @@ var (
 		Name:       "projects",
 		Columns:    ProjectsColumns,
 		PrimaryKey: []*schema.Column{ProjectsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "project_visibility_sort_order_created_at_id",
+				Unique:  false,
+				Columns: []*schema.Column{ProjectsColumns[15], ProjectsColumns[18], ProjectsColumns[19], ProjectsColumns[0]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						ProjectsColumns[19].Name: true,
+
+						ProjectsColumns[18].Name: true,
+					},
+				},
+			},
+		},
 	}
 	// ProjectDetailsColumns holds the columns for the "project_details" table.
 	ProjectDetailsColumns = []*schema.Column{

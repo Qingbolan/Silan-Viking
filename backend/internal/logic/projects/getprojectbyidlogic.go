@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/svc"
@@ -82,8 +83,8 @@ func (l *GetProjectByIdLogic) GetProjectById(req *types.ProjectByIdRequest) (res
 		DemoURL:          proj.DemoURL,
 		DocumentationURL: proj.DocumentationURL,
 		ThumbnailURL:     proj.ThumbnailURL,
-		CoverSourceType:  projectCoverSourceType(l.ctx, l.svcCtx, proj.ID),
-		CoverWebsiteURL:  projectCoverWebsiteURL(l.ctx, l.svcCtx, proj.ID),
+		CoverSourceType:  string(proj.CoverSourceType),
+		CoverWebsiteURL:  strings.TrimSpace(proj.CoverWebsiteURL),
 		UpdatedAt:        formatContentTime(proj.UpdatedAt, "2006-01-02T15:04:05Z07:00"),
 	}, nil
 }

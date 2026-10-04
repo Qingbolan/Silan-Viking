@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -136,4 +137,9 @@ func (BlogPost) Edges() []ent.Edge {
 		// transaction once any real comment exists. The comment handlers
 		// query by `entity_type` + `entity_id` directly.
 	}
+}
+
+// Indexes support public listing order without sorting all matching rows.
+func (BlogPost) Indexes() []ent.Index {
+	return []ent.Index{index.Fields("visibility", "published_at", "id").Annotations(entsql.DescColumns("published_at"))}
 }

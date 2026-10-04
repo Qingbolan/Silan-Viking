@@ -49,16 +49,10 @@ func (l *SearchEpisodesLogic) SearchEpisodes(req *types.EpisodeSearchRequest) (*
 	)
 
 	if search := strings.TrimSpace(req.Query); search != "" {
-		partIDs, err := contentsearch.EntityIDsMatchingParts(
-			l.ctx, l.svcCtx.DB, itempart.EntityTypeEpisode, search, req.Language,
-		)
-		if err != nil {
-			return nil, err
-		}
 		languages := contentsearch.Languages(req.Language)
 		query = query.Where(episode.Or(
 			episode.TitleContainsFold(search),
-			episode.IDIn(partIDs...),
+			contentsearch.MatchesParts(itempart.EntityTypeEpisode, search, req.Language),
 			episode.HasTranslationsWith(
 				episodetranslation.LanguageCodeIn(languages...),
 				episodetranslation.Or(

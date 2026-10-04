@@ -6,10 +6,9 @@
 package contentsearch
 
 import (
-	"context"
 	"strings"
 
-	"silan-backend/internal/ent"
+	"entgo.io/ent/dialect/sql"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/ent/itemparttranslation"
 )
@@ -24,43 +23,23 @@ func Languages(language string) []string {
 	return []string{language, "en"}
 }
 
-// EntityIDsMatchingParts returns entity ids whose authored Part body contains
-// query in the requested language or the English fallback. The slice is
-// always non-nil, which lets callers safely compose it into IDIn predicates.
-func EntityIDsMatchingParts(
-	ctx context.Context,
-	client *ent.Client,
-	entityType itempart.EntityType,
-	query string,
-	language string,
-) ([]string, error) {
+// MatchesParts keeps body matching inside the database instead of materializing
+// every matching entity ID in Go. The subquery has fixed parameter cardinality,
+// independent of how many parts match, and composes with visibility/pagination.
+func MatchesParts(entityType itempart.EntityType, query, language string) func(*sql.Selector) {
 	query = strings.TrimSpace(query)
-	if query == "" {
-		return []string{}, nil
-	}
-
-	parts, err := client.ItemPart.Query().
-		Where(
-			itempart.EntityTypeEQ(entityType),
-			itempart.HasTranslationsWith(
-				itemparttranslation.LanguageCodeIn(Languages(language)...),
-				itemparttranslation.BodyContainsFold(query),
-			),
-		).
-		Select(itempart.FieldEntityID).
-		All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	seen := make(map[string]struct{}, len(parts))
-	ids := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if _, exists := seen[part.EntityID]; exists {
-			continue
+	return func(outer *sql.Selector) {
+		if query == "" {
+			outer.Where(sql.False())
+			return
 		}
-		seen[part.EntityID] = struct{}{}
-		ids = append(ids, part.EntityID)
+		table := sql.Table(itempart.Table)
+		matched := sql.Dialect(outer.Dialect()).Select(table.C(itempart.FieldEntityID)).From(table)
+		itempart.EntityTypeEQ(entityType)(matched)
+		itempart.HasTranslationsWith(
+			itemparttranslation.LanguageCodeIn(Languages(language)...),
+			itemparttranslation.BodyContainsFold(query),
+		)(matched)
+		outer.Where(sql.In(outer.C("id"), matched))
 	}
-	return ids, nil
 }

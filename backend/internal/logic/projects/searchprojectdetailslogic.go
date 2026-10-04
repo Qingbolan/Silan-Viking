@@ -46,12 +46,6 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 
 	// Apply filters through project relationship if provided
 	if search := strings.TrimSpace(req.Query); search != "" {
-		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
-			l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, search, req.Language,
-		)
-		if partErr != nil {
-			return nil, partErr
-		}
 		query = query.Where(
 			projectdetail.Or(
 				// M0.5a §11.8: release_notes / quick_start moved to item_part
@@ -62,7 +56,7 @@ func (l *SearchProjectDetailsLogic) SearchProjectDetails(req *types.ProjectSearc
 					project.Or(
 						project.TitleContainsFold(search),
 						project.DescriptionContainsFold(search),
-						project.IDIn(partIDs...),
+						contentsearch.MatchesParts(itempart.EntityTypeProject, search, req.Language),
 						project.HasTranslationsWith(
 							projecttranslation.LanguageCodeIn(contentsearch.Languages(req.Language)...),
 							projecttranslation.Or(

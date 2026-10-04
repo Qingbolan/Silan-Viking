@@ -2,7 +2,6 @@ package projects
 
 import (
 	"context"
-	"math"
 	"strconv"
 	"strings"
 
@@ -49,16 +48,10 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 	}
 
 	if search := strings.TrimSpace(req.Search); search != "" {
-		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
-			l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, search, req.Language,
-		)
-		if partErr != nil {
-			return nil, partErr
-		}
 		query = query.Where(project.Or(
 			project.TitleContainsFold(search),
 			project.DescriptionContainsFold(search),
-			project.IDIn(partIDs...),
+			contentsearch.MatchesParts(itempart.EntityTypeProject, search, req.Language),
 			project.HasTranslationsWith(
 				projecttranslation.LanguageCodeIn(contentsearch.Languages(req.Language)...),
 				projecttranslation.Or(
@@ -75,43 +68,50 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 		}
 	}
 
-	projects, err := query.
-		Order(ent.Desc(project.FieldSortOrder), ent.Desc(project.FieldCreatedAt)).
-		All(l.ctx)
+	if req.Year > 0 {
+		query = query.Where(projectInYear(req.Year))
+	}
+	total, err := query.Clone().Count(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	filtered := projects[:0]
-	for _, proj := range projects {
-		if req.Year > 0 && projectYear(proj) != req.Year {
-			continue
+	page, size := req.Page, req.Size
+	if page < 1 {
+		page = 1
+	}
+	if size < 1 {
+		size = 10
+	}
+	pageProjects := []*ent.Project{}
+	if total > 0 && page-1 <= (total-1)/size {
+		pageProjects, err = query.Order(ent.Desc(project.FieldSortOrder), ent.Desc(project.FieldCreatedAt), ent.Asc(project.FieldID)).Offset((page - 1) * size).Limit(size).All(l.ctx)
+		if err != nil {
+			return nil, err
 		}
-		filtered = append(filtered, proj)
+	}
+	ids := make([]string, 0, len(pageProjects))
+	for _, proj := range pageProjects {
+		ids = append(ids, proj.ID)
+	}
+	tags, tagErr := l.svcCtx.ContentTags.LookupMany(l.ctx, "project", ids)
+	if tagErr != nil {
+		l.Errorf("content_tag lookup for project page: %v", tagErr)
+	}
+	result := make([]types.Project, 0, len(pageProjects))
+	for _, proj := range pageProjects {
+		result = append(result, mapBasicProject(proj, req.Language, tags[proj.ID]))
 	}
 
-	total := len(filtered)
-	offset := (req.Page - 1) * req.Size
-	if offset > total {
-		offset = total
+	totalPages := total / size
+	if total%size != 0 {
+		totalPages++
 	}
-	end := offset + req.Size
-	if end > total {
-		end = total
-	}
-
-	result := make([]types.Project, 0, end-offset)
-	for _, proj := range filtered[offset:end] {
-		result = append(result, l.mapBasicProject(proj, req.Language))
-	}
-
-	totalPages := int(math.Ceil(float64(total) / float64(req.Size)))
 
 	return &types.ProjectListResponse{
 		Projects:   result,
 		Total:      int64(total),
-		Page:       req.Page,
-		Size:       req.Size,
+		Page:       page,
+		Size:       size,
 		TotalPages: totalPages,
 	}, nil
 }
@@ -128,16 +128,7 @@ func splitCSV(value string) []string {
 	return result
 }
 
-func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types.Project {
-	// `Tags` is the project's content tags, read from the cross-type
-	// `content_tag` table — the same source blog / idea / episode use. (The
-	// `tech_stack` technologies are a separate concept; the engine does not
-	// currently emit them, so `project_technologies` stays empty.)
-	tags, tagErr := l.svcCtx.ContentTags.Lookup(l.ctx, "project", proj.ID)
-	if tagErr != nil {
-		l.Errorf("content_tag lookup for project %s: %v", proj.ID, tagErr)
-	}
-
+func mapBasicProject(proj *ent.Project, lang string, tags []string) types.Project {
 	// Resolve language-variant fields from project_translations: the content
 	// engine leaves title/description empty on the main projects row.
 	name := proj.Title
@@ -167,8 +158,8 @@ func (l *GetProjectsLogic) mapBasicProject(proj *ent.Project, lang string) types
 		DemoURL:          proj.DemoURL,
 		DocumentationURL: proj.DocumentationURL,
 		ThumbnailURL:     proj.ThumbnailURL,
-		CoverSourceType:  projectCoverSourceType(l.ctx, l.svcCtx, proj.ID),
-		CoverWebsiteURL:  projectCoverWebsiteURL(l.ctx, l.svcCtx, proj.ID),
+		CoverSourceType:  string(proj.CoverSourceType),
+		CoverWebsiteURL:  strings.TrimSpace(proj.CoverWebsiteURL),
 		UpdatedAt:        formatContentTime(proj.UpdatedAt, "2006-01-02T15:04:05Z07:00"),
 	}
 }

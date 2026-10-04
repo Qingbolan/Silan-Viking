@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
 )
 
@@ -108,4 +109,9 @@ func (Project) Edges() []ent.Edge {
 		// fresh ids every content sync — would dangle it and abort. The
 		// analytics handlers query by `project_id` directly.
 	}
+}
+
+// Indexes support public listing order without sorting all matching rows.
+func (Project) Indexes() []ent.Index {
+	return []ent.Index{index.Fields("visibility", "sort_order", "created_at", "id").Annotations(entsql.DescColumns("sort_order", "created_at"))}
 }

@@ -3,10 +3,10 @@ package blog
 import (
 	"context"
 	"fmt"
-	"math"
 	"strings"
 
 	"silan-backend/internal/contentsearch"
+	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/blogpost"
 	"silan-backend/internal/ent/blogposttranslation"
@@ -56,17 +56,11 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 	}
 
 	if search := strings.TrimSpace(req.Search); search != "" {
-		partIDs, partErr := contentsearch.EntityIDsMatchingParts(
-			l.ctx, l.svcCtx.DB, itempart.EntityTypeBlog, search, req.Language,
-		)
-		if partErr != nil {
-			return nil, partErr
-		}
 		query = query.Where(blogpost.Or(
 			blogpost.TitleContainsFold(search),
 			blogpost.ExcerptContainsFold(search),
 			blogpost.ContentContainsFold(search),
-			blogpost.IDIn(partIDs...),
+			contentsearch.MatchesParts(itempart.EntityTypeBlog, search, req.Language),
 			blogpost.HasTranslationsWith(
 				blogposttranslation.LanguageCodeIn(contentsearch.Languages(req.Language)...),
 				blogposttranslation.Or(
@@ -78,39 +72,32 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		))
 	}
 
-	// Tag filter — resolved through the cross-type `content_tag` table.
-	// `EntityIDsMatchingTags` returns the blog ids carrying the tag; an
-	// empty (non-nil) result means nothing matches, so `IDIn` correctly
-	// narrows the query to zero rows rather than skipping the filter.
-	if req.Tag != "" {
-		ids, tagErr := l.svcCtx.ContentTags.EntityIDsMatchingTags(l.ctx, "blog", []string{req.Tag})
-		if tagErr != nil {
-			return nil, tagErr
-		}
-		query = query.Where(blogpost.IDIn(ids...))
+	if strings.TrimSpace(req.Tag) != "" {
+		query = query.Where(contenttag.MatchesTags("blog", []string{req.Tag}))
 	}
 
 	// The silan-viking model has no separate `blog_series` table, so the
 	// listing does not fold a series into one representative post — every
 	// published post is listed, newest first. Each post still carries its
 	// `series_id` / `series_order`, so a client can group by series itself.
-	allFilteredPosts, err := query.
-		Order(ent.Desc(blogpost.FieldPublishedAt)).
-		All(l.ctx)
+	total, err := query.Clone().Count(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	total := len(allFilteredPosts)
-	offset := (req.Page - 1) * req.Size
-	end := offset + req.Size
-	if end > len(allFilteredPosts) {
-		end = len(allFilteredPosts)
+	page, size := req.Page, req.Size
+	if page < 1 {
+		page = 1
 	}
-
-	var posts []*ent.BlogPost
-	if offset < len(allFilteredPosts) {
-		posts = allFilteredPosts[offset:end]
+	if size < 1 {
+		size = 10
+	}
+	// Compare page indexes before multiplying to avoid overflow on hostile input.
+	posts := []*ent.BlogPost{}
+	if total > 0 && page-1 <= (total-1)/size {
+		posts, err = query.Order(ent.Desc(blogpost.FieldPublishedAt), ent.Asc(blogpost.FieldID)).Offset((page - 1) * size).Limit(size).All(l.ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 	postIDs := make([]string, 0, len(posts))
 	for _, post := range posts {
@@ -121,6 +108,10 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		return nil, err
 	}
 
+	tagsByPost, tagErr := l.svcCtx.ContentTags.LookupMany(l.ctx, "blog", postIDs)
+	if tagErr != nil {
+		l.Errorf("content_tag lookup for blog page: %v", tagErr)
+	}
 	result := make([]types.BlogData, 0, len(posts))
 	for _, post := range posts {
 		counts := engagementCounts[post.ID]
@@ -138,10 +129,7 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 
 		// Tags come from the cross-type `content_tag` table — the engine no
 		// longer populates the legacy ent `Tags` edge.
-		tags, err := l.svcCtx.ContentTags.Lookup(l.ctx, "blog", post.ID)
-		if err != nil {
-			l.Errorf("content_tag lookup for blog %s: %v", post.ID, err)
-		}
+		tags := tagsByPost[post.ID]
 
 		// Single-owner system: content has no per-item author. The site
 		// owner is the author of everything; the frontend supplies that.
@@ -205,13 +193,16 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		})
 	}
 
-	totalPages := int(math.Ceil(float64(total) / float64(req.Size)))
+	totalPages := total / size
+	if total%size != 0 {
+		totalPages++
+	}
 
 	return &types.BlogListResponse{
 		Posts:      result,
 		Total:      int64(total),
-		Page:       req.Page,
-		Size:       req.Size,
+		Page:       page,
+		Size:       size,
 		TotalPages: totalPages,
 	}, nil
 }

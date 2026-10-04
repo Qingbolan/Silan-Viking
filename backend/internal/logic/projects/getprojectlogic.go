@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/logic/engagement"
@@ -102,8 +103,8 @@ func (l *GetProjectLogic) GetProject(req *types.ProjectRequest) (resp *types.Pro
 		DemoURL:          demoURL,
 		DocumentationURL: documentationURL,
 		ThumbnailURL:     thumbnailURL,
-		CoverSourceType:  projectCoverSourceType(l.ctx, l.svcCtx, proj.ID),
-		CoverWebsiteURL:  projectCoverWebsiteURL(l.ctx, l.svcCtx, proj.ID),
+		CoverSourceType:  string(proj.CoverSourceType),
+		CoverWebsiteURL:  strings.TrimSpace(proj.CoverWebsiteURL),
 		IsFeatured:       proj.IsFeatured,
 		IsPublic:         proj.Visibility == project.VisibilityPublic,
 		ViewCount:        int64(counts.Views),

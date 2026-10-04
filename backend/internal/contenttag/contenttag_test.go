@@ -3,7 +3,8 @@ package contenttag
 import (
 	"context"
 	"database/sql"
-	"sort"
+	entsql "entgo.io/ent/dialect/sql"
+	"fmt"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -93,50 +94,40 @@ func TestLookupReturnsLabelsSorted(t *testing.T) {
 	}
 }
 
-func TestEntityIDsMatchingTags(t *testing.T) {
+func TestMatchesTags(t *testing.T) {
 	db := seedDB(t)
 	defer db.Close()
-	ctx := context.Background()
-	repository := NewRepository(db, "sqlite3")
-
-	// Single tag — both blog posts carry `easynet`.
-	got, err := repository.EntityIDsMatchingTags(ctx, "blog", []string{"easynet"})
-	if err != nil {
-		t.Fatalf("single tag: %v", err)
+	if _, err := db.Exec(`CREATE TABLE items (id TEXT); INSERT INTO items VALUES ('post-a'),('post-b'),('untagged'); INSERT INTO tag VALUES ('alias','Other Label','alias'); INSERT INTO content_tag VALUES ('post-a','a','blog','alias')`); err != nil {
+		t.Fatal(err)
 	}
-	sort.Strings(got)
-	if len(got) != 2 || got[0] != "post-a" || got[1] != "post-b" {
-		t.Errorf("easynet -> %v, want [post-a post-b]", got)
-	}
-
-	// AND semantics — only post-a carries both `easynet` and `research`.
-	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"easynet", "research"})
-	if err != nil {
-		t.Fatalf("two tags: %v", err)
-	}
-	if len(got) != 1 || got[0] != "post-a" {
-		t.Errorf("easynet+research -> %v, want [post-a]", got)
-	}
-
-	// Case-insensitive, and matches the label too ("EasyNet" -> easynet tag).
-	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"EASYNET"})
-	if err != nil || len(got) != 2 {
-		t.Errorf("EASYNET -> %v (err %v), want 2 matches", got, err)
-	}
-
-	// A non-empty filter that matches nothing returns an empty, non-nil slice.
-	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"no-such-tag"})
-	if err != nil {
-		t.Fatalf("no-match: %v", err)
-	}
-	if got == nil || len(got) != 0 {
-		t.Errorf("no-such-tag -> %v, want non-nil empty slice", got)
-	}
-
-	// An empty filter list returns (nil, nil) — caller applies no filter.
-	got, err = repository.EntityIDsMatchingTags(ctx, "blog", []string{"", "  "})
-	if err != nil || got != nil {
-		t.Errorf("blank tags -> %v (err %v), want nil", got, err)
+	for _, tc := range []struct {
+		terms []string
+		count int
+	}{
+		{[]string{"easynet"}, 2}, {[]string{"easynet", "research"}, 1},
+		{[]string{"EASYNET", "easynet"}, 2}, {[]string{"alias", "Other Label"}, 1},
+		{[]string{"missing"}, 0}, {[]string{"", " "}, 3},
+	} {
+		table := entsql.Table("items")
+		query := entsql.Dialect("sqlite3").Select(table.C("id")).From(table)
+		MatchesTags("blog", tc.terms)(query)
+		statement, args := query.Query()
+		rows, err := db.Query(statement, args...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		count := 0
+		for rows.Next() {
+			count++
+		}
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if count != tc.count {
+			t.Fatalf("terms %v: count %d want %d", tc.terms, count, tc.count)
+		}
 	}
 }
 
@@ -146,5 +137,24 @@ func TestPostgresBindingPreservesQuotedQuestionMarks(t *testing.T) {
 	want := `SELECT '?' AS literal, "?" AS identifier FROM content_tag WHERE entity_type = $1 AND entity_id = $2`
 	if got := repository.bind(query); got != want {
 		t.Fatalf("bind() = %q, want %q", got, want)
+	}
+}
+
+func TestLookupManyBatchesAndPreservesMissingItems(t *testing.T) {
+	db := seedDB(t)
+	defer db.Close()
+	ids := []string{"post-a", "post-a", "post-b", "moment-x"}
+	for i := 0; i < 1200; i++ {
+		ids = append(ids, fmt.Sprintf("missing-%d", i))
+	}
+	got, err := NewRepository(db, "sqlite3").LookupMany(context.Background(), "blog", ids)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1203 || len(got["post-a"]) != 2 || got["post-a"][0] != "EasyNet" || len(got["post-b"]) != 1 {
+		t.Fatalf("unexpected batch results: %d entries", len(got))
+	}
+	if got["moment-x"] == nil || len(got["moment-x"]) != 0 || got["missing-1199"] == nil {
+		t.Fatal("missing or wrong-type items must have empty labels")
 	}
 }
