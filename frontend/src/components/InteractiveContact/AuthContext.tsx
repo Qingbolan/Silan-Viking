@@ -1,3 +1,4 @@
+import { isPrerenderRuntime } from '../../utils/runtimeContext';
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { User } from '../../types/contact';
 import { apiUrl } from '../../api/utils';
@@ -79,6 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [mapUser]);
 
   useEffect(() => {
+    if (isPrerenderRuntime()) { setLoading(false); return; }
     let active = true;
     // Remove the former client-trusted identity cache. The HttpOnly session
     // endpoint is now the only source of authentication truth.

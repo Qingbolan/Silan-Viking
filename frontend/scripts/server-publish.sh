@@ -276,6 +276,7 @@ echo "[frontend:server] dependencies unchanged"
 
 export PUPPETEER_CACHE_DIR="$puppeteer_cache"
 export PRERENDER_START_LOCAL_BACKEND=false
+export PRERENDER_CACHE_DIR="$state_root/cache/prerender"
 export VITE_API_ORIGIN="$SILAN_PUBLIC_ORIGIN"
 export VITE_PUBLIC_ORIGIN="$SILAN_PUBLIC_ORIGIN"
 export VITE_GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-}"

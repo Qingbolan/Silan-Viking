@@ -4,6 +4,7 @@
 // `--target <name>` loads `.env.<name>` and uses its public base/origin and API
 // origin. The default target preserves the existing silan.tech build flow.
 /* global document, fetch, URL, window */
+import { PrerenderCache, QuerySnapshot, fingerprint } from './prerender-cache.mjs';
 import { spawn } from 'node:child_process';
 import http from 'node:http';
 import { createServer } from 'node:http';
@@ -185,10 +186,20 @@ const homePrerenderShell = (language) => language === 'zh'
   </main>
 </div>`.trim();
 
+const querySnapshot = new QuerySnapshot(async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText} from ${url}`);
+  return JSON.stringify(await response.json());
+});
 async function fetchJson(path) {
-  const response = await fetch(apiUrl(path));
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText} from ${path}`);
-  return response.json();
+  return JSON.parse(await querySnapshot.get(apiUrl(path)));
+}
+
+function rendererFingerprint(directory) {
+  return readdirSync(directory).sort().map(name => {
+    const path = join(directory, name);
+    return statSync(path).isDirectory() ? rendererFingerprint(path) : [path.slice(DIST.length), fingerprint(readFileSync(path))];
+  });
 }
 
 const asArray = (j) =>
@@ -520,19 +531,10 @@ const filteredListForRequest = (entries, url, kind) => {
   return filtered;
 };
 
-async function installPublicListInterception(page) {
+function publicListResponse(url) {
   const blogLists = publicListData.blogList;
   const projectLists = publicListData.projectList;
   const momentLists = publicListData.momentList;
-  if (!blogLists && !projectLists && !momentLists) return;
-
-  await page.setRequestInterception(true);
-  page.on('request', async (request) => {
-    if (request.method() !== 'GET') {
-      await request.continue();
-      return;
-    }
-    const url = new URL(request.url());
     const language = url.searchParams.get('lang')?.startsWith('zh') ? 'zh' : 'en';
     const config = url.pathname === '/api/v1/blog/posts'
       ? { entries: blogLists?.[language], key: 'posts' }
@@ -541,22 +543,42 @@ async function installPublicListInterception(page) {
         : url.pathname === '/api/v1/moments'
           ? { entries: momentLists?.[language], key: 'moments' }
         : null;
-    if (!config?.entries) {
+  if (!config?.entries) return null;
+  const entries = filteredListForRequest(config.entries, url, config.key);
+  return JSON.stringify({ [config.key]: entries, total: entries.length, page: 1, size: entries.length, total_pages: entries.length ? 1 : 0 });
+}
+
+async function installPublicListInterception(page, dependencies) {
+
+  await page.setRequestInterception(true);
+  page.on('request', async (request) => {
+    if (request.method() !== 'GET') {
       await request.continue();
       return;
     }
-    const entries = filteredListForRequest(config.entries, url, config.key);
-    await request.respond({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        [config.key]: entries,
-        total: entries.length,
-        page: 1,
-        size: entries.length,
-        total_pages: entries.length ? 1 : 0,
-      }),
-    });
+    const url = new URL(request.url());
+    const listBody = publicListResponse(url);
+    if (listBody === null) {
+      const apiOrigin = new URL(apiUrl('/')).origin;
+      if (url.origin === apiOrigin && url.pathname.startsWith('/api/v1/') && !url.pathname.startsWith('/api/v1/media') && !url.pathname.startsWith('/api/v1/feedback-media')) {
+        try {
+          const body = await querySnapshot.get(url.href);
+          dependencies.values[url.href] = fingerprint(body);
+          await request.respond({ status: 200, contentType: 'application/json', body, headers: { 'Access-Control-Allow-Origin': '*' } });
+        } catch (error) {
+          log(`uncached API ${url.pathname}: ${error.message}`);
+          dependencies.complete = false;
+          await request.continue();
+        }
+      } else {
+        // Unobserved external data must never produce a reusable snapshot.
+        if (['fetch', 'xhr'].includes(request.resourceType())) { dependencies.complete = false; log(`uncached request ${url.origin}${url.pathname}`); }
+        await request.continue();
+      }
+      return;
+    }
+    dependencies.values[`list:${url.href}`] = fingerprint(listBody);
+    await request.respond({ status: 200, contentType: 'application/json', body: listBody });
   });
 }
 
@@ -1158,14 +1180,15 @@ const waitForHttp = (url, timeoutMs = 30000) =>
     tick();
   });
 
-const withTimeout = (promise, timeoutMs, label) =>
-  Promise.race([
+const withTimeout = (promise, timeoutMs, label) => {
+  let timer;
+  return Promise.race([
     promise,
-    new Promise((resolve) => setTimeout(() => {
-      log(`WARNING: timed out while closing ${label}.`);
-      resolve();
-    }, timeoutMs)),
-  ]);
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`timed out while closing ${label}`)), timeoutMs);
+    }),
+  ]).finally(() => clearTimeout(timer));
+};
 
 async function ensureBackend() {
   if (!config.startLocalBackend) return { backend: null, backendUp: true };
@@ -1292,10 +1315,12 @@ const isRecoverableBrowserError = (error) =>
   );
 
 async function closeBrowser(browser) {
+  if (!browser) return;
   try {
     await withTimeout(browser.close(), 5000, 'browser');
   } catch (error) {
     log(`WARNING: failed to close browser cleanly: ${error.message}`);
+    browser.process()?.kill('SIGKILL');
   }
 }
 
@@ -1304,9 +1329,19 @@ async function main() {
     throw new Error('dist/ not found — run `vite build` first.');
   }
 
+  const renderer = fingerprint(JSON.stringify({
+    version: 1, config, files: rendererFingerprint(DIST),
+    script: readFileSync(fileURLToPath(import.meta.url), 'utf8'),
+    cache: readFileSync(join(__dirname, 'prerender-cache.mjs'), 'utf8'),
+    siteProfile,
+  }));
+  const cache = new PrerenderCache(process.env.PRERENDER_CACHE_DIR || join(FRONTEND, 'node_modules/.cache/silan-prerender'));
   const { backend, backendUp } = await ensureBackend();
+  let server = null;
+  let browser = null;
+  try {
   removeStalePrerenderOutput();
-  const server = await startStaticServer();
+  server = await startStaticServer();
   log(`serving dist/ on http://localhost:${SERVE_PORT}${config.base}`);
 
   const detail = backendUp ? await detailRoutes() : [];
@@ -1316,19 +1351,30 @@ async function main() {
   const routes = [...new Set([...localizedStaticRoutes, ...detail])];
   log(`${routes.length} public localized routes to prerender.`);
 
-  let browser = await launchBrowser();
+  let reused = 0;
   const failedRoutes = [];
   for (const route of routes) {
     let routeRendered = false;
     let routeFailure = null;
     const routeData = backendUp ? await routeDataFor(route) : null;
+    const identity = fingerprint(JSON.stringify({ renderer, routeData }));
+    const cached = backendUp ? await cache.restore(route, identity, url => url.startsWith('list:') ? publicListResponse(new URL(url.slice(5))) : querySnapshot.get(url)) : null;
+    if (cached !== null) {
+      mkdirSync(routeDir(route), { recursive: true });
+      writeFileSync(join(routeDir(route), 'index.html'), cached);
+      reused += 1;
+      log(`reusing ${route}`);
+      continue;
+    }
+    if (!browser) browser = await launchBrowser();
     for (let attempt = 1; attempt <= 2 && !routeRendered; attempt += 1) {
       let page = null;
       const url = `http://localhost:${SERVE_PORT}${basePath}${route}`;
       log(`rendering ${route}${attempt > 1 ? ` (attempt ${attempt})` : ''}`);
       try {
         page = await browser.newPage();
-        await installPublicListInterception(page);
+        const dependencies = { values: {}, complete: true };
+        await installPublicListInterception(page, dependencies);
         await page.evaluateOnNewDocument(() => {
           window.__SILAN_PRERENDER__ = true;
         });
@@ -1354,6 +1400,7 @@ async function main() {
         const outDir = routeDir(route);
         mkdirSync(outDir, { recursive: true });
         writeFileSync(join(outDir, 'index.html'), html, 'utf8');
+        if (backendUp && dependencies.complete) cache.save(route, identity, dependencies.values, html);
         routeRendered = true;
       } catch (err) {
         routeFailure = err;
@@ -1379,15 +1426,13 @@ async function main() {
   }
 
   if (failedRoutes.length > 0) {
-    await closeBrowser(browser);
-    await new Promise((resolve) => server.close(resolve));
-    if (backend) backend.kill('SIGTERM');
     throw new Error(
       `refusing incomplete prerender output; ${failedRoutes.length} route(s) failed:\n` +
       failedRoutes.map((failure) => `- ${failure}`).join('\n'),
     );
   }
 
+  log(`incremental: ${reused} reused, ${routes.length - reused} rendered`);
   const expectedSitemapUrls = writeSitemap(routes);
   const expectedRssUrls = writeRssFeed();
   const seoVerification = validateSeoArtifacts({
@@ -1408,14 +1453,15 @@ async function main() {
   rewriteBuiltAssetPaths();
   log('wrote sitemap.xml, rss.xml, robots.txt, llms.txt, about.txt, site-index.jsonld and manifest.json');
 
-  await closeBrowser(browser);
-  await new Promise((resolve) => server.close(resolve));
-  if (backend) backend.kill('SIGTERM');
   log(backendUp ? 'done — pages prerendered with live content.' : 'done — pages prerendered (shell only).');
-  process.exit(0);
+  } finally {
+    await closeBrowser(browser);
+    if (server) await new Promise(resolve => server.close(resolve));
+    if (backend) backend.kill('SIGTERM');
+  }
 }
 
 main().catch((err) => {
   console.error('[prerender] fatal:', err);
-  process.exit(1);
+  process.exitCode = 1;
 });

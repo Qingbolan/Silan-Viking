@@ -75,6 +75,22 @@ Frontend publication has four explicit operations:
 A content release invokes only `publish`. Therefore editing a paper, project,
 or research page does not recompile application code.
 
+Prerendering keeps a persistent cache in `$SILAN_FRONTEND_STATE_ROOT/cache/prerender`.
+Each page records its HTML integrity hash, renderer identity (compiled assets,
+configuration, renderer code and site profile), embedded route data, and the
+public API/list responses actually read by that page. Unchanged pages reuse
+HTML; changed or unavailable dependencies force rendering. Code/asset changes
+conservatively invalidate every page; component-level build dependency tracking
+is not implemented. Current route discovery remains authoritative, so deleted
+routes are never restored from the cache. Sitemap and feed verification always
+run, including when every page is reused.
+
+A per-release query snapshot deduplicates identical public JSON requests across
+route discovery, rendering and SEO exports. Public prerendering does not request
+personal login sessions. Failed or untracked data requests prevent cache reuse.
+This reduces repeated reads and browser rendering; it does not implement an API
+change feed or avoid querying each unique dependency to validate freshness.
+
 Every static generation writes `release-manifest.json` with the content commit,
 content hash, schema version, project code commit, frontend artifact digest,
 release ID and generation time.
