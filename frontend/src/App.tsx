@@ -82,7 +82,7 @@ const LocalizedRoutes: React.FC = () => {
         <Route path="/people/:actorId" element={<PublicActorProfile />} />
         {/* Contact page disabled (2026-08): <Route path="/contact" element={<InteractiveContactPage />} /> */}
         <Route path="/projects" element={<ProjectGallery />} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/projects/:id/:section?" element={<ProjectDetail />} />
         <Route path="/ideas" element={<LegacyIdeaRoute />} />
         <Route path="/ideas/:id" element={<LegacyIdeaRoute />} />
         <Route path="/blog" element={<BlogStack />} />

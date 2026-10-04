@@ -33,7 +33,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   // The app scrolls inside the browser-window surface, not window. Route
   // changes therefore reset this owner once, centrally; page components do
   // not guess which scroll container happens to be active.
+  const previousPath = useRef(pathname);
   useLayoutEffect(() => {
+    const projectRoot = (path: string) => path.match(/^\/projects\/[^/]+/)?.[0];
+    const sameProject = projectRoot(pathname) && projectRoot(pathname) === projectRoot(previousPath.current);
+    previousPath.current = pathname;
+    if (sameProject) return;
     document.getElementById('browser-window')?.scrollTo({ top: 0, left: 0 });
   }, [pathname]);
 

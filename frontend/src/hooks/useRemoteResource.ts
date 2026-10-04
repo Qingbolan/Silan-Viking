@@ -56,7 +56,7 @@ export const useRemoteResource = <T>(
       })
       .catch((cause: unknown) => {
         if (!active) return;
-        setData(null);
+        if (!keepPreviousData) setData(null);
         setError(cause);
         setStatus(cause instanceof ApiError && cause.status === 404 ? 'not-found' : 'error');
       });

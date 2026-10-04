@@ -75,7 +75,8 @@ export const fetchProjects = async (
 // then loads its detail projection.
 export const fetchProjectDetailById = async (
   idOrSlug: string,
-  language: Language = 'en'
+  language: Language = 'en',
+  section?: string
 ): Promise<ProjectDetail | null> => {
   const basicRaw = idOrSlug.startsWith('i_')
     ? await get<Project>(`/api/v1/projects/id/${idOrSlug}`, { lang: formatLanguage(language) })
@@ -85,6 +86,7 @@ export const fetchProjectDetailById = async (
   const basicProject = normalizeProject(basicRaw);
   const projectDetail = await get<any>(`/api/v1/projects/${basicProject.id}/detail`, {
     lang: formatLanguage(language),
+    section,
   });
   const releaseNotes: string | undefined = projectDetail?.release || projectDetail?.release_notes || undefined;
   const version: string | undefined = projectDetail?.version || undefined;

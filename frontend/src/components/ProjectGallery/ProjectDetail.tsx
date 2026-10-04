@@ -1,6 +1,6 @@
 import '../ds/ContentOverlay.css';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -57,7 +57,7 @@ import ArticleFooter from '../ds/ArticleFooter';
 import ProjectIssuesList from './ProjectIssuesList';
 
 const PROJECT_HEADER_ID = 'project-header';
-const PROJECT_FEEDBACK_ID = 'tab-issues';
+const PROJECT_FEEDBACK_ID = 'feedback';
 
 const ROLE_LABELS: Record<string, { en: string; zh: string }> = {
   overview: { en: 'Overview', zh: '概述' },
@@ -110,6 +110,7 @@ const partBody = (part: ContentPart, language: string): string =>
   '';
 
 const partHasContent = (part: ContentPart, language: string): boolean => {
+  if (part.hasContent !== undefined) return part.hasContent;
   if (part.shape === 'entry_list') return (part.entries?.length ?? 0) > 0;
   return partBody(part, language).trim().length > 0;
 };
@@ -157,15 +158,17 @@ const PartPanel: React.FC<{
 };
 
 const ProjectDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, section } = useParams<{ id: string; section: string }>();
+  const navigate = useNavigate();
+  const sectionPath = useCallback((role: string) => canonicalInternalPath(`/projects/${id}${role === 'overview' ? '' : `/${encodeURIComponent(role)}`}`), [id]);
   const { language } = useLanguage();
   const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<string>(PROJECT_HEADER_ID);
   const loadProject = useCallback(
-    () => id ? fetchProjectDetailById(id, language as 'en' | 'zh') : Promise.resolve(null),
-    [id, language],
+    () => id ? fetchProjectDetailById(id, language as 'en' | 'zh', section ?? 'default') : Promise.resolve(null),
+    [id, language, section],
   );
-  const projectResource = useRemoteResource<ProjectDetailType>(id, loadProject);
+  const projectResource = useRemoteResource<ProjectDetailType>(id ? `${id}/${section ?? 'overview'}` : undefined, loadProject, true);
   const project = projectResource.data;
   const engagement = useProjectEngagement({
     projectId: project?.id ?? '',
@@ -213,7 +216,7 @@ const ProjectDetail: React.FC = () => {
         ...visibleParts.map((part) => ({
           id: part.role,
           label: roleLabel(part.role, language),
-          onClick: () => scrollToAnchor(part.role),
+          onClick: () => navigate(sectionPath(part.role)),
         })),
       );
     }
@@ -221,13 +224,13 @@ const ProjectDetail: React.FC = () => {
       {
         id: PROJECT_FEEDBACK_ID,
         label: language === 'zh' ? '项目反馈' : 'Project feedback',
-        onClick: () => scrollToAnchor(PROJECT_FEEDBACK_ID),
+        onClick: () => navigate(sectionPath(PROJECT_FEEDBACK_ID)),
       },
     );
     return entries;
   }, [
     language,
-    visibleParts,
+    visibleParts, navigate, sectionPath,
   ]);
 
   const sectionTabs = useMemo(
@@ -248,36 +251,43 @@ const ProjectDetail: React.FC = () => {
     [language, visibleParts],
   );
 
-  const defaultPanel = visibleParts.length === 0
-    ? PROJECT_FEEDBACK_ID
-    : visibleParts[0].role;
-  const [activePanel, setActivePanel] = useState<string>(defaultPanel);
+  const activePanel = section ?? visibleParts[0]?.role ?? PROJECT_FEEDBACK_ID;
   const activePart = visibleParts.find((part) => part.role === activePanel) ?? null;
 
   useEffect(() => {
-    const nextPanel = visibleParts.length === 0
-      ? PROJECT_FEEDBACK_ID
-      : visibleParts[0].role;
-    setActivePanel(nextPanel);
-    setActiveSection(nextPanel);
-    const scrollRoot = document.querySelector('#browser-window') as HTMLElement | null;
-    if (scrollRoot) scrollRoot.scrollTo({ top: 0 });
-    else window.scrollTo({ top: 0 });
-  }, [project?.id, visibleParts]);
-
-  useEffect(() => {
     setActiveSection(activePanel);
-  }, [activePanel]);
+  }, [id, activePanel]);
 
-  if (projectResource.status === 'loading') {
+  const previousPanel = useRef(activePanel);
+  const tabScroll = useRef({ pending: false, loading: false });
+  useEffect(() => {
+    if (previousPanel.current !== activePanel) {
+      previousPanel.current = activePanel;
+      tabScroll.current = { pending: true, loading: false };
+    }
+    if (!tabScroll.current.pending) return;
+    if (projectResource.status === 'loading') {
+      tabScroll.current.loading = true;
+      return;
+    }
+    if (projectResource.status !== 'ready' || !tabScroll.current.loading) return;
+    const frame = requestAnimationFrame(() => {
+      const navigation = document.getElementById('project-section-navigation');
+      scrollToAnchor('project-section-content', (navigation?.offsetHeight ?? 44) + 8);
+      tabScroll.current.pending = false;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activePanel, projectResource.status]);
+
+  if (!project && projectResource.status === 'loading') {
     return <BrandLoading inline message={t('projects.loadingProject')} />;
   }
 
-  if (projectResource.status === 'error') {
+  if (!project && projectResource.status === 'error') {
     return <NetworkError onRetry={projectResource.reload} />;
   }
 
-  if (!project) {
+  if (!project || (section && section !== PROJECT_FEEDBACK_ID && !activePart)) {
     return (
       <>
         <Seo
@@ -316,9 +326,9 @@ const ProjectDetail: React.FC = () => {
   return (
     <motion.div id="project-detail-document" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Seo
-        title={title}
+        title={section ? `${roleLabel(activePanel, language)} · ${title}` : title}
         description={project.description || ''}
-        path={`/projects/${id}`}
+        path={sectionPath(activePanel)}
         image={project.image || undefined}
         type="article"
         lang={language as 'en' | 'zh'}
@@ -412,6 +422,7 @@ const ProjectDetail: React.FC = () => {
         }}
         navigation={
           <nav
+            id="project-section-navigation"
             data-ds
             aria-label={language === 'zh' ? '项目详情章节' : 'Project detail sections'}
             className="content-dark-capsule no-scrollbar  flex min-h-11 flex-nowrap items-center overflow-x-auto px-2"
@@ -420,13 +431,11 @@ const ProjectDetail: React.FC = () => {
               const Icon = tab.icon;
               const active = activePanel === tab.id;
               return (
-                <button
+                <Link
                   data-ds
                   key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    setActivePanel(tab.id);
-                  }}
+                  to={sectionPath(tab.id)}
+                  aria-current={active ? 'page' : undefined}
                   className={cn(
                     'inline-flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-ds-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#ffad70] focus-visible:-outline-offset-2',
                     active ? 'text-[#ffad70]' : 'text-white/85 hover:text-white',
@@ -434,7 +443,7 @@ const ProjectDetail: React.FC = () => {
                 >
                   <Icon className="size-4" aria-hidden />
                   {tab.label}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -452,9 +461,13 @@ const ProjectDetail: React.FC = () => {
         <article data-ds className="w-full">
 
 
-          <div className="pt-2">
+          <div id="project-section-content" className="pt-2">
             <div id="project-active-part" className="prose-content w-full">
-            {activePart && (
+            {projectResource.status === 'loading' ? (
+              <BrandLoading inline message={t('projects.loadingProject')} />
+            ) : projectResource.status === 'error' ? (
+              <NetworkError onRetry={projectResource.reload} />
+            ) : activePart && (
               <PartPanel
                 part={activePart}
                 label={roleLabel(activePart.role, language)}
@@ -496,4 +509,10 @@ const ProjectDetail: React.FC = () => {
   );
 };
 
-export default ProjectDetail;
+// Reset the shell only when entering another project or language, not another tab.
+const ProjectDetailRoute: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const { language } = useLanguage();
+  return <ProjectDetail key={`${id}:${language}`} />;
+};
+export default ProjectDetailRoute;

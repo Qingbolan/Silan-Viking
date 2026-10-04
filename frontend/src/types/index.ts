@@ -83,6 +83,7 @@ export interface ContentEntry {
 }
 
 export interface ContentPart {
+  hasContent?: boolean;
   id: string;
   partId: string;
   role: string;

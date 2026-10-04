@@ -364,6 +364,14 @@ async function detailRoutes() {
         const segment = project.slug || project.id;
         if (segment) {
           registerPublicRoute(routes, `/projects/${segment}/`, language, project);
+          const detail = await fetchJson(`/api/v1/projects/${encodeURIComponent(project.id)}/detail?lang=${language}`);
+          for (const part of detail.parts ?? []) {
+            const hasContent = (part.entries?.length ?? 0) > 0 || Object.values(part.body ?? {}).some(body => String(body).trim());
+            if (part.role !== 'overview' && hasContent) {
+              registerPublicRoute(routes, `/projects/${segment}/${encodeURIComponent(part.role)}/`, language, project);
+            }
+          }
+          registerPublicRoute(routes, `/projects/${segment}/feedback/`, language, project);
         }
       }
     } catch (e) {

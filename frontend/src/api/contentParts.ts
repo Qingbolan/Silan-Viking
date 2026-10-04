@@ -23,6 +23,7 @@ export function mapContentParts(raw: any): ContentPart[] {
   return raw.map((p: any) => ({
     id: p.id ?? '',
     partId: p.part_id ?? p.partId ?? '',
+    hasContent: p.has_content,
     role: p.role ?? '',
     shape: p.shape ?? 'prose',
     sortOrder: p.sort_order ?? p.sortOrder ?? 0,
