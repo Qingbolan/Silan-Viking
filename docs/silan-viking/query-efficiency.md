@@ -137,3 +137,19 @@ URLs and 3 RSS items. No production artifacts were changed by this check.
 This verifies a full unchanged-data run using the resource limits. A real
 single-resource change test remains separate from the cache dependency unit
 tests; API revalidation still executes 128 unique queries in the unchanged run.
+
+## Local HTTP concurrency check
+
+Run `SILAN_TEST_HTTP_LOAD=1 go test ./internal/handler/blog -run TestConcurrentPublicBlogHTTP -v -count=1`
+(and the same command with `-race`) to exercise the actual Blog HTTP handler,
+request parser, list logic, shared Ent/raw tag pool, and JSON serialization over
+loopback HTTP. The fixture has 1,000 public rows and one private row. Sixty-four
+workers each request 20 pages through a four-connection database pool. Every
+response is checked for status, count, page length and deterministic first ID.
+The test also checks the pool limit and zero in-use connections after completion.
+
+One local non-race run completed 1,280 requests in 188.7 ms: P50 8.10 ms,
+P95 17.65 ms, P99 22.29 ms. The pool recorded 6,327 waits totaling 9.79 seconds
+across concurrent callers. This is a warm in-memory SQLite/read-only baseline;
+it excludes production middleware, TLS, remote storage, writes and deployment
+contention. It is not an SLA or evidence of equivalent production throughput.
