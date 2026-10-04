@@ -126,30 +126,43 @@ func (l *GetProjectDetailLogic) GetProjectDetail(req *types.ProjectDetailRequest
 		updatedAt = formatContentTime(proj.UpdatedAt, "2006-01-02 15:04:05")
 	}
 
-	// A project's prose lives in `item_part` Parts — one per role the
-	// silan-viking SCHEMA declares for `project`. Each is read from
-	// item_part_translation; an absent Part yields "" and the frontend
-	// simply does not render that tab.
-	detailedDescription = projectPartBody(l.ctx, l.svcCtx, proj.ID, "overview", req.Language)
-	goals := projectPartBody(l.ctx, l.svcCtx, proj.ID, "goals", req.Language)
-	challenges := projectPartBody(l.ctx, l.svcCtx, proj.ID, "challenges", req.Language)
-	solutions := projectPartBody(l.ctx, l.svcCtx, proj.ID, "solutions", req.Language)
-	lessons := projectPartBody(l.ctx, l.svcCtx, proj.ID, "lessons", req.Language)
-	quickStart := projectPartBody(l.ctx, l.svcCtx, proj.ID, "quick_start", req.Language)
-	releaseNotes := projectPartBody(l.ctx, l.svcCtx, proj.ID, "release_notes", req.Language)
-
+	// Collect the project documents once; derive public fields from this snapshot.
+	parts, err := contentpart.Collect(l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, proj.ID, req.Language)
+	if err != nil {
+		return nil, err
+	}
+	body := func(role string) string {
+		for _, part := range parts {
+			if part.Role != role {
+				continue
+			}
+			for _, lang := range []string{resolveLang(req.Language), "en", part.CanonicalLang} {
+				if value := part.Body[lang]; value != "" {
+					return value
+				}
+			}
+			for _, value := range part.Body {
+				if value != "" {
+					return value
+				}
+			}
+		}
+		return ""
+	}
+	detailedDescription = body("overview")
+	goals, challenges, solutions := body("goals"), body("challenges"), body("solutions")
+	lessons, quickStart, releaseNotes := body("lessons"), body("quick_start"), body("release_notes")
 	relatedBlogs, err := NewGetProjectRelatedBlogsLogic(l.ctx, l.svcCtx).GetProjectRelatedBlogs(req)
 	if err != nil {
 		return nil, err
 	}
 
-	// The data-driven Part list — whatever Parts the project actually has,
-	// in sort_order. The named fields above stay as a compatibility shim;
-	// the frontend renders tabs from `Parts`, so a project Part with a role
-	// the SCHEMA never declared still becomes its own tab.
-	parts, err := contentpart.Collect(l.ctx, l.svcCtx.DB, itempart.EntityTypeProject, proj.ID, req.Language)
-	if err != nil {
-		return nil, err
+	if req.Section != "" {
+		parts, err = selectProjectSection(parts, req.Section)
+		if err != nil {
+			return nil, err
+		}
+		detailedDescription, goals, challenges, solutions, lessons, quickStart, releaseNotes = "", "", "", "", "", "", ""
 	}
 
 	return &types.ProjectDetail{

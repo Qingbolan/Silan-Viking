@@ -472,6 +472,7 @@ type ContentEntry struct {
 }
 
 type ContentPart struct {
+	HasContent    *bool             `json:"has_content,omitempty"`
 	ID            string            `json:"id"`
 	PartID        string            `json:"part_id"`
 	Role          string            `json:"role"`
@@ -638,6 +639,7 @@ type ProjectDetail struct {
 }
 
 type ProjectDetailRequest struct {
+	Section  string `form:"section,optional"`
 	ID       string `path:"id"`
 	Language string `form:"lang,default=en"`
 }
