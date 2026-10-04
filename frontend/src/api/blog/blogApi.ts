@@ -116,7 +116,7 @@ export const fetchBlogById = async (slugOrId: string, language: 'en' | 'zh' = 'e
     : `/api/v1/blog/posts/${slugOrId}`;
   const response = await get<any>(endpoint, {
     lang: formatLanguage(language),
-    fingerprint: getClientFingerprint(),
+    fingerprint: getClientFingerprint() || undefined,
   });
   if (!response) return null;
   return normalizeBlogResponse(response, language);

@@ -51,7 +51,7 @@ export const fetchEpisode = async (
   if (!slug) return null;
   const episode = await get<EpisodeData>(`/api/v1/episodes/${slug}`, {
     lang: formatLanguage(language),
-    fingerprint: getClientFingerprint(),
+    fingerprint: getClientFingerprint() || undefined,
   });
   return episode ? normalizeEpisode(episode) : null;
 };
