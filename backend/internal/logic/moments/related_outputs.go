@@ -186,6 +186,11 @@ func momentOutputBlogs(
 	if err != nil {
 		return result
 	}
+	resolvedIDs := make([]string, 0, len(posts))
+	for _, post := range posts {
+		resolvedIDs = append(resolvedIDs, post.ID)
+	}
+	labels, _ := svcCtx.ContentTags.LookupMany(ctx, "blog", resolvedIDs)
 	for _, post := range posts {
 		title := post.Title
 		description := post.Excerpt
@@ -197,7 +202,7 @@ func momentOutputBlogs(
 				description = translation.Excerpt
 			}
 		}
-		tags, _ := svcCtx.ContentTags.Lookup(ctx, "blog", post.ID)
+		tags := labels[post.ID]
 		slug := post.Slug
 		if slug == "" {
 			slug = post.ID
@@ -239,6 +244,11 @@ func momentOutputProjects(
 	if err != nil {
 		return result
 	}
+	resolvedIDs := make([]string, 0, len(projects))
+	for _, proj := range projects {
+		resolvedIDs = append(resolvedIDs, proj.ID)
+	}
+	labels, _ := svcCtx.ContentTags.LookupMany(ctx, "project", resolvedIDs)
 	for _, proj := range projects {
 		title := proj.Title
 		description := proj.Description
@@ -250,7 +260,7 @@ func momentOutputProjects(
 				description = translation.Description
 			}
 		}
-		tags, _ := svcCtx.ContentTags.Lookup(ctx, "project", proj.ID)
+		tags := labels[proj.ID]
 		slug := proj.Slug
 		if slug == "" {
 			slug = proj.ID

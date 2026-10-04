@@ -153,3 +153,10 @@ P95 17.65 ms, P99 22.29 ms. The pool recorded 6,327 waits totaling 9.79 seconds
 across concurrent callers. This is a warm in-memory SQLite/read-only baseline;
 it excludes production middleware, TLS, remote storage, writes and deployment
 contention. It is not an SLA or evidence of equivalent production throughput.
+
+Moment lists and their related Blog/Project cards now batch tag reads through
+`LookupMany` as well. Moment response mapping has no database dependency. Tests
+cover canonical-ID tag attachment when relations use slugs and private project
+exclusion; targeted race tests and the backend suite pass. The Moment list still
+returns all public moments under its existing API contract; this change removes
+per-item tag round trips but does not introduce pagination to that endpoint.

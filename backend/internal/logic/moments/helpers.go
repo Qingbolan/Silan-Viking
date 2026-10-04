@@ -3,7 +3,6 @@ package moments
 import (
 	"context"
 
-	"silan-backend/internal/contenttag"
 	"silan-backend/internal/ent"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/svc"
@@ -80,7 +79,7 @@ func updatePartBodies(
 	return bodies
 }
 
-func updateToData(ctx context.Context, tags *contenttag.Repository, moment *ent.Moment, language string) types.Moment {
+func momentToData(moment *ent.Moment, language string, labels []string) types.Moment {
 	title := moment.Title
 	description := moment.Description
 	for _, translation := range moment.Edges.Translations {
@@ -90,10 +89,6 @@ func updateToData(ctx context.Context, tags *contenttag.Repository, moment *ent.
 			break
 		}
 	}
-
-	// Tags come from the cross-type `content_tag` table — the engine no
-	// longer writes them onto the `moments.tags` column.
-	labels, _ := tags.Lookup(ctx, "moment", moment.ID)
 
 	return types.Moment{
 		ID:          moment.ID,

@@ -36,7 +36,8 @@ func (l *GetMomentLogic) GetMoment(req *types.MomentRequest) (*types.Moment, err
 		return nil, err
 	}
 
-	data := updateToData(l.ctx, l.svcCtx.ContentTags, moment, req.Language)
+	labels, _ := l.svcCtx.ContentTags.Lookup(l.ctx, "moment", moment.ID)
+	data := momentToData(moment, req.Language, labels)
 
 	// Moment is a prose type: the body markdown lives in item_part_translation
 	// (the `body` Part), not in the moments table. Override the

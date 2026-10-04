@@ -45,9 +45,11 @@ func (l *GetMomentsLogic) GetMoments(req *types.MomentListRequest) (*types.Momen
 	bodies := updatePartBodies(l.ctx, l.svcCtx, ids, "body", req.Language)
 	relatedOutputs := relatedMomentOutputs(l.ctx, l.svcCtx, ids, req.Language)
 
+	labels, _ := l.svcCtx.ContentTags.LookupMany(l.ctx, "moment", ids)
+
 	result := make([]types.Moment, 0, len(moments))
 	for _, moment := range moments {
-		data := updateToData(l.ctx, l.svcCtx.ContentTags, moment, req.Language)
+		data := momentToData(moment, req.Language, labels[moment.ID])
 		if body := bodies[moment.ID]; body != "" {
 			data.Description = body
 		}
