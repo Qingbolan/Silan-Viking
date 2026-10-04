@@ -3,8 +3,8 @@
 // Post-build static prerender. A target is a named build profile:
 // `--target <name>` loads `.env.<name>` and uses its public base/origin and API
 // origin. The default target preserves the existing silan.tech build flow.
-/* global document, fetch, URL, window */
-import { PrerenderCache, QuerySnapshot, fingerprint } from './prerender-cache.mjs';
+/* global document, fetch, URL, window, AbortSignal */
+import { PrerenderCache, QuerySnapshot, fingerprint, readBoundedJson } from './prerender-cache.mjs';
 import { spawn } from 'node:child_process';
 import http from 'node:http';
 import { createServer } from 'node:http';
@@ -187,9 +187,8 @@ const homePrerenderShell = (language) => language === 'zh'
 </div>`.trim();
 
 const querySnapshot = new QuerySnapshot(async (url) => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText} from ${url}`);
-  return JSON.stringify(await response.json());
+  const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
+  return JSON.stringify(await readBoundedJson(response));
 });
 async function fetchJson(path) {
   return JSON.parse(await querySnapshot.get(apiUrl(path)));
@@ -566,9 +565,9 @@ async function installPublicListInterception(page, dependencies) {
           dependencies.values[url.href] = fingerprint(body);
           await request.respond({ status: 200, contentType: 'application/json', body, headers: { 'Access-Control-Allow-Origin': '*' } });
         } catch (error) {
-          log(`uncached API ${url.pathname}: ${error.message}`);
+          log(`failed API ${url.pathname}: ${error.message}`);
           dependencies.complete = false;
-          await request.continue();
+          await request.abort('failed');
         }
       } else {
         // Unobserved external data must never produce a reusable snapshot.
@@ -1433,6 +1432,7 @@ async function main() {
   }
 
   log(`incremental: ${reused} reused, ${routes.length - reused} rendered`);
+  log(`query snapshot: ${JSON.stringify(querySnapshot.stats)}`);
   const expectedSitemapUrls = writeSitemap(routes);
   const expectedRssUrls = writeRssFeed();
   const seoVerification = validateSeoArtifacts({
