@@ -12,6 +12,7 @@ import (
 	"silan-backend/internal/ent/blogposttranslation"
 	"silan-backend/internal/ent/itempart"
 	"silan-backend/internal/logic/engagement"
+	"silan-backend/internal/pagination"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -84,17 +85,11 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 	if err != nil {
 		return nil, err
 	}
-	page, size := req.Page, req.Size
-	if page < 1 {
-		page = 1
-	}
-	if size < 1 {
-		size = 10
-	}
+	page := pagination.New(req.Page, req.Size, 0)
 	// Compare page indexes before multiplying to avoid overflow on hostile input.
 	posts := []*ent.BlogPost{}
-	if total > 0 && page-1 <= (total-1)/size {
-		posts, err = query.Order(ent.Desc(blogpost.FieldPublishedAt), ent.Asc(blogpost.FieldID)).Offset((page - 1) * size).Limit(size).All(l.ctx)
+	if offset, ok := page.Offset(total); ok {
+		posts, err = query.Order(ent.Desc(blogpost.FieldPublishedAt), ent.Asc(blogpost.FieldID)).Offset(offset).Limit(page.Size).All(l.ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -193,16 +188,11 @@ func (l *GetBlogPostsLogic) GetBlogPosts(req *types.BlogListRequest) (resp *type
 		})
 	}
 
-	totalPages := total / size
-	if total%size != 0 {
-		totalPages++
-	}
-
 	return &types.BlogListResponse{
 		Posts:      result,
 		Total:      int64(total),
-		Page:       page,
-		Size:       size,
-		TotalPages: totalPages,
+		Page:       page.Number,
+		Size:       page.Size,
+		TotalPages: page.TotalPages(total),
 	}, nil
 }

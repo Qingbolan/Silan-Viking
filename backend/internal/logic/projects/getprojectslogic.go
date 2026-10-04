@@ -11,6 +11,7 @@ import (
 	"silan-backend/internal/ent/project"
 	"silan-backend/internal/ent/projecttechnology"
 	"silan-backend/internal/ent/projecttranslation"
+	"silan-backend/internal/pagination"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -75,16 +76,10 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 	if err != nil {
 		return nil, err
 	}
-	page, size := req.Page, req.Size
-	if page < 1 {
-		page = 1
-	}
-	if size < 1 {
-		size = 10
-	}
+	page := pagination.New(req.Page, req.Size, 0)
 	pageProjects := []*ent.Project{}
-	if total > 0 && page-1 <= (total-1)/size {
-		pageProjects, err = query.Order(ent.Desc(project.FieldSortOrder), ent.Desc(project.FieldCreatedAt), ent.Asc(project.FieldID)).Offset((page - 1) * size).Limit(size).All(l.ctx)
+	if offset, ok := page.Offset(total); ok {
+		pageProjects, err = query.Order(ent.Desc(project.FieldSortOrder), ent.Desc(project.FieldCreatedAt), ent.Asc(project.FieldID)).Offset(offset).Limit(page.Size).All(l.ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -102,17 +97,12 @@ func (l *GetProjectsLogic) GetProjects(req *types.ProjectListRequest) (resp *typ
 		result = append(result, mapBasicProject(proj, req.Language, tags[proj.ID]))
 	}
 
-	totalPages := total / size
-	if total%size != 0 {
-		totalPages++
-	}
-
 	return &types.ProjectListResponse{
 		Projects:   result,
 		Total:      int64(total),
-		Page:       page,
-		Size:       size,
-		TotalPages: totalPages,
+		Page:       page.Number,
+		Size:       page.Size,
+		TotalPages: page.TotalPages(total),
 	}, nil
 }
 

@@ -160,3 +160,11 @@ cover canonical-ID tag attachment when relations use slugs and private project
 exclusion; targeted race tests and the backend suite pass. The Moment list still
 returns all public moments under its existing API contract; this change removes
 per-item tag round trips but does not introduce pagination to that endpoint.
+
+Pagination arithmetic is owned by `internal/pagination`. Blog, Project and
+Episode use the same overflow-safe offset and integer page-count computation.
+Endpoint size policy remains explicit: Episode retains its existing cap of 50;
+Blog and Project retain their existing uncapped size behavior. Out-of-range
+pages skip row loading. Tests include maximum machine integers and exhaustive
+small-page coverage without gaps or overlaps. Episode ordering now also ends
+with its unique ID for deterministic ties.

@@ -2,7 +2,6 @@ package episodes
 
 import (
 	"context"
-	"math"
 	"strings"
 
 	"silan-backend/internal/contentsearch"
@@ -12,6 +11,7 @@ import (
 	"silan-backend/internal/ent/episodeseriestranslation"
 	"silan-backend/internal/ent/episodetranslation"
 	"silan-backend/internal/ent/itempart"
+	"silan-backend/internal/pagination"
 	"silan-backend/internal/svc"
 	"silan-backend/internal/types"
 
@@ -33,16 +33,7 @@ func NewSearchEpisodesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 }
 
 func (l *SearchEpisodesLogic) SearchEpisodes(req *types.EpisodeSearchRequest) (*types.EpisodeSearchResponse, error) {
-	page, size := req.Page, req.Size
-	if page < 1 {
-		page = 1
-	}
-	if size < 1 {
-		size = 10
-	}
-	if size > 50 {
-		size = 50
-	}
+	page := pagination.New(req.Page, req.Size, 50)
 
 	query := l.svcCtx.DB.Episode.Query().Where(
 		episode.VisibilityEQ(episode.VisibilityPublic),
@@ -79,15 +70,12 @@ func (l *SearchEpisodesLogic) SearchEpisodes(req *types.EpisodeSearchRequest) (*
 		return nil, err
 	}
 
-	episodes, err := query.
-		WithTranslations().
-		WithSeries().
-		Order(ent.Desc(episode.FieldPublishedAt), ent.Asc(episode.FieldEpisodeNumber)).
-		Offset((page - 1) * size).
-		Limit(size).
-		All(l.ctx)
-	if err != nil {
-		return nil, err
+	episodes := []*ent.Episode{}
+	if offset, ok := page.Offset(total); ok {
+		episodes, err = query.WithTranslations().WithSeries().Order(ent.Desc(episode.FieldPublishedAt), ent.Asc(episode.FieldEpisodeNumber), ent.Asc(episode.FieldID)).Offset(offset).Limit(page.Size).All(l.ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	result := make([]types.EpisodeData, 0, len(episodes))
@@ -98,8 +86,8 @@ func (l *SearchEpisodesLogic) SearchEpisodes(req *types.EpisodeSearchRequest) (*
 	return &types.EpisodeSearchResponse{
 		Episodes:   result,
 		Total:      int64(total),
-		Page:       page,
-		Size:       size,
-		TotalPages: int(math.Ceil(float64(total) / float64(size))),
+		Page:       page.Number,
+		Size:       page.Size,
+		TotalPages: page.TotalPages(total),
 	}, nil
 }
