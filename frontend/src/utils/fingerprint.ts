@@ -1,3 +1,5 @@
+import { isPrerenderRuntime } from './runtimeContext';
+
 // Lightweight browser fingerprint for local authorization (no PII)
 // Combines userAgent, language, platform, hardwareConcurrency, and timezone
 // and stores a stable browser ID in both a first-party cookie and localStorage.
@@ -64,6 +66,8 @@ function generateRawFingerprint(): string {
 }
 
 export function getClientFingerprint(): string {
+  // Static content has no visitor identity; runtime hydration creates one.
+  if (isPrerenderRuntime()) return '';
   const cookieValue = readCookie();
   if (cookieValue) {
     const decoded = decodeURIComponent(cookieValue);

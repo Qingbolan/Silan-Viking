@@ -1,3 +1,4 @@
+import { isPrerenderRuntime } from '../utils/runtimeContext';
 import { fetchVisitorGeo } from '../api/geo';
 import { getClientFingerprint } from '../utils/fingerprint';
 
@@ -45,6 +46,7 @@ const currentFingerprint = (): string => {
 };
 
 export const readCommenter = (): StoredCommenter => {
+  if (isPrerenderRuntime()) return { authorName: 'Guest', customName: false, countryCode: UNKNOWN_COUNTRY, regionCode: UNKNOWN_REGION };
   const fingerprint = currentFingerprint();
   try {
     const stored = JSON.parse(localStorage.getItem(COMMENTER_KEY) ?? '{}');
@@ -85,7 +87,7 @@ export const persistCommenter = (commenter: StoredCommenter) => {
 
 export const ensureCommenter = (): Promise<StoredCommenter> => {
   const initial = readCommenter();
-  if (initial.customName) return Promise.resolve(initial);
+  if (isPrerenderRuntime() || initial.customName) return Promise.resolve(initial);
   if (ensureCommenterPromise) return ensureCommenterPromise;
 
   ensureCommenterPromise = (async () => {
