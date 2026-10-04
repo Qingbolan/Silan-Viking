@@ -1,7 +1,10 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUp } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Rocket } from 'lucide-react';
+import { useReducedMotion } from 'framer-motion';
+import { useRocketFlight } from '../ds/knowledge-base/useRocketFlight';
+import '../ds/knowledge-base/EngagementFAB.css';
 import type { Moment } from '../../types/api';
 import { canonicalInternalPath } from '../../utils/navigation';
 
@@ -16,15 +19,24 @@ function JumpLink({ moment, next, language }: { moment: Moment | null; next?: bo
 export default function MomentJumpBar({ previous, next, language, visible }: {
   previous: Moment | null; next: Moment | null; language: 'en' | 'zh'; visible: boolean;
 }) {
-  if (!visible || (!previous && !next)) return null;
+  const reduceMotion = useReducedMotion();
+  const backToTop = React.useCallback(() => {
+    document.getElementById('browser-window')?.scrollTo({ top: 0, behavior: reduceMotion ? 'instant' : 'smooth' });
+  }, [reduceMotion]);
+  const { flight, launching, launch } = useRocketFlight(backToTop);
+  if ((!visible && !launching) || (!previous && !next)) return null;
   return createPortal(
     <nav aria-label={language === 'zh' ? '底部动态跳转' : 'Moment quick navigation'}
       className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] sm:bottom-[max(1rem,env(safe-area-inset-bottom))] left-4 right-4 z-40 mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 rounded-ds-lg border border-ds-border bg-ds-surface-1 p-1.5 text-ds-fg shadow-ds-2">
       <JumpLink moment={previous} language={language} />
       <button type="button" aria-label={language === 'zh' ? '回到顶部' : 'Back to top'} title={language === 'zh' ? '回到顶部' : 'Back to top'}
         className="rounded-full p-3 text-ds-fg-muted transition-colors hover:bg-ds-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ds-primary"
-        onClick={() => document.getElementById('browser-window')?.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>
-        <ArrowUp className="size-4" />
+        onClick={launch}>
+        <span aria-hidden="true" className={`reading-rocket ${launching ? 'reading-rocket--launching' : ''}`}
+          style={{ transform: reduceMotion ? undefined : `translateY(${-42 * (flight.phase === 'launching' ? flight.progress : 0)}px)` }}>
+          <Rocket size={18} className="reading-rocket__ship" />
+          <span className="reading-rocket__exhaust" />
+        </span>
       </button>
       <JumpLink moment={next} next language={language} />
     </nav>, document.body,

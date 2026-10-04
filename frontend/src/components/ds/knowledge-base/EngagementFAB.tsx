@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ThumbsUp, MessageCircle, Rocket } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import './EngagementFAB.css';
+import { useRocketFlight } from './useRocketFlight';
 
 interface EngagementFABProps {
   likes?: number;
@@ -55,42 +56,7 @@ const EngagementFAB: React.FC<EngagementFABProps> = ({
 }) => {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const reduceMotion = useReducedMotion();
-  const [flight, setFlight] = useState<
-    { phase: 'idle' } | { phase: 'launching' | 'arrived'; progress: number }
-  >({ phase: 'idle' });
-  const launching = flight.phase === 'launching';
-  const launch = () => {
-    if (!launching) setFlight({ phase: 'launching', progress: 0 });
-  };
-
-  useEffect(() => {
-    if (!launching) return;
-    const root = document.querySelector<HTMLElement>('#browser-window');
-    const scroller = root ?? document.documentElement;
-    const startTop = scroller.scrollTop;
-    let frame = 0;
-    let lastTop = startTop;
-    let lastMovement = performance.now();
-    const track = (now: number) => {
-      const top = scroller.scrollTop;
-      if (top <= 1) {
-        setFlight({ phase: 'arrived', progress: 1 });
-        return;
-      }
-      if (top !== lastTop) lastMovement = now;
-      // Stop the flight when scrolling is interrupted or cannot advance.
-      if (top > lastTop + 1 || now - lastMovement > 250) {
-        setFlight({ phase: 'idle' });
-        return;
-      }
-      lastTop = top;
-      setFlight({ phase: 'launching', progress: Math.max(0, Math.min(1, 1 - top / startTop)) });
-      frame = requestAnimationFrame(track);
-    };
-    onBackToTop();
-    frame = requestAnimationFrame(track);
-    return () => cancelAnimationFrame(frame);
-  }, [launching, onBackToTop]);
+  const { flight, launching, launch, resetOnScroll } = useRocketFlight(onBackToTop);
 
   useEffect(() => {
     const root = document.querySelector<HTMLElement>('#browser-window');
@@ -99,7 +65,7 @@ const EngagementFAB: React.FC<EngagementFABProps> = ({
     const updateVisibility = () => {
       const viewportHeight = root ? root.clientHeight : window.innerHeight;
       if (scroller.scrollTop > 160) {
-        setFlight((current) => current.phase === 'arrived' ? { phase: 'idle' } : current);
+        resetOnScroll();
       }
       setShowBackToTop(
         scroller.scrollHeight > viewportHeight + 1 && scroller.scrollTop > 160,
@@ -116,7 +82,7 @@ const EngagementFAB: React.FC<EngagementFABProps> = ({
       window.removeEventListener('resize', updateVisibility);
       observer.disconnect();
     };
-  }, []);
+  }, [resetOnScroll]);
 
   return (
     // Keep mobile shortcuts above the tab bar and device safe area.
