@@ -1,3 +1,4 @@
+import '../components/ds/ContentOverlay.css';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../components/LanguageContext';
 import { useTheme } from '../components/ThemeContext';
+import AddressNavigator from './AddressNavigator';
 import GlobalSearch from '../components/Search/GlobalSearch';
 import { usePageTitle, usePageSectionState, usePageFilterState } from './PageTitleContext';
 import { canonicalInternalPath, isNavigationPathActive, primaryNavigationPath } from '../utils/navigation';
@@ -262,8 +264,8 @@ const MenuCrumb: React.FC<{
   ariaLabel: string;
   onSelect: (value: string) => void;
 }> = ({ label, items, activeValue, ariaLabel, onSelect }) => {
-  const { colors, isDarkMode } = useTheme();
-  const { hoverBg, accent, accentSoft } = useChromeTokens();
+  const { colors } = useTheme();
+  const { hoverBg, accent } = useChromeTokens();
   const reduceMotion = useReducedMotion();
   const { pathname } = useLocation();
 
@@ -310,15 +312,11 @@ const MenuCrumb: React.FC<{
           <motion.ul
             role="listbox"
             aria-label={ariaLabel}
-            className="absolute left-0 top-full z-50 mt-2 max-h-[60vh] min-w-[200px] overflow-y-auto rounded-xl p-1"
+            className="content-dark-capsule absolute left-0 top-full z-50 mt-2 max-h-[60vh] min-w-[200px] overflow-y-auto rounded-xl p-1"
             initial={reduceMotion ? false : { opacity: 0, y: -6 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
             transition={reduceMotion ? undefined : { duration: 0.16, ease: 'easeOut' }}
-            style={{
-              backgroundColor: isDarkMode ? 'oklch(0.21 0.012 264)' : 'oklch(1 0 0)',
-              boxShadow: colors.shadowLg,
-            }}
           >
             {items.map((it) => {
               const active = it.value === activeValue;
@@ -333,21 +331,21 @@ const MenuCrumb: React.FC<{
                     className="flex w-full items-center gap-2 rounded-lg py-1.5 pr-3 text-left transition-colors"
                     style={{
                       paddingLeft: it.level ? `${0.75 + it.level * 1}rem` : '0.75rem',
-                      color: active ? accent : colors.textSecondary,
-                      backgroundColor: active ? accentSoft : 'transparent',
+                      color: active ? '#ffad70' : '#e5e7eb',
+                      backgroundColor: active ? 'rgb(255 173 112 / 12%)' : 'transparent',
                       fontWeight: active ? 600 : 400,
                     }}
                     onMouseEnter={(e) => {
-                      if (!active) e.currentTarget.style.backgroundColor = hoverBg;
+                      if (!active) e.currentTarget.style.backgroundColor = 'rgb(255 255 255 / 8%)';
                     }}
                     onMouseLeave={(e) => {
                       if (!active) e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                   >
-                    <span aria-hidden style={{ color: colors.textTertiary }}>#</span>
+                    <span aria-hidden style={{ color: '#9ca3af' }}>#</span>
                     <span className="flex-1 truncate">{it.label}</span>
                     {it.count !== undefined && (
-                      <span className="text-xs" style={{ color: colors.textTertiary }}>
+                      <span className="text-xs" style={{ color: '#9ca3af' }}>
                         {it.count}
                       </span>
                     )}
@@ -414,6 +412,7 @@ const TopNavigation: React.FC = () => {
   }, [navigate, primeMobileKeyboard]);
 
   const routes = useMemo(() => ROUTES(zh), [zh]);
+  const [addressOpen, setAddressOpen] = useState(false);
   const detailTitle = usePageTitle();
   const { sections, activeSectionId } = usePageSectionState();
   const pageFilter = usePageFilterState();
@@ -468,6 +467,9 @@ const TopNavigation: React.FC = () => {
   // ⌘K / Ctrl+K opens search.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'l') {
+        e.preventDefault(); setAddressOpen(true); return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setSearchOpen(true);
@@ -550,7 +552,10 @@ const TopNavigation: React.FC = () => {
         >
           {/* Breadcrumb trail — section, then the content title on detail pages */}
           <nav
-            aria-label={zh ? '当前位置' : 'Breadcrumb'}
+            aria-label={zh ? '当前位置，双击输入地址' : 'Breadcrumb, double-click to enter an address'}
+            onDoubleClick={() => setAddressOpen(true)}
+            tabIndex={0}
+            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); setAddressOpen(true); } }}
             className="flex min-w-0 flex-1 items-center justify-center gap-1 px-2.5 text-ds-xs"
           >
             {crumbs.map((c, i) => {
@@ -653,6 +658,7 @@ const TopNavigation: React.FC = () => {
         </div>
       </div>
 
+      {addressOpen && <AddressNavigator open onClose={() => setAddressOpen(false)} zh={zh} />}
       <GlobalSearch
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}

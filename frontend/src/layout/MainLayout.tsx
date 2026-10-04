@@ -131,7 +131,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           TopNavigation own the row. Desktop (sm+) keeps the full chrome. */}
       <header
         className={[
-          'relative z-10 flex-shrink-0 items-center gap-1.5 px-2.5 py-1.5 sm:gap-2 sm:px-3',
+          'relative z-20 flex-shrink-0 items-center gap-1.5 px-2.5 py-1.5 sm:gap-2 sm:px-3',
           isSearchRoute ? 'hidden sm:flex' : 'flex',
         ].join(' ')}
       >
