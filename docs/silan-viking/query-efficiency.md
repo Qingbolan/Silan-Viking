@@ -168,3 +168,21 @@ Blog and Project retain their existing uncapped size behavior. Out-of-range
 pages skip row loading. Tests include maximum machine integers and exhaustive
 small-page coverage without gaps or overlaps. Episode ordering now also ends
 with its unique ID for deterministic ties.
+
+### Single-article change through the complete renderer
+
+A temporary fetch recorder captured the 128 public API responses from an
+unchanged run. Replay was restricted to those responses (no missing-response
+network fallback); guest fingerprint variants were matched to their recorded
+public response. In that isolated fixture, only the English text block of
+`make-research-work-findable` was changed, including its equivalent fingerprint
+query variant. No production content was written.
+
+With the same compiled baseline and page cache, full prerender reported **82
+reused, 2 rendered**: the English and Chinese routes for that article. The
+English output contained the marker in rendered HTML outside script elements;
+the Chinese visible body did not. Both routes embed bilingual route data, so
+both legitimately changed identity. Sitemap and RSS validation passed. This
+verifies changed-content propagation and scoped invalidation across the full
+browser renderer, while retaining the limitation that dependency validation
+still reads all unique API responses.
