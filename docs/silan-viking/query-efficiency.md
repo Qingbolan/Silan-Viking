@@ -186,3 +186,18 @@ both legitimately changed identity. Sitemap and RSS validation passed. This
 verifies changed-content propagation and scoped invalidation across the full
 browser renderer, while retaining the limitation that dependency validation
 still reads all unique API responses.
+
+## Published verification
+
+Backend optimization revision `7c3b787` was locally cross-compiled to static
+Linux/amd64 binaries and deployed with checksum and health verification. Frontend
+revision `8fa0c41` additionally isolates prerender from visitor cookies/storage,
+omits visitor geolocation, and omits empty fingerprint query parameters. Its
+local build rendered all 84 pages successfully; the publisher then reused all
+84 with zero browser renders. Unique dependency queries dropped from 128 to
+121, and retained response bytes from 778,610 to 664,611. Public release
+`20261004T083215Z-11178` and API health were verified after publication.
+
+These results demonstrate the delivered improvements under the documented
+fixtures and deployment checks. They do not remove the need for dependency
+revalidation, promise zero API reads, or define an unmeasured production SLA.
