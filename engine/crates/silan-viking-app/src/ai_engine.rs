@@ -238,7 +238,7 @@ pub fn test_connection(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::io::{Read, Write};
 
@@ -251,7 +251,7 @@ mod tests {
         }
     }
 
-    fn server(status: &str, body: &str) -> (String, std::thread::JoinHandle<String>) {
+    pub(crate) fn server(status: &str, body: &str) -> (String, std::thread::JoinHandle<String>) {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let address = format!("http://{}/v1", listener.local_addr().unwrap());
         let response = format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());

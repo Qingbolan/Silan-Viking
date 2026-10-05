@@ -72,23 +72,11 @@ export const createCoverBrief = ({
   const normalizedLanguage = language?.trim().toLowerCase().startsWith('zh') || hasCjk(`${title} ${description || ''}`)
     ? 'zh'
     : 'en';
-  const isSeries = contentKind === 'series';
-  const isProject = contentKind === 'project';
   return {
     contentKind,
     language: normalizedLanguage,
     headline: compact(title),
-    audience: normalizedLanguage === 'zh'
-      ? isSeries
-        ? '希望持续跟进这个主题的读者'
-        : isProject
-          ? '正在评估这个项目是否适合其实际问题的人'
-          : '正在解决同类问题、需要快速判断这篇内容是否值得读的人'
-      : isSeries
-        ? 'Readers deciding whether to follow this topic'
-        : isProject
-          ? 'People evaluating whether this project fits their practical problem'
-          : 'Readers deciding whether this article solves their current problem',
+    audience: '',
     value: compact(description || title),
     visualDirection: '',
   };
@@ -111,3 +99,15 @@ export const generateCoverAsset = async (
     outputFormat: request.outputFormat,
   });
 };
+
+export const generateCoverBrief = (target: CoverTarget, language: string) =>
+  invoke<Omit<CoverBrief, 'contentKind'>>('generate_cover_brief', { targetUri: target.uri, language });
+
+/** Preserve edits made while the model was preparing its answer. */
+export function mergeGeneratedCoverBrief(current: CoverBrief, baseline: CoverBrief, generated: Omit<CoverBrief, 'contentKind'>): CoverBrief {
+  const result = { ...current };
+  for (const field of ['headline', 'audience', 'value', 'visualDirection'] as const) {
+    if (current[field] === baseline[field]) result[field] = generated[field];
+  }
+  return result;
+}

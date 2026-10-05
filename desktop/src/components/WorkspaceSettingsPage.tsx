@@ -54,13 +54,11 @@ const languageOptions = [
     value: 'en',
     label: 'English',
     nativeLabel: 'English',
-    description: 'Open shelves, Resume, and Capture in English.',
   },
   {
     value: 'zh',
     label: 'Chinese',
     nativeLabel: '简体中文',
-    description: '默认以中文打开内容、简历与快速记录。',
   },
 ] as const;
 
@@ -148,9 +146,6 @@ function WorkspaceProfileSettings({
     >
       <header className="workspace-settings-section-header">
         <h2 id="workspace-profile-heading">Profile</h2>
-        <p>
-          Set the identity shown across the workspace and choose how authoring views open.
-        </p>
       </header>
 
       {!preferences ? (
@@ -163,7 +158,6 @@ function WorkspaceProfileSettings({
           <section className="workspace-profile-setting" aria-labelledby="workspace-avatar-label">
             <div className="workspace-profile-setting-copy">
               <h3 id="workspace-avatar-label">Avatar</h3>
-              <p>Used in the app sidebar, Moments profile, and public Resume identity.</p>
             </div>
 
             <div className="workspace-avatar-editor">
@@ -174,11 +168,6 @@ function WorkspaceProfileSettings({
               </div>
               <div className="workspace-avatar-copy">
                 <strong>{displayName}</strong>
-                <span>
-                  {preferences.identity.avatar_reference
-                    ? preferences.identity.avatar_reference
-                    : 'No avatar selected'}
-                </span>
                 <div className="workspace-avatar-actions">
                   <Button
                     type="button"
@@ -224,7 +213,6 @@ function WorkspaceProfileSettings({
           <section className="workspace-profile-setting" aria-labelledby="workspace-language-label">
             <div className="workspace-profile-setting-copy">
               <h3 id="workspace-language-label">Default language</h3>
-              <p>You can still switch language from any shelf or editor.</p>
             </div>
 
             <div className="workspace-language-options" role="radiogroup" aria-labelledby="workspace-language-label">
@@ -249,8 +237,6 @@ function WorkspaceProfileSettings({
                     </span>
                     <span>
                       <strong>{option.nativeLabel}</strong>
-                      <small>{option.label}</small>
-                      <p>{option.description}</p>
                     </span>
                   </button>
                 );
@@ -332,9 +318,6 @@ function PrivateResourceSettings({
     >
       <header className="workspace-settings-section-header">
         <h2 id="workspace-private-heading">Private resources</h2>
-        <p>
-          Private content stays in your workspace and is excluded from the next website deployment.
-        </p>
       </header>
 
       <div className="workspace-private-summary" aria-label="Archive summary">
@@ -415,14 +398,12 @@ function PrivateResourceSettings({
           <div className="workspace-private-empty">
             <CheckCircle2 size={20} />
             <strong>No private resources</strong>
-            <p>Private content appears here.</p>
           </div>
         )}
         {resources.length > 0 && visibleResources.length === 0 && (
           <div className="workspace-private-empty">
             <Search size={20} />
             <strong>No private content matches</strong>
-            <p>Try a title, slug, type, or series name.</p>
           </div>
         )}
       </div>

@@ -63,6 +63,9 @@ pub struct EditableDocument {
     pub title: String,
     pub description: Option<String>,
     pub series_slug: Option<String>,
+    pub series_title: Option<String>,
+    pub series_description: Option<String>,
+    pub series_cover_url: Option<String>,
     pub episode_number: Option<i64>,
     pub visibility: String,
     pub updated_at: String,
@@ -305,6 +308,9 @@ impl WorkspaceContent {
             let series_slug = (item.kind() == ContentKind::Episode)
                 .then(|| parsed.main().text("series").map(str::to_owned))
                 .flatten();
+            let series = series_slug
+                .as_deref()
+                .and_then(|slug| scan.series().iter().find(|series| series.slug == slug));
             let parts = item
                 .parts()
                 .iter()
@@ -370,6 +376,9 @@ impl WorkspaceContent {
                 slug: item.slug().to_string(),
                 title,
                 description,
+                series_title: series.map(|series| series.title.clone()),
+                series_description: series.map(|series| series.description.clone()),
+                series_cover_url: series.map(|series| series.cover_url.clone()),
                 series_slug,
                 episode_number: parsed.main().int("episode_number"),
                 visibility: parsed
@@ -1367,6 +1376,15 @@ mod tests {
             .into_iter()
             .find(|document| document.content_type == "episode")
             .expect("episode fixture");
+        assert_eq!(episode.series_title.as_deref(), Some("Tutorial Series"));
+        assert_eq!(
+            episode.series_description.as_deref(),
+            Some("A walkthrough series.")
+        );
+        assert_eq!(
+            episode.series_cover_url.as_deref(),
+            Some("silan://resources/episode/tutorial-series/assets/cover.png")
+        );
         let source = &episode.parts[0].translations[0].source_path;
         assert!(
             source.starts_with("resources/episode/tutorial-series/"),

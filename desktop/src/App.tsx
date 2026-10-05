@@ -56,6 +56,7 @@ import { ArticleDiscoverySettings } from './components/ArticleDiscoverySettings'
 import { CommitWall, TrafficWall } from './components/CommitWall';
 import { ContentOutline } from './components/ContentOutline';
 import { ContentCard } from './components/ContentCard';
+import { ContentLibrary, type LibrarySeriesSource } from './components/ContentLibrary';
 import { ContentMasonry } from './components/ContentMasonry';
 import { ContentPublishingFields } from './components/ContentPublishingFields';
 import {
@@ -306,6 +307,7 @@ const lifecycleIconFor = (action: VisibilityAction | SeriesVisibilityAction) =>
 const lifecycleButtonVariantFor = (tone: VisibilityAction['tone']) => tone;
 
 export default function App() {
+  const [librarySeries, setLibrarySeries] = React.useState<LibrarySeriesSource[]>([]);
   const [documents, setDocuments] = React.useState<EditorDocument[]>([]);
   const [dashboard, setDashboard] = React.useState<DashboardData | null>(null);
   const [deploymentPlanLoad, setDeploymentPlanLoad] = React.useState<{
@@ -669,7 +671,8 @@ export default function App() {
       coverUrl: string;
       episodes: Map<string, EpisodeGroup>;
     }>();
-    filtered.filter((document) => document.entity_type === 'episode').forEach((document) => {
+    librarySeries.forEach(series => seriesMap.set(series.slug, { id: series.slug, slug: series.slug, title: series.title || series.slug, description: series.description, coverUrl: series.cover_url, episodes: new Map() }));
+    activeDocuments.filter((document) => document.entity_type === 'episode').forEach((document) => {
       const seriesId = document.series_id || document.series_slug || 'unfiled';
       if (!seriesMap.has(seriesId)) {
         seriesMap.set(seriesId, {
@@ -713,7 +716,7 @@ export default function App() {
         (left, right) => (left.episodeNumber || 0) - (right.episodeNumber || 0),
       ),
     }));
-  }, [filtered]);
+  }, [activeDocuments, librarySeries]);
 
   const displayContentGroups = React.useMemo(
     () => contentGroups.map((group) => localizeContentGroup(group, chromeLanguage)),
@@ -726,7 +729,6 @@ export default function App() {
 
   const seriesCards = React.useMemo(() => displayEpisodeSeries.map((series): ContentGroup | null => {
     const firstEpisode = series.episodes[0];
-    if (!firstEpisode) return null;
     const latestEpisode = [...series.episodes].sort(
       (left, right) => (right.episodeNumber || 0) - (left.episodeNumber || 0),
     )[0];
@@ -737,11 +739,11 @@ export default function App() {
       title: series.title,
       slug: series.slug,
 
-      visibility: lifecycle.visibilityLabel,
+      visibility: lifecycle.visibility,
       coverUrl: series.coverUrl || undefined,
       description: series.description || null,
       language: chromeLanguage,
-      documents: firstEpisode.documents,
+      documents: firstEpisode?.documents || [],
       engagement: series.episodes.reduce((total, episode) => ({
         likes: total.likes + episode.engagement.likes,
         comments: total.comments + episode.engagement.comments,
@@ -1060,15 +1062,6 @@ export default function App() {
     />
   );
   const currentShelf = entityMeta[entityFilter];
-  const visibleItemCount = React.useMemo(
-    () => new Set(filtered.map((document) => `${document.entity_type}:${document.entity_id}`)).size,
-    [filtered],
-  );
-  const contentSummary = entityFilter === 'blog'
-    ? `${contentGroups.filter((group) => group.kind === 'blog').length} articles · ${episodeSeries.length} series · ${episodeSeries.reduce((total, series) => total + series.episodes.length, 0)} episodes · ${filtered.length} Markdown parts`
-    : entityFilter === 'episode'
-    ? `${episodeSeries.length} series · ${visibleItemCount} episodes · ${filtered.length} Markdown parts`
-    : `${visibleItemCount} items · ${filtered.length} Markdown parts`;
   const statsSyncedAt = dashboard?.stats_synced_at || null;
   const workspaceRefreshLabel = React.useMemo(
     () => formatSyncedAgo(statsSyncedAt).replace(/^Synced /, ''),
@@ -1210,7 +1203,11 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const nextDocuments = await invoke<EditorDocument[]>('list_documents');
+      const [nextDocuments, nextSeries] = await Promise.all([
+        invoke<EditorDocument[]>('list_documents'),
+        invoke<LibrarySeriesSource[]>('list_library_series'),
+      ]);
+      setLibrarySeries(nextSeries);
       setRecoveryCopies(recovery.list());
       savedTranslationContentRef.current = new Map(
         nextDocuments.flatMap((document) => (
@@ -2865,7 +2862,9 @@ export default function App() {
     ? entityFilter === 'blog'
       ? arrangeBlogGroupsForGrid([
           ...displayContentGroups.filter((group) => group.kind === 'blog'),
-          ...seriesCards,
+          ...seriesCards.filter(series => !query.trim()
+            || `${series.title} ${series.description || ''}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+            || filtered.some(document => document.series_slug === series.slug)),
         ])
       : displayContentGroups.filter((group) => group.kind === entityFilter)
     : [];
@@ -3407,26 +3406,6 @@ export default function App() {
       : screen === 'content'
         ? currentShelf.label
         : undefined;
-  const titlebarMeta = screen === 'dashboard' ? (
-    <>
-      <span>{displayedHumanInteractions} human interactions</span>
-      <span>{displayedAiCrawlerInteractions} AI · {displayedSearchCrawlerInteractions} search crawler hits</span>
-      <span>{attentionCount} delivery moments</span>
-      <span>{workspaceChangeCount} uncommitted workspace changes</span>
-      <span>{dirtyIds.size} unsaved Markdown files</span>
-    </>
-  ) : screen === 'settings' ? (
-    <>
-      <span>Manage profile, language, integrations, and archived content</span>
-      <span>Workspace identity stays source-backed · credentials stay local</span>
-    </>
-  ) : (
-    <>
-      <span>{contentSummary}</span>
-      <span>{dirtyIds.size} unsaved</span>
-      {selected && <span>{docPath(selected)}</span>}
-    </>
-  );
   const titlebarOptions = screen === 'settings' ? (
     <button
       type="button"
@@ -3450,7 +3429,7 @@ export default function App() {
         canGoBack={canMoveWorkspaceNavigationHistory(workspaceNavigationHistory, -1)}
         canGoForward={canMoveWorkspaceNavigationHistory(workspaceNavigationHistory, 1)}
         titlebarTitle={titlebarTitle}
-        titlebarMeta={titlebarMeta}
+        titlebarMeta={null}
         titlebarOptions={titlebarOptions}
         onSidebarToggle={() => {
           if (screen === 'settings') {
@@ -3912,7 +3891,7 @@ export default function App() {
                       const canExpandVisitors = trafficMode === 'human' || trafficMode === 'unique';
                       const expanded = canExpandVisitors && expandedTrafficItem === itemKey;
                       return (
-                        <div className="ranking-row" key={itemKey}>
+                        <div className="traffic-result-item" key={itemKey}>
                         <button
                         type="button"
                         className={expanded ? 'traffic-result-row traffic-result-row--expanded' : 'traffic-result-row'}
@@ -4130,6 +4109,10 @@ export default function App() {
           </section>
         ) : (
           <section className={`editor-area ${isMasonryShelf ? 'content-editor-area' : ''}`}>
+            <ContentLibrary enabled={isMasonryShelf && !contentEditorOpen} groups={[...masonryGroups, ...(selectedSeries?.episodes || [])]} series={episodeSeries} selectedSeries={selectedSeries} dirty={dirtyIds.size > 0} onRefresh={loadDocuments}
+              onOpen={group => group.cardKind === 'series' ? setSelectedSeriesId(group.id) : openContentGroup(group)}
+              onPrivate={group => { const series = episodeSeries.find(s => `series:${s.id}` === group.id); if (series) void saveSeriesState(series, {visibility:'private'}); else void saveGroupState(group,{visibility:'private'}); }}>
+
             {isMasonryShelf ? (
               loading ? (
                 <div className="empty">Reading Markdown sources...</div>
@@ -4199,7 +4182,7 @@ export default function App() {
                             {episode.documents.map((document) => renderDocumentRow(document))}
                           </div>
                         ))}
-                      </section>
+          </section>
                     ))
                   ) : (
                     <>
@@ -4311,6 +4294,7 @@ export default function App() {
               </section>
             </div>
             )}
+            </ContentLibrary>
           </section>
         )}
 
@@ -4453,9 +4437,7 @@ export default function App() {
           <section className="resume-editor-workspace series-editor-workspace" role="dialog" aria-modal="true" aria-labelledby="series-editor-title">
             <header className="resume-editor-topbar">
               <div className="resume-editor-title">
-                <span>Episode series</span>
                 <strong id="series-editor-title">{seriesDraft.title || 'Edit series'}</strong>
-                <em>{seriesSource?.relative_path || `content/resources/episode/${seriesEditingSlug}/series.toml`}</em>
               </div>
               {renderLanguageCloseControls({
                 disabled: seriesEditorSaving,
@@ -4480,15 +4462,12 @@ export default function App() {
                   {seriesSettingsPage === 'overview' && (
                     <>
                       <SettingsPageIntro
-                        eyebrow="Series settings"
                         title={seriesSettingsPageTitle('overview')}
-                        description="Set the name and short promise readers see before opening an episode."
                       />
                       <section className="resume-editor-section content-settings-section">
                         <div className="content-settings-grid">
                           <label className="content-settings-field content-settings-field--wide">
                             <span>Series title</span>
-                            <small>The public name used on the series card, detail page, and episode navigation.</small>
                             <input
                               type="text"
                               value={seriesDraft.title}
@@ -4498,7 +4477,6 @@ export default function App() {
                           </label>
                           <label className="content-settings-field content-settings-field--wide">
                             <span>Series summary</span>
-                            <small>Explain the concrete outcome of the series so readers can decide whether to start it.</small>
                             <textarea
                               value={seriesDraft.description}
                               onChange={(event) => setSeriesDraft((current) => ({ ...current, description: event.target.value }))}
@@ -4514,9 +4492,7 @@ export default function App() {
                   {seriesSettingsPage === 'cover' && (
                     <>
                       <SettingsPageIntro
-                        eyebrow="Series settings"
                         title={seriesSettingsPageTitle('cover')}
-                        description="Choose the image that helps readers recognize this series in the blog index."
                       />
                       <section className="resume-editor-section content-settings-section content-settings-cover-section">
                         <div className="content-settings-section-heading">
@@ -4586,9 +4562,7 @@ export default function App() {
                   {seriesSettingsPage === 'publishing' && (
                     <>
                       <SettingsPageIntro
-                        eyebrow="Series settings"
                         title={seriesSettingsPageTitle('publishing')}
-                        description="Change whether the episodes in this series are available on the public site."
                       />
                       <section className="resume-editor-section content-settings-section">
                         <div className="content-settings-section-heading">
@@ -4607,21 +4581,17 @@ export default function App() {
                   {seriesSettingsPage === 'source' && (
                     <>
                       <SettingsPageIntro
-                        eyebrow="Series settings"
                         title={seriesSettingsPageTitle('source')}
-                        description="Inspect the stable identifier and the file that owns this series metadata."
                       />
                       <section className="resume-editor-section content-settings-section">
                         <div className="content-settings-grid">
                           <label className="content-settings-field">
                             <span>Series slug</span>
-                            <small>The stable folder and URL identifier. Rename it in source control to avoid broken episode links.</small>
                             <input type="text" value={seriesEditingSlug} disabled />
                           </label>
 
                           <label className="content-settings-field content-settings-field--wide">
                             <span>Metadata source</span>
-                            <small>The TOML file read and written by this settings editor.</small>
                             <input type="text" value={seriesSource?.relative_path || `content/resources/episode/${seriesEditingSlug}/series.toml`} disabled />
                           </label>
                         </div>
@@ -4677,12 +4647,6 @@ export default function App() {
                   <span className={badgeClass(selected.entity_type)}>{selected.entity_type}</span>
                   <div>
                     <h2 id="content-editor-title">{selectedContentGroup.title}</h2>
-                    <p>
-                      {selected.entity_type === 'episode' && selected.series_title
-                        ? `${selected.series_title} · Episode ${selected.episode_number ?? '?'} · `
-                        : ''}
-                      {selectedContentGroup.slug} · {selectedContentGroup.documents.length} Markdown parts
-                    </p>
                   </div>
                 </div>
                 {contentRailPanel === 'parts' && (
@@ -5033,9 +4997,7 @@ export default function App() {
                     <section className="content-settings-panel content-settings-panel--metadata" aria-label="Content settings">
                       <header className="resume-editor-topbar content-settings-topbar">
                         <div className="resume-editor-title">
-                          <span>{selected.entity_type.toUpperCase()} SETTINGS</span>
                           <strong>{selectedContentGroup.title}</strong>
-                          <em>{selectedContentGroup.slug}</em>
                         </div>
                       </header>
                       <div className="resume-editor-body content-settings-body">
@@ -5052,15 +5014,12 @@ export default function App() {
                             {contentSettingsPage === 'overview' && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow={`${selected.entity_type} settings`}
                                   title={contentSettingsPageTitle('overview')}
-                                  description="Set the promise readers see in listings, search results, and the page header."
                                 />
                                 <section className="resume-editor-section content-settings-section">
                                   <div className="content-settings-grid">
                                     <label className="content-settings-field content-settings-field--wide">
                                       <span>Title</span>
-                                      <small>The public name shown on cards, page headings, and browser metadata.</small>
                                       <input
                                         type="text"
                                         value={metadataDraft.title}
@@ -5071,7 +5030,6 @@ export default function App() {
                                     {selectedMetadataSummaryLabel && (
                                       <label className="content-settings-field content-settings-field--wide">
                                         <span>{selectedMetadataSummaryLabel}</span>
-                                        <small>A concise explanation of the problem and outcome, used where readers decide whether to open this page.</small>
                                         <textarea
                                           rows={5}
                                           value={metadataDraft.description}
@@ -5084,7 +5042,6 @@ export default function App() {
                                       <>
                                         <div className="content-settings-control">
                                           <span>Moment type</span>
-                                          <small>The semantic event class used by timeline and query surfaces.</small>
                                           <Select
                                             aria-label="Moment type"
                                             value={metadataDraft.moment_type}
@@ -5101,7 +5058,6 @@ export default function App() {
                                         </div>
                                         <div className="content-settings-control">
                                           <span>Priority</span>
-                                          <small>Editorial importance; independent from lifecycle and visibility.</small>
                                           <Select
                                             aria-label="Moment priority"
                                             value={metadataDraft.priority}
@@ -5118,7 +5074,6 @@ export default function App() {
                                         </div>
                                         <label className="content-settings-field content-settings-field--wide">
                                           <span>Tags</span>
-                                          <small>Comma-separated semantic topics. A leading # is normalized automatically.</small>
                                           <Input
                                             value={metadataDraft.tags}
                                             disabled={metadataSavingId === selectedContentGroup.id}
@@ -5139,9 +5094,7 @@ export default function App() {
                             {contentSettingsPage === 'cover' && selectedMetadataCoverLabel && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow={`${selected.entity_type} settings`}
                                   title={contentSettingsPageTitle('cover')}
-                                  description="Choose the visual readers use to recognize this page before they open it."
                                 />
                                 <section className="resume-editor-section content-settings-section content-settings-cover-section">
                                   <div className="content-settings-section-heading">
@@ -5159,7 +5112,6 @@ export default function App() {
                                   {selectedContentGroup.kind === 'project' && (
                                     <div className="content-settings-control">
                                       <span>Cover source</span>
-                                      <small>Use an uploaded image, or keep the cover tied to a live website.</small>
                                       <div className="content-cover-type-group" role="radiogroup" aria-label="Cover source">
                                         <button
                                           type="button"
@@ -5204,7 +5156,6 @@ export default function App() {
                                   ) : selectedContentGroup.kind === 'project' ? (
                                     <label className="content-settings-field content-settings-field--wide">
                                       <span>Website address</span>
-                                      <small>The live website used when the project cover is refreshed.</small>
                                       <Input
                                         type="url"
                                         value={metadataDraft.cover_website_url}
@@ -5247,15 +5198,12 @@ export default function App() {
                             {contentSettingsPage === 'links' && selectedContentGroup.kind === 'project' && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow={`${selected.entity_type} settings`}
                                   title={contentSettingsPageTitle('links')}
-                                  description="Connect the project page to the places where readers can inspect the work or try it."
                                 />
                                 <section className="resume-editor-section content-settings-section">
                                   <div className="content-settings-grid">
                                     <label className="content-settings-field content-settings-field--wide">
                                       <span>Repository</span>
-                                      <small>The source repository opened from the project page.</small>
                                       <Input
                                         type="text"
                                         value={metadataDraft.github_url}
@@ -5266,7 +5214,6 @@ export default function App() {
                                     </label>
                                     <label className="content-settings-field content-settings-field--wide">
                                       <span>Live demo</span>
-                                      <small>The working product, paper companion, or deployed result readers can open directly.</small>
                                       <Input
                                         type="text"
                                         value={metadataDraft.demo_url}
@@ -5283,9 +5230,7 @@ export default function App() {
                             {contentSettingsPage === 'discovery' && selectedContentGroup.kind === 'blog' && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow={`${selected.entity_type} settings`}
                                   title={contentSettingsPageTitle('discovery')}
-                                  description="Connect this article to the work behind it, then preserve that identity across the page, search previews, and downloaded images."
                                 />
                                 <ArticleDiscoverySettings
                                   targetUri={`silan://resources/blog/${selectedContentGroup.slug}`}
@@ -5305,9 +5250,7 @@ export default function App() {
                             {contentSettingsPage === 'relations' && (selectedContentGroup.kind === 'blog' || selectedContentGroup.kind === 'moment') && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow={`${selected.entity_type} settings`}
                                   title={contentSettingsPageTitle('relations')}
-                                  description="Convert durable notes into publishable resources, or keep independent resources connected by typed source relations."
                                 />
                                 {selectedContentGroup.kind === 'blog' && (
                                   <section className="resume-editor-section content-settings-section">
@@ -5423,11 +5366,7 @@ export default function App() {
                             {contentSettingsPage === 'publishing' && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow={`${selected.entity_type} settings`}
                                   title={contentSettingsPageTitle('publishing')}
-                                  description={selectedContentGroup.kind === 'moment'
-                                    ? 'Manage progress and public visibility as independent Moment states.'
-                                    : 'Manage the authored lifecycle and public visibility without collapsing them into one field.'}
                                 />
                                 <section className="resume-editor-section content-settings-section">
                                   <div className="content-settings-section-heading">
@@ -5447,7 +5386,6 @@ export default function App() {
                                       <span className="content-publishing-switch" aria-hidden="true"><i /></span>
                                       <span className="content-publishing-pin-copy">
                                         <strong>Feature project</strong>
-                                        <small>Show this project on the website home page after the next deployment. The project must be public.</small>
                                       </span>
                                     </label>
                                   )}
@@ -5464,25 +5402,20 @@ export default function App() {
                             {contentSettingsPage === 'source' && (
                               <>
                                 <SettingsPageIntro
-                                  eyebrow={`${selected.entity_type} settings`}
                                   title={contentSettingsPageTitle('source')}
-                                  description="Inspect the stable identifiers and authored file behind this page."
                                 />
                                 <section className="resume-editor-section content-settings-section">
                                   <div className="content-settings-grid">
                                     <label className="content-settings-field">
                                       <span>Slug</span>
-                                      <small>The stable URL and resource identifier. Rename it in source control to avoid broken links.</small>
                                       <input type="text" value={selectedContentGroup.slug} disabled />
                                     </label>
                                     <label className="content-settings-field">
                                       <span>Content type</span>
-                                      <small>Determines the schema, editor behavior, and public rendering used for this resource.</small>
                                       <input type="text" value={selected.entity_type} disabled />
                                     </label>
                                     <label className="content-settings-field content-settings-field--wide">
                                       <span>Metadata source</span>
-                                      <small>The Markdown file read and written by this settings editor.</small>
                                       <input type="text" value={selectedMetadataTranslation?.source_path || ''} disabled />
                                     </label>
                                   </div>

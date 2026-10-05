@@ -531,6 +531,10 @@ impl DesktopWorkspace {
         })
     }
 
+    pub(crate) fn content_library(&self) -> silan_viking_app::library::ContentLibrary {
+        silan_viking_app::library::ContentLibrary::new(self.workspace_content.content_root(), &self.db_path)
+    }
+
     pub(crate) fn list_documents(&self) -> Result<Vec<EditorDocument>, String> {
         let stats = ContentEngagementSnapshot::read(&self.db_path);
         Ok(self
@@ -999,6 +1003,16 @@ impl DesktopWorkspace {
             .import_asset_bytes(&document.id, file_name, bytes)
             .map_err(|error| error.to_string())?;
         Ok(self.imported_media_asset(asset))
+    }
+
+    pub(crate) fn generate_cover_brief(
+        &self,
+        target_uri: &str,
+        language: &str,
+        api_key: &OpenAiApiKey,
+    ) -> Result<CoverBrief, String> {
+        self.cover_workspace
+            .generate_brief(target_uri, language, api_key)
     }
 
     pub(crate) fn generate_cover_asset(
@@ -1946,6 +1960,9 @@ fn map_editable_document(
         title,
         description,
         series_slug,
+        series_title,
+        series_description,
+        series_cover_url,
         episode_number,
         visibility,
         updated_at,
@@ -1983,9 +2000,9 @@ fn map_editable_document(
                 entity_id: item_id.clone(),
                 series_id: series_slug.clone(),
                 series_slug: series_slug.clone(),
-                series_title: None,
-                series_description: None,
-                series_cover_url: None,
+                series_title: series_title.clone(),
+                series_description: series_description.clone(),
+                series_cover_url: series_cover_url.clone(),
                 episode_number,
                 slug: slug.clone(),
                 role,
@@ -2308,6 +2325,28 @@ fn save_metadata_input(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn editor_projection_preserves_series_metadata() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../engine/tests/fixtures/content");
+        let document = WorkspaceContent::open(root)
+            .expect("fixture workspace")
+            .editable_documents()
+            .expect("documents")
+            .into_iter()
+            .find(|document| document.content_type == "episode")
+            .expect("episode");
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let engagement = ContentEngagementSnapshot::read(&directory.path().join("stats.db"));
+        let documents = map_editable_document(document, &engagement);
+        assert!(!documents.is_empty());
+        for document in documents {
+            assert_eq!(document.series_title.as_deref(), Some("Tutorial Series"));
+            assert_eq!(document.series_description.as_deref(), Some("A walkthrough series."));
+            assert_eq!(document.series_cover_url.as_deref(), Some("silan://resources/episode/tutorial-series/assets/cover.png"));
+        }
+    }
 
     #[test]
     fn content_visibility_accepts_only_public_or_private() {

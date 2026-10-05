@@ -22,7 +22,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     <input
       ref={ref}
       {...dsRoot}
-      className={cn(controlClasses, 'h-9 px-3', className)}
+      className={cn(controlClasses, 'h-11 px-3', className)}
       {...props}
     />
   ),

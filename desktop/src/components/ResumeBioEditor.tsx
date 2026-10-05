@@ -95,7 +95,6 @@ export function ResumeBioEditor({
               <FileText size={14} />
               <div className="document-copy">
                 <strong>Bio</strong>
-                <small>summary</small>
               </div>
               {dirty && <span className="dirty-dot" />}
             </div>

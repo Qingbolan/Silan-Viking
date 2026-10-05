@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   createCoverBrief,
   generateCoverAsset,
+  generateCoverBrief,
+  mergeGeneratedCoverBrief,
   initialCoverGenerationState,
   transitionCoverGeneration,
   type CoverGenerationRequest,
@@ -33,14 +35,11 @@ function CoverGenerationDialog({
           <span className="ai-cover-progress-scan" />
         </div>
         <div className="ai-cover-progress-copy" aria-live="polite">
-          <span>AI image generation</span>
-          <h3 id="ai-cover-progress-title">Composing your cover</h3>
-          <p>{headline || 'Building the visual hierarchy and final image.'}</p>
+          <h3 id="ai-cover-progress-title">正在生成封面</h3>
+          {headline && <p>{headline}</p>}
           <div className="ai-cover-progress-status">
             <span aria-hidden="true"><i /><i /><i /></span>
-            <strong>Generating image</strong>
           </div>
-          <small>This can take a minute. Keep this window open.</small>
         </div>
       </section>
     </div>,
@@ -89,6 +88,34 @@ export function AiCoverGenerator({
   const paidAi = usePaidAiGate();
   const availability = paidAi.availability('cover_generation');
 
+  const [briefPhase, setBriefPhase] = React.useState<'idle' | 'preparing' | 'ready' | 'failed'>('idle');
+  const [briefError, setBriefError] = React.useState('');
+  const briefRequest = React.useRef(0);
+  const briefInFlight = React.useRef(false);
+  React.useEffect(() => () => { briefRequest.current += 1; }, [target.uri]);
+  const prepareBrief = async () => {
+    if (disabled || briefInFlight.current) return;
+    const availability = paidAi.availability('cover_brief');
+    if (!availability.enabled) { setBriefError(availability.reason || 'Configure a text engine to fill this brief.'); return; }
+    briefInFlight.current = true;
+    const request = ++briefRequest.current;
+    const baseline = brief;
+    setBriefPhase('preparing'); setBriefError('');
+    try {
+      if (!await paidAi.confirm({ kind: 'cover_brief', action: 'Fill the cover brief', scope: `saved source for “${title}”` })) {
+        if (request === briefRequest.current) setBriefPhase('idle');
+        return;
+      }
+      if (request !== briefRequest.current) return;
+      const generated = await generateCoverBrief(target, brief.language);
+      if (request !== briefRequest.current) return;
+      setBrief(current => mergeGeneratedCoverBrief(current, baseline, generated));
+      setBriefPhase('ready');
+    } catch (error) {
+      if (request === briefRequest.current) { setBriefError(String(error)); setBriefPhase('failed'); }
+    } finally { briefInFlight.current = false; }
+  };
+
   const candidateUrl = generation.asset
     ? toWebviewMediaUrl(generation.asset.local_path || generation.asset.uri)
     : '';
@@ -97,6 +124,7 @@ export function AiCoverGenerator({
   const generating = generation.phase === 'generating';
   const canGenerate = Boolean(
     availability.enabled
+    && briefPhase !== 'preparing'
     && brief.headline.trim()
     && brief.value.trim(),
   );
@@ -143,19 +171,22 @@ export function AiCoverGenerator({
             type="button"
             disabled={disabled}
             aria-expanded="false"
-            onClick={() => setOptionsVisible(true)}
+            onClick={() => { setOptionsVisible(true); if (briefPhase !== 'ready') void prepareBrief(); }}
           >
             Generate with AI
           </button>
         </div>
       ) : (
         <>
+      {briefError && <p className="ai-cover-error" role="status">{briefError} <button type="button" onClick={paidAi.openSettings}>AI 设置</button></p>}
       <header className="ai-cover-generator-header">
         <div>
           <span>AI cover</span>
-          <strong>XHS editorial method</strong>
         </div>
         <div className="ai-cover-header-actions">
+          <button type="button" disabled={disabled || generating || briefPhase === 'preparing'} onClick={() => void prepareBrief()}>
+            {briefPhase === 'preparing' ? 'AI 填写中…' : 'AI 重新填写'}
+          </button>
           {availability.settingsFixable ? (
             <button
               type="button"
@@ -193,7 +224,6 @@ export function AiCoverGenerator({
       <div className="ai-cover-fields">
         <label className="ai-cover-field">
           <span>Cover headline</span>
-          <small className="ai-cover-field-help">The one sentence a reader should understand at thumbnail size.</small>
           <input
             type="text"
             value={brief.headline}
@@ -204,7 +234,6 @@ export function AiCoverGenerator({
         </label>
         <label className="ai-cover-field">
           <span>Reader</span>
-          <small className="ai-cover-field-help">Name the person who should immediately recognize this as relevant.</small>
           <input
             type="text"
             value={brief.audience}
@@ -214,7 +243,6 @@ export function AiCoverGenerator({
         </label>
         <label className="ai-cover-field ai-cover-field--wide">
           <span>Problem and value</span>
-          <small className="ai-cover-field-help">State the practical problem and the result this {subjectLabel} delivers.</small>
           <textarea
             rows={3}
             value={brief.value}
@@ -224,7 +252,6 @@ export function AiCoverGenerator({
         </label>
         <label className="ai-cover-field ai-cover-field--wide">
           <span>Concrete visual</span>
-          <small className="ai-cover-field-help">Describe a real scene, object, or material that can carry the idea visually.</small>
           <textarea
             rows={2}
             value={brief.visualDirection}
@@ -239,7 +266,6 @@ export function AiCoverGenerator({
         <div className="ai-cover-option">
           <div className="ai-cover-option-copy">
             <span>Format</span>
-            <small>Wide fits website cards; portrait can be reused on social platforms.</small>
           </div>
           <div className="ai-cover-segmented" role="radiogroup" aria-label="Cover format">
             <button
@@ -267,7 +293,6 @@ export function AiCoverGenerator({
         <div className="ai-cover-option">
           <div className="ai-cover-option-copy">
             <span>Quality</span>
-            <small>Medium is the practical default. High takes longer and costs more.</small>
           </div>
           <div className="ai-cover-segmented ai-cover-segmented--quality" role="radiogroup" aria-label="Image quality">
             {(['low', 'medium', 'high'] as const).map((value) => (
@@ -306,7 +331,6 @@ export function AiCoverGenerator({
           </div>
           <div>
             <span>Generated candidate</span>
-            <small>Review the image, then choose it as the current cover.</small>
             <button
               type="button"
               disabled={disabled || generating || generation.phase === 'applied'}

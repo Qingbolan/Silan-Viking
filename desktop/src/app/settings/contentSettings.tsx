@@ -29,24 +29,23 @@ export type RelationTargetKind = 'blog' | 'project';
 type SettingsPageItem<Page extends string> = {
   id: Page;
   label: string;
-  description: string;
 };
 
 export const contentSettingsPages: Array<SettingsPageItem<ContentSettingsPage>> = [
-  { id: 'overview', label: 'Overview', description: 'Title and summary' },
-  { id: 'cover', label: 'Cover', description: 'Preview and generate' },
-  { id: 'discovery', label: 'Discovery', description: 'Resources and image credit' },
-  { id: 'links', label: 'Links', description: 'Repository and demo' },
-  { id: 'relations', label: 'Relations', description: 'Convert and connect' },
-  { id: 'publishing', label: 'Publishing', description: 'Visibility and placement' },
-  { id: 'source', label: 'Source', description: 'Identifiers and files' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'cover', label: 'Cover' },
+  { id: 'discovery', label: 'Discovery' },
+  { id: 'links', label: 'Links' },
+  { id: 'relations', label: 'Relations' },
+  { id: 'publishing', label: 'Publishing' },
+  { id: 'source', label: 'Source' },
 ];
 
 export const seriesSettingsPages: Array<SettingsPageItem<SeriesSettingsPage>> = [
-  { id: 'overview', label: 'Overview', description: 'Title and summary' },
-  { id: 'cover', label: 'Cover', description: 'Upload or generate' },
-  { id: 'publishing', label: 'Publishing', description: 'Visibility and placement' },
-  { id: 'source', label: 'Source', description: 'Identifier and file' },
+  { id: 'overview', label: 'Overview' },
+  { id: 'cover', label: 'Cover' },
+  { id: 'publishing', label: 'Publishing' },
+  { id: 'source', label: 'Source' },
 ];
 
 /**
@@ -96,7 +95,7 @@ export function SettingsPageNavigation<Page extends string>({
 }) {
   return (
     <nav className="content-settings-page-nav" aria-label={label}>
-      {items.map(({ id, label: itemLabel, description }) => (
+      {items.map(({ id, label: itemLabel }) => (
         <button
           key={id}
           type="button"
@@ -106,7 +105,6 @@ export function SettingsPageNavigation<Page extends string>({
         >
           <span>
             <strong>{itemLabel}</strong>
-            <small>{description}</small>
           </span>
         </button>
       ))}
@@ -115,19 +113,13 @@ export function SettingsPageNavigation<Page extends string>({
 }
 
 export function SettingsPageIntro({
-  eyebrow,
   title,
-  description,
 }: {
-  eyebrow: string;
   title: string;
-  description: string;
 }) {
   return (
     <header className="content-settings-page-intro">
-      <span>{eyebrow}</span>
       <h2>{title}</h2>
-      <p>{description}</p>
     </header>
   );
 }

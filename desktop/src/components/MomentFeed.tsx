@@ -1,8 +1,7 @@
-import { ArrowUpRight, Heart, MessageCircle } from 'lucide-react';
+import { Heart, LockKeyhole, MessageCircle } from 'lucide-react';
 import { contentGroupTags, contentGroupUpdatedAt, localizedDocumentTitle, selectPrimaryDocument, translationPreview } from '../lib/content';
 import { contentVisibilityFor } from '../lib/contentVisibility';
 import { toWebviewMediaUrl } from '../lib/media';
-import { Badge } from './ds/Badge';
 import type { ContentGroup, MomentsSettings } from '../types';
 
 type MomentFeedProps = {
@@ -77,7 +76,7 @@ export function MomentFeed({
               {[...days].sort(([, left], [, right]) =>
                 Number(right.items.some((item) => item.pinned)) - Number(left.items.some((item) => item.pinned)),
               ).map(([key, { date, items }]) => (
-                <li className="moments-timeline-row" key={key}>
+                <li className="moments-timeline-row" key={key} data-visibility={items.every(item => item.visibility === 'private') ? 'private' : undefined}>
                   <div className="moments-date">
                     <time dateTime={date ? key : undefined}>{date?.getDate() ?? '—'}</time>
                     {date && <span>{date.toLocaleDateString('en-SG', { month: 'short' })}</span>}
@@ -91,27 +90,24 @@ export function MomentFeed({
                       const visibility = contentVisibilityFor(group.visibility);
                       const tags = contentGroupTags(group, 3);
                       return (
-                        <article className="moments-post" key={group.id}>
+                        <article className="moments-post" key={group.id} data-visibility={visibility.visibility}>
                           <button type="button" className="moments-entry" onClick={() => onOpen(group)} aria-label={`Edit ${title}`}>
                             {group.pinned && <span className="moments-post-pin">Pin</span>}
                             <div className="moments-entry-heading">
                               <h3>{title}</h3>
-                              <ArrowUpRight className="moments-open-arrow" size={14} aria-hidden="true" />
+                              {visibility.visibility === 'private' && <span className="moments-private-icon" role="img" aria-label="私密" title="私密"><LockKeyhole size={14} aria-hidden="true" /></span>}
                             </div>
                             {preview && <p>{preview}</p>}
                             {tags.length > 0 && <div className="moments-tags">
                               {tags.map((tag) => <span key={tag}>#{tag}</span>)}
                             </div>}
                           </button>
-                          <div className="moments-post-footer">
-                            <Badge size="sm" tone={visibility.visibility === 'public' ? 'success' : 'neutral'}>
-                              {visibility.visibilityLabel}
-                            </Badge>
+                          {(group.engagement.likes > 0 || group.engagement.comments > 0) && <div className="moments-post-footer">
                             <div className="moments-engagement" aria-label={`${group.engagement.likes} likes and ${group.engagement.comments} comments`}>
-                              <span><Heart size={12} aria-hidden="true" />{group.engagement.likes}</span>
-                              <span><MessageCircle size={12} aria-hidden="true" />{group.engagement.comments}</span>
+                              {group.engagement.likes > 0 && <span><Heart size={12} aria-hidden="true" />{group.engagement.likes}</span>}
+                              {group.engagement.comments > 0 && <span><MessageCircle size={12} aria-hidden="true" />{group.engagement.comments}</span>}
                             </div>
-                          </div>
+                          </div>}
                         </article>
                       );
                     })}

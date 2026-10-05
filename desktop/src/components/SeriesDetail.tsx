@@ -1,141 +1,43 @@
-import { ArrowLeft, FileText, Heart, MessageCircle, PencilLine } from 'lucide-react';
+import { ArrowLeft, FolderOpen, PencilLine } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { badgeClass, contentGroupUpdatedAt, selectPrimaryDocument, translationPreview } from '../lib/content';
-import { contentStateSummary } from '../lib/contentVisibility';
-import { formatShortDate } from '../lib/format';
+import { selectPrimaryDocument, translationPreview } from '../lib/content';
+import { cardExcerpt } from '../lib/cardPresentation';
 import { toWebviewMediaUrl } from '../lib/media';
 import type { ContentGroup, EpisodeGroup, EpisodeSeries } from '../types';
-
 type SeriesDetailProps = {
-  series: EpisodeSeries;
-  managementEnabled: boolean;
-  onBack: () => void;
-  onEditSeries: (series: EpisodeSeries) => void;
-  onEditEpisode: (episode: EpisodeGroup) => void;
-  renderStateControls: (group: ContentGroup, variant?: 'card' | 'header') => ReactNode;
-  seriesStateControls?: ReactNode;
+    series: EpisodeSeries;
+    managementEnabled: boolean;
+    onBack: () => void;
+    onEditSeries: (series: EpisodeSeries) => void;
+    onEditEpisode: (episode: EpisodeGroup) => void;
+    renderStateControls: (group: ContentGroup, variant?: 'card' | 'header') => ReactNode;
+    seriesStateControls?: ReactNode;
 };
-
-const seriesEngagement = (series: EpisodeSeries) => series.episodes.reduce((total, episode) => ({
-  likes: total.likes + episode.engagement.likes,
-  comments: total.comments + episode.engagement.comments,
-}), { likes: 0, comments: 0 });
-
-export function SeriesDetail({
-  series,
-  managementEnabled,
-  onBack,
-  onEditSeries,
-  onEditEpisode,
-  renderStateControls,
-  seriesStateControls,
-}: SeriesDetailProps) {
-  const coverUrl = toWebviewMediaUrl(series.coverUrl);
-  const engagement = seriesEngagement(series);
-  const latestDate = series.episodes.reduce((latest, episode) => {
-    const updatedAt = contentGroupUpdatedAt(episode);
-    return !latest || updatedAt > latest ? updatedAt : latest;
-  }, '');
-
-  return (
-    <div className="series-detail">
-      <header className="series-detail-head">
-        <button type="button" className="series-back" onClick={onBack}>
-          <ArrowLeft size={15} />
-          Back
-        </button>
-        <div>
-          <span className={badgeClass('episode')}>Series</span>
-          <h2>{series.title}</h2>
-          <p>
-            {series.episodes.length} episodes
-            {latestDate ? ` · Updated ${formatShortDate(latestDate)}` : ''}
-          </p>
-          <div
-            className="series-engagement"
-            aria-label={`${engagement.likes} likes and ${engagement.comments} comments across this series`}
-          >
-            <span title={`${engagement.likes} likes across this series`}>
-              <Heart size={14} />
-              {engagement.likes}
-            </span>
-            <span title={`${engagement.comments} comments across this series`}>
-              <MessageCircle size={14} />
-              {engagement.comments}
-            </span>
-          </div>
-          {series.description && <small>{series.description}</small>}
-          {coverUrl && (
-            <img className="series-cover" src={coverUrl} alt="" loading="lazy" />
-          )}
-        </div>
-        {managementEnabled && (
-          <div className="series-detail-actions management-controls-enter">
-            <button type="button" className="series-edit-button" onClick={() => onEditSeries(series)}>
-              <PencilLine size={13} />
-              Edit series
-            </button>
-            {seriesStateControls}
-          </div>
-        )}
+export function SeriesDetail({ series, managementEnabled, onBack, onEditSeries, onEditEpisode, renderStateControls, seriesStateControls }: SeriesDetailProps) {
+    const coverUrl = toWebviewMediaUrl(series.coverUrl);
+    return <div className="series-detail" data-series-target={series.slug}>
+    <nav className="series-folder-toolbar"><button type="button" onClick={onBack}><ArrowLeft size={16}/>返回</button><span><FolderOpen size={16}/>{series.episodes.length} 篇</span><button type="button" onClick={() => onEditSeries(series)} aria-label="编辑系列"><PencilLine size={16}/></button></nav>
+    <section className="series-folder" data-library-id={`series:${series.id}`}>
+      <header className="series-folder-head">
+        {coverUrl && <img src={coverUrl} alt="" className="series-folder-cover"/>}
+        <div><h2>{series.title}</h2>{series.description && <p>{series.description}</p>}{managementEnabled && seriesStateControls}</div>
       </header>
-
       <div className="series-episode-list">
-        {series.episodes.map((episode) => {
-          const primary = selectPrimaryDocument(episode);
-          const excerpt = translationPreview(primary, episode.language);
-          const date = formatShortDate(contentGroupUpdatedAt(episode));
-
-          return (
-            <article className="series-episode-card" key={episode.id}>
-              <button type="button" className="series-episode-open" onClick={() => onEditEpisode(episode)}>
-                <span className="series-episode-number">
-                  {episode.episodeNumber != null ? `#${episode.episodeNumber}` : <FileText size={15} />}
-                </span>
-                <span className="series-episode-copy">
-                  <span className="series-episode-meta">
-                    <span>{date || 'No date'}</span>
-                    <span className="content-state-pills">
-                      {contentStateSummary(episode.visibility).split(' · ').map((part) => (
-                        <span
-                          key={part}
-                          data-visibility={part.toLowerCase().includes('private') ? 'private' : undefined}
-                        >
-                          {part}
-                        </span>
-                      ))}
-                    </span>
-                    <span
-                      className="series-episode-engagement"
-                      aria-label={`${episode.engagement.likes} likes and ${episode.engagement.comments} comments`}
-                    >
-                      <span title={`${episode.engagement.likes} likes`}>
-                        <Heart size={13} />
-                        {episode.engagement.likes}
-                      </span>
-                      <span title={`${episode.engagement.comments} comments`}>
-                        <MessageCircle size={13} />
-                        {episode.engagement.comments}
-                      </span>
-                    </span>
-                  </span>
-                  <strong>{episode.title}</strong>
-                  {excerpt && <small>{excerpt}</small>}
-                </span>
-              </button>
-              {managementEnabled && (
-                <div className="series-episode-actions management-controls-enter">
-                  {renderStateControls(episode, 'card')}
-                  <button type="button" className="series-edit-button" onClick={() => onEditEpisode(episode)}>
-                    <PencilLine size={13} />
-                    Edit
-                  </button>
-                </div>
-              )}
-            </article>
-          );
+        {series.episodes.map(episode => {
+            const primary = selectPrimaryDocument(episode);
+            const excerpt = cardExcerpt(episode.title, episode.description || translationPreview(primary, episode.language));
+            const cover = toWebviewMediaUrl(primary?.cover_url);
+            return <article key={episode.id} className="series-episode-card" data-visibility={episode.visibility} data-library-id={episode.id} draggable>
+            <button type="button" className="series-episode-open" onClick={() => onEditEpisode(episode)}>
+              <span className="series-episode-number">{String(episode.episodeNumber ?? '').padStart(2, '0')}</span>
+              <span className="series-episode-copy"><strong>{episode.title}</strong>{excerpt && <span>{excerpt}</span>}</span>
+              {cover && <img src={cover} alt=""/>}
+            </button>
+            {managementEnabled && <div className="series-episode-actions">{renderStateControls(episode, 'card')}</div>}
+          </article>;
         })}
+        {!series.episodes.length && <div className="series-folder-empty"><FolderOpen size={28}/><span>拖入文章或 Markdown 文件</span></div>}
       </div>
-    </div>
-  );
+    </section>
+  </div>;
 }

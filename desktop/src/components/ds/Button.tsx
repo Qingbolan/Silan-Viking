@@ -21,7 +21,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Solid NUS-orange — the single emphasised action on a surface.
+        // Solid ink — the single emphasised action on a surface.
         primary: 'bg-ds-primary text-ds-primary-fg hover:bg-ds-primary-hover active:bg-ds-primary-active',
         // Filled neutral surface with a hairline.
         secondary: 'bg-ds-surface-2 border border-ds-border text-ds-fg hover:bg-ds-surface-3',
@@ -32,8 +32,8 @@ const buttonVariants = cva(
         destructive: 'bg-ds-error text-white hover:brightness-[0.92]',
       },
       size: {
-        sm: 'h-7 px-3 gap-1.5 rounded-ds-sm text-ds-xs [&_svg]:size-3.5',
-        md: 'h-8 px-3 gap-1.5 rounded-ds-md text-ds-sm [&_svg]:size-4',
+        sm: 'h-9 px-3 gap-2 rounded-ds-md text-ds-sm [&_svg]:size-3.5',
+        md: 'h-11 px-4 gap-2 rounded-ds-md text-ds-sm [&_svg]:size-4',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

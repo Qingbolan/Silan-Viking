@@ -578,9 +578,7 @@ function ResumeProfileView({
 }
 
 function ResumeEditorWorkspace({
-  eyebrow,
   title,
-  subtitle,
   saving,
   saveLabel,
   language,
@@ -590,9 +588,7 @@ function ResumeEditorWorkspace({
   onSave,
   onCancel,
 }: {
-  eyebrow: string;
   title: string;
-  subtitle: string;
   saving: boolean;
   saveLabel: string;
   language: string;
@@ -606,9 +602,7 @@ function ResumeEditorWorkspace({
     <div className="resume-editor-workspace" role="dialog" aria-modal="true" aria-label={title}>
       <div className="resume-editor-topbar">
         <div className="resume-editor-title">
-          <span>{eyebrow}</span>
           <strong>{title}</strong>
-          <em>{subtitle}</em>
         </div>
         <LanguageCloseControls
           className="resume-editor-language-close"
@@ -1184,9 +1178,7 @@ export function ResumePage({
 
       {profileDraft && profileSource && (
         <ResumeEditorWorkspace
-          eyebrow={`${language.toUpperCase()} resume`}
           title={profileDraft.full_name || 'Profile'}
-          subtitle="Profile header"
           saving={savingProfile}
           saveLabel="Save profile"
           language={language}
@@ -1227,9 +1219,7 @@ export function ResumePage({
 
       {editing && editingSection && (
         <ResumeEditorWorkspace
-          eyebrow={`${language.toUpperCase()} ${roleLabels[editingSection.role] || editingSection.role}`}
           title={editingTitle}
-          subtitle={editing.draft.isNew ? 'New resume block' : editing.draft.entry_id}
           saving={savingRole === editingSection.role}
           saveLabel="Save block"
           language={language}

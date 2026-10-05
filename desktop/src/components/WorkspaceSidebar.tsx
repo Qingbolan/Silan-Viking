@@ -176,7 +176,6 @@ export function WorkspaceSidebar({
             </span>
             <span className="sidebar-account-copy">
               <strong>{displayName}</strong>
-              <small>Silan-Viking workspace</small>
             </span>
             <span className="sidebar-account-settings" aria-hidden="true">
               <SidebarGlyph name="settings" size={16} />

@@ -58,7 +58,6 @@ export function ContentRelationManager({
     <section className="resume-editor-section content-settings-section content-relation-manager">
       <div className="content-settings-section-heading">
         <h3>Linked content</h3>
-        <p>Review typed links from this moment, open their target, or remove a reference without memorizing slugs.</p>
       </div>
 
       {relations.length === 0 ? (
@@ -119,7 +118,6 @@ export function ContentRelationManager({
       <div className="content-relation-create" aria-label="Add content reference">
         <div className="content-settings-control">
           <span>Target type</span>
-          <small>Choose the resource collection first.</small>
           <Select
             aria-label="Relation target type"
             value={targetKind}
@@ -132,7 +130,6 @@ export function ContentRelationManager({
         </div>
         <div className="content-settings-control content-relation-resource-control">
           <span>Resource</span>
-          <small>Select an existing active resource; its authored slug remains the stable link target.</small>
           <Select
             aria-label="Relation target resource"
             value={targetSlug}

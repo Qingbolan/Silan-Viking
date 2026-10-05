@@ -446,6 +446,18 @@ pub(crate) async fn edit_markdown_selection(
 }
 
 #[tauri::command]
+pub(crate) async fn generate_cover_brief(
+    target_uri: String,
+    language: String,
+) -> Result<silan_viking_app::CoverBrief, String> {
+    run_background("AI cover brief", move || {
+        let key = crate::ai_engines::openai_key(silan_viking_app::ai_engine::AiCapability::Text)?;
+        DesktopWorkspace::from_environment()?.generate_cover_brief(&target_uri, &language, &key)
+    })
+    .await
+}
+
+#[tauri::command]
 pub(crate) async fn generate_cover_asset(
     target_uri: String,
     language: String,
@@ -861,4 +873,13 @@ pub(crate) async fn test_ai_engine(
         crate::ai_engines::test(capability)
     })
     .await
+}
+
+#[tauri::command]
+pub(crate) fn list_library_series() -> Result<Vec<silan_viking_app::library::LibrarySeries>, String> {
+    DesktopWorkspace::from_environment()?.content_library().series()
+}
+#[tauri::command]
+pub(crate) async fn operate_content_library(operation: silan_viking_app::library::LibraryOperation) -> Result<(), String> {
+    run_background("content library", move || DesktopWorkspace::from_environment()?.content_library().execute(operation)).await
 }

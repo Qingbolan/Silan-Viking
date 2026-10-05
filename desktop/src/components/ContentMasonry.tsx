@@ -11,13 +11,13 @@ interface ContentMasonryProps {
  * remeasured when covers, management controls, or the workspace width change. */
 export function ContentMasonry({ groups, renderCard }: ContentMasonryProps) {
   const cells = useMemo(() => groups.map((group) => measuredCell(group.id, {
-    columnSpan: group.cardKind === 'series' ? 2 : 1,
+    columnSpan: 1,
     estimatedHeight: 360,
     meta: group,
   })), [groups]);
   const { layout, stableCells, gridRef, cellRef } = useMasonry<ContentGroup>(cells, {
-    columnWidth: 300,
-    gap: 14,
+    columnWidth: 260,
+    gap: 8,
   });
   const ready = layout.width > 0;
 

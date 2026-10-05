@@ -23,7 +23,7 @@ const iconButtonVariants = cva(
       variant: {
         // Quiet — transparent until hovered. The chrome / toolbar default.
         ghost: 'bg-transparent text-ds-fg-muted hover:bg-ds-surface-2 hover:text-ds-fg',
-        // Solid NUS-orange — a single emphasised icon action.
+        // Solid ink — a single emphasised icon action.
         primary: 'bg-ds-primary text-white shadow-ds-1 hover:bg-ds-primary-hover',
         // Filled neutral surface with a hairline.
         surface: 'bg-ds-surface-2 text-ds-fg border border-ds-border hover:bg-ds-surface-3',
@@ -31,8 +31,8 @@ const iconButtonVariants = cva(
         glass: 'ds-acrylic text-ds-fg hover:brightness-[0.97]',
       },
       size: {
-        sm: 'h-7 w-7 [&_svg]:size-3.5',
-        md: 'h-9 w-9 [&_svg]:size-4',
+        sm: 'h-8 w-8 [&_svg]:size-3.5',
+        md: 'h-10 w-10 [&_svg]:size-4',
         lg: 'h-11 w-11 [&_svg]:size-5',
       },
       shape: {

@@ -40,7 +40,6 @@ export function ContentPublishingFields({
     <div className="content-publishing-fields">
       <div className="content-settings-control">
         <span>Visibility</span>
-        <small>Who can discover the content after the next deployment.</small>
         <Select
           aria-label="Content visibility"
           value={value.visibility}
@@ -64,7 +63,6 @@ export function ContentPublishingFields({
           <span className="content-publishing-switch" aria-hidden="true"><i /></span>
           <span className="content-publishing-pin-copy">
             <strong><Pin size={14} aria-hidden="true" /> Pin to top</strong>
-            <small>Keep this moment above newer timeline entries.</small>
           </span>
         </label>
       )}

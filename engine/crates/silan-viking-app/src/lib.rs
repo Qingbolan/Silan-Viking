@@ -38,6 +38,7 @@ pub mod github_oauth_credentials;
 pub mod google_oauth_credentials;
 pub mod image_attribution;
 pub mod language_audit;
+pub mod library;
 pub mod media_library;
 pub mod media_optimizer;
 pub mod openai_credentials;

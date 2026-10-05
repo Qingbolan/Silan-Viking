@@ -14,6 +14,7 @@ export type PaidAiActionKind =
   | 'reader_review'
   | 'translation'
   | 'selection_edit'
+  | 'cover_brief'
   | 'cover_generation'
   | 'commit_message'
   | 'dictation';
@@ -63,6 +64,7 @@ export const paidAiActionCapability: Record<PaidAiActionKind, AiCapability> = {
   translation: 'text',
   selection_edit: 'text',
   cover_generation: 'image',
+  cover_brief: 'text',
   dictation: 'speech',
 };
 
@@ -73,6 +75,7 @@ export const legacyAiActionProvider: Record<PaidAiActionKind, LegacyAiProvider> 
   translation: 'openai',
   selection_edit: 'openai',
   cover_generation: 'openai',
+  cover_brief: 'openai',
   dictation: 'openai',
 };
 
