@@ -50,7 +50,13 @@ function useWorkspaceSwitcher() {
 /** Sidebar control: current workspace name plus a recent-workspaces list. */
 export function WorkspaceSwitcher() {
   const { state, error, switching, switchTo } = useWorkspaceSwitcher();
-  if (!state?.current && !state?.recent.length) return null;
+  if (!state) return null;
+  const availableRoots = new Set(
+    [state.current, ...state.recent]
+      .filter((workspace): workspace is WorkspaceSwitcherEntry => Boolean(workspace?.available))
+      .map(workspace => workspace.project_root),
+  );
+  if (availableRoots.size <= 1) return null;
   return (
     <div className="workspace-switcher">
       <label>
