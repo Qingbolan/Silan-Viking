@@ -41,9 +41,15 @@ importers:
       '@lexical/utils':
         specifier: 0.49.0
         version: 0.49.0(typescript@5.9.3)
+      '@masonrykit/react':
+        specifier: ^0.2.3
+        version: 0.2.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tauri-apps/api':
         specifier: ^2.11.1
         version: 2.11.1
+      '@tauri-apps/plugin-dialog':
+        specifier: 2.4.2
+        version: 2.4.2
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -607,6 +613,21 @@ packages:
       typescript:
         optional: true
 
+  '@masonrykit/browser@0.2.0':
+    resolution: {integrity: sha512-bDghsNOkzudAA3Z7Xl6dZMaMMSkeA4dFfwr2y8G3aoDqFSqJJcCtLG1pV8aWIfKoY7EQcwTsxcsQ7C6HqCY9rA==}
+    engines: {node: '>=22'}
+
+  '@masonrykit/core@0.2.0':
+    resolution: {integrity: sha512-RKUCjczbBJQ1nu/0Z/PttlvY4fGQl/bhpMyzBpe7GAv31q5LD2AZvcFAzE1Qh9mjLUy4eUCiWINzZ9CbJ6O9Ow==}
+    engines: {node: '>=22'}
+
+  '@masonrykit/react@0.2.3':
+    resolution: {integrity: sha512-CF3vfzvdhyfTwAhklZj6mOH3KuTqikYqjoYnTMtAI8P+V8iJwSFcMfEZPTeYoylqrZA4C3PX4mKzB3qvOSx8Cw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      react: ^18.2.0 || ^19.0.0-0
+      react-dom: ^18.2.0 || ^19.0.0-0
+
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -766,6 +787,9 @@ packages:
   '@tauri-apps/api@2.11.1':
     resolution: {integrity: sha512-M2FPuYND2m+wh5hfW9ZpSdxMPdEJovPBWwoHJmwUpysTYNHaOkVFN419m/K0LIgjb/7KU2vBgsUepJWugQCvAA==}
 
+  '@tauri-apps/api@2.12.1':
+    resolution: {integrity: sha512-DeyFHa3wynpyoqTDikDEDGTJIq4LQ5USfolQGRmGIWT6JMADyxZBTDa5cAdT3tDg73rUXufPaCwN7aXBos4OnQ==}
+
   '@tauri-apps/cli-darwin-arm64@2.11.4':
     resolution: {integrity: sha512-1ryOF3ZhpZ/nemHV5zVwBQBz9jDGKmKPvWPADOhc83ig0P4bMc2iER4NbC6r9sjeIZ6RVQ4g3RZIYvezhcl4TQ==}
     engines: {node: '>= 10'}
@@ -841,6 +865,9 @@ packages:
     resolution: {integrity: sha512-R8xGtMpwyetawSqm9kYOuMmEqkhUbvcUy8n0aNXIxollKBLESUu5f4Fx+64hgASYm1H+jSWq6jCW6zqTnH6hqQ==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-dialog@2.4.2':
+    resolution: {integrity: sha512-lNIn5CZuw8WZOn8zHzmFmDSzg5zfohWoa3mdULP0YFh/VogVdMVWZPcWSHlydsiJhRQYaTNSYKN7RmZKE2lCYQ==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -2058,6 +2085,19 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
+  '@masonrykit/browser@0.2.0':
+    dependencies:
+      '@masonrykit/core': 0.2.0
+
+  '@masonrykit/core@0.2.0': {}
+
+  '@masonrykit/react@0.2.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@masonrykit/browser': 0.2.0
+      '@masonrykit/core': 0.2.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -2151,6 +2191,8 @@ snapshots:
 
   '@tauri-apps/api@2.11.1': {}
 
+  '@tauri-apps/api@2.12.1': {}
+
   '@tauri-apps/cli-darwin-arm64@2.11.4':
     optional: true
 
@@ -2197,6 +2239,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.11.4
       '@tauri-apps/cli-win32-ia32-msvc': 2.11.4
       '@tauri-apps/cli-win32-x64-msvc': 2.11.4
+
+  '@tauri-apps/plugin-dialog@2.4.2':
+    dependencies:
+      '@tauri-apps/api': 2.12.1
 
   '@types/babel__core@7.20.5':
     dependencies:

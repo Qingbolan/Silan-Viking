@@ -327,11 +327,11 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
                 className="git-panel-generate-message"
                 disabled={generatingMessage || committing || stagedPaths.length === 0}
                 onClick={() => void generateCommitMessage()}
-                title="Generate commit message with DeepSeek"
-                aria-label="Generate commit message with DeepSeek"
+                title="Generate commit message with AI"
+                aria-label="Generate commit message with AI"
               >
                 {generatingMessage ? <LoaderCircle size={12} className="spin" /> : <Sparkles size={12} />}
-                {generatingMessage ? 'Generating' : 'DeepSeek'}
+                {generatingMessage ? 'Generating' : 'AI'}
               </button>
               <small>{stagedPaths.length} staged file{stagedPaths.length === 1 ? '' : 's'}</small>
             </span>
@@ -340,7 +340,7 @@ export function GitChangesPanel({ onClose, onCommitted }: GitChangesPanelProps) 
             value={message}
             onChange={(event) => setMessage(event.target.value)}
             placeholder={stagedPaths.length > 0
-              ? 'Describe this content change or generate with DeepSeek...'
+              ? 'Describe this content change or generate with AI...'
               : 'Stage at least one file to commit...'}
             disabled={committing || generatingMessage}
             rows={2}

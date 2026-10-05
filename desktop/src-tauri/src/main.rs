@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai_engines;
 mod application;
 mod commands;
 mod credential_store;
@@ -13,6 +14,7 @@ use tauri::{http, Manager};
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .register_uri_scheme_protocol("silan", |_ctx, request| silan_protocol_response(request))
         .setup(|app| {
             workspace_runtime::initialize(app.path().app_config_dir()?)
@@ -49,6 +51,9 @@ fn main() {
             commands::get_resume_sections,
             commands::get_version_status,
             commands::get_workspace_changes,
+            commands::get_ai_engines,
+            commands::save_ai_engine,
+            commands::test_ai_engine,
             commands::get_workspace_bootstrap_status,
             commands::get_workspace_file_diff,
             commands::get_workspace_preferences,
@@ -63,6 +68,8 @@ fn main() {
             commands::read_capture_attachment,
             commands::import_resume_media_asset,
             commands::join_workspace,
+            commands::create_local_workspace,
+            commands::open_local_workspace,
             commands::get_interaction_details,
             commands::link_moment_to_content,
             commands::list_documents,

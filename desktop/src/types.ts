@@ -389,7 +389,7 @@ export type DeliverySyncStatus = {
   local_commits: number;
   remote_commits: number;
   workspace_changes: number;
-  state: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown';
+  state: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown' | 'not_configured' | 'uncommitted';
 };
 
 export type WorkspaceFileChange = {

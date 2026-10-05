@@ -34,6 +34,7 @@ pub enum DeepSeekCommitMessageError {
 }
 
 pub struct DeepSeekCommitMessageGenerator {
+    engine: Option<crate::ai_engine::AiEngineProfile>,
     api_base: String,
     model: String,
 }
@@ -50,12 +51,31 @@ impl Default for DeepSeekCommitMessageGenerator {
 }
 
 impl DeepSeekCommitMessageGenerator {
+    pub fn configured() -> Result<Self, String> {
+        let mut client = Self {
+            engine: crate::ai_engine::configured_profile(crate::ai_engine::AiCapability::Text)?,
+            ..Self::default()
+        };
+        if let Some(profile) = &client.engine {
+            client.model = profile.model.clone();
+        }
+        Ok(client)
+    }
+    pub fn with_model(mut self, model: String) -> Self {
+        self.model = model.clone();
+        if let Some(profile) = &mut self.engine {
+            profile.model = model;
+        }
+        self
+    }
+
     pub fn for_model(model: impl Into<String>) -> Self {
         Self::new(DEFAULT_API_BASE, model)
     }
 
     pub fn new(api_base: impl Into<String>, model: impl Into<String>) -> Self {
         Self {
+            engine: None,
             api_base: api_base.into().trim_end_matches('/').to_owned(),
             model: model.into(),
         }
@@ -79,6 +99,19 @@ impl DeepSeekCommitMessageGenerator {
         api_key: &DeepSeekApiKey,
         staged_diff: &str,
     ) -> Result<String, DeepSeekCommitMessageError> {
+        if let Some(profile) = api_key.engine().or(self.engine.as_ref()) {
+            let response = crate::ai_engine::chat_completion(
+                profile,
+                api_key.expose_secret(),
+                COMMIT_MESSAGE_SYSTEM_PROMPT,
+                &commit_message_user_prompt(staged_diff),
+                None,
+            )
+            .map_err(DeepSeekCommitMessageError::Unavailable)?;
+            return crate::ai_engine::completion_text(&response)
+                .map(str::to_owned)
+                .map_err(DeepSeekCommitMessageError::InvalidResponse);
+        }
         let url = format!("{}/chat/completions", self.api_base);
         let user_prompt = commit_message_user_prompt(staged_diff);
         let payload = ChatCompletionRequest {

@@ -1,6 +1,8 @@
 export type DeploymentPlanState = 'loading' | 'ready' | 'error';
 
 export type DeploymentReadinessState =
+  | 'not_configured'
+  | 'uncommitted'
   | 'comparing'
   | 'synchronized'
   | 'remote_ahead'
@@ -25,7 +27,7 @@ export type DeploymentReadiness = {
 type DeploymentReadinessInput = {
   localCommitCount: number | null;
   remoteCommitCount: number;
-  syncState: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown' | null;
+  syncState: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown' | 'not_configured' | 'uncommitted' | null;
   workspaceChangeCount: number;
   unsavedDocumentCount: number;
   planState: DeploymentPlanState;
@@ -37,7 +39,7 @@ type DeploymentReadinessInput = {
 type DeliverySyncSnapshot = {
   local_head: string;
   remote_head: string;
-  state: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown';
+  state: 'synchronized' | 'local_ahead' | 'remote_ahead' | 'diverged' | 'remote_unknown' | 'not_configured' | 'uncommitted';
 };
 
 /**
@@ -85,6 +87,13 @@ export const deploymentReadinessFor = ({
   deploying,
   pulling,
 }: DeploymentReadinessInput): DeploymentReadiness => {
+  if (syncState === 'not_configured' || syncState === 'uncommitted') {
+    return {
+      state: syncState, canDeploy: false, canPull: false,
+      message: syncState === 'not_configured' ? 'Local workspace · publishing is not configured' : 'Create your first commit before publishing',
+      actionTitle: syncState === 'not_configured' ? 'Configure a deployment target and device access when you are ready to publish' : 'Review and commit your local content first',
+    };
+  }
   if (localCommitCount === null) {
     return {
       state: 'comparing',

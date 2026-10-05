@@ -78,8 +78,9 @@ pub(crate) fn bootstrap_status() -> DesktopBootstrapStatus {
     if let Some(error) = workspace_runtime::initialization_error() {
         return DesktopBootstrapStatus {
             state: "invalid_workspace".to_owned(),
-            project_root: None,
-            project_name: None,
+            project_root: workspace_runtime::selection()
+                .map(|s| s.project_root.display().to_string()),
+            project_name: workspace_runtime::selection().map(|s| s.project_name),
             repository_url: None,
             deployment_key_path: None,
             configured_deployment_key: None,
@@ -94,7 +95,9 @@ pub(crate) fn bootstrap_status() -> DesktopBootstrapStatus {
             WorkspaceActivationState::Prepared => "deployment_key",
             WorkspaceActivationState::Ready => "ready",
         };
-        return match read_desktop_project_summary(&selection.project_root) {
+        return match DesktopWorkspace::from_project_root(&selection.project_root)
+            .and_then(|_| read_desktop_project_summary(&selection.project_root))
+        {
             Ok(summary) => DesktopBootstrapStatus {
                 state: state.to_owned(),
                 project_root: Some(selection.project_root.display().to_string()),
@@ -160,12 +163,16 @@ pub(crate) fn verify_repository_access(
 
 pub(crate) fn join_workspace(
     input: DesktopJoinWorkspaceInput,
+    progress: impl Fn(silan_viking_app::workspace_setup::WorkspaceSetupStage),
 ) -> Result<DesktopJoinWorkspaceResult, String> {
-    let result = WorkspaceJoiner::join(&JoinWorkspaceInput {
-        repository_url: input.repository_url,
-        destination: PathBuf::from(input.destination),
-        branch: input.branch,
-    })
+    let result = WorkspaceJoiner::join_with_progress(
+        &JoinWorkspaceInput {
+            repository_url: input.repository_url,
+            destination: PathBuf::from(input.destination),
+            branch: input.branch,
+        },
+        progress,
+    )
     .map_err(|error| error.to_string())?;
     workspace_runtime::save_selection(WorkspaceSelection::prepared(
         result.project_root.clone(),
@@ -245,7 +252,6 @@ pub(crate) fn complete_onboarding(
 ) -> Result<DesktopBootstrapStatus, String> {
     let selection =
         workspace_runtime::selection().ok_or_else(|| "no prepared workspace exists".to_owned())?;
-    let summary = read_desktop_project_summary(&selection.project_root)?;
     let deployment_key_path = match input
         .deployment_key_path
         .as_deref()
@@ -253,10 +259,7 @@ pub(crate) fn complete_onboarding(
         .filter(|path| !path.is_empty())
     {
         Some(path) => Some(PathBuf::from(validate_deployment_key(path)?.path)),
-        None if summary.deployment_key_required => {
-            return Err("this workspace requires a device-local deployment key".to_owned())
-        }
-        None => None,
+        None => selection.deployment_key_path.clone(),
     };
     DesktopWorkspace::from_project_root(&selection.project_root).map_err(|error| {
         format!("workspace cannot enter the editor until validation passes: {error}")

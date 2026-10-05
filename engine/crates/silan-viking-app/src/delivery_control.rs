@@ -287,21 +287,29 @@ impl DeliveryControl {
     ) -> Result<ScopeReleaseStatus, DeliveryControlError> {
         let repo = self.repo()?;
         let branch = run(&repo, ["branch", "--show-current"])?;
-        let head = run(&repo, ["rev-parse", "--short=12", "HEAD"])?;
+        let head = repo
+            .head_revision()
+            .map_err(|e| DeliveryControlError::Repository(e.to_string()))?
+            .map(|head| head.chars().take(12).collect::<String>())
+            .unwrap_or_default();
         let changes = run(&repo, path_args(&["status", "--porcelain"], scope.paths()))?
             .lines()
             .filter_map(parse_status)
             .collect::<Vec<_>>();
-        let recent_commits = run(
-            &repo,
-            path_args(
-                &["log", "-5", "--pretty=format:%h%x1f%s%x1f%cr"],
-                scope.paths(),
-            ),
-        )?
-        .lines()
-        .filter_map(parse_log)
-        .collect();
+        let recent_commits = if head.is_empty() {
+            Vec::new()
+        } else {
+            run(
+                &repo,
+                path_args(
+                    &["log", "-5", "--pretty=format:%h%x1f%s%x1f%cr"],
+                    scope.paths(),
+                ),
+            )?
+            .lines()
+            .filter_map(parse_log)
+            .collect()
+        };
         Ok(ScopeReleaseStatus {
             scope,
             scope_label: scope.label().to_owned(),
@@ -332,7 +340,11 @@ impl DeliveryControl {
         } else {
             branch
         };
-        let head = run(&repo, ["rev-parse", "--short=12", "HEAD"])?;
+        let head = repo
+            .head_revision()
+            .map_err(|e| DeliveryControlError::Repository(e.to_string()))?
+            .map(|head| head.chars().take(12).collect::<String>())
+            .unwrap_or_default();
         let paths = release_scopes
             .iter()
             .flat_map(|scope| scope.paths().iter().copied())
@@ -410,6 +422,26 @@ impl DeliveryControl {
 
     pub fn sync_status(&self) -> Result<DeliverySyncStatus, DeliveryControlError> {
         let repo = self.repo()?;
+        let head = repo
+            .head_revision()
+            .map_err(|e| DeliveryControlError::Repository(e.to_string()))?;
+        let state = if api_base_url(&self.content_root).is_err() || self.bearer_token.is_none() {
+            Some("not_configured")
+        } else if head.is_none() {
+            Some("uncommitted")
+        } else {
+            None
+        };
+        if let Some(state) = state {
+            return Ok(DeliverySyncStatus {
+                local_head: head.unwrap_or_default(),
+                remote_head: String::new(),
+                local_commits: 0,
+                remote_commits: 0,
+                workspace_changes: self.workspace_changes()?.len(),
+                state: state.into(),
+            });
+        }
         let remote_head = self.remote_content_version()?.content_commit;
         validate_remote_commit(&remote_head)?;
         self.sync_status_against(&repo, remote_head)
@@ -695,6 +727,13 @@ impl DeliveryControl {
         scopes: &[ReleaseScope],
     ) -> Result<Vec<CommitActivityDay>, DeliveryControlError> {
         let repo = self.repo()?;
+        if repo
+            .head_revision()
+            .map_err(|e| DeliveryControlError::Repository(e.to_string()))?
+            .is_none()
+        {
+            return Ok(Vec::new());
+        }
         let paths = scopes
             .iter()
             .flat_map(|scope| scope.paths().iter().copied())
@@ -841,7 +880,7 @@ impl DeliveryControl {
         let bundle =
             self.build_deploy_bundle(&content_commit, &media, &empty_upload, scan.assets())?;
         let raw_response = post_content_bundle(&agent, &url, token, &bundle);
-        let raw_response = match raw_response {
+        let raw_response = match raw_response.map_err(|error| *error) {
             Err(ureq::Error::Status(409, response)) => {
                 let plan: MediaPlanResponse = response.into_json().map_err(|error| {
                     DeliveryControlError::Remote(format!("{url}: invalid media plan: {error}"))
@@ -862,7 +901,7 @@ impl DeliveryControl {
                     scan.assets(),
                 )?;
                 post_content_bundle(&agent, &url, token, &bundle)
-                    .map_err(|error| deploy_http_error(&url, error))?
+                    .map_err(|error| deploy_http_error(&url, *error))?
             }
             Err(error) => return Err(deploy_http_error(&url, error)),
             Ok(response) => response,
@@ -1304,7 +1343,7 @@ fn post_content_bundle(
     url: &str,
     token: &str,
     bundle: &[u8],
-) -> Result<ureq::Response, ureq::Error> {
+) -> Result<ureq::Response, Box<ureq::Error>> {
     agent
         .post(url)
         .set("Authorization", &format!("Bearer {token}"))
@@ -1313,6 +1352,7 @@ fn post_content_bundle(
             "application/vnd.silan.content-deploy+tar+gzip",
         )
         .send_bytes(bundle)
+        .map_err(Box::new)
 }
 
 fn deploy_http_error(url: &str, error: ureq::Error) -> DeliveryControlError {

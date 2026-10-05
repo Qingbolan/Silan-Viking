@@ -158,28 +158,59 @@ transport container. Production code deployment runs from a project checkout;
 content-only publication needs only the content workspace, configured API, and
 machine credential.
 
-## Joining an Existing Workspace on a New Device
+## Desktop First-Run Workspace Setup
 
-The packaged desktop runtime now treats first launch as an explicit bootstrap
-lifecycle. When no workspace is configured, **Join existing workspace** asks
-for the Git source repository, a local destination, and an optional branch.
-The production host is deliberately not used as a source-code remote.
+The desktop bootstrap separates local authoring from remote synchronization and
+publishing. Its first page offers **Create a workspace**, **Open a local
+workspace**, and **Continue from another device**. A missing or invalid saved
+workspace enters a repair page that preserves the previous path and offers
+relocation; it never masquerades as a new Git authentication failure.
 
-Before entering the editor, the desktop application:
+New users follow four slides: name/location, author/writing language, optional
+private example note, and a review of the exact configuration. `WorkspaceSetup`
+stages the source, initializes an uncommitted local Git repository, validates
+content and builds the projection before activating the new directory. Existing
+destinations are rejected. No account, remote, deployment credential or fabricated
+commit identity is required. The CLI and desktop share the schema and content
+scaffolding in the application crate. Author names are serialized as YAML values.
 
-1. verifies repository access through the device's SSH agent or HTTPS Git
-   credential manager without accepting credentials embedded in the URL;
-2. clones a missing workspace or fetches an existing checkout;
-3. fast-forwards only a clean remote-ahead branch and stops on dirty,
-   local-ahead, diverged, detached, or no-upstream states;
-4. reads `silan-viking.toml`, validates `content/SCHEMA.md`, and rebuilds the
-   local `portfolio.db` projection from Markdown;
-5. validates a device-local deployment private-key path when the shared
-   project configuration declares a remote deployment target.
+Opening a local project rebuilds its projection without fetching or requiring a
+clean worktree, upstream or deployment key. The configured `project.content_dir`
+is authoritative, including custom directory names. A project folder or its
+configured content folder can be selected with the native directory picker.
+Only successfully validated projects replace the device's saved selection.
 
-Only paths and workspace identity are persisted in the desktop app's local
-configuration. Git credentials remain in the SSH agent or credential manager,
-and deployment key material remains in its original local file.
+An optional onboarding avatar stays in memory until creation. The setup use case
+validates PNG/JPEG/WebP bytes (12 MB, 4096-pixel limits), normalizes them to PNG,
+and imports through `MediaLibrary` into the staged Resume assets. Both localized
+profiles store the same `silan://resources/resume/assets/...` reference before
+activation. Canceling, replacing or removing a pending avatar writes no resource.
+
+Git onboarding verifies read access, asks for a local destination and performs
+clone/fetch with safe fast-forward checks. Branch selection is advanced; an
+existing checkout on another branch is rejected rather than silently ignoring
+that selection. Configuration paths are resolved again after synchronization.
+Fresh clones remain staged until synchronization and projection succeed.
+Preparation progress comes from backend events. Failed operations return to the
+current slide with the user's input intact.
+
+A shared remote deployment target does not block local editing. Existing
+`Prepared` registry records can complete without providing a key; an optional
+key field remains available for devices that will deploy. An unborn Git branch
+has no release history; an unconfigured deployment target or missing device
+credential produces `not_configured`, not an error or automatic pull. A configured
+but uncommitted repository produces `uncommitted`.
+
+Device-local registration stores paths and workspace identity only. Git
+credentials remain with the SSH agent or Git credential manager. The separate
+site-recovery help page explains the existing CLI recovery command and its
+public-content-only boundary. It does not imply recovery of private notes or
+original Git history.
+
+The wizard bundles its illustrations locally and supports reduced motion,
+keyboard navigation and narrow windows. For visual review, serve the built
+frontend and open `?onboarding=preview` in a browser; this mode cannot invoke
+filesystem setup or pretend to complete a desktop operation.
 
 ## Pulling a Newer Deployed Revision
 
@@ -216,3 +247,43 @@ remote revision when no editor buffer is unsaved. Polling never retries the
 same failed revision in a loop, and a later synchronized or local-ahead status
 clears the obsolete synchronization error without requiring an application
 restart. Production deployment remains an explicit owner-confirmed action.
+
+
+## Device-wide AI engines
+
+Desktop onboarding separates author identity (including an optional managed avatar)
+from optional AI configuration. The same AI editor is available in Workspace
+Settings. Skipping AI does not prevent creating or opening a workspace.
+
+`engine/crates/silan-viking-app/src/ai_engine.rs` owns configuration validation and
+the common Chat Completions transport. Desktop owns Keychain I/O. Device settings
+live in `$XDG_CONFIG_HOME/silan-viking/ai-engines.json` (default
+`~/.config/silan-viking/ai-engines.json`); only endpoint, model, provider and opaque
+credential references are serialized. API keys live in macOS Keychain under
+`silan-viking.ai-engines`, outside authored content and Git.
+
+Capabilities are independently configured:
+
+- Text: OpenAI-compatible Chat Completions or Ollama (`http://localhost:11434/v1`).
+  Translation requires structured JSON output; the selected model/service must
+  implement that contract. Commit messages, language review and selection edits
+  use the same selected text engine.
+- Image: OpenAI-compatible image generation returning base64 image data.
+- Speech: OpenAI-compatible multipart audio transcription.
+
+The API base URL includes the service prefix (typically `/v1`). Model names are
+user-entered, without a fixed vendor model list. Save, connection test and disable
+are explicit actions. Text tests perform a small completion; media tests verify
+model-list access and model existence, without creating media. They do not prove
+that a provider implements every generation option.
+
+Desktop and CLI calls read the same device configuration. Once a configuration
+exists, an unset capability is explicitly unavailable. Existing provider-specific
+public credential commands and constructors retain their behavior for installations
+that have not saved device routing. Each invocation binds a credential to its
+endpoint snapshot; changing an endpoint requires a new key and redirects are not
+followed. Configuration writes are staged atomically and failed writes remove newly
+created credentials.
+
+Browser onboarding preview never saves keys or makes provider requests. Real
+configuration and connection testing require the native desktop application.

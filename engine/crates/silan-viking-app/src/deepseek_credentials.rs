@@ -19,7 +19,7 @@ pub const DEEPSEEK_KEYCHAIN_SERVICE: &str = "silan-viking.deepseek";
 pub const DEEPSEEK_KEYCHAIN_ACCOUNT: &str = "api-key";
 
 /// A validated DeepSeek API key value. Its debug representation is redacted.
-pub struct DeepSeekApiKey(String);
+pub struct DeepSeekApiKey(String, Option<crate::ai_engine::AiEngineProfile>);
 
 impl DeepSeekApiKey {
     /// Validate the local shape without making a network request.
@@ -31,7 +31,19 @@ impl DeepSeekApiKey {
         let value = normalize_api_key(value).map_err(DeepSeekCredentialError::InvalidFormat)?;
         validate_api_key_has_no_whitespace(&value)
             .map_err(DeepSeekCredentialError::InvalidFormat)?;
-        Ok(Self(value))
+        Ok(Self(value, None))
+    }
+
+    pub fn for_engine(
+        secret: String,
+        profile: crate::ai_engine::AiEngineProfile,
+    ) -> Result<Self, DeepSeekCredentialError> {
+        let mut key = Self::parse(secret)?;
+        key.1 = Some(profile);
+        Ok(key)
+    }
+    pub fn engine(&self) -> Option<&crate::ai_engine::AiEngineProfile> {
+        self.1.as_ref()
     }
 
     /// Expose the key only to a credential adapter or authenticated request.

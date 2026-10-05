@@ -142,6 +142,13 @@ struct ResolvedWorkspace {
     repository_root: PathBuf,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct LocalWorkspace {
+    pub project_root: PathBuf,
+    pub content_root: PathBuf,
+    pub project_name: String,
+}
+
 /// Application service for the new-device join lifecycle.
 pub struct WorkspaceJoiner;
 
@@ -165,6 +172,15 @@ impl WorkspaceJoiner {
     /// checkout. Dirty, locally-ahead, and diverged repositories are never
     /// mutated; their state is reported as a synchronization error instead.
     pub fn join(input: &JoinWorkspaceInput) -> Result<JoinWorkspaceResult, WorkspaceJoinError> {
+        Self::join_with_progress(input, |_| {})
+    }
+
+    pub fn join_with_progress(
+        input: &JoinWorkspaceInput,
+        progress: impl Fn(crate::workspace_setup::WorkspaceSetupStage),
+    ) -> Result<JoinWorkspaceResult, WorkspaceJoinError> {
+        use crate::workspace_setup::WorkspaceSetupStage;
+        progress(WorkspaceSetupStage::CheckingAccess);
         let authentication = Self::verify_repository_access(&input.repository_url)?;
         validate_branch(input.branch.as_deref())?;
         let destination = expand_home(&input.destination)?;
@@ -172,12 +188,44 @@ impl WorkspaceJoiner {
             .read_dir()
             .ok()
             .is_some_and(|mut entries| entries.next().is_none());
-        let resolved = if destination.exists() && !destination_is_empty {
-            Self::open_existing(&input.repository_url, &destination)?
+        // Keep a fresh clone private until synchronization and projection both
+        // succeed. A failed join must not leave a half-prepared destination.
+        let staging = if !destination.exists() || destination_is_empty {
+            let parent = destination.parent().ok_or_else(|| {
+                WorkspaceJoinError::InvalidDestination("choose a workspace folder".into())
+            })?;
+            fs::create_dir_all(parent)
+                .map_err(|e| WorkspaceJoinError::Filesystem(e.to_string()))?;
+            Some(
+                tempfile::tempdir_in(parent)
+                    .map_err(|e| WorkspaceJoinError::Filesystem(e.to_string()))?,
+            )
         } else {
-            Self::clone_new(input, &destination)?
+            None
+        };
+        progress(WorkspaceSetupStage::Cloning);
+        let resolved = if let Some(staging) = staging.as_ref() {
+            Self::clone_new(input, &staging.path().join("workspace"))?
+        } else {
+            Self::open_existing(&input.repository_url, &destination)?
         };
 
+        progress(WorkspaceSetupStage::Synchronizing);
+        if let Some(branch) = input
+            .branch
+            .as_deref()
+            .map(str::trim)
+            .filter(|b| !b.is_empty())
+        {
+            let current = git_stdout(
+                Some(&resolved.repository_root),
+                "read branch",
+                ["branch", "--show-current"],
+            )?;
+            if current != branch {
+                return Err(WorkspaceJoinError::UnsafeSynchronization(format!("existing checkout is on `{current}`, not `{branch}`; select its current branch or clone into a new folder")));
+            }
+        }
         fetch_repository(&resolved.repository_root)?;
         let observed = repository_status(&resolved.repository_root)?;
         synchronize_fast_forward(&resolved.repository_root, &observed)?;
@@ -189,6 +237,9 @@ impl WorkspaceJoiner {
             )));
         }
 
+        // A fast-forward may have changed project paths. Resolve the new revision.
+        let resolved = resolve_project_workspace(&resolved.project_root, resolved.layout)?;
+        progress(WorkspaceSetupStage::Indexing);
         fs::create_dir_all(
             resolved
                 .database_path
@@ -202,6 +253,26 @@ impl WorkspaceJoiner {
             .sync()
             .map_err(|error| WorkspaceJoinError::Projection(error.to_string()))?;
 
+        let mut resolved = resolved;
+        if staging.is_some() {
+            let content_relative = resolved
+                .content_root
+                .strip_prefix(&resolved.project_root)
+                .map_err(|e| WorkspaceJoinError::Filesystem(e.to_string()))?
+                .to_path_buf();
+            let database_relative = resolved
+                .database_path
+                .strip_prefix(&resolved.project_root)
+                .map_err(|e| WorkspaceJoinError::Filesystem(e.to_string()))?
+                .to_path_buf();
+            progress(WorkspaceSetupStage::Activating);
+            remove_empty_destination(&destination)?;
+            fs::rename(&resolved.project_root, &destination)
+                .map_err(|e| WorkspaceJoinError::Filesystem(e.to_string()))?;
+            resolved.project_root = destination.clone();
+            resolved.content_root = destination.join(content_relative);
+            resolved.database_path = destination.join(database_relative);
+        }
         Ok(JoinWorkspaceResult {
             project_root: resolved.project_root,
             content_root: resolved.content_root,
@@ -215,6 +286,54 @@ impl WorkspaceJoiner {
             projection_revision: projection.projection_revision,
             items_scanned: projection.items_scanned,
             rows_written: projection.rows_written,
+        })
+    }
+
+    /// Open and rebuild a local project without contacting any remote or
+    /// requiring a clean worktree, upstream, or deployment credentials.
+    pub fn open_local(destination: &Path) -> Result<LocalWorkspace, WorkspaceJoinError> {
+        let destination = expand_home(destination)?;
+        let root = if destination.join(CONFIG_FILE).is_file() {
+            destination.clone()
+        } else if destination.join("SCHEMA.md").is_file() {
+            destination
+                .parent()
+                .ok_or_else(|| {
+                    WorkspaceJoinError::InvalidDestination(
+                        "select the project folder containing silan-viking.toml".into(),
+                    )
+                })?
+                .to_path_buf()
+        } else {
+            return Err(WorkspaceJoinError::InvalidDestination("select the project folder containing silan-viking.toml, or its configured content folder".into()));
+        };
+        let root =
+            fs::canonicalize(root).map_err(|e| WorkspaceJoinError::Filesystem(e.to_string()))?;
+        let layout = if root.join(".git").exists() {
+            WorkspaceLayout::ProjectRepository
+        } else {
+            WorkspaceLayout::ContentRepository
+        };
+        let resolved = resolve_project_workspace(&root, layout)?;
+        if destination.join("SCHEMA.md").is_file()
+            && fs::canonicalize(&destination).ok() != fs::canonicalize(&resolved.content_root).ok()
+        {
+            return Err(WorkspaceJoinError::InvalidDestination(
+                "this folder is not the content directory declared by the project".into(),
+            ));
+        }
+        if let Some(parent) = resolved.database_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|e| WorkspaceJoinError::Filesystem(e.to_string()))?;
+        }
+        WorkspaceSync::open(&resolved.content_root, &resolved.database_path)
+            .map_err(|e| WorkspaceJoinError::Projection(e.to_string()))?
+            .sync()
+            .map_err(|e| WorkspaceJoinError::Projection(e.to_string()))?;
+        Ok(LocalWorkspace {
+            project_root: root,
+            content_root: resolved.content_root,
+            project_name: resolved.project_name,
         })
     }
 
@@ -294,7 +413,7 @@ impl WorkspaceJoiner {
         }
         let layout = if destination.join(".git").exists() {
             WorkspaceLayout::ProjectRepository
-        } else if destination.join(DEFAULT_CONTENT_DIR).join(".git").exists() {
+        } else if destination.join(CONFIG_FILE).is_file() {
             WorkspaceLayout::ContentRepository
         } else {
             return Err(WorkspaceJoinError::InvalidDestination(format!(
@@ -882,6 +1001,17 @@ mod tests {
             ],
         );
         let destination = temporary.path().join("joined-workspace");
+        let failed_destination = temporary.path().join("failed-workspace");
+        let failed = WorkspaceJoiner::join(&JoinWorkspaceInput {
+            repository_url: remote.display().to_string(),
+            destination: failed_destination.clone(),
+            branch: Some("missing-branch".into()),
+        });
+        assert!(failed.is_err());
+        assert!(
+            !failed_destination.exists(),
+            "failed clone must not activate its destination"
+        );
         let result = WorkspaceJoiner::join(&JoinWorkspaceInput {
             repository_url: remote.display().to_string(),
             destination: destination.clone(),

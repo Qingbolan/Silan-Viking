@@ -1,3 +1,4 @@
+@import './styles/syntax-theme.css';
 /* Tailwind Base with Enhanced CSS Variables */
 @tailwind base;
 @tailwind components;
@@ -847,96 +848,6 @@ p:not([data-ds] *) {
 .dark .fluent-subtle-gradient {
   background: linear-gradient(145deg, rgba(50, 49, 48, 0.9), rgba(45, 44, 43, 0.9));
 }
-
-/* Dracula official palette: https://draculatheme.com/contribute */
-:root {
-  --syntax-bg: #282a36;
-  --syntax-fg: #f8f8f2;
-  --syntax-muted: #6272a4;
-  --syntax-punctuation: #f8f8f2;
-  --syntax-keyword: #ff79c6;
-  --syntax-property: #f8f8f2;
-  --syntax-string: #f1fa8c;
-  --syntax-number: #bd93f9;
-  --syntax-function: #50fa7b;
-  --syntax-variable: #f8f8f2;
-  --syntax-type: #8be9fd;
-}
-.dracula-code-surface {
-  --ds-color-surface-1: #282a36;
-  --ds-color-surface-2: #282a36;
-  --ds-color-surface-3: #44475a;
-  --ds-color-border: #44475a;
-  --color-textPrimary: #f8f8f2;
-  --color-textSecondary: #f8f8f2;
-  --color-textTertiary: #6272a4;
-  color: #f8f8f2;
-}
-pre::selection, pre ::selection { background: #44475a; color: #f8f8f2; }
-
-pre[class*="language-"], code[class*="language-"] {
-  color: var(--syntax-fg);
-  background: transparent;
-  text-shadow: none;
-}
-code[class*="language-"] .token.comment,
-code[class*="language-"] .token.block-comment,
-code[class*="language-"] .token.prolog,
-code[class*="language-"] .token.doctype,
-code[class*="language-"] .token.cdata {
-  color: var(--syntax-muted);
-  font-style: italic;
-}
-code[class*="language-"] .token.punctuation {
-  color: var(--syntax-punctuation);
-}
-code[class*="language-"] .token.property,
-code[class*="language-"] .token.tag,
-code[class*="language-"] .token.constant,
-code[class*="language-"] .token.symbol,
-code[class*="language-"] .token.deleted {
-  color: var(--syntax-property);
-}
-code[class*="language-"] .token.boolean,
-code[class*="language-"] .token.number {
-  color: var(--syntax-number);
-}
-code[class*="language-"] .token.selector,
-code[class*="language-"] .token.attr-name,
-code[class*="language-"] .token.string,
-code[class*="language-"] .token.char,
-code[class*="language-"] .token.builtin,
-code[class*="language-"] .token.inserted {
-  color: var(--syntax-string);
-}
-code[class*="language-"] .token.operator,
-code[class*="language-"] .token.entity,
-code[class*="language-"] .token.url {
-  color: var(--syntax-punctuation);
-}
-code[class*="language-"] .token.atrule,
-code[class*="language-"] .token.attr-value,
-code[class*="language-"] .token.keyword {
-  color: var(--syntax-keyword);
-}
-code[class*="language-"] .token.function,
-code[class*="language-"] .token.class-name,
-code[class*="language-"] .token.macro {
-  color: var(--syntax-function);
-}
-code[class*="language-"] .token.regex,
-code[class*="language-"] .token.important,
-code[class*="language-"] .token.variable,
-code[class*="language-"] .token.lifetime,
-code[class*="language-"] .token.decorator {
-  color: var(--syntax-variable);
-}
-code[class*="language-"] .token.type,
-code[class*="language-"] .token.parameter {
-  color: var(--syntax-type);
-}
-code[class*="language-"] .token.bold { font-weight: 700; }
-code[class*="language-"] .token.italic { font-style: italic; }
 
 /* ========================================
    Ant Design Custom Styles

@@ -19,7 +19,7 @@ pub const OPENAI_KEYCHAIN_SERVICE: &str = "silan-viking.openai";
 pub const OPENAI_KEYCHAIN_ACCOUNT: &str = "api-key";
 
 /// A validated API key value. Its debug representation is always redacted.
-pub struct OpenAiApiKey(String);
+pub struct OpenAiApiKey(String, Option<crate::ai_engine::AiEngineProfile>);
 
 impl OpenAiApiKey {
     /// Validate the local shape without making a network request.
@@ -31,7 +31,25 @@ impl OpenAiApiKey {
             ));
         }
         validate_api_key_has_no_whitespace(&value).map_err(OpenAiCredentialError::InvalidFormat)?;
-        Ok(Self(value))
+        Ok(Self(value, None))
+    }
+
+    pub fn for_compatible_service(value: impl Into<String>) -> Result<Self, OpenAiCredentialError> {
+        let value = normalize_api_key(value).map_err(OpenAiCredentialError::InvalidFormat)?;
+        validate_api_key_has_no_whitespace(&value).map_err(OpenAiCredentialError::InvalidFormat)?;
+        Ok(Self(value, None))
+    }
+
+    pub fn for_engine(
+        secret: String,
+        profile: crate::ai_engine::AiEngineProfile,
+    ) -> Result<Self, OpenAiCredentialError> {
+        let mut key = Self::for_compatible_service(secret)?;
+        key.1 = Some(profile);
+        Ok(key)
+    }
+    pub fn engine(&self) -> Option<&crate::ai_engine::AiEngineProfile> {
+        self.1.as_ref()
     }
 
     /// Expose the key only to a credential adapter or authenticated request.

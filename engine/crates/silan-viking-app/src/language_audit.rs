@@ -499,6 +499,7 @@ pub enum DeepSeekLanguageAuditError {
 
 #[derive(Debug)]
 pub struct DeepSeekLanguageAuditor {
+    engine: Option<crate::ai_engine::AiEngineProfile>,
     api_base: String,
     model: String,
     min_confidence: f64,
@@ -625,6 +626,24 @@ impl Default for DeepSeekLanguageAuditor {
 }
 
 impl DeepSeekLanguageAuditor {
+    pub fn configured() -> Result<Self, String> {
+        let mut client = Self {
+            engine: crate::ai_engine::configured_profile(crate::ai_engine::AiCapability::Text)?,
+            ..Self::default()
+        };
+        if let Some(profile) = &client.engine {
+            client.model = profile.model.clone();
+        }
+        Ok(client)
+    }
+    pub fn with_model(mut self, model: String) -> Self {
+        self.model = model.clone();
+        if let Some(profile) = &mut self.engine {
+            profile.model = model;
+        }
+        self
+    }
+
     pub fn from_environment() -> Self {
         let model = env::var(DEEPSEEK_LANGUAGE_AUDIT_MODEL_ENV)
             .unwrap_or_else(|_| DEFAULT_DEEPSEEK_LANGUAGE_AUDIT_MODEL.to_owned());
@@ -633,6 +652,7 @@ impl DeepSeekLanguageAuditor {
 
     pub fn new(api_base: impl Into<String>, model: impl Into<String>) -> Self {
         Self {
+            engine: None,
             api_base: api_base.into().trim_end_matches('/').to_owned(),
             model: model.into(),
             min_confidence: DEFAULT_LANGUAGE_AUDIT_MIN_CONFIDENCE,
@@ -704,6 +724,24 @@ impl DeepSeekLanguageAuditor {
         (GeneratedLanguageAudit, String, Option<LanguageAuditUsage>),
         DeepSeekLanguageAuditError,
     > {
+        if let Some(profile) = api_key.engine().or(self.engine.as_ref()) {
+            let response = crate::ai_engine::chat_completion(
+                profile,
+                api_key.expose_secret(),
+                LANGUAGE_AUDIT_SYSTEM_PROMPT,
+                &language_audit_user_prompt(document, self.min_confidence),
+                None,
+            )
+            .map_err(DeepSeekLanguageAuditError::Unavailable)?;
+            let output = crate::ai_engine::completion_text(&response)
+                .map_err(DeepSeekLanguageAuditError::InvalidResponse)?;
+            let generated = serde_json::from_str(output.trim())
+                .map_err(|e| DeepSeekLanguageAuditError::InvalidResponse(e.to_string()))?;
+            let usage = response
+                .get("usage")
+                .and_then(|u| serde_json::from_value(u.clone()).ok());
+            return Ok((generated, profile.model.clone(), usage));
+        }
         let url = format!("{}/chat/completions", self.api_base);
         let payload = ChatCompletionRequest {
             model: self.model.as_str(),

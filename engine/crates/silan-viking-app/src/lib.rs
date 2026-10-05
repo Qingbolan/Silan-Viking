@@ -23,6 +23,7 @@
 
 mod api_credentials;
 
+pub mod ai_engine;
 pub mod capture;
 pub mod commit_message;
 pub mod content_recovery;
@@ -45,6 +46,7 @@ pub mod openai_transcription;
 pub mod parser;
 pub mod proposal;
 pub mod query;
+pub mod scaffold;
 pub mod schema;
 mod source_lock;
 pub mod stats;
@@ -54,6 +56,7 @@ pub mod website_insights;
 pub mod workspace;
 pub mod workspace_content;
 pub mod workspace_join;
+pub mod workspace_setup;
 pub mod workspace_sync;
 
 pub use capture::{CaptureError, CapturedContent, ContentCreator, IdeaCategory};

@@ -196,6 +196,18 @@ impl GitRepo {
         }
     }
 
+    /// A newly initialized repository has an unborn branch, not a broken HEAD.
+    pub fn head_revision(&self) -> Result<Option<String>, GitError> {
+        match self.run(["rev-parse", "--verify", "--quiet", "HEAD"]) {
+            Ok(output) => Ok(Some(output.stdout)),
+            Err(GitError::Command { code: 1, .. }) => {
+                self.run(["symbolic-ref", "--quiet", "HEAD"])?;
+                Ok(None)
+            }
+            Err(error) => Err(error),
+        }
+    }
+
     /// Produce a byte-exact tar archive from one committed revision.
     ///
     /// Binary Git output stays inside this adapter rather than leaking a

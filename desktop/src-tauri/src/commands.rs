@@ -22,7 +22,7 @@ use silan_viking_app::{
     DeletedPrivateResource, LanguageAuditReport, OpenAiAudioTranscriber,
 };
 use std::path::PathBuf;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[tauri::command]
 pub(crate) fn get_workspace_bootstrap_status() -> DesktopBootstrapStatus {
@@ -44,14 +44,62 @@ pub(crate) async fn join_workspace(
     app: tauri::AppHandle,
     input: DesktopJoinWorkspaceInput,
 ) -> Result<DesktopJoinWorkspaceResult, String> {
+    let progress_app = app.clone();
     let joined = run_background("join workspace", move || {
-        workspace_onboarding::join_workspace(input)
+        workspace_onboarding::join_workspace(input, |stage| {
+            let _ = progress_app.emit("workspace-preparation", stage);
+        })
     })
     .await?;
     app.asset_protocol_scope()
         .allow_directory(PathBuf::from(&joined.content_root).join("resources"), true)
         .map_err(|error| format!("cannot allow workspace media: {error}"))?;
     Ok(joined)
+}
+
+#[tauri::command]
+pub(crate) async fn create_local_workspace(
+    app: tauri::AppHandle,
+    input: silan_viking_app::workspace_setup::CreateWorkspaceInput,
+) -> Result<DesktopBootstrapStatus, String> {
+    let progress_app = app.clone();
+    let root = run_background("create local workspace", move || {
+        silan_viking_app::workspace_setup::WorkspaceSetup::create(&input, |stage| {
+            let _ = progress_app.emit("workspace-preparation", stage);
+        })
+    })
+    .await?;
+    activate_local_workspace(&app, root).await
+}
+
+#[tauri::command]
+pub(crate) async fn open_local_workspace(
+    app: tauri::AppHandle,
+    path: String,
+) -> Result<DesktopBootstrapStatus, String> {
+    let _ = app.emit("workspace-preparation", "indexing");
+    let local = run_background("open local workspace", move || {
+        silan_viking_app::WorkspaceJoiner::open_local(&PathBuf::from(path))
+            .map_err(|e| e.to_string())
+    })
+    .await?;
+    activate_local_workspace(&app, local.project_root).await
+}
+
+async fn activate_local_workspace(
+    app: &tauri::AppHandle,
+    root: PathBuf,
+) -> Result<DesktopBootstrapStatus, String> {
+    let _ = app.emit("workspace-preparation", "activating");
+    run_background("activate local workspace", move || {
+        crate::workspace_runtime::activate_local_workspace(&root)
+    })
+    .await?;
+    let content = crate::application::desktop_content_root()?;
+    app.asset_protocol_scope()
+        .allow_directory(content.join("resources"), true)
+        .map_err(|e| e.to_string())?;
+    Ok(workspace_onboarding::bootstrap_status())
 }
 
 #[tauri::command]
@@ -164,7 +212,7 @@ pub(crate) async fn remove_deepseek_credentials() -> Result<ApiCredentialStatus,
 #[tauri::command]
 pub(crate) async fn review_document_language(id: String) -> Result<LanguageAuditReport, String> {
     run_background("DeepSeek document language review", move || {
-        let api_key = DesktopDeepSeekCredentials::load_key()?;
+        let api_key = crate::ai_engines::text_key()?;
         DesktopWorkspace::from_environment()?.review_document_language(&id, &api_key)
     })
     .await
@@ -173,7 +221,7 @@ pub(crate) async fn review_document_language(id: String) -> Result<LanguageAudit
 #[tauri::command]
 pub(crate) async fn review_blog_language(slug: String) -> Result<LanguageAuditReport, String> {
     run_background("DeepSeek Blog language review", move || {
-        let api_key = DesktopDeepSeekCredentials::load_key()?;
+        let api_key = crate::ai_engines::text_key()?;
         DesktopWorkspace::from_environment()?.review_blog_language(&slug, &api_key)
     })
     .await
@@ -184,7 +232,7 @@ pub(crate) async fn review_episode_series_language(
     series_slug: String,
 ) -> Result<LanguageAuditReport, String> {
     run_background("DeepSeek episode-series language review", move || {
-        let api_key = DesktopDeepSeekCredentials::load_key()?;
+        let api_key = crate::ai_engines::text_key()?;
         DesktopWorkspace::from_environment()?.review_episode_series_language(&series_slug, &api_key)
     })
     .await
@@ -276,7 +324,7 @@ pub(crate) async fn get_workspace_file_diff(path: String, staged: bool) -> Resul
 #[tauri::command]
 pub(crate) async fn generate_workspace_commit_message() -> Result<String, String> {
     run_background("DeepSeek commit message generation", move || {
-        let api_key = DesktopDeepSeekCredentials::load_key()?;
+        let api_key = crate::ai_engines::text_key()?;
         DesktopWorkspace::from_environment()?.generate_workspace_commit_message(&api_key)
     })
     .await
@@ -333,7 +381,8 @@ pub(crate) async fn generate_missing_translation(
     source_language: Option<String>,
 ) -> Result<EditorDocument, String> {
     run_background("AI translation generation", move || {
-        let api_key = DesktopOpenAiCredentials::load_key()?;
+        let api_key =
+            crate::ai_engines::openai_key(silan_viking_app::ai_engine::AiCapability::Text)?;
         DesktopWorkspace::from_environment()?.generate_missing_translation(
             &id,
             &target_language,
@@ -351,7 +400,8 @@ pub(crate) async fn sync_counterpart_translation(
     previous_source_body: Option<String>,
 ) -> Result<EditorDocument, String> {
     run_background("AI translation sync", move || {
-        let api_key = DesktopOpenAiCredentials::load_key()?;
+        let api_key =
+            crate::ai_engines::openai_key(silan_viking_app::ai_engine::AiCapability::Text)?;
         DesktopWorkspace::from_environment()?.sync_counterpart_translation(
             &id,
             &target_language,
@@ -367,7 +417,8 @@ pub(crate) async fn edit_markdown_selection(
     input: MarkdownSelectionAssistInput,
 ) -> Result<MarkdownSelectionAssistResult, String> {
     run_background("AI local Markdown selection edit", move || {
-        let api_key = DesktopOpenAiCredentials::load_key()?;
+        let api_key =
+            crate::ai_engines::openai_key(silan_viking_app::ai_engine::AiCapability::Text)?;
         DesktopWorkspace::from_environment()?.edit_markdown_selection(input, &api_key)
     })
     .await
@@ -386,7 +437,8 @@ pub(crate) async fn generate_cover_asset(
     output_format: Option<String>,
 ) -> Result<ImportedMediaAsset, String> {
     run_background("AI cover generation", move || {
-        let api_key = DesktopOpenAiCredentials::load_key()?;
+        let api_key =
+            crate::ai_engines::openai_key(silan_viking_app::ai_engine::AiCapability::Image)?;
         DesktopWorkspace::from_environment()?.generate_cover_asset(
             &target_uri,
             GenerateCoverAssetInput {
@@ -651,8 +703,9 @@ pub(crate) async fn transcribe_audio(
     duration_ms: u64,
 ) -> Result<String, String> {
     run_background("audio transcription", move || {
-        let api_key = DesktopOpenAiCredentials::load_key()?;
-        OpenAiAudioTranscriber::default()
+        let api_key =
+            crate::ai_engines::openai_key(silan_viking_app::ai_engine::AiCapability::Speech)?;
+        OpenAiAudioTranscriber::configured()?
             .transcribe(
                 &api_key,
                 AudioTranscriptionRequest {
@@ -759,4 +812,24 @@ pub(crate) fn save_resume_entries(
         &entries,
         &expected_revision,
     )
+}
+
+#[tauri::command]
+pub(crate) async fn get_ai_engines() -> Result<crate::ai_engines::AiEngineStatus, String> {
+    run_background("AI engine settings", crate::ai_engines::status).await
+}
+#[tauri::command]
+pub(crate) async fn save_ai_engine(
+    input: crate::ai_engines::SaveAiEngineInput,
+) -> Result<crate::ai_engines::AiEngineStatus, String> {
+    run_background("save AI engine", move || crate::ai_engines::save(input)).await
+}
+#[tauri::command]
+pub(crate) async fn test_ai_engine(
+    capability: silan_viking_app::ai_engine::AiCapability,
+) -> Result<String, String> {
+    run_background("test AI engine", move || {
+        crate::ai_engines::test(capability)
+    })
+    .await
 }

@@ -1,3 +1,4 @@
+import type { AiEngineStatus } from '../lib/aiEngines';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { invoke, isTauri } from '@tauri-apps/api/core';
@@ -33,7 +34,7 @@ function CoverGenerationDialog({
           <span className="ai-cover-progress-scan" />
         </div>
         <div className="ai-cover-progress-copy" aria-live="polite">
-          <span>OpenAI image generation</span>
+          <span>AI image generation</span>
           <h3 id="ai-cover-progress-title">Composing your cover</h3>
           <p>{headline || 'Building the visual hierarchy and final image.'}</p>
           <div className="ai-cover-progress-status">
@@ -94,9 +95,10 @@ export function AiCoverGenerator({
       return undefined;
     }
     let active = true;
-    void invoke<OpenAiCredentialStatus>('get_openai_credentials')
-      .then((status) => {
-        if (active) setCredential(status.state);
+    void invoke<AiEngineStatus>('get_ai_engines')
+      .then(async (status) => {
+        const state = status.configured ? (status.settings.image ? 'ready' : 'missing') : (await invoke<OpenAiCredentialStatus>('get_openai_credentials')).state;
+        if (active) setCredential(state);
       })
       .catch(() => {
         if (active) setCredential('unavailable');
@@ -176,11 +178,11 @@ export function AiCoverGenerator({
               disabled={disabled}
               onClick={onConfigureOpenAi}
             >
-              {credential === 'missing' ? 'Configure OpenAI' : 'Replace OpenAI key'}
+              {credential === 'missing' ? 'Configure image engine' : 'Update image engine'}
             </button>
           ) : (
             <span className="ai-cover-credential" data-state={credential}>
-              {credential === 'ready' ? 'OpenAI ready' : credential === 'loading' ? 'Checking OpenAI' : 'Desktop only'}
+              {credential === 'ready' ? 'Image engine ready' : credential === 'loading' ? 'Checking image engine' : 'Desktop only'}
             </span>
           )}
           <button

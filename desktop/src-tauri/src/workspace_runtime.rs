@@ -126,6 +126,15 @@ fn register_local_workspace(
     Ok(selection)
 }
 
+/// Explicit local opens validate before replacing the device selection.
+pub(crate) fn activate_local_workspace(project_root: &Path) -> Result<(), String> {
+    let runtime = runtime()?;
+    let previous = selection();
+    let selected =
+        register_local_workspace(&runtime.registry_path, project_root, previous.as_ref())?;
+    save_selection(selected)
+}
+
 pub(crate) fn initialization_error() -> Option<String> {
     runtime()
         .ok()
@@ -296,6 +305,66 @@ mod tests {
         )
         .is_err());
         assert_eq!(fs::read(&registry).unwrap(), before);
+    }
+
+    #[test]
+    fn fresh_offline_workspace_opens_without_a_commit_or_deployment_key() {
+        use silan_viking_app::workspace_setup::{CreateWorkspaceInput, WorkspaceSetup};
+        for include_example in [false, true] {
+            let directory = tempfile::tempdir().unwrap();
+            let root = WorkspaceSetup::create(
+                &CreateWorkspaceInput {
+                    destination: directory.path().join("new"),
+                    name: "New research".into(),
+                    author: "Researcher".into(),
+                    language: "zh".into(),
+                    include_example,
+                    avatar: if include_example {
+                        Some(silan_viking_app::workspace_setup::WorkspaceAvatarInput {
+                            bytes: include_bytes!("../icons/64x64.png").to_vec(),
+                        })
+                    } else {
+                        None
+                    },
+                },
+                |_| {},
+            )
+            .unwrap();
+            let workspace = crate::application::DesktopWorkspace::from_project_root(&root).unwrap();
+            let preferences = workspace.workspace_preferences().unwrap();
+            assert_eq!(preferences.default_language, "zh");
+            assert_eq!(preferences.identity.display_name, "Researcher");
+            if include_example {
+                assert!(preferences
+                    .identity
+                    .avatar_reference
+                    .starts_with("silan://resources/resume/assets/"));
+                assert!(preferences
+                    .identity
+                    .avatar_url
+                    .as_ref()
+                    .is_some_and(|url| !url.is_empty()));
+                let source = root.join("content/resources/resume/assets/avatar.png");
+                assert!(source.is_file());
+            } else {
+                assert!(preferences.identity.avatar_reference.is_empty());
+            }
+            workspace.dashboard().unwrap();
+            let control = silan_viking_app::DeliveryControl::open(
+                root.join("content"),
+                root.join("_deploy/portfolio.db"),
+                &root,
+            )
+            .unwrap();
+            let plan = control.deployment_plan().unwrap();
+            assert!(plan.head.is_empty());
+            assert!(plan.commit_activity.is_empty());
+            assert_eq!(control.sync_status().unwrap().state, "not_configured");
+            let selection =
+                register_local_workspace(&directory.path().join(REGISTRY_FILE), &root, None)
+                    .unwrap();
+            assert_eq!(selection.state, WorkspaceActivationState::Ready);
+        }
     }
 
     #[test]

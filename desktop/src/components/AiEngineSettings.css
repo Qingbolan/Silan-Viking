@@ -1,0 +1,13 @@
+.ai-engine-settings { display: grid; gap: 12px; width: 100%; min-width: 0; color: var(--ink, #171717); font-size: 14px; }
+.ai-engine-settings label { display: grid; gap: 8px; font-weight: 500; }
+.ai-engine-settings input, .ai-engine-settings select { width: 100%; min-width: 0; height: 44px; padding: 8px 12px; font: inherit; color: inherit; border: 1px solid #dedede; border-radius: 8px; background: #fff; }
+.ai-engine-tabs, .ai-engine-actions { display: flex; gap: 8px; }
+.ai-engine-settings button { min-height: 44px; padding: 8px 16px; font: inherit; border: 0; border-radius: 8px; background: #f2f2f2; color: #262626; cursor: pointer; }
+.ai-engine-tabs > button { flex: 1; }
+.ai-engine-tabs > button[aria-selected='true'], .ai-engine-actions > button:first-child { background: #171717; color: #fff; }
+.ai-engine-settings button:disabled { opacity: .45; cursor: default; }
+.ai-engine-settings button:hover:not(:disabled) { filter: brightness(.92); }
+.ai-engine-settings :is(button, input, select):focus-visible { outline: 2px solid #777; outline-offset: 3px; }
+.ai-engine-status { margin: 0; min-height: 22px; color: #737373; overflow-wrap: anywhere; }
+
+.ai-engine-status:empty { display: none; }

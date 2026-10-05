@@ -10,7 +10,7 @@ mod language_check;
 mod onboarding;
 mod private_backup;
 mod recovery;
-mod scaffold;
+use silan_viking_app::scaffold;
 mod skill;
 
 use rusqlite::{params, Connection, OptionalExtension};
@@ -28,7 +28,7 @@ use std::time::{Duration, Instant};
 
 /// The canonical `content/SCHEMA.md`, embedded so `silan init` writes a
 /// schema the engine can actually parse (it needs the fenced ```yaml``` block).
-const SCHEMA_TEMPLATE: &str = include_str!("../assets/SCHEMA.md");
+use silan_viking_app::workspace_setup::SCHEMA_TEMPLATE;
 const BUILD_VERSION: &str = env!("SILAN_BUILD_VERSION");
 
 fn main() {
@@ -3716,9 +3716,9 @@ impl<'a> RemoteArtifactTransport<'a> {
         let mut parts = vec![
             "ssh".to_owned(),
             "-o".to_owned(),
-            format!("BatchMode=yes"),
+            "BatchMode=yes".to_owned(),
             "-o".to_owned(),
-            format!("StrictHostKeyChecking=accept-new"),
+            "StrictHostKeyChecking=accept-new".to_owned(),
             "-o".to_owned(),
             format!("ConnectTimeout={SSH_CONNECT_TIMEOUT_SECS}"),
             "-o".to_owned(),

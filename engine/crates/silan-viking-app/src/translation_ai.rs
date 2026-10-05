@@ -101,6 +101,7 @@ pub enum OpenAiTranslationError {
 }
 
 pub struct OpenAiMarkdownTranslator {
+    engine: Option<crate::ai_engine::AiEngineProfile>,
     api_base: String,
     model: String,
 }
@@ -112,6 +113,24 @@ impl Default for OpenAiMarkdownTranslator {
 }
 
 impl OpenAiMarkdownTranslator {
+    pub fn configured() -> Result<Self, String> {
+        let mut client = Self {
+            engine: crate::ai_engine::configured_profile(crate::ai_engine::AiCapability::Text)?,
+            ..Self::default()
+        };
+        if let Some(profile) = &client.engine {
+            client.model = profile.model.clone();
+        }
+        Ok(client)
+    }
+    pub fn with_model(mut self, model: String) -> Self {
+        self.model = model.clone();
+        if let Some(profile) = &mut self.engine {
+            profile.model = model;
+        }
+        self
+    }
+
     pub fn from_environment() -> Self {
         let model = env::var("SILAN_OPENAI_TRANSLATION_MODEL")
             .unwrap_or_else(|_| DEFAULT_OPENAI_TRANSLATION_MODEL.to_owned());
@@ -120,6 +139,7 @@ impl OpenAiMarkdownTranslator {
 
     pub fn new(api_base: impl Into<String>, model: impl Into<String>) -> Self {
         Self {
+            engine: None,
             api_base: api_base.into().trim_end_matches('/').to_owned(),
             model: model.into(),
         }
@@ -229,6 +249,20 @@ impl OpenAiMarkdownTranslator {
         user_prompt: &str,
         text: TextConfig<'static>,
     ) -> Result<T, OpenAiTranslationError> {
+        if let Some(profile) = api_key.engine().or(self.engine.as_ref()) {
+            let response = crate::ai_engine::chat_completion(
+                profile,
+                api_key.expose_secret(),
+                system_prompt,
+                user_prompt,
+                Some(text.format.schema),
+            )
+            .map_err(OpenAiTranslationError::Unavailable)?;
+            let output = crate::ai_engine::completion_text(&response)
+                .map_err(OpenAiTranslationError::InvalidResponse)?;
+            return serde_json::from_str(output.trim())
+                .map_err(|e| OpenAiTranslationError::InvalidResponse(e.to_string()));
+        }
         let url = format!("{}/v1/responses", self.api_base);
         let agent = ureq::AgentBuilder::new()
             .timeout_connect(Duration::from_secs(6))

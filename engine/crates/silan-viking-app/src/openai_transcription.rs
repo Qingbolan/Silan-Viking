@@ -34,6 +34,7 @@ pub enum OpenAiTranscriptionError {
 }
 
 pub struct OpenAiAudioTranscriber {
+    endpoint: Option<String>,
     api_base: String,
     model: String,
 }
@@ -45,8 +46,20 @@ impl Default for OpenAiAudioTranscriber {
 }
 
 impl OpenAiAudioTranscriber {
+    pub fn configured() -> Result<Self, String> {
+        let mut client = Self::default();
+        if let Some(profile) =
+            crate::ai_engine::configured_profile(crate::ai_engine::AiCapability::Speech)?
+        {
+            client.endpoint = Some(profile.endpoint("audio/transcriptions"));
+            client.model = profile.model;
+        }
+        Ok(client)
+    }
+
     pub fn new(api_base: impl Into<String>, model: impl Into<String>) -> Self {
         Self {
+            endpoint: None,
             api_base: api_base.into().trim_end_matches('/').to_owned(),
             model: model.into(),
         }
@@ -59,9 +72,22 @@ impl OpenAiAudioTranscriber {
     ) -> Result<String, OpenAiTranscriptionError> {
         let audio_format = AudioFormat::parse(&request)?;
         let boundary = format!("silan-viking-{}", std::process::id());
-        let body = multipart_body(&boundary, &self.model, audio_format, &request.audio);
-        let url = format!("{}/v1/audio/transcriptions", self.api_base);
+        let body = multipart_body(
+            &boundary,
+            api_key
+                .engine()
+                .map(|p| p.model.as_str())
+                .unwrap_or(&self.model),
+            audio_format,
+            &request.audio,
+        );
+        let url = api_key
+            .engine()
+            .map(|p| p.endpoint("audio/transcriptions"))
+            .or_else(|| self.endpoint.clone())
+            .unwrap_or_else(|| format!("{}/v1/audio/transcriptions", self.api_base));
         let agent = ureq::AgentBuilder::new()
+            .redirects(0)
             .timeout_connect(Duration::from_secs(6))
             .timeout_read(Duration::from_secs(90))
             .timeout_write(Duration::from_secs(20))

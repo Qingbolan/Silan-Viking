@@ -153,6 +153,7 @@ pub enum OpenAiImageGenerationError {
 }
 
 pub struct OpenAiImageGenerator {
+    endpoint: Option<String>,
     api_base: String,
     model: String,
 }
@@ -164,6 +165,17 @@ impl Default for OpenAiImageGenerator {
 }
 
 impl OpenAiImageGenerator {
+    pub fn configured() -> Result<Self, String> {
+        let mut client = Self::default();
+        if let Some(profile) =
+            crate::ai_engine::configured_profile(crate::ai_engine::AiCapability::Image)?
+        {
+            client.endpoint = Some(profile.endpoint("images/generations"));
+            client.model = profile.model;
+        }
+        Ok(client)
+    }
+
     pub fn from_environment() -> Self {
         let model = env::var("SILAN_OPENAI_IMAGE_MODEL")
             .unwrap_or_else(|_| DEFAULT_OPENAI_IMAGE_MODEL.to_owned());
@@ -172,6 +184,7 @@ impl OpenAiImageGenerator {
 
     pub fn new(api_base: impl Into<String>, model: impl Into<String>) -> Self {
         Self {
+            endpoint: None,
             api_base: api_base.into().trim_end_matches('/').to_owned(),
             model: model.into(),
         }
@@ -183,14 +196,22 @@ impl OpenAiImageGenerator {
         request: &ImageGenerationRequest,
     ) -> Result<GeneratedImageAsset, OpenAiImageGenerationError> {
         validate_prompt(&request.prompt)?;
-        let url = format!("{}/v1/images/generations", self.api_base);
+        let url = api_key
+            .engine()
+            .map(|p| p.endpoint("images/generations"))
+            .or_else(|| self.endpoint.clone())
+            .unwrap_or_else(|| format!("{}/v1/images/generations", self.api_base));
         let agent = ureq::AgentBuilder::new()
+            .redirects(0)
             .timeout_connect(Duration::from_secs(6))
             .timeout_read(Duration::from_secs(180))
             .timeout_write(Duration::from_secs(10))
             .build();
         let payload = ImageGenerationPayload {
-            model: self.model.as_str(),
+            model: api_key
+                .engine()
+                .map(|p| p.model.as_str())
+                .unwrap_or(&self.model),
             prompt: request.prompt.trim(),
             n: 1,
             size: request.size.as_api_value(),
@@ -198,30 +219,41 @@ impl OpenAiImageGenerator {
             output_format: request.output_format.as_api_value(),
         };
 
-        let response =
-            match agent
-                .post(&url)
-                .set(
-                    "Authorization",
-                    &format!("Bearer {}", api_key.expose_secret()),
-                )
-                .send_json(serde_json::to_value(payload).map_err(|error| {
-                    OpenAiImageGenerationError::InvalidResponse(error.to_string())
-                })?) {
-                Ok(response) => response,
-                Err(ureq::Error::Status(status, response)) => {
-                    let message = response
-                        .into_json::<ApiErrorEnvelope>()
-                        .ok()
-                        .map(|body| body.error.message)
-                        .filter(|message| !message.trim().is_empty())
-                        .unwrap_or_else(|| "image generation request failed".to_owned());
-                    return Err(OpenAiImageGenerationError::Rejected { status, message });
-                }
-                Err(ureq::Error::Transport(error)) => {
-                    return Err(OpenAiImageGenerationError::Unavailable(error.to_string()));
-                }
-            };
+        let mut payload = serde_json::to_value(payload)
+            .map_err(|e| OpenAiImageGenerationError::InvalidResponse(e.to_string()))?;
+        if self.endpoint.is_some()
+            && !api_key
+                .engine()
+                .map(|p| p.model.as_str())
+                .unwrap_or(&self.model)
+                .starts_with("gpt-image")
+        {
+            payload.as_object_mut().unwrap().remove("output_format");
+            payload.as_object_mut().unwrap().remove("quality");
+            payload["response_format"] = serde_json::json!("b64_json");
+        }
+        let response = match agent
+            .post(&url)
+            .set(
+                "Authorization",
+                &format!("Bearer {}", api_key.expose_secret()),
+            )
+            .send_json(payload)
+        {
+            Ok(response) => response,
+            Err(ureq::Error::Status(status, response)) => {
+                let message = response
+                    .into_json::<ApiErrorEnvelope>()
+                    .ok()
+                    .map(|body| body.error.message)
+                    .filter(|message| !message.trim().is_empty())
+                    .unwrap_or_else(|| "image generation request failed".to_owned());
+                return Err(OpenAiImageGenerationError::Rejected { status, message });
+            }
+            Err(ureq::Error::Transport(error)) => {
+                return Err(OpenAiImageGenerationError::Unavailable(error.to_string()));
+            }
+        };
 
         let body = response
             .into_json::<ImageGenerationResponse>()

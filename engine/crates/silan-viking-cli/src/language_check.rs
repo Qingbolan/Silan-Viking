@@ -11,18 +11,26 @@ use std::path::{Path, PathBuf};
 
 pub fn run(content_root: &Path, scope: LanguageAuditScope, args: &[&str]) -> Result<(), String> {
     let options = LanguageCheckOptions::parse(args)?;
-    let api_key = credentials::deepseek_api_key()?;
-    let auditor = options
-        .model
-        .as_deref()
-        .map(DeepSeekLanguageAuditor::for_model)
-        .unwrap_or_default()
+    let mut api_key = credentials::deepseek_api_key()?;
+    let mut auditor = DeepSeekLanguageAuditor::configured()?;
+    if let Some(model) = options.model {
+        if let Some(mut profile) = api_key.engine().cloned() {
+            profile.model = model.clone();
+            api_key = silan_viking_app::DeepSeekApiKey::for_engine(
+                api_key.expose_secret().to_owned(),
+                profile,
+            )
+            .map_err(|error| error.to_string())?;
+        }
+        auditor = auditor.with_model(model);
+    }
+    let auditor = auditor
         .with_min_confidence(options.min_confidence)
         .map_err(|error| error.to_string())?;
     let workflow = LanguageAuditWorkflow::with_auditor(content_root, auditor)
         .map_err(|error| error.to_string())?;
     eprintln!(
-        "Sending authored documents to DeepSeek for read-only reader review \
+        "Sending authored documents to the configured AI engine for read-only reader review \
          (model={}, min-confidence={:.2}).",
         workflow.model(),
         workflow.min_confidence()
@@ -76,7 +84,7 @@ fn write_report(path: &Path, report: &LanguageAuditReport) -> Result<(), String>
 
 fn print_human_report(content_root: &Path, report: &LanguageAuditReport) {
     println!(
-        "DeepSeek reader review · model={} · min-confidence={:.2} · \
+        "AI reader review · model={} · min-confidence={:.2} · \
          documents={}/{} · findings={} (major={})",
         report.model,
         report.min_confidence,

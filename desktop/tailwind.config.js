@@ -2,6 +2,8 @@
 export default {
   content: [
     "./index.html",
+    "../frontend/src/components/ui/CodeBlockView.tsx",
+    "../frontend/src/components/ds/Button.tsx",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',

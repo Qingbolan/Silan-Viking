@@ -457,7 +457,7 @@ impl DesktopWorkspace {
             .delivery_control
             .staged_diff()
             .map_err(|error| error.to_string())?;
-        DeepSeekCommitMessageGenerator::default()
+        DeepSeekCommitMessageGenerator::configured()?
             .generate(api_key, &staged_diff)
             .map_err(|error| error.to_string())
     }
@@ -531,10 +531,13 @@ impl DesktopWorkspace {
         translation_id: &str,
         api_key: &DeepSeekApiKey,
     ) -> Result<LanguageAuditReport, String> {
-        LanguageAuditWorkflow::open(&self.content_root)
-            .map_err(|error| error.to_string())?
-            .review_translation(api_key, translation_id)
-            .map_err(|error| error.to_string())
+        LanguageAuditWorkflow::with_auditor(
+            &self.content_root,
+            silan_viking_app::DeepSeekLanguageAuditor::configured()?,
+        )
+        .map_err(|error| error.to_string())?
+        .review_translation(api_key, translation_id)
+        .map_err(|error| error.to_string())
     }
 
     pub(crate) fn review_blog_language(
@@ -559,10 +562,13 @@ impl DesktopWorkspace {
         selector: &str,
         api_key: &DeepSeekApiKey,
     ) -> Result<LanguageAuditReport, String> {
-        LanguageAuditWorkflow::open(&self.content_root)
-            .map_err(|error| error.to_string())?
-            .review_scope(api_key, scope, Some(selector))
-            .map_err(|error| error.to_string())
+        LanguageAuditWorkflow::with_auditor(
+            &self.content_root,
+            silan_viking_app::DeepSeekLanguageAuditor::configured()?,
+        )
+        .map_err(|error| error.to_string())?
+        .review_scope(api_key, scope, Some(selector))
+        .map_err(|error| error.to_string())
     }
 
     pub(crate) fn resume_sections(&self, language: &str) -> Result<Vec<ResumeSection>, String> {
@@ -805,7 +811,7 @@ impl DesktopWorkspace {
             ));
         }
 
-        let translator = OpenAiMarkdownTranslator::from_environment();
+        let translator = OpenAiMarkdownTranslator::configured()?;
         let generated = translator
             .translate(
                 api_key,
@@ -871,7 +877,7 @@ impl DesktopWorkspace {
             return Err("Both source and target Markdown must exist before syncing.".to_owned());
         }
 
-        let translator = OpenAiMarkdownTranslator::from_environment();
+        let translator = OpenAiMarkdownTranslator::configured()?;
         let synced = translator
             .sync_existing(
                 api_key,
@@ -925,7 +931,7 @@ impl DesktopWorkspace {
                 MarkdownSelectionEditAction::CommentIssue
             }
         };
-        let editor = OpenAiMarkdownTranslator::from_environment();
+        let editor = OpenAiMarkdownTranslator::configured()?;
         let output = editor
             .edit_selection(
                 api_key,

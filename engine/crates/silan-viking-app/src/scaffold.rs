@@ -301,7 +301,14 @@ pub fn new_resume(
     let meta = write_meta(&summary_dir, "summary")?;
     let md = summary_dir.join("en.md");
     let frontmatter = format!(
-        "---\nfull_name: {full_name}\ntitle: {title}\nkind: resume\nvisibility: private\n---\n"
+        "---\n{}---\n",
+        serde_yaml::to_string(&std::collections::BTreeMap::from([
+            ("full_name", full_name),
+            ("title", title),
+            ("kind", "resume"),
+            ("visibility", "private"),
+        ]))
+        .map_err(|error| ScaffoldError(error.to_string()))?
     );
     // The bio body is heading-free prose: the front-end already renders it
     // inside a titled section ("About Me"), so a leading `## Summary` here

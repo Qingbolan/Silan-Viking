@@ -113,3 +113,11 @@ test('a successful status transition clears only stale synchronization errors', 
   ), null);
   assert.equal(clearResolvedSynchronizationError('another operation failed', resolved), 'another operation failed');
 });
+
+test('a new local workspace has no remote comparison or automatic pull prerequisite', () => {
+  const result = readiness({ syncState: 'not_configured', localCommitCount: 0 });
+  assert.equal(result.state, 'not_configured');
+  assert.equal(result.canDeploy, false);
+  assert.equal(result.canPull, false);
+  assert.equal(automaticDeploymentPullKey({ state: 'not_configured', local_head: '', remote_head: '' }, 0), null);
+});

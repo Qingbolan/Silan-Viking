@@ -272,15 +272,17 @@ impl CoverWorkspace {
             .filter(|value| !value.is_empty())
             .map(str::to_owned)
             .unwrap_or_else(|| input.brief.xhs_editorial_prompt(target.kind, input.size));
-        let generated = OpenAiImageGenerator::default().generate(
-            api_key,
-            &ImageGenerationRequest {
-                prompt,
-                size: input.size,
-                quality: input.quality,
-                output_format: input.output_format,
-            },
-        )?;
+        let generated = OpenAiImageGenerator::configured()
+            .map_err(crate::OpenAiImageGenerationError::InvalidRequest)?
+            .generate(
+                api_key,
+                &ImageGenerationRequest {
+                    prompt,
+                    size: input.size,
+                    quality: input.quality,
+                    output_format: input.output_format,
+                },
+            )?;
         let named = GeneratedImageAsset {
             file_name: format!(
                 "ai-cover-{}.{}",

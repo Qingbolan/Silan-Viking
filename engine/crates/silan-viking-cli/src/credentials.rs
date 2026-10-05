@@ -155,6 +155,19 @@ fn remove<P: ApiCredentialProvider>() -> Result<(), String> {
 }
 
 pub fn openai_api_key() -> Result<OpenAiApiKey, String> {
+    use silan_viking_app::ai_engine::{
+        configured_profile, AiCapability, AiProvider, KEYCHAIN_SERVICE,
+    };
+    if let Some(profile) = configured_profile(AiCapability::Image)? {
+        let key = if let Some(id) = &profile.credential_id {
+            load_secret(KEYCHAIN_SERVICE, id)?.ok_or("AI API key is missing")?
+        } else if profile.provider == AiProvider::Ollama {
+            "ollama".into()
+        } else {
+            return Err("AI API key is missing".into());
+        };
+        return OpenAiApiKey::for_engine(key, profile).map_err(|e| e.to_string());
+    }
     api_key::<OpenAiProvider>()
 }
 
@@ -179,6 +192,19 @@ pub fn deepseek_set() -> Result<(), String> {
 }
 
 pub fn deepseek_api_key() -> Result<DeepSeekApiKey, String> {
+    use silan_viking_app::ai_engine::{
+        configured_profile, AiCapability, AiProvider, KEYCHAIN_SERVICE,
+    };
+    if let Some(profile) = configured_profile(AiCapability::Text)? {
+        let key = if let Some(id) = &profile.credential_id {
+            load_secret(KEYCHAIN_SERVICE, id)?.ok_or("AI API key is missing")?
+        } else if profile.provider == AiProvider::Ollama {
+            "ollama".into()
+        } else {
+            return Err("AI API key is missing".into());
+        };
+        return DeepSeekApiKey::for_engine(key, profile).map_err(|e| e.to_string());
+    }
     api_key::<DeepSeekProvider>()
 }
 

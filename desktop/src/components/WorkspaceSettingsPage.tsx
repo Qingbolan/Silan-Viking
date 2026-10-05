@@ -8,13 +8,11 @@ import {
   CheckCircle2,
   FolderKanban,
   ImagePlus,
-  KeyRound,
   Languages,
   LoaderCircle,
   Radio,
   RotateCcw,
   Search,
-  ShieldCheck,
   Trash2,
 } from 'lucide-react';
 import { selectPrimaryDocument } from '../lib/content';
@@ -30,7 +28,7 @@ import { Input } from './ds/Input';
 import { contentVisibilityFor, contentStateSummary } from '../lib/contentVisibility';
 import { formatShortDate } from '../lib/format';
 import { toWebviewMediaUrl } from '../lib/media';
-import { useApiCredentials, type ApiCredentialProvider } from '../lib/apiCredentials';
+import { AiEngineSettings } from './AiEngineSettings';
 import type { ContentGroup, WorkspacePreferences } from '../types';
 
 type SettingsTab = 'profile' | 'connection' | 'private';
@@ -268,149 +266,6 @@ function WorkspaceProfileSettings({
           <span>{error}</span>
         </div>
       )}
-    </section>
-  );
-}
-
-const apiProviderMeta: Record<ApiCredentialProvider, {
-  displayName: string;
-  description: string;
-  modelLabel: string;
-  keyLabel: string;
-  placeholder: string;
-}> = {
-  openai: {
-    displayName: 'OpenAI',
-    description: 'Translation and voice capture share one Platform API key stored in macOS Keychain.',
-    modelLabel: 'Translation model',
-    keyLabel: 'OpenAI Platform API key',
-    placeholder: 'sk-…',
-  },
-  deepseek: {
-    displayName: 'DeepSeek',
-    description: 'Reader review scores Blog and episode-series prose without modifying source files.',
-    modelLabel: 'Reader review model',
-    keyLabel: 'DeepSeek API key',
-    placeholder: 'DeepSeek API key',
-  },
-};
-
-function ApiProviderConnectionSettings({ provider }: { provider: ApiCredentialProvider }) {
-  const meta = apiProviderMeta[provider];
-  const { state, setDraft, save, test, remove } = useApiCredentials(provider);
-  const busy = state.phase === 'loading'
-    || state.phase === 'saving'
-    || state.phase === 'testing'
-    || state.phase === 'removing';
-  const configured = state.status?.state === 'ready';
-  const invalid = state.status?.state === 'invalid';
-  const verified = Boolean(state.status?.request_id);
-  const statusLabel = verified
-    ? 'Connected'
-    : configured
-      ? 'Configured'
-      : invalid
-        ? 'Stored key is invalid'
-        : 'Not configured';
-
-  return (
-    <section className="workspace-settings-section" aria-labelledby={`${provider}-connection-heading`}>
-      <header className="workspace-settings-section-header">
-        <h2 id={`${provider}-connection-heading`}>{meta.displayName}</h2>
-        <p>{meta.description}</p>
-      </header>
-
-      <div className="api-connection-status" data-state={state.status?.state || 'loading'}>
-        {state.phase === 'loading'
-          ? <LoaderCircle size={16} className="spin" />
-          : configured
-            ? <CheckCircle2 size={16} />
-            : <AlertCircle size={16} />}
-        <div>
-          <strong>{state.phase === 'loading' ? 'Reading Keychain…' : statusLabel}</strong>
-          <span>{meta.modelLabel} · {state.status?.model || '—'}</span>
-        </div>
-      </div>
-
-      <form
-        className="api-settings-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (state.draft.trim() && !busy) void save();
-        }}
-      >
-        <label className="api-key-field">
-          <span>{configured ? `Replace ${meta.displayName} API key` : meta.keyLabel}</span>
-          <input
-            type="password"
-            value={state.draft}
-            placeholder={meta.placeholder}
-            autoComplete="new-password"
-            spellCheck={false}
-            disabled={busy}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-          <small>The key is verified before it replaces the current Keychain entry.</small>
-        </label>
-
-        {(state.error || state.status?.detail) && (
-          <div className="dialog-error api-settings-error" role="alert">
-            <AlertCircle size={14} />
-            <span>{state.error || state.status?.detail}</span>
-          </div>
-        )}
-
-        {state.status?.request_id && !state.error && (
-          <div className="api-verification-result">
-            <ShieldCheck size={14} />
-            <span>Verified with {meta.displayName} · request {state.status.request_id}</span>
-          </div>
-        )}
-
-        <footer className="api-settings-actions">
-          <div>
-            {(configured || invalid) && (
-              <button
-                type="button"
-                className="api-remove-button"
-                disabled={busy}
-                onClick={() => void remove()}
-              >
-                {state.phase === 'removing' ? <LoaderCircle size={14} className="spin" /> : <Trash2 size={14} />}
-                Remove
-              </button>
-            )}
-          </div>
-          <div>
-            {configured && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={busy}
-                onClick={() => void test()}
-              >
-                {state.phase === 'testing' ? <LoaderCircle size={14} className="spin" /> : <ShieldCheck size={14} />}
-                Test connection
-              </Button>
-            )}
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={busy || !state.draft.trim()}
-            >
-              {state.phase === 'saving' ? <LoaderCircle size={14} className="spin" /> : <KeyRound size={14} />}
-              Verify &amp; save
-            </Button>
-          </div>
-        </footer>
-      </form>
-
-      <div className="workspace-settings-security-note">
-        <ShieldCheck size={14} />
-        <span>The API key stays in macOS Keychain and is never written to <strong>content/</strong>.</span>
-      </div>
     </section>
   );
 }
@@ -668,8 +523,7 @@ export function WorkspaceSettingsPage({
         )}
         {activeTab === 'connection' && (
           <div className="api-provider-settings">
-            <ApiProviderConnectionSettings provider="openai" />
-            <ApiProviderConnectionSettings provider="deepseek" />
+            <AiEngineSettings />
           </div>
         )}
         {activeTab === 'private' && (
