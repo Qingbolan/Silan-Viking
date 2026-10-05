@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node scripts/start-dev-server.mjs",
     "build": "tsc && vite build",
-    "test": "npm run test:resource-visibility && npm run test:navigation && npm run test:desktop-window && npm run test:shelf-interaction && npm run test:startup-sequence && npm run test:cover-generation && npm run test:language-review && npm run test:editor-workflows && npm run test:capture && npm run test:deployment-readiness && npm run test:workspace-view && npm run test:onboarding && npm run test:workflow-guards && npm run test:content-settings && npm run test:traffic-insights && npm run test:lexical-editor && npm run test:card-presentation",
+    "test": "npm run test:resource-visibility && npm run test:navigation && npm run test:desktop-window && npm run test:shelf-interaction && npm run test:startup-sequence && npm run test:cover-generation && npm run test:language-review && npm run test:editor-workflows && npm run test:capture && npm run test:deployment-readiness && npm run test:workspace-view && npm run test:onboarding && npm run test:workflow-guards && npm run test:content-settings && npm run test:traffic-insights && npm run test:lexical-editor && npm run test:card-presentation && npm run test:sidebar && npm run test:page-plugins",
     "test:capture": "esbuild src/lib/captureSubmission.test.mjs --bundle --platform=node --format=esm --outfile=/tmp/silan-capture-submission-test.mjs && node --test /tmp/silan-capture-submission-test.mjs",
     "test:cover-generation": "node --experimental-strip-types --test src/lib/coverGeneration.test.mjs",
     "test:resource-visibility": "node --experimental-strip-types --test src/lib/resourceVisibility.test.mjs",
@@ -27,7 +27,9 @@
     "tauri": "tauri",
     "desktop": "tauri dev",
     "build:desktop": "tauri build",
-    "test:card-presentation": "node --experimental-strip-types --test src/lib/cardPresentation.test.mjs"
+    "test:card-presentation": "node --experimental-strip-types --test src/lib/cardPresentation.test.mjs",
+    "test:sidebar": "node --experimental-strip-types --test src/components/sidebar/SidebarFactory.test.mjs",
+    "test:page-plugins": "node --experimental-strip-types --test src/plugins/PagePlugin.test.mjs && npm --prefix templates/page-plugin run check"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

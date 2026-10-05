@@ -1,3 +1,5 @@
+import { pagePlugins } from './plugins/registry';
+import { PagePluginHost } from './plugins/PagePluginHost';
 import React from 'react';
 import { CaptureSubmission } from './lib/captureSubmission';
 import type { VideoCoverState } from './lib/videoCover';
@@ -336,7 +338,7 @@ export default function App() {
   const [deployVerification, setDeployVerification] = React.useState<DeployVerificationResult | null>(null);
   const [momentsSettings, setMomentsSettings] = React.useState<MomentsSettings | null>(null);
   const [workspacePreferences, setWorkspacePreferences] = React.useState<WorkspacePreferences | null>(null);
-  const [screen, setScreen] = React.useState<'dashboard' | 'content' | 'settings'>('dashboard');
+  const [screen, setScreen] = React.useState<'dashboard' | 'content' | 'settings' | 'plugin'>('dashboard');
   const [selectedId, setSelectedId] = React.useState('');
   const [languageByDocument, setLanguageByDocument] = React.useState<Record<string, string>>({});
   const [query, setQuery] = React.useState('');
@@ -509,8 +511,17 @@ export default function App() {
     ? translationSync.state.key || ''
     : '';
 
+  const [activePageId, setActivePageId] = React.useState('');
+  const openPluginPage = (id: string) => {
+    if (!pagePlugins.find(id)) return;
+    setActivePageId(id);
+    setContentEditorOpen(false);
+    setScreen('plugin');
+  };
+
   const workspaceLocation = React.useMemo(() => workspaceLocationFrom({
     screen,
+    pageId: activePageId,
     entityFilter,
     selectedDocumentId: selectedId,
     selectedSeriesId,
@@ -518,6 +529,7 @@ export default function App() {
     railMode: contentRailMode,
     railPanel: contentRailPanel,
   }), [
+    activePageId,
     contentEditorOpen,
     contentRailMode,
     contentRailPanel,
@@ -542,6 +554,12 @@ export default function App() {
   }, [workspaceLocation, workspaceLocationId]);
 
   const restoreWorkspaceLocation = React.useCallback((location: WorkspaceLocation) => {
+    if (location.kind === 'plugin') {
+      setActivePageId(location.pageId);
+      setContentEditorOpen(false);
+      setScreen('plugin');
+      return;
+    }
     if (location.kind === 'settings') {
       settingsReturnScreenRef.current = screen === 'content' ? 'content' : 'dashboard';
       setSidebarOpen(false);
@@ -3399,7 +3417,7 @@ export default function App() {
     };
   }, [versionScope, documents, dirtyIds.size]);
 
-  const titlebarTitle = screen === 'dashboard'
+  const titlebarTitle = screen === 'plugin' ? pagePlugins.find(activePageId)?.title : screen === 'dashboard'
     ? 'Overview'
     : screen === 'settings'
       ? 'Settings'
@@ -3446,6 +3464,8 @@ export default function App() {
       {screen !== 'settings' && (
         <WorkspaceSidebar
           open={sidebarOpen}
+          activePageId={screen === 'plugin' ? activePageId : undefined}
+          onPageOpen={openPluginPage}
           dashboardActive={screen === 'dashboard'}
           activeItem={screen === 'content' ? entityFilter : null}
           attentionCount={attentionCount}
@@ -3483,7 +3503,9 @@ export default function App() {
           </div>
         )}
 
-        {screen === 'settings' ? (
+        {screen === 'plugin' ? (
+          <PagePluginHost plugin={pagePlugins.find(activePageId)} context={{ language: chromeLanguage, openPage: openPluginPage, openDashboard: returnToDashboard }} />
+        ) : screen === 'settings' ? (
           <WorkspaceSettingsPage
             privateResources={privateResources}
             restoringResourceId={stateSavingId}
@@ -4298,7 +4320,7 @@ export default function App() {
           </section>
         )}
 
-        {screen === 'settings' ? null : screen === 'dashboard' ? (
+        {screen === 'settings' || screen === 'plugin' ? null : screen === 'dashboard' ? (
           <div className="quick-dock" aria-label="Writing shortcuts">
             <button
               type="button"

@@ -1,0 +1,9 @@
+{
+  "name": "silan-page-plugin-template",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "check": "tsc -p tsconfig.json" },
+  "peerDependencies": { "react": "^18.0.0" },
+  "devDependencies": { "typescript": "^5.0.0", "@types/react": "^18.0.0" }
+}

@@ -2,7 +2,8 @@ import type { ContentRailMode, ContentRailPanel } from '../app/settings/contentS
 import type { EntityFilter } from '../types';
 
 export type WorkspaceNavigationSnapshot = {
-  screen: 'dashboard' | 'content' | 'settings';
+  screen: 'dashboard' | 'content' | 'settings' | 'plugin';
+  pageId?: string;
   entityFilter: EntityFilter;
   selectedDocumentId: string;
   selectedSeriesId: string;
@@ -12,6 +13,7 @@ export type WorkspaceNavigationSnapshot = {
 };
 
 export type WorkspaceLocation =
+  | { kind: 'plugin'; pageId: string }
   | { kind: 'dashboard' }
   | { kind: 'settings' }
   | { kind: 'shelf'; entityFilter: EntityFilter }
@@ -35,6 +37,7 @@ const historyLimit = 100;
 export const workspaceLocationFrom = (
   snapshot: WorkspaceNavigationSnapshot,
 ): WorkspaceLocation => {
+  if (snapshot.screen === 'plugin') return { kind: 'plugin', pageId: snapshot.pageId || '' };
   if (snapshot.screen === 'dashboard') return { kind: 'dashboard' };
   if (snapshot.screen === 'settings') return { kind: 'settings' };
   if (snapshot.editorOpen && snapshot.selectedDocumentId) {
@@ -59,6 +62,7 @@ export const workspaceLocationFrom = (
 
 export const workspaceLocationKey = (location: WorkspaceLocation) => {
   switch (location.kind) {
+    case 'plugin': return `plugin:${location.pageId}`;
     case 'dashboard':
     case 'settings':
       return location.kind;
