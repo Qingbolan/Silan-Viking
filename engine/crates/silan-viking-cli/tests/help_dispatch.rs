@@ -349,3 +349,35 @@ fn relation_link_without_a_type_value_names_the_valid_kinds() {
         "{stderr}"
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn desktop_default_ignores_the_invoking_workspace() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = empty_cwd();
+    std::fs::write(root.join("silan-viking.toml"), "invalid project config [").unwrap();
+    let bundle = root.join("Silan Context System.app");
+    let executable = bundle.join("Contents/MacOS/Silan Context System");
+    std::fs::create_dir_all(executable.parent().unwrap()).unwrap();
+    std::fs::write(executable, "fixture").unwrap();
+    let opener = root.join("open");
+    std::fs::write(&opener, "#!/bin/sh\n[ \"$#\" -eq 1 ] || exit 2\n[ -z \"$SILAN_DESKTOP_PROJECT$SILAN_DESKTOP_CONTENT$SILAN_DESKTOP_DB\" ] || exit 3\n").unwrap();
+    std::fs::set_permissions(&opener, std::fs::Permissions::from_mode(0o755)).unwrap();
+    for command in ["desktop", "destop"] {
+        let output = Command::new(bin())
+            .arg(command)
+            .current_dir(&root)
+            .env("PATH", &root)
+            .env("SILAN_DESKTOP_APP", &bundle)
+            .env("SILAN_DESKTOP_PROJECT", "/unrelated")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    assert!(!root.join("portfolio.db").exists());
+    std::fs::remove_dir_all(root).unwrap();
+}

@@ -502,3 +502,13 @@ silan uninstall           remove the skill + derived files; --purge also drops c
   exposed to the agent (#13 safety boundary).
 - Code site: `silan-viking-cli/groups/`, one file per noun (`01`
   §1.9).
+
+### Desktop launch selection
+
+`silan desktop` and its `silan destop` alias activate the installed Desktop app
+without reading the invoking directory's project configuration, syncing content,
+or overriding the app's saved workspace. `silan desktop --path /path/to/project`
+explicitly selects a workspace; the path must be a directory at or under a project
+containing `silan-viking.toml`. Its `[project].content_dir` and database settings
+remain authoritative. A positional directory is rejected. `silan desktop dev`
+remains the explicit source development entry point.

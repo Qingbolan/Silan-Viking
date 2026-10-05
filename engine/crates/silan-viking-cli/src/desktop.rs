@@ -18,9 +18,10 @@ const APPLICATION_OVERRIDE_ENV: &str = "SILAN_DESKTOP_APP";
 const DESKTOP_IDENTIFIER: &str = "tech.silan.desktop";
 const DESKTOP_WORKSPACE_RECORD: &str = "workspace.json";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum DesktopLaunchMode {
     Installed,
+    Workspace(PathBuf),
     Development,
 }
 
@@ -29,22 +30,48 @@ impl DesktopLaunchMode {
         match arguments {
             [] => Ok(Self::Installed),
             ["dev"] => Ok(Self::Development),
+            ["--path", path] if !path.is_empty() => Ok(Self::Workspace(PathBuf::from(path))),
+            [argument] if argument.starts_with("--path=") && argument.len() > 7 => Ok(Self::Workspace(PathBuf::from(&argument[7..]))),
             [argument, ..] => Err(format!(
-                "desktop: unknown argument `{argument}` · expected `desktop` or `desktop dev`"
+                "desktop: unknown argument `{argument}` · expected `desktop [--path PATH]` or `desktop dev`"
             )),
         }
     }
 }
 
-pub(crate) fn run(content_root: &Path, db_path: &Path, arguments: &[&str]) -> Result<(), String> {
+pub(crate) fn run(arguments: &[&str]) -> Result<(), String> {
     match DesktopLaunchMode::parse(arguments)? {
         DesktopLaunchMode::Installed => {
             let application = InstalledDesktopApplication::discover()?;
-            DesktopWorkspaceSession::prepare(content_root, db_path)?.launch(application)
+            let status = application
+                .default_command()
+                .status()
+                .map_err(|error| format!("desktop: launch application: {error}"))?;
+            if !status.success() {
+                return Err("macOS could not launch the Desktop application".into());
+            }
+            Ok(())
+        }
+        DesktopLaunchMode::Workspace(path) => {
+            let path = path
+                .canonicalize()
+                .map_err(|error| format!("desktop: invalid --path: {error}"))?;
+            if !path.is_dir() {
+                return Err("desktop: --path must be a directory".into());
+            }
+            let project = crate::find_project_root_from(&path)
+                .ok_or("desktop: no silan-viking.toml found at --path or its parents")?;
+            let content = crate::configured_content_root(&project)?;
+            let db =
+                crate::resolve_db_path(&content).unwrap_or_else(|| project.join("portfolio.db"));
+            let application = InstalledDesktopApplication::discover()?;
+            DesktopWorkspaceSession::prepare(&content, &db)?.launch(application)
         }
         DesktopLaunchMode::Development => {
-            let application = DevelopmentDesktopApplication::discover(content_root)?;
-            DesktopWorkspaceSession::prepare(content_root, db_path)?.develop(application)
+            let options = crate::CliOptions::parse(&[])?;
+            let application = DevelopmentDesktopApplication::discover(&options.content_root)?;
+            DesktopWorkspaceSession::prepare(&options.content_root, &options.db_path)?
+                .develop(application)
         }
     }
 }
@@ -164,6 +191,19 @@ struct InstalledDesktopApplication {
 }
 
 impl InstalledDesktopApplication {
+    fn default_command(&self) -> Command {
+        let mut command = Command::new("open");
+        command.arg(&self.bundle);
+        for key in [
+            "SILAN_DESKTOP_PROJECT",
+            "SILAN_DESKTOP_CONTENT",
+            "SILAN_DESKTOP_DB",
+        ] {
+            command.env_remove(key);
+        }
+        command
+    }
+
     fn discover() -> Result<Self, String> {
         if let Some(configured) = env::var_os(APPLICATION_OVERRIDE_ENV) {
             return Self::from_bundle(PathBuf::from(configured)).map_err(|error| {
@@ -304,6 +344,28 @@ mod tests {
             DesktopLaunchMode::parse(&["dev"]).expect("development mode"),
             DesktopLaunchMode::Development
         );
+        assert_eq!(
+            DesktopLaunchMode::parse(&["--path", "/work/project"]).unwrap(),
+            DesktopLaunchMode::Workspace(PathBuf::from("/work/project"))
+        );
+        assert_eq!(
+            DesktopLaunchMode::parse(&["--path=/work/project"]).unwrap(),
+            DesktopLaunchMode::Workspace(PathBuf::from("/work/project"))
+        );
+        assert!(DesktopLaunchMode::parse(&["--path"]).is_err());
+        assert!(DesktopLaunchMode::parse(&["--path="]).is_err());
+        assert!(DesktopLaunchMode::parse(&["/work/project"]).is_err());
+        let command = InstalledDesktopApplication {
+            bundle: PathBuf::from("/Applications/Silan Context System.app"),
+        }
+        .default_command();
+        assert_eq!(
+            command.get_args().collect::<Vec<_>>(),
+            vec![std::ffi::OsStr::new(
+                "/Applications/Silan Context System.app"
+            )]
+        );
+        assert!(command.get_envs().all(|(_, value)| value.is_none()));
         assert!(DesktopLaunchMode::parse(&["--debug"]).is_err());
         assert!(DesktopLaunchMode::parse(&["dev", "extra"]).is_err());
     }

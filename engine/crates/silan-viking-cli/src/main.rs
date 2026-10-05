@@ -131,7 +131,7 @@ fn command_usage(command: &str) -> Option<&'static [&'static str]> {
             "stats show|crawlers|sources <uri>",
             "stats visitors <uri> [--show-network]",
         ],
-        "desktop" | "destop" => &["desktop", "desktop dev"],
+        "desktop" | "destop" => &["desktop [--path PATH]", "desktop dev"],
         "onboard" | "setup" => &[
             "onboard [--flow quickstart|advanced]",
             "onboard --plan",
@@ -235,6 +235,10 @@ fn run(args: Vec<String>) -> Result<(), String> {
         return Ok(());
     }
 
+    if matches!(args.first().map(String::as_str), Some("desktop" | "destop")) {
+        let flags = args[1..].iter().map(String::as_str).collect::<Vec<_>>();
+        return desktop::run(&flags);
+    }
     let opts = CliOptions::parse(&args)?;
     let command = opts.command.iter().map(String::as_str).collect::<Vec<_>>();
     match command.as_slice() {
@@ -301,9 +305,7 @@ fn run(args: Vec<String>) -> Result<(), String> {
                 _ => unreachable!(),
             }
         }
-        ["desktop", flags @ ..] | ["destop", flags @ ..] => {
-            desktop::run(&opts.content_root, &opts.db_path, flags)
-        }
+        ["desktop", flags @ ..] | ["destop", flags @ ..] => desktop::run(flags),
         ["completion", shell] => completion(shell),
         ["index", "sync"] => {
             let ws = Workspace::open(&opts.content_root).map_err(|e| e.to_string())?;
