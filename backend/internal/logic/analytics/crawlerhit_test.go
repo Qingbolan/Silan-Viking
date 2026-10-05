@@ -97,6 +97,40 @@ func TestRecordCrawlerHitKeepsOtherBotsOutOfSEOInteractions(t *testing.T) {
 	}
 }
 
+func TestRecordCrawlerHitKeepsAssetsOutOfContentLedger(t *testing.T) {
+	ctx := context.Background()
+	service := crawlerTestService(t)
+	paths := []string{
+		"/assets/Avatar-FOGU6MOF.js",
+		"/assets/Badge-DAYLI8NX.js",
+		"/assets/BrandLoading-BQLBCP2Q.js",
+		"/assets/Calendar-C2HKDK7Y.js",
+		"/llms.txt",
+		"/robots.txt",
+		"/",
+	}
+	for _, path := range paths {
+		if err := RecordCrawlerHit(ctx, service, CrawlerHit{
+			RequestURI: path,
+			UserAgent:  "Mozilla/5.0 Claude-User/1.0",
+		}); err != nil {
+			t.Fatalf("RecordCrawlerHit(%s): %v", path, err)
+		}
+	}
+
+	if count := service.DB.RequestLog.Query().CountX(ctx); count != len(paths) {
+		t.Fatalf("request logs = %d, want every crawler request in the access log", count)
+	}
+	rows := service.DB.ContentInteraction.Query().AllX(ctx)
+	landed := map[string]bool{}
+	for _, row := range rows {
+		landed[*row.LandingURL] = true
+	}
+	if len(rows) != 3 || !landed["/llms.txt"] || !landed["/robots.txt"] || !landed["/"] {
+		t.Fatalf("content ledger = %v, want only the page and machine files", landed)
+	}
+}
+
 func TestRecordCrawlerHitIgnoresHumanMirrorTraffic(t *testing.T) {
 	ctx := context.Background()
 	service := crawlerTestService(t)

@@ -124,6 +124,27 @@ Minimum design:
 - `--raw` requires interactive confirmation by the local-machine owner before printing the full IP / fingerprint; the MCP side does not expose a `--raw` equivalent.
 - On write, the Go API classifies `visitor_kind` / `crawler_name` / `referrer_kind`; Rust stats only reads — it does not re-classify.
 
+Implemented API contract (`GET /api/v1/stats/visitors` and
+`GET /api/v1/stats/snapshot`, both behind the owner `PrivateAPI` token):
+
+- The default response is anonymous. Each visitor row carries a pseudonymous
+  visitor id in `fingerprint` (a truncated SHA-256 of the stored browser
+  fingerprint, never the fingerprint itself and never derived from an IP),
+  `visitor_kind`, `referrer_kind` / `referrer` / `crawler_name` (source),
+  `landing_url`, `last_seen_at`, and GeoIP-level location (country, region,
+  city, nearest place, centroid, time zone, accuracy radius). `ip_address`
+  is omitted, `ip_masked` is empty, and snapshot `countries[].ip_addresses`
+  is omitted.
+- Network details require the explicit query parameter
+  `include_network=true` on an owner-authenticated request; only then are
+  `ip_address`, `ip_masked` (last octet/hextet replaced by `x`) and
+  `countries[].ip_addresses` populated.
+- The snapshot's `crawler_assets` lists per-crawler counts of asset requests
+  (scripts, styles, fonts, images) from the crawler access log. Assets are
+  classified once by `traffic.ClassifyRequestResource`: they never enter the
+  content ledger or any per-page projection; pages and machine-readable files
+  (`robots.txt`, `sitemap.xml`, `llms.txt`, `about.txt`, feeds) do.
+
 ## 8.5 proposal concurrency and conflict patches
 
 The worktree + validation ② direction in `03` is correct, but the implementation is missing two hard constraints:

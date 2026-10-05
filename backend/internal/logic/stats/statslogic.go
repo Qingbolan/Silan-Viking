@@ -7,6 +7,8 @@ package stats
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"time"
@@ -35,8 +37,8 @@ type StatsLogic struct {
 // Snapshot returns all observed content statistics in one HTTP response.
 // Per-item aggregation stays inside the backend so clients do not fan out
 // four requests for every content item.
-func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
-	interactions, err := l.svcCtx.DB.ContentInteraction.Query().Order(contentinteraction.ByCreatedAt()).All(l.ctx)
+func (l *StatsLogic) Snapshot(req *types.StatsSnapshotRequest) (*types.StatsSnapshotResponse, error) {
+	interactions, err := l.observedInteractions(l.svcCtx.DB.ContentInteraction.Query().Order(contentinteraction.ByCreatedAt()))
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +118,7 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		}
 		items = append(items, types.StatsSnapshotItem{
 			Stats:    itemStats,
-			Visitors: projectVisitors(rows, legacyLocations),
+			Visitors: projectVisitors(rows, legacyLocations, req.IncludeNetwork),
 			Crawlers: projectCrawlers(rows),
 			Sources:  projectSources(rows),
 			Likers:   bloglogic.UpdateLikers(likerRows),
@@ -164,11 +166,14 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 	}
 	countries := make([]types.CountryRow, 0, len(locationVisitors))
 	for location, visitors := range locationVisitors {
-		ipAddresses := make([]string, 0, len(visitors))
-		for ip := range visitors {
-			ipAddresses = append(ipAddresses, ip)
+		var ipAddresses []string
+		if req.IncludeNetwork {
+			ipAddresses = make([]string, 0, len(visitors))
+			for ip := range visitors {
+				ipAddresses = append(ipAddresses, ip)
+			}
+			sort.Strings(ipAddresses)
 		}
-		sort.Strings(ipAddresses)
 		countries = append(countries, types.CountryRow{
 			CountryCode:    location.country,
 			RegionCode:     location.regionCode,
@@ -195,12 +200,71 @@ func (l *StatsLogic) Snapshot() (*types.StatsSnapshotResponse, error) {
 		}
 		return countries[i].Count > countries[j].Count
 	})
+	crawlerAssets, err := l.crawlerAssets()
+	if err != nil {
+		return nil, err
+	}
 	return &types.StatsSnapshotResponse{
 		GeneratedAt:                time.Now().UTC().Format(time.RFC3339),
 		InteractionDetailsComplete: true,
 		Items:                      items,
 		Countries:                  countries,
+		CrawlerAssets:              crawlerAssets,
 	}, nil
+}
+
+// observedInteractions loads content-ledger rows without crawler fetches of
+// assets. Ingestion no longer records those; rows written before it
+// classified request resources are excluded here so every stats projection
+// agrees with new data.
+func (l *StatsLogic) observedInteractions(query *ent.ContentInteractionQuery) ([]*ent.ContentInteraction, error) {
+	rows, err := query.All(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	observed := rows[:0]
+	for _, row := range rows {
+		if row.VisitorKind != contentinteraction.VisitorKindHuman && row.LandingURL != nil &&
+			traffic.ClassifyRequestResource(*row.LandingURL) == traffic.RequestResourceAsset {
+			continue
+		}
+		observed = append(observed, row)
+	}
+	return observed, nil
+}
+
+// crawlerAssets aggregates the crawler access log's asset requests per
+// crawler. It is the only place assets are counted.
+func (l *StatsLogic) crawlerAssets() ([]types.CrawlerAssetRow, error) {
+	var groups []struct {
+		BotName string `json:"bot_name"`
+		Path    string `json:"path"`
+		Count   int    `json:"count"`
+	}
+	if err := l.svcCtx.DB.RequestLog.Query().
+		Where(requestlog.IsBot(true)).
+		GroupBy(requestlog.FieldBotName, requestlog.FieldPath).
+		Aggregate(ent.Count()).
+		Scan(l.ctx, &groups); err != nil {
+		return nil, err
+	}
+	counts := map[string]int{}
+	for _, group := range groups {
+		if traffic.ClassifyRequestResource(group.Path) == traffic.RequestResourceAsset {
+			counts[group.BotName] += group.Count
+		}
+	}
+	rows := make([]types.CrawlerAssetRow, 0, len(counts))
+	for name, count := range counts {
+		rows = append(rows, types.CrawlerAssetRow{CrawlerName: name, Count: count})
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Count == rows[j].Count {
+			return rows[i].CrawlerName < rows[j].CrawlerName
+		}
+		return rows[i].Count > rows[j].Count
+	})
+	return rows, nil
 }
 
 // UpdateCommentVisibility changes only the public projection flag. Comment
@@ -270,24 +334,21 @@ func (l *StatsLogic) Stats(req *types.StatsRequest) (*types.StatsResponse, error
 		}
 		views, likes = counts.Views, counts.Likes
 	default:
-		entityType := contentinteraction.EntityType(kind)
-		views, err = l.svcCtx.DB.ContentInteraction.Query().
+		rows, rowsErr := l.observedInteractions(l.svcCtx.DB.ContentInteraction.Query().
 			Where(
-				contentinteraction.EntityTypeEQ(entityType),
+				contentinteraction.EntityTypeEQ(contentinteraction.EntityType(kind)),
 				contentinteraction.EntityIDEQ(id),
-				contentinteraction.KindEQ(contentinteraction.KindView),
-			).Count(l.ctx)
-		if err != nil {
-			return nil, err
+			))
+		if rowsErr != nil {
+			return nil, rowsErr
 		}
-		likes, err = l.svcCtx.DB.ContentInteraction.Query().
-			Where(
-				contentinteraction.EntityTypeEQ(entityType),
-				contentinteraction.EntityIDEQ(id),
-				contentinteraction.KindEQ(contentinteraction.KindLike),
-			).Count(l.ctx)
-		if err != nil {
-			return nil, err
+		for _, row := range rows {
+			switch row.Kind {
+			case contentinteraction.KindView:
+				views++
+			case contentinteraction.KindLike:
+				likes++
+			}
 		}
 	}
 	comments, err := l.svcCtx.DB.Comment.Query().
@@ -325,22 +386,22 @@ func maskIP(ip string) string {
 }
 
 // Visitors lists the visitor observations of a content item.
-func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse, error) {
-	kind, err := entityType(req)
+func (l *StatsLogic) Visitors(req *types.VisitorsRequest) (*types.VisitorsResponse, error) {
+	item := &types.StatsRequest{EntityType: req.EntityType, EntityID: req.EntityID}
+	kind, err := entityType(item)
 	if err != nil {
 		return nil, err
 	}
-	id, err := entityID(req)
+	id, err := entityID(item)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := l.svcCtx.DB.ContentInteraction.Query().
+	rows, err := l.observedInteractions(l.svcCtx.DB.ContentInteraction.Query().
 		Where(
 			contentinteraction.EntityTypeEQ(contentinteraction.EntityType(kind)),
 			contentinteraction.EntityIDEQ(id),
 		).
-		Order(contentinteraction.ByCreatedAt()).
-		All(l.ctx)
+		Order(contentinteraction.ByCreatedAt()))
 	if err != nil {
 		return nil, err
 	}
@@ -351,11 +412,25 @@ func (l *StatsLogic) Visitors(req *types.StatsRequest) (*types.VisitorsResponse,
 
 	return &types.VisitorsResponse{
 		EntityType: req.EntityType, EntityID: req.EntityID,
-		Visitors: projectVisitors(rows, legacyLocations),
+		Visitors: projectVisitors(rows, legacyLocations, req.IncludeNetwork),
 	}, nil
 }
 
-func projectVisitors(rows []*ent.ContentInteraction, legacyLocations map[string]traffic.GeoLocation) []types.VisitorRow {
+// anonymousVisitorID is the pseudonymous visitor id exposed on the wire. It
+// keeps per-visitor distinctness without revealing the stored browser
+// fingerprint. Addresses are never hashed into it: an IPv4 hash is trivially
+// reversible.
+func anonymousVisitorID(fingerprint string) string {
+	if fingerprint == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte("silan-visitor:" + fingerprint))
+	return hex.EncodeToString(sum[:8])
+}
+
+// projectVisitors is the single visitor-row projection. Network addresses
+// are included only on the owner's explicit includeNetwork request.
+func projectVisitors(rows []*ent.ContentInteraction, legacyLocations map[string]traffic.GeoLocation, includeNetwork bool) []types.VisitorRow {
 	visitors := make([]types.VisitorRow, 0, len(rows))
 	for _, row := range rows {
 		ip := ""
@@ -395,10 +470,14 @@ func projectVisitors(rows []*ent.ContentInteraction, legacyLocations map[string]
 		if location.CountryCode == "" {
 			location = legacyLocations[ip]
 		}
+		ipAddress, ipMasked := "", ""
+		if includeNetwork {
+			ipAddress, ipMasked = ip, maskIP(ip)
+		}
 		visitors = append(visitors, types.VisitorRow{
-			Fingerprint:    fp,
-			IPAddress:      ip,
-			IPMasked:       maskIP(ip),
+			Fingerprint:    anonymousVisitorID(fp),
+			IPAddress:      ipAddress,
+			IPMasked:       ipMasked,
 			VisitorKind:    row.VisitorKind.String(),
 			ReferrerKind:   row.ReferrerKind.String(),
 			Referrer:       referrer,
@@ -500,7 +579,7 @@ func (l *StatsLogic) CrawlerBreakdown(req *types.StatsRequest) (*types.CrawlerBr
 			contentinteraction.EntityIDEQ(id),
 		)
 	}
-	rows, err := query.All(l.ctx)
+	rows, err := l.observedInteractions(query)
 	if err != nil {
 		return nil, err
 	}
@@ -538,7 +617,7 @@ func (l *StatsLogic) SourceBreakdown(req *types.StatsRequest) (*types.SourceBrea
 			contentinteraction.EntityIDEQ(id),
 		)
 	}
-	rows, err := query.All(l.ctx)
+	rows, err := l.observedInteractions(query)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package stats
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"silan-backend/internal/ent"
@@ -68,7 +69,7 @@ func TestSnapshotCarriesCompleteLikerAndModerationDetails(t *testing.T) {
 		SetIsApproved(false).
 		SaveX(ctx)
 
-	snapshot, err := NewStatsLogic(ctx, svcCtx).Snapshot()
+	snapshot, err := NewStatsLogic(ctx, svcCtx).Snapshot(&types.StatsSnapshotRequest{})
 	if err != nil {
 		t.Fatalf("Snapshot: %v", err)
 	}
@@ -148,13 +149,100 @@ func TestSnapshotCountriesUseLatestEligibleVisitPerIP(t *testing.T) {
 	if err != nil || len(logs) != 2 {
 		t.Fatalf("latest rows = %v, error = %v", logs, err)
 	}
-	snapshot, err := logic.Snapshot()
+	snapshot, err := logic.Snapshot(&types.StatsSnapshotRequest{IncludeNetwork: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(snapshot.Countries) != 1 || snapshot.Countries[0].City != "Singapore" ||
 		snapshot.Countries[0].Count != 2 || strings.Join(snapshot.Countries[0].IPAddresses, ",") != "a,b" {
 		t.Fatalf("countries = %+v", snapshot.Countries)
+	}
+	anonymous, err := logic.Snapshot(&types.StatsSnapshotRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(anonymous.Countries) != 1 || anonymous.Countries[0].Count != 2 || anonymous.Countries[0].IPAddresses != nil {
+		t.Fatalf("default countries must keep counts and omit addresses: %+v", anonymous.Countries)
+	}
+}
+
+func TestVisitorsAreAnonymousUnlessNetworkRequested(t *testing.T) {
+	ctx, svcCtx := newStatsTestContext(t)
+	svcCtx.DB.ContentInteraction.Create().SetID("view-one").
+		SetEntityType(contentinteraction.EntityTypeMoment).SetEntityID("moment-one").
+		SetKind(contentinteraction.KindView).SetFingerprint("raw-browser-fingerprint").
+		SetIPAddress("14.100.52.7").SetCountryCode("SG").SetCity("Singapore").SaveX(ctx)
+	logic := NewStatsLogic(ctx, svcCtx)
+
+	anonymous, err := logic.Visitors(&types.VisitorsRequest{EntityType: "moment", EntityID: "moment-one"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	row := anonymous.Visitors[0]
+	if row.IPAddress != "" || row.IPMasked != "" {
+		t.Fatalf("default visitor row exposes network info: %+v", row)
+	}
+	if row.Fingerprint == "" || row.Fingerprint == "raw-browser-fingerprint" {
+		t.Fatalf("visitor id = %q, want a pseudonymous id", row.Fingerprint)
+	}
+	if row.VisitorKind != "human" || row.CountryCode != "SG" || row.City != "Singapore" || row.LastSeenAt == "" {
+		t.Fatalf("anonymous row lost kind/location/time: %+v", row)
+	}
+	encoded, err := json.Marshal(anonymous)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), "14.100.52") {
+		t.Fatalf("default response leaks address: %s", encoded)
+	}
+
+	owner, err := logic.Visitors(&types.VisitorsRequest{EntityType: "moment", EntityID: "moment-one", IncludeNetwork: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := owner.Visitors[0]; got.IPAddress != "14.100.52.7" || got.IPMasked != "14.100.52.x" || got.Fingerprint != row.Fingerprint {
+		t.Fatalf("owner network row = %+v", got)
+	}
+}
+
+func TestStatsExcludeCrawlerAssetFetchesAndCountThemSeparately(t *testing.T) {
+	ctx, svcCtx := newStatsTestContext(t)
+	view := func(id, landingURL string, kind contentinteraction.VisitorKind) {
+		svcCtx.DB.ContentInteraction.Create().SetID(id).
+			SetEntityType(contentinteraction.EntityTypeResume).SetEntityID("homepage").
+			SetKind(contentinteraction.KindView).SetVisitorKind(kind).
+			SetCrawlerName("ByteDance Bytespider").SetLandingURL(landingURL).SaveX(ctx)
+	}
+	// Rows recorded before ingestion classified request resources.
+	view("asset-avatar", "/assets/Avatar-FOGU6MOF.js", contentinteraction.VisitorKindAiCrawler)
+	view("asset-badge", "/assets/Badge-DAYLI8NX.js", contentinteraction.VisitorKindAiCrawler)
+	view("page-home", "/", contentinteraction.VisitorKindAiCrawler)
+	view("machine-llms", "/llms.txt", contentinteraction.VisitorKindAiCrawler)
+	for _, path := range []string{"/assets/BrandLoading-BQLBCP2Q.js", "/assets/Calendar-C2HKDK7Y.js", "/assets/Calendar-C2HKDK7Y.js", "/", "/robots.txt"} {
+		svcCtx.DB.RequestLog.Create().SetIP("110.249.201.1").SetPath(path).
+			SetIsBot(true).SetBotName("ByteDance Bytespider").SaveX(ctx)
+	}
+	logic := NewStatsLogic(ctx, svcCtx)
+
+	snapshot, err := logic.Snapshot(&types.StatsSnapshotRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snapshot.Items) != 1 || snapshot.Items[0].Stats.Views != 2 || len(snapshot.Items[0].Visitors) != 2 {
+		t.Fatalf("homepage item = %+v, want page + machine file only", snapshot.Items)
+	}
+	for _, visitor := range snapshot.Items[0].Visitors {
+		if visitor.LandingURL != "/" && visitor.LandingURL != "/llms.txt" {
+			t.Fatalf("asset leaked into visitor evidence: %q", visitor.LandingURL)
+		}
+	}
+	want := []types.CrawlerAssetRow{{CrawlerName: "ByteDance Bytespider", Count: 3}}
+	if !reflect.DeepEqual(snapshot.CrawlerAssets, want) {
+		t.Fatalf("crawler assets = %+v, want %+v", snapshot.CrawlerAssets, want)
+	}
+	stats, err := logic.Stats(&types.StatsRequest{EntityType: "resume", EntityID: "homepage"})
+	if err != nil || stats.Views != 2 {
+		t.Fatalf("homepage stats = %+v, err = %v, want 2 views", stats, err)
 	}
 }
 
@@ -175,7 +263,7 @@ func TestSnapshotAggregatesMatchIndividualEndpoints(t *testing.T) {
 		SetEntityType(contentinteraction.EntityTypeProject).SetEntityID("project-one").
 		SetKind(contentinteraction.KindView).SetCountryCode("SG").SaveX(ctx)
 	logic := NewStatsLogic(ctx, svcCtx)
-	snapshot, err := logic.Snapshot()
+	snapshot, err := logic.Snapshot(&types.StatsSnapshotRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +273,7 @@ func TestSnapshotAggregatesMatchIndividualEndpoints(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		visitors, err := logic.Visitors(req)
+		visitors, err := logic.Visitors(&types.VisitorsRequest{EntityType: req.EntityType, EntityID: req.EntityID})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -224,15 +312,15 @@ func TestSnapshotQueryBudgetDoesNotGrowWithAnonymousContent(t *testing.T) {
 					SetIPAddress("203.0.113.1").SetCountryCode("SG").SaveX(ctx)
 			}
 			selects = 0
-			snapshot, err := NewStatsLogic(ctx, &svc.ServiceContext{DB: client}).Snapshot()
+			snapshot, err := NewStatsLogic(ctx, &svc.ServiceContext{DB: client}).Snapshot(&types.StatsSnapshotRequest{})
 			if err != nil {
 				t.Fatal(err)
 			}
 			if len(snapshot.Items) != count {
 				t.Fatalf("items = %d, want %d", len(snapshot.Items), count)
 			}
-			if selects != 3 {
-				t.Fatalf("snapshot issued %d SELECTs for %d items; want 3", selects, count)
+			if selects != 4 {
+				t.Fatalf("snapshot issued %d SELECTs for %d items; want 4", selects, count)
 			}
 		})
 	}

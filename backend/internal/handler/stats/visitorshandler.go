@@ -12,7 +12,7 @@ import (
 // De-identified visitor list of one item
 func VisitorsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.StatsRequest
+		var req types.VisitorsRequest
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
