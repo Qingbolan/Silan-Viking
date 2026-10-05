@@ -151,6 +151,31 @@ Based on §9.3's design upper bound (1000 items), pin the
 
 ---
 
+## 9.5a GEO advisor score — explainable content signals
+
+`silan_viking_app::GeoAdvisor` (owner: `engine/crates/silan-viking-app/src/geo_advisor.rs`)
+scores one source translation. The score is additive and every addend is
+returned in `GeoInsightReport.score_components[]` as
+`{id, label, points, max_points, reason}`; `score` is their sum capped at 100.
+Existing report fields (`score`, `grade`, `summary`, `metrics`, `actions`) are
+unchanged, so consumers may ignore the breakdown.
+
+Signals are parsed from Markdown structure; fenced code blocks and inline code
+are ignored:
+
+| id | max | rule |
+|---|---|---|
+| `baseline` | 20 | every indexable translation |
+| `length` | 20 | `words / 700 × 20`, capped. Words are Unicode-aware: each CJK ideograph, kana or Hangul syllable counts as one word; any other whitespace-delimited run with a letter or digit counts as one word (`用Rust写` = 3). |
+| `sections` | 16 | 4 per ATX heading (`#`–`######` + space), up to 4 |
+| `questions` | 8 | 4 per question-shaped heading, up to 2: ends with `?`/`？`, starts with an English interrogative (what, why, how, …), or contains a Chinese one (什么, 为什么, 如何, 怎么, 哪, 吗, 是否, …). `?` in body text does not count. |
+| `media` | 8 | any image reference |
+| `evidence_links` | 8 | 4 per distinct attributable target, up to 2: `http(s)://` or `silan://resources/` in links, autolinks, reference definitions or prose; image targets (`![](…)`, `<img>`) excluded |
+| `ai_crawls` | 8 | synced snapshot: 1–4 AI crawler interactions earn 4, ≥5 earn 8 (observed outcome, not source quality) |
+| `ai_referrals` | 8 | any AI chat referral in the synced snapshot |
+
+---
+
 ## 9.6 Knock-on requirements from this chapter
 
 | Chapter | What to add / align with this chapter |

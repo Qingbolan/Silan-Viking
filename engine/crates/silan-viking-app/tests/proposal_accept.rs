@@ -6,7 +6,7 @@
 //! invariant under test: every failure mode leaves the main branch exactly
 //! where it was; only a merged-and-validated commit advances it.
 
-use silan_viking_app::{ProposalId, ProposalKind, Workspace};
+use silan_viking_app::{ProposalError, ProposalId, ProposalKind, Workspace};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -209,6 +209,55 @@ fn accept_with_merge_conflict_leaves_main_untouched() {
 
     assert!(result.is_err(), "conflicting accept must fail");
     assert_eq!(main_before, main_after, "main must not move on conflict");
+
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn accept_validation_failure_explains_the_next_steps() {
+    // A proposal that drafts a Part of an Item main does not have (its
+    // `item.toml` was never committed) fails post-merge validation. The
+    // error must say what to do next, not just echo the scanner.
+    let root = fresh_content_repo("orphan-part");
+    let ws = Workspace::open(&root).expect("workspace opens");
+    let id = ProposalId::new("01HORPHAN").expect("valid id");
+    ws.register_proposal(&id, ProposalKind::Modify, vec![])
+        .expect("register");
+
+    git(&root, &["checkout", "-q", "-b", "proposal/01HORPHAN"]);
+    let part = root.join("resources/projects/gem-bench/parts/overview");
+    std::fs::create_dir_all(&part).expect("part dir");
+    std::fs::write(part.join("en.md"), "# Gem bench\n").expect("draft");
+    std::fs::write(
+        part.join("meta.toml"),
+        "part_id = \"p_01HORPHANPART000000000000\"\ntype = \"overview\"\ncanonical_lang = \"en\"\n",
+    )
+    .expect("meta");
+    git(&root, &["add", "-A"]);
+    git(&root, &["commit", "-q", "-m", "orphan part"]);
+    git(&root, &["checkout", "-q", "main"]);
+
+    let main_before = git(&root, &["rev-parse", "refs/heads/main"]);
+    let error = ws
+        .accept_proposal(&id)
+        .expect_err("orphan part must not validate");
+    assert_eq!(git(&root, &["rev-parse", "refs/heads/main"]), main_before);
+
+    let message = error.to_string();
+    assert!(
+        matches!(error, ProposalError::ValidationFailed { .. }),
+        "{message}"
+    );
+    assert!(message.contains("gem-bench"), "{message}");
+    assert!(message.contains("commit any files"), "{message}");
+    assert!(
+        message.contains("silan proposal rebase 01HORPHAN"),
+        "{message}"
+    );
+    assert!(
+        message.contains("silan proposal reject 01HORPHAN"),
+        "{message}"
+    );
 
     let _ = std::fs::remove_dir_all(&root);
 }

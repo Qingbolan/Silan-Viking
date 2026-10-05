@@ -16,7 +16,7 @@ pub use scan::{ScanError, ScanReport, ScannedAsset, ScannedSeries};
 use crate::parser::ParserRegistry;
 use crate::proposal::accept::{accept as run_accept, AcceptReport};
 use crate::proposal::store::{ProposalKind, ProposalRecord};
-use crate::proposal::{GitRepo, ProposalError, ProposalId};
+use crate::proposal::{GitRepo, ProposalError, ProposalId, ProposalTarget};
 use crate::query::{QueryError, QueryHit, QueryIndex};
 use crate::schema::{Schema, SchemaError};
 use crate::sync::{MapperRegistry, SqliteSink, SyncError, SyncReport};
@@ -261,6 +261,20 @@ impl Workspace {
         let repo = self.content_repo()?;
         let branch = id.branch_name();
 
+        // A proposal is drafted against main's last commit. If a touched
+        // Item exists only in the working tree (new, uncommitted files), the
+        // branch would carry a draft for an Item main does not have, and
+        // `accept` would later fail post-merge validation. Refuse up front.
+        for uri in &touched {
+            let paths = uncommitted_target_paths(&repo, uri)?;
+            if !paths.is_empty() {
+                return Err(ProposalError::UncommittedTarget {
+                    target: uri.clone(),
+                    paths: paths.join(", "),
+                });
+            }
+        }
+
         // The original `git add -A` swept everything in the working tree into
         // the proposal commit, including unrelated WIP files the owner hadn't
         // committed yet (the 2026-05-21 e2e pass caught this — `touched` said
@@ -357,4 +371,42 @@ impl Workspace {
     pub fn accept_proposal(&self, id: &ProposalId) -> Result<AcceptReport, ProposalError> {
         run_accept(&self.content_root, id, DEFAULT_MAIN_BRANCH)
     }
+}
+
+/// The working-tree paths of the Item (or episode Series) behind proposal
+/// target `uri` that differ from the last commit: untracked, modified,
+/// staged or deleted. A URI outside `silan://resources` (an agent note) has
+/// no committed base requirement and yields nothing.
+fn uncommitted_target_paths(repo: &GitRepo, uri: &str) -> Result<Vec<String>, ProposalError> {
+    let Ok(target) = ProposalTarget::parse(uri) else {
+        return Ok(Vec::new());
+    };
+    let item = match &target {
+        ProposalTarget::Item(item) | ProposalTarget::Series(item) => item,
+        ProposalTarget::Part { item, .. } => item,
+    };
+    let segments = item.segments();
+    let mut pathspecs = vec![format!("resources/{}", segments.join("/"))];
+    if segments.len() == 3 && segments[0] == "episode" {
+        pathspecs.push(format!("resources/episode/{}/series.toml", segments[1]));
+    }
+    let mut args = vec![
+        "status".to_owned(),
+        "--porcelain".to_owned(),
+        "--untracked-files=all".to_owned(),
+        "--".to_owned(),
+    ];
+    args.extend(pathspecs);
+    let status = repo.run_raw(repo.root(), args)?.stdout;
+    Ok(status
+        .lines()
+        .filter_map(|line| line.get(3..))
+        .map(|path| {
+            path.rsplit(" -> ")
+                .next()
+                .unwrap_or(path)
+                .trim_matches('"')
+                .to_owned()
+        })
+        .collect())
 }

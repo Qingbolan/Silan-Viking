@@ -94,7 +94,7 @@ pub use editor::{
 };
 pub use geo_advisor::{
     GeoAction, GeoAdvisor, GeoAdvisorError, GeoEvidence, GeoEvidenceSource, GeoInsightReport,
-    GeoMetric,
+    GeoMetric, GeoScoreComponent,
 };
 pub use github_oauth_credentials::{
     GitHubOAuthCredentialError, GitHubOAuthCredentials, GITHUB_OAUTH_KEYCHAIN_ACCOUNT,
@@ -144,7 +144,7 @@ pub use query::{EmbedderMode, QueryDocument, QueryError, QueryHit, QueryIndex};
 pub use schema::{Schema, SchemaError};
 pub use stats::{
     api_base_url, workspace_stats_sync_token, CountRow, ItemStats, StatsCache, StatsError,
-    StatsSync, StatsSyncResult, VisitorRow,
+    StatsSync, StatsSyncResult, VisitorDisclosure, VisitorRow,
 };
 pub use translation_ai::{
     GeneratedMarkdownTranslation, MarkdownSelectionEdit, MarkdownSelectionEditAction,

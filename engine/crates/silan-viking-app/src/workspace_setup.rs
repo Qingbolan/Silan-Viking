@@ -121,7 +121,7 @@ impl WorkspaceSetup {
             toml::to_string_pretty(&config).map_err(|e| e.to_string())?,
         )
         .map_err(|e| e.to_string())?;
-        scaffold::new_resume(&content, author, "").map_err(|e| e.to_string())?;
+        scaffold::new_resume(&content, author, "", None).map_err(|e| e.to_string())?;
         // Both supported profile languages share the supplied identity. The
         // writer remains free to translate each profile after onboarding.
         let summary = content.join("resources/resume/parts/summary");

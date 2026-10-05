@@ -42,12 +42,15 @@ fn err(content: &Path, args: &[&str]) {
 
 /// A process-unique temp directory. A monotonic counter (not a timestamp)
 /// guarantees no collision between parallel tests in this binary.
-fn fresh_project() -> std::path::PathBuf {
+fn fresh_root() -> std::path::PathBuf {
     use std::sync::atomic::{AtomicU32, Ordering};
     static COUNTER: AtomicU32 = AtomicU32::new(0);
     let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
-    let root = std::env::temp_dir().join(format!("silan-cmd-{}-{seq}", std::process::id()));
-    let content = root.join("content");
+    std::env::temp_dir().join(format!("silan-cmd-{}-{seq}", std::process::id()))
+}
+
+fn fresh_project() -> std::path::PathBuf {
+    let content = fresh_root().join("content");
     ok(&content, &["init"]);
     content
 }
@@ -201,9 +204,22 @@ fn everything_synced_passes_validation() {
 #[test]
 fn init_makes_content_a_git_repo() {
     // `06` §6.2: `silan init` must `git init` + commit, so the proposal plane
-    // has a repo to branch from, with the default identity configured so the
-    // proposal merge commit has an author.
-    let c = fresh_project();
+    // has a repo to branch from. Without an owner Git identity, the `init`
+    // profile becomes the repo's author — never a hardcoded maintainer.
+    let root = fresh_root();
+    let c = root.join("content");
+    let out = Command::new(bin())
+        .args(["--content", c.to_str().expect("path"), "init"])
+        .args(["--name", "Ada Lovelace", "--email", "ada@example.org"])
+        .env("GIT_CONFIG_GLOBAL", root.join("no-global-gitconfig"))
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .output()
+        .expect("cli runs");
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
     assert!(c.join(".git").is_dir(), "init must create a git repo");
     let git_config = |key: &str| -> String {
         let out = Command::new("git")
@@ -213,9 +229,20 @@ fn init_makes_content_a_git_repo() {
             .expect("git config");
         String::from_utf8_lossy(&out.stdout).trim().to_owned()
     };
-    assert_eq!(git_config("user.name"), "Silan.Hu");
-    assert_eq!(git_config("user.email"), "silan.hu@u.nus.edu");
-    let _ = std::fs::remove_dir_all(c.parent().expect("root"));
+    assert_eq!(git_config("user.name"), "Ada Lovelace");
+    assert_eq!(git_config("user.email"), "ada@example.org");
+    // Empty collections are committed through a placeholder, so release
+    // scopes can name them as Git pathspecs on a fresh workspace.
+    let tracked = Command::new("git")
+        .args(["ls-files", "resources/episode", "resources/moment"])
+        .current_dir(&c)
+        .output()
+        .expect("git ls-files");
+    assert_eq!(
+        String::from_utf8_lossy(&tracked.stdout),
+        "resources/episode/.gitkeep\nresources/moment/.gitkeep\n"
+    );
+    let _ = std::fs::remove_dir_all(root);
 }
 
 #[test]

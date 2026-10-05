@@ -16,7 +16,7 @@ pub use server::McpServer;
 use serde::Serialize;
 use silan_viking_app::{
     ContentKind, Identified, ProposalId, ProposalKind, ProposalTarget, QueryHit, StatsCache,
-    Workspace,
+    VisitorDisclosure, Workspace,
 };
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -201,10 +201,13 @@ pub fn tool_specs() -> Vec<ToolSpec> {
         ToolSpec {
             name: "visitors",
             tier: ReadOnly,
-            description: "de-identified visitor list (local stats cache)",
+            description: "anonymous visitor list (local stats cache): visitor ids, kind, referrer, coarse region, time. IPs and precise location are omitted unless show_network is true",
             input_schema: serde_json::json!({
                 "type": "object",
-                "properties": {"uri": {"type":"string","description":"the silan:// Item URI"}},
+                "properties": {
+                    "uri": {"type":"string","description":"the silan:// Item URI"},
+                    "show_network": {"type":"boolean","description":"also return masked/raw IP and precise location (default false)"},
+                },
                 "required": ["uri"],
             }),
         },
@@ -231,12 +234,12 @@ pub fn tool_specs() -> Vec<ToolSpec> {
         ToolSpec {
             name: "capture",
             tier: Capture,
-            description: "capture a thought into a proposal. With no `type` (or `type=note`) the note lands in agent/notes/ for the agent's scratch space. With `type=idea|blog|project|episode|moment` it opens a new Item under silan://resources/<type>/<slug>/ scaffolded with the note as the primary Part's body — this is the path the owner uses to grow a half-formed thought into a real content Item.",
+            description: "capture a thought. Contract: (1) no `type` or `type=note` — a private agent note, written DIRECTLY to silan://agent/notes/<id> (content/agent/notes/<id>.md); no proposal, never published. (2) `type=idea|blog|project|episode|moment` — published content, so it NEVER writes the working tree: it opens a proposal branch scaffolding a new Item under silan://resources/<type>/<slug>/ with the note as the primary Part's body; the owner reviews and accepts it with the CLI. Anything under resources/ always goes through a proposal; only agent/ is written directly.",
             input_schema: serde_json::json!({
                 "type": "object",
                 "properties": {
                     "note": {"type":"string","description":"the free-text note to capture"},
-                    "type": {"type":"string","description":"optional content type: note (default) / idea / blog / project / episode / moment. note → agent/notes/; the others scaffold a real Item under resources/"},
+                    "type": {"type":"string","description":"optional content type: note (default) / idea / blog / project / episode / moment. note → direct private write to agent/notes/ (no proposal); the others → a proposal scaffolding a new Item under resources/"},
                     "slug": {"type":"string","description":"optional explicit slug; if omitted, derived from the first sentence of the note. Only used when type is a content kind."},
                     "title": {"type":"string","description":"optional explicit title; if omitted, derived from the first sentence of the note."}
                 },
@@ -937,13 +940,30 @@ fn propose_hint(
     Some(notes.join("; "))
 }
 
-/// `capture(note, type?, slug?, title?)` — capture a thought into a proposal.
+/// What one `capture` call produced. The two variants are the whole contract:
+/// the private `agent/` namespace is written directly (it is the agent's own
+/// memory, `03` Tier 2.5), while anything under `resources/` is published
+/// content and only ever lands as a proposal branch (`03` §3.1).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Captured {
+    /// A private agent note written straight to `content/agent/notes/`.
+    Note {
+        /// `silan://agent/notes/<id>`.
+        uri: String,
+        /// The file written on disk.
+        path: PathBuf,
+    },
+    /// A new-Item proposal under `silan://resources/<type>/<slug>/`.
+    Proposal(ProposalCreated),
+}
+
+/// `capture(note, type?, slug?, title?)` — capture a thought.
 ///
 /// Two routing paths, decided by `kind`:
 ///
-/// * **`kind` is `None` or `"note"`** — the legacy scratch-note path. A free-text
-///   note lands in `agent/notes/<id>.md` on a proposal branch. No Item identity;
-///   the proposal touches `silan://agent/notes/<id>`.
+/// * **`kind` is `None` or `"note"`** — a private agent note. It is written
+///   directly to `agent/notes/<id>.md` through the same owner as `ctx_write`:
+///   no proposal branch, no owner `accept`, never published.
 ///
 /// * **`kind` is one of the six content kinds** (`idea` / `blog` / `project` /
 ///   `episode` / `resume` / `moment`) — open a real Item under
@@ -964,31 +984,19 @@ pub fn capture(
     kind: Option<&str>,
     slug: Option<&str>,
     title: Option<&str>,
-) -> Result<ProposalCreated, McpError> {
+) -> Result<Captured, McpError> {
+    // Route by `kind`. A note is private agent memory: direct write, exactly
+    // like `ctx_write`, so there is one rule for the whole `agent/` namespace.
+    let kind = kind.unwrap_or("note");
+    if kind == "note" {
+        let uri = format!("silan://agent/notes/{}", Ulid::new());
+        let path = ctx_write(content_root, &uri, note)?;
+        return Ok(Captured::Note { uri, path });
+    }
+
     let ws = Workspace::open(content_root).map_err(|e| McpError::Workspace(e.to_string()))?;
     let id =
         ProposalId::new(Ulid::new().to_string()).map_err(|e| McpError::Proposal(e.to_string()))?;
-
-    // Route by `kind`. The "no kind" and "kind=note" cases keep the legacy
-    // agent/notes/ behaviour so existing callers don't break.
-    let kind = kind.unwrap_or("note");
-    if kind == "note" {
-        let rel = format!("agent/notes/{}.md", id.as_str());
-        ws.create_proposal(
-            &id,
-            ProposalKind::Create,
-            vec![format!("silan://agent/notes/{}", id.as_str())],
-            &format!("capture {}", id.as_str()),
-            |root| write_draft_file(&root.join(&rel), note),
-        )
-        .map_err(|e| McpError::Proposal(e.to_string()))?;
-        return Ok(ProposalCreated {
-            id: id.as_str().to_owned(),
-            branch: id.branch_name(),
-            hint: None,
-            created_uri: Some(format!("silan://agent/notes/{}", id.as_str())),
-        });
-    }
 
     // Content-kind route: scaffold a real Item under resources/<type>/<slug>/.
     //
@@ -1101,12 +1109,12 @@ pub fn capture(
         id.as_str(), id.as_str(), item_uri
     ));
 
-    Ok(ProposalCreated {
+    Ok(Captured::Proposal(ProposalCreated {
         id: id.as_str().to_owned(),
         branch: id.branch_name(),
         hint,
         created_uri: Some(item_uri),
-    })
+    }))
 }
 
 /// Take the first sentence-ish span of `note` to use as a derived title /
@@ -1780,7 +1788,12 @@ fn resolve_stats_entity(db_path: &Path, uri: &str) -> Result<(String, String), M
 
 /// `stats` / `visitors` / `crawler_breakdown` / `source_breakdown` — the four
 /// #15 stats tools, served from the local cache (`silan stats sync` fills it).
-fn cached_stats(db_path: &Path, tool: &str, uri: &str) -> Result<serde_json::Value, McpError> {
+fn cached_stats(
+    db_path: &Path,
+    tool: &str,
+    uri: &str,
+    disclosure: VisitorDisclosure,
+) -> Result<serde_json::Value, McpError> {
     use serde_json::json;
     let (entity_type, entity_id) = resolve_stats_entity(db_path, uri)?;
     let cache = StatsCache::open(db_path);
@@ -1804,7 +1817,7 @@ fn cached_stats(db_path: &Path, tool: &str, uri: &str) -> Result<serde_json::Val
         }
         "visitors" => {
             let v = cache
-                .visitors(&entity_type, &entity_id)
+                .visitors(&entity_type, &entity_id, disclosure)
                 .map_err(not_synced)?;
             Ok(json!({ "uri": uri, "visitors": v }))
         }
@@ -1928,15 +1941,24 @@ pub fn call(
         }
         "stats" | "visitors" | "crawler_breakdown" | "source_breakdown" => {
             let uri = str_arg("uri")?;
-            cached_stats(db_path, tool, &uri)
+            let disclosure = if args
+                .get("show_network")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false)
+            {
+                VisitorDisclosure::Network
+            } else {
+                VisitorDisclosure::Anonymous
+            };
+            cached_stats(db_path, tool, &uri, disclosure)
         }
         "capture" => {
             let note = str_arg("note")?;
             // `type` / `slug` / `title` are all optional; missing type means
-            // "scratch note" — the legacy behaviour (agent/notes/<ulid>.md).
-            // Any of the six content kinds routes through a different
-            // scaffold path so the proposal opens a real Item under
-            // resources/<type>/<slug>/.
+            // a private agent note written directly to agent/notes/<ulid>.md.
+            // A content kind opens a proposal for a new Item under
+            // resources/<type>/<slug>/ — published content never lands
+            // directly.
             let kind = opt_str("type");
             let slug = opt_str("slug");
             let title = opt_str("title");
@@ -1947,12 +1969,23 @@ pub fn call(
                 slug.as_deref(),
                 title.as_deref(),
             )?;
-            Ok(json!({
-                "proposal_id": created.id,
-                "branch": created.branch,
-                "hint": created.hint,
-                "created_uri": created.created_uri,
-            }))
+            Ok(match created {
+                Captured::Note { uri, path } => json!({
+                    "mode": "direct",
+                    "created_uri": uri,
+                    "path": path.display().to_string(),
+                    "proposal_id": null,
+                    "branch": null,
+                    "hint": "private agent note written directly to agent/; it is never published. Pass `type` to turn a thought into a content Item proposal.",
+                }),
+                Captured::Proposal(created) => json!({
+                    "mode": "proposal",
+                    "proposal_id": created.id,
+                    "branch": created.branch,
+                    "hint": created.hint,
+                    "created_uri": created.created_uri,
+                }),
+            })
         }
         "ctx_read" => {
             let uri = str_arg("uri")?;

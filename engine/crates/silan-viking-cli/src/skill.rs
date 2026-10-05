@@ -98,7 +98,7 @@ fn render_skill_md(content_root: &Path) -> String {
          | taking stock of existing work (\"which projects are in flight\") | `list(type, filter)` — a structured list with status |\n\
          | wanting to see by tag (\"all the rust posts\", \"every ML moment\") | `list(type, filter.tag)` to filter; `list_tags(type?)` to see what tags exist |\n\
          | finding whether a topic was written about | `recall(query)` — semantic search; tags are folded in, so a tagged Item ranks high for its tag word |\n\
-         | voicing a half-formed thought | `capture(note, type)` — open a proposal, do not commit |\n\
+         | voicing a half-formed thought | `capture(note, type)` — a content `type` opens a proposal under resources/ (never written directly); no `type` saves a private agent note to agent/notes/ directly |\n\
          | wanting a *new* moment / blog / project written | `propose` to a fresh `silan://resources/<kind>/<slug>` — see the note below |\n\
          | wanting to think a moment through, write it up | `recall` for related Items first, then `propose` |\n\
          | wanting to push a project / moment forward | `propose` anchored to the right Part (e.g. progress) |\n\

@@ -14,6 +14,9 @@ use std::process::Command;
 const APPLICATION_BUNDLE: &str = "Silan Context System.app";
 const APPLICATION_EXECUTABLE: &str = "Silan Context System";
 const APPLICATION_OVERRIDE_ENV: &str = "SILAN_DESKTOP_APP";
+/// The Desktop app's device-local workspace record (Tauri `app_config_dir`).
+const DESKTOP_IDENTIFIER: &str = "tech.silan.desktop";
+const DESKTOP_WORKSPACE_RECORD: &str = "workspace.json";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DesktopLaunchMode {
@@ -82,6 +85,13 @@ impl DesktopWorkspaceSession {
             sync.items_scanned,
             if sync.wrote { "refreshed" } else { "current" }
         );
+
+        if let Some(notice) = desktop_record_path()
+            .and_then(|record| recorded_workspace(&record))
+            .and_then(|recorded| workspace_change_notice(&recorded, &project_root))
+        {
+            println!("{notice}");
+        }
 
         Ok(Self {
             content_root,
@@ -235,6 +245,35 @@ impl DevelopmentDesktopApplication {
     }
 }
 
+fn desktop_record_path() -> Option<PathBuf> {
+    Some(
+        PathBuf::from(env::var_os("HOME")?)
+            .join("Library/Application Support")
+            .join(DESKTOP_IDENTIFIER)
+            .join(DESKTOP_WORKSPACE_RECORD),
+    )
+}
+
+/// The project root the Desktop app currently has recorded, if any.
+fn recorded_workspace(record: &Path) -> Option<PathBuf> {
+    let source = fs::read_to_string(record).ok()?;
+    let value: serde_json::Value = serde_json::from_str(&source).ok()?;
+    value.get("project_root")?.as_str().map(PathBuf::from)
+}
+
+/// One line telling the owner this launch replaces the recorded workspace.
+fn workspace_change_notice(recorded: &Path, launching: &Path) -> Option<String> {
+    let recorded = fs::canonicalize(recorded).unwrap_or_else(|_| recorded.to_path_buf());
+    let launching = fs::canonicalize(launching).unwrap_or_else(|_| launching.to_path_buf());
+    (recorded != launching).then(|| {
+        format!(
+            "desktop: switching the recorded workspace from {} to {} (switch back from the app's workspace list)",
+            recorded.display(),
+            launching.display()
+        )
+    })
+}
+
 fn absolute_path(path: &Path) -> Result<PathBuf, String> {
     if path.is_absolute() {
         return Ok(path.to_path_buf());
@@ -267,6 +306,30 @@ mod tests {
         );
         assert!(DesktopLaunchMode::parse(&["--debug"]).is_err());
         assert!(DesktopLaunchMode::parse(&["dev", "extra"]).is_err());
+    }
+
+    #[test]
+    fn launching_another_workspace_prints_one_change_notice() {
+        let directory =
+            std::env::temp_dir().join(format!("silan-desktop-record-{}", std::process::id()));
+        let first = directory.join("first");
+        let second = directory.join("second");
+        fs::create_dir_all(&first).expect("first");
+        fs::create_dir_all(&second).expect("second");
+        let record = directory.join(DESKTOP_WORKSPACE_RECORD);
+        fs::write(
+            &record,
+            serde_json::json!({ "version": 1, "project_root": first }).to_string(),
+        )
+        .expect("record");
+
+        let recorded = recorded_workspace(&record).expect("recorded root");
+        assert!(workspace_change_notice(&recorded, &first.join(".")).is_none());
+        let notice = workspace_change_notice(&recorded, &second).expect("notice");
+        assert!(notice.starts_with("desktop: switching the recorded workspace"));
+        assert_eq!(notice.lines().count(), 1);
+        assert!(recorded_workspace(&directory.join("missing.json")).is_none());
+        fs::remove_dir_all(&directory).expect("cleanup");
     }
 
     #[test]

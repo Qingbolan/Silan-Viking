@@ -162,6 +162,9 @@ enum DeliverySyncState {
     RemoteAhead,
     Diverged,
     RemoteUnknown,
+    /// No `[deploy]` target exists, so there is no deployed version to
+    /// compare against. This is an onboarding state, not a failure.
+    NotConfigured,
 }
 
 impl DeliverySyncState {
@@ -172,6 +175,7 @@ impl DeliverySyncState {
             Self::RemoteAhead => "remote_ahead",
             Self::Diverged => "diverged",
             Self::RemoteUnknown => "remote_unknown",
+            Self::NotConfigured => "not_configured",
         }
     }
 }
@@ -292,10 +296,20 @@ impl DeliveryControl {
             .map_err(|e| DeliveryControlError::Repository(e.to_string()))?
             .map(|head| head.chars().take(12).collect::<String>())
             .unwrap_or_default();
-        let changes = run(&repo, path_args(&["status", "--porcelain"], scope.paths()))?
-            .lines()
-            .filter_map(parse_status)
-            .collect::<Vec<_>>();
+        // `run_raw` keeps the leading status column of the first record, and
+        // every untracked file is listed individually so each one can be
+        // previewed and committed as a file rather than as a directory.
+        let changes = run_raw(
+            &repo,
+            path_args(
+                &["status", "--porcelain", "--untracked-files=all"],
+                scope.paths(),
+            ),
+        )?
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .filter_map(parse_status)
+        .collect::<Vec<_>>();
         let recent_commits = if head.is_empty() {
             Vec::new()
         } else {
@@ -426,7 +440,7 @@ impl DeliveryControl {
             .head_revision()
             .map_err(|e| DeliveryControlError::Repository(e.to_string()))?;
         let state = if api_base_url(&self.content_root).is_err() || self.bearer_token.is_none() {
-            Some("not_configured")
+            Some(DeliverySyncState::NotConfigured.id())
         } else if head.is_none() {
             Some("uncommitted")
         } else {
@@ -522,7 +536,7 @@ impl DeliveryControl {
                     observed.local_commits, observed.remote_commits,
                 )))
             }
-            DeliverySyncState::RemoteUnknown => {
+            DeliverySyncState::RemoteUnknown | DeliverySyncState::NotConfigured => {
                 return Err(DeliveryControlError::UnsafeSynchronization(format!(
                     "deployed revision `{}` could not be compared after fetch",
                     short_oid(&remote_head),
@@ -574,10 +588,7 @@ impl DeliveryControl {
         let local_head = run(repo, ["rev-parse", "HEAD"])?;
         let comparison_head =
             local_recovery_anchor(repo, &remote_head).unwrap_or_else(|| remote_head.clone());
-        let workspace_changes = run(repo, ["status", "--porcelain"])?
-            .lines()
-            .filter(|line| !line.trim().is_empty())
-            .count();
+        let workspace_changes = workspace_change_count(repo)?;
         if local_head == comparison_head {
             return Ok((
                 DeliverySyncStatus {
@@ -644,16 +655,50 @@ impl DeliveryControl {
             .next()
             .is_some_and(|line| line.starts_with("??"));
         if is_untracked {
-            let contents = fs::read_to_string(self.content_root.join(path))
-                .map_err(|error| DeliveryControlError::Repository(error.to_string()))?;
-            let body = contents
-                .lines()
-                .map(|line| format!("+{line}"))
-                .collect::<Vec<_>>()
-                .join("\n");
-            return Ok(format!("--- /dev/null\n+++ b/{path}\n{body}"));
+            return self.untracked_file_diff(path);
         }
         run(&repo, ["diff", "--", path])
+    }
+
+    /// Diff for one changed file of a section commit preview: exactly what
+    /// [`Self::release_scope`] would commit for that path (HEAD against the
+    /// working tree), so the preview cannot disagree with the commit.
+    pub fn release_file_diff(
+        &self,
+        scope: ReleaseScope,
+        path: &str,
+    ) -> Result<String, DeliveryControlError> {
+        if !scope_owns_path(scope, path) || path.split('/').any(|segment| segment == "..") {
+            return Err(DeliveryControlError::Repository(format!(
+                "`{path}` is not part of the {} section",
+                scope.label()
+            )));
+        }
+        let repo = self.repo()?;
+        let is_untracked = run_raw(
+            &repo,
+            ["status", "--porcelain", "--untracked-files=all", "--", path],
+        )?
+        .lines()
+        .next()
+        .is_some_and(|line| line.starts_with("??"));
+        if is_untracked {
+            return self.untracked_file_diff(path);
+        }
+        run(&repo, ["diff", "HEAD", "--", path])
+    }
+
+    /// A brand new untracked file rendered as a synthetic all-added diff,
+    /// since git has no blob to diff it against yet.
+    fn untracked_file_diff(&self, path: &str) -> Result<String, DeliveryControlError> {
+        let contents = fs::read_to_string(self.content_root.join(path))
+            .map_err(|error| DeliveryControlError::Repository(error.to_string()))?;
+        let body = contents
+            .lines()
+            .map(|line| format!("+{line}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        Ok(format!("--- /dev/null\n+++ b/{path}\n{body}"))
     }
 
     /// Unified diff for exactly the index content that `commit_workspace`
@@ -788,10 +833,20 @@ impl DeliveryControl {
             .collect())
     }
 
+    /// Commit every change inside one section with the owner-reviewed
+    /// `message`. Only section roots that Git can match are passed as
+    /// pathspecs: a freshly initialised workspace keeps empty, untracked
+    /// section directories (for example `resources/episode`), and naming
+    /// them would make `git add`/`git commit` fail.
     pub fn release_scope(
         &self,
         scope: ReleaseScope,
+        message: &str,
     ) -> Result<ScopeReleaseStatus, DeliveryControlError> {
+        let message = message.trim();
+        if message.is_empty() {
+            return Err(DeliveryControlError::EmptyCommitMessage);
+        }
         let before = self.scope_status(scope)?;
         if before.dirty_count == 0 {
             return Err(DeliveryControlError::NothingToRelease(
@@ -799,16 +854,36 @@ impl DeliveryControl {
             ));
         }
         let repo = self.repo()?;
-        run(&repo, path_args(&["add", "-A"], scope.paths()))?;
+        // `git add` and `git commit --only` reject a pathspec that matches
+        // nothing, and a fresh workspace has empty, untracked scope folders
+        // (e.g. `resources/episode`). Each mutating call therefore receives
+        // only the scope roots Git can actually resolve at that moment.
+        let addable = addable_scope_paths(&repo, scope)?;
+        if addable.is_empty() {
+            return Err(DeliveryControlError::NothingToRelease(
+                scope.label().to_owned(),
+            ));
+        }
+        run(&repo, path_args(&["add", "-A"], &addable))?;
         let staged = run(
             &repo,
-            path_args(&["diff", "--cached", "--name-only"], scope.paths()),
+            path_args(&["diff", "--cached", "--name-only"], &addable),
         )?;
         if staged.trim().is_empty() {
             return Err(DeliveryControlError::NothingToRelease(
                 scope.label().to_owned(),
             ));
         }
+        let committable = scope
+            .paths()
+            .iter()
+            .copied()
+            .filter(|path| {
+                staged
+                    .lines()
+                    .any(|staged_path| path_is_within(staged_path, path))
+            })
+            .collect::<Vec<_>>();
         let mut args = vec![
             "-c".to_owned(),
             format!("user.name={AUTHOR_NAME}"),
@@ -817,10 +892,10 @@ impl DeliveryControl {
             "commit".to_owned(),
             "--only".to_owned(),
             "-m".to_owned(),
-            format!("release: {} updates", scope.id()),
+            message.to_owned(),
             "--".to_owned(),
         ];
-        args.extend(scope.paths().iter().map(|path| (*path).to_owned()));
+        args.extend(committable.iter().map(|path| (*path).to_owned()));
         run(&repo, args)?;
         let sync = WorkspaceSync::open(&self.content_root, &self.db_path)
             .map_err(|error| DeliveryControlError::Workspace(error.to_string()))?;
@@ -1237,11 +1312,37 @@ fn parse_porcelain_path(line: &str) -> Option<String> {
     )
 }
 
+fn workspace_change_count(repo: &GitRepo) -> Result<usize, DeliveryControlError> {
+    Ok(run(repo, ["status", "--porcelain"])?
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .count())
+}
+
 fn scope_owns_path(scope: ReleaseScope, path: &str) -> bool {
-    scope.paths().iter().any(|root| {
-        path.strip_prefix(root)
-            .is_some_and(|suffix| suffix.is_empty() || suffix.starts_with('/'))
-    })
+    scope.paths().iter().any(|root| path_is_within(path, root))
+}
+
+fn path_is_within(path: &str, root: &str) -> bool {
+    path.strip_prefix(root)
+        .is_some_and(|suffix| suffix.is_empty() || suffix.starts_with('/'))
+}
+
+/// The scope roots that hold at least one tracked or untracked (non-ignored)
+/// file. Git rejects a mutating pathspec that matches nothing, so empty or
+/// absent scope folders must be omitted rather than passed on.
+fn addable_scope_paths(
+    repo: &GitRepo,
+    scope: ReleaseScope,
+) -> Result<Vec<&'static str>, DeliveryControlError> {
+    let listing = ["ls-files", "--cached", "--others", "--exclude-standard"];
+    let mut known = Vec::new();
+    for path in scope.paths().iter().copied() {
+        if !run(repo, path_args(&listing, &[path]))?.trim().is_empty() {
+            known.push(path);
+        }
+    }
+    Ok(known)
 }
 
 fn run<I, S>(repo: &GitRepo, args: I) -> Result<String, DeliveryControlError>
@@ -1990,10 +2091,162 @@ mod tests {
     }
 
     #[test]
+    fn release_scope_skips_scope_folders_git_does_not_know() {
+        // A fresh `silan init` leaves `resources/episode` absent or empty;
+        // releasing the blog scope must not hand Git a dead pathspec.
+        let (_directory, content, db) = fixture("http://127.0.0.1:1");
+        std::fs::create_dir_all(content.join("resources/blog")).expect("blog dir");
+        std::fs::create_dir_all(content.join("resources/episode")).expect("episode dir");
+        std::fs::write(content.join("resources/blog/note.md"), "draft\n").expect("write");
+        let control = DeliveryControl::open(&content, &db, content.parent().expect("repo root"))
+            .expect("open");
+
+        let before = control.scope_status(ReleaseScope::Blog).expect("status");
+        assert_eq!(before.dirty_count, 1);
+        let result = control.release_scope(ReleaseScope::Blog, "release: blog updates");
+
+        assert!(
+            !matches!(result, Err(DeliveryControlError::Repository(_))),
+            "{result:?}"
+        );
+        let subject = Command::new("git")
+            .args(["log", "-1", "--pretty=%s"])
+            .current_dir(&content)
+            .output()
+            .expect("log");
+        assert_eq!(
+            String::from_utf8_lossy(&subject.stdout).trim(),
+            "release: blog updates"
+        );
+        let after = control.scope_status(ReleaseScope::Blog).expect("status");
+        assert_eq!(after.dirty_count, 0);
+        assert_eq!(after.recent_commits.len(), 1);
+    }
+
+    #[test]
     fn porcelain_rename_reports_the_destination_path() {
         assert_eq!(
             parse_porcelain_path("R  resources/old.md -> resources/new.md"),
             Some("resources/new.md".to_owned())
         );
+    }
+
+    fn copy_fixture_item(content: &Path, relative: &str) {
+        fn copy(from: &Path, to: &Path) {
+            std::fs::create_dir_all(to).expect("fixture directory");
+            for entry in std::fs::read_dir(from).expect("read fixture") {
+                let entry = entry.expect("fixture entry");
+                let target = to.join(entry.file_name());
+                if entry.file_type().expect("fixture type").is_dir() {
+                    copy(&entry.path(), &target);
+                } else {
+                    std::fs::copy(entry.path(), target).expect("copy fixture file");
+                }
+            }
+        }
+        copy(
+            &PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../../tests/fixtures/content")
+                .join(relative),
+            &content.join(relative),
+        );
+    }
+
+    #[test]
+    fn sync_status_without_a_deploy_target_is_not_configured_instead_of_an_error() {
+        let (directory, content, db) = fixture("http://127.0.0.1:9");
+        std::fs::write(
+            directory.path().join("silan-viking.toml"),
+            "[project]\nname = \"fresh\"\n",
+        )
+        .expect("config without deploy");
+        let status = DeliveryControl::open(&content, &db, directory.path())
+            .expect("open")
+            .sync_status()
+            .expect("an unconfigured deployment is a state, not a failure");
+        assert_eq!(status.state, "not_configured");
+        assert_eq!(status.local_head, head(&content));
+        assert!(status.remote_head.is_empty());
+        assert_eq!((status.local_commits, status.remote_commits), (0, 0));
+    }
+
+    #[test]
+    fn section_status_lists_each_new_file_with_its_full_path() {
+        let (directory, content, db) = fixture("http://127.0.0.1:9");
+        copy_fixture_item(&content, "resources/blog/hello-world");
+        let status = DeliveryControl::open(&content, &db, directory.path())
+            .expect("open")
+            .scope_status(ReleaseScope::Blog)
+            .expect("blog status");
+        assert!(status.dirty_count > 0);
+        assert!(status.changes.iter().all(|change| change
+            .path
+            .starts_with("resources/blog/hello-world/")
+            && !change.path.ends_with('/')));
+    }
+
+    #[test]
+    fn section_release_skips_empty_untracked_roots_and_uses_the_reviewed_message() {
+        let (directory, content, db) = fixture("http://127.0.0.1:9");
+        // `silan init` leaves this empty and untracked; naming it as a Git
+        // pathspec used to fail the whole Blog commit.
+        std::fs::create_dir_all(content.join("resources/episode")).expect("empty episode root");
+        copy_fixture_item(&content, "resources/blog/hello-world");
+        let control = DeliveryControl::open(&content, &db, directory.path()).expect("open");
+        let path = control
+            .scope_status(ReleaseScope::Blog)
+            .expect("status")
+            .changes[0]
+            .path
+            .clone();
+        assert!(control
+            .release_file_diff(ReleaseScope::Blog, &path)
+            .expect("preview diff")
+            .starts_with("--- /dev/null"));
+
+        let released = control
+            .release_scope(ReleaseScope::Blog, "  feat(blog): add hello world  ")
+            .expect("blog release");
+
+        assert_eq!(released.dirty_count, 0);
+        assert_eq!(
+            released.recent_commits[0].subject,
+            "feat(blog): add hello world"
+        );
+    }
+
+    #[test]
+    fn section_release_requires_a_message_and_leaves_other_sections_uncommitted() {
+        let (directory, content, db) = fixture("http://127.0.0.1:9");
+        copy_fixture_item(&content, "resources/blog/hello-world");
+        copy_fixture_item(&content, "resources/moment/changelog-2026-q2");
+        let control = DeliveryControl::open(&content, &db, directory.path()).expect("open");
+        assert!(matches!(
+            control.release_scope(ReleaseScope::Moment, "   "),
+            Err(DeliveryControlError::EmptyCommitMessage)
+        ));
+
+        control
+            .release_scope(ReleaseScope::Moment, "release: moment updates")
+            .expect("moment release");
+
+        assert_eq!(
+            control
+                .scope_status(ReleaseScope::Moment)
+                .expect("moment status")
+                .dirty_count,
+            0
+        );
+        assert!(
+            control
+                .scope_status(ReleaseScope::Blog)
+                .expect("blog status")
+                .dirty_count
+                > 0,
+            "a Moments commit must never include Blog sources"
+        );
+        assert!(control
+            .release_file_diff(ReleaseScope::Moment, "resources/blog/hello-world/item.toml")
+            .is_err());
     }
 }

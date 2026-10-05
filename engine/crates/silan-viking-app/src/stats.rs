@@ -108,6 +108,36 @@ pub struct VisitorRow {
     pub last_seen_at: String,
 }
 
+/// How much network detail a visitor listing discloses. Listings are
+/// anonymous (visitor fingerprint, kind, referrer, coarse region, time)
+/// unless the owner explicitly asks for network information — the masked and
+/// raw IP and precise location (city, postal code, place, coordinates).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum VisitorDisclosure {
+    #[default]
+    Anonymous,
+    Network,
+}
+
+impl VisitorRow {
+    /// This row reduced to what `disclosure` permits.
+    pub fn disclosed(mut self, disclosure: VisitorDisclosure) -> Self {
+        if disclosure == VisitorDisclosure::Anonymous {
+            self.ip_masked.clear();
+            self.ip_address.clear();
+            self.city.clear();
+            self.postal_code.clear();
+            self.place_name.clear();
+            self.place_feature_code.clear();
+            self.place_distance_km = 0.0;
+            self.latitude = 0.0;
+            self.longitude = 0.0;
+            self.accuracy_radius = 0;
+        }
+        self
+    }
+}
+
 /// `/api/v1/stats/visitors` response.
 #[derive(Debug, Clone, Deserialize)]
 struct VisitorsResponse {
@@ -1038,11 +1068,12 @@ impl StatsCache {
         })
     }
 
-    /// The cached visitors of one item.
+    /// The cached visitors of one item, reduced to what `disclosure` permits.
     pub fn visitors(
         &self,
         entity_type: &str,
         entity_id: &str,
+        disclosure: VisitorDisclosure,
     ) -> Result<Vec<VisitorRow>, StatsError> {
         let what = format!("{entity_type}/{entity_id}");
         let conn = Connection::open(&self.db)?;
@@ -1083,7 +1114,10 @@ impl StatsCache {
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(rows)
+        Ok(rows
+            .into_iter()
+            .map(|row: VisitorRow| row.disclosed(disclosure))
+            .collect())
     }
 
     /// The cached crawler-kind breakdown of one item.

@@ -88,12 +88,20 @@ fn today_iso8601() -> String {
     )
 }
 
+/// Words a slug cannot spell in their conventional upper case; title-casing
+/// restores them (`working-with-ai` -> `Working With AI`).
+const TITLE_ACRONYMS: &[&str] = &["ai", "mcp", "cli", "geo", "seo", "api", "llm", "ui"];
+
 /// Title-case a slug into a default human title (`my-first-post` -> `My First
-/// Post`). The author edits the frontmatter afterwards.
+/// Post`), keeping common acronyms upper case. The author edits the
+/// frontmatter afterwards.
 fn slug_to_title(slug: &str) -> String {
     slug.split('-')
         .filter(|w| !w.is_empty())
         .map(|w| {
+            if TITLE_ACRONYMS.contains(&w) {
+                return w.to_ascii_uppercase();
+            }
             let mut chars = w.chars();
             match chars.next() {
                 Some(first) => first.to_ascii_uppercase().to_string() + chars.as_str(),
@@ -175,6 +183,26 @@ fn frontmatter_for(kind: &str, slug: &str, extra: &[(&str, String)]) -> String {
 ///
 /// Lays down `resources/<kind>/<slug>/parts/<primary-role>/{meta.toml,en.md}`.
 pub fn new_item(content_root: &Path, kind: &str, slug: &str) -> Result<Scaffolded, ScaffoldError> {
+    write_item(content_root, kind, slug, &[])
+}
+
+/// Scaffold a flat-type Item that `silan init` seeds as an example. The
+/// `sample: true` frontmatter marker tells lint that the item is a
+/// placeholder, so its missing translations are not reported.
+pub fn new_sample_item(
+    content_root: &Path,
+    kind: &str,
+    slug: &str,
+) -> Result<Scaffolded, ScaffoldError> {
+    write_item(content_root, kind, slug, &[("sample", "true".to_owned())])
+}
+
+fn write_item(
+    content_root: &Path,
+    kind: &str,
+    slug: &str,
+    extra: &[(&str, String)],
+) -> Result<Scaffolded, ScaffoldError> {
     validate_slug(slug)?;
     let primary_role = primary_role(kind)?;
     let item_dir = content_root
@@ -193,7 +221,7 @@ pub fn new_item(content_root: &Path, kind: &str, slug: &str) -> Result<Scaffolde
     let item_meta = write_item_meta(&item_dir)?;
     let meta = write_meta(&part_dir, primary_role)?;
     let md = part_dir.join("en.md");
-    let frontmatter = frontmatter_for(kind, slug, &[]);
+    let frontmatter = frontmatter_for(kind, slug, extra);
     fs::write(
         &md,
         format!(
@@ -228,12 +256,7 @@ pub fn new_episode(
             "episode `{series}/{slug}` already exists"
         )));
     }
-    // Next episode_number = count of existing episode subdirs + 1.
-    let existing = fs::read_dir(&series_dir)?
-        .filter_map(Result::ok)
-        .filter(|e| e.path().is_dir())
-        .count();
-    let episode_number = existing + 1;
+    let episode_number = next_episode_number(&series_dir)?;
 
     let part_dir = episode_dir.join("parts").join("body");
     fs::create_dir_all(&part_dir)?;
@@ -258,6 +281,53 @@ pub fn new_episode(
     Ok(Scaffolded {
         files: vec![item_meta, meta, md],
     })
+}
+
+/// The next free `episode_number` in a series: one past the highest number
+/// any existing episode declares in its frontmatter. Counting directories
+/// would be wrong — a series also holds `assets/`, and numbers need not be
+/// contiguous after reorders or removals.
+fn next_episode_number(series_dir: &Path) -> Result<i64, ScaffoldError> {
+    let mut highest = 0;
+    for entry in fs::read_dir(series_dir)? {
+        let episode_dir = entry?.path();
+        if !episode_dir.join("item.toml").is_file() {
+            continue;
+        }
+        let Ok(parts) = fs::read_dir(episode_dir.join("parts")) else {
+            continue;
+        };
+        for part in parts.filter_map(Result::ok) {
+            let Ok(files) = fs::read_dir(part.path()) else {
+                continue;
+            };
+            for file in files.filter_map(Result::ok) {
+                if file.path().extension().is_some_and(|ext| ext == "md") {
+                    let body = fs::read_to_string(file.path())?;
+                    if let Some(number) = frontmatter_int(&body, "episode_number") {
+                        highest = highest.max(number);
+                    }
+                }
+            }
+        }
+    }
+    Ok(highest + 1)
+}
+
+/// An integer `key: value` line from a Markdown file's leading `---` block.
+fn frontmatter_int(body: &str, key: &str) -> Option<i64> {
+    let mut lines = body.lines();
+    if lines.next()?.trim() != "---" {
+        return None;
+    }
+    lines
+        .take_while(|line| line.trim() != "---")
+        .find_map(|line| {
+            let (name, value) = line.split_once(':')?;
+            (name.trim() == key)
+                .then(|| value.trim().trim_matches(['"', '\'']).parse().ok())
+                .flatten()
+        })
 }
 
 /// Scaffold a new episode container series (`series.toml`).
@@ -290,6 +360,7 @@ pub fn new_resume(
     content_root: &Path,
     full_name: &str,
     title: &str,
+    email: Option<&str>,
 ) -> Result<Scaffolded, ScaffoldError> {
     let item_dir = content_root.join("resources").join("resume");
     let summary_dir = item_dir.join("parts").join("summary");
@@ -302,13 +373,8 @@ pub fn new_resume(
     let md = summary_dir.join("en.md");
     let frontmatter = format!(
         "---\n{}---\n",
-        serde_yaml::to_string(&std::collections::BTreeMap::from([
-            ("full_name", full_name),
-            ("title", title),
-            ("kind", "resume"),
-            ("visibility", "private"),
-        ]))
-        .map_err(|error| ScaffoldError(error.to_string()))?
+        serde_yaml::to_string(&resume_frontmatter(full_name, title, email))
+            .map_err(|error| ScaffoldError(error.to_string()))?
     );
     // The bio body is heading-free prose: the front-end already renders it
     // inside a titled section ("About Me"), so a leading `## Summary` here
@@ -322,6 +388,24 @@ pub fn new_resume(
     Ok(Scaffolded {
         files: vec![item_meta, meta, md],
     })
+}
+
+/// Resume frontmatter fields; `email` is only written when the author gave one.
+fn resume_frontmatter<'a>(
+    full_name: &'a str,
+    title: &'a str,
+    email: Option<&'a str>,
+) -> std::collections::BTreeMap<&'static str, &'a str> {
+    let mut fields = std::collections::BTreeMap::from([
+        ("full_name", full_name),
+        ("title", title),
+        ("kind", "resume"),
+        ("visibility", "private"),
+    ]);
+    if let Some(email) = email.filter(|email| !email.trim().is_empty()) {
+        fields.insert("email", email);
+    }
+    fields
 }
 
 /// Add an optional Part to an existing Item: `parts/<role>/{meta.toml,en.md}`.
@@ -474,5 +558,61 @@ mod tests {
     #[test]
     fn slug_to_title_capitalizes_words() {
         assert_eq!(slug_to_title("my-first-post"), "My First Post");
+    }
+
+    #[test]
+    fn slug_to_title_keeps_common_acronyms_upper_case() {
+        assert_eq!(
+            slug_to_title("working-with-ai-assistants"),
+            "Working With AI Assistants"
+        );
+        assert_eq!(
+            slug_to_title("mcp-cli-geo-seo-api-llm-ui"),
+            "MCP CLI GEO SEO API LLM UI"
+        );
+        // Only whole words are acronyms.
+        assert_eq!(slug_to_title("guide-to-apis"), "Guide To Apis");
+    }
+
+    #[test]
+    fn new_episode_numbers_after_the_highest_existing_episode() {
+        let root =
+            std::env::temp_dir().join(format!("silan-scaffold-episode-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        new_series(&root, "talks").expect("series");
+        let series = root.join("resources/episode/talks");
+        // Non-episode folders and gaps must not inflate the next number.
+        fs::create_dir_all(series.join("assets")).expect("assets");
+        new_episode(&root, "talks", "first").expect("first");
+        new_episode(&root, "talks", "second").expect("second");
+        let second = series.join("second/parts/body/en.md");
+        let body = fs::read_to_string(&second).expect("read");
+        fs::write(
+            &second,
+            body.replace("episode_number: 2", "episode_number: 4"),
+        )
+        .expect("renumber");
+
+        let third = new_episode(&root, "talks", "working-with-ai").expect("third");
+
+        let body = fs::read_to_string(third.files.last().expect("md")).expect("read");
+        assert!(body.contains("episode_number: 5"), "{body}");
+        assert!(body.contains("title: Working With AI"), "{body}");
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn frontmatter_int_reads_only_the_leading_block() {
+        assert_eq!(
+            frontmatter_int(
+                "---\nepisode_number: 3\n---\nepisode_number: 9\n",
+                "episode_number"
+            ),
+            Some(3)
+        );
+        assert_eq!(
+            frontmatter_int("episode_number: 3\n", "episode_number"),
+            None
+        );
     }
 }

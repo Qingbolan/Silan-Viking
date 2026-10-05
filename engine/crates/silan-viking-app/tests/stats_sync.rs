@@ -6,7 +6,7 @@
 //! `StatsCache` answers from the synced rows — proving the whole
 //! fetch → cache → query chain offline.
 
-use silan_viking_app::{StatsCache, StatsSync};
+use silan_viking_app::{StatsCache, StatsSync, VisitorDisclosure};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::mpsc;
@@ -96,10 +96,23 @@ fn sync_pulls_remote_stats_then_cache_serves_them_offline() {
     assert_eq!(item.likes, 7);
     assert_eq!(item.comments, 3);
 
-    let visitors = cache.visitors("blog", "abc").expect("visitors cached");
+    let visitors = cache
+        .visitors("blog", "abc", VisitorDisclosure::Network)
+        .expect("visitors cached");
     assert_eq!(visitors.len(), 1);
     assert_eq!(visitors[0].visitor_kind, "human");
     assert_eq!(visitors[0].ip_masked, "1.2.3.x");
+
+    // The default listing is anonymous: the visitor id survives, network
+    // detail does not.
+    let anonymous = cache
+        .visitors("blog", "abc", VisitorDisclosure::default())
+        .expect("visitors cached");
+    assert_eq!(anonymous[0].fingerprint, visitors[0].fingerprint);
+    assert_eq!(anonymous[0].visitor_kind, "human");
+    assert!(anonymous[0].ip_masked.is_empty());
+    assert!(anonymous[0].ip_address.is_empty());
+    assert_eq!(anonymous[0].latitude, 0.0);
 
     let crawlers = cache.crawlers("blog", "abc").expect("crawlers cached");
     assert_eq!(crawlers.len(), 2);
@@ -130,6 +143,12 @@ fn re_sync_replaces_the_previous_snapshot() {
 
     let cache = StatsCache::open(&db);
     // Visitors must be 1, not 2 — the second sync replaced, not appended.
-    assert_eq!(cache.visitors("blog", "abc").expect("visitors").len(), 1);
+    assert_eq!(
+        cache
+            .visitors("blog", "abc", VisitorDisclosure::Anonymous)
+            .expect("visitors")
+            .len(),
+        1
+    );
     let _ = std::fs::remove_dir_all(&dir);
 }

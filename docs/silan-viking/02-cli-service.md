@@ -95,7 +95,7 @@ silan episode series reorder <series> reorder the episodes in a series (episode_
 silan episode series rm <series>      ★ real delete: removes the entire series (and every episode in it)
 silan episode series archive <series> archive a series (status → archived)
 # ── episode layer (each episode is its own Item) ──
-silan episode new <series> <slug>     add one episode to a series (scaffold + parts/body/{meta.toml,en.md}; episode_number is auto-assigned)
+silan episode new <series> <slug>     add one episode to a series (scaffold + parts/body/{meta.toml,en.md}; episode_number = highest existing episode_number + 1)
 silan episode list [<series>]         list episodes (with <series> given, only list that series')
 silan episode show <series> <slug>    show one episode (frontmatter + body)
 silan episode edit <series> <slug> [lang]  open this episode's parts/body/<lang>.md (default primary language)
@@ -191,7 +191,20 @@ silan update add-lang <slug> <lang> add a language variant
 silan content ls <uri>     list the contents under a silan:// path (across all types)
 silan content tree         hierarchical browse of the whole content/
 silan content show <uri>   show any item by silan:// URI (type-agnostic)
+silan content lint [<uri>] [--verbose]   graded content-health report
 ```
+
+> `content lint` groups issues by severity (`fatal`, `warn`, `info`), each
+> with its count. `info` issues (chiefly parts with no translation) are
+> collapsed to their count unless `--verbose` is passed. The closing
+> `N issue(s); M fatal` line and the exit code (non-zero only for fatal
+> issues) are stable. Items carrying the `sample: true` frontmatter marker
+> (the examples seeded by `silan init`) are never reported for missing
+> translations.
+
+> Default titles derived from a slug keep common acronyms upper case
+> (AI, MCP, CLI, GEO, SEO, API, LLM, UI): `working-with-ai` becomes
+> `Working With AI`.
 
 > The `content` group is **read-only and cross-type** — it is the
 > "bird's-eye view of content/". For actual CRUD on a single item,
@@ -262,8 +275,11 @@ silan index status     workspace state: per-Collection item counts, unsynced ite
 silan relation link <from> <to> --type <kind>   create a directed edge (write to content_relation)
 silan relation show <uri>                       print the forward and reverse relations of one item
 silan relation graph                            export the relation graph (data source for the site's knowledge graph)
-# kind ∈ evolved-from/into · documents · references · supersedes · part-of
+# kind ∈ evolved_into · evolved_from · documents · references · supersedes · part_of
 ```
+
+> A missing endpoint, a `--type` without a value, or an unknown kind fails
+> with an error naming the problem and listing the valid kinds.
 
 ### `silan site <verb>` — website projection and operations (serves #11 #14)
 
@@ -274,11 +290,21 @@ silan site check       pre-publish health check (broken links / missing images /
 silan site publish <uri>   set an Item's visibility to public (selective publication)
 silan site deploy      Docker deploy (--dry-run on by default; --confirm to really deploy); deploys also carry crawler artefacts
 silan site rollback    roll back to the previous release
-silan site status      live-service health + the content commit that is currently deployed
+silan site status      read-only report: production (live health + deployed content commit) and local preview (Docker stack)
 silan site recover [--from URL] [--to PATH]
                        restore the checksum-bound public authored source of the live release;
                        --from enables a new device with no local project configuration
 ```
+
+`site status` reports each section independently: with no `[deploy]` the
+production section says "not configured", an unreachable host is reported
+as unavailable, and a missing or stopped Docker marks only the preview as
+unavailable — the command itself succeeds.
+
+`site deploy` and `site update-content` (including `--dry-run`) without a
+`[deploy]` section print the required fields (`host`, `user`,
+`ssh_key_path`, `remote_dir`; `public_url` recommended), a copyable example
+block and `silan onboard` as the guided path, then exit non-zero.
 
 `site recover --from https://silan.tech` restores into `./content` by
 default. It reads `SILAN_STATS_SYNC_TOKEN` from the process or the target
@@ -294,7 +320,9 @@ authoritative new-device migration path.
 ```
 silan stats sync <uri>        pull this Item's runtime stats from the production server into the local cache
 silan stats show <uri>        the Item's view / like / comment counts (reads the local cache)
-silan stats visitors <uri>    visitor details: fingerprint / IP / visitor_kind / referrer_kind
+silan stats visitors <uri> [--show-network]
+                              anonymous visitor details: fingerprint / visitor_kind / referrer_kind / last_seen;
+                              --show-network adds the masked IP (and the cache's precise location fields)
 silan stats crawlers <uri>    aggregated by visitor kind: human / search engine / AI crawler; per-crawler scrape count
 silan stats sources <uri>     aggregated by source: search / social / AI chat / direct / referral
 ```
@@ -329,6 +357,10 @@ silan proposal accept <id>    staging-area merge + validation ② → on pass, a
 silan proposal reject <id>    delete the proposal branch
 silan proposal rebase <id>    rebase a stale proposal branch onto the latest main; stop on conflict; resolve and `rebase --continue`
 # A proposal = a git branch in the content repo (proposal/<ulid>). accept / reject / rebase are human-only.
+# `proposal create` (like MCP `propose`) refuses a target Item with uncommitted files:
+#   commit your changes in content/ first, then propose — proposals are built from main's last commit.
+# A blocked `accept` (conflict / validation ②) prints the failing detail plus next steps:
+#   commit + `silan proposal rebase <id>`, or `silan proposal reject <id>`. Main is never touched.
 ```
 
 ### `silan mcp <verb>` — the MCP service process (serves #10 #12)
@@ -412,12 +444,23 @@ quotes, source lines, explanations, and suggested repairs. See
 ### Top-level commands
 
 ```
-silan init                initialise a project under ~/.silan-viking/ (--path overrides); see 06 §6.2
+silan init [--project <name>] [--name <full name>] [--title <title>] [--email <address>]
+                          initialise a project under ~/.silan-viking/ (--path overrides); see 06 §6.2
+silan guide               show the next step for the current project
 silan config edit         edit the project config; --global edits ~/.config/silan/config.toml
 silan doctor              cross-layer health check
 silan completion <shell>  shell completion
 silan uninstall           remove the skill + derived files; --purge also drops content/ and config
 ```
+
+> `silan init` seeds `[project].name` and the `[identity]` / resume
+> frontmatter from its flags. On a terminal it prompts for each value not
+> passed; without a terminal (scripts, tests) it uses fixed defaults
+> (`silan-site`, `Example User`, `AI Researcher / Engineer`, no email), so
+> non-interactive runs stay deterministic. The seeded welcome blog and first
+> project carry `sample: true`, and every empty collection folder gets a
+> tracked `.gitkeep` so release scopes can name it as a Git pathspec.
+> Every command answers `silan <command> --help` with its own usage.
 
 > `uninstall` by default removes only the reproducible parts — the
 > installed skill (`~/.claude/skills/silan-viking`) and the
